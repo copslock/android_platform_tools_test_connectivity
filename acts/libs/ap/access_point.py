@@ -46,6 +46,8 @@ class AP():
         self._client = jsonrpc.JSONRPCClient(
                         "http://""{}:{}/cgi-bin/luci/rpc/".format(addr, port))
         self.RADIO_NAMES = []
+        # Configuration provided by the user, which is optional.
+        self.user_config = None
         keys = self._client.get_all("wireless").keys()
         if "radio0" in keys:
             self.RADIO_NAMES.append("radio0")
@@ -94,13 +96,13 @@ class AP():
             ap_config: A dict containing the configurations for the AP.
         """
         self.reset()
+        self.user_config = ap_config
         for k, v in ap_config.items():
             if "radio" in k:
                 self._apply_radio_configs(k, v)
             if "network" in k:
                 # TODO(angli) Implement this.
                 pass
-        self._client.commit('wireless')
         self.apply_wifi_changes()
 
     def _apply_radio_configs(self, radio_id, radio_config):
@@ -156,6 +158,36 @@ class AP():
         new_state = '1' if cur_state else '0'
         self._set_option("wireless", radio_name, "disabled", new_state)
         return
+
+    def set_ssid_state(self, ssid, state):
+        """Sets the state of ssid (turns on/off).
+
+        Args:
+            ssid: The ssid whose state is being changed.
+            state: State to set the ssid to. Enable the ssid if True, disable
+                otherwise.
+        """
+        new_state = '0' if state else '1'
+        section_ids = self.section_id_lookup("wireless", "ssid", ssid)
+        for s_id in section_ids:
+            self._set_option("wireless", s_id, "disabled", new_state)
+
+
+    def apply_wifi_changes(self):
+        """Applies committed wifi changes by restarting wifi.
+
+        Raises:
+            ServerError: Something funny happened restarting wifi on the AP.
+        """
+        s = self._client.commit('wireless')
+        resp = self.run('wifi')
+        if resp != '' or not status:
+            raise ServerError(("Exception in refreshing wifi changes, commit"
+                               "status: ") + s + ", wifi restart response: "
+                               + resp)
+
+    def set_wifi_channel(self, channel, device='radio0'):
+        self.set('wireless', device, 'channel', channel)
 
     def _add_ifaces(self, configs):
         """Adds wifi-ifaces in the AP's wireless config based on a list of
@@ -264,8 +296,8 @@ class AP():
         """
         section_ids = self.section_id_lookup(cfg_name, key, value)
         if not section_ids:
-            raise ClientError("Could not find any section that has " + key + ":"
-                              + value)
+            raise ClientError("Could not find any section that has " + key
+                              + ":" + value)
         for section_id in section_ids:
             self._delete_cfg_section_by_id(cfg_name, section_id)
 
@@ -281,27 +313,6 @@ class AP():
             ServerError: Uci delete call returned False.
         """
         self._client.delete(cfg_name, section_id)
-
-    def apply_wifi_changes(self):
-        """Applies committed wifi changes by restarting wifi.
-
-        Raises:
-            ServerError: Something funny happened restarting wifi on the AP.
-        """
-        resp = self.run('wifi')
-        if resp != '':
-            raise ServerError("Exception in refreshing wifi changes: " + resp)
-
-    def set_wifi_channel(self, channel, device='radio0'):
-        self.set('wireless', device, 'channel', channel)
-
-    def get_iface_info():
-        sections = self._client.get_all('wireless')
-        results = []
-        for k, v in sections.items():
-            if 'ssid' in v and 'frequency' in v:
-                results.append(v['ssid'], v['frequency'])
-        return results
 
     @property
     def bssid(self):
