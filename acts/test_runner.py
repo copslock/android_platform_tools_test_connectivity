@@ -22,6 +22,7 @@ from ap.access_point import AP
 from test_utils.utils import *
 
 test_paths = [os.path.dirname(os.path.abspath(__file__)) + "/tests"]
+testbed_config_path = "testbed.config"
 
 class TestRunner():
     TAG = "TestRunner"
@@ -81,6 +82,6 @@ if __name__ == "__main__":
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
                         help="List of test classes to run.If not specified, run all test classes found.")
     args = parser.parse_args()
-    t = TestRunner("testbed.config", args.testclass)
+    t = TestRunner(testbed_config_path, args.testclass)
     t.run()
     os._exit(0)
