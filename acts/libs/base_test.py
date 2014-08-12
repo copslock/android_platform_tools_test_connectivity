@@ -15,7 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time, os, traceback
+import time, os, traceback, sys
 import logger
 from android_device import AndroidDevice
 
@@ -43,7 +43,6 @@ class BaseTestClass():
       self.log.warning("No attached android device found.")
     if "access_points" in controllers:
       self.access_points = controllers["access_points"]
-
     # Initialize sl4a client
     self.TAG = tag
     self.mdevice = self.android_devices[0]
@@ -88,14 +87,20 @@ class BaseTestClass():
         failed_settings.append(s)
     return failed_settings
 
-  def run(self):
+  def run(self, test_cases=None):
     """Runs test cases within a test class by the order they
        appear in the test list.
     """
+    tests = self.tests
+    if test_cases:
+      ts = []
+      for test_name in test_cases:
+        ts.append(getattr(self, test_name))
+      tests = ts
     # Length of the longest test name for report formatting
-    name_max_len = max(len(t.__name__) for t in self.tests)
+    name_max_len = max(len(t.__name__) for t in tests)
     # Run tests in order
-    for test_func in self.tests:
+    for test_func in tests:
       test_name = test_func.__name__
       self.exec_one_testcase(test_name, test_func, name_max_len)
     self.clean_up()

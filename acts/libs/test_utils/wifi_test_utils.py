@@ -32,13 +32,12 @@ REPORT_EVENT_FULL_SCAN_RESULT = 2
 # US Wifi frequencies
 ALL_2G_FREQUENCIES = [2412, 2417, 2422, 2427, 2432, 2437, 2442, 2447, 2452,
                       2457, 2462]
-ALL_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580,
-                      5660, 5680, 5700, 5180, 5200, 5220, 5240, 5745, 5765,
-                      5785, 5805, 5825]
-DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580, 5660
-                   5680, 5700]
+DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520, 5540, 5560, 5580,
+                      5660, 5680, 5700]
 NONE_DFS_5G_FREQUENCIES = [5180, 5200, 5220, 5240, 5745, 5765, 5785, 5805,
                            5825]
+ALL_5G_FREQUENCIES = DFS_5G_FREQUENCIES + NONE_DFS_5G_FREQUENCIES
+
 band_to_frequencies = {
   WIFI_BAND_24_GHZ: ALL_2G_FREQUENCIES,
   WIFI_BAND_5_GHZ: NONE_DFS_5G_FREQUENCIES,
@@ -194,12 +193,15 @@ def wifi_toggle_state(droid, ed, new_state=None):
     ed: event_dispatcher associated with the sl4a session.
     new_state: Wifi state to set to. If None, opposite of the current state.
   """
-  if new_state and new_state != droid.wifiCheckState():
-    droid.wifiStartTrackingStateChange()
-    droid.wifiToggleState(new_state)
-    event = ed.pop_event("SupplicantConnectionChanged", 10)
-    assert event['data']['Connected'] == new_state
-    droid.wifiStopTrackingStateChange()
+  # Check if the new_state is already achieved, so we don't wait for the
+  # state change event by mistake.
+  if new_state == droid.wifiCheckState():
+    return True
+  droid.wifiStartTrackingStateChange()
+  droid.wifiToggleState(new_state)
+  event = ed.pop_event("SupplicantConnectionChanged", 10)
+  assert event['data']['Connected'] == new_state
+  droid.wifiStopTrackingStateChange()
 
 def reset_wifi(droid):
   """Disconnects and removes all configured Wifi networks.

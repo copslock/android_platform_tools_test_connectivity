@@ -26,15 +26,15 @@ class WifiManagerTest(BaseTestClass):
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
   def __init__(self, controllers):
-    BaseTestClass.__init__(self, self.TAG, controllers)
-    # ssid of the wifi that is supposed to be discovered by scans
-    self.reference_wifi_name = "GoogleGuest"
     self.tests = (
              self.test_toggle_state,
              self.test_scan,
              self.test_add_network,
              self.test_enable_network,
             )
+    BaseTestClass.__init__(self, self.TAG, controllers)
+    # ssid of the wifi that is supposed to be discovered by scans
+    self.reference_wifi_name = "GoogleGuest"
 
   """ Tests Begin """
   def test_toggle_state(self):
@@ -51,7 +51,7 @@ class WifiManagerTest(BaseTestClass):
     self.log.debug("Start regular wifi scan.")
     self.droid.wifiStartScan()
     try:
-      self.ed.pop_event("WifiScanFinished")
+      self.ed.pop_event("WifiScanFinished", 60)
     except Empty:
       self.log.error("Wifi connection scan timed out.")
       return False
