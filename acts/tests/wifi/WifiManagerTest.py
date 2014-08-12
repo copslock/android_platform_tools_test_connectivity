@@ -15,11 +15,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import threading, time, os
+import os
+import threading
+import time
+
 from base_test import BaseTestClass
-from test_utils.wifi_test_utils import *
-from test_utils.utils import *
 from queue import Empty
+from test_utils.utils import *
+from test_utils.wifi_test_utils import *
 
 class WifiManagerTest(BaseTestClass):
   TAG = "WifiManagerTest"
