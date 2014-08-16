@@ -18,8 +18,8 @@ python3.4
 python module “requests” http://docs.python-requests.org/en/latest/
 
 Setup:
-1. Install the dependencies.
-2. add the absolute path to “libs” directory to your $PYTHONPATH. You probably want to add the export statement in your ~/.bash_profile file.
+1. Install the dependencies. Note you need to install dependencies with python3.
+2. Prepend the absolute path to “libs” directory to your $PYTHONPATH. You probably want to add the export statement in your ~/.bash_profile file.
 
-To run the included sample tests in command line:
-python3 test_runner.py
+To run the included sample WifiManager tests in command line:
+python3 test_runner.py -tc WifiManagerTest

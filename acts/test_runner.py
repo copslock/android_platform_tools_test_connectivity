@@ -37,6 +37,10 @@ class TestRunner():
         self.parse_config(testbed_config)
         self.test_classes = TestRunner.find_test_files()
         self.run_list = [x for x in run_list if x]
+        self.reporter = logger.get_test_reporter("../logs/TestRunner/", self.TAG)
+        self.num_requested = 0
+        self.num_executed = 0
+        self.num_passed = 0
 
     def parse_config(self, testbed_config):
         """ This is not used because we only need the android device atm,

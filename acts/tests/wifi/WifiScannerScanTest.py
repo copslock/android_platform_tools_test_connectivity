@@ -37,20 +37,51 @@ class WifiScannerScanTest(BaseTestClass):
   log_path = BaseTestClass.log_path + TAG + "/"
   tests = None
   current_path = os.path.dirname(os.path.abspath(__file__))
+  log_path = ''.join((BaseTestClass.log_path, TAG, '/'))
 
   def __init__(self, controllers):
     BaseTestClass.__init__(self, self.TAG, controllers)
-    if hasattr(self, "access_points"):
-      self.config = load_config(self.current_path
-                                + "/WifiScannerScanTest.config")
-      # Initialize APs with config file.
-      for item in self.config["AP"]:
-        self.access_points[item["index"]].apply_configs(item)
+    self.failed_scan_settings = None
     # A list of all test cases to be executed in this class.
     self.tests = (
         "test_wifi_scanner_scan_with_enumerated_params",
-        #self.test_wifi_scanner_with_wifi_off,
+        "test_wifi_scanner_with_wifi_off",
+        "test_wifi_scanner_with_invalid_numBssidsPerScan",
+        "test_wifi_scanner_scan_with_failed_settings",
         )
+
+  def setup_class(self):
+    BaseTestClass.setup_class(self)
+    if not hasattr(self, "access_points"):
+      self.log.error("No AP available.")
+      return False
+    self.config = load_config(self.current_path
+                              + "/WifiScannerTests.config")
+    ap_configs = self.config["AP"]
+    if len(self.access_points) < len(ap_configs):
+      self.log.error("Not enough APs to config.")
+      return False
+    # Initialize APs with config file.
+    configured = []
+    for item in ap_configs:
+      self.log.info("Setting up AP " + str(item["index"]))
+      self.access_points[item["index"]].apply_configs(item)
+      configured.append(item["index"])
+    # If more APs exist than needed, disable extras.
+    if len(self.access_points) > len(ap_configs):
+      for idx,ap in enumerate(self.access_points):
+        if idx not in configured:
+          self.access_points[idx].toggle_radio_state("radio0", False)
+          self.access_points[idx].toggle_radio_state("radio1", False)
+    return True
+
+  def teardown_test(self):
+    BaseTestClass.teardown_test(self)
+    #self.log.debug("Shut down all wifi scanner activities.")
+    #self.droid.wifiScannerShutdown()
+
+  # def setup_class(self):
+  #   return True
 
   """ Helper Functions Begin """
   def start_wifi_background_scan(self, scan_setting):
@@ -118,8 +149,8 @@ class WifiScannerScanTest(BaseTestClass):
       if k == "device": # skip "device" since it will never be in results.
         continue
       if k not in result or v != result[k]:
-        self.log.error("Mismatching " + k + ", expected " + v + ", got "
-                       + str(result[k]))
+        self.log.error(' '.join(("Mismatching", k, "expected", v, "got",
+                       str(result[k]))))
         return False
     return True
 
@@ -160,16 +191,29 @@ class WifiScannerScanTest(BaseTestClass):
       events = self.ed.pop_events(EVENT_TAG + str(idx))
       self.log.error("Did not get onSuccess, got:\n" + str(events))
       return False
-    event = self.ed.pop_event(EVENT_TAG + str(idx) + "onResults", 1200)
-    self.log.debug(event)
+    event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
+    results = event["data"]["Results"]
+    self.log.debug("Got onResults:\n" + str(event))
     self.droid.stopWifiScannerScan(idx)
     self.ed.clear_all_events()
-    results = event["data"]["Results"]
     # First make sure all results are of the expected frequencies.
-    self.result_sanity_check(scan_setting, results)
+    if not self.result_sanity_check(scan_setting, results):
+      return False
     # Now check to make sure all expected wifi networks are found in results.
     expected = self.wifi_generate_expected_wifi_infos(scan_setting)
     return self.verify_scan_results(expected, results)
+
+  def start_wifi_scanner_scan_expect_failure(self, scan_setting):
+    try:
+      idx = self.droid.wifiStartScannerScan(json.dumps(scan_setting))
+      event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onFailure")),
+                                SHORT_TIMEOUT)
+    except Empty:
+      events = self.ed.pop_events(EVENT_TAG, SHORT_TIMEOUT)
+      self.log.error("Did not get expected onFailure. Got\n" + str(events))
+      return False
+    self.log.debug("Got expected onFailure:\n" + str(event))
+    return True
   """ Helper Functions End """
 
   """ Tests Begin """

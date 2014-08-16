@@ -36,6 +36,7 @@ class BaseTestClass():
   tests = None
 
   def __init__(self, tag, controllers):
+    self.TAG = tag
     # Initialize loggers, logging to both console and file.
     self.log = logger.get_test_logger(self.log_path, self.TAG)
     self.reporter = logger.get_test_reporter(self.log_path, self.TAG)
@@ -122,18 +123,19 @@ class BaseTestClass():
         verdict = test_func(*params)
       else:
         verdict = test_func()
-      timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
+      timestamp = utils.get_current_human_time()
+      msg = ' '.join((timestamp, test_name, " "*offset))
       if verdict:
-        self.reporter.write(timestamp + test_name + " "*offset + "PASSED\n")
+        self.reporter.write(msg + " PASSED\n")
         self.log.info("PASSED")
         return True
       else:
-        self.reporter.write(timestamp + test_name + " "*offset + "FAILED\n")
+        self.reporter.write(msg + "FAILED\n")
         self.log.info("FAILED")
         return False
     except:
-      timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
-      self.reporter.write(timestamp + test_name + " "*offset + "FAILED\n")
+      timestamp = utils.get_current_human_time()
+      self.reporter.write(msg + " FAILED\n")
       self.log.exception("Exception in " + test_name)
       self.log.exception(traceback.format_exc())
       self._exec_func(self.reset_env)
@@ -153,11 +155,14 @@ class BaseTestClass():
       setting_strs: A list of strings representing parameter sets. These are
         usually json strings that get loaded in the test_func.
       args: Additional args to be passed to the test_func.
+
+    Returns:
+      A list of settings that did not pass.
     """
     name_max_len = max(len(s) for s in setting_strs) + len(tag)
     failed_settings = []
-    for s in setting_strs:
-      test_name = tag + "\n" + s
+    for s, s_str in zip(settings, setting_strs):
+      test_name = ' '.join((tag, s_str))
       self._exec_func(self.setup_test)
       result = self.exec_one_testcase(test_name,
                                       test_func,
@@ -192,10 +197,10 @@ class BaseTestClass():
     try:
       return func(*args)
     except:
-      msg = ("Exception happened when executing " + func.__name__ + " in "
-             + self.TAG)
-      timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
-      self.reporter.write(timestamp  + " " + msg + "\n")
+      msg = ' '.join(("Exception happened when executing", func.__name__, "in",
+             self.TAG))
+      timestamp = utils.get_current_human_time()
+      self.reporter.write(' '.join((timestamp, msg, "\n")))
       self.log.exception(msg)
       self.log.exception(traceback.format_exc())
 
@@ -204,28 +209,34 @@ class BaseTestClass():
     appear in the test list.
 
     Args:
-      test_cases: Test cases to be executed; all if set to None.
+      test_names: A list of names of the requested test cases. If None, all
+        test cases in the class are considered requested.
+
+    Returns:
+      A tuple of: the number of requested test cases, the number of test cases
+      executed, and the number of test cases passed.
     """
-    self._exec_func(self.setup_class)
-    tests = self.tests
-    if test_cases:
-      ts = []
-      for test_name in test_cases:
-        ts.append(getattr(self, test_name))
-      tests = ts
-    # Length of the longest test name for report formatting
-    name_max_len = max(len(t.__name__) for t in tests)
-    # Run tests in order
-    for test_func in tests:
-      test_name = test_func.__name__
-      if self._is_test_name_valid(test_name):
-        self._exec_func(self.setup_test)
-        self.exec_one_testcase(test_name, test_func, name_max_len)
-        self._exec_func(self.teardown_test)
-      else:
-        self.log.error("Attempted to execute a test case with invalid name: "
-                       + test_name)
+    # Setup for the class.
+    if not self._exec_func(self.setup_class):
+      self.log.error(''.join(("Failed to set up ", self.TAG, ", skipping.")))
+      return None
+    self.log.info(''.join(("="*10, "> ", self.TAG, " < ", "="*10)))
+    name_max_len, tests = self._get_test_funcs(test_names)
+    # Counters for summary.
+    self.num_requested = len(test_names) if test_names else len(self.tests)
+    # Run tests in order.
+    for test_name,test_func in tests:
+      if not self._exec_func(self.setup_test):
+        self.log.error(' '.join(("Setup for", test_name, "failed, skipping.")))
+        continue
+      status = self.exec_one_testcase(test_name, test_func, name_max_len)
+      self._exec_func(self.teardown_test)
     self._exec_func(self.teardown_class)
+    summary = ''.join(("Result summary for tests in ", self.TAG,
+               "\nExecuted:  ", str(self.num_executed),
+               "\nPassed:    ", str(self.num_passed)))
+    self.log.info(summary)
+    self.reporter.write(summary)
     self._exec_func(self.clean_up)
 
   def clean_up(self):
