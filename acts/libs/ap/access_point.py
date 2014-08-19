@@ -251,7 +251,7 @@ class AP():
             radio = i["device"]
             # Skip this info the radio its ssid is on is disabled.
             disabled = self._client.get("wireless", radio, "disabled")
-            if disabled == '1':
+            if disabled != '0':
                 continue
             c = int(self._client.get("wireless", radio, "channel"))
             if radio == "radio0":

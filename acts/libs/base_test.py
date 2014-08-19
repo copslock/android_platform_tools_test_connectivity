@@ -44,6 +44,16 @@ class BaseTestClass():
     # Unpack controller objects into instance variable lists
     if "android_devices" in controllers:
       self.android_devices = controllers["android_devices"]
+      self.droids = []
+      self.eds = []
+      for ad in self.android_devices:
+        d,e = ad.get_droid()
+        self.droids.append(d)
+        self.eds.append(e)
+        # Create separate references to first droid for convenience.
+      self.droid = self.droids[0]
+      self.ed = self.eds[0]
+      self.ed.start()
     else:
       self.log.warning("No attached android device found.")
     if "access_points" in controllers:
@@ -135,6 +145,7 @@ class BaseTestClass():
         return False
     except:
       timestamp = utils.get_current_human_time()
+      msg = ' '.join((timestamp, test_name, " "*offset))
       self.reporter.write(msg + " FAILED\n")
       self.log.exception("Exception in " + test_name)
       self.log.exception(traceback.format_exc())
