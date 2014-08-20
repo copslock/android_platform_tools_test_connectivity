@@ -129,14 +129,14 @@ class EventDispatcher:
 
         Return and remove the oldest entry of an event.
         Block until an event of specified name is available or
-		times out if timeout is set.
+        times out if timeout is set.
 
         Parameters
         ----------
         event_name : string
           Name of the event to be popped.
         timeout : integer
-		  Number of seconds to wait when event is not present. Infinite if None.
+          Number of seconds to wait when event is not present. Infinite if None.
 
         Returns
         -------
@@ -146,7 +146,7 @@ class EventDispatcher:
         Raises
         ------
         IllegalStateError
-          Raised if pop is called before the dispatcher starts polling
+          Raised if pop is called before the dispatcher starts polling.
     '''
     if not self.started:
       raise IllegalStateError("Dispatcher needs to be started before popping.")
@@ -174,6 +174,13 @@ class EventDispatcher:
         results : list
           Events whose names contain the partial_event_name. Empty if none exist and the wait
           timed out.
+
+        Raises
+        ------
+        IllegalStateError
+          Raised if pop is called before the dispatcher starts polling.
+        queue.Empty
+          Raised if no event was found before time out.
     '''
     if not self.started:
       raise IllegalStateError("Dispatcher needs to be started before popping.")
@@ -184,6 +191,8 @@ class EventDispatcher:
       if len(results) != 0 or time.time() > deadline:
         break
       time.sleep(1)
+    if len(results) == 0:
+      raise Empty("No event whose name matches " + event_name + " ever occured.")
     return results
 
   def _match_and_pop(self, partial_event_name):
@@ -304,7 +313,7 @@ class EventDispatcher:
         Raises
         ------
         IllegalStateError
-          Raised if pop is called before the dispatcher starts polling
+          Raised if pop is called before the dispatcher starts polling.
     '''
     if not self.started:
       raise IllegalStateError("Dispatcher needs to be started before popping.")

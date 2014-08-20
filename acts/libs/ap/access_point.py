@@ -19,6 +19,7 @@
 Access controller for OpenWRT routers.
 """
 import jsonrpc
+from test_utils.wifi_test_utils import *
 
 class ServerError(Exception):
     pass
@@ -46,8 +47,6 @@ class AP():
         self._client = jsonrpc.JSONRPCClient(
                         "http://""{}:{}/cgi-bin/luci/rpc/".format(addr, port))
         self.RADIO_NAMES = []
-        # Configuration provided by the user, which is optional.
-        self.user_config = None
         keys = self._client.get_all("wireless").keys()
         if "radio0" in keys:
             self.RADIO_NAMES.append("radio0")
@@ -74,7 +73,43 @@ class AP():
             if key in section_cfg and section_cfg[key] == value:
                 section_ids.append(section_id)
         return section_ids
- 
+
+    def _section_option_lookup(self, cfg_name, conditions, *target_keys):
+        """Looks up values of options in sections that match the conditions.
+
+        To match a condition, a section needs to have all the key:value pairs
+        specified in conditions.
+
+        Args:
+            cfg_name: Name of the configuration file to look in.
+            key: Key of the pair.
+            value: Value of the pair.
+            target_key: Key of the options we want to retrieve values from.
+
+        Returns:
+            A list of the values found.
+        """
+        results = []
+        sections = self._client.get_all(cfg_name)
+        for section_cfg in sections.values():
+            if self._match_conditions(conditions, section_cfg):
+                r = {}
+                for k in target_keys:
+                    if k not in section_cfg:
+                        break
+                    r[k] = section_cfg[k]
+                if r:
+                    results.append(r)
+        return results
+
+    @staticmethod
+    def _match_conditions(conds, cfg):
+        for cond in conds:
+            key, value = cond
+            if key not in cfg or cfg[key] != value:
+                return False
+        return True
+
     def run(self, *cmd):
         """Executes a terminal command on the AP.
 
@@ -96,7 +131,6 @@ class AP():
             ap_config: A dict containing the configurations for the AP.
         """
         self.reset()
-        self.user_config = ap_config
         for k, v in ap_config.items():
             if "radio" in k:
                 self._apply_radio_configs(k, v)
@@ -172,6 +206,72 @@ class AP():
         for s_id in section_ids:
             self._set_option("wireless", s_id, "disabled", new_state)
 
+    def get_ssids(self, conds):
+        """Gets all the ssids that match the conditions.
+
+        Params:
+            conds: An iterable of tuples, each representing a key:value pair
+                an ssid must have to be included.
+
+        Returns:
+            A list of ssids that contain all the specified key:value pairs.
+        """
+        results = []
+        for s in self._section_option_lookup("wireless", conds, "ssid"):
+            results.append(s["ssid"])
+        return results
+
+    def get_active_ssids(self):
+        """Gets the ssids that are currently not disabled.
+
+        Returns:
+            A list of ssids that are currently active.
+        """
+        conds = (("disabled", "0"),)
+        return self.get_ssids(conds)
+
+    def get_active_ssids_info(self, *keys):
+        """Gets the specified info of currently active ssids
+
+        If frequency is requested, it'll be retrieved from the radio section
+        associated with this ssid.
+
+        Params:
+            keys: Names of the fields to include in the returned info.
+                e.g. "frequency".
+
+        Returns:
+            Values of the requested info.
+        """
+        conds = (("disabled", "0"),)
+        keys = [w.replace("frequency","device") for w in keys]
+        info = self._section_option_lookup("wireless", conds, "ssid", *keys)
+        if "device" in keys:
+            for i in info:
+                radio = i["device"]
+                c = self._client.get("wireless", radio, "channel")
+                if radio == "radio0":
+                    i["frequency"] = channel_2G_to_freq[c]
+                elif radio == "radio1":
+                    i["frequency"] = channel_5G_to_freq[c]
+        return info
+
+    def get_radio_option(self, key, idx=0):
+        """Gets an option from the configured settings of a radio.
+
+        Params:
+            key: Name of the option to retrieve.
+            idx: Index of the radio to retrieve the option from. Default is 0.
+
+        Returns:
+            The value of the specified option and radio.
+        """
+        r = None
+        if idx == 0:
+            r = "radio0"
+        elif idx == 1:
+            r = "radio1"
+        return self._client.get("wireless", r, key)
 
     def apply_wifi_changes(self):
         """Applies committed wifi changes by restarting wifi.

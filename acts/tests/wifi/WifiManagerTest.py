@@ -18,14 +18,15 @@
 import threading, time, os
 from base_test import BaseTestClass
 from test_utils.wifi_test_utils import *
+from test_utils.utils import *
 from queue import Empty
 
 class WifiManagerTest(BaseTestClass):
   TAG = "WifiManagerTest"
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
-  def __init__(self, android_devices):
-    BaseTestClass.__init__(self, self.TAG, android_devices)
+  def __init__(self, controllers):
+    BaseTestClass.__init__(self, self.TAG, controllers)
     # ssid of the wifi that is supposed to be discovered by scans
     self.reference_wifi_name = "GoogleGuest"
     self.tests = (

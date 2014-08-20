@@ -50,6 +50,56 @@ class BaseTestClass():
     self.droid, self.ed = self.mdevice.get_droid()
     self.ed.start()
 
+  def exec_one_testcase(self, test_name, test_func, name_max_len, params=None):
+    offset = name_max_len - len(test_name) + 5
+    try:
+      self.log.info("="*10 + "> Running - " + test_name)
+      verdict = None
+      if params:
+        verdict = test_func(*params)
+      else:
+        verdict = test_func()
+      timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
+      if verdict:
+        self.reporter.write(timestamp + test_name + " "*offset + "PASSED\n")
+        self.log.info("PASSED")
+        return True
+      else:
+        self.reporter.write(timestamp + test_name + " "*offset + "FAILED\n")
+        self.log.info("FAILED")
+        return False
+    except:
+      timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
+      self.reporter.write(timestamp + test_name + " "*offset + "FAILED\n")
+      self.log.exception("Exception in " + test_name)
+      self.log.exception(traceback.format_exc())
+    return False
+
+  def run_generated_testcases(self, tag, test_func, setting_strs, *args):
+    name_max_len = max(len(s) for s in setting_strs) + len(tag)
+    failed_settings = []
+    for s in setting_strs:
+      test_name = tag + "\n" + s
+      result = self.exec_one_testcase(test_name,
+                                      test_func,
+                                      name_max_len,
+                                      (s,) + args)
+      if not result:
+        failed_settings.append(s)
+    return failed_settings
+
+  def run(self):
+    """Runs test cases within a test class by the order they
+       appear in the test list.
+    """
+    # Length of the longest test name for report formatting
+    name_max_len = max(len(t.__name__) for t in self.tests)
+    # Run tests in order
+    for test_func in self.tests:
+      test_name = test_func.__name__
+      self.exec_one_testcase(test_name, test_func, name_max_len)
+    self.clean_up()
+
   def clean_up(self):
     self.mdevice.kill_all_droids()
     for h in self.log.handlers:
@@ -59,29 +109,4 @@ class BaseTestClass():
         pass
       self.log.removeHandler(h)
     self.reporter.close()
-
-  def run(self):
-    """Runs test cases within a test class by the order they
-       appear in the test list.
-    """
-    # Length of the longest test name for report formatting
-    self.name_max_len = max(len(t.__name__) for t in self.tests)
-    # Run tests in order
-    for test in self.tests:
-      test_name = test.__name__
-      offset = self.name_max_len - len(test_name) + 5
-      try:
-        self.log.debug("="*10 + "> Running " + test_name + " <" + "="*10)
-        verdict = test()
-        timestamp = time.strftime("%m-%d-%Y %H:%M:%S ")
-        if verdict:
-          self.reporter.write(timestamp + test_name + " "*offset + "PASSED\n")
-          self.log.info(test_name + " "*offset + "PASSED")
-        else:
-          self.reporter.write(timestamp + test_name + " "*offset + "FAILED\n")
-          self.log.info(test_name + " "*offset + "FAILED")
-      except Exception as e:
-        self.log.exception("Exception in " + test_name)
-        self.log.exception(traceback.format_exc())
-    self.clean_up()
 
