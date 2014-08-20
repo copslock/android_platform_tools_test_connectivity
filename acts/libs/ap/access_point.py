@@ -249,7 +249,7 @@ class AP():
         if "device" in keys:
             for i in info:
                 radio = i["device"]
-                c = self._client.get("wireless", radio, "channel")
+                c = int(self._client.get("wireless", radio, "channel"))
                 if radio == "radio0":
                     i["frequency"] = channel_2G_to_freq[c]
                 elif radio == "radio1":
@@ -281,7 +281,7 @@ class AP():
         """
         s = self._client.commit('wireless')
         resp = self.run('wifi')
-        if resp != '' or not status:
+        if resp != '' or not s:
             raise ServerError(("Exception in refreshing wifi changes, commit"
                                "status: ") + s + ", wifi restart response: "
                                + resp)

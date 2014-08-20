@@ -31,7 +31,7 @@ class TestRunner():
         self.controllers = {}
         self.parse_config(testbed_config)
         self.test_classes = TestRunner.find_test_files()
-        self.run_list = run_list
+        self.run_list = [x for x in run_list if x]
 
     def parse_config(self, testbed_config):
         """ This is not used because we only need the android device atm,
@@ -60,28 +60,75 @@ class TestRunner():
                     if ext == ".py" and name[-4:] == "Test":
                       fileFullPath = os.path.join(dirPath, fname)
                       sys.path.append(dirPath)
-                      file_list.append((name,fileFullPath))
+                      file_list.append(name)
         return file_list
 
-    def run_test_class(self, test_cls_info):
+    def run_test_class(self, test_cls_name, test_cases=None):
         # Each entry of test class info follows:
         # (TestClassName, path/to/test/class/file) both are strings
         # will add more info later; the info may be based on testbed config
-        m = __import__(test_cls_info[0])
-        test_cls = getattr(m, test_cls_info[0])
+        m = __import__(test_cls_name)
+        test_cls = getattr(m, test_cls_name)
         test_cls_instance = test_cls(self.controllers)
-        test_cls_instance.run()
+        test_cls_instance.run(test_cases)
+
+    def parse_run_list(self):
+        results = {}
+        for item in run_list:
+            tokens = item.split('.')
+            if len(tokens) == 1:
+                results[tokens[0]] = None
+            elif len(tokens) == 2:
+                test_cls_name = tokens[0]
+                if test_cls_name in results:
+                    results[test_cls_name].append(tokens[1])
+                else:
+                    results[test_cls_name] = [tokens[1]]
+        return results
 
     def run(self):
-        for test_cls_info in self.test_classes:
-            if not self.run_list or test_cls_info[0] in self.run_list:
-                self.run_test_class(test_cls_info)
+        if self.run_list:
+            for test_name in self.run_list:
+                tokens = test_name.split(':')
+                if len(tokens) == 1:
+                    test_cls_name = tokens[0]
+                    self.run_test_class(test_cls_name)
+                elif len(tokens) == 2:
+                    test_cls_name, test_case_names = tokens
+                    names = [n.strip() for n in test_case_names.split(',') if n]
+                    self.run_test_class(test_cls_name, names)
+        else:
+            for test_cls_name in self.test_classes:
+                self.run_test_class(test_cls_name)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=("Specify tests to run. If "
+                 "nothing specified, run all test cases found."))
+    parser.add_argument('-tb', '--testbed', nargs='+', type=str,
+                        help=("Path to a file containing a json object that "
+                              "represents the testbed configuration."))
+    parser.add_argument('-tf', '--testfile', nargs='+', type=str,
+                        help=("Path to a file containing a comma delimited list"
+                              " of test classes to run."))
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
-                        help="List of test classes to run.If not specified, run all test classes found.")
+                        help=("List of test classes to run. Ignored if "
+                              "testfile is set."))
+    parser.add_argument('-r', '--repeat', type=int, help=("Number of times to "
+                        "run the specified test cases."))
     args = parser.parse_args()
-    t = TestRunner(testbed_config_path, args.testclass)
-    t.run()
+    test_list = []
+    repeat = 1
+    if args.testfile:
+        for fpath in args.testfile:
+            tf = None
+            with open(fpath, 'r') as f:
+                tf = f.read().replace('\n', ' ')
+        test_list += tf.split(' ')
+    elif args.testclass:
+            test_list = args.testclass
+    if args.repeat:
+        repeat = args.repeat
+    for i in range(repeat):
+        t = TestRunner(testbed_config_path, test_list)
+        t.run()
     os._exit(0)
