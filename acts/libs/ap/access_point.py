@@ -15,9 +15,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-"""
-Access controller for OpenWRT routers.
-"""
 import jsonrpc
 from test_utils.wifi_test_utils import *
 
@@ -27,6 +24,9 @@ class ServerError(Exception):
 class ClientError(Exception):
     pass
 
+"""
+Controller for OpenWRT routers.
+"""
 class AP():
     """Interface to OpenWRT using the LuCI interface.
 

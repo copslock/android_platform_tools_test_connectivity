@@ -15,8 +15,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import argparse
+import json
+import os
+import sys
 import time
-import os, sys, json, traceback, argparse
+import traceback
+
 from android_device import AndroidDevice
 from ap.access_point import AP
 from test_utils.utils import *
@@ -91,9 +96,12 @@ class TestRunner():
             for test_name in self.run_list:
                 tokens = test_name.split(':')
                 if len(tokens) == 1:
+                    # This should be considered a test class name
                     test_cls_name = tokens[0]
                     self.run_test_class(test_cls_name)
                 elif len(tokens) == 2:
+                    # This should be considered a test class name followed by
+                    # a list of test case names.
                     test_cls_name, test_case_names = tokens
                     names = [n.strip() for n in test_case_names.split(',') if n]
                     self.run_test_class(test_cls_name, names)
