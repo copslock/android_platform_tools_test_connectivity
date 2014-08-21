@@ -22,6 +22,8 @@ import sys
 import time
 import traceback
 
+import logger
+import attenuator.minicircuits.telnet as mctelnet
 from android_device import AndroidDevice
 from ap.access_point import AP
 from test_utils.utils import *
@@ -55,9 +57,14 @@ class TestRunner():
             for ap in data["AP"]:
                 controllers.append(AP(ap['Address'], ap['Port']))
             self.controllers["access_points"] = controllers
-        # if "Attenuator" in data:
-        #     for ap in data["AP"]
-        #         self.aps.append(Attenuator(ap['Address'])
+        if "Attenuator" in data:
+            controllers = []
+            for attenuator in data["Attenuator"]:
+                attn = mctelnet.AttenuatorInstrument(1)
+                attn.open(attenuator['Address'], attenuator['Port'])
+                attn.set_atten(0, 0)
+                controllers.append(attn)
+            self.controllers["attenuators"] = controllers
 
     @staticmethod
     def find_test_files():

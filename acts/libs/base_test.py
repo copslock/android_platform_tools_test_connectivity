@@ -58,11 +58,8 @@ class BaseTestClass():
       self.log.warning("No attached android device found.")
     if "access_points" in controllers:
       self.access_points = controllers["access_points"]
-    # Initialize sl4a client
-    self.TAG = tag
-    self.mdevice = self.android_devices[0]
-    self.droid, self.ed = self.mdevice.get_droid()
-    self.ed.start()
+    if "attenuators" in controllers:
+      self.attenuators = controllers["attenuators"]
 
   def setup_class(self):
     """Setup function that will be called before executing any test case in the
