@@ -214,10 +214,48 @@ class WifiScannerScanTest(BaseTestClass):
       return False
     self.log.debug("Got expected onFailure:\n" + str(event))
     return True
+
+  def check_get_available_channels_with_one_band(self, b):
+    r = self.droid.wifiScannerGetAvailableChannels(b)
+    self.log.debug(b)
+    self.log.debug(r)
+    expected = band_to_frequencies[b]
+    if not r or set(r) != set(expected):
+      self.log.error(' '.join(("Band", str(b), "failed. Expected",
+                               str(expected), "got", str(r))))
+      return False
+    return True
   """ Helper Functions End """
 
   """ Tests Begin """
-  def test_wifi_scanner_scan_with_enumerated_params(self):
+  # The two test_available_channels tests demonstrate the use of generated
+  # test cases. The two test cases are equivalent to each other, but the
+  # generated one handles exception and reporting better.
+  def test_available_channels_loop(self):
+    bands = (1,2,3,4,6,7)
+    for b in bands:
+      r = self.droid.wifiScannerGetAvailableChannels(b)
+      self.log.debug(b)
+      self.log.debug(r)
+      if r != band_to_frequencies[b]:
+        self.log.error(' '.join(("Band", str(b), "failed. Expected",
+                                 str(band_to_frequencies[b]), "got", str(r))))
+    return False
+
+  def test_available_channels_generated(self):
+    bands = (1,2,3,4,6,7)
+    failed = self.run_generated_testcases(
+      "Wifi Scanner Get Available Channels",
+      self.check_get_available_channels_with_one_band,
+      bands)
+    if failed:
+      self.log.debug("Get available channels failed with these bands: "
+                     + str(failed))
+      return False
+    return True
+
+  def test_wifi_scanner_scan_with_enumerated_params(self, scan_settings=None):
+    """Run scanner scan test with a list of different settings."""
     wifi_toggle_state(self.droid, self.ed, True)
     scan_settings = self.wifi_generate_scanner_scan_settings()
     self.log.debug("Scan settings:\n" + str(scan_settings))

@@ -30,14 +30,28 @@ class WifiManagerTest(BaseTestClass):
   tests = None
   def __init__(self, controllers):
     self.tests = (
-             self.test_toggle_state,
-             self.test_scan,
-             self.test_add_network,
-             self.test_enable_network,
+             "test_toggle_state",
+             "test_scan",
+             "test_add_network",
+             "test_connect_to_open_network",
+             "test_connect_psk2",
             )
     BaseTestClass.__init__(self, self.TAG, controllers)
     # ssid of the wifi that is supposed to be discovered by scans
     self.reference_wifi_name = "GoogleGuest"
+
+  def connect_to_wifi_network_with_password(self, credential):
+    network_name, passwd = credential
+    self.droid.wifiStartTrackingStateChange()
+    if not self.droid.wifiConnectWPA(network_name, passwd):
+      self.log.error("Failed to connect to " + network_name)
+      return False
+    connect_result = self.ed.pop_event("WifiNetworkConnected")
+    self.droid.wifiStopTrackingStateChange()
+    self.log.debug(connect_result)
+    result = network_matches(connect_result['data'], network_name)
+    reset_droid_wifi(self.droid)
+    return result
 
   """ Tests Begin """
   def test_toggle_state(self):
@@ -75,7 +89,7 @@ class WifiManagerTest(BaseTestClass):
     self.log.debug(configured_networks)
     return has_network(configured_networks, self.reference_wifi_name)
 
-  def test_enable_network(self):
+  def test_connect_to_open_network(self):
     self.droid.wifiStartTrackingStateChange()
     configured_networks = self.droid.wifiGetConfiguredNetworks()
     net_id = find_field(configured_networks,
@@ -92,6 +106,24 @@ class WifiManagerTest(BaseTestClass):
     result = network_matches(connect_result['data'], self.reference_wifi_name)
     reset_wifi(self.droid)
     return result
+
+  def test_connect_with_password(self):
+    credentials = [("AirPort Extreme", "hahahaha")]
+    for name,psk in credentials:
+      stat = self.connect_to_wifi_network_with_password(name, psk)
+      if not stat:
+        self.log.error(' '.join(("Connection to", name, "with psk", psk,
+                       "failed.")))
+    return self.connect_to_wifi_network_with_password("Test_1", "12345678")
+
+  def test_connect_with_password(self):
+    credentials = [("AirPort Extreme", "hahahaha")]
+    failed = self.run_generated_testcases("Wifi connection test",
+                                    self.connect_to_wifi_network_with_password,
+                                    credentials)
+    if failed:
+      return False
+    return True
   """ Tests End """
 
 if __name__ == "__main__":
