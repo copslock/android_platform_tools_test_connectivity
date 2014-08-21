@@ -17,11 +17,11 @@
 
 import os
 import sys
-import time
 import traceback
 
 import logger
 from android_device import AndroidDevice
+from test_utils import utils
 
 class BaseTestClass():
   """Base class for all test classes.
@@ -40,9 +40,12 @@ class BaseTestClass():
     # Initialize loggers, logging to both console and file.
     self.log = logger.get_test_logger(self.log_path, self.TAG)
     self.reporter = logger.get_test_reporter(self.log_path, self.TAG)
-
+    self.num_requested = 0
+    self.num_executed = 0
+    self.num_passed = 0
     # Unpack controller objects into instance variable lists
     if "android_devices" in controllers:
+      # Initialize sl4a clients
       self.android_devices = controllers["android_devices"]
       self.droids = []
       self.eds = []
@@ -67,8 +70,7 @@ class BaseTestClass():
 
     Implementation is optional.
     """
-    self.log.debug("Setting up for the test class " + self.TAG)
-    pass
+    return True
 
   def teardown_class(self):
     """Teardown function that will be called after all the selected test cases
@@ -76,7 +78,6 @@ class BaseTestClass():
 
     Implementation is optional.
     """
-    self.log.debug("Tearing down the test class " + self.TAG)
     pass
 
   def setup_test(self):
@@ -85,8 +86,7 @@ class BaseTestClass():
 
     Implementation is optional.
     """
-    self.log.debug("Setting up before a test...")
-    pass
+    return True
 
   def teardown_test(self):
     """Teardown function that will be called every time a test case has been
@@ -94,7 +94,6 @@ class BaseTestClass():
 
     Implementation is optional.
     """
-    self.log.debug("Tearing down after a test...")
     pass
 
   def reset_env(self):
@@ -103,7 +102,6 @@ class BaseTestClass():
 
     Implementation is optional.
     """
-    self.log.debug("Resetting the environment after an exception in a test...")
     pass
 
   def exec_one_testcase(self, test_name, test_func, name_max_len, params=None):
@@ -123,8 +121,9 @@ class BaseTestClass():
     """
     offset = name_max_len - len(test_name) + 5
     try:
-      self.log.info("="*10 + "> Running - " + test_name)
+      self.log.info("-"*5 + "> Test Case - " + test_name)
       verdict = None
+      self.num_executed += 1
       if params:
         # The evil unexposed ability to pass parameters into each test case.
         verdict = test_func(*params)
@@ -135,11 +134,11 @@ class BaseTestClass():
       if verdict:
         self.reporter.write(msg + " PASSED\n")
         self.log.info("PASSED")
-        return True
+        self.num_passed += 1
       else:
         self.reporter.write(msg + "FAILED\n")
         self.log.info("FAILED")
-        return False
+      return verdict
     except:
       timestamp = utils.get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
@@ -147,9 +146,9 @@ class BaseTestClass():
       self.log.exception("Exception in " + test_name)
       self.log.exception(traceback.format_exc())
       self._exec_func(self.reset_env)
-    return False
+      return False
 
-  def run_generated_testcases(self, tag, test_func, setting_strs, *args):
+  def run_generated_testcases(self, tag, test_func, settings, *args):
     """Runs generated test cases.
 
     Generated test cases are not written down as functions, but as a list of
@@ -157,16 +156,17 @@ class BaseTestClass():
     scalability.
 
     Args:
-      tag: Overall name of this group of generated test cases.
+      tag: Name of this group of generated test cases.
       test_func: The common logic shared by all these genrated test cases. This
         function should take at least one argument, which is a parameter set.
-      setting_strs: A list of strings representing parameter sets. These are
+      settings: A list of strings representing parameter sets. These are
         usually json strings that get loaded in the test_func.
       args: Additional args to be passed to the test_func.
 
     Returns:
       A list of settings that did not pass.
     """
+    setting_strs = [str(s) for s in settings]
     name_max_len = max(len(s) for s in setting_strs) + len(tag)
     failed_settings = []
     for s, s_str in zip(settings, setting_strs):
@@ -182,15 +182,27 @@ class BaseTestClass():
     return failed_settings
 
   def _is_test_name_valid(self, name):
-    """Checks if a test name follows the convention.
+    """Checks if a test name is valid.
+
+    To be valid, a test name needs to follow the naming convention: starts
+    with "test_". Also, the test class needs to actually have a function named
+    after the test.
 
     Params:
       name: name of a test case.
 
     Returns:
-      True if the name follows the convention, False otherwise.
+      True if the name is valid, False otherwise.
     """
-    return name[:5] == "test_"
+    if name[:5] != "test_":
+      self.log.error("Attempted to execute a test case with invalid name: "
+                       + name)
+      return False
+    if name not in dir(self):
+      self.log.error("Test class " + self.TAG + " does not have test case "
+                     + name)
+      return False
+    return True
 
   def _exec_func(self, func, *args):
     """Executes a function with exception safeguard.
@@ -212,9 +224,29 @@ class BaseTestClass():
       self.log.exception(msg)
       self.log.exception(traceback.format_exc())
 
-  def run(self, test_cases=None):
+  def _get_test_funcs(self, test_case_names):
+    # All tests are selected if test_cases list is None.
+    test_names = self.tests
+    if test_case_names:
+      test_names = test_case_names
+    # Load functions based on test names. Also find the longest test name.
+    test_funcs = []
+    name_max_len = 0
+    for test_name in test_names:
+      if not self._is_test_name_valid(test_name):
+        continue
+      if len(test_name) > name_max_len:
+        name_max_len = len(test_name)
+      test_funcs.append((test_name, getattr(self, test_name)))
+    return name_max_len, test_funcs
+
+  def run(self, test_names=None):
     """Runs test cases within a test class by the order they
     appear in the test list.
+
+    Being in the test_names list makes the test case "requested". If its name
+    passes validation, then it'll be executed, otherwise the name will be
+    skipped.
 
     Args:
       test_names: A list of names of the requested test cases. If None, all
@@ -227,7 +259,7 @@ class BaseTestClass():
     # Setup for the class.
     if not self._exec_func(self.setup_class):
       self.log.error(''.join(("Failed to set up ", self.TAG, ", skipping.")))
-      return None
+      return 0, 0, 0
     self.log.info(''.join(("="*10, "> ", self.TAG, " < ", "="*10)))
     name_max_len, tests = self._get_test_funcs(test_names)
     # Counters for summary.
@@ -246,11 +278,13 @@ class BaseTestClass():
     self.log.info(summary)
     self.reporter.write(summary)
     self._exec_func(self.clean_up)
+    return self.num_requested, self.num_executed, self.num_passed
 
   def clean_up(self):
     """Cleans up objects initialized in the constructor.
     """
-    self.mdevice.kill_all_droids()
+    for ad in self.android_devices:
+      ad.kill_all_droids()
     for h in self.log.handlers:
       try:
         h.close()

@@ -15,6 +15,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
 import os
 import threading
 import time
@@ -27,30 +28,33 @@ from test_utils.wifi_test_utils import *
 class WifiManagerTest(BaseTestClass):
   TAG = "WifiManagerTest"
   log_path = BaseTestClass.log_path + TAG + '/'
-  tests = None
+
   def __init__(self, controllers):
     self.tests = (
              "test_toggle_state",
              "test_scan",
              "test_add_network",
              "test_connect_to_open_network",
-             "test_connect_psk2",
+             "test_connect_with_password",
             )
     BaseTestClass.__init__(self, self.TAG, controllers)
     # ssid of the wifi that is supposed to be discovered by scans
     self.reference_wifi_name = "GoogleGuest"
 
-  def connect_to_wifi_network_with_password(self, credential):
-    network_name, passwd = credential
-    self.droid.wifiStartTrackingStateChange()
-    if not self.droid.wifiConnectWPA(network_name, passwd):
+  def connect_to_wifi_network_with_password(self, params):
+    (network_name, passwd), (droid, ed) = params
+    droid.wifiStartTrackingStateChange()
+    if not droid.wifiConnectWPA(network_name, passwd):
       self.log.error("Failed to connect to " + network_name)
       return False
-    connect_result = self.ed.pop_event("WifiNetworkConnected")
-    self.droid.wifiStopTrackingStateChange()
+
+    ed.clear_all_events()
+    connect_result = ed.pop_event("WifiNetworkConnected")
+    droid.wifiStopTrackingStateChange()
     self.log.debug(connect_result)
     result = network_matches(connect_result['data'], network_name)
     reset_droid_wifi(self.droid)
+    self.log.debug(result)
     return result
 
   """ Tests Begin """
@@ -68,7 +72,7 @@ class WifiManagerTest(BaseTestClass):
     self.log.debug("Start regular wifi scan.")
     self.droid.wifiStartScan()
     try:
-      self.ed.pop_event("WifiScanFinished", 60)
+      self.ed.pop_event("WifiManagerScanResultsAvailable", 60)
     except Empty:
       self.log.error("Wifi connection scan timed out.")
       return False
@@ -79,7 +83,7 @@ class WifiManagerTest(BaseTestClass):
 
   def test_add_network(self):
     """ Test wifi connection scan. """
-    reset_wifi(self.droid)
+    reset_droid_wifi(self.droid)
     nId = self.droid.wifiAddNetwork(self.reference_wifi_name)
     if nId == -1:
       self.log.error("Failed to add network.")
@@ -104,7 +108,7 @@ class WifiManagerTest(BaseTestClass):
     self.droid.wifiStopTrackingStateChange()
     self.log.debug(connect_result)
     result = network_matches(connect_result['data'], self.reference_wifi_name)
-    reset_wifi(self.droid)
+    reset_droid_wifi(self.droid)
     return result
 
   def test_connect_with_password(self):
@@ -118,9 +122,12 @@ class WifiManagerTest(BaseTestClass):
 
   def test_connect_with_password(self):
     credentials = [("AirPort Extreme", "hahahaha")]
+    droids = zip(self.droids, self.eds)
+    params = list(itertools.product(credentials, droids))
     failed = self.run_generated_testcases("Wifi connection test",
                                     self.connect_to_wifi_network_with_password,
-                                    credentials)
+                                    params)
+    self.log.debug(failed)
     if failed:
       return False
     return True

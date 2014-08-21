@@ -210,8 +210,8 @@ def wifi_toggle_state(droid, ed, new_state=None):
   assert event['data']['Connected'] == new_state
   droid.wifiStopTrackingStateChange()
 
-def reset_wifi(droid):
-  """Disconnects and removes all configured Wifi networks.
+def reset_droid_wifi(droid):
+  """Disconnects and removes all configured Wifi networks on an android device.
 
   Params:
     droid: Sl4a session to use.
@@ -220,3 +220,16 @@ def reset_wifi(droid):
   networks = droid.wifiGetConfiguredNetworks()
   for n in networks:
     droid.wifiForgetNetwork(n['networkId'])
+
+def sort_wifi_scan_results(results, key="level"):
+  return sorted(results, lambda d: (key not in d, d[key]))
+
+def start_wifi_background_scan(droid, ed, scan_setting):
+    idx = droid.wifiStartScannerScan(json.dumps(scan_setting))
+    event = ed.pop_event("WifiScannerScan" + str(idx) + "onSuccess", SHORT_TIMEOUT)
+    return idx
+
+def start_wifi_tracking_change(droid, ed):
+    idx = droid.wifiStartTrackingChange()
+    event = ed.pop_event("WifiScannerChange" + str(idx) + "onSuccess", SHORT_TIMEOUT)
+    return idx
