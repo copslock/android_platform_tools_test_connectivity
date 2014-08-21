@@ -16,6 +16,13 @@
 #   limitations under the License.
 # The following frequency lists are for US
 
+import json
+
+# Number of seconds to wait for events that are supposed to happen quickly.
+# Like onSuccess for start background scan and confirmation on wifi state
+# change.
+SHORT_TIMEOUT = 10
+
 # Macros as specified in the WifiScanner code.
 WIFI_BAND_UNSPECIFIED = 0;      # not specified
 WIFI_BAND_24_GHZ = 1;           # 2.4 GHz band
@@ -199,7 +206,7 @@ def wifi_toggle_state(droid, ed, new_state=None):
     return True
   droid.wifiStartTrackingStateChange()
   droid.wifiToggleState(new_state)
-  event = ed.pop_event("SupplicantConnectionChanged", 10)
+  event = ed.pop_event("SupplicantConnectionChanged", SHORT_TIMEOUT)
   assert event['data']['Connected'] == new_state
   droid.wifiStopTrackingStateChange()
 

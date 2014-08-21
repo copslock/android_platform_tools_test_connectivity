@@ -246,15 +246,20 @@ class AP():
         conds = (("disabled", "0"),)
         keys = [w.replace("frequency","device") for w in keys]
         info = self._section_option_lookup("wireless", conds, "ssid", *keys)
-        if "device" in keys:
-            for i in info:
-                radio = i["device"]
-                c = int(self._client.get("wireless", radio, "channel"))
-                if radio == "radio0":
-                    i["frequency"] = channel_2G_to_freq[c]
-                elif radio == "radio1":
-                    i["frequency"] = channel_5G_to_freq[c]
-        return info
+        results = []
+        for i in info:
+            radio = i["device"]
+            # Skip this info the radio its ssid is on is disabled.
+            disabled = self._client.get("wireless", radio, "disabled")
+            if disabled == '1':
+                continue
+            c = int(self._client.get("wireless", radio, "channel"))
+            if radio == "radio0":
+                i["frequency"] = channel_2G_to_freq[c]
+            elif radio == "radio1":
+                i["frequency"] = channel_5G_to_freq[c]
+            results.append(i)
+        return results
 
     def get_radio_option(self, key, idx=0):
         """Gets an option from the configured settings of a radio.
@@ -281,10 +286,11 @@ class AP():
         """
         s = self._client.commit('wireless')
         resp = self.run('wifi')
-        if resp != '' or not s:
-            raise ServerError(("Exception in refreshing wifi changes, commit"
-                               "status: ") + s + ", wifi restart response: "
-                               + resp)
+        return resp
+        # if resp != '' or not s:
+        #     raise ServerError(("Exception in refreshing wifi changes, commit"
+        #                        " status: ") + str(s) + ", wifi restart response: "
+        #                        + str(resp))
 
     def set_wifi_channel(self, channel, device='radio0'):
         self.set('wireless', device, 'channel', channel)
@@ -315,7 +321,8 @@ class AP():
         """
         section_id = self._client.add(cfg_name, section)
         if not section_id:
-            raise ServerError("Failed adding " + section + " in " + cfg_name)
+            raise ServerError(' '.join(("Failed adding", section, "in",
+                              cfg_name)))
         self._set_options(cfg_name, section_id, options, defaults)
 
     def _set_options(self, cfg_name, section_id, options, defaults):
@@ -356,8 +363,8 @@ class AP():
         status = self._client.set(cfg_name, section_id, k, v)
         if not status:
             # Delete whatever was added.
-                raise ServerError("Failed adding option " + str(k) + ':'
-                                  + str(d) + " to " + str(section_id))
+                raise ServerError(' '.join(("Failed adding option", str(k),
+                                  ':', str(d), "to", str(section_id))))
 
     def delete_ifaces_by_ids(self, ids):
         """Delete wifi-ifaces that are specified by the ids from the AP's
@@ -396,8 +403,8 @@ class AP():
         """
         section_ids = self.section_id_lookup(cfg_name, key, value)
         if not section_ids:
-            raise ClientError("Could not find any section that has " + key
-                              + ":" + value)
+            raise ClientError(' '.join(("Could not find any section that has ",
+                              key, ":", value)))
         for section_id in section_ids:
             self._delete_cfg_section_by_id(cfg_name, section_id)
 
@@ -414,18 +421,54 @@ class AP():
         """
         self._client.delete(cfg_name, section_id)
 
-    @property
-    def bssid(self):
-        # TODO(angli): Make bssid retrieval work.
-        text = self.run("iw dev", "{} info".format(self._ifname))
-        bssid = None
-        for line in text.splitlines():
-            line = line.strip()
-            if line.startswith("addr"):
-                bssid = line.split()[1]
-                bssid = bssid.upper()
-                break
-        return bssid
+    def _get_iw_info(self):
+        results = []
+        text = self.run("iw dev").replace('\t', '')
+        interfaces = text.split("Interface")
+        for intf in interfaces:
+            if len(intf.strip()) < 6:
+                # This is a PHY mark.
+                continue
+            # This is an interface line.
+            intf = intf.replace(', ', '\n')
+            lines = intf.split('\n')
+            r = {}
+            for l in lines:
+                if ' ' in l:
+                    # Only the lines with space are processed.
+                    k, v = l.split(' ', 1)
+                    if k == "addr":
+                        k = "bssid"
+                    if "wlan" in v:
+                        k = "interface"
+                    if k == "channel":
+                        vs = v.split(' ', 1)
+                        v = int(vs[0])
+                        r["frequency"] = int(vs[1].split(' ', 1)[0][1:5])
+                    if k[-1] == ':':
+                        k = k[:-1]
+                    r[k] = v
+            results.append(r)
+        return results
+
+    def get_active_bssids_info(self, radio, *args):
+        wlan = None
+        if radio == "radio0":
+            wlan = "wlan0"
+        if radio == "radio1":
+            wlan = "wlan1"
+        infos = self._get_iw_info()
+        bssids = []
+        for i in infos:
+            if wlan in i["interface"]:
+                r = {}
+                for k,v in i.items():
+                    if k in args:
+                        r[k] = v
+                r["bssid"] = i["bssid"].upper()
+                bssids.append(r)
+        return bssids
+>>>>>>> 85617fd... Improvements to ACTS.
 
     def __getattr__(self, name):
         return _LibCaller(self._client, name)
