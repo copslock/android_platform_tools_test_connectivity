@@ -203,7 +203,7 @@ class WifiScannerScanTest(BaseTestClass):
     event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
     results = event["data"]["Results"]
     self.log.debug("Got onResults:\n" + str(event))
-    self.droid.stopWifiScannerScan(idx)
+    self.droid.wifiScannerStopScan(idx)
     self.ed.clear_all_events()
     # First make sure all results are of the expected frequencies.
     if not self.result_sanity_check(scan_setting, results):
@@ -215,7 +215,7 @@ class WifiScannerScanTest(BaseTestClass):
 
   def start_wifi_scanner_scan_expect_failure(self, scan_setting):
     try:
-      idx = self.droid.wifiStartScannerScan(json.dumps(scan_setting))
+      idx = self.droid.wifiScannerStartScan(json.dumps(scan_setting))
       event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onFailure")),
                                 SHORT_TIMEOUT)
     except Empty:
@@ -300,7 +300,7 @@ class WifiScannerScanTest(BaseTestClass):
     event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
     results = event["data"]["Results"]
     self.log.debug("Got onResults:\n" + str(event))
-    self.droid.stopWifiScannerScan(idx)
+    self.droid.wifiScannerStopScan(idx)
     self.ed.clear_all_events()
     return True
 
