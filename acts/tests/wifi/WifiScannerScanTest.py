@@ -23,10 +23,8 @@ from test_utils.wifi_test_utils import *
 from test_utils.utils import *
 
 SCANCHANNEL = [2412,2437,2457,2462,5180,5200,5220,5745]
-SCANTIME = 5000
+SCANTIME = 10000
 
-
-SHORT_TIMEOUT = 10
 EVENT_TAG = "WifiScannerScan"
 
 class WifiScannerScanError(Exception):
@@ -34,8 +32,6 @@ class WifiScannerScanError(Exception):
 
 class WifiScannerScanTest(BaseTestClass):
   TAG = "WifiScannerScanTest"
-  log_path = BaseTestClass.log_path + TAG + "/"
-  tests = None
   current_path = os.path.dirname(os.path.abspath(__file__))
   log_path = ''.join((BaseTestClass.log_path, TAG, '/'))
 
@@ -48,6 +44,7 @@ class WifiScannerScanTest(BaseTestClass):
         "test_wifi_scanner_with_wifi_off",
         "test_wifi_scanner_with_invalid_numBssidsPerScan",
         "test_wifi_scanner_scan_with_failed_settings",
+        "test_wifi_scanner_scan_sanity"
         )
 
   def setup_class(self):
@@ -84,11 +81,6 @@ class WifiScannerScanTest(BaseTestClass):
   #   return True
 
   """ Helper Functions Begin """
-  def start_wifi_background_scan(self, scan_setting):
-    idx = self.droid.startWifiScannerScan(scan_setting)
-    event = self.ed.pop_event(EVENT_TAG + str(idx) + "onSuccess",
-                              SHORT_TIMEOUT)
-    return idx
 
   def wifi_generate_scanner_scan_settings(self):
     """Generates all the combinations of different scan setting parameters.
@@ -106,7 +98,7 @@ class WifiScannerScanTest(BaseTestClass):
                   ("channels", NONE_DFS_5G_FREQUENCIES),
                   ("channels", ALL_2G_FREQUENCIES),
                   ("channels", SCANCHANNEL))
-    num_of_bssid = (10, 17)
+    num_of_bssid = (16,)
     # Generate all the combinations of report types and scan types
     setting_combinations = list(itertools.product(report_types,
                                                   scan_types,
@@ -118,12 +110,11 @@ class WifiScannerScanTest(BaseTestClass):
       s["reportEvents"] = combo[0]
       s[combo[1][0]] = combo[1][1]
       s["numBssidsPerScan"] = combo[2]
-      scan_settings.append(json.dumps(s))
+      scan_settings.append(s)
     return scan_settings
 
   def filter_wifi_info_by_freq(self, scan_setting, infos):
     freq_filter = None
-    scan_setting = json.loads(scan_setting)
     if "band" in scan_setting and "channels" not in scan_setting:
       freq_filter = band_to_frequencies[scan_setting["band"]]
     elif "channels" in scan_setting and "band" not in scan_setting:
@@ -181,14 +172,32 @@ class WifiScannerScanTest(BaseTestClass):
       self.log.error("Found unexpected entries in scan results:\n"
                      + str(extras))
       return False
-    else:
-      return True
+    return True
 
   def wifi_execute_one_scan_test(self, scan_setting):
+    """Common logic for an enumerated wifi scanner scan test case.
+
+    This function starts a scan with the given settings, queries the access
+    points for active wifi networks, infers expected results from the active
+    networks and scan setting, and verifies the actual results.
+
+    There are two steps for the verification. First it checks that all the
+    wifi networks in results are of the correct frequencies set by scan setting
+    params. Then it checks that the results contain all the active wifi
+    networks with the correct frequencies broadcasted by the APs.
+
+    Args:
+      scan_setting: The params for the background scan.
+
+    Returns:
+      True if the test passes, False otherwise.
+    """
+    idx = None
     try:
-      idx = self.start_wifi_background_scan(scan_setting)
+      idx = start_wifi_background_scan(self.droid, self.ed, scan_setting)
+      self.log.debug("Wifi background scan started with index: " + str(idx))
     except Empty:
-      events = self.ed.pop_events(EVENT_TAG + str(idx))
+      events = self.ed.pop_events(EVENT_TAG, 10)
       self.log.error("Did not get onSuccess, got:\n" + str(events))
       return False
     event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
@@ -201,6 +210,7 @@ class WifiScannerScanTest(BaseTestClass):
       return False
     # Now check to make sure all expected wifi networks are found in results.
     expected = self.wifi_generate_expected_wifi_infos(scan_setting)
+    self.log.debug("Expected results:\n" + str(expected))
     return self.verify_scan_results(expected, results)
 
   def start_wifi_scanner_scan_expect_failure(self, scan_setting):
@@ -257,15 +267,42 @@ class WifiScannerScanTest(BaseTestClass):
   def test_wifi_scanner_scan_with_enumerated_params(self, scan_settings=None):
     """Run scanner scan test with a list of different settings."""
     wifi_toggle_state(self.droid, self.ed, True)
-    scan_settings = self.wifi_generate_scanner_scan_settings()
+    if not scan_settings:
+      scan_settings = self.wifi_generate_scanner_scan_settings()
     self.log.debug("Scan settings:\n" + str(scan_settings))
     failed = self.run_generated_testcases("Wifi Background Scan Test",
                                           self.wifi_execute_one_scan_test,
                                           scan_settings)
+    self.failed_scan_settings = failed
     self.log.debug("Settings that caused failure: " + str(failed))
     if len(failed) == 0:
       return True
     return False
+
+  def test_wifi_scanner_scan_with_failed_settings(self):
+    self.log.debug("\n===== Running the failed cases again. =====\n")
+    return self.test_wifi_scanner_scan_with_enumerated_params(
+      self.failed_scan_settings)
+
+  def test_wifi_scanner_scan_sanity(self):
+    scan_setting = {
+      "band": WIFI_BAND_BOTH_WITH_DFS,
+      "periodInMs": SCANTIME,
+      "reportEvents": REPORT_EVENT_AFTER_EACH_SCAN
+    }
+    try:
+      idx = start_wifi_background_scan(self.droid, self.ed, scan_setting)
+      self.log.debug("Wifi background scan started with index: " + str(idx))
+    except Empty:
+      events = self.ed.pop_events(EVENT_TAG, 10)
+      self.log.error("Did not get onSuccess, got:\n" + str(events))
+      return False
+    event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
+    results = event["data"]["Results"]
+    self.log.debug("Got onResults:\n" + str(event))
+    self.droid.stopWifiScannerScan(idx)
+    self.ed.clear_all_events()
+    return True
 
   def test_wifi_scanner_with_wifi_off(self):
     self.log.debug("Make sure wifi is off.")
@@ -275,21 +312,19 @@ class WifiScannerScanTest(BaseTestClass):
       "periodInMs": SCANTIME,
       "reportEvents": REPORT_EVENT_AFTER_EACH_SCAN
     }
-    try:
-      idx = self.droid.startWifiScannerScan(json.dumps(scan_setting))
-      event = self.ed.pop_event(EVENT_TAG + str(idx) + "onFailure",
-                                SHORT_TIMEOUT)
-    except Empty:
-      self.log.error("Wifi is off, but did not get onFailure.")
-      events = self.ed.pop_events(EVENT_TAG, 10)
-      self.log.error("Got\n" + str(events))
-      self.log.debug("Turning wifi back on.")
-      wifi_toggle_state(self.droid, self.ed, True)
-      return False
-    self.log.debug("Got onFailure, which is expected.\n"
-                   + str(event) + "\nTurning wifi back on.")
+    status = self.start_wifi_scanner_scan_expect_failure(scan_setting)
+    self.log.debug("Turning wifi back on.")
     wifi_toggle_state(self.droid, self.ed, True)
-    return True
+    return status
+
+  def test_wifi_scanner_with_invalid_numBssidsPerScan(self):
+    scan_setting = {
+      "band": WIFI_BAND_BOTH_WITH_DFS,
+      "periodInMs": SCANTIME,
+      "reportEvents": REPORT_EVENT_AFTER_EACH_SCAN,
+      'numBssidsPerScan': 17
+    }
+    return self.start_wifi_scanner_scan_expect_failure(scan_setting)
   """ Tests End """
 
 if __name__ == "__main__":

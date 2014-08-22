@@ -80,13 +80,26 @@ class TestRunner():
         return file_list
 
     def run_test_class(self, test_cls_name, test_cases=None):
-        # Each entry of test class info follows:
-        # (TestClassName, path/to/test/class/file) both are strings
-        # will add more info later; the info may be based on testbed config
+        """Instantiates and executes a test class.
+
+        If the test cases list is not None, all the test cases in the test
+        class should be executed.
+
+        Args:
+            test_cls_name: Name of the test class to execute.
+            test_cases: List of test case names to exectute within the class.
+
+        Returns:
+            A tuple, with the number of cases passed at index 0, and the total
+            number of test cases at index 1.
+        """
         m = __import__(test_cls_name)
         test_cls = getattr(m, test_cls_name)
         test_cls_instance = test_cls(self.controllers)
-        test_cls_instance.run(test_cases)
+        r,e,p = test_cls_instance.run(test_cases)
+        self.num_requested += r
+        self.num_executed += e
+        self.num_passed += p
 
     def parse_run_list(self):
         results = {}
@@ -119,6 +132,9 @@ class TestRunner():
         else:
             for test_cls_name in self.test_classes:
                 self.run_test_class(test_cls_name)
+        self.reporter.write("Excecuted: " + str(self.num_executed)
+                            + "\nPassed: " + str(self.num_passed) + "\n")
+        self.reporter.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=("Specify tests to run. If "

@@ -192,7 +192,7 @@ class EventDispatcher:
         break
       time.sleep(1)
     if len(results) == 0:
-      raise Empty("No event whose name matches " + event_name + " ever occured.")
+      raise Empty("No event whose name matches " + partial_event_name + " ever occured.")
     return results
 
   def _match_and_pop(self, partial_event_name):
@@ -256,7 +256,7 @@ class EventDispatcher:
       If condition is not None, block until condition is met or timeout.
   '''
   def _handle(self, event_handler, event_name, user_args, event_timeout, cond, cond_timeout):
-    if cond and cond_timeout:
+    if cond:
       cond.wait(cond_timeout)
     event = self.pop_event(event_name, event_timeout)
     return event_handler(event,*user_args)
@@ -321,7 +321,7 @@ class EventDispatcher:
     try:
       while True:
         results.append(self.event_dict[event_name].get())
-    except (Empty, KeyError):
+    except (Queue.Empty, KeyError):
       return results
 
   def clear_all_events(self):

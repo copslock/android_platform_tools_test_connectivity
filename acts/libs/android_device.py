@@ -57,9 +57,11 @@ class AndroidDevice:
         results : list
           A list of AndroidDevice objects each representing an android device attached.
     '''
+    h_port = 9999
     results = []
     for s in AndroidDevice.list_devices():
-      results.append(AndroidDevice(s))
+      results.append(AndroidDevice(s, host_port=h_port))
+      h_port -= 1
     return results
 
   def get_droid(self, handle_event=True):

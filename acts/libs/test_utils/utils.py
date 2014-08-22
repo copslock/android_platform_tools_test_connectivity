@@ -16,6 +16,10 @@
 #   limitations under the License.
 
 import json
+import time
+
+def get_current_human_time():
+  return time.strftime("%m-%d-%Y %H:%M:%S ")
 
 def load_config(file_full_path):
   f = open(file_full_path, 'r')

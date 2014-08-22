@@ -191,6 +191,7 @@ class AP():
             return
         new_state = '1' if cur_state else '0'
         self._set_option("wireless", radio_name, "disabled", new_state)
+        self.apply_wifi_changes()
         return
 
     def set_ssid_state(self, ssid, state):
@@ -245,6 +246,8 @@ class AP():
         """
         conds = (("disabled", "0"),)
         keys = [w.replace("frequency","device") for w in keys]
+        if "device" not in keys:
+            keys.append("device")
         info = self._section_option_lookup("wireless", conds, "ssid", *keys)
         results = []
         for i in info:
@@ -468,7 +471,15 @@ class AP():
                 r["bssid"] = i["bssid"].upper()
                 bssids.append(r)
         return bssids
->>>>>>> 85617fd... Improvements to ACTS.
+
+    def toggle_bssid_state(self, bssid):
+        if bssid == self.get_bssid("radio0"):
+            self.toggle_radio_state("radio0")
+            return True
+        elif bssid == self.get_bssid("radio1"):
+            self.toggle_radio_state("radio1")
+            return True
+        return False
 
     def __getattr__(self, name):
         return _LibCaller(self._client, name)

@@ -75,7 +75,9 @@ class WifiRttManagerTest(BaseTestClass):
 
   def __init__(self, android_devices):
     BaseTestClass.__init__(self, self.TAG, android_devices)
-    self.tests = (self.test_rtt_ranging,)
+    self.tests = (
+                  "test_rtt_ranging",
+                  )
 
   """Helper Functions"""
   def find_surrounding_wifi_networks(self):
