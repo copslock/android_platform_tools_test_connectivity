@@ -19,7 +19,9 @@
 JSON-RPC over HTTP. Basic handler using pycurl.
 """
 import json
-from requests import post
+import logging
+import time
+from urllib import request
 
 class HTTPError(Exception):
     pass
@@ -38,18 +40,34 @@ class JSONRPCClient:
     headers = {'content-type': 'application/json'}
     def __init__(self, baseurl):
         self._baseurl = baseurl
-
     def call(self, path, methodname=None, *args):
+        try:
+            return self._call(path, methodname, *args)
+        except:
+            # Take five and try again
+            time.sleep(5)
+            return self._call(path, methodname, *args)
+
+    def _post_json(self, url, payload):
+        req = request.Request(url)
+        req.add_header('Content-Type', 'application/json')
+        resp = request.urlopen(req, data=payload.encode("utf-8"))
+        txt = resp.read()
+        return resp.code, txt.decode('utf-8')
+
+    def _call(self, path, methodname=None, *args):
         """Perform a POST to baseurl path,
            with method and params packaged in a JSON object as the payload.
         """
         jsonid = next(JSONRPCClient.COUNTER)
-        payload = json.dumps({"method": methodname, "params": args, "id": jsonid})
+        payload = json.dumps({"method": methodname,
+                              "params": args,
+                              "id": jsonid})
         url = self._baseurl + path
-        r = post(url, data=payload, headers=self.headers)
-        if r.status_code != 200:
-            raise HTTPError(r.text)
-        r = r.json()
+        status_code, text = self._post_json(url, payload)
+        if status_code != 200:
+            raise HTTPError(text)
+        r = json.loads(text)
         if r['error']:
             raise RemoteError(r['error'])
         return r['result']

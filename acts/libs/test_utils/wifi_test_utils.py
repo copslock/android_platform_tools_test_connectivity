@@ -225,11 +225,11 @@ def sort_wifi_scan_results(results, key="level"):
   return sorted(results, lambda d: (key not in d, d[key]))
 
 def start_wifi_background_scan(droid, ed, scan_setting):
-    idx = droid.wifiStartScannerScan(json.dumps(scan_setting))
+    idx = droid.wifiScannerStartScan(json.dumps(scan_setting))
     event = ed.pop_event("WifiScannerScan" + str(idx) + "onSuccess", SHORT_TIMEOUT)
     return idx
 
 def start_wifi_tracking_change(droid, ed):
-    idx = droid.wifiStartTrackingChange()
+    idx = droid.wifiScannerStartTrackingChange()
     event = ed.pop_event("WifiScannerChange" + str(idx) + "onSuccess", SHORT_TIMEOUT)
     return idx

@@ -15,11 +15,13 @@ Library files.
 Dependencies:
 adb
 python3.4
-python module “requests” http://docs.python-requests.org/en/latest/
 
 Setup:
-1. Install the dependencies. Note you need to install dependencies with python3.
+1. Install the dependencies.
 2. Prepend the absolute path to “libs” directory to your $PYTHONPATH. You probably want to add the export statement in your ~/.bash_profile file.
 
-To run the included sample WifiManager tests in command line:
+To run the included sample WifiManager tests in command line, connect an android device with proper sl4a installed,
+then:
 python3 test_runner.py -tc WifiManagerTest
+
+For details of how to use the framework, refer to the quick start guide.
