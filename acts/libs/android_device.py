@@ -115,11 +115,12 @@ class AndroidDevice:
         ed : EventDispatcher
           An EventDispatcher for specified session.
     '''
-    if droid.uid in self._event_dispatchers:
-      return self._event_dispatchers[droid.uid]
+    ed_key = self.device_id + str(droid.uid)
+    if ed_key in self._event_dispatchers:
+      return self._event_dispatchers[ed_key]
     event_droid = self.add_new_connection_to_session(droid.uid)
     ed = EventDispatcher(event_droid)
-    self._event_dispatchers[droid.uid] = ed
+    self._event_dispatchers[ed_key] = ed
     return ed
 
   def start_new_session(self):
@@ -163,7 +164,7 @@ class AndroidDevice:
     '''
     if session_id not in self._droid_sessions:
       raise DOESNOTEXISTException("Session " + str(session_id) + " does not exist.")
-    droid = android.Android(cmd='continue', uid=session_id)
+    droid = android.Android(cmd='continue', uid=session_id, port=self.h_port)
     self._droid_sessions[session_id].append(droid)
     return droid
 

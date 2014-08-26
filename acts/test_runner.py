@@ -101,20 +101,6 @@ class TestRunner():
         self.num_executed += e
         self.num_passed += p
 
-    def parse_run_list(self):
-        results = {}
-        for item in run_list:
-            tokens = item.split('.')
-            if len(tokens) == 1:
-                results[tokens[0]] = None
-            elif len(tokens) == 2:
-                test_cls_name = tokens[0]
-                if test_cls_name in results:
-                    results[test_cls_name].append(tokens[1])
-                else:
-                    results[test_cls_name] = [tokens[1]]
-        return results
-
     def run(self):
         if self.run_list:
             for test_name in self.run_list:
