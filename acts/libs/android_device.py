@@ -188,7 +188,6 @@ class AndroidDevice:
 
   def kill_all_droids(self):
     ''' Kill all sl4a sessions.
-
         Terminate all sessions and clear caches.
     '''
     if self._droid_sessions:
@@ -196,3 +195,26 @@ class AndroidDevice:
       for session_id in session_ids:
         self.terminate_session(session_id)
 
+  def start_iperf(self, server_host):
+    ''' Start iperf client on the device.
+
+        Return status as true if iperf client start successfully.
+        And data flow information as results
+
+        Parameters
+        ----------
+        server_host : String
+          host where iperf server is running.
+
+        Returns
+        -------
+        status : Boolean
+          true if iperf client start successfully.
+        results : list
+          results have data flow information
+
+    '''
+    results = android.start_iperf(server_host,serial=self.device_id)
+    if "error" in results[0]:
+      return False, results
+    return True, results

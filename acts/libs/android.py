@@ -149,4 +149,9 @@ def is_sl4a_running(serial=""):
       return False
     return True
 
-
+def start_iperf(server_host, serial=""):
+    if serial:
+      serial = " -s " + serial
+    out = _exe_cmd("adb {} shell iperf3 -c {}".format(serial, server_host))
+    clean_out = str(out,'utf-8').strip().split('\n')
+    return clean_out
