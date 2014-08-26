@@ -83,8 +83,7 @@ class WifiRttManagerTest(BaseTestClass):
   def find_surrounding_wifi_networks(self):
     wifi_toggle_state(self.droid, self.ed, True)
     self.log.debug("Start regular wifi scan.")
-    self.droid.wifiStartScan()
-    self.ed.pop_event("WifiScanFinished")
+    start_wifi_connection_scan(self.droid, self.ed)
     wifi_networks = self.droid.wifiGetScanResults()
     results = []
     for i, n in enumerate(wifi_networks):

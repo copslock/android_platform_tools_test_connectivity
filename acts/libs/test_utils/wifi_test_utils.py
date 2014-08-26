@@ -17,7 +17,7 @@
 # The following frequency lists are for US
 
 import json
-
+from queue import Empty
 # Number of seconds to wait for events that are supposed to happen quickly.
 # Like onSuccess for start background scan and confirmation on wifi state
 # change.
@@ -177,6 +177,9 @@ channel_5G_to_freq = {
     165: 5825
 }
 
+class WifiTestUtilsError(Exception):
+    pass
+
 def network_matches(network, target_id):
   s1 = False
   s2 = False
@@ -210,19 +213,37 @@ def wifi_toggle_state(droid, ed, new_state=None):
   assert event['data']['Connected'] == new_state
   droid.wifiStopTrackingStateChange()
 
-def reset_droid_wifi(droid):
+def reset_droid_wifi(droid, ed):
   """Disconnects and removes all configured Wifi networks on an android device.
 
   Params:
     droid: Sl4a session to use.
+    ed: Event dispatcher instance associated with the sl4a session.
+
+  Raises:
+    WIFIUTILError if forget network operation failed.
   """
   droid.wifiToggleState(True)
   networks = droid.wifiGetConfiguredNetworks()
   for n in networks:
     droid.wifiForgetNetwork(n['networkId'])
+    try:
+      event = ed.pop_event("WifiManagerForgetNetworkOnSuccess", SHORT_TIMEOUT)
+    except Empty:
+      raise WifiTestUtilsError("Failed to remove network " + str(n))
 
 def sort_wifi_scan_results(results, key="level"):
   return sorted(results, lambda d: (key not in d, d[key]))
+
+def start_wifi_connection_scan(droid, ed):
+    """Starts a wifi connection scan and wait for results to become available.
+
+    Params:
+    droid: Sl4a session to use.
+    ed: Event dispatcher instance associated with the sl4a session.
+    """
+    droid.wifiStartScan()
+    ed.pop_event("WifiManagerScanResultsAvailable", 60)
 
 def start_wifi_background_scan(droid, ed, scan_setting):
     idx = droid.wifiScannerStartScan(json.dumps(scan_setting))

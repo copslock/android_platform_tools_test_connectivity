@@ -43,17 +43,17 @@ class WifiManagerTest(BaseTestClass):
 
   def connect_to_wifi_network_with_password(self, params):
     (network_name, passwd), (droid, ed) = params
+    start_wifi_connection_scan(droid, ed)
     droid.wifiStartTrackingStateChange()
     if not droid.wifiConnectWPA(network_name, passwd):
       self.log.error("Failed to connect to " + network_name)
       return False
-
     ed.clear_all_events()
     connect_result = ed.pop_event("WifiNetworkConnected")
     droid.wifiStopTrackingStateChange()
     self.log.debug(connect_result)
     result = network_matches(connect_result['data'], network_name)
-    reset_droid_wifi(self.droid)
+    reset_droid_wifi(droid, ed)
     self.log.debug(result)
     return result
 
@@ -70,12 +70,7 @@ class WifiManagerTest(BaseTestClass):
     """ Test wifi connection scan can start and find expected networks. """
     wifi_toggle_state(self.droid, self.ed, True)
     self.log.debug("Start regular wifi scan.")
-    self.droid.wifiStartScan()
-    try:
-      self.ed.pop_event("WifiManagerScanResultsAvailable", 60)
-    except Empty:
-      self.log.error("Wifi connection scan timed out.")
-      return False
+    start_wifi_connection_scan(self.droid, self.ed)
     wifi_results = self.droid.wifiGetScanResults()
     self.log.debug("Scan results:")
     self.log.debug(wifi_results)
@@ -83,7 +78,7 @@ class WifiManagerTest(BaseTestClass):
 
   def test_add_network(self):
     """ Test wifi connection scan. """
-    reset_droid_wifi(self.droid)
+    reset_droid_wifi(self.droid, self.ed)
     nId = self.droid.wifiAddNetwork(self.reference_wifi_name)
     if nId == -1:
       self.log.error("Failed to add network.")
@@ -108,26 +103,42 @@ class WifiManagerTest(BaseTestClass):
     self.droid.wifiStopTrackingStateChange()
     self.log.debug(connect_result)
     result = network_matches(connect_result['data'], self.reference_wifi_name)
-    reset_droid_wifi(self.droid)
+    reset_droid_wifi(self.droid, self.ed)
     return result
 
   def test_connect_with_password(self):
-    credentials = [("AirPort Extreme", "hahahaha")]
-    for name,psk in credentials:
-      stat = self.connect_to_wifi_network_with_password(name, psk)
-      if not stat:
-        self.log.error(' '.join(("Connection to", name, "with psk", psk,
-                       "failed.")))
-    return self.connect_to_wifi_network_with_password("Test_1", "12345678")
-
-  def test_connect_with_password(self):
-    credentials = [("AirPort Extreme", "hahahaha")]
+    credentials = [("Tp-link_ac1750_5GHz", "hahahaha")]
+    for ed in self.eds:
+      if not ed.started:
+        ed.start()
     droids = zip(self.droids, self.eds)
     params = list(itertools.product(credentials, droids))
     failed = self.run_generated_testcases("Wifi connection test",
                                     self.connect_to_wifi_network_with_password,
                                     params)
-    self.log.debug(failed)
+    self.log.debug("Failed ones: " + str(failed))
+    if failed:
+      return False
+    return True
+
+  def test_iot_with_password(self):
+    credentials = [("AirPort Extreme", "hahahaha"),
+                   ("AirPort Express", "hahahaha"),
+                   ("Linksys_wrt1900_2GHz", "hahahaha"),
+                   ("Linksys_wrt1900_5GHz", "hahahaha"),
+                   ("Asus_ac2400_2GHz", "hahahaha"),
+                   ("Asus_ac2400_5GHz", "hahahaha"),
+                   ("Netgear_r6200_2GHz", "hahahaha"),
+                   ("Netgear_r6200_5GHz", "hahahaha")]
+    for ed in self.eds:
+      if not ed.start:
+        ed.start()
+    droids = zip(self.droids, self.eds)
+    params = list(itertools.product(credentials, droids))
+    failed = self.run_generated_testcases("Wifi connection test",
+                                    self.connect_to_wifi_network_with_password,
+                                    params)
+    self.log.debug("Failed ones: " + str(failed))
     if failed:
       return False
     return True

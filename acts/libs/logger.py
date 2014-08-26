@@ -8,6 +8,9 @@ def get_test_logger(log_path, TAG):
     ''' Get the standard test class logger '''
     create_dir(log_path)
     log = logging.getLogger(None)
+    if log.handlers:
+        # If logger is already attached with handlers, return it.
+        return log
     log.setLevel(logging.DEBUG)
     c_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     # Log info to stream

@@ -290,6 +290,7 @@ class WifiScannerScanTest(BaseTestClass):
       "periodInMs": SCANTIME,
       "reportEvents": REPORT_EVENT_AFTER_EACH_SCAN
     }
+    wifi_toggle_state(self.droid, self.ed, True)
     try:
       idx = start_wifi_background_scan(self.droid, self.ed, scan_setting)
       self.log.debug("Wifi background scan started with index: " + str(idx))
