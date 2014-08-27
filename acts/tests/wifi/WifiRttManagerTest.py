@@ -13,13 +13,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import threading, time, os, traceback
+import json
+import traceback
 from queue import Empty
 
 from base_test import BaseTestClass
-from ap.access_point import AP
-from test_utils.wifi_test_utils import *
-from test_utils.utils import *
+from test_utils.wifi_test_utils import start_wifi_connection_scan
+from test_utils.wifi_test_utils import wifi_toggle_state
 
 RTT_TYPE_UNSPECIFIED    = 0;
 RTT_TYPE_ONE_SIDED      = 1;
@@ -89,7 +89,7 @@ class WifiRttManagerTest(BaseTestClass):
     for i, n in enumerate(wifi_networks):
       if i == self.MAX_RTT_AP:
         break
-      results.append((n["bssid"],n["frequency"]))
+      results.append((n["bssid"], n["frequency"]))
     return results
 
   """Tests"""
@@ -107,6 +107,7 @@ class WifiRttManagerTest(BaseTestClass):
       rtt_params.append(json.dumps(self.RttParamDefault))
     self.log.debug("Start Rtt Ranging with params: " + str(rtt_params))
     idx = self.droid.wifiRttStartRanging(rtt_params)
+    event = None
     try:
       event = self.ed.pop_event("WifiRttRanging" + str(idx) + "onSuccess", 30)
     except Empty:

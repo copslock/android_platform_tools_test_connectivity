@@ -21,9 +21,12 @@ import threading
 import time
 
 from base_test import BaseTestClass
-from queue import Empty
-from test_utils.utils import *
-from test_utils.wifi_test_utils import *
+from test_utils.utils import find_field
+from test_utils.wifi_test_utils import has_network
+from test_utils.wifi_test_utils import network_matches
+from test_utils.wifi_test_utils import reset_droid_wifi
+from test_utils.wifi_test_utils import start_wifi_connection_scan
+from test_utils.wifi_test_utils import wifi_toggle_state
 
 class WifiManagerTest(BaseTestClass):
   TAG = "WifiManagerTest"
@@ -107,7 +110,7 @@ class WifiManagerTest(BaseTestClass):
     return result
 
   def test_connect_with_password(self):
-    credentials = [("Tp-link_ac1750_5GHz", "hahahaha")]
+    credentials = [("Test_40", "hahahaha")]
     for ed in self.eds:
       if not ed.started:
         ed.start()

@@ -19,16 +19,39 @@ import json
 import time
 
 def get_current_human_time():
+  """Returns the current time in human readable format.
+
+  Returns:
+  	The current time stamp in Month-Day-Year Hour:Min:Sec format.
+  """
   return time.strftime("%m-%d-%Y %H:%M:%S ")
 
 def load_config(file_full_path):
+  """Loads a JSON config file.
+
+  Returns:
+  	A JSON object.
+  """
   f = open(file_full_path, 'r')
   conf = json.load(f)
   f.close()
   return conf
 
-def find_field(item_list, item_b, comparator, target_field):
+def find_field(item_list, cond, comparator, target_field):
+  """Finds the value of a field in a dict object that satisfies certain
+  conditions.
+
+  Params:
+  	item_list: A list of dict objects.
+  	cond: A param that defines the condition.
+  	comparator: A function that checks if an dict satisfies the condition.
+  	target_field: Name of the field whose value to be returned if an item
+  		satisfies the condition.
+
+  Returns:
+  	Target value or None if no item satisfies the condition.
+  """
   for item in item_list:
-    if comparator(item, item_b) and target_field in item:
+    if comparator(item, cond) and target_field in item:
       return item[target_field]
   return None
