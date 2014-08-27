@@ -127,6 +127,7 @@ class TestRunner():
         them accordingly.
         """
         if self.run_list:
+            self.log.debug("Executing run list " + str(self.run_list))
             for test_name in self.run_list:
                 tokens = test_name.split(':')
                 if len(tokens) == 1:

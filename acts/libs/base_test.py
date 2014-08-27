@@ -260,7 +260,7 @@ class BaseTestClass():
       return 0, 0, 0
     self.log.info(''.join(("="*10, "> ", self.TAG, " < ", "="*10)))
     name_max_len, tests = self._get_test_funcs(test_names)
-    # Counters for summary.
+    # Total number of test cases requested by user.
     self.num_requested = len(test_names) if test_names else len(self.tests)
     # Run tests in order.
     for test_name,test_func in tests:
