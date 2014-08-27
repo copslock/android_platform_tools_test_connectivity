@@ -15,12 +15,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import threading, time, os, itertools, json, traceback
-from queue import Empty
+import json
+import os
+
 from base_test import BaseTestClass
-from ap.access_point import AP
-from test_utils.wifi_test_utils import *
-from test_utils.utils import *
+from test_utils.utils import load_config
+from test_utils.wifi_test_utils import start_wifi_background_scan
+from test_utils.wifi_test_utils import WifiEnums
 
 SCANCHANNEL = [2412,2437,2457,2462,5180,5200,5220,5745]
 SCANTIME = 5000
@@ -57,7 +58,7 @@ class WifiScannerBssidTest(BaseTestClass):
   def start_wifi_track_bssid(self, info):
     idx = self.droid.wifiScannerStartTrackingBssids([json.dumps(info)], -50)
     event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onSuccess")),
-                                SHORT_TIMEOUT)
+                                WifiEnums.SHORT_TIMEOUT)
     self.log.debug("Got onSuccess:\n" + str(event))
     return idx
   """ Helper Functions End """
@@ -65,9 +66,9 @@ class WifiScannerBssidTest(BaseTestClass):
   """ Tests Begin """
   def test_wifi_track_bssid(self):
     scan_setting = {
-      "band": WIFI_BAND_24_GHZ,
+      "band": WifiEnums.WIFI_BAND_24_GHZ,
       "periodInMs": 5000,
-      "reportEvents": REPORT_EVENT_AFTER_EACH_SCAN,
+      "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
       'numBssidsPerScan': 16
     }
     bssid_info = {

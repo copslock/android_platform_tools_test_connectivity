@@ -19,14 +19,12 @@ import argparse
 import json
 import os
 import sys
-import time
-import traceback
 
-import logger
-import attenuator.minicircuits.telnet as mctelnet
 from android_device import AndroidDevice
 from ap.access_point import AP
-from test_utils.utils import *
+import attenuator.minicircuits.telnet as mctelnet
+import logger
+from test_utils.utils import load_config
 
 test_paths = [os.path.dirname(os.path.abspath(__file__)) + "/tests"]
 testbed_config_path = "testbed.config"
@@ -36,10 +34,13 @@ class TestRunner():
 
     def __init__(self, testbed_config, run_list = None):
         self.controllers = {}
+        self.log = logger.get_test_logger("../logs/TestRunner/",
+                                                 self.TAG)
+        self.reporter = logger.get_test_reporter("../logs/TestRunner/",
+                                                 self.TAG)
         self.parse_config(testbed_config)
-        self.test_classes = TestRunner.find_test_files()
+        self.test_classes = TestRunner.find_test_files(test_paths)
         self.run_list = [x for x in run_list if x]
-        self.reporter = logger.get_test_reporter("../logs/TestRunner/", self.TAG)
         self.num_requested = 0
         self.num_executed = 0
         self.num_passed = 0
@@ -50,24 +51,42 @@ class TestRunner():
         """
         android_devices = AndroidDevice.get_all()
         if android_devices:
+            self.log.debug(' '.join(("Found", str(len(android_devices)),
+                                     "android devices.")))
             self.controllers["android_devices"] = android_devices
         data = load_config(testbed_config)
         if "AP" in data:
-            controllers = []
+            aps = []
             for ap in data["AP"]:
-                controllers.append(AP(ap['Address'], ap['Port']))
-            self.controllers["access_points"] = controllers
+                aps.append(AP(ap['Address'], ap['Port']))
+            self.controllers["access_points"] = aps
+            self.log.debug(' '.join(("Found", str(len(aps)),
+                                     "access points.")))
         if "Attenuator" in data:
-            controllers = []
+            attns = []
             for attenuator in data["Attenuator"]:
                 attn = mctelnet.AttenuatorInstrument(1)
                 attn.open(attenuator['Address'], attenuator['Port'])
                 attn.set_atten(0, 0)
-                controllers.append(attn)
-            self.controllers["attenuators"] = controllers
+                attns.append(attn)
+            self.controllers["attenuators"] = attns
+            self.log.debug(' '.join(("Found", str(len(attns)),
+                                     "access points.")))
 
     @staticmethod
-    def find_test_files():
+    def find_test_files(test_paths):
+        """Locate python files that match the test naming convention in
+        directories specified by test_paths.
+
+        All python files whose name ends with "Test" are considered a test
+        file.
+
+        Params:
+            test_paths: A list of directory paths where the test files reside.
+
+        Returns:
+            A list of python files that match the test file naming convention.
+        """
         file_list = []
         for path in test_paths:
             for dirPath, subdirList, fileList in os.walk(path):
@@ -102,20 +121,29 @@ class TestRunner():
         self.num_passed += p
 
     def run(self):
+        """Run test classes/cases.
+
+        This is the method that takes a list of test classes/cases and execute
+        them accordingly.
+        """
         if self.run_list:
             for test_name in self.run_list:
                 tokens = test_name.split(':')
                 if len(tokens) == 1:
                     # This should be considered a test class name
                     test_cls_name = tokens[0]
+                    self.log.debug("Executing test class " + test_cls_name)
                     self.run_test_class(test_cls_name)
                 elif len(tokens) == 2:
                     # This should be considered a test class name followed by
                     # a list of test case names.
                     test_cls_name, test_case_names = tokens
-                    names = [n.strip() for n in test_case_names.split(',') if n]
-                    self.run_test_class(test_cls_name, names)
+                    ns = [n.strip() for n in test_case_names.split(',') if n]
+                    self.log.debug(' '.join(("Executing test cases ", str(ns),
+                                             "in test class", test_cls_name)))
+                    self.run_test_class(test_cls_name, ns)
         else:
+            self.log.debug("No run list provided by user, running everything.")
             for test_cls_name in self.test_classes:
                 self.run_test_class(test_cls_name)
         self.reporter.write("Excecuted: " + str(self.num_executed)
@@ -129,8 +157,8 @@ if __name__ == "__main__":
                         help=("Path to a file containing a json object that "
                               "represents the testbed configuration."))
     parser.add_argument('-tf', '--testfile', nargs='+', type=str,
-                        help=("Path to a file containing a comma delimited list"
-                              " of test classes to run."))
+                        help=("Path to a file containing a comma delimited"
+                              " list of test classes to run."))
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
                         help=("List of test classes to run. Ignored if "
                               "testfile is set."))

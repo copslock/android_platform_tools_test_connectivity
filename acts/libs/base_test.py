@@ -19,9 +19,9 @@ import os
 import sys
 import traceback
 
-import logger
 from android_device import AndroidDevice
-from test_utils import utils
+import logger
+from test_utils.utils import get_current_human_time
 
 class BaseTestClass():
   """Base class for all test classes.
@@ -32,8 +32,6 @@ class BaseTestClass():
   Handle test execution and clean up.
   """
   log_path = "../logs/"
-  TAG = None
-  tests = None
 
   def __init__(self, tag, controllers):
     self.TAG = tag
@@ -129,7 +127,7 @@ class BaseTestClass():
         verdict = test_func(*params)
       else:
         verdict = test_func()
-      timestamp = utils.get_current_human_time()
+      timestamp = get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
       if verdict:
         self.reporter.write(msg + " PASSED\n")
@@ -140,7 +138,7 @@ class BaseTestClass():
         self.log.info("FAILED")
       return verdict
     except:
-      timestamp = utils.get_current_human_time()
+      timestamp = get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
       self.reporter.write(msg + " FAILED\n")
       self.log.exception("Exception in " + test_name)
@@ -209,7 +207,7 @@ class BaseTestClass():
 
     Args:
       func: Function to be executed.
-      args: arguments to be passed to the function
+      args: Arguments to be passed to the function.
 
     Returns:
       Whatever the function returns.
@@ -219,7 +217,7 @@ class BaseTestClass():
     except:
       msg = ' '.join(("Exception happened when executing", func.__name__, "in",
              self.TAG))
-      timestamp = utils.get_current_human_time()
+      timestamp = get_current_human_time()
       self.reporter.write(' '.join((timestamp, msg, "\n")))
       self.log.exception(msg)
       self.log.exception(traceback.format_exc())
@@ -253,7 +251,7 @@ class BaseTestClass():
         test cases in the class are considered requested.
 
     Returns:
-      A tuple of: the number of requested test cases, the number of test cases
+      A tuple of: The number of requested test cases, the number of test cases
       executed, and the number of test cases passed.
     """
     # Setup for the class.
