@@ -15,12 +15,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import threading, time, os, itertools, json, traceback
-from queue import Empty
-from base_test import BaseTestClass
+import json
+import os
+
 from ap.access_point import AP
-from test_utils.wifi_test_utils import *
-from test_utils.utils import *
+from base_test import BaseTestClass
+from queue import Empty
+from test_utils.utils import load_config
+from test_utils.wifi_test_utils import start_wifi_tracking_change
+from test_utils.wifi_test_utils import WifiEnums
+from test_utils.wifi_test_utils import wifi_toggle_state
 
 SCANCHANNEL = [2412,2437,2457,2462,5180,5200,5220,5745]
 SCANTIME = 5000
@@ -56,20 +60,13 @@ class WifiScannerChangeTest(BaseTestClass):
     return True
 
   """ Helper Functions Begin """
-  def start_wifi_track_change(self):
-    idx = self.droid.wifiScannerStartTrackingChange()
-    event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onSuccess")),
-                                SHORT_TIMEOUT)
-    self.log.debug("Got onSuccess:\n" + str(event))
-    return idx
-
   def start_wifi_track_change_expect_failure(self):
     try:
       idx = self.droid.wifiScannerStartTrackingChange()
       event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onFailure")),
-                                SHORT_TIMEOUT)
+                                WifiEnums.SHORT_TIMEOUT)
     except Empty:
-      events = self.ed.pop_events(EVENT_TAG, SHORT_TIMEOUT)
+      events = self.ed.pop_events(EVENT_TAG, WifiEnums.SHORT_TIMEOUT)
       self.log.error("Did not get expected onFailure. Got\n" + str(events))
       return False
     self.log.debug("Got expected onFailure:\n" + str(event))
@@ -108,7 +105,7 @@ class WifiScannerChangeTest(BaseTestClass):
     bssids0 = ap.get_active_bssids_info("radio0", "frequency", "ssid")
     bssids1 = ap.get_active_bssids_info("radio1", "frequency", "ssid")
     bssids = bssids0 + bssids1
-    idx = self.start_wifi_track_change()
+    idx = start_wifi_tracking_change(self.droid, self.ed, self.log)
     self.log.debug("Wait for onQuiescence.")
     event = self.ed.pop_event(EVENT_TAG + str(idx) + "onQuiescence", 120)
     self.log.debug("Tuning off " + str(bssids))

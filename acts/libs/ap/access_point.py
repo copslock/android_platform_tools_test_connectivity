@@ -16,7 +16,7 @@
 #   limitations under the License.
 
 import jsonrpc
-from test_utils.wifi_test_utils import *
+from test_utils.wifi_test_utils import WifiEnums
 
 class ServerError(Exception):
     pass
@@ -258,9 +258,9 @@ class AP():
                 continue
             c = int(self._client.get("wireless", radio, "channel"))
             if radio == "radio0":
-                i["frequency"] = channel_2G_to_freq[c]
+                i["frequency"] = WifiEnums.channel_2G_to_freq[c]
             elif radio == "radio1":
-                i["frequency"] = channel_5G_to_freq[c]
+                i["frequency"] = WifiEnums.channel_5G_to_freq[c]
             results.append(i)
         return results
 
