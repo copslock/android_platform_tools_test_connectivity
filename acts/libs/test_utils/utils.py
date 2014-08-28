@@ -16,7 +16,16 @@
 #   limitations under the License.
 
 import json
+import subprocess
 import time
+
+def exe_cmd(*cmds):
+  cmd = ' '.join(cmds)
+  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+  (out, err) = proc.communicate()
+  if not err:
+    return out
+  raise Exception(err)
 
 def get_current_human_time():
   """Returns the current time in human readable format.
