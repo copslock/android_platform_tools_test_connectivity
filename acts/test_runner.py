@@ -158,8 +158,8 @@ if __name__ == "__main__":
                         help=("Path to a file containing a json object that "
                               "represents the testbed configuration."))
     parser.add_argument('-tf', '--testfile', nargs='+', type=str,
-                        help=("Path to a file containing a comma delimited"
-                              " list of test classes to run."))
+                        help=("Path to a file containing a comma delimited "
+                              "list of test classes to run."))
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
                         help=("List of test classes to run. Ignored if "
                               "testfile is set."))

@@ -16,8 +16,10 @@
 #   limitations under the License.
 
 import time
+
 import android
 from event_dispatcher import EventDispatcher
+from test_utils.utils import exe_cmd
 
 class ANDROIDDEVICEException(Exception):
   pass
@@ -63,6 +65,11 @@ class AndroidDevice:
       results.append(AndroidDevice(s, host_port=h_port))
       h_port -= 1
     return results
+
+  def get_model(self):
+    out = exe_cmd('adb -s {} shell cat /system/build.prop | grep "product.board"'.format(self.device_id))
+    model = out.decode("utf-8").split('=')[1]
+    return model.strip()
 
   def get_droid(self, handle_event=True):
     ''' Create an sl4a connection to the device.
