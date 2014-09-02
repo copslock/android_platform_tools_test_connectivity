@@ -34,12 +34,12 @@ class GattConnectTest(BaseTestClass):
       "test_gatt_connect",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
-    self.droid.bluetoothToggleState(False)
-    self.droid.bluetoothToggleState(True)
-    self.droid1.bluetoothToggleState(False)
-    self.droid1.bluetoothToggleState(True)
+    #self.droid.bluetoothToggleState(False)
+    #self.droid.bluetoothToggleState(True)
+    #self.droid1.bluetoothToggleState(False)
+    #self.droid1.bluetoothToggleState(True)
     # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
+    #time.sleep(self.default_timeout)
     self.ed1.start()
 
   # Handler Functions Begin
@@ -63,7 +63,17 @@ class GattConnectTest(BaseTestClass):
       test_result = False
     return test_result
 
-  def setupGattCharacteristics(self, droid, input):
+  def gatt_on_service_added_handler(self, event, expected_service_uuid):
+    test_result = True
+    self.log.debug("Verifying onServiceAdded event")
+    self.log.debug(pprint.pformat(event))
+    if event['data']['serviceUuid'] != expected_service_uuid:
+      test_result = False
+    return test_result
+
+  # Handler Functions End
+
+  def _setupGattCharacteristics(self, droid, input):
     characteristic_list = []
     for item in input:
       index = droid.createBluetoothGattCharacteristic(
@@ -73,70 +83,88 @@ class GattConnectTest(BaseTestClass):
       characteristic_list.append(index)
     return characteristic_list
 
-  def setupGattDescriptors(self, droid, input):
+  def _setupGattDescriptors(self, droid, input):
     descriptor_list = []
     for item in input:
       index = droid.createBluetoothGattDescriptor(
         item['uuid'],
         item['property'],
-        )
+      )
       descriptor_list.append(index)
     return descriptor_list
 
-  def test_swag(self):
-    scan_droid, scan_event_dispatcher = self.droid, self.ed
-    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    # TODO: Change UUIDS since these are currently from a vendor
+  def _setup_characteristics_and_descriptors(self, droid):
     characteristic_input = [
       {
-        'uuid':"7D2A4BDA-D29B-4152-B725-2491478C5CD7",
-        'property':BluetoothGattCharacteristic.PROPERTY_WRITE.value |
-                   BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-        'permission':BluetoothGattCharacteristic.PROPERTY_WRITE.value
+        'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+        'property': BluetoothGattCharacteristic.PROPERTY_WRITE.value |
+                    BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
+        'permission': BluetoothGattCharacteristic.PROPERTY_WRITE.value
       },
       {
-        'uuid':"30619F2D-0F54-41BD-A65A-7588D8C85B45",
-        'property':BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-                   BluetoothGattCharacteristic.PROPERTY_READ.value,
+        'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
+        'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
+                    BluetoothGattCharacteristic.PROPERTY_READ.value,
         'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
       },
       {
-        'uuid':"68F0FD05-B0D4-495A-8FD8-130179A137C0",
-        'property':BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-                  BluetoothGattCharacteristic.PROPERTY_READ.value,
-        'permission':BluetoothGattCharacteristic.PERMISSION_READ.value
+        'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
+        'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
+                    BluetoothGattCharacteristic.PROPERTY_READ.value,
+        'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
       },
     ]
     descriptor_input = [
       {
-        'uuid':"7D2A4BDA-D29B-4152-B725-2491478C5CD7",
-        'property':BluetoothGattDescriptor.PERMISSION_READ.value |
-                   BluetoothGattDescriptor.PERMISSION_WRITE.value,
+        'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+        'property': BluetoothGattDescriptor.PERMISSION_READ.value |
+                    BluetoothGattDescriptor.PERMISSION_WRITE.value,
       },
       {
-        'uuid':"00002902-0000-1000-8000-00805F9B34FB",
-        'property':BluetoothGattDescriptor.PERMISSION_READ.value |
-                   BluetoothGattCharacteristic.PERMISSION_WRITE.value,
+        'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
+        'property': BluetoothGattDescriptor.PERMISSION_READ.value |
+                    BluetoothGattCharacteristic.PERMISSION_WRITE.value,
       }
     ]
-    characteristic_list = self.setupGattCharacteristics(advertise_droid,
-                                           characteristic_input)
-    descriptor_list = self.setupGattDescriptors(advertise_droid,
-                                               descriptor_input)
+    characteristic_list = self._setupGattCharacteristics(droid,
+                                                        characteristic_input)
+    descriptor_list = self._setupGattDescriptors(droid,
+                                                descriptor_input)
+    return characteristic_list,descriptor_list
+
+  def test_swag(self):
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    characteristic_list, descriptor_list = (
+      self._setup_characteristics_and_descriptors(advertise_droid))
     advertise_droid.bluetoothGattCharacteristicAddDescriptor(
       characteristic_list[1], descriptor_list[0])
     advertise_droid.bluetoothGattCharacteristicAddDescriptor(
       characteristic_list[2], descriptor_list[1])
     gattService = advertise_droid.createGattService(
-      "1F687216-B8BF-4D61-B99A-8FBE8D5E6C98",
-                                      BluetoothGattService.SERVICE_TYPE_SECONDARY.value)
+      "2649a34c-aa23-44a1-af1c-f560b0084e44",
+      BluetoothGattService.SERVICE_TYPE_SECONDARY.value)
     for characteristic in characteristic_list:
-      advertise_droid.bluetoothGattAddCharacteristicToService(characteristic)
-    gattServer = advertise_droid.createGattServerCallback()
+      advertise_droid.bluetoothGattAddCharacteristicToService(gattService,
+                                                              characteristic)
+    gattServerCallback = advertise_droid.createGattServerCallback()
+    gattServer = advertise_droid.openGattServer(gattServerCallback)
     advertise_droid.gattServerAddService(gattServer, gattService)
-
-
-  # Handler Functions End
+    expected_add_service_event_name = "GattServer" + str(
+      gattServerCallback) + "onServiceAdded"
+    worker = advertise_event_dispatcher.handle_event(
+      self.gatt_on_service_added_handler,
+      expected_add_service_event_name, (["2649a34c-aa23-44a1-af1c-f560b0084e44"]))
+    test_result = worker.result()
+    advertise_droid.setAdvertisementSettingsAdvertiseMode(
+      AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+    advertise_droid.setAdvertisementSettingsIsConnectable(True)
+    advertise_droid.setAdvertisementSettingsTxPowerLevel(
+      AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value)
+    advertise_droid.addAdvertiseDataServiceData(
+        "00000000-0000-1000-8000-00805f9b34fb",
+        "1,2,3")
+    return test_result
 
   def setup_gatt_connection(self, scan_droid, advertise_droid,
                             scan_event_dispatcher, autoconnect):
@@ -147,9 +175,6 @@ class GattConnectTest(BaseTestClass):
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
     expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    #advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_droid.setAdvertisementSettingsIsConnectable(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)

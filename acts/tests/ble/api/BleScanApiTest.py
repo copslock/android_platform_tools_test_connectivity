@@ -14,7 +14,10 @@
 # the License.
 
 """
-Test script for functional Ble Scan tests.
+Test script to exercise Ble Scan Api's. This exercises all getters and
+setters. This is important since there is a builder object that is immutable
+after you set all attributes of each object. If this test suite doesn't pass,
+then other test suites utilising Ble Scanner will also fail.
 """
 
 import pprint
@@ -27,7 +30,7 @@ from test_utils.ble_helper_functions import *
 
 
 class BleScanVerificationError(Exception):
-  """Error in fetching BleScanner Scan result."""
+  """Error in comparing BleScan results"""
 
 
 class BleSetScanSettingsError(Exception):
@@ -86,17 +89,11 @@ class BleScanApiTest(BaseTestClass):
       "test_classic_ble_scan_with_service_uuids_hr_and_p",
     )
 
-  # Handler Functions Begin
-  def blescantest_verify_onfailure_event_handler(self, event):
-    self.log.info("Verifying onFailure event")
-    self.log.info(pprint.pformat(event))
-    return event
-
-  # Handler Functions End
-
-  # Test Ble Scan API's.
-
   def _format_defaults(self, input):
+    """
+    Creates a dictionary of default ScanSetting and ScanFilter Values.
+    :return: input: dict
+    """
     if 'ScanSettings' not in input.keys():
       input['ScanSettings'] = (
         ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
@@ -113,6 +110,12 @@ class BleScanApiTest(BaseTestClass):
     return input
 
   def validate_scan_settings_helper(self, input, droid):
+    """
+    Validates each input of the scan settings object that is matches what was
+    set or not set such that it matches the defaults.
+    :return: False at any point something doesn't match. True if everything
+    matches.
+    """
     filter_list = gen_filterlist(droid)
     if 'ScanSettings' in input.keys():
       try:
@@ -121,13 +124,13 @@ class BleScanApiTest(BaseTestClass):
                               input['ScanSettings'][2],
                               input['ScanSettings'][3])
       except android.SL4AAPIError as error:
-        self.log.info("Set Scan Settings failed with: " + str(error))
+        self.log.debug("Set Scan Settings failed with: " + str(error))
         return False
     if 'ScanFilterDeviceName' in input.keys():
       try:
         droid.setScanFilterDeviceName(input['ScanFilterDeviceName'])
       except android.SL4AAPIError as error:
-        self.log.info(
+        self.log.debug(
           "Set Scan Filter Device Name failed with: " + str(error))
         return False
     if 'ScanFilterDeviceAddress' in input.keys():
@@ -135,7 +138,7 @@ class BleScanApiTest(BaseTestClass):
         droid.setScanFilterDeviceAddress(
           input['ScanFilterDeviceAddress'])
       except android.SL4AAPIError as error:
-        self.log.info(
+        self.log.debug(
           "Set Scan Filter Device Address failed with: " + str(error))
         return False
     if 'ScanFilterManufacturerDataId' in input.keys() \
@@ -146,7 +149,7 @@ class BleScanApiTest(BaseTestClass):
           input['ScanFilterManufacturerData'],
           input['ScanFilterManufacturerDataMask'])
       except android.SL4AAPIError as error:
-        self.log.info(
+        self.log.debug(
           "Set Scan Filter Manufacturer info with data mask failed with: " + str(
             error))
         return False
@@ -158,7 +161,7 @@ class BleScanApiTest(BaseTestClass):
           input['ScanFilterManufacturerDataId'],
           input['ScanFilterManufacturerData'])
       except android.SL4AAPIError as error:
-        self.log.info(
+        self.log.debug(
           "Set Scan Filter Manufacturer info failed with: " + str(
             error))
         return False
@@ -186,27 +189,27 @@ class BleScanApiTest(BaseTestClass):
                                                             scan_filter_index)
 
     if scan_settings != input['ScanSettings']:
-      self.log.info("Scan Settings did not match. expected: " + input[
+      self.log.debug("Scan Settings did not match. expected: " + input[
         'ScanSettings'] + ", found: " + str(scan_settings))
       return False
     if device_name_filter != input['ScanFilterDeviceName']:
-      self.log.info(
+      self.log.debug(
         "Scan Filter device name did not match. expected: " + input[
           'ScanFilterDeviceName'] + ", found: " + device_name_filter)
       return False
     if device_address_filter != input['ScanFilterDeviceAddress']:
-      self.log.info(
+      self.log.debug(
         "Scan Filter address name did not match. expected: " + input[
           'ScanFilterDeviceAddress'] + ", found: " + device_address_filter)
       return False
     if manufacturer_id != input['ScanFilterManufacturerDataId']:
-      self.log.info(
+      self.log.debug(
         "Scan Filter manufacturer data id did not match. expected: " +
         input[
           'ScanFilterManufacturerDataId'] + ", found: " + manufacturer_id)
       return False
     if manufacturer_data != input['ScanFilterManufacturerData']:
-      self.log.info(
+      self.log.debug(
         "Scan Filter manufacturer data did not match. expected: " +
         input[
           'ScanFilterManufacturerData'] + ", found: " + manufacturer_data)
@@ -217,7 +220,7 @@ class BleScanApiTest(BaseTestClass):
         scan_filter_index)
       if manufacturer_data_mask != input[
         'ScanFilterManufacturerDataMask']:
-        self.log.info(
+        self.log.debug(
           "Manufacturer data mask did not match. expected: " + input[
             'ScanFilterManufacturerDataMask'] + ", found: " + manufacturer_data_mask)
         return False
@@ -229,12 +232,12 @@ class BleScanApiTest(BaseTestClass):
       service_mask = droid.getScanFilterServiceUuidMask(filter_list,
                                                         scan_filter_index)
       if service_uuid != expected_service_uuid.lower():
-        self.log.info(
+        self.log.debug(
           "Service uuid did not match. expected: " + expected_service_uuid
           + ", found: " + service_uuid)
         return False
       if service_mask != expected_service_mask.lower():
-        self.log.info(
+        self.log.debug(
           "Service mask did not match. expected: " + expected_service_mask
           + ", found: " + service_mask)
         return False
@@ -244,42 +247,62 @@ class BleScanApiTest(BaseTestClass):
     return True
 
   def test_start_ble_scan_with_default_settings(self):
-    self.log.info("Test default scan settings.")
+    """
+    Test to validate all default scan settings values.
+    :return: bool
+    """
     input = {}
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_stop_ble_scan_default_settings(self):
-    self.log.info(
-      "Test default scan settings with a start ble scan and stop ble scan.")
+    """
+    Test default scan settings on an actual scan. Verify it can also stop the
+    scan.
+    Steps:
+    1. Validate default scan settings.
+    2. Start ble scan.
+    3. Stop ble scan.
+    :return: test_result: bool
+    """
     input = {}
     test_result = self.validate_scan_settings_helper(input, self.droid)
     if not test_result:
-      self.log.info("Could not setup ble scanner.")
+      self.log.debug("Could not setup ble scanner.")
       return test_result
     test_result = startblescan(self.droid, self.filter_list,
                                self.scan_settings_index,
                                self.scan_callback)
     try:
-      self.log.info("Step 4: Stop Bluetooth Le Scan.")
+      self.log.debug("Step 4: Stop Bluetooth Le Scan.")
       test_result = stopblescan(self.droid, self.scan_callback)
     except BleScanResultError as error:
-      self.log.info(str(error))
+      self.log.debug(str(error))
       test_result = False
     return test_result
 
   def test_scan_settings_callback_type_all_matches(self):
-    self.log.info("Test scan settings callback type all matches.")
+    """
+    Test scan settings callback type all matches.
+    Steps:
+    1. Validate the scan settings callback type with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_callback_type_first_match(self):
-    self.log.info("Test scan settings callback type first lost.")
+    """
+    Test scan settings callback type first lost.
+    Steps:
+    1. Validate the scan settings callback type with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value, 0,
@@ -289,7 +312,13 @@ class BleScanApiTest(BaseTestClass):
     return test_result
 
   def test_scan_settings_set_callback_type_match_lost(self):
-    self.log.info("Test scan settings callback type match lost.")
+    """
+    Test scan settings callback type match lost.
+    Steps:
+    1. Validate the scan settings callback type with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value, 0,
@@ -299,7 +328,13 @@ class BleScanApiTest(BaseTestClass):
     return test_result
 
   def test_scan_settings_set_invalid_callback_type(self):
-    self.log.info("Test scan settings callback type invalid type.")
+    """
+    Test scan settings invalid callback type -1.
+    Steps:
+    1. Validate the scan settings callback type with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       -1, 0, ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
@@ -308,7 +343,13 @@ class BleScanApiTest(BaseTestClass):
     return not test_result
 
   def test_scan_settings_set_scan_mode_low_power(self):
-    self.log.info("Test scan settings scan mode low power.")
+    """
+    Test scan settings scan mode low power.
+    Steps:
+    1. Validate the scan settings scan mode with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
@@ -318,80 +359,121 @@ class BleScanApiTest(BaseTestClass):
     return test_result
 
   def test_scan_settings_set_scan_mode_balanced(self):
-    self.log.info("Test scan settings scan mode balanced.")
+    """
+    Test scan settings scan mode balanced.
+    Steps:
+    1. Validate the scan settings scan mode with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_scan_mode_low_latency(self):
-    self.log.info("Test scan settings scan mode low latency.")
+    """
+    Test scan settings scan mode low latency.
+    Steps:
+    1. Validate the scan settings scan mode with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_invalid_scan_mode(self):
-    self.log.info("Test scan settings scan mode invalid value.")
+    """
+    Test scan settings invalid scan mode -1.
+    Steps:
+    1. Validate the scan settings scan mode with all other settings set to
+    their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0, -1,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_report_delay_millis_min(self):
-    self.log.info("Test scan settings report delay seconds min.")
+    """
+    Test scan settings report delay millis min value.
+    Steps:
+    1. Validate the scan settings report delay millis with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
       ScanSettingsReportDelaySeconds.MIN.value,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_report_delay_millis_min_plus_one(self):
-    self.log.info("Test scan settings report delay seconds min plus 1.")
+    """
+    Test scan settings report delay millis min value + 1.
+    Steps:
+    1. Validate the scan settings report delay millis with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
       ScanSettingsReportDelaySeconds.MIN.value + 1,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_report_delay_millis_max(self):
-    self.log.info("Test scan settings report delay seconds max.")
+    """
+    Test scan settings report delay millis max value.
+    Steps:
+    1. Validate the scan settings report delay millis with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
       ScanSettingsReportDelaySeconds.MAX.value,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_report_delay_millis_max_minus_one(self):
-    self.log.info("Test scan settings report delay seconds max minus 1.")
+    """
+    Test scan settings report delay millis max value - 1.
+    Steps:
+    1. Validate the scan settings report delay millis with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
       ScanSettingsReportDelaySeconds.MAX.value - 1,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_invalid_report_delay_millis_min_minus_one(self):
-    self.log.info("Test scan settings report delay seconds max minus 1.")
+    """
+    Test scan settings invalid report delay millis min value - 1.
+    Steps:
+    1. Validate the scan settings report delay millis with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     droid = self.droid
     input = {}
     input["ScanSettings"] = (
@@ -399,197 +481,288 @@ class BleScanApiTest(BaseTestClass):
       ScanSettingsReportDelaySeconds.MIN.value - 1,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, droid)
 
   def test_scan_settings_set_scan_result_type_full(self):
-    self.log.info("Test scan settings result type full.")
+    """
+    Test scan settings result type full.
+    Steps:
+    1. Validate the scan settings result type with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_scan_result_type_abbreviated(self):
-    self.log.info("Test scan settings result type abbreviated.")
+    """
+    Test scan settings result type abbreviated.
+    Steps:
+    1. Validate the scan settings result type with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_ABBREVIATED.value)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_settings_set_invalid_scan_result_type(self):
-    self.log.info("Test scan settings result type invalid.")
+    """
+    Test scan settings invalid result type -1.
+    Steps:
+    1. Validate the scan settings result type with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input["ScanSettings"] = (
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, -1)
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_device_name(self):
-    self.log.info("Test scan filter device name. ")
+    """
+    Test scan filter device name sl4atest.
+    Steps:
+    1. Validate the scan filter device name with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceName'] = "sl4atest"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_device_name_blank(self):
-    self.log.info("Test scan filter device name as empty string. ")
+    """
+    Test scan filter device name blank.
+    Steps:
+    1. Validate the scan filter device name with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     droid = self.droid
     input = {}
     input['ScanFilterDeviceName'] = ""
-    test_result = self.validate_scan_settings_helper(input, droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, droid)
 
   def test_scan_filter_set_device_name_special_chars(self):
-    self.log.info("Test scan filter device name to be special chars. ")
+    """
+    Test scan filter device name special characters.
+    Steps:
+    1. Validate the scan filter device name with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceName'] = "!@#$%^&*()\":<>/"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_device_address(self):
-    self.log.info("Test scan filter device address 01:02:03:AB:CD:EF. ")
+    """
+    Test scan filter device address valid.
+    Steps:
+    1. Validate the scan filter device address with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceAddress'] = "01:02:03:AB:CD:EF"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_invalid_device_address_lower_case(self):
-    self.log.info(
-      "Test scan filter invalid device address 01:02:03:ab:cd:ef")
+    """
+    Test scan filter device address lower case.
+    Steps:
+    1. Validate the scan filter device address with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceAddress'] = "01:02:03:ab:cd:ef"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_invalid_device_address_blank(self):
-    self.log.info("Test scan filter invalid device address as empty string")
+    """
+    Test scan filter invalid device address blank.
+    Steps:
+    1. Validate the scan filter device address with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceAddress'] = ""
     test_result = self.validate_scan_settings_helper(input, self.droid)
     return not test_result
 
   def test_scan_filter_set_invalid_device_address_bad_format(self):
-    self.log.info(
-      "Test scan filter invalid device address as 10.10.10.10.10")
+    """
+    Test scan filter invalid device address bad format.
+    Steps:
+    1. Validate the scan filter device address with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceAddress'] = "10.10.10.10.10"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_invalid_device_address_bad_address(self):
-    self.log.info(
-      "Test scan filter invalid device address as ZZ:ZZ:ZZ:ZZ:ZZ:ZZ")
+    """
+    Test scan filter invalid device address invalid characters.
+    Steps:
+    1. Validate the scan filter device address with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     input = {}
     input['ScanFilterDeviceAddress'] = "ZZ:ZZ:ZZ:ZZ:ZZ:ZZ"
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_manufacturer_id_data(self):
+    """
+    Test scan filter manufacturer data.
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = 0
     expected_manufacturer_data = "1,2,1,3,4,5,6"
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_manufacturer_id_data_mask(self):
+    """
+    Test scan filter manufacturer data with data mask.
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = 1
     expected_manufacturer_data = "1"
     expected_manufacturer_data_mask = "1,2,1,3,4,5,6"
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data + ", manufacturer data mask " + expected_manufacturer_data_mask)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
     input[
       'ScanFilterManufacturerDataMask'] = expected_manufacturer_data_mask
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_manufacturer_max_id(self):
+    """
+    Test scan filter manufacturer data max id
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = 2147483647
     expected_manufacturer_data = "1,2,1,3,4,5,6"
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_manufacturer_data_empty(self):
+    """
+    Test scan filter manufacturer data empty.
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = 1
     expected_manufacturer_data = ""
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_manufacturer_data_mask_empty(self):
+    """
+    Test scan filter manufacturer mask empty.
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = 1
     expected_manufacturer_data = "1,2,1,3,4,5,6"
     expected_manufacturer_data_mask = ""
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data
-                  + ", manufacturer data mask " + expected_manufacturer_data_mask)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
     input[
       'ScanFilterManufacturerDataMask'] = expected_manufacturer_data_mask
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_invalid_manufacturer_min_id_minus_one(self):
+    """
+    Test scan filter invalid manufacturer id min value - 1.
+    Steps:
+    1. Validate the scan filter manufacturer id with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_manufacturer_id = -1
     expected_manufacturer_data = "1,2,1,3,4,5,6"
-    self.log.info("Test scan filter set manufacturer id " + str(
-      expected_manufacturer_id) + ", manufacturer data " + expected_manufacturer_data)
     input = {}
     input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
     input['ScanFilterManufacturerData'] = expected_manufacturer_data
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return not test_result
+    return not self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_set_service_uuid(self):
+    """
+    Test scan filter service uuid.
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_service_uuid = "00000000-0000-1000-8000-00805F9B34FB"
     expected_service_mask = "00000000-0000-1000-8000-00805F9B34FB"
-    self.log.info(
-      "Test scan filter set service uuid " + expected_service_uuid + ", service uuid "
-      + expected_service_mask)
     input = {}
     input['ScanFilterServiceUuid'] = expected_service_uuid
     input['ScanFilterServiceMask'] = expected_service_mask
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_scan_filter_service_uuid_p_service(self):
+    """
+    Test scan filter service uuid p service
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    :return: bool
+    """
     expected_service_uuid = Uuids.P_Service.value
     expected_service_mask = "00000000-0000-1000-8000-00805F9B34FB"
-    self.log.info(
-      "Test scan filter set service uuid " + expected_service_uuid + ", service uuid "
-      + expected_service_mask)
+    self.log.debug("Step 1: Setup environment.")
+
     input = {}
     input['ScanFilterServiceUuid'] = expected_service_uuid
     input['ScanFilterServiceMask'] = expected_service_mask
-    test_result = self.validate_scan_settings_helper(input, self.droid)
-    return test_result
+    return self.validate_scan_settings_helper(input, self.droid)
 
   def test_classic_ble_scan_with_service_uuids_p(self):
-    self.log.info("Step 1: Setup environment.")
+    """
+    Test classic ble scan with scan filter service uuid p service uuids
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    2. Start classic ble scan.
+    3. Stop classic ble scan
+    :return: bool
+    """
 
     droid = self.droid
     service_uuid_list = [Uuids.P_Service.value]
@@ -599,8 +772,15 @@ class BleScanApiTest(BaseTestClass):
                                                       service_uuid_list)
 
   def test_classic_ble_scan_with_service_uuids_hr(self):
-    self.log.info("Step 1: Setup environment.")
-
+    """
+    Test classic ble scan with scan filter service uuid hr service
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    2. Start classic ble scan.
+    3. Stop classic ble scan
+    :return: bool
+    """
     droid = self.droid
     service_uuid_list = [Uuids.HR_SERVICE.value]
     scan_callback = droid.genLeScanCallback()
@@ -609,8 +789,15 @@ class BleScanApiTest(BaseTestClass):
                                                       service_uuid_list)
 
   def test_classic_ble_scan_with_service_uuids_empty_uuid_list(self):
-    self.log.info("Step 1: Setup environment.")
-
+    """
+    Test classic ble scan with service uuids as empty list
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    2. Start classic ble scan.
+    3. Stop classic ble scan
+    :return: bool
+    """
     droid = self.droid
     service_uuid_list = []
     scan_callback = droid.genLeScanCallback()
@@ -619,8 +806,15 @@ class BleScanApiTest(BaseTestClass):
                                                       service_uuid_list)
 
   def test_classic_ble_scan_with_service_uuids_hr_and_p(self):
-    self.log.info("Step 1: Setup environment.")
-
+    """
+    Test classic ble scan with service uuids a list of hr and p service
+    Steps:
+    1. Validate the scan filter service uuid with all other settings
+    set to their respective defaults.
+    2. Start classic ble scan.
+    3. Stop classic ble scan
+    :return: bool
+    """
     droid = self.droid
     service_uuid_list = [Uuids.HR_SERVICE.value, Uuids.P_Service.value]
     scan_callback = droid.genLeScanCallback()

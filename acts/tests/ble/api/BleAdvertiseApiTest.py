@@ -14,16 +14,22 @@
 # the License.
 
 """
-Test script for functional Ble Scan tests.
+Test script to exercise Ble Advertisement Api's. This exercises all getters and
+setters. This is important since there is a builder object that is immutable
+after you set all attributes of each object. If this test suite doesn't pass,
+then other test suites utilising Ble Advertisements will also fail.
 """
+
+# TODO: Refactor to work like BleScanApiTest. Add proper documentation.
 
 import pprint
 from queue import Empty
+import time
 
-from test_utils.ble_advertise_utils import *
-from test_utils.ble_helper_functions import *
 from base_test import BaseTestClass
 from test_utils.BleEnum import *
+from test_utils.ble_advertise_utils import *
+from test_utils.ble_helper_functions import *
 
 
 class BleAdvertiseApiTest(BaseTestClass):
@@ -64,33 +70,21 @@ class BleAdvertiseApiTest(BaseTestClass):
       "test_advertise_data_set_include_device_name_false",
     )
 
-  def verify_advertise_data_attributes(self, input, droid):
-    if "service_uuids" in input.keys():
-      self.log.info("taco")
-    else:
-      self.log.info("no taco")
-    return True
-
-  def test_derp(self):
-    self.log.debug("Step 1: Setup environment.")
-    test_result = True
-    droid = self.droid
-    input = {
-      "service_uuids": [],
-      "service_data_uuid": None,
-      "manufacturer_id": -1,
-      "include_tx_power_level": False,
-      "include_device_name": False,
-    }
-    return self.verify_advertise_data_attributes(input, droid)
-
   def test_advertise_settings_defaults(self):
-    self.log.debug("Step 1: Setup environment.")
+    """
+    Tests the default advertisement settings. This builder object should have a
+    proper "get" expectation for each attribute of the builder object once it is
+    built.
+    Steps:
+    1. Build a new advertise settings object.
+    2. Get the attributes of the advertise settings object.
+    3. Compare the attributes found against the attributes expected.
+
+    :return: test_result: bool
+    """
     test_result = True
     droid = self.droid
-    self.log.debug("Step 2: Build advertisement settings.")
     advertise_settings = build_advertisesettings(droid)
-    self.log.debug("Step 3: Get all default values.")
     advertise_mode = droid.getAdvertisementSettingsMode(advertise_settings)
     tx_power_level = droid.getAdvertisementSettingsTxPowerLevel(
       advertise_settings)
@@ -100,7 +94,6 @@ class BleAdvertiseApiTest(BaseTestClass):
     expected_advertise_mode = AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_POWER.value
     expected_tx_power_level = AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value
     expected_is_connectable = True
-    self.log.debug("Step 4: Verify all defaults match expected values.")
     if advertise_mode != expected_advertise_mode:
       test_result = False
       self.log.debug("Expected filtering mode: " + str(
@@ -118,19 +111,23 @@ class BleAdvertiseApiTest(BaseTestClass):
         expected_is_connectable)
                      + ", found filtering is connectable: " + str(
         is_connectable))
-    if not test_result:
-      self.log.debug("Some values didn't match the defaults.")
-    else:
-      self.log.debug("All default values passed.")
     return test_result
 
   def test_advertise_data_defaults(self):
-    self.log.debug("Step 1: Setup environment.")
+    """
+    Tests the default advertisement data. This builder object should have a
+    proper "get" expectation for each attribute of the builder object once it is
+    built.
+    Steps:
+    1. Build a new advertise data object.
+    2. Get the attributes of the advertise settings object.
+    3. Compare the attributes found against the attributes expected.
+
+    :return: test_result: bool
+    """
     test_result = True
     droid = self.droid
-    self.log.debug("Step 2: Build advertisement data.")
     advertise_data = build_advertisedata(droid)
-    self.log.debug("Step 3: Get all default values.")
     service_uuids = droid.getAdvertiseDataServiceUuids(advertise_data)
     include_tx_power_level = droid.getAdvertiseDataIncludeTxPowerLevel(
       advertise_data)
@@ -502,9 +499,5 @@ class BleAdvertiseApiTest(BaseTestClass):
     droid.setAdvertiseDataIncludeTxPowerLevel(True)
     data, settings, callback = generate_ble_advertise_objects(droid)
     droid.startBleAdvertising(callback, data, settings)
-
-    print("now advertising")
-    import time
-
     time.sleep(800)
     return True
