@@ -13,6 +13,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+"""
+This test script exercises distance based testcases.
+
+This test script was designed with this setup in mind:
+Shield box one: Android Device
+Shield box two: Android Device
+An attenuator sitting in between the two shield boxes.
+"""
 
 import pprint
 import concurrent
@@ -24,8 +32,8 @@ from test_utils.BleEnum import *
 from test_utils.ble_helper_functions import *
 
 
-class BleAttenuatorTest(BaseTestClass):
-  TAG = "BleAttenuatorTest"
+class BleDistanceTest(BaseTestClass):
+  TAG = "BleDistanceTest"
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
   default_timeout = 10
@@ -33,7 +41,7 @@ class BleAttenuatorTest(BaseTestClass):
   def __init__(self, controllers):
     BaseTestClass.__init__(self, self.TAG, controllers)
     self.tests = (
-      "test_scan_default_advertisement_high_attenuation"
+      "test_scan_default_advertisement_high_attenuation",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
     self.droid.bluetoothToggleState(False)
@@ -44,28 +52,32 @@ class BleAttenuatorTest(BaseTestClass):
     time.sleep(self.default_timeout)
     self.ed1.start()
 
-  def blescan_verify_onscanresult_event_handler(self, event,
-                                                expected_callbacktype=None,
-                                                system_time_nanos=None):
+  def blescan_verify_onscanresult_event_handler(self, event):
+    """
+    An event handler that validates the onScanResult event.
+    :param event: dict that represents the callback onScanResult
+    :return: test_result: bool
+    """
+    # Todo: Implement proper validation steps.
     test_result = True
     self.log.debug("Verifying onScanResult event")
     self.log.debug(pprint.pformat(event))
-    callbacktype = event['data']['CallbackType']
-    if callbacktype != expected_callbacktype:
-      self.log.debug(
-        "Expected callback type: " + str(expected_callbacktype)
-        + ", Found callback type: " + str(callbacktype))
-      test_result = False
     return test_result
 
   def test_scan_default_advertisement_high_attenuation(self):
-    self.log.debug("Step 1: Setting up environment")
-
-    self.attn.set_atten(0, 90)
+    """
+    Test that tests a large distance between the advertiser android and the
+    scanner android.
+    Steps:
+    1. Set attenuation to 90 (the highest value for the attenuator).
+    2. Setup the scanning android device
+    3. Setup the advertiser android devices.
+    3. Verify that no onScanResult callbacks were recorded.
+    :return: test_result: bool
+    """
+    self.attenuators[0].set_atten(0, 90)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
     expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
@@ -79,21 +91,16 @@ class BleAttenuatorTest(BaseTestClass):
     if test_result is False:
       self.log.debug("Advertising failed.")
       return test_result
-
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
     test_result = startblescan(scan_droid, filter_list, scan_settings,
                                scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
-      expected_event_name, ([1]), self.default_timeout)
+      expected_event_name, ([]), self.default_timeout)
     try:
       event_info = scan_event_dispatcher.pop_event(expected_event_name,
                                                    10)
-      self.log.debug("Unexpectedly found an advertiser: " + event_info)
+      self.log.debug("Unexpectedly found an advertiser: " + pprint.pformat(
+        event_info))
       test_result = False
     except Empty as error:
       self.log.debug("No events were found as expected.")

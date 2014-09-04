@@ -147,7 +147,7 @@ class TestRunner():
             self.log.debug("No run list provided by user, running everything.")
             for test_cls_name in self.test_classes:
                 self.run_test_class(test_cls_name)
-        self.reporter.write("Excecuted: " + str(self.num_executed)
+        self.reporter.write("Executed: " + str(self.num_executed)
                             + "\nPassed: " + str(self.num_passed) + "\n")
         self.reporter.close()
 
