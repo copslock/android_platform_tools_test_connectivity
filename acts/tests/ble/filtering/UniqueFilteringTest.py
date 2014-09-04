@@ -24,8 +24,8 @@ from test_utils.BleEnum import *
 from test_utils.ble_helper_functions import *
 
 
-class BleAdvertiseScanFilteringTest(BaseTestClass):
-  TAG = "BleAdvertiseScanFilteringTest"
+class UniqueFilteringTest(BaseTestClass):
+  TAG = "UniqueFilteringTest"
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
   default_timeout = 10
@@ -33,13 +33,10 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
   def __init__(self, controllers):
     BaseTestClass.__init__(self, self.TAG, controllers)
     self.tests = (
-      "test_scan_default_advertisement",
-      "test_scan_advertisement_with_device_name_filter",
       "test_scan_flush_pending_scan_results",
       "test_scan_trigger_on_batch_scan_results",
       "test_scan_flush_results_without_on_batch_scan_results_triggered",
-      "test_scan_non_existant_name_filter",
-      "test_scan_advertisement_with_device_service_uuid_filter",
+      "test_scan_non_existent_name_filter",
       "test_scan_advertisement_with_device_service_uuid_filter_expect_no_events",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
@@ -92,7 +89,7 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
 
   # Handler Functions End
 
-  def test_scan_default_advertisement(self):
+  def test_scan_flush_pending_scan_results(self):
     self.log.debug("Step 1: Setting up environment")
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
@@ -117,7 +114,7 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
                                scan_callback)
     self.log.debug(
       "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
+    scan_droid.flushPendingScanResults(scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_event_name, ([1]), self.default_timeout)
@@ -129,100 +126,6 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
     except concurrent.futures._base.TimeoutError as error:
       test_result = False
       self.log.debug("Test failed with TimeoutError: " + str(error))
-    scan_droid.stopBleScan(scan_callback)
-    advertise_droid.stopBleAdvertising(advertise_callback)
-    return test_result
-
-
-  def test_scan_advertisement_with_device_name_filter(self):
-    self.log.debug("Step 1: Setting up environment")
-
-    scan_droid, scan_event_dispatcher = self.droid, self.ed
-    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    filter_name = advertise_droid.bluetoothGetLocalName()
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    self.log.debug("Step 2: Create name filter on " + filter_name +
-                   ", a default scan settings, and a default scan callback.")
-    scan_droid.setScanFilterDeviceName(filter_name)
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
-    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-      scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
-    advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
-      advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed on device.")
-      return test_result
-
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
-    worker = scan_event_dispatcher.handle_event(
-      self.blescan_verify_onscanresult_event_handler,
-      expected_event_name, ([1]), self.default_timeout)
-    try:
-      self.log.debug(worker.result(self.default_timeout))
-    except Empty as error:
-      test_result = False
-      self.log.debug("Test failed with: " + str(error))
-    except concurrent.futures._base.TimeoutError as error:
-      test_result = False
-      self.log.debug("Test failed with: " + str(error))
-    scan_droid.stopBleScan(scan_callback)
-    advertise_droid.stopBleAdvertising(advertise_callback)
-    return test_result
-
-  def test_scan_flush_pending_scan_results(self):
-    self.log.debug("Step 1: Setting up environment")
-
-    scan_droid, scan_event_dispatcher = self.droid, self.ed
-    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
-    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-      scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
-    advertise_data, advertise_settings, advertise_callback = \
-      generate_ble_advertise_objects(
-        advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed.")
-      return test_result
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed " +
-      "event.")
-    scan_droid.flushPendingScanResults(scan_callback)
-    worker = scan_event_dispatcher.handle_event(
-      self.blescan_verify_onscanresult_event_handler,
-      expected_event_name, ([1, scan_droid]), None,
-      self.default_timeout)
-    try:
-      self.log.debug(worker.result(self.default_timeout))
-    except Empty as error:
-      test_result = False
-      self.log.debug("Test failed with: " + str(error))
-    except concurrent.futures._base.TimeoutError as error:
-      test_result = False
-      self.log.debug("Test failed with: " + str(error))
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
@@ -284,8 +187,6 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
       scan_droid)
     expected_event_name = "BleScan" + str(
       scan_callback) + "onBatchScanResults"
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
     test_result = startbleadvertise(advertise_droid, advertise_data,
@@ -317,7 +218,7 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
 
-  def test_scan_non_existant_name_filter(self):
+  def test_scan_non_existent_name_filter(self):
     self.log.debug("Step 1: Setting up environment")
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
@@ -363,57 +264,6 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
 
-  def test_scan_advertisement_with_device_service_uuid_filter(self):
-    self.log.debug("Step 1: Setting up environment")
-
-    scan_droid, scan_event_dispatcher = self.droid, self.ed
-    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    service_uuid = "00000000-0000-1000-8000-00805F9B34FB"
-    service_mask = "00000000-0000-1000-8000-00805F9B34FA"
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    self.log.debug("Step 2: Create service uuid filter on " + service_uuid +
-                   ", service mask filter on " + service_mask +
-                   ", a default scan settings, and a default scan callback.")
-    scan_droid.setScanFilterServiceUuid(service_uuid, service_mask)
-    self.log.debug(
-      "Step 3: Create scan filter, scan settings, and scan callback")
-    advertise_droid.setAdvertisementSettingsAdvertiseMode(
-      AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-    advertise_droid.setAdvertiseDataSetServiceUuids([service_uuid])
-    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-      scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-    advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
-    advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
-      advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed")
-      return test_result
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
-    worker = scan_event_dispatcher.handle_event(
-      self.blescan_verify_onscanresult_event_handler,
-      expected_event_name, ([1]), self.default_timeout)
-    try:
-      self.log.debug(worker.result(5))
-    except concurrent.futures._base.TimeoutError as error:
-      test_result = False
-      self.log.debug(error.__class__)
-      self.log.debug(
-        "Test failed with: concurrent.futures._base.TimeoutError")
-    scan_droid.stopBleScan(scan_callback)
-    advertise_droid.stopBleAdvertising(advertise_callback)
-    return test_result
-
   def test_scan_advertisement_with_device_service_uuid_filter_expect_no_events(
     self):
     self.log.debug("Step 1: Setting up environment")
@@ -442,7 +292,7 @@ class BleAdvertiseScanFilteringTest(BaseTestClass):
                                     advertise_callback)
     if test_result is False:
       self.log.debug("Advertising failed.")
-      return
+      return test_result
 
     self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
       scan_callback))

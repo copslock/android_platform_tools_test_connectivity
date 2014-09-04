@@ -38,8 +38,8 @@ class BleSetScanFilterError(Exception):
   """Error in setting Ble Scan Settings"""
 
 
-class BleScanTest(BaseTestClass):
-  TAG = "BleFunctionalScanTest"
+class BleScanApiTest(BaseTestClass):
+  TAG = "BleScanApiTest"
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
 
@@ -72,12 +72,6 @@ class BleScanTest(BaseTestClass):
       "test_scan_filter_set_invalid_device_address_blank",
       "test_scan_filter_set_invalid_device_address_bad_format",
       "test_scan_filter_set_invalid_device_address_bad_address",
-      # "test_scan_filter_set_rssi",
-      # "test_scan_filter_set_rssi_inner_bounds",
-      # "test_scan_filter_set_rssi_reverse_values",
-      # "test_scan_filter_set_rssi_same_values",
-      # "test_scan_filter_set_invalid_rssi_max_bound_plus_one",
-      # "test_scan_filter_set_invalid_rssi_min_bound_minus_one",
       "test_scan_filter_set_manufacturer_id_data",
       "test_scan_filter_set_manufacturer_id_data_mask",
       "test_scan_filter_set_manufacturer_max_id",
@@ -496,89 +490,6 @@ class BleScanTest(BaseTestClass):
     input['ScanFilterDeviceAddress'] = "ZZ:ZZ:ZZ:ZZ:ZZ:ZZ"
     test_result = self.validate_scan_settings_helper(input, self.droid)
     return not test_result
-
-  def test_scan_filter_set_rssi(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_min_rssi = ScanFilterRssi.MIN.value
-    expected_max_rssi = ScanFilterRssi.MAX.value
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    verify_scan_filters_rssi(self, droid, expected_min_rssi,
-                             expected_max_rssi)
-
-    return
-
-  def test_scan_filter_set_rssi_inner_bounds(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_min_rssi = ScanFilterRssi.MIN.value + 1
-    expected_max_rssi = ScanFilterRssi.MAX.value - 1
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    verify_scan_filters_rssi(self, droid, expected_min_rssi,
-                             expected_max_rssi)
-
-    return
-
-  def test_scan_filter_set_rssi_reverse_values(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_max_rssi = ScanFilterRssi.MIN.value
-    expected_min_rssi = ScanFilterRssi.MAX.value
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    verify_scan_filters_rssi(self, droid, expected_min_rssi,
-                             expected_max_rssi)
-
-    return
-
-  def test_scan_filter_set_rssi_same_values(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_max_rssi = 0
-    expected_min_rssi = 0
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    return verify_scan_filters_rssi(self, droid,
-                                    expected_min_rssi,
-                                    expected_max_rssi)
-
-  def test_scan_filter_set_invalid_rssi_max_bound_plus_one(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_max_rssi = ScanFilterRssi.MIN.value
-    expected_min_rssi = ScanFilterRssi.MAX.value + 1
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    verify_invalid_scan_filters_rssi(self, droid, expected_min_rssi,
-                                     expected_max_rssi)
-
-    return
-
-  def test_scan_filter_set_invalid_rssi_min_bound_minus_one(self):
-    self.log.info("Step 1: Setup environment.")
-
-    droid = self.droid
-    expected_max_rssi = ScanFilterRssi.MIN.value - 1
-    expected_min_rssi = ScanFilterRssi.MAX.value
-    self.log.info("Step 2: Set the scan filters object's value to "
-                  + "min rssi " + str(expected_min_rssi) + ", max rssi "
-                  + str(expected_max_rssi))
-    verify_invalid_scan_filters_rssi(self, droid, expected_min_rssi,
-                                     expected_max_rssi)
-
-    return
 
   def test_scan_filter_set_manufacturer_id_data(self):
     expected_manufacturer_id = 0

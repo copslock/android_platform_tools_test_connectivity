@@ -24,7 +24,7 @@ from test_utils.ble_helper_functions import *
 
 
 class BleStressTest(BaseTestClass):
-  TAG = "BleAdvertiseScanFilteringTest"
+  TAG = "BleStressTest"
   log_path = BaseTestClass.log_path + TAG + '/'
   tests = None
   default_timeout = 10
