@@ -30,8 +30,8 @@ import time
 
 from base_test import BaseTestClass
 from queue import Empty
-from test_utils.BleEnum import *
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.BleEnum import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 
 class BeaconSwarmTest(BaseTestClass):
@@ -122,7 +122,8 @@ class BeaconSwarmTest(BaseTestClass):
     3. Verify that 1000 onScanResult callbacks were triggered.
     :return: test_result: bool
     """
-    self.log.debug("Step 1: Setting up environment")
+    test_result = True
+    self.attenuators[0].set_atten(0, 0)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     n = 0
     while n < 1000:

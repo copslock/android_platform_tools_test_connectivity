@@ -20,8 +20,8 @@
 Helper functions for Advertise Feature
 """
 
-from test_utils.ble_utils import *
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.ble_utils import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 #Build Advertise Data based on below configs
 ADVERTISE_DATA_NO_INCLUDE_TX_POWER = 0
