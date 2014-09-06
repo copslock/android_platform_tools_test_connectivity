@@ -16,8 +16,18 @@
 #   limitations under the License.
 
 import json
+import os
 import subprocess
 import time
+
+def create_dir(path):
+    """Creates a directory if it does not exist already.
+
+    Params:
+        path: The path of the directory to create.
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 def exe_cmd(*cmds):
   cmd = ' '.join(cmds)
@@ -34,6 +44,28 @@ def get_current_human_time():
   	The current time stamp in Month-Day-Year Hour:Min:Sec format.
   """
   return time.strftime("%m-%d-%Y %H:%M:%S ")
+
+def find_files(paths, file_predicate):
+    """Locate files whose names and extensions match the given predicate in
+    the specified directories.
+
+    Params:
+        paths: A list of directory paths where to find the files.
+        file_predicate: A function that returns True if the file name and
+          extension are desired.
+
+    Returns:
+        A list of files that match the predicate.
+    """
+    file_list = []
+    for path in paths:
+        for dirPath, subdirList, fileList in os.walk(path):
+            for fname in fileList:
+                name, ext = os.path.splitext(fname)
+                if file_predicate(name, ext):
+                  fileFullPath = os.path.join(dirPath, fname)
+                  file_list.append(name)
+    return file_list
 
 def load_config(file_full_path):
   """Loads a JSON config file.

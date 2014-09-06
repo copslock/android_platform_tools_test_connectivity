@@ -17,18 +17,10 @@
 
 import datetime
 import logging
-import os
 import sys
 import time
 
-def create_dir(path):
-    """Creates a directory if it does not exist already.
-
-    Params:
-        path: The path of the directory to create.
-    """
-    if not os.path.exists(path):
-        os.makedirs(path)
+from test_utils.utils import create_dir
 
 def get_test_logger(log_path, TAG):
     """Returns a logger object used for tests.
