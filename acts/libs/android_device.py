@@ -67,8 +67,8 @@ class AndroidDevice:
     return results
 
   def get_model(self):
-    out = exe_cmd('adb -s {} shell cat /system/build.prop | grep "product.board"'.format(self.device_id))
-    model = out.decode("utf-8").split('=')[1]
+    out = exe_cmd('adb -s {} shell cat /system/build.prop | grep "product.name"'.format(self.device_id))
+    model = out.decode("utf-8").split('=')[-1].strip().lower()
     return model.strip()
 
   def get_droid(self, handle_event=True):
