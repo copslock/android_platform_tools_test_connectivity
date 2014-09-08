@@ -24,9 +24,9 @@ import pprint
 from queue import Empty
 
 from base_test import BaseTestClass
-from test_utils.ble_scan_utils import *
-from test_utils.BleEnum import *
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.ble_scan_utils import *
+from test_utils.bluetooth.BleEnum import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 
 class BleScanVerificationError(Exception):

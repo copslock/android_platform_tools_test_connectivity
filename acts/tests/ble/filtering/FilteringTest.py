@@ -20,8 +20,8 @@ import time
 
 from queue import Empty
 from base_test import BaseTestClass
-from test_utils.BleEnum import *
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.BleEnum import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 
 class FilteringTest(BaseTestClass):
@@ -45,8 +45,53 @@ class FilteringTest(BaseTestClass):
       'manufacturer_specific_data': "1"
     },
     {
-      'service_data_uuid': "00000000-0000-1000-8000-00805f9b34fb",
-      'service_data': "1,2,3"
+      'manufacturer_specific_data_id': 1,
+      'manufacturer_specific_data': "14,0,54,0,0,0,0,0"
+    },
+    {
+      'manufacturer_specific_data_id': 1,
+      'manufacturer_specific_data': "1",
+      'manufacturer_specific_data_mask': "1"
+    },
+    {
+      'service_data_uuid': "0000110A-0000-1000-8000-00805F9B34FB",
+      'service_data': "11,17,80"
+    },
+    {
+      'service_data_uuid': "0000110B-0000-1000-8000-00805F9B34FB",
+      'service_data': "13,0,8"
+    },
+    {
+      'service_data_uuid': "0000110C-0000-1000-8000-00805F9B34FB",
+      'service_data': "11,14,50"
+    },
+    {
+      'service_data_uuid': "0000110D-0000-1000-8000-00805F9B34FB",
+      'service_data': "16,22,11"
+    },
+    {
+      'service_data_uuid': "0000110E-0000-1000-8000-00805F9B34FB",
+      'service_data': "2,9,54"
+    },
+    {
+      'service_data_uuid': "0000110F-0000-1000-8000-00805F9B34FB",
+      'service_data': "69,11,50"
+    },
+    {
+      'service_data_uuid': "00001101-0000-1000-8000-00805F9B34FB",
+      'service_data': "12,11,21"
+    },
+    {
+      'service_data_uuid': "00001102-0000-1000-8000-00805F9B34FB",
+      'service_data': "12,12,44"
+    },
+    {
+      'service_data_uuid': "00001103-0000-1000-8000-00805F9B34FB",
+      'service_data': "4,54,1"
+    },
+    {
+      'service_data_uuid': "00001104-0000-1000-8000-00805F9B34FB",
+      'service_data': "33,22,44"
     }
   ]
 
@@ -234,12 +279,21 @@ class FilteringTest(BaseTestClass):
       'include_tx_power_level'] is not False):
       advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     if 'manufacturer_specific_data_id' in filters.keys():
-      advertise_droid.addAdvertiseDataManufacturerId(
-        filters['manufacturer_specific_data_id'],
-        filters['manufacturer_specific_data'])
-      scan_droid.setScanFilterManufacturerData(
-        filters['manufacturer_specific_data_id'],
-        filters['manufacturer_specific_data'])
+      if 'manufacturer_specific_data_mask' in filters.keys():
+        advertise_droid.addAdvertiseDataManufacturerId(
+          filters['manufacturer_specific_data_id'],
+          filters['manufacturer_specific_data'])
+        scan_droid.setScanFilterManufacturerData(
+          filters['manufacturer_specific_data_id'],
+          filters['manufacturer_specific_data'],
+          filters['manufacturer_specific_data_mask'])
+      else:
+        advertise_droid.addAdvertiseDataManufacturerId(
+          filters['manufacturer_specific_data_id'],
+          filters['manufacturer_specific_data'])
+        scan_droid.setScanFilterManufacturerData(
+          filters['manufacturer_specific_data_id'],
+          filters['manufacturer_specific_data'])
     if 'service_data' in filters.keys():
       advertise_droid.addAdvertiseDataServiceData(
         filters['service_data_uuid'],

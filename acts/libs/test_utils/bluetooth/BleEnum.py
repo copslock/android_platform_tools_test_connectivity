@@ -118,3 +118,12 @@ class BluetoothGattDescriptor(Enum):
 class BluetoothGattService(Enum):
   SERVICE_TYPE_PRIMARY = 0
   SERVICE_TYPE_SECONDARY = 1
+
+class BluetoothGattConnectionPriority(Enum):
+  CONNECTION_PRIORITY_BALANCED = 0
+  CONNECTION_PRIORITY_HIGH = 1
+  CONNECTION_PRIORITY_LOW_POWER = 2
+
+class BluetoothGatt(Enum):
+  GATT_SUCCESS = 0
+  GATT_FAILURE = 0x101
