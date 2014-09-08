@@ -13,8 +13,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import android
-from test_utils.blescan_api_helper import *
+from test_utils.bluetooth.blescan_api_helper import *
 
 
 class BleAdvertiseVerificationError(Exception):

@@ -14,7 +14,7 @@
 # the License.
 
 import android
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 
 class BleScanVerificationError(Exception):

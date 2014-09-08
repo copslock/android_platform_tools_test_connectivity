@@ -28,8 +28,8 @@ import time
 
 from base_test import BaseTestClass
 from queue import Empty
-from test_utils.BleEnum import *
-from test_utils.ble_helper_functions import *
+from test_utils.bluetooth.BleEnum import *
+from test_utils.bluetooth.ble_helper_functions import *
 
 
 class BleDistanceTest(BaseTestClass):
