@@ -357,7 +357,7 @@ def start_advertising(start_index, total_advertise, droid, event_dispatcher):
     callbackIdx = advertise_callback_index[index]
     settingsIdx = advertise_settings_index[index]
     dataIdx = advertise_data_index[index]
-    status = startbleadvertise(droid, callbackIdx, dataIdx, settingsIdx)
+    droid.startBleAdvertising(callbackIdx, dataIdx, settingsIdx)
     if status is True:
       expected_result = expected_advertise_result[index]
       callback = advertise_callback_index[index]
@@ -374,7 +374,7 @@ def stop_advertising(start_index, total_advertise, droid):
   total_advertise = start_index + total_advertise
   for index in range(start_index, total_advertise):
     callbackIdx = advertise_callback_index[index]
-    status = stopbleadvertise(droid, callbackIdx)
+    droid.stopBleAdvertising(callbackIdx)
 
 
 def modify_expected_result(index, event_name):
@@ -455,7 +455,7 @@ def verify_advertise_settings_advertise_mode(testcase, droid, expected_advertise
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering settings object's index.")
-    settings_index = build_advertisesettings(droid)
+    settings_index = droid.buildAdvertisementSettings()
     testcase.log.debug("Step 4: Get the filtering setting's filtering mode.")
     advertise_mode = droid.getAdvertisementSettingsMode(settings_index)
     if expected_advertise_mode is not advertise_mode:
@@ -474,7 +474,7 @@ def verify_advertise_settings_tx_power_level(testcase, droid, expected_advertise
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering settings object's index.")
-    settings_index = build_advertisesettings(droid)
+    settings_index = droid.buildAdvertisementSettings()
     testcase.log.debug("Step 4: Get the filtering setting's tx power level.")
     advertise_tx_power_level = droid.getAdvertisementSettingsTxPowerLevel(settings_index)
     if expected_advertise_tx_power is not advertise_tx_power_level:
@@ -493,7 +493,7 @@ def verify_advertise_settings_is_connectable(testcase, droid, expected_is_connec
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering settings object's index.")
-    settings_index = build_advertisesettings(droid)
+    settings_index = droid.buildAdvertisementSettings()
     testcase.log.debug("Step 4: Get the filtering setting's is connectable value.")
     is_connectable = droid.getAdvertisementSettingsIsConnectable(settings_index)
     if expected_is_connectable is not is_connectable:
@@ -512,7 +512,7 @@ def verify_advertise_data_service_uuids(testcase, droid, expected_service_uuids)
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering data object's index.")
-    data_index = build_advertisedata(droid)
+    data_index = droid.buildAdvertiseData()
     testcase.log.debug("Step 4: Get the filtering data's service uuids.")
     service_uuids = droid.getAdvertiseDataServiceUuids(data_index)
     if expected_service_uuids != service_uuids:
@@ -532,7 +532,7 @@ def verify_advertise_data_service_data(testcase, droid, expected_service_data_uu
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering data object's index.")
-    data_index = build_advertisedata(droid)
+    data_index = droid.buildAdvertiseData()
     testcase.log.debug("Step 5: Get the filtering data's service data.")
     service_data = droid.getAdvertiseDataServiceData(data_index, expected_service_data_uuid)
     if expected_service_data != service_data:
@@ -555,7 +555,7 @@ def verify_advertise_data_manufacturer_id(testcase, droid, expected_manufacturer
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering data object's index.")
-    data_index = build_advertisedata(droid)
+    data_index = droid.buildAdvertiseData()
     testcase.log.debug("Step 5: Get the filtering data's manufacturer specific data.")
     manufacturer_specific_data = droid.getAdvertiseDataManufacturerSpecificData(data_index, expected_manufacturer_id)
     if expected_manufacturer_specific_data != manufacturer_specific_data:
@@ -576,7 +576,7 @@ def verify_advertise_data_include_tx_power_level(testcase, droid, expected_inclu
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering settings object's index.")
-    data_index = build_advertisedata(droid)
+    data_index = droid.buildAdvertiseData()
     testcase.log.debug("Step 4: Get the filtering data's include tx power level.")
     include_tx_power_level = droid.getAdvertiseDataIncludeTxPowerLevel(data_index)
     if expected_include_tx_power_level is not include_tx_power_level:
@@ -596,7 +596,7 @@ def verify_advertise_data_include_device_name(testcase, droid, expected_include_
         testcase.log.debug(str(error))
         return False
     testcase.log.debug("Step 3: Get a filtering settings object's index.")
-    data_index = build_advertisedata(droid)
+    data_index = droid.buildAdvertiseData()
     testcase.log.debug("Step 4: Get the filtering data's include device name.")
     include_device_name = droid.getAdvertiseDataIncludeDeviceName(data_index)
     if expected_include_device_name is not include_device_name:
@@ -613,7 +613,7 @@ def verify_invalid_advertise_settings_advertise_mode(testcase, droid,
                                                      expected_advertise_mode):
     try:
         droid.setAdvertisementSettingsAdvertiseMode(expected_advertise_mode)
-        build_advertisesettings(droid)
+        droid.buildAdvertisementSettings()
         testcase.log.debug("Set Advertise settings invalid filtering mode passed "
                                 + " with input as " + str(expected_advertise_mode))
         return False
@@ -627,7 +627,7 @@ def verify_invalid_advertise_settings_tx_power_level(testcase, droid,
                                                      expected_advertise_tx_power):
     try:
         droid.setAdvertisementSettingsTxPowerLevel(expected_advertise_tx_power)
-        build_advertisesettings(droid)
+        droid.buildAdvertisementSettings()
         testcase.log.debug("Set Advertise settings invalid tx power level "
                                 + " with input as " + str(expected_advertise_tx_power))
         return False
@@ -641,7 +641,7 @@ def verify_invalid_advertise_data_service_uuids(testcase, droid,
                                                 expected_service_uuids):
     try:
         droid.setAdvertiseDataSetServiceUuids(expected_service_uuids)
-        build_advertisedata(droid)
+        droid.buildAdvertiseData()
         testcase.log.debug("Set Advertise Data service uuids "
                                 + " with input as " + str(expected_service_uuids))
         return False
@@ -655,7 +655,7 @@ def verify_invalid_advertise_data_service_data(testcase, droid,
                                                expected_service_data_uuid, expected_service_data):
     try:
         droid.addAdvertiseDataServiceData(expected_service_data_uuid, expected_service_data)
-        build_advertisedata(droid)
+        droid.buildAdvertiseData()
         testcase.log.debug("Set Advertise Data service data uuid: " + str(
             expected_service_data_uuid) + ", service data: " + str(expected_service_data))
         return False
@@ -672,7 +672,7 @@ def verify_invalid_advertise_data_manufacturer_id(testcase, droid,
     try:
         droid.addAdvertiseDataManufacturerId(expected_manufacturer_id,
                                              expected_manufacturer_specific_data)
-        build_advertisedata(droid)
+        droid.buildAdvertiseData()
         testcase.log.debug("Set Advertise Data manufacturer id: " + str(
                                 expected_manufacturer_id) + ", manufacturer specific data: " + str(
                                 expected_manufacturer_specific_data))

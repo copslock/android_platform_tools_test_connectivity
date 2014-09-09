@@ -20,7 +20,7 @@
 Advertisement Settings and Advertise Data Values to build Advertise Data
 """
 
-from test_utils.BleEnum import *
+from test_utils.bluetooth.BleEnum import *
 
 #Manufacturer ID's
 MANUFACTURER_ID = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
