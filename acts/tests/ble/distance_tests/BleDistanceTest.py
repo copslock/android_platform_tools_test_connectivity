@@ -34,7 +34,7 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class BleDistanceTest(BaseTestClass):
   TAG = "BleDistanceTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
   default_timeout = 10
 
@@ -80,27 +80,23 @@ class BleDistanceTest(BaseTestClass):
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
     advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
+    test_result = advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
     if test_result is False:
       self.log.debug("Advertising failed.")
       return test_result
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
+    test_result = scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_event_name, ([]), self.default_timeout)
     try:
       event_info = scan_event_dispatcher.pop_event(expected_event_name,
                                                    10)
-      self.log.debug("Unexpectedly found an advertiser: " + pprint.pformat(
-        event_info))
+      self.log.debug(" ".join(["Unexpectedly found an advertiser:",pprint.pformat(event_info)]))
       test_result = False
     except Empty as error:
       self.log.debug("No events were found as expected.")

@@ -20,13 +20,16 @@ after you set all attributes of each object. If this test suite doesn't pass,
 then other test suites utilising Ble Scanner will also fail.
 """
 
+# TODO: Refactor to use less code and be more effective.
+# TODO: Add documentation to the refactored code.
+
 import pprint
 from queue import Empty
 
 from base_test import BaseTestClass
 from test_utils.bluetooth.ble_scan_utils import *
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import BleScanResultError
 
 
 class BleScanVerificationError(Exception):
@@ -43,7 +46,7 @@ class BleSetScanFilterError(Exception):
 
 class BleScanApiTest(BaseTestClass):
   TAG = "BleScanApiTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
 
   def __init__(self, controllers):
@@ -116,7 +119,7 @@ class BleScanApiTest(BaseTestClass):
     :return: False at any point something doesn't match. True if everything
     matches.
     """
-    filter_list = gen_filterlist(droid)
+    filter_list = droid.genFilterList()
     if 'ScanSettings' in input.keys():
       try:
         droid.setScanSettings(input['ScanSettings'][0],
@@ -124,34 +127,31 @@ class BleScanApiTest(BaseTestClass):
                               input['ScanSettings'][2],
                               input['ScanSettings'][3])
       except android.SL4AAPIError as error:
-        self.log.debug("Set Scan Settings failed with: " + str(error))
+        self.log.debug(" ".join(["Set Scan Settings failed with:",str(error)]))
         return False
     if 'ScanFilterDeviceName' in input.keys():
       try:
         droid.setScanFilterDeviceName(input['ScanFilterDeviceName'])
       except android.SL4AAPIError as error:
-        self.log.debug(
-          "Set Scan Filter Device Name failed with: " + str(error))
+        self.log.debug(" ".join(["Set Scan Filter Device Name failed with:",str(error)]))
         return False
     if 'ScanFilterDeviceAddress' in input.keys():
       try:
         droid.setScanFilterDeviceAddress(
           input['ScanFilterDeviceAddress'])
       except android.SL4AAPIError as error:
-        self.log.debug(
-          "Set Scan Filter Device Address failed with: " + str(error))
+        self.log.debug(" ".join(["Set Scan Filter Device Address failed with:",str(error)]))
         return False
-    if 'ScanFilterManufacturerDataId' in input.keys() \
-      and 'ScanFilterManufacturerDataMask' in input.keys():
+    if ('ScanFilterManufacturerDataId' in input.keys()
+        and 'ScanFilterManufacturerDataMask' in input.keys()):
       try:
         droid.setScanFilterManufacturerData(
           input['ScanFilterManufacturerDataId'],
           input['ScanFilterManufacturerData'],
           input['ScanFilterManufacturerDataMask'])
       except android.SL4AAPIError as error:
-        self.log.debug(
-          "Set Scan Filter Manufacturer info with data mask failed with: " + str(
-            error))
+        self.log.debug(" ".join(["Set Scan Filter Manufacturer info with data mask failed with:",
+                                 str(error)]))
         return False
     if ('ScanFilterManufacturerDataId' in input.keys()
         and 'ScanFilterManufacturerData' in input.keys()
@@ -161,16 +161,14 @@ class BleScanApiTest(BaseTestClass):
           input['ScanFilterManufacturerDataId'],
           input['ScanFilterManufacturerData'])
       except android.SL4AAPIError as error:
-        self.log.debug(
-          "Set Scan Filter Manufacturer info failed with: " + str(
-            error))
+        self.log.debug(" ".join(["Set Scan Filter Manufacturer info failed with: ",str(error)]))
         return False
     if 'ScanFilterServiceUuid' in input.keys() and 'ScanFilterServiceMask' in input.keys():
       droid.setScanFilterServiceUuid(input['ScanFilterServiceUuid'],
                                      input['ScanFilterServiceMask'])
 
     input = self._format_defaults(input)
-    scan_settings_index = build_scansettings(droid)
+    scan_settings_index = droid.buildScanSetting()
     scan_settings = (droid.getScanSettingsCallbackType(scan_settings_index),
                      droid.getScanSettingsReportDelayMillis(
                        scan_settings_index),
@@ -178,41 +176,31 @@ class BleScanApiTest(BaseTestClass):
                      droid.getScanSettingsScanResultType(
                        scan_settings_index))
 
-    scan_filter_index = build_scanfilter(droid, filter_list)
-    device_name_filter = droid.getScanFilterDeviceName(filter_list,
-                                                       scan_filter_index)
-    device_address_filter = droid.getScanFilterDeviceAddress(filter_list,
-                                                             scan_filter_index)
-    manufacturer_id = droid.getScanFilterManufacturerId(filter_list,
-                                                        scan_filter_index)
-    manufacturer_data = droid.getScanFilterManufacturerData(filter_list,
-                                                            scan_filter_index)
+    scan_filter_index = droid.buildScanFilter(filter_list)
+    device_name_filter = droid.getScanFilterDeviceName(filter_list, scan_filter_index)
+    device_address_filter = droid.getScanFilterDeviceAddress(filter_list, scan_filter_index)
+    manufacturer_id = droid.getScanFilterManufacturerId(filter_list, scan_filter_index)
+    manufacturer_data = droid.getScanFilterManufacturerData(filter_list, scan_filter_index)
 
     if scan_settings != input['ScanSettings']:
-      self.log.debug("Scan Settings did not match. expected: " + input[
-        'ScanSettings'] + ", found: " + str(scan_settings))
+      self.log.debug(" ".join(["Scan Settings did not match. expected:",input['ScanSettings'],
+                               ", found:",str(scan_settings)]))
       return False
     if device_name_filter != input['ScanFilterDeviceName']:
-      self.log.debug(
-        "Scan Filter device name did not match. expected: " + input[
-          'ScanFilterDeviceName'] + ", found: " + device_name_filter)
+      self.log.debug(" ".join(["Scan Filter device name did not match. expected:",
+                               input['ScanFilterDeviceName'],", found:",device_name_filter]))
       return False
     if device_address_filter != input['ScanFilterDeviceAddress']:
-      self.log.debug(
-        "Scan Filter address name did not match. expected: " + input[
-          'ScanFilterDeviceAddress'] + ", found: " + device_address_filter)
+      self.log.debug(" ".join(["Scan Filter address name did not match. expected:",
+                               input['ScanFilterDeviceAddress'],", found: ",device_address_filter]))
       return False
     if manufacturer_id != input['ScanFilterManufacturerDataId']:
-      self.log.debug(
-        "Scan Filter manufacturer data id did not match. expected: " +
-        input[
-          'ScanFilterManufacturerDataId'] + ", found: " + manufacturer_id)
+      self.log.debug(" ".join(["Scan Filter manufacturer data id did not match. expected:",
+                              input['ScanFilterManufacturerDataId'],", found:",manufacturer_id]))
       return False
     if manufacturer_data != input['ScanFilterManufacturerData']:
-      self.log.debug(
-        "Scan Filter manufacturer data did not match. expected: " +
-        input[
-          'ScanFilterManufacturerData'] + ", found: " + manufacturer_data)
+      self.log.debug(" ".join(["Scan Filter manufacturer data did not match. expected:",
+                               input['ScanFilterManufacturerData'],", found:",manufacturer_data]))
       return False
     if 'ScanFilterManufacturerDataMask' in input.keys():
       manufacturer_data_mask = droid.getScanFilterManufacturerDataMask(
@@ -220,9 +208,9 @@ class BleScanApiTest(BaseTestClass):
         scan_filter_index)
       if manufacturer_data_mask != input[
         'ScanFilterManufacturerDataMask']:
-        self.log.debug(
-          "Manufacturer data mask did not match. expected: " + input[
-            'ScanFilterManufacturerDataMask'] + ", found: " + manufacturer_data_mask)
+        self.log.debug(" ".join(["Manufacturer data mask did not match. expected:",
+                                 input['ScanFilterManufacturerDataMask'],", found:",
+                                 manufacturer_data_mask]))
         return False
     if 'ScanFilterServiceUuid' in input.keys() and 'ScanFilterServiceMask' in input.keys():
       expected_service_uuid = input['ScanFilterServiceUuid']
@@ -232,14 +220,12 @@ class BleScanApiTest(BaseTestClass):
       service_mask = droid.getScanFilterServiceUuidMask(filter_list,
                                                         scan_filter_index)
       if service_uuid != expected_service_uuid.lower():
-        self.log.debug(
-          "Service uuid did not match. expected: " + expected_service_uuid
-          + ", found: " + service_uuid)
+        self.log.debug(" ".join(["Service uuid did not match. expected:",expected_service_uuid,
+          ", found: ",service_uuid]))
         return False
       if service_mask != expected_service_mask.lower():
-        self.log.debug(
-          "Service mask did not match. expected: " + expected_service_mask
-          + ", found: " + service_mask)
+        self.log.debug(" ".join(["Service mask did not match. expected: ",expected_service_mask,
+                                 ", found: ",service_mask]))
         return False
     self.scan_settings_index = scan_settings_index
     self.filter_list = filter_list
@@ -269,12 +255,10 @@ class BleScanApiTest(BaseTestClass):
     if not test_result:
       self.log.debug("Could not setup ble scanner.")
       return test_result
-    test_result = startblescan(self.droid, self.filter_list,
-                               self.scan_settings_index,
-                               self.scan_callback)
+    self.droid.startBleScan(self.filter_list,self.scan_settings_index,
+                                        self.scan_callback)
     try:
-      self.log.debug("Step 4: Stop Bluetooth Le Scan.")
-      test_result = stopblescan(self.droid, self.scan_callback)
+      self.droid.stopBleScan(self.scan_callback)
     except BleScanResultError as error:
       self.log.debug(str(error))
       test_result = False

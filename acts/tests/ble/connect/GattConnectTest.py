@@ -23,14 +23,13 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class GattConnectTest(BaseTestClass):
   TAG = "GattConnectTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
   default_timeout = 10
 
   def __init__(self, controllers):
     BaseTestClass.__init__(self, self.TAG, controllers)
     self.tests = (
-      "test_swag",
       "test_gatt_connect",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
@@ -149,7 +148,7 @@ class GattConnectTest(BaseTestClass):
                                                 descriptor_input)
     return characteristic_list,descriptor_list
 
-  def test_swag(self):
+  def test_gatt_connect(self):
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
     gattServerCallback = advertise_droid.createGattServerCallback()
@@ -167,8 +166,8 @@ class GattConnectTest(BaseTestClass):
       advertise_droid.bluetoothGattAddCharacteristicToService(gattService,
                                                               characteristic)
     advertise_droid.gattServerAddService(gattServer, gattService)
-    expected_add_service_event_name = "GattServer" + str(
-      gattServerCallback) + "onServiceAdded"
+    expected_add_service_event_name = "".join(["GattServer",str(gattServerCallback),
+                                              "onServiceAdded"])
     worker = advertise_event_dispatcher.handle_event(
       self.gatt_on_service_added_handler,
       expected_add_service_event_name, (["2649a34c-aa23-44a1-af1c-f560b0084e44"]))
@@ -184,11 +183,8 @@ class GattConnectTest(BaseTestClass):
     advertise_droid.setAdvertiseDataSetServiceUuids(["00000000-0000-1000-8000-00805f9b34fb"])
     advertise_data, advertise_settings, advertise_callback = (
       generate_ble_advertise_objects(advertise_droid))
-    startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    expected_onsuccess_event = ("BleAdvertise" + str(advertise_callback)
-                                     + "onSuccess")
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    expected_onsuccess_event = "".join(["BleAdvertise",str(advertise_callback),"onSuccess"])
     advertise_worker = advertise_event_dispatcher.handle_event(
       self.bleadvertise_verify_onsuccess_handler,
       expected_onsuccess_event, ([]), self.default_timeout)
@@ -214,6 +210,10 @@ class GattConnectTest(BaseTestClass):
       scan_droid,
       scan_event_dispatcher,
       bluetooth_gatt)
+    scan_droid.bluetoothGattGetServices(bluetooth_gatt)
+    scan_droid.bluetoothGattGetDevice(bluetooth_gatt)
+    scan_droid.bluetoothGattBeginReliableWrite(bluetooth_gatt)
+    time.sleep(10) #temporary testing purposes.
     scan_droid.bluetoothGattDisconnect(gatt_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
@@ -224,9 +224,8 @@ class GattConnectTest(BaseTestClass):
       "Step 3: Create default scan filter, scan settings, and scan callback")
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
+    test_result = scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     self.log.debug(
       "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
 
@@ -235,18 +234,17 @@ class GattConnectTest(BaseTestClass):
       expected_event_name, (), None)
     try:
       mac_address = worker.result()
-      self.log.debug("Mac address found: " + mac_address)
+      self.log.debug(" ".join(["Mac address found:",mac_address]))
     except Empty as error:
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
     self.log.debug("Creating Gatt Callback")
     gatt_callback = scan_droid.createGattCallback()
-    self.log.debug("Gatt Connect to mac address " + mac_address)
+    self.log.debug(" ".join(["Gatt Connect to mac address ",mac_address]))
     bluetooth_gatt = scan_droid.connectGatt(gatt_callback, mac_address,
                                             autoconnect)
-    expected_event_name = "GattConnect" + str(
-      gatt_callback) + "onConnectionStateChange"
+    expected_event_name = "".join(["GattConnect",str(gatt_callback),"onConnectionStateChange"])
     expected_status = GattConnectionState.STATE_CONNECTED.value
     worker = scan_event_dispatcher.handle_event(
       self.gatt_on_connection_state_change,
@@ -255,23 +253,9 @@ class GattConnectTest(BaseTestClass):
       self.log.debug(worker.result())
     except Empty as error:
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
 
     return test_result, bluetooth_gatt, gatt_callback
-
-  # TODO: Finish test case!
-  def test_gatt_connect(self):
-    self.log.debug("Step 1: Setting up environment")
-    scan_droid, scan_event_dispatcher = self.droid, self.ed
-    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    autoconnect = True
-    test_result, gatt_callback = self.setup_gatt_connection(scan_droid,
-                                                            advertise_droid,
-                                                            scan_event_dispatcher,
-                                                            autoconnect)
-    scan_droid.bluetoothGattDisconnect(gatt_callback)
-
-    return test_result
 
   def _trigger_on_services_discovered_callback(self, scan_droid,
                                                scan_event_dispatcher,
@@ -279,8 +263,8 @@ class GattConnectTest(BaseTestClass):
                                                expected_status):
     test_result = True
     if scan_droid.bluetoothGattDiscoverServices(bluetooth_gatt):
-      expected_services_discovered_event_name = ("GattConnect" + str(
-      bluetooth_gatt) + "onServicesDiscovered")
+      expected_services_discovered_event_name = "".join(["GattConnect",str(bluetooth_gatt),
+                                                         "onServicesDiscovered"])
       worker = scan_event_dispatcher.handle_event(
         self.gatt_on_services_discovered_handler,
         expected_services_discovered_event_name,
@@ -290,7 +274,7 @@ class GattConnectTest(BaseTestClass):
         test_result = worker.result(self.default_timeout)
       except Empty as error:
         test_result = False
-        self.log.debug("Test failed with: " + str(error))
+        self.log.debug(" ".join(["Test failed with: ",str(error)]))
     else:
       test_result = False
     return test_result
@@ -301,8 +285,8 @@ class GattConnectTest(BaseTestClass):
     bluetooth_gatt):
     test_result = True
     if scan_droid.bluetoothGattReadRSSI(bluetooth_gatt):
-      expected_read_rssi_event_name = ("GattConnect" + str(bluetooth_gatt) +
-                                    "onReadRemoteRssi")
+      expected_read_rssi_event_name = "".join(["GattConnect",str(bluetooth_gatt),
+                                               "onReadRemoteRssi"])
       worker = scan_event_dispatcher.handle_event(
         self.gatt_on_read_remote_rssi_handler,
         expected_read_rssi_event_name, (), self.default_timeout)
@@ -310,7 +294,7 @@ class GattConnectTest(BaseTestClass):
         self.log.debug(worker.result(self.default_timeout))
       except Empty as error:
         test_result = False
-        self.log.debug("Test failed with: " + str(error))
+        self.log.debug(" ".join(["Test failed with:",str(error)]))
     else:
       test_result = False
     return test_result

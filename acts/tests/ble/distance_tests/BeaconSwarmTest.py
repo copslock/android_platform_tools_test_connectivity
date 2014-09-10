@@ -36,9 +36,9 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class BeaconSwarmTest(BaseTestClass):
   TAG = "BeaconSwarmTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
-  default_timeout = 20
+  default_timeout = 10
 
   def __init__(self, controllers):
     BaseTestClass.__init__(self, self.TAG, controllers)
@@ -55,6 +55,8 @@ class BeaconSwarmTest(BaseTestClass):
     time.sleep(self.default_timeout)
     self.ed1.start()
 
+  ble_device_addresses = []
+
   def blescan_verify_onbatchscanresult_event_handler(self, event):
     """
     An event handler that validates the onBatchScanResult
@@ -65,6 +67,14 @@ class BeaconSwarmTest(BaseTestClass):
     test_result = True
     self.log.debug("Verifying onBatchScanResult event")
     self.log.debug(pprint.pformat(event))
+    print(pprint.pformat(event))
+    for event in event['data']['Results']:
+      address = event['deviceInfo']['address']
+      name = event['deviceName']
+      combined_name = address + name
+      if combined_name not in self.ble_device_addresses:
+        self.ble_device_addresses.append(combined_name)
+
     return test_result
 
   def blescan_verify_onscanresult_event_handler(self, event):
@@ -89,26 +99,31 @@ class BeaconSwarmTest(BaseTestClass):
     3. Verify that at least one onBatchScanResult callback was triggered.
     :return: test_result: bool
     """
+    test_result = True
     self.attenuators[0].set_atten(0, 0)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
-    scan_droid.setScanSettings(1, 0, 0, 0)
+    scan_droid.setScanSettings(1, 1000, 0, 0)
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onBatchScanResult"
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    worker = scan_event_dispatcher.handle_event(
-      self.blescan_verify_onbatchscanresult_event_handler,
-      expected_event_name, ([]), self.default_timeout)
-    try:
-      self.log.debug(worker.result(self.default_timeout))
-    except Empty as error:
-      test_result = False
-      self.log.debug("Test failed with Empty error: " + str(error))
-    except concurrent.futures._base.TimeoutError as error:
-      test_result = False
-      self.log.debug("Test failed with TimeoutError: " + str(error))
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onBatchScanResult"])
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    n = 0
+    while n < 100:
+      worker = scan_event_dispatcher.handle_event(
+        self.blescan_verify_onbatchscanresult_event_handler,
+        expected_event_name, ([]), self.default_timeout)
+      try:
+        self.log.debug(worker.result(self.default_timeout))
+      except Empty as error:
+        test_result = False
+        self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
+      except concurrent.futures._base.TimeoutError as error:
+        test_result = False
+        self.log.debug(" ".join(["Test failed with TimeoutError:",str(error)]))
+      n+=1
     scan_droid.stopBleScan(scan_callback)
+    print (self.ble_device_addresses) #temporary
+    print (str(len(self.ble_device_addresses))) #temporary
     return test_result
 
   def test_swarm_1000_on_scan_result(self):
@@ -129,9 +144,8 @@ class BeaconSwarmTest(BaseTestClass):
     while n < 1000:
       filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
         scan_droid)
-      expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
-      startblescan(scan_droid, filter_list, scan_settings,
-                   scan_callback)
+      expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
+      scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
       worker = scan_event_dispatcher.handle_event(
         self.blescan_verify_onscanresult_event_handler,
         expected_event_name, ([]), self.default_timeout)
@@ -139,10 +153,10 @@ class BeaconSwarmTest(BaseTestClass):
         self.log.debug(worker.result(self.default_timeout))
       except Empty as error:
         test_result = False
-        self.log.debug("Test failed with Empty error: " + str(error))
+        self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
       except concurrent.futures._base.TimeoutError as error:
         test_result = False
-        self.log.debug("Test failed with TimeoutError: " + str(error))
+        self.log.debug(" ".join(["Test failed with TimeoutError:",str(error)]))
       scan_droid.stopBleScan(scan_callback)
       n += 1
     return test_result

@@ -26,7 +26,7 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class FilteringTest(BaseTestClass):
   TAG = "FilteringTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
   default_timeout = 20
 
@@ -92,7 +92,14 @@ class FilteringTest(BaseTestClass):
     {
       'service_data_uuid': "00001104-0000-1000-8000-00805F9B34FB",
       'service_data': "33,22,44"
-    }
+    },
+    {
+      'service_uuid': "00000000-0000-1000-8000-00805f9b34fb",
+      'service_mask': "00000000-0000-1000-8000-00805f9b34fb",
+    },
+    {
+      'service_uuid': "00000000-0000-1000-8000-00805f9b34fb",
+    },
   ]
 
   valid_filter_variants = {
@@ -166,39 +173,35 @@ class FilteringTest(BaseTestClass):
     callback_type = event['data']['CallbackType']
     if 'callback_type' in filters.keys():
       if filters['callback_type'] != callback_type:
-        self.log.debug(
-          "Expected callback type: " + str(filters['callback_type'])
-          + ", Found callback type: " + str(callback_type))
+        self.log.debug(" ".join(["Expected callback type:",str(filters['callback_type']),
+                                 ", Found callback type:",str(callback_type)]))
       test_result = False
     elif self.default_callback != callback_type:
-      self.log.debug(
-        "Expected callback type: " + str(self.default_callback)
-        + ", Found callback type: " + str(callback_type))
+      self.log.debug(" ".join(["Expected callback type:",str(self.default_callback),
+                               ", Found callback type:",
+                               str(callback_type)]))
       test_result = False
     if 'include_device_name' in filters.keys() and filters[
       'include_device_name'] is not False:
       if event['data']['Result']['deviceName'] != filters[
         'include_device_name']:
-        self.log.debug(
-          "Expected device name: " + filters['include_device_name']
-          + ", Found device name: " + event['data']['Result']['deviceName']
-        )
+        self.log.debug(" ".join(["Expected device name:",filters['include_device_name'],
+                                 ", Found device name:",
+                                 event['data']['Result']['deviceName']]))
         test_result = False
     elif 'deviceName' in event['data']['Result'].keys():
-      self.log.debug("Device name was found when it wasn't meant to be "
-                     "included.")
+      self.log.debug("Device name was found when it wasn't meant to be included.")
       test_result = False
     if ('include_tx_power_level' in filters.keys() and filters[
       'include_tx_power_level'] is not False and event['data']['Result'][
       'txPowerLevel'] != JavaInteger.MIN.value):
       if not event['data']['Result']['txPowerLevel']:
-        self.log.debug("Expected to find tx power level in event but found "
-                       "none.")
+        self.log.debug("Expected to find tx power level in event but found none.")
         test_result = False
     elif (event['data']['Result']['txPowerLevel'] !=
             JavaInteger.MIN.value):
-      self.log.debug("Tx power level found as min java integer, was not meant "
-                     + "to be included in the advertisement.")
+      self.log.debug(" ".join(["Tx power level found as min java integer, was not meant",
+                              "to be included in the advertisement."]))
       test_result = False
     if not event['data']['Result']['rssi']:
       self.log.debug("Expected rssi in the advertisement, found none.")
@@ -214,39 +217,35 @@ class FilteringTest(BaseTestClass):
     if 'is_connectable' in settings_in_effect.keys():
       if (event['data']['SettingsInEffect']['isConnectable'] !=
             settings_in_effect['is_connectable']):
-        self.log.debug("Expected is connectable value: " +
-                       str(settings_in_effect['is_connectable']) +
-                       " Actual is connectable value: " +
-                       str(event['data']['SettingsInEffect']['isConnectable']))
+        self.log.debug(" ".join(["Expected is connectable value:",
+                       str(settings_in_effect['is_connectable']),
+                       "Actual is connectable value:",
+                       str(event['data']['SettingsInEffect']['isConnectable'])]))
         test_result = False
     elif (event['data']['SettingsInEffect']['isConnectable'] !=
             self.default_is_connectable):
-      self.log.debug("Default value for isConnectable did not match what "
-                     "was found.")
+      self.log.debug("Default value for isConnectable did not match what was found.")
       test_result = False
     if 'mode' in settings_in_effect.keys():
       if (event['data']['SettingsInEffect']['mode'] !=
             settings_in_effect['mode']):
-        self.log.debug("Expected mode value: " +
-                       str(settings_in_effect['mode']) +
-                       " Actual mode value: " +
-                       str(event['data']['SettingsInEffect']['mode']))
+        self.log.debug(" ".join(["Expected mode value:",str(settings_in_effect['mode']),
+                                "Actual mode value:",
+                                str(event['data']['SettingsInEffect']['mode'])]))
         test_result = False
     elif (event['data']['SettingsInEffect']['mode'] !=
             self.default_advertise_mode):
-      self.log.debug("Default value for filtering mode did not match what "
-                     "was found.")
+      self.log.debug("Default value for filtering mode did not match what was found.")
       test_result = False
     if 'tx_power_level' in settings_in_effect.keys():
       if (event['data']['SettingsInEffect']['txPowerLevel'] ==
             JavaInteger.MIN.value):
-        self.log.debug("Expected tx power level was not meant to be " + str(
-          JavaInteger.MIN.value))
+        self.log.debug(" ".join(["Expected tx power level was not meant to be",
+                                str(JavaInteger.MIN.value)]))
         test_result = False
     elif (event['data']['SettingsInEffect']['txPowerLevel'] !=
             self.default_tx_power_level):
-      self.log.debug("Default value for tx power level did not match what "
-                     "was found.")
+      self.log.debug("Default value for tx power level did not match what was found.")
       test_result = False
     return test_result
 
@@ -256,22 +255,17 @@ class FilteringTest(BaseTestClass):
     (filters, settings_in_effect) = params
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    self.log.debug("Settings in effect: " + pprint.pformat(settings_in_effect))
-    self.log.debug("filters: " + pprint.pformat(filters))
+    self.log.debug(" ".join(["Settings in effect:",pprint.pformat(settings_in_effect)]))
+    self.log.debug(" ".join(["filters:",pprint.pformat(filters)]))
     test_result = True
     if 'is_connectable' in settings_in_effect.keys():
-      advertise_droid.setAdvertisementSettingsIsConnectable(settings_in_effect[
-        'is_connectable'])
+      advertise_droid.setAdvertisementSettingsIsConnectable(settings_in_effect['is_connectable'])
     if 'mode' in settings_in_effect.keys():
-      advertise_droid.setAdvertisementSettingsAdvertiseMode(settings_in_effect[
-        'mode'])
+      advertise_droid.setAdvertisementSettingsAdvertiseMode(settings_in_effect['mode'])
     if 'tx_power_level' in settings_in_effect.keys():
-      advertise_droid.setAdvertisementSettingsTxPowerLevel(settings_in_effect[
-        'tx_power_level'])
-    filter_list = gen_filterlist(scan_droid)
-    if ('include_device_name' in filters.keys() and filters[
-      'include_device_name'] is
-    not False):
+      advertise_droid.setAdvertisementSettingsTxPowerLevel(settings_in_effect['tx_power_level'])
+    filter_list = scan_droid.genFilterList()
+    if 'include_device_name' in filters.keys() and filters['include_device_name'] is not False:
       advertise_droid.setAdvertiseDataIncludeDeviceName(True)
       filters['include_device_name'] = advertise_droid.bluetoothGetLocalName()
       scan_droid.setScanFilterDeviceName(filters['include_device_name'])
@@ -305,6 +299,13 @@ class FilteringTest(BaseTestClass):
       for pair in filters['manufacturer_specific_data_list']:
         (manu_id, manu_data) = pair
         advertise_droid.addAdvertiseDataManufacturerId(manu_id, manu_data)
+    if 'service_mask' in filters.keys():
+      scan_droid.setScanFilterServiceUuid(filters['service_uuid'],
+                                          filters['service_mask'])
+      advertise_droid.setAdvertiseDataSetServiceUuids([filters['service_uuid']])
+    elif 'service_uuid' in filters.keys():
+      scan_droid.setScanFilterServiceUuid(filters['service_uuid'])
+      advertise_droid.setAdvertiseDataSetServiceUuids([filters['service_uuid']])
     scan_droid.buildScanFilter(filter_list)
     advertise_data, advertise_settings, advertise_callback = (
       generate_ble_advertise_objects(advertise_droid))
@@ -312,29 +313,26 @@ class FilteringTest(BaseTestClass):
       ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
       ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
       ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
-    scan_settings = build_scansettings(scan_droid)
-    scan_callback = gen_scancallback(scan_droid)
-    startbleadvertise(advertise_droid, advertise_data, advertise_settings,
-                      advertise_callback)
-    expected_advertise_event_name = ("BleAdvertise" + str(advertise_callback)
-                                     + "onSuccess")
+    scan_settings = scan_droid.buildScanSetting()
+    scan_callback = scan_droid.genScanCallback()
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    expected_advertise_event_name = "".join(["BleAdvertise",str(advertise_callback),"onSuccess"])
     self.log.debug(expected_advertise_event_name)
     advertise_worker = advertise_event_dispatcher.handle_event(
       self.bleadvertise_verify_onsuccess_handler,
       expected_advertise_event_name, ([settings_in_effect]),
       self.default_timeout)
-    startblescan(scan_droid, filter_list, scan_settings,
-                 scan_callback)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     try:
       test_result = advertise_worker.result(self.default_timeout)
     except Empty as error:
-      self.log.debug("Test failed with Empty error: " + str(error))
+      self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
       return False
     except concurrent.futures._base.TimeoutError as error:
-      self.log.debug("Test failed, filtering callback onSuccess never "
-                     "occurred: " + str(error))
+      self.log.debug(" ".join(["Test failed, filtering callback onSuccess never occurred:",
+                               str(error)]))
       return False
-    expected_scan_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    expected_scan_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_scan_event_name, ([filters]), self.default_timeout)
@@ -342,12 +340,12 @@ class FilteringTest(BaseTestClass):
       test_result = worker.result(self.default_timeout)
     except Empty as error:
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
     except concurrent.futures._base.TimeoutError as error:
       scan_droid.stopBleScan(scan_callback)
       advertise_droid.stopBleAdvertising(advertise_callback)
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     if not test_result:
@@ -364,8 +362,7 @@ class FilteringTest(BaseTestClass):
       self.settings_in_effect_variants)
     filters = [{"defaults": True}]
     params = list(it.product(filters, settings_in_effect_suite))
-    failed = self.run_generated_testcases("Ble advertisement settings in "
-                                          "effect test",
+    failed = self.run_generated_testcases("Ble advertisement settings in effect test",
                                           self._magic,
                                           params)
     if failed:
@@ -377,8 +374,7 @@ class FilteringTest(BaseTestClass):
     settings = [
       {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
     params = list(it.product(valid_filter_suit, settings))
-    failed = self.run_generated_testcases("Ble advertisement filters suite in "
-                                          "effect test",
+    failed = self.run_generated_testcases("Ble advertisement filters suite in effect test",
                                           self._magic,
                                           params)
     if failed:
@@ -389,8 +385,7 @@ class FilteringTest(BaseTestClass):
     settings = [
       {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
     params = list(it.product(self.valid_filter_suite, settings))
-    failed = self.run_generated_testcases("Ble advertisement filters in "
-                                          "effect test",
+    failed = self.run_generated_testcases("Ble advertisement filters in effect test",
                                           self._magic,
                                           params)
     if failed:
@@ -404,8 +399,7 @@ class FilteringTest(BaseTestClass):
     params = list(it.product(multi,
                              settings))
     self.log.debug(pprint.pformat(params))
-    failed = self.run_generated_testcases("Ble advertisement filters in "
-                                          "effect test",
+    failed = self.run_generated_testcases("Ble advertisement filters in effect test",
                                           self._magic,
                                           params)
     if failed:
