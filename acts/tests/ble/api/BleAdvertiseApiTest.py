@@ -34,7 +34,7 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class BleAdvertiseApiTest(BaseTestClass):
   TAG = "BleAdvertiseApiTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
 
   def __init__(self, android_devices):
@@ -84,7 +84,7 @@ class BleAdvertiseApiTest(BaseTestClass):
     """
     test_result = True
     droid = self.droid
-    advertise_settings = build_advertisesettings(droid)
+    advertise_settings = droid.buildAdvertisementSettings()
     advertise_mode = droid.getAdvertisementSettingsMode(advertise_settings)
     tx_power_level = droid.getAdvertisementSettingsTxPowerLevel(
       advertise_settings)
@@ -96,21 +96,16 @@ class BleAdvertiseApiTest(BaseTestClass):
     expected_is_connectable = True
     if advertise_mode != expected_advertise_mode:
       test_result = False
-      self.log.debug("Expected filtering mode: " + str(
-        expected_advertise_mode) + ", found filtering mode: " + str(
-        advertise_mode))
+      self.log.debug(" ".join(["Expected filtering mode:",str(expected_advertise_mode),
+                               ", found filtering mode:",str(advertise_mode)]))
     if tx_power_level != expected_tx_power_level:
       test_result = False
-      self.log.debug("Expected tx power level: " + str(
-        expected_tx_power_level)
-                     + ", found filtering tx power level: " + str(
-        expected_tx_power_level))
+      self.log.debug(" ".join(["Expected tx power level:",str(expected_tx_power_level),
+                               ", found filtering tx power level: ",str(expected_tx_power_level)]))
     if expected_is_connectable != is_connectable:
       test_result = False
-      self.log.debug("Expected is connectable: " + str(
-        expected_is_connectable)
-                     + ", found filtering is connectable: " + str(
-        is_connectable))
+      self.log.debug(" ".join(["Expected is connectable:",str(expected_is_connectable),
+                               ", found filtering is connectable: ",str(is_connectable)]))
     return test_result
 
   def test_advertise_data_defaults(self):
@@ -127,7 +122,7 @@ class BleAdvertiseApiTest(BaseTestClass):
     """
     test_result = True
     droid = self.droid
-    advertise_data = build_advertisedata(droid)
+    advertise_data = droid.buildAdvertiseData()
     service_uuids = droid.getAdvertiseDataServiceUuids(advertise_data)
     include_tx_power_level = droid.getAdvertiseDataIncludeTxPowerLevel(
       advertise_data)
@@ -142,22 +137,21 @@ class BleAdvertiseApiTest(BaseTestClass):
     self.log.debug("Step 4: Verify all defaults match expected values.")
     if service_uuids != expected_service_uuids:
       test_result = False
-      self.log.debug("Expected filtering service uuids: " + str(
-        expected_service_uuids)
-                     + ", found filtering service uuids: " + str(
-        service_uuids))
+      self.log.debug(" ".join(["Expected filtering service uuids:",
+                               expected_service_uuids,", found filtering service uuids:",
+                               str(service_uuids)]))
     if include_tx_power_level != expected_include_tx_power_level:
       test_result = False
-      self.log.debug("Expected filtering include tx power level: " + str(
-        expected_include_tx_power_level)
-                     + ", found filtering include tx power level: "
-                     + str(include_tx_power_level))
+      self.log.debug(" ".join(["Expected filtering include tx power level:",
+                              str(expected_include_tx_power_level),
+                              ", found filtering include tx power level:",
+                              str(include_tx_power_level)]))
     if include_device_name != expected_include_device_name:
       test_result = False
-      self.log.debug("Expected filtering include tx power level: " + str(
-        expected_include_device_name)
-                     + ", found filtering include tx power level: " + str(
-        include_device_name))
+      self.log.debug(" ".join(["Expected filtering include tx power level:",
+                               str(expected_include_device_name),
+                               ", found filtering include tx power level:",
+                               str(include_device_name)]))
     if not test_result:
       self.log.debug("Some values didn't match the defaults.")
     else:

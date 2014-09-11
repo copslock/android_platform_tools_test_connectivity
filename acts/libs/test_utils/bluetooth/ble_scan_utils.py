@@ -14,57 +14,12 @@
 # the License.
 
 import android
-from test_utils.bluetooth.ble_helper_functions import *
+
+from test_utils.bluetooth.ble_helper_functions import BleScanResultError
 
 
 class BleScanVerificationError(Exception):
     """Error in fetsching BleScanner Scan result."""
-
-
-
-def verify_scan_filters_rssi(testcase, droid, expected_min_rssi, expected_max_rssi):
-    filter_list = gen_filterlist(droid)
-    try:
-        droid.setScanFilterRssiRange(expected_min_rssi, expected_max_rssi)
-
-    except BleScanVerificationError as error:
-        testcase.log.debug(str(error))
-        return False
-    testcase.log.debug("Step 4: Build the scan filter object.")
-    scan_filter_index = build_scanfilter(droid, filter_list)
-    testcase.log.debug("Step 5: Get the scan filter's min and max rssi")
-    min_rssi = droid.getScanFilterMinRssi(filter_list, scan_filter_index)
-    max_rssi = droid.getScanFilterMaxRssi(filter_list, scan_filter_index)
-
-    if min_rssi != expected_min_rssi:
-        testcase.log.debug("Expected min rssi: " + str(expected_min_rssi)
-                                + ", Actual min rssi: " + str(min_rssi))
-        return False
-    if max_rssi != expected_max_rssi:
-        testcase.log.debug("Expected min rssi: " + str(expected_max_rssi)
-                                + ", Actual min rssi: " + str(max_rssi))
-
-        return False
-    testcase.log.debug("Scan Filter min rssi " + str(min_rssi) + ", max rssi "
-                           + str(max_rssi) + " test Passed.")
-    return True
-
-
-def verify_invalid_scan_filters_rssi(testcase, droid, expected_min_rssi,
-                                     expected_max_rssi):
-    try:
-        droid.setScanFilterRssiRange(expected_min_rssi, expected_max_rssi)
-        build_scansettings(droid)
-        testcase.log.debug("Set Scan Filter invalid device address passed "
-                                + " with input as  min rssi " + str(expected_min_rssi)
-                                + ", max rssi " + str(expected_max_rssi))
-        return False
-    except android.SL4AAPIError:
-        testcase.log.debug("Set Scan Filter invalid device address failed successfully"
-                               + " with input as  min rssi " + str(expected_min_rssi)
-                               + ", max rssi " + str(expected_max_rssi))
-        return True
-
 
 
 def verify_ble_scan(testcase, droid, event_dispatcher, filter_list, scan_settings, scan_callback):

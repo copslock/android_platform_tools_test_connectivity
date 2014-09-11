@@ -13,6 +13,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+"""
+This test script exercises different filters and outcomes not exercised in FiltersTest.
+
+This test script was designed with this setup in mind:
+Shield box one: Android Device
+Shield box two: Android Device
+Antenna between the two shield boxes.
+"""
 
 import pprint
 import concurrent
@@ -26,7 +34,7 @@ from test_utils.bluetooth.ble_helper_functions import *
 
 class UniqueFilteringTest(BaseTestClass):
   TAG = "UniqueFilteringTest"
-  log_path = BaseTestClass.log_path + TAG + '/'
+  log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
   default_timeout = 10
 
@@ -62,9 +70,8 @@ class UniqueFilteringTest(BaseTestClass):
     self.log.debug(pprint.pformat(event))
     callbacktype = event['data']['CallbackType']
     if callbacktype != expected_callbacktype:
-      self.log.debug(
-        "Expected callback type: " + str(expected_callbacktype)
-        + ", Found callback type: " + str(callbacktype))
+      self.log.debug(" ".join(["Expected callback type:",str(expected_callbacktype),
+                               ", Found callback type:",str(callbacktype)]))
       test_result = False
     return test_result
 
@@ -77,43 +84,38 @@ class UniqueFilteringTest(BaseTestClass):
     for result in event['data']['Results']:
       timestamp_nanos = result['timestampNanos']
       length_of_time = timestamp_nanos - system_time_nanos
-      self.log.debug(
-        "Difference in time in between scan start and onBatchScanResult: " + str(
-          length_of_time))
+      self.log.debug(" ".join(["Difference in time in between scan start and onBatchScanResult:",
+                               str(length_of_time)]))
       buffer = 1000000000  # 1 second
       if length_of_time > (report_delay_nanos + buffer):
-        self.log.debug(
-          "Difference was greater than the allowable difference.")
+        self.log.debug("Difference was greater than the allowable difference.")
         test_result = False
     return test_result
 
   # Handler Functions End
 
   def test_scan_flush_pending_scan_results(self):
-    self.log.debug("Step 1: Setting up environment")
+    """
+    Test that flush pending scan results doesn't affect onScanResults from triggering.
+    Steps:
+    1. Setup the scanning android device
+    2. Setup the advertiser android devices.
+    3. Trigger flushPendingScanResults on the scanning droid.
+    4. Verify that only one onScanResults callback was triggered.
+    :return: test_result: bool
+    """
+    test_result = True
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
     advertise_droid.setAdvertisementSettingsAdvertiseMode(
       AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if not test_result:
-      self.log.debug("Advertising failed.")
-      return test_result
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     scan_droid.flushPendingScanResults(scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
@@ -122,45 +124,40 @@ class UniqueFilteringTest(BaseTestClass):
       self.log.debug(worker.result(self.default_timeout))
     except Empty as error:
       test_result = False
-      self.log.debug("Test failed with Empty error: " + str(error))
+      self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
     except concurrent.futures._base.TimeoutError as error:
       test_result = False
-      self.log.debug("Test failed with TimeoutError: " + str(error))
+      self.log.debug(" ".join(["Test failed with TimeoutError:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
 
   def test_scan_trigger_on_batch_scan_results(self):
-    self.log.debug("Step 1: Setting up environment")
-
+    """
+    Test that triggers onBatchScanResults and verifies the time to trigger within one second leeway.
+    Steps:
+    1. Setup the scanning android device with report delay seconds set to 5000.
+    2. Setup the advertiser android devices.
+    3. Verify that only one onScanResults callback was triggered.
+    4. Compare the system time that the scan was started with the elapsed time that is in the
+    callback.
+    :return: test_result: bool
+    """
+    test_result = True
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
     scan_droid.setScanSettings(1, 5000, 0, 0)
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(
-      scan_callback) + "onBatchScanResult"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onBatchScanResult"])
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
     advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed.")
-      return test_result
-
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     system_time_nanos = scan_droid.getSystemElapsedRealtimeNanos()
-    self.log.debug("Current system time: " + str(system_time_nanos))
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
+    self.log.debug(" ".join(["Current system time:",str(system_time_nanos)]))
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onbatchscanresult_event_handler,
       expected_event_name, ([system_time_nanos, 5000000000]),
@@ -169,39 +166,34 @@ class UniqueFilteringTest(BaseTestClass):
       self.log.debug(worker.result(self.default_timeout))
     except Empty as error:
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
     except concurrent.futures._base.TimeoutError as error:
       test_result = False
-      self.log.debug("Test failed with: " + str(error))
+      self.log.debug(" ".join(["Test failed with:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
 
   def test_scan_flush_results_without_on_batch_scan_results_triggered(self):
-    self.log.debug("Step 1: Setting up environment")
+    """
+    Test flush pending scan results with a report delay seconds set to 0. No onBatchScanResults
+    callback should be triggered.
+    Steps:
+    1. Setup the scanning android device with report delay seconds set to 0 (or just use default.
+    2. Setup the advertiser android devices.
+    3. Verify that no onBatchScanResults were triggered.
+    :return: test_result: bool
+    """
+    test_result = True
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(
-      scan_callback) + "onBatchScanResults"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onBatchScanResults"])
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed")
-      return test_result
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onbatchscanresult_event_handler,
       expected_event_name, ([]), self.default_timeout)
@@ -209,54 +201,46 @@ class UniqueFilteringTest(BaseTestClass):
     try:
       event_info = scan_event_dispatcher.pop_event(expected_event_name,
                                                    10)
-      self.log.debug("Unexpectedly found an advertiser: " + event_info)
+      self.log.debug(" ".join(["Unexpectedly found an advertiser:",event_info]))
       test_result = False
     except Empty as error:
-      self.log.debug(
-        "No onBatchScanResult events were found as expected.")
+      self.log.debug("No onBatchScanResult events were found as expected.")
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
     return test_result
 
   def test_scan_non_existent_name_filter(self):
-    self.log.debug("Step 1: Setting up environment")
+    """
+    Test scan filter on non-existent device name.
+    Steps:
+    1. Setup the scanning android device with scan filter for device name set to an unexpected
+    value.
+    2. Setup the advertiser android devices.
+    3. Verify that no onScanResults were triggered.
+    :return: test_result: bool
+    """
+    test_result = True
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
-    filter_name = advertise_droid.bluetoothGetLocalName() + "_probably_wont_find"
+    filter_name = "".join([advertise_droid.bluetoothGetLocalName(),"_probably_wont_find"])
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    self.log.debug("Step 2: Create name filter on " + filter_name +
-                   ", a default scan settings, and a default scan callback.")
     scan_droid.setScanFilterDeviceName(filter_name)
-    self.log.debug(
-      "Step 3: Create scan filter, scan settings, and scan callback")
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
     advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed on device.")
-      return test_result
-
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_event_name, ([1]), self.default_timeout)
     try:
       event_info = scan_event_dispatcher.pop_event(expected_event_name,
                                                    10)
-      self.log.debug("Unexpectedly found an advertiser: " + event_info)
+      self.log.debug(" ".join(["Unexpectedly found an advertiser:",event_info]))
       test_result = False
     except Empty as error:
       self.log.debug("No events were found as expected.")
@@ -266,47 +250,40 @@ class UniqueFilteringTest(BaseTestClass):
 
   def test_scan_advertisement_with_device_service_uuid_filter_expect_no_events(
     self):
-    self.log.debug("Step 1: Setting up environment")
+    """
+    Test that exercises a service uuid filter on the scanner but no server uuid added to the
+    advertisement.
+    Steps:
+    1. Setup the scanning android device with scan filter including a service uuid and mask.
+    2. Setup the advertiser android devices.
+    3. Verify that no onScanResults were triggered.
+    :return: test_result: bool
+    """
+    test_result = True
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
     service_uuid = "00000000-0000-1000-8000-00805F9B34FB"
     service_mask = "00000000-0000-1000-8000-00805F9B34FA"
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
-    self.log.debug("Step 2: Create service uuid filter on " + service_uuid +
-                   ", service mask filter on " + service_mask +
-                   ", a default scan settings, and a default scan callback.")
     scan_droid.setScanFilterServiceUuid(service_uuid, service_mask)
-    self.log.debug(
-      "Step 3: Create scan filter, scan settings, and scan callback")
     advertise_droid.setAdvertisementSettingsAdvertiseMode(
       AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
       scan_droid)
-    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
     advertise_droid.setAdvertiseDataIncludeDeviceName(True)
     advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = startbleadvertise(advertise_droid, advertise_data,
-                                    advertise_settings,
-                                    advertise_callback)
-    if test_result is False:
-      self.log.debug("Advertising failed.")
-      return test_result
-
-    self.log.debug("Step 4: Start Bluetooth Le Scan on callback ID: " + str(
-      scan_callback))
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_event_name, ([1]), self.default_timeout)
     try:
       event_info = scan_event_dispatcher.pop_event(expected_event_name,
                                                    self.default_timeout)
-      self.log.debug("Unexpectedly found an advertiser: " + event_info)
+      self.log.debug(" ".join(["Unexpectedly found an advertiser:",event_info]))
       test_result = False
     except Empty as error:
       self.log.debug("No events were found as expected.")
