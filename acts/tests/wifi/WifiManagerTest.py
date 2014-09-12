@@ -16,12 +16,14 @@
 #   limitations under the License.
 
 import itertools
+import json
 import os
 import threading
 import time
 
 from base_test import BaseTestClass
 from test_utils.utils import find_field
+from test_utils.utils import rand_ascii_str
 from test_utils.wifi_test_utils import has_network
 from test_utils.wifi_test_utils import network_matches
 from test_utils.wifi_test_utils import reset_droid_wifi
@@ -46,6 +48,7 @@ class WifiManagerTest(BaseTestClass):
 
   def connect_to_wifi_network_with_password(self, params):
     (network_name, passwd), (droid, ed) = params
+    ed.clear_all_events()
     start_wifi_connection_scan(droid, ed)
     droid.wifiStartTrackingStateChange()
     if not droid.wifiConnectWPA(network_name, passwd):
@@ -145,9 +148,59 @@ class WifiManagerTest(BaseTestClass):
     if failed:
       return False
     return True
+
+  def set_wifi_ap_enabled(self, droid, ed, ap_config, enable):
+    config = None
+    if ap_config:
+      config = json.dumps(ap_config)
+    # If already enabled, disable we the config can be updated.
+    if enable and droid.wifiIsApEnabled():
+      self.log.info("Already enabled, disabling.")
+      droid.wifiSetApEnabled(None, False)
+      ed.pop_event("WifiManagerApDisabled", 15)
+    self.log.debug("Enable wifi ap mode with " + str(ap_config))
+    assert droid.wifiSetApEnabled(config, enable)
+    ed.pop_event("WifiManagerApEnabled", 15)
+
+  def set_wifi_tethering(self, droid, ed, ap_config, enable):
+    droid.wifiStartTrackingStateChange()
+    self.log.debug("Enable wifi tethering with " + str(ap_config))
+    self.set_wifi_ap_enabled(droid, ed, ap_config, enable)
+    ap_enable_pred = None
+    if enable:
+      ap_enable_pred = lambda e : e["data"]["ACTIVE_TETHER"]
+    else:
+      ap_enable_pred = lambda e : not e["data"]["ACTIVE_TETHER"]
+    event = ed.wait_for_event("TetherStateChanged", ap_enable_pred, 30)
+    if enable:
+      assert 'wlan0' in event["data"]["ACTIVE_TETHER"]
+    else:
+      assert 'wlan0' not in event["data"]["ACTIVE_TETHER"]
+
+  def start_wifi_tethering_and_connect(self, droid, ed, ap_config, droid1, ed1):
+    self.set_wifi_tethering(droid, ed, ap_config, True)
+    conf = droid.wifiGetApConfiguration()
+    self.log.debug("Wifi AP config:" + str(conf))
+    self.log.debug("Wifi tethering enabled, connect from another device.")
+    reset_droid_wifi(droid1, ed1)
+    self.connect_to_wifi_network_with_password(
+      ((ap_config["SSID"], ap_config["PASSWORD"]), (droid1, ed1))
+      )
+    self.log.debug("Check that tethering is disabled.")
+    self.set_wifi_tethering(droid, ed, None, False)
+
+  def test_tethering(self):
+    droid1, ed1 = self.android_devices[1].get_droid()
+    ed1.start()
+    ssid = rand_ascii_str(10)
+    pwd = rand_ascii_str(8)
+    ap_config = {"SSID": ssid, "PASSWORD": pwd}
+    self.start_wifi_tethering_and_connect(self.droid, self.ed,
+                                          ap_config,
+                                          droid1, ed1)
+    return True
   """ Tests End """
 
 if __name__ == "__main__":
   tester = WifiManagerTest()
   tester.run()
-

@@ -210,9 +210,9 @@ if __name__ == "__main__":
     skip_setup_wizard(None)
     exit(0)
   if args.buildtype:
-    build_type = '-' + args.buildtype
+    build_type = '-' + args.buildtype[0]
   if args.branch:
-    branch = args.branch
+    branch = args.branch[0]
   targets = {}
   android_devices = AndroidDevice.get_all()
   for a in android_devices:

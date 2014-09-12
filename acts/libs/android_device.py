@@ -68,8 +68,10 @@ class AndroidDevice:
 
   def get_model(self):
     out = exe_cmd('adb -s {} shell cat /system/build.prop | grep "product.name"'.format(self.device_id))
-    model = out.decode("utf-8").split('=')[-1].strip().lower()
-    return model.strip()
+    model = out.decode("utf-8").split('=')[-1].strip().lower().strip()
+    if "aosp_" == model[:5]:
+      model = model[5:]
+    return model
 
   def get_droid(self, handle_event=True):
     ''' Create an sl4a connection to the device.
