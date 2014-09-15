@@ -126,7 +126,7 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         self.log.debug("Step5 verify internet: " + self.phone_number_0)
         wifi_toggle_state(self.droid0, self.ed0, False)
         result_internet = self.droid0.networkIsConnected()
-        network_type = self.droid0.networkGetConnectionType()
+        network_type = self.droid0.networkGetActiveConnectionTypeName()
         if not result_internet or not network_type == "MOBILE":
             self.log.error("Step5 verify internet error")
             return False

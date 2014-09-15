@@ -78,10 +78,10 @@ def toggle_call_state(droid, ed_caller, ed_callee, action):
     """
     event = None
     if action == "accept":
-        droid.telecommAcceptRingingCall()
+        droid.telecomAcceptRingingCall()
         event = "onPreciseStateChangedActive"
     elif action == "hangup":
-        droid.telecommEndCall()
+        droid.telecomEndCall()
         event = "onCallStateChangedIdle"
     else:
         return False
@@ -115,8 +115,8 @@ def initiate_call(log, droid_caller, droid_callee, ed_callee,
     except Empty:
         log.exception("Did not get expected event")
         log.debug("Call did not get through, end call on both side")
-        droid_caller.telecommEndCall()
-        droid_callee.telecommEndCall()
+        droid_caller.telecomEndCall()
+        droid_callee.telecomEndCall()
     finally:
         droid_callee.phoneStopTrackingCallStateChange()
     if (event_ringing['data']['incomingNumber'] == caller_number):
@@ -172,8 +172,8 @@ def call_process(log, droid_caller, droid_callee, droid_hangup, ed_caller,
         log.info("Accept on " + callee_number)
         toggle_call_state(droid_callee, ed_caller, ed_callee, "accept")
         time.sleep(delay_in_call)
-        if (droid_caller.telecommIsInCall() and
-            droid_callee.telecommIsInCall()):
+        if (droid_caller.telecomIsInCall() and
+            droid_callee.telecomIsInCall()):
             result = True
     if result:
         result = False
