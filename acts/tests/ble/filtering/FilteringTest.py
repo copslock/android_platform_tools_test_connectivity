@@ -21,7 +21,9 @@ import time
 from queue import Empty
 from base_test import BaseTestClass
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class FilteringTest(BaseTestClass):
@@ -151,13 +153,13 @@ class FilteringTest(BaseTestClass):
     )
 
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(5)
-    self.ed1.start()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
 
   # Handler Functions Begin
@@ -348,8 +350,6 @@ class FilteringTest(BaseTestClass):
       self.log.debug(" ".join(["Test failed with:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
-    if not test_result:
-      time.sleep(20)
     return test_result
 
   def test_default_advertisement(self):
