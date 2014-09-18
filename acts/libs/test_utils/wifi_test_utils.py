@@ -226,6 +226,8 @@ def reset_droid_wifi(droid, ed):
   """
   droid.wifiToggleState(True)
   networks = droid.wifiGetConfiguredNetworks()
+  if not networks:
+    return
   for n in networks:
     droid.wifiForgetNetwork(n['networkId'])
     try:

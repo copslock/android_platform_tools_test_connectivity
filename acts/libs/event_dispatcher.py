@@ -15,10 +15,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import threading, time
-from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
 import logging
+from queue import Queue, Empty
+import threading
+import time
 
 class EventDispatcherError(Exception):
   pass
@@ -155,6 +156,40 @@ class EventDispatcher:
       return None
     return e_queue.get(True, timeout)
 
+  def wait_for_event(self, event_name, predicate, timeout=60):
+    ''' Wait for an event that satisfies a predicate to appear.
+
+        Continuously pop events of a particular name and check against the predicate until
+        an event that satisfies the predicate is popped or timed out.
+
+        Parameters
+        ----------
+        event_name : string
+          Name of the event to be popped.
+        predicate : function
+          A function that takes an event and returns True if the predicate is satisfied,
+          False otherwise.
+        timeout : integer
+          Number of seconds to wait.
+
+        Returns
+        -------
+        The event that satisfies the predicate.
+
+        Raises
+        ------
+        Empty
+          Raised if no event that satisfies the predicate was found before time out.
+    '''
+    deadline = time.time() + timeout
+    while True:
+      event = self.pop_event("TetherStateChanged", 1)
+      if predicate(event):
+        return event
+      if time.time() > deadline:
+        raise Empty(''.join(("No event '", event_name,
+                             "' that satisfies the specified predicate occured.")))
+
   def pop_events(self, partial_event_name, timeout):
     ''' Pop events whose names contain partial_event_name.
 
@@ -184,7 +219,6 @@ class EventDispatcher:
     '''
     if not self.started:
       raise IllegalStateError("Dispatcher needs to be started before popping.")
-    dealine = None
     deadline = time.time() + timeout
     while True:
       results = self._match_and_pop(partial_event_name)
@@ -226,7 +260,7 @@ class EventDispatcher:
 
         Raises
         ------
-        queue.Empty
+        Empty
           Raised if the queue does not exist and timeout has passed.
     '''
     deadline = None
@@ -321,8 +355,22 @@ class EventDispatcher:
     try:
       while True:
         results.append(self.event_dict[event_name].get())
-    except (Queue.Empty, KeyError):
+    except (Empty, KeyError):
       return results
+
+  def clear_events(event_name):
+    ''' Clear all events of a particular name.
+
+        Parameters
+        ----------
+        event_name : string
+          Name of the events to be popped.
+    '''
+    try:
+      q = self.get_event_q(event_name, 0)
+      q.queue.clear()
+    except Empty:
+      return
 
   def clear_all_events(self):
     ''' Clear all cached events and their queues '''

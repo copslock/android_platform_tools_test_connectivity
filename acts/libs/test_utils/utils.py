@@ -17,8 +17,12 @@
 
 import json
 import os
+import random
+import string
 import subprocess
 import time
+
+ascii_letters_and_digits = string.ascii_letters + string.digits
 
 def create_dir(path):
     """Creates a directory if it does not exist already.
@@ -96,3 +100,15 @@ def find_field(item_list, cond, comparator, target_field):
     if comparator(item, cond) and target_field in item:
       return item[target_field]
   return None
+
+def rand_ascii_str(length):
+  """Generates a random string of specified length, composed of ascii letters
+  and digits.
+
+  Params:
+    length: The number of characters in the string.
+
+  Returns:
+    The random string generated.
+  """
+  return ''.join(random.choice(ascii_letters_and_digits) for i in range(length))

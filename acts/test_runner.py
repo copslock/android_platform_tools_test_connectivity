@@ -54,7 +54,24 @@ class TestRunner():
             self.log.debug(' '.join(("Found", str(len(android_devices)),
                                      "android devices.")))
             self.controllers["android_devices"] = android_devices
-        data = load_config(testbed_config)
+        data = None
+        try:
+            data = load_config(testbed_config)
+        except:
+            self.log.error("ERROR: Failed to load testbed config.")
+        if "AndroidDevice" in data:
+            # If user specified devices in testbed config, the specified
+            # devices will be in the front of the list.
+            user_specified = data["AndroidDevice"]
+            former = []
+            latter = []
+            for ad in android_devices:
+                if ad.device_id in user_specified:
+                    former.append(ad)
+                else:
+                    latter.append(ad)
+            android_devices = former + latter
+            self.controllers["android_devices"] = android_devices
         if "AP" in data:
             aps = []
             for ap in data["AP"]:

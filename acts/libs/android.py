@@ -17,10 +17,10 @@
 JSON RPC interface to android scripting engine.
 """
 
-import os, subprocess
 import json
+import os
 import socket
-
+import subprocess
 
 HOST = os.environ.get('AP_HOST', None)
 PORT = os.environ.get('AP_PORT', 9999)

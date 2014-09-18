@@ -18,7 +18,7 @@ python3.4
 
 Setup:
 1. Install the dependencies.
-2. Prepend the absolute path to “libs” directory to your $PYTHONPATH. You probably want to add the export statement in your ~/.bash_profile file.
+2. Prepend the absolute path to “libs” directory to your $PYTHONPATH. You probably want to add the export statement in your ~/.bashrc or ~/.bash_profile (for mac) file.
 
 To run the included sample WifiManager tests in command line, connect an android device with proper sl4a installed,
 then:

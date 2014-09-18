@@ -202,6 +202,7 @@ class WifiScannerScanTest(BaseTestClass):
       idx = start_wifi_background_scan(self.droid, self.ed, scan_setting)
       self.log.debug("Wifi background scan started with index: " + str(idx))
       event = self.ed.pop_event(''.join((EVENT_TAG, str(idx), "onResults")), 300)
+      self.droid.wifiScannerStopScan(idx)
       results = event["data"]["Results"]
       self.log.debug("Got onResults:\n" + str(event))
     except Empty:
@@ -209,7 +210,6 @@ class WifiScannerScanTest(BaseTestClass):
       self.log.error("Did not get onSuccess, got:\n" + str(events))
       return False
     finally:
-      self.droid.wifiScannerStopScan(idx)
       self.ed.clear_all_events()
     # First make sure all results are of the expected frequencies.
     if not self.result_sanity_check(scan_setting, results):
