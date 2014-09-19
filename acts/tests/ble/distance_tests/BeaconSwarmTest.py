@@ -31,7 +31,9 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class BeaconSwarmTest(BaseTestClass):
@@ -47,13 +49,13 @@ class BeaconSwarmTest(BaseTestClass):
       "test_swarm_1000_on_scan_result",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
-    self.ed1.start()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
   ble_device_addresses = []
 
@@ -70,10 +72,8 @@ class BeaconSwarmTest(BaseTestClass):
     print(pprint.pformat(event))
     for event in event['data']['Results']:
       address = event['deviceInfo']['address']
-      name = event['deviceName']
-      combined_name = address + name
-      if combined_name not in self.ble_device_addresses:
-        self.ble_device_addresses.append(combined_name)
+      if address not in self.ble_device_addresses:
+        self.ble_device_addresses.append(address)
 
     return test_result
 

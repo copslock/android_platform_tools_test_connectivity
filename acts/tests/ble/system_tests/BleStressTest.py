@@ -20,7 +20,9 @@ import time
 from queue import Empty
 from base_test import BaseTestClass
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class BleStressTest(BaseTestClass):
@@ -37,8 +39,7 @@ class BleStressTest(BaseTestClass):
     )
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
+    verify_bluetooth_on_event(self.ed)
 
   def bleadvertise_verify_onsuccess_handler(self, event):
     test_result = True

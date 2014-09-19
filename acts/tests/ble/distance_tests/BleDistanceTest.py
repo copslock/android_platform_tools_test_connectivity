@@ -29,7 +29,9 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class BleDistanceTest(BaseTestClass):
@@ -44,13 +46,13 @@ class BleDistanceTest(BaseTestClass):
       "test_scan_default_advertisement_high_attenuation",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
-    self.ed1.start()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
   def blescan_verify_onscanresult_event_handler(self, event):
     """
@@ -75,6 +77,7 @@ class BleDistanceTest(BaseTestClass):
     3. Verify that no onScanResult callbacks were recorded.
     :return: test_result: bool
     """
+    test_result = True
     self.attenuators[0].set_atten(0, 90)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
@@ -85,11 +88,11 @@ class BleDistanceTest(BaseTestClass):
     advertise_droid.setAdvertiseDataIncludeTxPowerLevel(True)
     advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
       advertise_droid)
-    test_result = advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
     if test_result is False:
       self.log.debug("Advertising failed.")
       return test_result
-    test_result = scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_verify_onscanresult_event_handler,
       expected_event_name, ([]), self.default_timeout)
@@ -102,4 +105,5 @@ class BleDistanceTest(BaseTestClass):
       self.log.debug("No events were found as expected.")
     scan_droid.stopBleScan(scan_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
+    print (test_result)
     return test_result
