@@ -25,7 +25,9 @@ import time
 from queue import Empty
 from base_test import BaseTestClass
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class BugsTest(BaseTestClass):
@@ -41,21 +43,28 @@ class BugsTest(BaseTestClass):
       "test_swarm_scan",
       "test_three_advertisers_and_three_scanners",
       "test_dual_scans",
+      "test_multiple_advertisers_on_batch_scan_result",
+      "test_advertisement_service_uuid",
+      "test_btu_hci_advertisement_crash",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
-    self.ed1.start()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
   # Handler Functions Begin
   def blescan_verify_onfailure_event_handler(self, event):
     self.log.debug("Verifying onFailure event")
     self.log.debug(pprint.pformat(event))
     return event
+
+  def bleadvertise_verify_onsuccess_handler(self, event, settings_in_effect):
+    self.log.debug(pprint.pformat(event))
+    return True
 
   def blescan_verify_onscanresult_event_handler(self, event,
                                                 expected_callbacktype=None,
@@ -70,6 +79,24 @@ class BugsTest(BaseTestClass):
       test_result = False
     return test_result
 
+  ble_device_addresses = []
+
+  def blescan_verify_onbatchscanresult_event_handler(self, event):
+    """
+    An event handler that validates the onBatchScanResult
+    :param event: dict that represents the callback onBatchScanResult
+    :return: test_result: bool
+    """
+    # Todo: Implement proper validation steps.
+    test_result = True
+    self.log.debug("Verifying onBatchScanResult event")
+    self.log.debug(pprint.pformat(event))
+    print(pprint.pformat(event))
+    for event in event['data']['Results']:
+      address = event['deviceInfo']['address']
+      if address not in self.ble_device_addresses:
+        self.ble_device_addresses.append(address)
+    return test_result
   # Handler Functions End
 
   def test_scan_advertise_50(self):
@@ -243,5 +270,118 @@ class BugsTest(BaseTestClass):
     advertise_droid.stopBleAdvertising(advertise_callback)
     advertise_droid.stopBleAdvertising(advertise_callback1)
     advertise_droid.stopBleAdvertising(advertise_callback2)
+
+    return test_result
+
+  # TODO: move test to another script
+  def test_multiple_advertisers_on_batch_scan_result(self):
+    """
+    Test that exercises onBatchScanResults against one device advertising its
+    max advertisements.
+    This is different from the BeaconSwarmTest:test_swarm_no_attenuation in
+    that it uses a second android device's advertisements instead of standalone
+    ble beacons.
+
+    Steps:
+    1. Setup the scanning android device
+    2. Setup max (4) advertisements on secondary device.
+    3. Verify that one hundred onBatchScanResult callback was triggered.
+    :return: test_result: bool
+    """
+    test_result = True
+    max_advertisers = 4
+    ad_callbacks = []
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    for x in range(max_advertisers):
+      advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(
+        advertise_droid)
+      advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+      expected_advertise_event_name = "".join(["BleAdvertise",str(advertise_callback),"onSuccess"])
+      worker = advertise_event_dispatcher.handle_event(
+        self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, ([]),
+        self.default_timeout)
+      ad_callbacks.append(advertise_callback)
+    #self.attenuators[0].set_atten(0, 0)
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    scan_droid.setScanSettings(1, 1000, 0, 0)
+    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+      scan_droid)
+    expected_event_name = "".join(["BleScan",str(scan_callback),"onBatchScanResult"])
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    n = 0
+    while n < 100:
+      worker = scan_event_dispatcher.handle_event(
+        self.blescan_verify_onbatchscanresult_event_handler,
+        expected_event_name, ([]), self.default_timeout)
+      try:
+        self.log.debug(worker.result(self.default_timeout))
+      except Empty as error:
+        test_result = False
+        self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
+      except concurrent.futures._base.TimeoutError as error:
+        test_result = False
+        self.log.debug(" ".join(["Test failed with TimeoutError:",str(error)]))
+      n+=1
+    scan_droid.stopBleScan(scan_callback)
+    for x in ad_callbacks:
+      advertise_droid.stopBleAdvertising(x)
+    print (self.ble_device_addresses) #temporary
+    print (str(len(self.ble_device_addresses))) #temporary
+    return test_result
+
+  def test_advertisement_service_uuid(self):
+    test_result = True
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    advertise_droid.setAdvertisementSettingsAdvertiseMode(
+      AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+    advertise_droid.setAdvertiseDataSetServiceUuids(["00000000-0000-1000-8000-00805f9b34fb"])
+    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+      scan_droid)
+
+    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    advertise_data, advertise_settings, advertise_callback = (
+      generate_ble_advertise_objects(advertise_droid))
+    test_result = advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+
+    test_result = scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    time.sleep(30)
+    worker = scan_event_dispatcher.handle_event(
+      self.blescan_verify_onscanresult_event_handler,
+      expected_event_name, ([1]), self.default_timeout)
+    try:
+      self.log.debug(worker.result(self.default_timeout))
+    except Empty as error:
+      test_result = False
+      self.log.debug("Test failed with Empty error: " + str(error))
+    except concurrent.futures._base.TimeoutError as error:
+      test_result = False
+      self.log.debug("Test failed with TimeoutError: " + str(error))
+    scan_droid.stopBleScan(scan_callback)
+    advertise_droid.stopBleAdvertising(advertise_callback)
+
+    return test_result
+
+
+  #{'is_connectable': True, 'mode': 0, 'tx_power_level': 2}
+  def test_btu_hci_advertisement_crash(self):
+    test_result = True
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    x = 0
+    while x < 50:
+      advertise_droid.setAdvertisementSettingsAdvertiseMode(
+        AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_POWER.value)
+      advertise_droid.setAdvertisementSettingsIsConnectable(True)
+      advertise_droid.setAdvertisementSettingsTxPowerLevel(2)
+      filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+        scan_droid)
+
+      expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+      advertise_data, advertise_settings, advertise_callback = (
+        generate_ble_advertise_objects(advertise_droid))
+      advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+      advertise_droid.stopBleAdvertising(advertise_callback)
+      x+=1
 
     return test_result

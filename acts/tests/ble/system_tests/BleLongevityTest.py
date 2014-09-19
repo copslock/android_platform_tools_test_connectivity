@@ -21,7 +21,9 @@ from base_test import BaseTestClass
 from event_dispatcher import IllegalStateError
 from queue import Empty
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class BleLongevityTest(BaseTestClass):
@@ -37,15 +39,13 @@ class BleLongevityTest(BaseTestClass):
       # "test_long_advertising_same_callback",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
-    self.ed1.start()
-    self.droid.eventClearBuffer()
-    self.droid1.eventClearBuffer()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
   def blescan_verify_onscanresult_event_handler(self, event,
                                                 expected_callbacktype=None,

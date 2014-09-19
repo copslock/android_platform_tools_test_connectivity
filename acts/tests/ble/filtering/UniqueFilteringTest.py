@@ -29,7 +29,9 @@ import time
 from queue import Empty
 from base_test import BaseTestClass
 from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
+from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
+                                                       generate_ble_scan_objects,
+                                                       generate_ble_advertise_objects)
 
 
 class UniqueFilteringTest(BaseTestClass):
@@ -48,13 +50,13 @@ class UniqueFilteringTest(BaseTestClass):
       "test_scan_advertisement_with_device_service_uuid_filter_expect_no_events",
     )
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
     self.droid.bluetoothToggleState(False)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(True)
-    # TODO: Eventually check for event of bluetooth state toggled to true.
-    time.sleep(self.default_timeout)
-    self.ed1.start()
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
   # Handler Functions Begin
   def blescan_verify_onfailure_event_handler(self, event):
