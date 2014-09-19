@@ -21,9 +21,7 @@
 """
 
 from .BleConfig import *
-from test_utils.bluetooth.blescan_api_helper import *
-from test_utils.bluetooth.ble_advertise_utils import (build_advertise_settings,
-                                                      build_advertise_data)
+from test_utils.ble_test_utils import *
 
 
 """Indicates the type of Scan Filter to be used by the scanner
@@ -206,17 +204,14 @@ def start_advertisement():
       settings_index, data_index, callback = get_advertise_data(droid,
                                              settings, data)
       index += 1
-      status = startbleadvertise(droid,data_index,settings_index,callback)
+      droid.startBleAdvertising(callback, data_index, settings_index)
+      expected_result = BLE_ONSUCCESS
+      status = verify_onsuccess_advertisement(dispatcher, callback,
+                                              expected_result)
       if status is False:
         break
       else:
-        expected_result = BLE_ONSUCCESS
-        status = verify_onsuccess_advertisement(dispatcher, callback,
-                                                expected_result)
-        if status is False:
-          break
-        else:
-          callback_list.append(callback)
+        callback_list.append(callback)
     advertise[CALLBACK_INDEX] = callback_list
     callback_list = []
   return status
@@ -247,7 +242,7 @@ def set_manufacturer_data_filter(droid, add_mask, filter, data_list,
         droid.setScanFilterManufacturerData(id,manu_data,MANUFACTURER_DATA_MASK)
       else:
         droid.setScanFilterManufacturerData(id,manu_data)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
     index += 1
 
 
@@ -265,7 +260,7 @@ def set_service_data_filter(droid, add_mask, filter, data_list, filter_list):
         droid.setScanFilterServiceData(serv_uuid,serv_data,SERVICE_DATA_MASK)
       else:
         droid.setScanFilterServiceData(serv_uuid,serv_data)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
     index += 1
 
 
@@ -284,7 +279,7 @@ def set_service_uuid_filter(droid, add_mask, filter, data_list, filter_list):
             droid.setScanFilterServiceUuid(serv_uuid,UUID_MASK)
           else:
             droid.setScanFilterServiceUuid(serv_uuid)
-          build_scanfilter(droid, filter_list)
+          droid.buildScanFilter(filter_list)
     index += 1
 
 
@@ -304,25 +299,25 @@ def set_all_filter(droid, add_mask, filter, data_list, filter_list):
       serv_uuid = data['SERVICE_UUID']
       serv_uuid_list = data['UUIDLIST']
       droid.setScanFilterDeviceName(filter_name)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
       if add_mask is True:
         droid.setScanFilterManufacturerData(id,manu_data,MANUFACTURER_DATA_MASK)
-        build_scanfilter(droid, filter_list)
+        droid.buildScanFilter(filter_list)
         droid.setScanFilterServiceData(serv_uuid,serv_data,SERVICE_DATA_MASK)
-        build_scanfilter(droid, filter_list)
+        droid.buildScanFilter(filter_list)
         if serv_uuid_list != -1:
           for uuid in serv_uuid_list:
             droid.setScanFilterServiceUuid(uuid,UUID_MASK)
-            build_scanfilter(droid, filter_list)
+            droid.buildScanFilter(filter_list)
       else:
         droid.setScanFilterManufacturerData(id,manu_data)
-        build_scanfilter(droid, filter_list)
+        droid.buildScanFilter(filter_list)
         droid.setScanFilterServiceData(serv_uuid,serv_data)
-        build_scanfilter(droid, filter_list)
+        droid.buildScanFilter(filter_list)
         if serv_uuid_list != -1:
           for uuid in serv_uuid_list:
             droid.setScanFilterServiceUuid(uuid)
-            build_scanfilter(droid, filter_list)
+            droid.buildScanFilter(filter_list)
     index += 1
 
 
@@ -337,7 +332,7 @@ def set_multiple_filter(droid, add_mask, filter, data_list, filter_list):
     if filter_type is NAME_FILTER:
       filter_name = advertise_droid.bluetoothGetLocalName()
       droid.setScanFilterDeviceName(filter_name)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
     elif filter_type is MANUFACTURER_DATA_FILTER:
       id = data['ID']
       manu_data = data['MANU_DATA']
@@ -345,7 +340,7 @@ def set_multiple_filter(droid, add_mask, filter, data_list, filter_list):
         droid.setScanFilterManufacturerData(id,manu_data,MANUFACTURER_DATA_MASK)
       else:
         droid.setScanFilterManufacturerData(id,manu_data)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
     elif filter_type is SERVICE_DATA_FILTER:
       serv_uuid = data['SERVICE_UUID']
       serv_data = data['SERVICE_DATA']
@@ -353,7 +348,7 @@ def set_multiple_filter(droid, add_mask, filter, data_list, filter_list):
         droid.setScanFilterServiceData(serv_uuid,serv_data,SERVICE_DATA_MASK)
       else:
         droid.setScanFilterServiceData(serv_uuid,serv_data)
-      build_scanfilter(droid, filter_list)
+      droid.buildScanFilter(filter_list)
     elif filter_type is SERVICE_UUID_FILTER:
       serv_uuid_list = data['UUIDLIST']
       if serv_uuid_list != -1:
@@ -362,7 +357,7 @@ def set_multiple_filter(droid, add_mask, filter, data_list, filter_list):
             droid.setScanFilterServiceUuid(serv_uuid,UUID_MASK)
           else:
             droid.setScanFilterServiceUuid(serv_uuid)
-          build_scanfilter(droid, filter_list)
+          droid.buildScanFilter(filter_list)
     index += 1
 
 
@@ -374,9 +369,7 @@ def start_ble_scan(droid):
   for callback in scancallback_list:
     settings = scansettings_list[index]
     filter = scanfilter_list[index]
-    status = startblescan(droid, filter, settings, callback)
-    if status is False:
-      break
+    droid.startBleScan(filter, settings, callback)
     index += 1
   return status
 
@@ -385,7 +378,7 @@ def stop_ble_scan(droid):
   """Stop Ble Scan for all advertisers
   """
   for callback in scancallback_list:
-    status = stopblescan(droid, callback)
+    droid.stopBleScan(callback)
 
 
 def clean_up_resources():

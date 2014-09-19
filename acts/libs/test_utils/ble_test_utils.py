@@ -13,23 +13,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import time
-import threading
-import pprint
-
-import android
-
 from queue import Empty
-
-
-class BleScanResultError(Exception):
-  """Error in fetching BleScanner Scan result."""
 
 default_timeout = 10
 
 def generate_ble_scan_objects(droid):
   filter_list = droid.genFilterList()
-  filter_index = droid.buildScanFilter(filter_list)
+  droid.buildScanFilter(filter_list)
   scan_settings = droid.buildScanSetting()
   scan_callback = droid.genScanCallback()
   return filter_list, scan_settings, scan_callback
@@ -124,3 +114,29 @@ def extract_uuidlist_from_record(uuid_string_list):
     start += uuid_length + 1
     uuidlist.append(uuid)
   return uuidlist
+
+def build_advertise_settings(droid, mode, txpower, type):
+  """Build Advertise Settings
+  """
+  droid.setAdvertisementSettingsAdvertiseMode(mode)
+  droid.setAdvertisementSettingsTxPowerLevel(txpower)
+  droid.setAdvertisementSettingsIsConnectable(type)
+  settings = droid.buildAdvertisementSettings()
+  return settings
+
+
+def build_advertise_data(droid, pwr_incl, name_incl, id, manu_data, serv_uuid,
+                         serv_data, uuid):
+  """Build Advertise Data
+  """
+  droid.setAdvertiseDataIncludeTxPowerLevel(pwr_incl)
+  droid.setAdvertiseDataIncludeDeviceName(name_incl)
+  if (manu_data != -1):
+    droid.addAdvertiseDataManufacturerId(id, manu_data);
+  if (serv_data != -1):
+    droid.addAdvertiseDataServiceData(serv_uuid, serv_data)
+  if (uuid != -1):
+    droid.setAdvertiseDataSetServiceUuids(uuid)
+  data_index = droid.buildAdvertiseData()
+  callback_index = droid.genBleAdvertiseCallback()
+  return data_index, callback_index

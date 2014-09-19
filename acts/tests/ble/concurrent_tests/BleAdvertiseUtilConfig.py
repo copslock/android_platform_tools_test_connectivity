@@ -19,7 +19,7 @@
 """Helper functions for Advertisement Feature
 """
 
-from test_utils.bluetooth.ble_advertise_utils import *
+from test_utils.ble_test_utils import *
 from .BleConfig import *
 
 
@@ -260,7 +260,7 @@ def start_advertising(start_index, total_advertise, droid, event_dispatcher):
     callbackIdx = advertise_callback_index[index]
     settingsIdx = advertise_settings_index[index]
     dataIdx = advertise_data_index[index]
-    status = startbleadvertise(droid, dataIdx, settingsIdx, callbackIdx)
+    droid.startBleAdvertising(callbackIdx, dataIdx, settingsIdx)
     if status is True:
       expected_result = expected_advertise_result[index]
       callback = advertise_callback_index[index]

@@ -20,6 +20,7 @@
 
 import time
 from base_test import BaseTestClass
+from test_utils.ble_test_utils import *
 from tests.ble.concurrent_tests.BleScanUtilConfig import *
 
 

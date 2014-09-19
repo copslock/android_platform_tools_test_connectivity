@@ -20,17 +20,16 @@ import time
 
 from queue import Empty
 from base_test import BaseTestClass
-from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
-                                                       generate_ble_scan_objects,
-                                                       generate_ble_advertise_objects)
-
+from test_utils.BleEnum import *
+from test_utils.ble_test_utils import (verify_bluetooth_on_event,
+                                       generate_ble_scan_objects,
+                                       generate_ble_advertise_objects)
 
 class FilteringTest(BaseTestClass):
   TAG = "FilteringTest"
   log_path = "".join([BaseTestClass.log_path,TAG,'/'])
   tests = None
-  default_timeout = 20
+  default_timeout = 10
 
   valid_filter_suite = [
     {
@@ -339,7 +338,12 @@ class FilteringTest(BaseTestClass):
       self.blescan_verify_onscanresult_event_handler,
       expected_scan_event_name, ([filters]), self.default_timeout)
     try:
-      test_result = worker.result(self.default_timeout)
+      finished = False
+      start_time = time.time()
+      while time.time() < start_time + self.default_timeout and not finished:
+        test_result = worker.result(self.default_timeout)
+        if test_result:
+          finished = True
     except Empty as error:
       test_result = False
       self.log.debug(" ".join(["Test failed with:",str(error)]))
@@ -360,7 +364,7 @@ class FilteringTest(BaseTestClass):
   def test_settings_in_effect_suite(self):
     settings_in_effect_suite = self._get_combinations(
       self.settings_in_effect_variants)
-    filters = [{"defaults": True}]
+    filters = [{"include_device_name": True}]
     params = list(it.product(filters, settings_in_effect_suite))
     failed = self.run_generated_testcases("Ble advertisement settings in effect test",
                                           self._magic,
