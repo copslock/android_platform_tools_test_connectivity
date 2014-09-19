@@ -59,3 +59,68 @@ def verify_bluetooth_on_event(ed):
   except Empty as error:
     test_result = False
   return test_result
+
+def case_insensitive_compare_uuidlist(exp_uuids, recv_uuids):
+  """Extract the UUID from Scan Result
+  """
+  index = 0
+  succ_count = 0
+  expected_succ_count = 0
+  succ_list = []
+  for index in range(0,len(exp_uuids)):
+    succ_list.append(False)
+    expected_succ_count += 1
+  for recv_uuid in recv_uuids:
+    index = 0
+    for index in range(0,len(exp_uuids)):
+      exp_uuid = exp_uuids[index]
+      if (exp_uuid.lower() == recv_uuid.lower() and
+          succ_list[index] == False):
+        succ_count += 1
+        succ_list[index] = True
+  del succ_list[ 0:len(succ_list)]
+  if succ_count == expected_succ_count:
+    return True
+  else:
+    return False
+
+def convert_integer_string_to_arraylist(string_list, start, end):
+  """Convert string values to integer values and append to array list
+  """
+  arraylist = []
+  innerloop = 0
+  while start < end:
+    temp = ""
+    ch = string_list[start]
+    innerloop = start
+    while ch != ',':
+      temp += ch
+      innerloop += 1
+      if innerloop >= end:
+        break
+      ch = string_list[innerloop]
+    value = int(temp)
+    arraylist.append(value)
+    start = innerloop + 1
+  return arraylist
+
+def extract_string_from_byte_array(string_list):
+  """Extract the string from array of string list
+  """
+  start = 1
+  end = len(string_list) - 1
+  extract_string = string_list[start:end]
+  return extract_string
+
+def extract_uuidlist_from_record(uuid_string_list):
+  """Extract uuid from Service UUID List
+  """
+  start = 1
+  end = len(uuid_string_list) - 1
+  uuid_length = 36
+  uuidlist = []
+  while start < end:
+    uuid = uuid_string_list[start:(start + uuid_length)]
+    start += uuid_length + 1
+    uuidlist.append(uuid)
+  return uuidlist

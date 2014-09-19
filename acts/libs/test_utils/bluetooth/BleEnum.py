@@ -127,3 +127,10 @@ class BluetoothGattConnectionPriority(Enum):
 class BluetoothGatt(Enum):
   GATT_SUCCESS = 0
   GATT_FAILURE = 0x101
+
+class AdvertiseErrorCode(Enum):
+  DATA_TOO_LARGE = 1
+  TOO_MANY_ADVERTISERS = 2
+  ADVERTISE_ALREADY_STARTED = 3
+  BLUETOOTH_INTERNAL_FAILURE = 4
+  FEATURE_NOT_SUPPORTED = 5
