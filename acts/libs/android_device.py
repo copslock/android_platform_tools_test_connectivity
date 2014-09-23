@@ -1,7 +1,6 @@
 #!/usr/bin/python3.4
-# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
-
-#   Copyright 2014- The Android Open Source Project
+#
+#   Copyright 2014 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -25,7 +24,7 @@ class ANDROIDDEVICEException(Exception):
   pass
 
 class DOESNOTEXISTException(ANDROIDDEVICEException):
-  ''' Raised when something does not exist is referrenced '''
+  ''' Raised when something does not exist is referenced '''
 
 class AndroidDevice:
   ''' Class representing an android device '''

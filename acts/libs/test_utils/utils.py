@@ -1,6 +1,5 @@
 #!/usr/bin/python3.4
-# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
-
+#
 #   Copyright 2014 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,20 +33,24 @@ def create_dir(path):
         os.makedirs(path)
 
 def exe_cmd(*cmds):
-  cmd = ' '.join(cmds)
-  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-  (out, err) = proc.communicate()
-  if not err:
-    return out
-  raise Exception(err)
+    """Executes commands in a new shell.
+
+    Params:
+      cmds: A sequence of commands and arguments.
+
+    Returns:
+      The output of the command run.
+    """
+    cmd = ' '.join(cmds)
+    return subprocess.check_output(cmd, shell=True)
 
 def get_current_human_time():
-  """Returns the current time in human readable format.
+    """Returns the current time in human readable format.
 
-  Returns:
-  	The current time stamp in Month-Day-Year Hour:Min:Sec format.
-  """
-  return time.strftime("%m-%d-%Y %H:%M:%S ")
+    Returns:
+        The current time stamp in Month-Day-Year Hour:Min:Sec format.
+    """
+    return time.strftime("%m-%d-%Y %H:%M:%S ")
 
 def find_files(paths, file_predicate):
     """Locate files whose names and extensions match the given predicate in
@@ -72,43 +75,43 @@ def find_files(paths, file_predicate):
     return file_list
 
 def load_config(file_full_path):
-  """Loads a JSON config file.
+    """Loads a JSON config file.
 
-  Returns:
-  	A JSON object.
-  """
-  f = open(file_full_path, 'r')
-  conf = json.load(f)
-  f.close()
-  return conf
+    Returns:
+        A JSON object.
+    """
+    f = open(file_full_path, 'r')
+    conf = json.load(f)
+    f.close()
+    return conf
 
 def find_field(item_list, cond, comparator, target_field):
-  """Finds the value of a field in a dict object that satisfies certain
-  conditions.
+    """Finds the value of a field in a dict object that satisfies certain
+    conditions.
 
-  Params:
-  	item_list: A list of dict objects.
-  	cond: A param that defines the condition.
-  	comparator: A function that checks if an dict satisfies the condition.
-  	target_field: Name of the field whose value to be returned if an item
-  		satisfies the condition.
+    Params:
+        item_list: A list of dict objects.
+        cond: A param that defines the condition.
+        comparator: A function that checks if an dict satisfies the condition.
+        target_field: Name of the field whose value to be returned if an item
+            satisfies the condition.
 
-  Returns:
-  	Target value or None if no item satisfies the condition.
-  """
-  for item in item_list:
-    if comparator(item, cond) and target_field in item:
-      return item[target_field]
-  return None
+    Returns:
+        Target value or None if no item satisfies the condition.
+    """
+    for item in item_list:
+       if comparator(item, cond) and target_field in item:
+          return item[target_field]
+    return None
 
 def rand_ascii_str(length):
-  """Generates a random string of specified length, composed of ascii letters
-  and digits.
+    """Generates a random string of specified length, composed of ascii letters
+    and digits.
 
-  Params:
-    length: The number of characters in the string.
+    Params:
+      length: The number of characters in the string.
 
-  Returns:
-    The random string generated.
-  """
-  return ''.join(random.choice(ascii_letters_and_digits) for i in range(length))
+    Returns:
+      The random string generated.
+    """
+    return ''.join(random.choice(ascii_letters_and_digits) for i in range(length))
