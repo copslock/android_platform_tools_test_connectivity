@@ -1,6 +1,5 @@
 #!/usr/bin/python3.4
-# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
-
+#
 #   Copyright 2014 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,24 +15,28 @@
 #   limitations under the License.
 
 import argparse
-import json
 import os
+import subprocess
 import sys
 
 from android_device import AndroidDevice
 from ap.access_point import AP
 import attenuator.minicircuits.telnet as mctelnet
 import logger
+from test_utils.utils import create_dir
 from test_utils.utils import load_config
 
 test_paths = [os.path.dirname(os.path.abspath(__file__)) + "/tests"]
 testbed_config_path = "testbed.config"
+adb_logcat_path = "../logs/AdbLogcat/"
+adb_logcat_tag = "adb_logcat"
 
 class TestRunner():
     TAG = "TestRunner"
 
-    def __init__(self, testbed_config, run_list = None):
+    def __init__(self, testbed_config, run_list=None):
         self.controllers = {}
+        self.procs = {}
         self.log = logger.get_test_logger("../logs/TestRunner/",
                                                  self.TAG)
         self.reporter = logger.get_test_reporter("../logs/TestRunner/",
@@ -123,7 +126,7 @@ class TestRunner():
 
         Args:
             test_cls_name: Name of the test class to execute.
-            test_cases: List of test case names to exectute within the class.
+            test_cases: List of test case names to execute within the class.
 
         Returns:
             A tuple, with the number of cases passed at index 0, and the total
@@ -143,6 +146,7 @@ class TestRunner():
         This is the method that takes a list of test classes/cases and execute
         them accordingly.
         """
+        self.start_adb_logcat()
         if self.run_list:
             self.log.debug("Executing run list " + str(self.run_list))
             for test_name in self.run_list:
@@ -150,7 +154,7 @@ class TestRunner():
                 if len(tokens) == 1:
                     # This should be considered a test class name
                     test_cls_name = tokens[0]
-                    self.log.debug("Executing test class " + test_cls_name)
+                    self.log.debug("Executing test class {}".format(test_cls_name))
                     self.run_test_class(test_cls_name)
                 elif len(tokens) == 2:
                     # This should be considered a test class name followed by
@@ -164,13 +168,44 @@ class TestRunner():
             self.log.debug("No run list provided by user, running everything.")
             for test_cls_name in self.test_classes:
                 self.run_test_class(test_cls_name)
-        self.reporter.write("Executed: " + str(self.num_executed)
-                            + "\nPassed: " + str(self.num_passed) + "\n")
+        self.reporter.write(''.join(("Executed: ", str(self.num_executed),
+                            "\nPassed: ", str(self.num_passed), "\n")))
         self.reporter.close()
+        self.stop_adb_logcat()
+
+    def start_adb_logcat(self):
+        """Starts adb logcat for each device in separate subprocesses and save
+        the logs in files.
+        """
+        if "android_devices" not in self.controllers:
+            return
+        devices = self.controllers["android_devices"]
+        create_dir(adb_logcat_path)
+        file_list = []
+        for d in devices:
+            serial = d.device_id
+            f_name = ''.join((logger.get_log_file_timestamp(), ',',
+                d.get_model(), ',', serial, '.log'))
+            cmd = ''.join(("adb -s ", serial, " logcat -v threadtime > ",
+                adb_logcat_path, f_name))
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+            self.procs[serial + adb_logcat_tag] = p
+            file_list.append(f_name)
+        if file_list:
+            self.controllers[adb_logcat_tag] = (adb_logcat_path, file_list)
+
+    def stop_adb_logcat(self):
+        """Stops all adb logcat subprocesses.
+        """
+        for k,p in self.procs.items():
+            if k[-len(adb_logcat_tag):] == adb_logcat_tag:
+                p.kill()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=("Specify tests to run. If "
                  "nothing specified, run all test cases found."))
+    parser.add_argument('-r', '--repeat', type=int, help=("Number of times to "
+                        "run the specified test cases."))
     parser.add_argument('-tb', '--testbed', nargs='+', type=str,
                         help=("Path to a file containing a json object that "
                               "represents the testbed configuration."))
@@ -180,8 +215,6 @@ if __name__ == "__main__":
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
                         help=("List of test classes to run. Ignored if "
                               "testfile is set."))
-    parser.add_argument('-r', '--repeat', type=int, help=("Number of times to "
-                        "run the specified test cases."))
     args = parser.parse_args()
     test_list = []
     repeat = 1
