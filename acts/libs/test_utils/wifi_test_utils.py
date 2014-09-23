@@ -1,7 +1,6 @@
 #!/usr/bin/python3.4
-# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
-
-#   Copyright 2014- Google, Inc.
+#
+#   Copyright 2014 Google, Inc.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -14,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-# The following frequency lists are for US
 
 from enum import Enum
 import json
