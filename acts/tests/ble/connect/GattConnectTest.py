@@ -17,10 +17,10 @@ import pprint
 from queue import Empty
 
 from base_test import BaseTestClass
-from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import (verify_bluetooth_on_event,
-                                                       generate_ble_scan_objects,
-                                                       generate_ble_advertise_objects)
+from test_utils.BleEnum import *
+from test_utils.ble_test_utils import (verify_bluetooth_on_event,
+                                       generate_ble_scan_objects,
+                                       generate_ble_advertise_objects)
 
 class GattConnectTest(BaseTestClass):
   TAG = "GattConnectTest"
@@ -253,7 +253,7 @@ class GattConnectTest(BaseTestClass):
     worker = advertise_event_dispatcher.handle_event(
       self.gatt_on_service_added_handler,
       expected_add_service_event_name, (["2649a34c-aa23-44a1-af1c-f560b0084e44"]))
-    test_result = worker.result()
+    test_result = worker.result(self.default_timeout)
     advertise_droid.setAdvertisementSettingsAdvertiseMode(
       AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
     advertise_droid.setAdvertisementSettingsIsConnectable(True)

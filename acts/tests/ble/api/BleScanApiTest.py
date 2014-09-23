@@ -20,17 +20,13 @@ after you set all attributes of each object. If this test suite doesn't pass,
 then other test suites utilising Ble Scanner will also fail.
 """
 
-# TODO: Refactor to use less code and be more effective.
-# TODO: Add documentation to the refactored code.
-
-import pprint
-from queue import Empty
-
+from android import SL4AAPIError
 from base_test import BaseTestClass
-from test_utils.bluetooth.ble_scan_utils import *
-from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import BleScanResultError
+from test_utils.BleEnum import *
 
+
+class BleScanResultsError(Exception):
+  """Error in getting scan results"""
 
 class BleScanVerificationError(Exception):
   """Error in comparing BleScan results"""
@@ -126,20 +122,20 @@ class BleScanApiTest(BaseTestClass):
                               input['ScanSettings'][1],
                               input['ScanSettings'][2],
                               input['ScanSettings'][3])
-      except android.SL4AAPIError as error:
+      except SL4AAPIError as error:
         self.log.debug(" ".join(["Set Scan Settings failed with:",str(error)]))
         return False
     if 'ScanFilterDeviceName' in input.keys():
       try:
         droid.setScanFilterDeviceName(input['ScanFilterDeviceName'])
-      except android.SL4AAPIError as error:
+      except SL4AAPIError as error:
         self.log.debug(" ".join(["Set Scan Filter Device Name failed with:",str(error)]))
         return False
     if 'ScanFilterDeviceAddress' in input.keys():
       try:
         droid.setScanFilterDeviceAddress(
           input['ScanFilterDeviceAddress'])
-      except android.SL4AAPIError as error:
+      except SL4AAPIError as error:
         self.log.debug(" ".join(["Set Scan Filter Device Address failed with:",str(error)]))
         return False
     if ('ScanFilterManufacturerDataId' in input.keys()
@@ -149,7 +145,7 @@ class BleScanApiTest(BaseTestClass):
           input['ScanFilterManufacturerDataId'],
           input['ScanFilterManufacturerData'],
           input['ScanFilterManufacturerDataMask'])
-      except android.SL4AAPIError as error:
+      except SL4AAPIError as error:
         self.log.debug(" ".join(["Set Scan Filter Manufacturer info with data mask failed with:",
                                  str(error)]))
         return False
@@ -160,7 +156,7 @@ class BleScanApiTest(BaseTestClass):
         droid.setScanFilterManufacturerData(
           input['ScanFilterManufacturerDataId'],
           input['ScanFilterManufacturerData'])
-      except android.SL4AAPIError as error:
+      except SL4AAPIError as error:
         self.log.debug(" ".join(["Set Scan Filter Manufacturer info failed with: ",str(error)]))
         return False
     if 'ScanFilterServiceUuid' in input.keys() and 'ScanFilterServiceMask' in input.keys():
@@ -751,7 +747,7 @@ class BleScanApiTest(BaseTestClass):
     droid = self.droid
     service_uuid_list = [Uuids.P_Service.value]
     scan_callback = droid.genLeScanCallback()
-    return verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
+    return self.verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
                                                       scan_callback,
                                                       service_uuid_list)
 
@@ -768,7 +764,7 @@ class BleScanApiTest(BaseTestClass):
     droid = self.droid
     service_uuid_list = [Uuids.HR_SERVICE.value]
     scan_callback = droid.genLeScanCallback()
-    return verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
+    return self.verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
                                                       scan_callback,
                                                       service_uuid_list)
 
@@ -785,7 +781,7 @@ class BleScanApiTest(BaseTestClass):
     droid = self.droid
     service_uuid_list = []
     scan_callback = droid.genLeScanCallback()
-    return verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
+    return self.verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
                                                       scan_callback,
                                                       service_uuid_list)
 
@@ -802,6 +798,24 @@ class BleScanApiTest(BaseTestClass):
     droid = self.droid
     service_uuid_list = [Uuids.HR_SERVICE.value, Uuids.P_Service.value]
     scan_callback = droid.genLeScanCallback()
-    return verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
+    return self.verify_classic_ble_scan_with_service_uuids(self, droid, self.ed,
                                                       scan_callback,
                                                       service_uuid_list)
+  # TODO: remove this when refactoring code
+  def verify_classic_ble_scan_with_service_uuids(self, testcase, droid, event_dispatcher,
+                                                 scan_callback,
+                                                 service_uuid_list):
+      test_result = True
+      try:
+          test_result = droid.startClassicBleScanWithServiceUuids(scan_callback, service_uuid_list)
+      except BleScanResultsError as error:
+          testcase.log.debug(str(error))
+          return False
+      droid.stopClassicBleScan(scan_callback)
+      if not test_result:
+          testcase.log.debug(
+              "Start classic ble scan with service uuids return false boolean value.")
+          return False
+      else:
+          testcase.log.debug("Passed")
+      return True

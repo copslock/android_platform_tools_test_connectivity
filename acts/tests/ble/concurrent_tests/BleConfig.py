@@ -20,9 +20,7 @@
    Scan Settings and Filter Setting Configuration
 """
 
-from test_utils.bluetooth.BleEnum import *
-from test_utils.bluetooth.ble_helper_functions import *
-from test_utils.bluetooth.blescan_api_helper import (startbleadvertise)
+from test_utils.BleEnum import *
 
 """Manufacturer ID's
 """

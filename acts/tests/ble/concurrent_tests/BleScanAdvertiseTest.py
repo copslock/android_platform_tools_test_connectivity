@@ -20,7 +20,7 @@
 
 import time
 from base_test import BaseTestClass
-from test_utils.bluetooth.blescan_api_helper import *
+from test_utils.ble_test_utils import *
 from tests.ble.concurrent_tests.BleAdvertiseUtilConfig import *
 
 
@@ -293,23 +293,22 @@ class BleScanAdvertiseTest(BaseTestClass):
     if self.is_testcase_failed is True:
       self.droid.bluetoothToggleState(False)
       self.droid1.bluetoothToggleState(False)
-      time.sleep(1)
       self.droid.bluetoothToggleState(True)
       self.droid1.bluetoothToggleState(True)
       self.is_testcase_failed = False
-      time.sleep(10)
+      verify_bluetooth_on_event(self.ed)
+      verify_bluetooth_on_event(self.ed1)
 
 
   def teardown_class(self):
     """Reset Bluetooth State after Test Class Run Complete
     """
-    self.ed1.stop()
     self.droid.bluetoothToggleState(False)
     self.droid1.bluetoothToggleState(False)
-    time.sleep(1)
     self.droid.bluetoothToggleState(True)
     self.droid1.bluetoothToggleState(True)
-    time.sleep(10)
+    verify_bluetooth_on_event(self.ed)
+    verify_bluetooth_on_event(self.ed1)
 
 
   """BLE Advertise Functional Test cases validated with Scan results
@@ -326,17 +325,15 @@ class BleScanAdvertiseTest(BaseTestClass):
           Scan Results received for both advertisement only after
           start advertising
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(2)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -356,7 +353,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 2, advertise_droid)
 
     if not test_result:
@@ -375,17 +372,15 @@ class BleScanAdvertiseTest(BaseTestClass):
        4. Reset Advertiser Bluetooth State.
        5. Verify Scan Results not received after Bluetooth Reset.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(2)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -401,14 +396,13 @@ class BleScanAdvertiseTest(BaseTestClass):
 
     if test_result is True:
       advertise_droid.bluetoothToggleState(False)
-      time.sleep(1)
       advertise_droid.bluetoothToggleState(True)
-      time.sleep(5)
+      verify_bluetooth_on_event(advertise_event_dispatcher)
       self.delay_scan_results(scan_event_dispatcher, scan_callback_index)
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 2, advertise_droid)
 
     if not test_result:
@@ -427,17 +421,15 @@ class BleScanAdvertiseTest(BaseTestClass):
        4. Reset Scanner Bluetooth State.
        5. Verify Scan Results received after Scanner Bluetooth Reset.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(2)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -453,15 +445,11 @@ class BleScanAdvertiseTest(BaseTestClass):
 
     if test_result is True:
       scan_droid.bluetoothToggleState(False)
-      time.sleep(1)
       scan_droid.bluetoothToggleState(True)
-      time.sleep(5)
+      verify_bluetooth_on_event(scan_event_dispatcher)
       (filter_list, scan_settings,
        scan_callback_index) = generate_ble_scan_objects(scan_droid)
-      test_result = startblescan(scan_droid, filter_list, scan_settings,
-                                 scan_callback_index)
-
-    if test_result is True:
+      scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, True)
 
@@ -471,7 +459,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 2, advertise_droid)
 
     if not test_result:
@@ -491,16 +479,14 @@ class BleScanAdvertiseTest(BaseTestClass):
        5. Verify Scan Results not received after both advertiser and
           Scanner Bluetooth Reset.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(2)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
     if test_result is True:
@@ -518,20 +504,17 @@ class BleScanAdvertiseTest(BaseTestClass):
     if test_result is True:
       advertise_droid.bluetoothToggleState(False)
       scan_droid.bluetoothToggleState(False)
-      time.sleep(1)
       advertise_droid.bluetoothToggleState(True)
       scan_droid.bluetoothToggleState(True)
-      time.sleep(5)
+      verify_bluetooth_on_event(scan_event_dispatcher)
+      verify_bluetooth_on_event(advertise_event_dispatcher)
       (filter_list, scan_settings,
        scan_callback_index) = generate_ble_scan_objects(scan_droid)
-      test_result = startblescan(scan_droid, filter_list,
-                                 scan_settings, scan_callback_index)
-
-    if test_result is True:
+      scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 2, advertise_droid)
 
     if not test_result:
@@ -554,17 +537,15 @@ class BleScanAdvertiseTest(BaseTestClass):
        7. Verify Scan Results received after both advertiser and
           Scanner Bluetooth Reset.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(2)
 
     (filter_list, scan_settings,
      scan_callback_index) = generate_ble_scan_objects(scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -581,16 +562,13 @@ class BleScanAdvertiseTest(BaseTestClass):
     if test_result is True:
       advertise_droid.bluetoothToggleState(False)
       scan_droid.bluetoothToggleState(False)
-      time.sleep(1)
       advertise_droid.bluetoothToggleState(True)
       scan_droid.bluetoothToggleState(True)
-      time.sleep(5)
+      verify_bluetooth_on_event(scan_event_dispatcher)
+      verify_bluetooth_on_event(advertise_event_dispatcher)
       (filter_list, scan_settings,
        scan_callback_index) = generate_ble_scan_objects(scan_droid)
-      test_result = startblescan(scan_droid, filter_list, scan_settings,
-                                 scan_callback_index)
-
-    if test_result is True:
+      scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
@@ -607,8 +585,6 @@ class BleScanAdvertiseTest(BaseTestClass):
       self.delay_scan_results(scan_event_dispatcher, scan_callback_index)
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
-
-    stopblescan(scan_droid, scan_callback_index)
     stop_advertising(0, 2, advertise_droid)
 
     if not test_result:
@@ -629,16 +605,15 @@ class BleScanAdvertiseTest(BaseTestClass):
           is triggered with error code.
        6. Verify onScanResults callback is triggered for the advertisement.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(1)
 
     (filter_list, scan_settings,
      scan_callback_index) = generate_ble_scan_objects(scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -670,7 +645,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 1, advertise_droid)
 
     if not test_result:
@@ -719,17 +694,15 @@ class BleScanAdvertiseTest(BaseTestClass):
             and verify scan result for instance 1, 9, 5 and 6
        19. Stop Advertising all instances 1, 9, 5 and 6
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(10)
 
     (filter_list, scan_settings,
      scan_callback_index) = generate_ble_scan_objects(scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
-
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
                                        {"Index": 0, "Status": BLE_ONFAILURE}})
@@ -912,7 +885,7 @@ class BleScanAdvertiseTest(BaseTestClass):
     if test_result is True:
       stop_advertising(0, 10, advertise_droid)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 10, advertise_droid)
 
     if not test_result:
@@ -929,17 +902,15 @@ class BleScanAdvertiseTest(BaseTestClass):
        4. Verify onSuccess callback triggered for all four instances.
        5. Verify onScanResults received for all four instances.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(4)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -963,7 +934,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 4, advertise_droid)
 
     if not test_result:
@@ -981,13 +952,13 @@ class BleScanAdvertiseTest(BaseTestClass):
           and onFailure for remaining instances.
        5. Verify onScanResults received for all four instances.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(6)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
     if test_result is True:
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
@@ -1018,7 +989,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 6, advertise_droid)
 
     if not test_result:
@@ -1036,16 +1007,15 @@ class BleScanAdvertiseTest(BaseTestClass):
           and onFailure for remaining instances.
        5. Verify onScanResults received for all four instances.
     """
+    test_result = True
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(10)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       expected_advertise_result.append({"Expected Result":
@@ -1081,7 +1051,7 @@ class BleScanAdvertiseTest(BaseTestClass):
       test_result = self.verify_scan_results(scan_event_dispatcher,
                                              scan_callback_index, False)
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 10, advertise_droid)
 
     if not test_result:
@@ -1099,17 +1069,16 @@ class BleScanAdvertiseTest(BaseTestClass):
        5. Repeat the steps till iteration complete.
        6. Verify onScanResults received for all iterations.
     """
+    test_result = True
     Iteration = 5
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(1)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       Index = 0
@@ -1132,7 +1101,7 @@ class BleScanAdvertiseTest(BaseTestClass):
           break
         Index += 1
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 1, advertise_droid)
 
     if not test_result:
@@ -1154,17 +1123,16 @@ class BleScanAdvertiseTest(BaseTestClass):
        7. Repeat the steps till iteration complete.
        8. Verify onScanResults received for all iterations.
     """
+    test_result = True
     Iteration = 5
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(1)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       Index = 0
@@ -1201,7 +1169,7 @@ class BleScanAdvertiseTest(BaseTestClass):
           break
         Index += 1
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 1, advertise_droid)
 
     if not test_result:
@@ -1220,17 +1188,16 @@ class BleScanAdvertiseTest(BaseTestClass):
        6. Repeat the steps till iteration complete.
        7. Verify onScanResults received for all iterations.
     """
+    test_result = True
     Iteration = 5
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(4)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       Index = 0
@@ -1259,7 +1226,7 @@ class BleScanAdvertiseTest(BaseTestClass):
           break
         Index += 1
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 4, advertise_droid)
 
     if not test_result:
@@ -1280,17 +1247,16 @@ class BleScanAdvertiseTest(BaseTestClass):
        7. Repeat the steps till iteration complete.
        8. Verify onScanResults received for all iterations.
     """
+    test_result = True
     Iteration = 5
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(6)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       Index = 0
@@ -1323,7 +1289,7 @@ class BleScanAdvertiseTest(BaseTestClass):
           break
         Index += 1
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 6, advertise_droid)
 
     if not test_result:
@@ -1343,17 +1309,16 @@ class BleScanAdvertiseTest(BaseTestClass):
        7. Repeat the steps till iteration complete.
        8. Verify onScanResults received for all iterations.
     """
+    test_result = True
     Iteration = 5
     (advertise_droid, scan_droid, advertise_event_dispatcher,
      scan_event_dispatcher) = self.configure_advertisement(10)
 
     filter_list, scan_settings, scan_callback_index = generate_ble_scan_objects(
       scan_droid)
-    test_result = startblescan(scan_droid, filter_list, scan_settings,
-                               scan_callback_index)
-    if test_result is True:
-      test_result = self.verify_scan_results(scan_event_dispatcher,
-                                             scan_callback_index, False)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback_index)
+    test_result = self.verify_scan_results(scan_event_dispatcher,
+                                           scan_callback_index, False)
 
     if test_result is True:
       Index = 0
@@ -1394,7 +1359,7 @@ class BleScanAdvertiseTest(BaseTestClass):
           break
         Index += 1
 
-    stopblescan(scan_droid, scan_callback_index)
+    scan_droid.stopBleScan(scan_callback_index)
     stop_advertising(0, 10, advertise_droid)
 
     if not test_result:
