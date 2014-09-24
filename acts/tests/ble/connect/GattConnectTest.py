@@ -18,9 +18,11 @@ from queue import Empty
 
 from base_test import BaseTestClass
 from test_utils.BleEnum import *
-from test_utils.ble_test_utils import (verify_bluetooth_on_event,
+from test_utils.ble_test_utils import (generate_ble_advertise_objects,
                                        generate_ble_scan_objects,
-                                       generate_ble_advertise_objects)
+                                       reset_bluetooth,
+                                       setup_multiple_devices_for_bluetooth_test,
+                                       take_btsnoop_log)
 
 class GattConnectTest(BaseTestClass):
   TAG = "GattConnectTest"
@@ -33,14 +35,20 @@ class GattConnectTest(BaseTestClass):
     self.tests = (
       "test_gatt_connect",
     )
+
+  def setup_class(self):
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
     self.ed1.start()
-    self.droid.bluetoothToggleState(False)
-    self.droid.bluetoothToggleState(True)
-    self.droid1.bluetoothToggleState(False)
-    self.droid1.bluetoothToggleState(True)
-    verify_bluetooth_on_event(self.ed)
-    verify_bluetooth_on_event(self.ed1)
+    return setup_multiple_devices_for_bluetooth_test(self.android_devices)
+
+  def on_exception(self, test_name, begin_time):
+    self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
+    for ad in self.android_devices:
+      self.take_bug_report(test_name, ad)
+      take_btsnoop_log(self, test_name, ad)
+
+  def on_fail(self, test_name, begin_time):
+    reset_bluetooth(self.android_devices)
 
   # Handler Functions Begin
   def blescan_verify_onfailure_event_handler(self, event):

@@ -19,10 +19,11 @@ import time
 
 from queue import Empty
 from base_test import BaseTestClass
-from test_utils.BleEnum import *
-from test_utils.ble_test_utils import (verify_bluetooth_on_event,
+from test_utils.ble_test_utils import (generate_ble_advertise_objects,
                                        generate_ble_scan_objects,
-                                       generate_ble_advertise_objects)
+                                       reset_bluetooth,
+                                       setup_multiple_devices_for_bluetooth_test,
+                                       take_btsnoop_log)
 
 
 class BleStressTest(BaseTestClass):
@@ -36,10 +37,23 @@ class BleStressTest(BaseTestClass):
     self.tests = (
       "test_loop_scanning_100",
       "test_loop_advertising_100",
+      "test_restart_advertise_callback_after_bt_toggle",
+      "test_restart_scan_callback_after_bt_toggle",
     )
-    self.droid.bluetoothToggleState(False)
-    self.droid.bluetoothToggleState(True)
-    verify_bluetooth_on_event(self.ed)
+
+  def setup_class(self):
+    self.droid1, self.ed1 = self.android_devices[1].get_droid()
+    self.ed1.start()
+    return setup_multiple_devices_for_bluetooth_test(self.android_devices)
+
+  def on_exception(self, test_name, begin_time):
+    self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
+    for ad in self.android_devices:
+      #self.take_bug_report(test_name, ad)
+      take_btsnoop_log(self, test_name, ad)
+
+  def on_fail(self, test_name, begin_time):
+    reset_bluetooth(self.android_devices)
 
   def bleadvertise_verify_onsuccess_handler(self, event):
     test_result = True
@@ -78,4 +92,51 @@ class BleStressTest(BaseTestClass):
                                str(error)]))
         test_result = False
       advertise_droid.stopBleAdvertising(advertise_callback)
+    return test_result
+
+
+  def test_restart_advertise_callback_after_bt_toggle(self):
+    test_result = True
+    advertise_droid, advertise_event_dispatcher = self.droid, self.ed
+    advertise_data, advertise_settings, advertise_callback = generate_ble_advertise_objects(advertise_droid)
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    expected_advertise_event_name = "".join(["BleAdvertise",str(advertise_callback),"onSuccess"])
+    worker = advertise_event_dispatcher.handle_event(
+      self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, ([]),
+      self.default_timeout)
+    try:
+      self.log.debug(worker.result(self.default_timeout))
+    except Empty as error:
+      self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
+      test_result = False
+    except concurrent.futures._base.TimeoutError as error:
+      self.log.debug(" ".join(["Test failed, filtering callback onSuccess never occurred:",
+                             str(error)]))
+    test_result = reset_bluetooth([self.android_devices[0]])
+    if not test_result:
+      return test_result
+    time.sleep(5)
+    advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+    worker = advertise_event_dispatcher.handle_event(
+      self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, ([]),
+      self.default_timeout)
+    try:
+      self.log.debug(worker.result(self.default_timeout))
+    except Empty as error:
+      self.log.debug(" ".join(["Test failed with Empty error:",str(error)]))
+      test_result = False
+    except concurrent.futures._base.TimeoutError as error:
+      self.log.debug(" ".join(["Test failed, filtering callback onSuccess never occurred:",
+                             str(error)]))
+    return test_result
+
+  def test_restart_scan_callback_after_bt_toggle(self):
+    test_result = True
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+        scan_droid)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    reset_bluetooth([self.android_devices[0]])
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+
     return test_result
