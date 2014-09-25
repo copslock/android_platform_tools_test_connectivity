@@ -80,10 +80,9 @@ def load_config(file_full_path):
     Returns:
         A JSON object.
     """
-    f = open(file_full_path, 'r')
-    conf = json.load(f)
-    f.close()
-    return conf
+    with open(file_full_path, 'r') as f:
+        conf = json.load(f)
+        return conf
 
 def find_field(item_list, cond, comparator, target_field):
     """Finds the value of a field in a dict object that satisfies certain

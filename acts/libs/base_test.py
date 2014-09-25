@@ -66,6 +66,8 @@ class BaseTestClass():
       self.attenuators = controllers["attenuators"]
     if "adb_logcat" in controllers:
       self.adb_logcat_path, self.adb_logcat_files = controllers["adb_logcat"]
+    if "user_params" in controllers:
+      self.user_params = controllers["user_params"]
 
   def setup_class(self):
     """Setup function that will be called before executing any test case in the
@@ -164,13 +166,14 @@ class BaseTestClass():
       out_name = ','.join((tag, device_model[:-4]))
       out_path = '/'.join((self.log_path, self.log_name))
       with open('/'.join((out_path, out_name + ".adblog")), 'w') as out:
-        with open(''.join((self.adb_logcat_path, f_name)), 'r') as f:
+        in_file = ''.join((self.adb_logcat_path, f_name))
+        with open(in_file, 'r', errors='replace') as f:
           in_range = False
           while True:
             line = None
             try:
               line = f.readline()
-            except UnicodeDecodeError:
+            except:
               self.log.debug("Failed to decode a line in adb log.")
               continue
             line_time = line[:logger.log_line_timestamp_len]
@@ -388,8 +391,11 @@ class BaseTestClass():
   def clean_up(self):
     """Cleans up objects initialized in the constructor.
     """
-    for ad in self.android_devices:
-      ad.kill_all_droids()
+    try:
+      for ad in self.android_devices:
+        ad.kill_all_droids()
+    except AttributeError as e:
+      pass
     for h in self.log.handlers:
       try:
         h.close()
@@ -397,4 +403,3 @@ class BaseTestClass():
         pass
       self.log.removeHandler(h)
     self.reporter.close()
-
