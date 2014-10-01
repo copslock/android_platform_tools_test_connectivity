@@ -88,6 +88,9 @@ def get_test_logger(log_path, TAG, filename=None):
         A logger configured with one stream handler and one file handler
     """
     log = logging.getLogger(TAG)
+    if log.handlers:
+        # This logger has been requested before.
+        return log
     log.propagate = False
     log.setLevel(logging.DEBUG)
     c_formatter = logging.Formatter(log_line_format, log_line_time_format)
@@ -109,6 +112,17 @@ def get_test_logger(log_path, TAG, filename=None):
     log.addHandler(fh)
     return log
 
+def kill_test_logger(logger):
+    """Cleans up a test logger object created by get_test_logger.
+
+    Params:
+        logger: The logging object to clean up.
+    """
+    for h in list(logger.handlers):
+        logger.removeHandler(h)
+        if isinstance(h, logging.FileHandler):
+            h.close()
+
 def get_test_reporter(log_path, TAG, filename=None):
     """Returns a file object used for reports.
 
@@ -128,6 +142,14 @@ def get_test_reporter(log_path, TAG, filename=None):
         create_dir(log_path)
     f = open(log_path + '/test_run_summary.log', 'w')
     return f
+
+def kill_test_reporter(reporter):
+    """Cleans up a test reporter object created by get_test_reporter.
+
+    Params:
+        reporter: The reporter file object to clean up.
+    """
+    reporter.close()
 
 def get_test_logger_and_reporter(log_path, TAG, filename=None):
     """Returns a logger and a reporter of the same name.
