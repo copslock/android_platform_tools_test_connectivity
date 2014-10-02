@@ -68,6 +68,17 @@ class BaseTestClass():
       self.adb_logcat_path, self.adb_logcat_files = controllers["adb_logcat"]
     if "user_params" in controllers:
       self.user_params = controllers["user_params"]
+    # Parse user params that we care about.
+    self.adb_log_time_offset = 5
+    if "user_params" in controllers:
+      user_params = controllers["user_params"]
+      if "adb_log_time_offset" in user_params:
+        offset = user_params["adb_log_time_offset"]
+        if offset < 0:
+          self.log.warning(' '.join(("Ignoring invalid adb_log_time_offset",
+            str(offset), "\nUsing default", str(self.adb_log_time_offset))))
+        else:
+          self.adb_log_time_offset = offset
 
   def setup_class(self):
     """Setup function that will be called before executing any test case in the
@@ -114,7 +125,7 @@ class BaseTestClass():
       test_name: Name of the test that triggered this function.
       begin_time: Logline timestamp taken when the test started.
     """
-    end_time = logger.get_current_logline_timestamp()
+    end_time = logger.get_log_line_timestamp(self.adb_log_time_offset)
     self.cat_adb_log(test_name, begin_time, end_time)
 
   def on_success(self, test_name, begin_time):
@@ -173,6 +184,8 @@ class BaseTestClass():
             line = None
             try:
               line = f.readline()
+              if not line:
+                return
             except:
               self.log.debug("Failed to decode a line in adb log.")
               continue
@@ -224,33 +237,34 @@ class BaseTestClass():
       True if the test passes, False otherwise.
     """
     offset = name_max_len - len(test_name) + 5
-    begin_time = logger.get_current_logline_timestamp()
+    begin_time = logger.get_log_line_timestamp(-self.adb_log_time_offset)
     try:
       self.log.info("-"*5 + "> Test Case - " + test_name)
       verdict = None
       self.num_executed += 1
       if params:
         # The evil unexposed ability to pass parameters into each test case.
-        verdict = self._exec_func(test_func, *params)
+        verdict = test_func(*params)
       else:
-        verdict = self._exec_func(test_func)
+        verdict = test_func()
       timestamp = get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
       if verdict:
-        self.reporter.write(msg + " PASSED\n")
-        self.log.info("PASSED")
+        self.reporter.write(msg + " PASS\n")
+        self.log.info("PASS")
         self.num_passed += 1
         self._exec_func(self.on_success, test_name, begin_time)
       else:
-        self.reporter.write(msg + "FAILED\n")
-        self.log.info("FAILED")
+        self.reporter.write(msg + "FAIL\n")
+        self.log.info("FAIL")
         self._exec_func(self.on_fail, test_name, begin_time)
       return verdict
     except:
       timestamp = get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
-      self.reporter.write(msg + " FAILED\n")
+      self.reporter.write(msg + " FAIL\n")
       self.log.exception("Exception in " + test_name)
+      self.log.info("FAIL")
       self.log.exception(traceback.format_exc())
       self._exec_func(self.on_exception, test_name, begin_time)
       self._exec_func(self.on_fail, test_name, begin_time)

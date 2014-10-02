@@ -42,7 +42,11 @@ def exe_cmd(*cmds):
       The output of the command run.
     """
     cmd = ' '.join(cmds)
-    return subprocess.check_output(cmd, shell=True)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    if not err:
+      return out
+    raise Exception(err)
 
 def get_current_human_time():
     """Returns the current time in human readable format.

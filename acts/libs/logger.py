@@ -61,15 +61,39 @@ def logline_timestamp_comparator(t1, t2):
             return 1
     return 0
 
-def get_current_logline_timestamp():
-    """Returns the current timestamp in the format used by log lines.
-    """
-    return datetime.datetime.now().strftime("%m-%d %H:%M:%S.%f")[:-3]
+def _get_timestamp(time_format, delta=None):
+    t = datetime.datetime.now()
+    if delta:
+        t = t + datetime.timedelta(seconds=delta)
+    return t.strftime(time_format)[:-3]
 
-def get_log_file_timestamp():
-    """Returns the current timestamp in the format used by log filenames.
+def get_log_line_timestamp(delta=None):
+    """Returns a timestamp in the format used by log lines.
+
+    Default is current time. If a delta is set, the return value will be
+    the current time offset by delta seconds.
+
+    Params:
+        delta: Number of seconds to offset from current time; can be negative.
+
+    Returns:
+        A timestamp in log line format with an offset.
     """
-    return datetime.datetime.now().strftime("%m-%d-%Y_%H-%M-%S-%f")[:-3]
+    return _get_timestamp("%m-%d %H:%M:%S.%f", delta)
+
+def get_log_file_timestamp(delta=None):
+    """Returns a timestamp in the format used for log file names.
+
+    Default is current time. If a delta is set, the return value will be
+    the current time offset by delta seconds.
+
+    Params:
+        delta: Number of seconds to offset from current time; can be negative.
+
+    Returns:
+        A timestamp in log filen name format with an offset.
+    """
+    return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
 
 def get_test_logger(log_path, TAG, filename=None):
     """Returns a logger object used for tests.
