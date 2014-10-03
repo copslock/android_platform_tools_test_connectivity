@@ -75,7 +75,7 @@ class BleAdvertiseApiTest(BaseTestClass):
     setup_result = True
     for ad in self.android_devices:
       droid, _ = ad.get_droid()
-      setup_result = droid.bluetoothSetHciSnoopLog(True)
+      setup_result = droid.bluetoothConfigHciSnoopLog(True)
       if not setup_result:
         return setup_result
     return setup_result

@@ -70,7 +70,6 @@ class TestRunner():
                 self.log.debug(' '.join(("Found", str(len(android_devices)),
                                          "android devices.")))
                 self.controllers["android_devices"] = android_devices
-        data = None
         if "AP" in data:
             aps = []
             for ap in data["AP"]:
@@ -204,8 +203,6 @@ class TestRunner():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=("Specify tests to run. If "
                  "nothing specified, run all test cases found."))
-    parser.add_argument('-c', '--config', nargs=1, type=str,
-                        help="Path to the test bed configuration file.")
     parser.add_argument('-r', '--repeat', type=int, help=("Number of times to "
                         "run the specified test cases."))
     parser.add_argument('-tb', '--testbed', nargs='+', type=str,
@@ -230,8 +227,8 @@ if __name__ == "__main__":
             test_list = args.testclass
     if args.repeat:
         repeat = args.repeat
-    if args.config:
-        testbed_config_path = args.config[0]
+    if args.testbed:
+        testbed_config_path = args.testbed[0]
     for i in range(repeat):
         t = TestRunner(testbed_config_path, test_list)
         t.run()

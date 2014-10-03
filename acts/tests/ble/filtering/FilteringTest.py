@@ -160,7 +160,6 @@ class FilteringTest(BaseTestClass):
   def on_exception(self, test_name, begin_time):
     self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
     for ad in self.android_devices:
-      self.take_bug_report(test_name, ad)
       take_btsnoop_log(self, test_name, ad)
 
   def on_fail(self, test_name, begin_time):
