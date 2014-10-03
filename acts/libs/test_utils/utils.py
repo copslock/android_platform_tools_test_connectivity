@@ -15,8 +15,10 @@
 #   limitations under the License.
 
 import json
+import functools
 import os
 import random
+import signal
 import string
 import subprocess
 import time
@@ -118,3 +120,41 @@ def rand_ascii_str(length):
       The random string generated.
     """
     return ''.join(random.choice(ascii_letters_and_digits) for i in range(length))
+
+# Timeout decorator block
+class TimeoutError(Exception):
+    """Exception for timeout decorator related errors.
+    """
+    pass
+
+def _timeout_handler(signum, frame):
+    """Handler function used by signal to terminate a timed out function.
+    """
+    raise TimeoutError()
+
+def timeout(sec):
+    """A decorator used to add time out check to a function.
+
+    Args:
+        sec: Number of seconds to wait before the function times out.
+            No timeout if set to 0
+
+    Returns:
+        What the decorated function returns.
+
+    Raises:
+        TimeoutError is raised when time out happens.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if sec:
+                signal.signal(signal.SIGALRM, _timeout_handler)
+                signal.alarm(sec)
+            try:
+                return func(*args, **kwargs)
+            except TimeoutError:
+                raise TimeoutError(("Function {} is timed out after {} "
+                  "seconds.").format(func.__name__, sec))
+        return wrapper
+    return decorator
