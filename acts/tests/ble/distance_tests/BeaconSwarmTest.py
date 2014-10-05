@@ -31,9 +31,10 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.BleEnum import *
-from test_utils.ble_test_utils import (verify_bluetooth_on_event,
-                                       generate_ble_scan_objects,
-                                       generate_ble_advertise_objects)
+from test_utils.ble_test_utils import (generate_ble_scan_objects,
+                                       reset_bluetooth,
+                                       setup_multiple_devices_for_bluetooth_test,
+                                       take_btsnoop_log)
 
 
 class BeaconSwarmTest(BaseTestClass):
@@ -48,14 +49,20 @@ class BeaconSwarmTest(BaseTestClass):
       "test_swarm_no_attenuation",
       "test_swarm_1000_on_scan_result",
     )
+
+  def setup_class(self):
     self.droid1, self.ed1 = self.android_devices[1].get_droid()
     self.ed1.start()
-    self.droid.bluetoothToggleState(False)
-    self.droid.bluetoothToggleState(True)
-    self.droid1.bluetoothToggleState(False)
-    self.droid1.bluetoothToggleState(True)
-    verify_bluetooth_on_event(self.ed)
-    verify_bluetooth_on_event(self.ed1)
+    return setup_multiple_devices_for_bluetooth_test(self.android_devices)
+
+  def on_exception(self, test_name, begin_time):
+    self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
+    for ad in self.android_devices:
+      self.take_bug_report(test_name, ad)
+      take_btsnoop_log(self, test_name, ad)
+
+  def on_fail(self, test_name, begin_time):
+    reset_bluetooth(self.android_devices)
 
   ble_device_addresses = []
 
@@ -100,7 +107,7 @@ class BeaconSwarmTest(BaseTestClass):
     :return: test_result: bool
     """
     test_result = True
-    self.attenuators[0].set_atten(0, 0)
+    #self.attenuators[0].set_atten(0, 0)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     scan_droid.setScanSettings(1, 1000, 0, 0)
     filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
@@ -138,7 +145,7 @@ class BeaconSwarmTest(BaseTestClass):
     :return: test_result: bool
     """
     test_result = True
-    self.attenuators[0].set_atten(0, 0)
+    #self.attenuators[0].set_atten(0, 0)
     scan_droid, scan_event_dispatcher = self.droid, self.ed
     n = 0
     while n < 1000:

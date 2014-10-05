@@ -13,7 +13,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import time
+from contextlib import suppress
 from queue import Empty
+
+from test_utils.utils import exe_cmd
+from test_utils.BleEnum import *
 
 default_timeout = 10
 
@@ -31,19 +36,34 @@ def generate_ble_advertise_objects(droid):
   advertise_callback = droid.genBleAdvertiseCallback()
   return advertise_data, advertise_settings, advertise_callback
 
+def _bluetooth_off_handler(event):
+  return True
+
 def _bluetooth_on_handler(event):
-  expected_state = "ON"
-  if expected_state != event['data']['State']:
-    return False
-  else:
-    return True
+  return True
 
 def verify_bluetooth_on_event(ed):
   test_result = True
-  expected_bluetooth_on_event_name = "BluetoothOn"
+  expected_bluetooth_on_event_name = "BluetoothStateChangedOn"
+  with suppress(Exception):
+    ed.start()
   worker = ed.handle_event(
     _bluetooth_on_handler,
     expected_bluetooth_on_event_name, (), default_timeout)
+  try:
+    test_result = worker.result(default_timeout)
+  except Empty as error:
+    test_result = False
+  return test_result
+
+def verify_bluetooth_off_event(ed):
+  test_result = True
+  expected_bluetooth_off_event_name = "BluetoothStateChangedOff"
+  with suppress(Exception):
+    ed.start()
+  worker = ed.handle_event(
+    _bluetooth_off_handler,
+    expected_bluetooth_off_event_name, (), default_timeout)
   try:
     test_result = worker.result(default_timeout)
   except Empty as error:
@@ -140,3 +160,63 @@ def build_advertise_data(droid, pwr_incl, name_incl, id, manu_data, serv_uuid,
   data_index = droid.buildAdvertiseData()
   callback_index = droid.genBleAdvertiseCallback()
   return data_index, callback_index
+
+def setup_multiple_devices_for_bluetooth_test(android_devices):
+  setup_result = True
+  setup_result = reset_bluetooth(android_devices)
+  if not setup_result:
+    return setup_result
+  for ad in android_devices:
+    droid, _ = ad.get_droid()
+    if not setup_result:
+      return setup_result
+    setup_result = droid.bluetoothConfigHciSnoopLog(True)
+    if not setup_result:
+      return setup_result
+  return setup_result
+
+def take_btsnoop_log(testcase, test_name, android_device):
+    """Grabs the btsnoop_hci log on a device and stores it in the log directory
+    of the test class.
+
+    If you want grab the btsnoop_hci log, call this function with android_device
+    objects in on_fail. Bug report takes a relative long time to take, so use
+    this cautiously.
+
+    Params:
+      test_name: Name of the test case that triggered this bug report.
+      android_device: The android_device instance to take bugreport on.
+    """
+    with suppress(Exception):
+      serial = android_device.device_id
+      device_model = android_device.get_model()
+      out_name = ','.join((test_name, device_model, serial))
+      out_path = '/'.join((testcase.log_path, testcase.log_name))
+      cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log > ", out_path, '/', out_name,
+                     ".btsnoop_hci.log"))
+      testcase.log.info(' '.join(("Test failed, grabbing the bt_snoop logs on",
+                              device_model, serial)))
+      exe_cmd(cmd)
+
+def reset_bluetooth(android_devices):
+  """Resets bluetooth on the list of android devices passed into the fucntion.
+  :param android_devices: list of android devices
+  :return: bool
+  """
+  test_result = True
+  for ad in android_devices:
+    droid, ed = ad.get_droid()
+    if droid.bluetoothCheckState() is True:
+      droid.bluetoothToggleState(False)
+      test_result = verify_bluetooth_off_event(ed)
+      if not test_result and droid.bluetoothCheckState() is True:
+        return test_result
+      else:
+        test_result = True
+    droid.bluetoothToggleState(True)
+    test_result = verify_bluetooth_on_event(ed)
+    if not test_result and droid.bluetoothCheckState() is False:
+      return test_result
+    else:
+      test_result = True
+  return test_result

@@ -68,7 +68,17 @@ class BleAdvertiseApiTest(BaseTestClass):
       "test_advertise_data_set_include_tx_power_level_false",
       "test_advertise_data_set_include_device_name_true",
       "test_advertise_data_set_include_device_name_false",
+      "test_advertisement_greater_than_31_bytes",
     )
+
+  def setup_class(self):
+    setup_result = True
+    for ad in self.android_devices:
+      droid, _ = ad.get_droid()
+      setup_result = droid.bluetoothSetHciSnoopLog(True)
+      if not setup_result:
+        return setup_result
+    return setup_result
 
   def test_advertise_settings_defaults(self):
     """
@@ -469,32 +479,21 @@ class BleAdvertiseApiTest(BaseTestClass):
     return self.verify_advertise_data_include_device_name(droid,
                                                           expected_include_device_name)
 
-  def test_quick_advertise(self):
-    droids = self.android_devices
-    d0 = droids[0]
-    d1 = droids[1]
-
+  def test_advertisement_greater_than_31_bytes(self):
+    test_result = True
     droid = self.droid
-
-    self.log.debug("data manu")
-    droid.addAdvertiseDataManufacturerId(1, "4,0,54")
-    self.log.debug("service uuid")
-    droid.setAdvertiseDataSetServiceUuids(
-      ["0000110A-0000-1000-8000-00805F9B34FB"])
-    self.log.debug("data manu")
-    droid.setAdvertiseDataIncludeTxPowerLevel(True)
-    droid.setAdvertiseDataIncludeDeviceName(True)
-    droid.setAdvertisementSettingsAdvertiseMode(
-      AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_POWER.value)
-    droid.setAdvertisementSettingsTxPowerLevel(
-      AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value)
-    droid.setAdvertisementSettingsIsConnectable(True)
     droid.setAdvertiseDataIncludeDeviceName(True)
     droid.setAdvertiseDataIncludeTxPowerLevel(True)
-    data, settings, callback = generate_ble_advertise_objects(droid)
-    droid.startBleAdvertising(callback, data, settings)
-    time.sleep(800)
-    return True
+    droid.addAdvertiseDataManufacturerId(1,"14,0,54,0,0,0,0,0")
+    droid.addAdvertiseDataServiceData("0000110D-0000-1000-8000-00805F9B34FB", "16,22,11")
+    advertise_callback, advertise_data, advertise_settings = generate_ble_advertise_objects(droid)
+    try:
+      droid.startBleAdvertising(advertise_callback, advertise_data,
+                                advertise_settings)
+      return False
+    except SL4AAPIError:
+      self.log.info("Failed as expected.")
+    return test_result
 
   # TODO: in code refactor, remove all verify helper functions.
   def verify_advertise_settings_advertise_mode(self, droid, expected_advertise_mode):
