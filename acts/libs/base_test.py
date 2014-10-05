@@ -231,9 +231,9 @@ class BaseTestClass():
       self.num_executed += 1
       if params:
         # The evil unexposed ability to pass parameters into each test case.
-        verdict = test_func(*params)
+        verdict = self._exec_func(test_func, *params)
       else:
-        verdict = test_func()
+        verdict = self._exec_func(test_func)
       timestamp = get_current_human_time()
       msg = ' '.join((timestamp, test_name, " "*offset))
       if verdict:
@@ -320,7 +320,7 @@ class BaseTestClass():
       args: Arguments to be passed to the function.
 
     Returns:
-      Whatever the function returns.
+      Whatever the function returns, or False if unhandled exception occured.
     """
     try:
       return func(*args)
@@ -331,6 +331,7 @@ class BaseTestClass():
       self.reporter.write(' '.join((timestamp, msg, "\n")))
       self.log.exception(msg)
       self.log.exception(traceback.format_exc())
+      return False
 
   def _get_test_funcs(self, test_case_names):
     # All tests are selected if test_cases list is None.
@@ -393,13 +394,9 @@ class BaseTestClass():
     """
     try:
       for ad in self.android_devices:
-        ad.kill_all_droids()
+        ad.terminate_all_sessions()
     except AttributeError as e:
       pass
-    for h in self.log.handlers:
-      try:
-        h.close()
-      except:
-        pass
-      self.log.removeHandler(h)
-    self.reporter.close()
+    logger.kill_test_logger(self.log)
+    logger.kill_test_reporter(self.reporter)
+

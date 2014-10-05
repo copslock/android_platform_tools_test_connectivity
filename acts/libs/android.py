@@ -98,25 +98,12 @@ class Android(object):
             return self._rpc(name, *args)
         return rpc_call
 
-def _extract_device_list(lines):
-    results = []
-    for line in lines:
-        tokens = line.strip().split('\t')
-        if len(tokens) == 2 and tokens[1] == 'device':
-            results.append(tokens[0])
-    return results
-
 def _exe_cmd(cmd):
     proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     if not err:
         return out
     raise AdbError(err)
-
-def list_devices():
-    out = _exe_cmd("adb devices")
-    clean_out = str(out,'utf-8').strip().split('\n')[1:]
-    return _extract_device_list(clean_out)
 
 def start_forwarding(port, localport=PORT, serial=""):
     if serial:
@@ -133,7 +120,7 @@ def start_adb_server(serial=""):
         serial = " -s "+serial
     _exe_cmd("adb {} start-server".format(serial))
 
-def start_sl4a(port=8080,serial=""):
+def start_sl4a(port=8080, serial=""):
     if is_sl4a_running(serial):
         return
     start_adb_server(serial)

@@ -19,7 +19,7 @@ import os
 import subprocess
 import sys
 
-from android_device import AndroidDevice
+import android_device
 from ap.access_point import AP
 import attenuator.minicircuits.telnet as mctelnet
 import logger
@@ -54,7 +54,7 @@ class TestRunner():
         """ This is not used because we only need the android device atm,
             which can be auto detected and added. Will need it soon though
         """
-        android_devices = AndroidDevice.get_all()
+        android_devices = android_device.get_all_instances()
         if android_devices:
             self.log.debug(' '.join(("Found", str(len(android_devices)),
                                      "android devices.")))
@@ -175,7 +175,8 @@ class TestRunner():
                 self.run_test_class(test_cls_name)
         self.reporter.write(''.join(("Executed: ", str(self.num_executed),
                             "\nPassed: ", str(self.num_passed), "\n")))
-        self.reporter.close()
+        logger.kill_test_logger(self.log)
+        logger.kill_test_reporter(self.reporter)
         self.stop_adb_logcat()
 
     def start_adb_logcat(self):
