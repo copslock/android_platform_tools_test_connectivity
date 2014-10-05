@@ -22,9 +22,8 @@ import threading
 import time
 import traceback
 
-from android_device import AndroidDevice
+import android_device
 from test_utils.utils import create_dir
-from test_utils.utils import exe_cmd
 from test_utils.utils import find_files
 
 cmd_fetch_latest = ("/google/data/ro/projects/android/fetch_artifact --latest "
@@ -35,6 +34,14 @@ wipe = False
 
 class FetchError(Exception):
   pass
+
+def exe_cmd(*cmds):
+  cmd = ' '.join(cmds)
+  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+  (out, err) = proc.communicate()
+  if not err:
+    return out
+  raise Exception(err)
 
 def exec_tool_with_serial(tool, cmd, serial=None):
   tool_cmd = None
@@ -93,7 +100,7 @@ def wait_for_boot_completion(serial):
 
 def find_devices(target):
   results = []
-  android_devices = AndroidDevice.get_all()
+  android_devices = android_device.get_all_instances()
   for a in android_devices:
     if a.get_model().lower() == target.lower():
       results.append(a.device_id)
@@ -106,7 +113,7 @@ def unzip(path, fname):
   return dest
 
 def exe_concurrent(func, param_list):
-  with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+  with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
     # Start the load operations and mark each future with its URL
     future_to_params = {executor.submit(func, *p): p for p in param_list}
     for future in concurrent.futures.as_completed(future_to_params):
@@ -198,6 +205,7 @@ if __name__ == "__main__":
                               "device."))
   args = parser.parse_args()
 
+  # Default values of build_type and branch
   build_type = "-userdebug"
   branch = "lmp-release"
 
@@ -214,7 +222,7 @@ if __name__ == "__main__":
   if args.branch:
     branch = args.branch[0]
   targets = {}
-  android_devices = AndroidDevice.get_all()
+  android_devices = android_device.get_all_instances()
   for a in android_devices:
     model = a.get_model()
     targets[model] = (model + build_type, branch)
