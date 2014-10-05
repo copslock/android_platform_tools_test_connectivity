@@ -28,6 +28,8 @@ from test_utils.utils import load_config
 
 test_paths = [os.path.dirname(os.path.abspath(__file__)) + "/tests"]
 testbed_config_path = "testbed.config"
+device_types = ["AndroidDevice", "AP", "Attenuator"]
+
 adb_logcat_path = "../logs/AdbLogcat/"
 adb_logcat_tag = "adb_logcat"
 
@@ -92,6 +94,9 @@ class TestRunner():
             self.controllers["attenuators"] = attns
             self.log.debug(' '.join(("Found", str(len(attns)),
                                      "access points.")))
+        etc = dict([i for i in data.items() if i[0] not in device_types])
+        if etc:
+            self.controllers["user_params"] = etc
 
     @staticmethod
     def find_test_files(test_paths):
@@ -204,17 +209,19 @@ class TestRunner():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=("Specify tests to run. If "
                  "nothing specified, run all test cases found."))
+    parser.add_argument('-c', '--config', nargs=1, type=str,
+                        help="Path to the test bed configuration file.")
     parser.add_argument('-r', '--repeat', type=int, help=("Number of times to "
                         "run the specified test cases."))
     parser.add_argument('-tb', '--testbed', nargs='+', type=str,
                         help=("Path to a file containing a json object that "
                               "represents the testbed configuration."))
-    parser.add_argument('-tf', '--testfile', nargs='+', type=str,
-                        help=("Path to a file containing a comma delimited "
-                              "list of test classes to run."))
     parser.add_argument('-tc', '--testclass', nargs='+', type=str,
                         help=("List of test classes to run. Ignored if "
                               "testfile is set."))
+    parser.add_argument('-tf', '--testfile', nargs='+', type=str,
+                        help=("Path to a file containing a comma delimited "
+                              "list of test classes to run."))
     args = parser.parse_args()
     test_list = []
     repeat = 1
@@ -228,6 +235,8 @@ if __name__ == "__main__":
             test_list = args.testclass
     if args.repeat:
         repeat = args.repeat
+    if args.config:
+        testbed_config_path = args.config[0]
     for i in range(repeat):
         t = TestRunner(testbed_config_path, test_list)
         t.run()

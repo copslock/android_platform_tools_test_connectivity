@@ -52,9 +52,9 @@ class EventDispatcher:
       while self.started:
         event_obj = self.droid.eventWait()
         event_name = event_obj['name']
-        logging.debug("Polled "+event_name)
+        logging.debug("Polled " + event_name)
         if event_name in self.handlers: #if handler registered, process event
-          logging.debug("Handling subscribed event: "+event_name)
+          logging.debug("Handling subscribed event: " + event_name)
           self.handle_subscribed_event(event_obj, event_name)
         elif event_name in self.event_dict: #otherwise, cache event
           self.event_dict[event_name].put(event_obj)
@@ -92,7 +92,7 @@ class EventDispatcher:
     if self.started:
       raise IllegalStateError("Can't register service after polling is started")
     if event_name in self.handlers:
-      raise DuplicateError("A handler for "+event_name+" already exists")
+      raise DuplicateError(' '.join(("A handler for", event_name, "already exists")))
     self.handlers[event_name] = (handler, args)
 
   def start(self):
@@ -226,7 +226,7 @@ class EventDispatcher:
         break
       time.sleep(1)
     if len(results) == 0:
-      raise Empty("No event whose name matches " + partial_event_name + " ever occured.")
+      raise Empty(' '.join(("No event whose name matches", partial_event_name, "ever occured.")))
     return results
 
   def _match_and_pop(self, partial_event_name):
@@ -268,7 +268,7 @@ class EventDispatcher:
       deadline = time.time() + timeout
     while event_name not in self.event_dict:
       if deadline and time.time() > deadline:
-        raise Empty("Timeout: no " + event_name + " event ever occured.")
+        raise Empty(' '.join(("Timeout: no", event_name, "event ever occured.")))
     return self.event_dict[event_name]
 
   def handle_subscribed_event(self, event_obj, event_name):
