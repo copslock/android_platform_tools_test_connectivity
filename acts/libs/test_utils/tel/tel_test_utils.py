@@ -294,7 +294,7 @@ def wait_for_data_connection_status(log, droid, ed, state):
             return True
         else:
             return False
-    log.debug("Expected event arrived, funtion return.")
+    log.debug("Expected event arrived, function return.")
     return True
 
 def toggle_wifi_verify_data_connection(log, droid, ed, wifi_ON):
@@ -322,6 +322,10 @@ def toggle_wifi_verify_data_connection(log, droid, ed, wifi_ON):
     else:
         result = verify_internet_connection_type(log, droid, "MOBILE")
     assert result, "Failed in verify connection type."
+    #Add delay to wait for the connection status to propagate in system,
+    #so 'verify http' will not give wrong result.
+    #TODO(yangxliu): Use SL4A event to replace hard coded wait time.
+    time.sleep(0.5)
     verify_http_connection(droid)
 
 def verify_incall_state(log, droids, expected_status):
@@ -364,3 +368,41 @@ def verify_active_call_number(droid, expected_number):
     assert actual_number == expected_number, ("Expected:{}, Actual:{}".
                                               format(expected_number,
                                                      actual_number))
+
+def toggle_volte(droid, new_state=None):
+    """Toggle enable/disable VoLTE.
+
+    Args:
+        droid: SL4A session.
+        new_state: VoLTE mode state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
+
+    Raises:
+        TelTestUtilsError if platform does not support VoLTE.
+    """
+    if not droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
+        raise TelTestUtilsError("VoLTE not supported by platform.")
+    current_state = droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    if new_state is None:
+        new_state = not current_state
+    if new_state == current_state:
+        return
+    droid.imsSetAdvanced4gMode(new_state)
+
+def set_preferred_network_type(droid, network_type):
+    """Set preferred network type.
+
+    Args:
+        droid: SL4A session.
+        network_type: Network type string. For example, "3G", "LTE", "2G".
+
+    Raises:
+        TelTestUtilsError if type is not supported.
+    """
+    if network_type == droid.phoneGetPreferredNetworkTypeString():
+        return
+    if not droid.phoneSetPreferredNetworkType(network_type):
+        raise TelTestUtilsError("Type:{} is not supported on this phone: {}.".
+                                format(network_type,droid))
+
