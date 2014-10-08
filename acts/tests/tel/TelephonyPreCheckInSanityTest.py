@@ -21,6 +21,7 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.tel.tel_test_utils import call_process
+from test_utils.tel.tel_test_utils import get_phone_number
 from test_utils.tel.tel_test_utils import set_preferred_network_type
 from test_utils.tel.tel_test_utils import toggle_airplane_mode
 from test_utils.tel.tel_test_utils import toggle_call_state
@@ -28,6 +29,7 @@ from test_utils.tel.tel_test_utils import toggle_volte
 from test_utils.tel.tel_test_utils import toggle_wifi_verify_data_connection
 from test_utils.tel.tel_test_utils import verify_http_connection
 from test_utils.tel.tel_test_utils import wait_for_data_connection_status
+from test_utils.utils import load_config
 from test_utils.wifi_test_utils import reset_droid_wifi
 from test_utils.wifi_test_utils import start_wifi_connection_scan
 from test_utils.wifi_test_utils import wifi_toggle_state
@@ -52,20 +54,19 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
                       "test_pretest_ensure_3g",
                       "test_data_connectivity_3g",
                       )
-        self.phone_number_0 = None
-        self.phone_number_1 = None
+        # The path for "sim config file" should be set
+        # in "testbed.config" entry "sim_conf_file".
+        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.time_wait_in_call = 10
         self.delay_between_test = 5
         self.live_network_ssid = "GoogleGuest"
 
     def setup_class(self):
-        if self.phone_number_0 is None:
-            self.phone_number_0 = self.droid0.getLine1Number()
-        if self.phone_number_1 is None:
-            self.phone_number_1 = self.droid1.getLine1Number()
-        if self.phone_number_0 is None or self.phone_number_1 is None :
-            self.log.error("In setup can not get phone number")
-            return False
+        for i,d in enumerate(self.droids):
+            num = get_phone_number(d, self.simconf)
+            assert num, "Fail to get phone number on {}".format(d)
+            setattr(self,"phone_number_" + str(i), num)
+            self.log.info("phone_number_{} : {}".format(str(i), num))
         for droid in [self.droid0, self.droid1]:
             if droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
                 toggle_volte(droid, False)
@@ -75,7 +76,7 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         for droid in [self.droid0, self.droid1]:
             if droid.telecomIsInCall():
                 droid.telecomEndCall()
-        #Leave the delay time for droid recover to idle from last test.
+        # Leave the delay time for droid recover to idle from last test.
         time.sleep(self.delay_between_test)
         return True
 

@@ -19,6 +19,7 @@ import random
 import string
 import time
 from queue import Empty
+from test_utils.utils import load_config
 from test_utils.utils import rand_ascii_str
 from test_utils.wifi_test_utils import wifi_toggle_state
 
@@ -133,7 +134,9 @@ def initiate_call(log, droid_caller, droid_callee, ed_callee,
 def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
                  delay_in_call,
                  caller_number=None, callee_number=None, delay_answer=1,
-                 hangup=False, droid_hangup=None):
+                 hangup=False, droid_hangup=None,
+                 verify_call_mode_caller=False, verify_call_mode_callee=False,
+                 caller_mode_VoLTE=None, callee_mode_VoLTE=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up.
 
@@ -157,7 +160,17 @@ def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
         hangup: Whether hangup in this function.
             Optional. Default value is False.
         droid_hangup: Android Object end the phone call.
-            Optional. Default value it None.
+            Optional. Default value is None.
+        verify_call_mode_caller: Whether verify caller call mode (VoLTE or CS).
+            Optional. Default value is False, not verify.
+        verify_call_mode_callee: Whether verify callee call mode (VoLTE or CS).
+            Optional. Default value is False, not verify.
+        caller_mode_VoLTE: If verify_call_mode_caller is True,
+            this is expected caller mode. True for VoLTE mode. False for CS mode.
+            Optional. Default value is None.
+        callee_mode_VoLTE: If verify_call_mode_callee is True,
+            this is expected callee mode. True for VoLTE mode. False for CS mode.
+            Optional. Default value is None.
 
     Returns:
         True if call process without any error.
@@ -180,13 +193,27 @@ def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
     if result:
         result = False
         time.sleep(delay_answer)
-        #TODO(yangxliu): If delay == 0, accept will fail, need to fix.
+        # TODO(yangxliu): If delay == 0, accept will fail, need to fix.
         log.info("Accept on " + callee_number)
         toggle_call_state(droid_callee, ed_caller, ed_callee, "accept")
         time.sleep(delay_in_call)
         if (droid_caller.telecomIsInCall() and
             droid_callee.telecomIsInCall()):
             result = True
+    if verify_call_mode_caller:
+        if caller_mode_VoLTE and droid_caller.getNetworkType() != "lte":
+            log.error("Error: Caller is not in VoLTE. Expected is VoLTE.")
+            return False
+        if not caller_mode_VoLTE and droid_caller.getNetworkType() == "lte":
+            log.error("Error: Caller is in VoLTE. Expected is not VoLTE.")
+            return False
+    if verify_call_mode_callee:
+        if callee_mode_VoLTE and droid_callee.getNetworkType() != "lte":
+            log.error("Error: Callee is not in VoLTE. Expected is VoLTE.")
+            return False
+        if not callee_mode_VoLTE and droid_callee.getNetworkType() == "lte":
+            log.error("Error: Callee is in VoLTE. Expected is not VoLTE.")
+            return False
     if not hangup:
         return True
     if result:
@@ -217,12 +244,12 @@ def verify_internet_connection_type(log, droid, type):
         True if current active connection is connected to Internet and by <type>.
         False if not connected or type is not matched.
     """
-    #Add delay here to make sure networkIsConnected will return correct value.
-    #In network switch from WiFi to Mobile:
-    #there is a time delay (less than 0.1 second) between
-    #<connection status become to CONNECTED> and
-    #<networkIsConnected become to True>
-    #So add this delay to make sure the state transit time won't fail this case.
+    # Add delay here to make sure networkIsConnected will return correct value.
+    # In network switch from WiFi to Mobile:
+    # there is a time delay (less than 0.1 second) between
+    # <connection status become to CONNECTED> and
+    # <networkIsConnected become to True>
+    # So add this delay to make sure the state transit time won't fail this case.
     time.sleep(0.1)
     result_internet = droid.networkIsConnected()
     if not result_internet:
@@ -322,9 +349,9 @@ def toggle_wifi_verify_data_connection(log, droid, ed, wifi_ON):
     else:
         result = verify_internet_connection_type(log, droid, "MOBILE")
     assert result, "Failed in verify connection type."
-    #Add delay to wait for the connection status to propagate in system,
-    #so 'verify http' will not give wrong result.
-    #TODO(yangxliu): Use SL4A event to replace hard coded wait time.
+    # Add delay to wait for the connection status to propagate in system,
+    # so 'verify http' will not give wrong result.
+    # TODO(yangxliu): Use SL4A event to replace hard coded wait time.
     time.sleep(0.5)
     verify_http_connection(droid)
 
@@ -345,7 +372,7 @@ def verify_incall_state(log, droids, expected_status):
     result = True
     for droid in droids:
         if droid.telecomIsInCall() is not expected_status:
-            log.error("Not in expected status:" + droid.getLine1Number())
+            log.error("Not in expected status:{}".format(droid.getLine1Number()))
             result = False
     if not result:
         raise TelTestUtilsError("Not all Phones in expected status.")
@@ -405,4 +432,45 @@ def set_preferred_network_type(droid, network_type):
     if not droid.phoneSetPreferredNetworkType(network_type):
         raise TelTestUtilsError("Type:{} is not supported on this phone: {}.".
                                 format(network_type,droid))
+
+def wait_for_droid_in_network_type(log, droids, max_time, network_type):
+    """Wait for droid to be in certain connection mode (e.g. lte, hspa).
+
+    Args:
+        log: log object.
+        droids: array of SL4A session.
+        max_time: max number of seconds to wait (each droid in the droids list).
+        network_type: expected connection network type. e.g. lte, hspa.
+
+    Raise:
+        TelTestUtilsError if droid not in expected network type when time out.
+    """
+    # TODO(yangxliu): replace loop time wait with SL4A event.
+    fail= False
+    for droid in droids:
+        while droid.getNetworkType() != network_type:
+            time.sleep(1)
+            max_time = max_time - 1
+            if max_time <= 0:
+                fail = True
+                log.error("{} not in {} mode.".format(droid, network_type))
+    if fail:
+        raise TelTestUtilsError("Not all droids in expected mode.")
+
+def get_phone_number(droid,simconf):
+    """Get phone number from simcard config JSON object.
+
+    Args:
+        droid: SL4A session.
+        simconf: JSON object loaded from sim config file.
+
+    Returns:
+        Phone number.
+    """
+    number = None
+    try:
+        number = simconf[droid.getSimSerialNumber()]["phone_num"]
+    except KeyError:
+        number = droid.getLine1Number()
+    return number
 
