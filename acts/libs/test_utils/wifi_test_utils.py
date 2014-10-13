@@ -23,6 +23,11 @@ from queue import Empty
 
 class WifiEnums():
     SHORT_TIMEOUT = 10
+    # Macros for wifi p2p.
+    WIFI_P2P_SERVICE_TYPE_ALL = 0
+    WIFI_P2P_SERVICE_TYPE_BONJOUR = 1
+    WIFI_P2P_SERVICE_TYPE_UPNP = 2
+    WIFI_P2P_SERVICE_TYPE_VENDOR_SPECIFIC = 255
     # Macros as specified in the WifiScanner code.
     WIFI_BAND_UNSPECIFIED = 0      # not specified
     WIFI_BAND_24_GHZ = 1           # 2.4 GHz band
@@ -31,6 +36,7 @@ class WifiEnums():
     WIFI_BAND_5_GHZ_WITH_DFS  = 6  # 5 GHz band with DFS channels
     WIFI_BAND_BOTH = 3             # both bands without DFS channels
     WIFI_BAND_BOTH_WITH_DFS = 7    # both bands with DFS channels
+
     REPORT_EVENT_AFTER_BUFFER_FULL = 0
     REPORT_EVENT_AFTER_EACH_SCAN = 1
     REPORT_EVENT_FULL_SCAN_RESULT = 2

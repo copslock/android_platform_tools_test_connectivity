@@ -24,7 +24,8 @@ class AndroidDeviceException(Exception):
     pass
 
 class DoesNotExistError(AndroidDeviceException):
-    """Raised when something that does not exist is referenced """
+    """Raised when something that does not exist is referenced.
+    """
 
 def list_devices():
     """List all android devices connected to the computer
@@ -42,6 +43,22 @@ def list_devices():
             results.append(tokens[0])
     return results
 
+def get_instances(serials):
+    """Create AndroidDevice instances from a list of serials.
+
+    Args:
+        serials: A list of android device serials.
+
+    Returns:
+        A list of AndroidDevice objects.
+    """
+    h_port = 9999
+    results = []
+    for s in serials:
+        results.append(AndroidDevice(s, host_port=h_port))
+        h_port -= 1
+    return results
+
 def get_all_instances():
     """Create AndroidDevice instances for all attached android devices.
 
@@ -49,12 +66,7 @@ def get_all_instances():
         A list of AndroidDevice objects each representing an android device
         attached to the computer.
     """
-    h_port = 9999
-    results = []
-    for s in list_devices():
-        results.append(AndroidDevice(s, host_port=h_port))
-        h_port -= 1
-    return results
+    return get_instances(list_devices())
 
 class AndroidDevice:
     """Class representing an android device """
@@ -90,7 +102,7 @@ class AndroidDevice:
         returned to the caller as well.
         If sl4a server is not started on the device, try to start it.
 
-        Parameters:
+        Args:
             handle_event: True if this droid session will need to handle
                 events.
 
@@ -120,7 +132,7 @@ class AndroidDevice:
     def get_dispatcher(self, droid):
         """Return an EventDispatcher for an sl4a session
 
-        Parameters:
+        Args:
             droid: Session to create EventDispatcher for.
 
         Returns:
@@ -157,7 +169,7 @@ class AndroidDevice:
     def add_new_connection_to_session(self, session_id):
         """Create a new connection to an existing sl4a session.
 
-        Parameters:
+        Args:
             session_id: UID of the sl4a session to add connection to.
 
         Returns:
@@ -182,7 +194,7 @@ class AndroidDevice:
         Send terminate signal to sl4a server; stop dispatcher associated with
         the session. Clear corresponding droids and dispatchers from cache.
 
-        Parameters:
+        Args:
             session_id: UID of the sl4a session to terminate.
         """
         android.Android(cmd='terminate', port=self.h_port, uid=session_id)
@@ -208,7 +220,7 @@ class AndroidDevice:
         Return status as true if iperf client start successfully.
         And data flow information as results.
 
-        Parameters:
+        Args:
             server_host: host where iperf server is running.
 
         Returns:

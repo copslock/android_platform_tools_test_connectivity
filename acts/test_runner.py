@@ -51,32 +51,26 @@ class TestRunner():
         self.num_passed = 0
 
     def parse_config(self, testbed_config):
-        """ This is not used because we only need the android device atm,
-            which can be auto detected and added. Will need it soon though
+        """This is not used because we only need the android device atm,
+           which can be auto detected and added. Will need it soon though
         """
-        android_devices = android_device.get_all_instances()
-        if android_devices:
-            self.log.debug(' '.join(("Found", str(len(android_devices)),
-                                     "android devices.")))
-            self.controllers["android_devices"] = android_devices
-        data = None
         try:
             data = load_config(testbed_config)
         except:
             self.log.error("ERROR: Failed to load testbed config.")
         if "AndroidDevice" in data:
-            # If user specified devices in testbed config, the specified
-            # devices will be in the front of the list.
-            user_specified = data["AndroidDevice"]
-            former = []
-            latter = []
-            for ad in android_devices:
-                if ad.device_id in user_specified:
-                    former.append(ad)
-                else:
-                    latter.append(ad)
-            android_devices = former + latter
-            self.controllers["android_devices"] = android_devices
+            # If user specified devices in testbed config, only the specified
+            # devices are picked up. Otherwise all devices attached to the
+            # computer will be picked up.
+            ad = android_device.get_instances(data["AndroidDevice"])
+            self.controllers["android_devices"] = ad
+        else:
+            android_devices = android_device.get_all_instances()
+            if android_devices:
+                self.log.debug(' '.join(("Found", str(len(android_devices)),
+                                         "android devices.")))
+                self.controllers["android_devices"] = android_devices
+        data = None
         if "AP" in data:
             aps = []
             for ap in data["AP"]:
@@ -93,7 +87,7 @@ class TestRunner():
                 attns.append(attn)
             self.controllers["attenuators"] = attns
             self.log.debug(' '.join(("Found", str(len(attns)),
-                                     "access points.")))
+                                     "attenuators.")))
         etc = dict([i for i in data.items() if i[0] not in device_types])
         if etc:
             self.controllers["user_params"] = etc
