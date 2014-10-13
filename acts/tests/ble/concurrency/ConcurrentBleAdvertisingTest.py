@@ -63,7 +63,6 @@ class ConcurrentBleAdvertisingTest(BaseTestClass):
   def on_exception(self, test_name, begin_time):
     self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
     for ad in self.android_devices:
-      self.take_bug_report(test_name, ad)
       take_btsnoop_log(self, test_name, ad)
 
   def on_success(self, test_name, begin_time):
@@ -455,7 +454,9 @@ class ConcurrentBleAdvertisingTest(BaseTestClass):
     except concurrent.futures._base.TimeoutError as error:
       self.log.debug(" ".join(["Test failed with:",str(error)]))
       return False
+    scan_droid.stopBleScan(scan_callback)
     test_result = reset_bluetooth([self.android_devices[1]])
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     if not test_result:
       return test_result
     worker = scan_event_dispatcher.handle_event(

@@ -15,6 +15,7 @@
 
 import pprint
 from queue import Empty
+import time
 
 from base_test import BaseTestClass
 from test_utils.BleEnum import *
@@ -34,6 +35,7 @@ class GattConnectTest(BaseTestClass):
     BaseTestClass.__init__(self, self.TAG, controllers)
     self.tests = (
       "test_gatt_connect",
+      "test_gatt_connect_in_quick_succession",
     )
 
   def setup_class(self):
@@ -44,7 +46,6 @@ class GattConnectTest(BaseTestClass):
   def on_exception(self, test_name, begin_time):
     self.log.debug(" ".join(["Test", test_name, "failed. Gathering bugreport and btsnoop logs"]))
     for ad in self.android_devices:
-      self.take_bug_report(test_name, ad)
       take_btsnoop_log(self, test_name, ad)
 
   def on_fail(self, test_name, begin_time):
@@ -66,7 +67,7 @@ class GattConnectTest(BaseTestClass):
   def gatt_on_connection_state_change(self, event, expected_state):
     test_result = True
     self.log.debug("Verifying onConnectionStateChange event")
-    self.log.debug(pprint.pformat(event))
+    self.log.info(pprint.pformat(event))
     if event['data']['State'] != expected_state:
       test_result = False
     return test_result
@@ -159,28 +160,28 @@ class GattConnectTest(BaseTestClass):
 
   def _setup_gatt_connection(self, scan_droid, advertise_droid,
                             scan_event_dispatcher, autoconnect):
-    self.log.debug(
-      "Step 3: Create default scan filter, scan settings, and scan callback")
-    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-      scan_droid)
+    test_result = True
+    filter_list = scan_droid.genFilterList()
+    scan_settings = scan_droid.buildScanSetting()
+    scan_callback = scan_droid.genScanCallback()
+    scan_droid.setScanFilterDeviceName(advertise_droid.bluetoothGetLocalName())
+    scan_droid.buildScanFilter(filter_list)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
-    test_result = scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
-    self.log.debug(
-      "Step 5: Verify the Bluetooth Le Scan did not cause an onScanFailed event.")
-
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
     worker = scan_event_dispatcher.handle_event(
       self.blescan_get_mac_address_from_onScanResult,
       expected_event_name, (), None)
     try:
-      mac_address = worker.result()
-      self.log.debug(" ".join(["Mac address found:",mac_address]))
+      mac_address = worker.result(self.default_timeout)
+      self.log.info(" ".join(["Mac address found:",mac_address]))
     except Empty as error:
       test_result = False
-      self.log.debug(" ".join(["Test failed with:",str(error)]))
+      self.log.info("Could not find advertiser.")
+      self.log.info(" ".join(["Test failed with:",str(error)]))
     scan_droid.stopBleScan(scan_callback)
-    self.log.debug("Creating Gatt Callback")
     gatt_callback = scan_droid.createGattCallback()
-    self.log.debug(" ".join(["Gatt Connect to mac address ",mac_address]))
+    self.log.info(" ".join(["Gatt Connect to mac address ",mac_address]))
     bluetooth_gatt = scan_droid.connectGatt(gatt_callback, mac_address,
                                             autoconnect)
     expected_event_name = "".join(["GattConnect",str(gatt_callback),"onConnectionStateChange"])
@@ -189,11 +190,11 @@ class GattConnectTest(BaseTestClass):
       self.gatt_on_connection_state_change,
       expected_event_name, ([expected_status]), self.default_timeout)
     try:
-      self.log.debug(worker.result())
+      self.log.debug(worker.result(self.default_timeout))
+      self.log.info("Connected successfully to " + mac_address)
     except Empty as error:
       test_result = False
-      self.log.debug(" ".join(["Test failed with:",str(error)]))
-
+      self.log.info(" ".join(["Test failed with:",str(error)]))
     return test_result, bluetooth_gatt, gatt_callback
 
   def _trigger_on_services_discovered_callback(self, scan_droid,
@@ -280,7 +281,7 @@ class GattConnectTest(BaseTestClass):
       expected_onsuccess_event, ([]), self.default_timeout)
     test_result = advertise_worker.result(self.default_timeout)
     if test_result is False:
-      self.log.debug("Advertising Failed to start.")
+      self.log.info("Advertising Failed to start.")
       return False
     autoconnect = True
     test_result, bluetooth_gatt, gatt_callback = self._setup_gatt_connection(
@@ -303,4 +304,100 @@ class GattConnectTest(BaseTestClass):
       bluetooth_gatt)
     scan_droid.bluetoothGattDisconnect(gatt_callback)
     advertise_droid.stopBleAdvertising(advertise_callback)
+    return test_result
+
+  def test_gatt_connect_in_quick_succession(self):
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    test_result = True
+    for x in range(50):
+      while not scan_droid.bluetoothCheckState():
+        scan_droid.bluetoothToggleState(True)
+      while not advertise_droid.bluetoothCheckState():
+        advertise_droid.bluetoothToggleState(True)
+      filter_list = scan_droid.genFilterList()
+      scan_settings = scan_droid.buildScanSetting()
+      scan_callback = scan_droid.genScanCallback()
+      scan_droid.setScanFilterDeviceName(advertise_droid.bluetoothGetLocalName())
+      scan_droid.buildScanFilter(filter_list)
+      advertise_droid.setAdvertiseDataIncludeDeviceName(True)
+      advertise_droid.setAdvertisementSettingsAdvertiseMode(
+          AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+      advertise_droid.setAdvertisementSettingsIsConnectable(True)
+      advertise_droid.setAdvertisementSettingsTxPowerLevel(
+          AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value)
+      advertise_data, advertise_settings, advertise_callback = (
+          generate_ble_advertise_objects(advertise_droid))
+      advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+      expected_onsuccess_event = "".join(["BleAdvertise",str(advertise_callback),"onSuccess"])
+      advertise_worker = advertise_event_dispatcher.handle_event(
+          self.bleadvertise_verify_onsuccess_handler,
+          expected_onsuccess_event, ([]), self.default_timeout)
+      try:
+        advertise_worker.result(self.default_timeout)
+      except Exception:
+        while not scan_droid.bluetoothCheckState():
+          scan_droid.bluetoothToggleState(True)
+        while not advertise_droid.bluetoothCheckState():
+          advertise_droid.bluetoothToggleState(True)
+        advertise_droid.stopBleAdvertising(advertise_callback)
+        self.log.info("Failed to advertise")
+        reset_bluetooth(self.android_devices)
+        scan_droid.bluetoothToggleState(True)
+        advertise_droid.bluetoothToggleState(True)
+        time.sleep(10)
+        continue
+
+      scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+      expected_event_name = "".join(["BleScan",str(scan_callback),"onScanResults"])
+      worker = scan_event_dispatcher.handle_event(
+        self.blescan_get_mac_address_from_onScanResult,
+        expected_event_name, (), self.default_timeout)
+      mac_address = ""
+      try:
+        mac_address = worker.result(self.default_timeout)
+        self.log.info(" ".join(["Mac address found:",mac_address]))
+      except Exception as error:
+        scan_droid.stopBleScan(scan_callback)
+        advertise_droid.stopBleAdvertising(advertise_callback)
+        test_result = False
+        self.log.info("Could not find advertiser.")
+        self.log.info(" ".join(["Test failed with:",str(error)]))
+        reset_bluetooth(self.android_devices)
+        scan_droid.bluetoothToggleState(True)
+        advertise_droid.bluetoothToggleState(True)
+        time.sleep(10)
+        continue
+      scan_droid.stopBleScan(scan_callback)
+      gatt_callback = scan_droid.createGattCallback()
+      self.log.info(" ".join(["Attempt Gatt Connect to mac address",mac_address]))
+      bluetooth_gatt = scan_droid.connectGatt(gatt_callback, mac_address,
+                                                False)
+      expected_event_name = "".join(["GattConnect",str(gatt_callback),"onConnectionStateChange"])
+      expected_status = GattConnectionState.STATE_CONNECTED.value
+      worker = scan_event_dispatcher.handle_event(
+        self.gatt_on_connection_state_change,
+        expected_event_name, ([expected_status]), self.default_timeout)
+      try:
+        self.log.debug(worker.result(self.default_timeout))
+        self.log.info("Connected successfully to " + mac_address)
+        test_result = True
+      except Empty as error:
+        test_result = False
+        self.log.info(" ".join(["Test failed with:",str(error)]))
+      advertise_droid.stopBleAdvertising(advertise_callback)
+      try:
+        scan_droid.bluetoothGattDisconnect(bluetooth_gatt)
+        expected_disconnect_event_name = "".join(["GattConnect",str(gatt_callback),"onConnectionStateChange"])
+        expected_status = GattConnectionState.STATE_DISCONNECTED.value
+        worker = scan_event_dispatcher.handle_event(
+          self.gatt_on_connection_state_change,
+          expected_disconnect_event_name, ([expected_status]), self.default_timeout)
+        self.log.debug(worker.result(self.default_timeout))
+        self.log.info("Connected successfully to " + mac_address)
+        test_result = True
+      except Exception as error:
+        test_result = False
+        self.log.info(" ".join(["Test failed with:",str(error)]))
+      self.log.info("Iteration " + str(x) + " completed. Result: " + str(test_result))
     return test_result

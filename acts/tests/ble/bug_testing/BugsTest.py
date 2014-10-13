@@ -48,6 +48,7 @@ class BugsTest(BaseTestClass):
       "test_multiple_advertisers_on_batch_scan_result",
       "test_advertisement_service_uuid",
       "test_btu_hci_advertisement_crash",
+      "test_deep_sleep_advertising",
     )
 
   def setup_class(self):
@@ -72,6 +73,10 @@ class BugsTest(BaseTestClass):
   def bleadvertise_verify_onsuccess_handler(self, event, settings_in_effect):
     self.log.debug(pprint.pformat(event))
     return True
+
+  def ble_scan_get_mac_address_handler(self, event):
+    self.log.debug(pprint.pformat(event))
+    return event['data']['Result']['deviceInfo']['address']
 
   def blescan_verify_onscanresult_event_handler(self, event,
                                                 expected_callbacktype=None,
@@ -390,3 +395,65 @@ class BugsTest(BaseTestClass):
       x+=1
 
     return test_result
+
+  def test_deep_sleep_advertising(self):
+    scan_droid, scan_event_dispatcher = self.droid, self.ed
+    advertise_droid, advertise_event_dispatcher = self.droid1, self.ed1
+    max_advertisements = 4
+    advertisement_callback_list = []
+    advertisement_mac_addr_list = []
+    filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+      scan_droid)
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    expected_event_name = "BleScan" + str(scan_callback) + "onScanResults"
+    while len(advertisement_mac_addr_list) < max_advertisements:
+      advertise_droid.setAdvertisementSettingsAdvertiseMode(
+        AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+      advertise_data, advertise_settings, advertise_callback = (
+        generate_ble_advertise_objects(advertise_droid))
+      advertisement_callback_list.append(advertise_callback)
+      advertise_droid.startBleAdvertising(advertise_callback, advertise_data, advertise_settings)
+      worker = scan_event_dispatcher.handle_event(
+        self.ble_scan_get_mac_address_handler,
+        expected_event_name, (), self.default_timeout)
+      try:
+        mac_address = worker.result(self.default_timeout)
+        print(mac_address)
+        if mac_address not in advertisement_mac_addr_list:
+          advertisement_mac_addr_list.append(mac_address)
+      except Exception:
+        self.log.info("failed to find advertisement")
+    scan_droid.stopBleScan(scan_callback)
+    print("putting advertise droid to sleep")
+    try:
+      print (pprint.pformat(self.ed1.pop_all(expected_event_name)))
+    except Exception:
+      print ("lol fail")
+    advertise_droid.setDeepSleep(960000) #16 minutes
+    advertise_droid.wakeupScreen()
+    scan_droid.startBleScan(filter_list,scan_settings,scan_callback)
+    advertisement_mac_addr_list2 = []
+    while len(advertisement_mac_addr_list2) < max_advertisements:
+      worker = scan_event_dispatcher.handle_event(
+        self.ble_scan_get_mac_address_handler,
+        expected_event_name, (), self.default_timeout)
+      try:
+        mac_address = worker.result(self.default_timeout)
+        print(mac_address)
+        if mac_address not in advertisement_mac_addr_list2:
+          advertisement_mac_addr_list2.append(mac_address)
+      except Exception:
+        self.log.info("failed to find advertisement")
+    scan_droid.stopBleScan(scan_callback)
+    diff_list = list(set(advertisement_mac_addr_list) - set(advertisement_mac_addr_list2))
+    print(pprint.pformat(advertisement_mac_addr_list))
+    print(pprint.pformat(advertisement_mac_addr_list2))
+    for callback in advertisement_callback_list:
+      advertise_droid.stopBleAdvertising(callback)
+    print("new callback")
+    print(pprint.pformat(diff_list))
+    print("done")
+    if len(diff_list) != max_advertisements:
+      return False
+    else:
+      return True
