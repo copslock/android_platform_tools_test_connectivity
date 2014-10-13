@@ -21,9 +21,11 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.tel.tel_test_utils import call_process
-from test_utils.tel.tel_test_utils import toggle_call_state
-from test_utils.tel.tel_test_utils import toggle_wifi_verify_data_connection
+from test_utils.tel.tel_test_utils import set_preferred_network_type
 from test_utils.tel.tel_test_utils import toggle_airplane_mode
+from test_utils.tel.tel_test_utils import toggle_call_state
+from test_utils.tel.tel_test_utils import toggle_volte
+from test_utils.tel.tel_test_utils import toggle_wifi_verify_data_connection
 from test_utils.tel.tel_test_utils import verify_http_connection
 from test_utils.tel.tel_test_utils import wait_for_data_connection_status
 from test_utils.wifi_test_utils import reset_droid_wifi
@@ -41,15 +43,19 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         self.droid1, self.ed1 = self.android_devices[1].get_droid()
         self.ed1.start()
         self.tests = (
+                      "test_pretest_ensure_lte",
                       "test_call_est_basic",
                       "test_airplane_mode_basic_attach_detach_connectivity",
-                      "test_data_connectivity_3g",
                       "test_data_pretest_ensure_wifi_connect_to_live_network",
                       "test_data_conn_network_switching",
+                      "test_data_connectivity_lte",
+                      "test_pretest_ensure_3g",
+                      "test_data_connectivity_3g",
                       )
         self.phone_number_0 = None
         self.phone_number_1 = None
         self.time_wait_in_call = 10
+        self.delay_between_test = 5
         self.live_network_ssid = "GoogleGuest"
 
     def setup_class(self):
@@ -60,6 +66,17 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         if self.phone_number_0 is None or self.phone_number_1 is None :
             self.log.error("In setup can not get phone number")
             return False
+        for droid in [self.droid0, self.droid1]:
+            if droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
+                toggle_volte(droid, False)
+        return True
+
+    def teardown_test(self):
+        for droid in [self.droid0, self.droid1]:
+            if droid.telecomIsInCall():
+                droid.telecomEndCall()
+        #Leave the delay time for droid recover to idle from last test.
+        time.sleep(self.delay_between_test)
         return True
 
     def _call_process_helper(self, params):
@@ -77,6 +94,19 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         return result
 
     """ Tests Begin """
+    def test_pretest_ensure_lte(self):
+        """Pretest operation: ensure preferred network is LTE.
+
+        Set preferred network to LTE.
+        Toggle ON/OFF airplane mode.
+        """
+        for droid in [self.droid0, self.droid1]:
+            set_preferred_network_type(droid, "LTE")
+        for (droid, ed) in [(self.droid0, self.ed0), (self.droid1, self.ed1)]:
+            toggle_airplane_mode(self.log, droid, ed, True)
+            toggle_airplane_mode(self.log, droid, ed, False)
+        return True
+
     def test_call_est_basic(self):
         """ Test call establishment basic ok on two phones.
 
@@ -148,51 +178,6 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
             return False
         return True
 
-    def test_data_connectivity_3g(self):
-        """Test data connection before call and in call.
-
-        Turn off airplane, turn off wifi, turn on data, verify internet.
-        Initial call and accept.
-        Verify internet.
-        Turn off data and verify not connected.
-        Hangup and turn data back on.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        result = False
-        self.droid0.phoneStartTrackingDataConnectionStateChange()
-        self.log.info("Step1 Airplane Off, Wifi Off, Data On, verify internet.")
-        toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
-        wifi_toggle_state(self.droid0, self.ed0, False)
-        self.droid0.toggleDataConnection(True)
-        toggle_wifi_verify_data_connection(self.log, self.droid0,
-                                           self.ed0, False)
-        self.log.info("Step2 Initiate call and accept.")
-        result = call_process(self.log, self.droid0, self.droid1,
-                              self.ed0, self.ed1, 5)
-        if not result:
-            self.log.error("Step2 initiate call failed.")
-            return False
-        self.log.info("Step3 Verify internet.")
-        verify_http_connection(self.droid0)
-        self.log.info("Step4 Turn off data and verify not connected.")
-        self.droid0.toggleDataConnection(False)
-        wait_for_data_connection_status(self.log, self.droid0, self.ed0, False)
-        result = True
-        try:
-            verify_http_connection(self.droid0)
-        except Exception:
-            result = False
-        if result:
-            self.log.error("Step4 turn off data failed.")
-            return False
-        self.log.info("Step5 Hang up.")
-        toggle_call_state(self.droid0, self.ed0, self.ed1, "hangup")
-        self.droid0.toggleDataConnection(True)
-        return True
-
     def test_data_pretest_ensure_wifi_connect_to_live_network(self):
         """Pre test for network switching.
 
@@ -239,5 +224,89 @@ class TelephonyPreCheckInSanityTest(BaseTestClass):
         self.log.info("Step4 Wifi is Off, Data is on Cell.")
         toggle_wifi_verify_data_connection(self.log, self.droid0,
                                            self.ed0, False)
+        return True
+
+    def test_data_connectivity_lte(self):
+        """Test LTE data connection before call and in call.
+
+        Turn off airplane, turn off wifi, turn on data, verify internet.
+        Initial call and accept.
+        Verify internet.
+        Hangup and turn data back on.
+        """
+        self.droid0.phoneStartTrackingDataConnectionStateChange()
+        self.log.info("Step1 Airplane Off, Wifi Off, Data On, verify internet.")
+        toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
+        wifi_toggle_state(self.droid0, self.ed0, False)
+        self.droid0.toggleDataConnection(True)
+        toggle_wifi_verify_data_connection(self.log, self.droid0,
+                                           self.ed0, False)
+        self.log.info("Step2 Initiate call and accept.")
+        result = call_process(self.log, self.droid0, self.droid1,
+                              self.ed0, self.ed1, 5)
+        if not result:
+            self.log.error("Call error.")
+            return False
+        self.log.info("Step3 Verify internet.")
+        verify_http_connection(self.droid0)
+        toggle_call_state(self.droid0, self.ed0, self.ed1, "hangup")
+        return True
+
+    def test_pretest_ensure_3g(self):
+        """Pretest operation: ensure preferred network is 3G.
+
+        Set preferred network to 3G.
+        Toggle ON/OFF airplane mode.
+        """
+        for droid in [self.droid0, self.droid1]:
+            set_preferred_network_type(droid, "3g")
+        for (droid, ed) in [(self.droid0, self.ed0), (self.droid1, self.ed1)]:
+            toggle_airplane_mode(self.log, droid, ed, True)
+            toggle_airplane_mode(self.log, droid, ed, False)
+        return True
+
+    def test_data_connectivity_3g(self):
+        """Test 3G data connection before call and in call.
+
+        Turn off airplane, turn off wifi, turn on data, verify internet.
+        Initial call and accept.
+        Verify internet.
+        Turn off data and verify not connected.
+        Hangup and turn data back on.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        result = False
+        self.droid0.phoneStartTrackingDataConnectionStateChange()
+        self.log.info("Step1 Airplane Off, Wifi Off, Data On, verify internet.")
+        toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
+        wifi_toggle_state(self.droid0, self.ed0, False)
+        self.droid0.toggleDataConnection(True)
+        toggle_wifi_verify_data_connection(self.log, self.droid0,
+                                           self.ed0, False)
+        self.log.info("Step2 Initiate call and accept.")
+        result = call_process(self.log, self.droid0, self.droid1,
+                              self.ed0, self.ed1, 5)
+        if not result:
+            self.log.error("Step2 initiate call failed.")
+            return False
+        self.log.info("Step3 Verify internet.")
+        verify_http_connection(self.droid0)
+        self.log.info("Step4 Turn off data and verify not connected.")
+        self.droid0.toggleDataConnection(False)
+        wait_for_data_connection_status(self.log, self.droid0, self.ed0, False)
+        result = True
+        try:
+            verify_http_connection(self.droid0)
+        except Exception:
+            result = False
+        if result:
+            self.log.error("Step4 turn off data failed.")
+            return False
+        self.log.info("Step5 Hang up.")
+        toggle_call_state(self.droid0, self.ed0, self.ed1, "hangup")
+        self.droid0.toggleDataConnection(True)
         return True
     """ Tests End """
