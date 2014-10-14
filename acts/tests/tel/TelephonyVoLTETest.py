@@ -21,12 +21,15 @@ import time
 from base_test import BaseTestClass
 from queue import Empty
 from test_utils.tel.tel_test_utils import call_process
+from test_utils.tel.tel_test_utils import get_phone_number
 from test_utils.tel.tel_test_utils import set_preferred_network_type
 from test_utils.tel.tel_test_utils import toggle_airplane_mode
 from test_utils.tel.tel_test_utils import toggle_call_state
 from test_utils.tel.tel_test_utils import toggle_volte
 from test_utils.tel.tel_test_utils import toggle_wifi_verify_data_connection
 from test_utils.tel.tel_test_utils import verify_http_connection
+from test_utils.tel.tel_test_utils import wait_for_droid_in_network_type
+from test_utils.utils import load_config
 from test_utils.wifi_test_utils import wifi_toggle_state
 
 class TelephonyVoLTETest(BaseTestClass):
@@ -44,27 +47,26 @@ class TelephonyVoLTETest(BaseTestClass):
                       "test_call_est_basic_volte",
                       "test_data_connectivity_lte_volte",
                       )
-        self.phone_number_0 = None
-        self.phone_number_1 = None
+        # The path for "sim config file" should be set
+        # in "testbed.config" entry "sim_conf_file".
+        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.time_wait_in_call = 10
         self.delay_between_test = 5
         self.max_wait_time_for_lte = 60
 
     def setup_class(self):
-        if self.phone_number_0 is None:
-            self.phone_number_0 = self.droid0.getLine1Number()
-        if self.phone_number_1 is None:
-            self.phone_number_1 = self.droid1.getLine1Number()
-        if self.phone_number_0 is None or self.phone_number_1 is None :
-            self.log.error("In setup can not get phone number")
-            return False
+        for i,d in enumerate(self.droids):
+            num = get_phone_number(d, self.simconf)
+            assert num, "Fail to get phone number on {}".format(d)
+            setattr(self,"phone_number_" + str(i), num)
+            self.log.info("phone_number_{} : {}".format(str(i), num))
         return True
 
     def teardown_test(self):
         for droid in [self.droid0, self.droid1]:
             if droid.telecomIsInCall():
                 droid.telecomEndCall()
-        #Leave the delay time for droid recover to idle from last test.
+        # Leave the delay time for droid recover to idle from last test.
         time.sleep(self.delay_between_test)
         return True
 
@@ -79,7 +81,10 @@ class TelephonyVoLTETest(BaseTestClass):
         result = call_process(self.log, droid_caller, droid_callee,
                               ed_caller, ed_callee, delay_in_call,
                               caller_number, callee_number,
-                              hangup = True, droid_hangup = droid_hangup)
+                              hangup = True, droid_hangup = droid_hangup,
+                              verify_call_mode_caller = True,
+                              verify_call_mode_callee = True,
+                              caller_mode_VoLTE = True, callee_mode_VoLTE = True)
         return result
 
     """ Tests Begin """
@@ -90,11 +95,11 @@ class TelephonyVoLTETest(BaseTestClass):
         Toggle ON/OFF airplane mode.
         Enable VoLTE.
         """
-        for droid in [self.droid0, self.droid1]:
-            set_preferred_network_type(droid, "LTE")
         for (droid, ed) in [(self.droid0, self.ed0), (self.droid1, self.ed1)]:
-            toggle_airplane_mode(self.log, droid, ed, True)
-            toggle_airplane_mode(self.log, droid, ed, False)
+            if droid.getNetworkType() != "lte":
+                set_preferred_network_type(droid, "LTE")
+                toggle_airplane_mode(self.log, droid, ed, True)
+                toggle_airplane_mode(self.log, droid, ed, False)
         for droid in [self.droid0, self.droid1]:
             toggle_volte(droid, True)
         return True
@@ -111,16 +116,10 @@ class TelephonyVoLTETest(BaseTestClass):
         Returns:
             True if pass; False if fail.
         """
-        #Wait for droids in LTE mode, before proceed VoLTE call.
-        #TODO(yangxliu): replace loop time wait with SL4A event.
-        for droid in [self.droid0, self.droid1]:
-            max_wait_time = self.max_wait_time_for_lte
-            while droid.getNetworkType() != "lte":
-                time.sleep(1)
-                max_wait_time = max_wait_time - 1
-                if max_wait_time < 0:
-                    self.log.error("Phone not in LTE mode.")
-                    return False
+        # Wait for droids in LTE mode, before proceed VoLTE call.
+        self.log.info("Waiting for droids to be in LTE mode.")
+        wait_for_droid_in_network_type(self.log, [self.droid0, self.droid1],
+                                       self.max_wait_time_for_lte, "lte")
         call_params = [(self.droid0, self.droid1,
                         self.ed0, self.ed1, self.time_wait_in_call,
                         self.phone_number_0, self.phone_number_1, self.droid0),
@@ -152,6 +151,10 @@ class TelephonyVoLTETest(BaseTestClass):
         Returns:
             True if pass; False if fail.
         """
+        # Wait for droids in LTE mode, before proceed VoLTE call.
+        self.log.info("Waiting for droids to be in LTE mode.")
+        wait_for_droid_in_network_type(self.log, [self.droid0, self.droid1],
+                                       self.max_wait_time_for_lte, "lte")
         self.log.info("Step1 verify internet on LTE.")
         toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
         wifi_toggle_state(self.droid0, self.ed0, False)
@@ -160,7 +163,11 @@ class TelephonyVoLTETest(BaseTestClass):
                                            self.ed0, False)
         self.log.info("Step2 Establish VoLTE call.")
         result = call_process(self.log, self.droid0, self.droid1,
-                              self.ed0, self.ed1, 5)
+                              self.ed0, self.ed1, 5,
+                              verify_call_mode_caller = True,
+                              verify_call_mode_callee = True,
+                              caller_mode_VoLTE = True,
+                              callee_mode_VoLTE = True)
         if not result:
             self.log.error("VoLTE Call error.")
             return False
@@ -170,9 +177,17 @@ class TelephonyVoLTETest(BaseTestClass):
         self.log.info("Step4 Disable VoLTE and make 3G call.")
         toggle_volte(self.droid0, False)
         toggle_volte(self.droid1, False)
+        # Wait for phone to be completely idle before proceed another nonVoLTE
+        # call.
+        # TODO(yangxliu): Replace hard coded wait to SL4A event wait.
+        time.sleep(5)
         verify_http_connection(self.droid0)
         result = call_process(self.log, self.droid0, self.droid1,
-                              self.ed0, self.ed1, 5)
+                              self.ed0, self.ed1, 5,
+                              verify_call_mode_caller = True,
+                              verify_call_mode_callee = True,
+                              caller_mode_VoLTE = False,
+                              callee_mode_VoLTE = False)
         if not result:
             self.log.error("3G Call error.")
             return False
