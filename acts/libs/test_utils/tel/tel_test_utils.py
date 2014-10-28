@@ -19,6 +19,7 @@ import random
 import string
 import time
 from queue import Empty
+from test_utils.tel.tel_enum import TelEnums
 from test_utils.utils import load_config
 from test_utils.utils import rand_ascii_str
 from test_utils.wifi_test_utils import wifi_toggle_state
@@ -38,6 +39,7 @@ def toggle_airplane_mode(log, droid, ed, new_state=None):
     Returns:
         result: True if operation succeed. False if error happens.
     """
+    wait_time_event = 90;
     phone_number = droid.getLine1Number()
     cur_state = droid.checkAirplaneMode()
     if cur_state == new_state:
@@ -58,7 +60,7 @@ def toggle_airplane_mode(log, droid, ed, new_state=None):
     droid.toggleAirplaneMode(new_state)
     event = None
     try:
-        event = ed.pop_event(event_name, 30)
+        event = ed.pop_events(event_name, wait_time_event)
     except Empty:
         log.exception("Did not get expected " + event_name)
     finally:
@@ -83,6 +85,7 @@ def toggle_call_state(droid, ed_caller, ed_callee, action):
     Returns:
         result: True if operation succeed. False if unknown action.
     """
+    wait_time_event = 30;
     event = None
     if action == "accept":
         droid.telecomAcceptRingingCall()
@@ -92,9 +95,50 @@ def toggle_call_state(droid, ed_caller, ed_callee, action):
         event = "onCallStateChangedIdle"
     else:
         return False
-    ed_callee.pop_event(event, 30)
-    ed_caller.pop_event(event, 30)
+    try:
+        ed_callee.pop_event(event, wait_time_event)
+        ed_caller.pop_event(event, wait_time_event)
+    except Empty:
+        if action == "accept" and not droid.telecomIsInCall():
+            raise TelTestUtilsError("Accept call failed.")
+        elif action == "hangup" and droid.telecomIsInCall():
+            raise TelTestUtilsError("Hangup call failed.")
     return True
+
+def check_phone_number_match(number1, number2):
+    """Check whether two input phone numbers match or not.
+
+    Compare the two input phone numbers.
+    If they match, return True; otherwise, return False.
+    Currently only handle phone number with the following formats:
+        (US phone number format)
+        +1abcxxxyyyy
+        1abcxxxyyyy
+        abcxxxyyyy
+        abc xxx yyyy
+        abc.xxx.yyyy
+        abc-xxx-yyyy
+
+    Args:
+        number1: 1st phone number to be compared.
+        number2: 2nd phone number to be compared.
+
+    Returns:
+        True if two phone numbers match. Otherwise False.
+    """
+    # Remove "1"  or "+1"from front
+    if number1[0] == "1":
+        number1 = number1[1:]
+    elif number1[0:2] == "+1":
+        number1 = number1[2:]
+    if number2[0] == "1":
+        number2 = number2[1:]
+    elif number2[0:2] == "+1":
+        number2 = number2[2:]
+    # Remove white spaces, dashes, dots
+    number1 = number1.replace(" ","").replace("-","").replace(".","")
+    number2 = number2.replace(" ","").replace("-","").replace(".","")
+    return number1 == number2
 
 def initiate_call(log, droid_caller, droid_callee, ed_callee,
                   caller_number, callee_number):
@@ -110,14 +154,15 @@ def initiate_call(log, droid_caller, droid_callee, ed_callee,
     Returns:
         result: if phone call is received by callee and ringing successfully.
         """
-    result = False
+    wait_time_event = 30
     droid_callee.phoneStartTrackingCallState()
     droid_callee.phoneAdjustPreciseCallStateListenLevel("Ringing", True)
     ed_callee.clear_all_events()
     droid_caller.phoneCallNumber(callee_number)
     event_ringing = None
     try:
-        event_ringing = ed_callee.pop_event("onCallStateChangedRinging", 30)
+        event_ringing = ed_callee.pop_event("onCallStateChangedRinging",
+                                            wait_time_event)
     except Empty:
         log.exception("Did not get expected ringing event")
         log.debug("Call did not get through, end call on both side")
@@ -127,8 +172,12 @@ def initiate_call(log, droid_caller, droid_callee, ed_callee,
         droid_callee.phoneStopTrackingCallStateChange()
     if not event_ringing:
         return False
-    if event_ringing['data']['incomingNumber'] == caller_number:
-        result = True
+    result = check_phone_number_match(event_ringing['data']['incomingNumber'],
+                                    caller_number)
+    if not result:
+        log.error("Expected number:{}, actual number:{}".
+                  format(caller_number,
+                         event_ringing['data']['incomingNumber']))
     return result
 
 def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
@@ -175,6 +224,9 @@ def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
     Returns:
         True if call process without any error.
         False if error happened.
+
+    Raises:
+        TelTestUtilsError if VoLTE check fail.
     """
     result = False
     if not caller_number:
@@ -201,18 +253,24 @@ def call_process(log, droid_caller, droid_callee, ed_caller, ed_callee,
             droid_callee.telecomIsInCall()):
             result = True
     if verify_call_mode_caller:
-        if caller_mode_VoLTE and droid_caller.getNetworkType() != "lte":
-            log.error("Error: Caller is not in VoLTE. Expected is VoLTE.")
+        network_type = get_network_type(droid_caller, "voice")
+        if caller_mode_VoLTE and network_type != "lte":
+            raise TelTestUtilsError("Error: Caller not in VoLTE. Expected VoLTE. Type:{}".
+                                    format(network_type))
             return False
-        if not caller_mode_VoLTE and droid_caller.getNetworkType() == "lte":
-            log.error("Error: Caller is in VoLTE. Expected is not VoLTE.")
+        if not caller_mode_VoLTE and network_type == "lte":
+            raise TelTestUtilsError("Error: Caller in VoLTE. Expected not VoLTE. Type:{}".
+                                    format(network_type))
             return False
     if verify_call_mode_callee:
-        if callee_mode_VoLTE and droid_callee.getNetworkType() != "lte":
-            log.error("Error: Callee is not in VoLTE. Expected is VoLTE.")
+        network_type = get_network_type(droid_callee, "voice")
+        if callee_mode_VoLTE and network_type != "lte":
+            raise TelTestUtilsError("Error: Callee not in VoLTE. Expected VoLTE. Type:{}".
+                                    format(network_type))
             return False
-        if not callee_mode_VoLTE and droid_callee.getNetworkType() == "lte":
-            log.error("Error: Callee is in VoLTE. Expected is not VoLTE.")
+        if not callee_mode_VoLTE and network_type == "lte":
+            raise TelTestUtilsError("Error: Callee in VoLTE. Expected not VoLTE.. Type:{}".
+                                    format(network_type))
             return False
     if not hangup:
         return True
@@ -433,14 +491,17 @@ def set_preferred_network_type(droid, network_type):
         raise TelTestUtilsError("Type:{} is not supported on this phone: {}.".
                                 format(network_type,droid))
 
-def wait_for_droid_in_network_type(log, droids, max_time, network_type):
-    """Wait for droid to be in certain connection mode (e.g. lte, hspa).
+def wait_for_droid_in_network_type(log, droids, max_time, network_type,
+                                   voice_or_data="data"):
+    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
 
     Args:
         log: log object.
         droids: array of SL4A session.
         max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, hspa.
+        network_type: expected connection network type. e.g. lte, 3g, 2g.
+        voice_or_data: check droid's voice network type or data network type.
+            Optional, default value is "data"
 
     Raise:
         TelTestUtilsError if droid not in expected network type when time out.
@@ -448,12 +509,17 @@ def wait_for_droid_in_network_type(log, droids, max_time, network_type):
     # TODO(yangxliu): replace loop time wait with SL4A event.
     fail= False
     for droid in droids:
-        while droid.getNetworkType() != network_type:
+        operator_name = get_operator_name(droid)
+        network_type_string = TelEnums.network_type_name[voice_or_data][operator_name][network_type]
+        while get_network_type(droid, voice_or_data) != network_type_string:
             time.sleep(1)
             max_time = max_time - 1
             if max_time <= 0:
                 fail = True
-                log.error("{} not in {} mode.".format(droid, network_type))
+                log.error("{}, expected:{}, actual:{}.".
+                          format(droid, network_type_string,
+                                 get_network_type(droid, voice_or_data)))
+                break
     if fail:
         raise TelTestUtilsError("Not all droids in expected mode.")
 
@@ -474,3 +540,78 @@ def get_phone_number(droid,simconf):
         number = droid.getLine1Number()
     return number
 
+def get_operator_name(droid):
+    """Get operator name (e.g. vzw, tmo) of droid.
+
+    Args:
+        droid: SL4A session.
+
+    Returns:
+        Operator name.
+    """
+    try:
+        result = TelEnums.operator_id_to_name[droid.getSimOperator()]
+    except KeyError:
+        result = "unknown"
+    return result
+
+def sms_send_receive_verify(log, droid_tx, droid_rx,
+                            phonenumber_tx, phonenumber_rx,
+                            ed_tx, ed_rx, length):
+    """Send SMS, receive SMS, and verify content and sender's number.
+
+        Send SMS from droid_tx to droid_rx, with <length> characters random string.
+        Verify SMS is sent, delivered and received.
+        Verify received content and sender's number are correct.
+
+    Args:
+        log: Log object.
+        droid_tx: Sender's SL4A session.
+        droid_rx: Receiver's SL4A session.
+        phonenumber_tx: Sender's phone number.
+        phonenumber_rx: Receiver's phone number.
+        ed_tx: Sender's event dispatcher.
+        ed_rx: Receiver's event dispatcher.
+        length: Length of message.
+    """
+    wait_time_sent_success = 60
+    wait_time_receive = 120
+    log.info("Sending SMS {} to {}, len {}".
+             format(phonenumber_tx, phonenumber_rx, length))
+    result = False
+    droid_rx.smsStartTrackingIncomingMessage()
+    text = rand_ascii_str(length)
+    droid_tx.smsSendTextMessage(phonenumber_rx, text, True)
+    event = None
+    ed_tx.pop_event("onSmsSentSuccess", wait_time_sent_success)
+    event = ed_rx.pop_event("onSmsReceived", wait_time_receive)
+    if (check_phone_number_match(event['data']['Sender'], phonenumber_tx) and
+        event['data']['Text'] == text):
+        result = True
+    else:
+        log.error("Received message error.")
+        log.error("Expected sender:" + phonenumber_tx)
+        log.error("Received sender:" + event['data']['Sender'])
+        log.error("Expected text:" + text)
+        log.error("Received text:" + event['data']['Text'])
+        result = False
+    droid_rx.smsStopTrackingIncomingMessage()
+    assert result, "Failed in verify receiving SMS."
+
+def get_network_type(droid, voice_or_data):
+    """Get current network type (Voice network type, or data network type)
+
+    Args:
+        droid: SL4A session.
+        voice_or_data: Input parameter indicating to get voice network type or
+            data network type.
+
+    Returns:
+        Current voice/data network type.
+    """
+    if voice_or_data == "voice":
+        return droid.getVoiceNetworkType()
+    elif voice_or_data == "data":
+        return droid.getDataNetworkType()
+    else:
+        return droid.getNetworkType()
