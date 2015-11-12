@@ -430,55 +430,53 @@ def match_networks(target_params, networks):
             results.append(n)
     return results
 
-def wifi_toggle_state(droid, ed, new_state=None):
-  """Toggles the state of wifi.
+def wifi_toggle_state(ad, new_state=None):
+    """Toggles the state of wifi.
 
-  Args:
-    droid: Sl4a session to use.
-    ed: event_dispatcher associated with the sl4a session.
-    new_state: Wifi state to set to. If None, opposite of the current state.
+    Args:
+        ad: An AndroidDevice object.
+        new_state: Wifi state to set to. If None, opposite of the current state.
 
-  Returns:
-    True if the toggle was successful, False otherwise.
-  """
-  # Check if the new_state is already achieved, so we don't wait for the
-  # state change event by mistake.
-  if new_state == droid.wifiCheckState():
-    return True
-  droid.wifiStartTrackingStateChange()
-  log.info("Setting wifi state to {}".format(new_state))
-  droid.wifiToggleState(new_state)
-  try:
-    event = ed.pop_event(WifiEventNames.SUPPLICANT_CON_CHANGED, SHORT_TIMEOUT)
-    return event['data']['Connected'] == new_state
-  except Empty:
-    # Supplicant connection event is not always reliable. We double check here
-    # and call it a success as long as the new state equals the expected state.
-    return new_state == droid.wifiCheckState()
-  finally:
-    droid.wifiStopTrackingStateChange()
-
-def reset_droid_wifi(droid, ed):
-  """Disconnects and removes all configured Wifi networks on an android device.
-
-  Args:
-    droid: Sl4a session to use.
-    ed: Event dispatcher instance associated with the sl4a session.
-
-  Raises:
-    WIFIUTILError if forget network operation failed.
-  """
-  droid.wifiToggleState(True)
-  networks = droid.wifiGetConfiguredNetworks()
-  if not networks:
-    return
-  for n in networks:
-    droid.wifiForgetNetwork(n['networkId'])
+    Returns:
+        True if the toggle was successful, False otherwise.
+    """
+    # Check if the new_state is already achieved, so we don't wait for the
+    # state change event by mistake.
+    if new_state == ad.droid.wifiCheckState():
+        return True
+    ad.droid.wifiStartTrackingStateChange()
+    log.info("Setting wifi state to {}".format(new_state))
+    ad.droid.wifiToggleState(new_state)
     try:
-      event = ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
-        SHORT_TIMEOUT)
+        event = ad.ed.pop_event(WifiEventNames.SUPPLICANT_CON_CHANGED, SHORT_TIMEOUT)
+        return event['data']['Connected'] == new_state
     except Empty:
-      raise WifiTestUtilsError("Failed to remove network {}.".format(n))
+      # Supplicant connection event is not always reliable. We double check here
+      # and call it a success as long as the new state equals the expected state.
+        return new_state == droid.wifiCheckState()
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+def reset_wifi(ad):
+    """Clears all saved networks on a device.
+
+    Args:
+        ad: An AndroidDevice object.
+
+    Raises:
+        WifiTestUtilsError is raised if forget network operation failed.
+    """
+    ad.droid.wifiToggleState(True)
+    networks = ad.droid.wifiGetConfiguredNetworks()
+    if not networks:
+        return
+    for n in networks:
+        ad.droid.wifiForgetNetwork(n['networkId'])
+        try:
+            event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+              SHORT_TIMEOUT)
+        except Empty:
+            raise WifiTestUtilsError("Failed to remove network {}.".format(n))
 
 def wifi_forget_network(ad, net_ssid):
   """Remove configured Wifi network on an android device.
@@ -488,7 +486,7 @@ def wifi_forget_network(ad, net_ssid):
     net_ssid: ssid of network to be forget
 
   Raises:
-    WIFIUTILError if forget network operation failed.
+    WifiTestUtilsError is raised if forget network operation failed.
   """
   droid, ed = ad.droid, ad.ed
   droid.wifiToggleState(True)
@@ -521,8 +519,8 @@ def wifi_test_device_init(ad):
     msg = "Failed to turn off location service's scan."
     assert not ad.droid.wifiScannerIsAlwaysAvailable(), msg
     msg = "Failed to turn WiFi on %s" % ad.serial
-    assert wifi_toggle_state(ad.droid, ad.ed, True), msg
-    reset_droid_wifi(ad.droid, ad.ed)
+    assert wifi_toggle_state(ad, True), msg
+    reset_wifi(ad)
     msg = "Failed to clear configured networks."
     assert not ad.droid.wifiGetConfiguredNetworks(), msg
     ad.droid.wifiEnableVerboseLogging(1)
@@ -548,15 +546,14 @@ def sort_wifi_scan_results(results, key="level"):
   """
   return sorted(results, lambda d: (key not in d, d[key]))
 
-def start_wifi_connection_scan(droid, ed):
+def start_wifi_connection_scan(ad):
     """Starts a wifi connection scan and wait for results to become available.
 
     Args:
-        droid: Sl4a session to use.
-        ed: Event dispatcher instance associated with the sl4a session.
+        ad: An AndroidDevice object.
     """
-    droid.wifiStartScan()
-    ed.pop_event("WifiManagerScanResultsAvailable", 60)
+    ad.droid.wifiStartScan()
+    ad.ed.pop_event("WifiManagerScanResultsAvailable", 60)
 
 def start_wifi_background_scan(ad, scan_setting):
     """Starts wifi background scan.
@@ -571,21 +568,6 @@ def start_wifi_background_scan(ad, scan_setting):
     droid, ed = ad.droids[0], ad.eds[0]
     idx = droid.wifiScannerStartBackgroundScan(scan_setting)
     event = ed.pop_event("WifiScannerScan{}onSuccess".format(idx),
-                         SHORT_TIMEOUT)
-    return event['data']
-
-def start_wifi_tracking_change(droid, ed):
-    """Starts tracking wifi change.
-
-    Args:
-        droid: Sl4a session to use.
-        ed: Event dispatcher instance associated with the sl4a session.
-
-    Returns:
-        If scan was started successfully, event data of success event is returned.
-    """
-    idx = droid.wifiScannerStartTrackingChange()
-    event = ed.pop_event("WifiScannerChange{}onSuccess".format(idx),
                          SHORT_TIMEOUT)
     return event['data']
 
@@ -696,7 +678,7 @@ def track_connection(ad, network_ssid, check_connection_count):
       connect_network = ed.pop_event("WifiNetworkConnected", 120)
       log.info("connect_network {}".format(connect_network))
       if (WifiEnums.SSID_KEY in connect_network['data']
-                            and connect_network['data'][WifiEnums.SSID_KEY]==network_ssid):
+                            and connect_network['data'][WifiEnums.SSID_KEY] == network_ssid):
         return True
       check_connection_count -= 1
     droid.wifiStopTrackingStateChange()
@@ -816,7 +798,7 @@ def eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         True if the connection is successful and Internet access works.
     """
     droid, ed = ad.droid, ad.ed
-    start_wifi_connection_scan(droid, ed)
+    start_wifi_connection_scan(ad)
     expect_ssid = None
     if WifiEnums.SSID_KEY in config:
         expect_ssid = config[WifiEnums.SSID_KEY]
@@ -824,7 +806,7 @@ def eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
     else:
         log.info("Connecting.")
     log.debug(pprint.pformat(config, indent=4))
-    droid.wifiEnterpriseConnect(config)
+    ad.droid.wifiEnterpriseConnect(config)
     try:
         event = ed.pop_event("WifiManagerEnterpriseConnectOnSuccess", 30)
         log.info("Started connecting...")
@@ -846,7 +828,7 @@ def eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         log.info("Checking Internet access.")
         # Wait for data connection to stabilize.
         time.sleep(4)
-        ping = droid.httpPing(ping_addr)
+        ping = ad.droid.httpPing(ping_addr)
         log.info("Http ping result: {}".format(ping))
         if not ping:
             log.error("No Internet access.")
