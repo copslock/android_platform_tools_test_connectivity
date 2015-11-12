@@ -1058,10 +1058,10 @@ class WifiScannerScanTest(BaseTestClass):
          3. Verify that scan is not started.
         """
         self.log.debug("Make sure wifi is off.")
-        wifi_toggle_state(self.droid, self.ed, False)
+        wifi_toggle_state(self.dut, False)
         self.start_wifi_scanner_single_scan_expect_failure(self.default_scan_setting)
         self.log.debug("Turning wifi back on.")
-        wifi_toggle_state(self.droid, self.ed, True)
+        wifi_toggle_state(self.dut, True)
 
     def test_wifi_scanner_with_invalid_numBssidsPerScan(self):
         """Test WiFi scanner single scan with invalid number of bssids reported

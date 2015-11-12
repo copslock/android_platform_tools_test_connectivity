@@ -208,7 +208,7 @@ class WifiRttManagerTest(BaseTestClass):
         Returns:
             A list of networks that have RTTResponders.
         """
-        start_wifi_connection_scan(self.droid, self.ed)
+        start_wifi_connection_scan(self.dut)
         networks = self.droid.wifiGetScanResults()
         rtt_networks = []
         for nw in networks:
@@ -483,7 +483,7 @@ class WifiRttManagerTest(BaseTestClass):
             All the non-RTT networks show up in scan results and their
             "is80211McRTTResponder" is False.
         """
-        start_wifi_connection_scan(self.droid, self.ed)
+        start_wifi_connection_scan(self.dut)
         scan_results = self.droid.wifiGetScanResults()
         self.log.debug(scan_results)
         for n in visible_networks:

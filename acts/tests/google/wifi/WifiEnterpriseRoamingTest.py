@@ -21,7 +21,7 @@ from random import shuffle
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi_test_utils import eap_connect
 from acts.test_utils.wifi_test_utils import expand_enterprise_config_by_phase2
-from acts.test_utils.wifi_test_utils import reset_droid_wifi
+from acts.test_utils.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi_test_utils import verify_wifi_connection_info
 from acts.test_utils.wifi_test_utils import wifi_test_device_init
 from acts.test_utils.wifi_test_utils import WifiEnums
@@ -95,7 +95,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        reset_droid_wifi(self.droid, self.ed)
+        reset_wifi(self.dut)
         self.droid.disableDevicePassword()
         self.ed.clear_all_events()
         self.set_attns("default")
@@ -104,7 +104,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         self.droid.wifiStartTrackingStateChange()
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
-        reset_droid_wifi(self.droid, self.ed)
+        reset_wifi(self.dut)
         self.ed.clear_all_events()
         return True
 
