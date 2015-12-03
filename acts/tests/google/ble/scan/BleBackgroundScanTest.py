@@ -1,0 +1,177 @@
+# python3.4
+# Copyright (C) 2015 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+"""
+This test script exercises background scan test scenarios.
+"""
+
+from queue import Empty
+
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BleEnum import BluetoothAdapterState
+from acts.test_utils.bt.bt_test_utils import bluetooth_off
+from acts.test_utils.bt.bt_test_utils import bluetooth_on
+from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
+from acts.test_utils.bt.bt_test_utils import log_energy_info
+from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
+from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
+from acts.test_utils.bt.bt_test_utils import scan_result
+
+
+class BleBackgroundScanTest(BluetoothBaseTest):
+    tests = None
+    default_timeout = 10
+    max_scan_instances = 28
+    report_delay = 2000
+    scan_callbacks = []
+    adv_callbacks = []
+    active_scan_callback_list = []
+    active_adv_callback_list = []
+
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
+        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
+        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
+        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        if self.droid_list[1]['max_advertisements'] == 0:
+            self.tests = ()
+            return
+        self.tests = (
+            "test_background_scan",
+            "test_background_scan_ble_disabled",
+        )
+
+    def setup_test(self):
+        self.log.debug(log_energy_info(self.droids, "Start"))
+        if (self.scn_droid.bluetoothGetLeState() ==
+                BluetoothAdapterState.STATE_OFF.value):
+            self.scn_droid.bluetoothEnableBLE()
+            self.scn_ed.pop_event("BleStateChangedOn")
+        for e in self.eds:
+            e.clear_all_events()
+        return True
+
+    def teardown_test(self):
+        self.log.debug(log_energy_info(self.droids, "End"))
+        cleanup_scanners_and_advertisers(
+            self.scn_droid, self.scn_ed, self.active_adv_callback_list,
+            self.adv_droid, self.adv_ed, self.active_adv_callback_list)
+        self.active_adv_callback_list = []
+        self.active_scan_callback_list = []
+
+    def _setup_generic_advertisement(self):
+        adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
+            self.adv_droid)
+        self.adv_droid.bleStartBleAdvertising(
+            adv_callback, adv_data, adv_settings)
+        self.active_adv_callback_list.append(adv_callback)
+
+    def _verify_no_events_found(self, event_name):
+        try:
+            self.scn_ed.pop_event(event_name, self.default_timeout)
+            self.log.error("Found an event when none was expected.")
+            return False
+        except Empty:
+            self.log.info("No scan result found as expected.")
+            return True
+
+    def _delete_me(self):
+        import time
+        time.sleep(5)
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_background_scan(self):
+        """Test generic background scan.
+
+        Tests LE background scan. The goal is to find scan results even though
+        Bluetooth is turned off.
+
+        Steps:
+        1. Setup an advertisement on dut1
+        2. Enable LE on the Bluetooth Adapter on dut0
+        3. Toggle BT off on dut1
+        4. Start a LE scan on dut0
+        5. Find the advertisement from dut1
+
+        Expected Result:
+        Find a advertisement from the scan instance.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Scanning, Background Scanning
+        Priority: 0
+        """
+        import time
+        self._setup_generic_advertisement()
+        self.scn_droid.bluetoothToggleState(False)
+        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
+        self.scn_droid.bluetoothDisableBLE()
+        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
+        self.scn_droid.bluetoothEnableBLE()
+        self._delete_me()
+        self.scn_ed.pop_event(bluetooth_on, self.default_timeout * 2)
+        filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+            self.scn_droid)
+        self.scn_droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
+        self.scn_ed.pop_event(
+            scan_result.format(scan_callback), self.default_timeout)
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_background_scan_ble_disabled(self):
+        """Test background LE scanning with LE disabled.
+
+        Tests LE background scan. The goal is to find scan results even though
+        Bluetooth is turned off.
+
+        Steps:
+        1. Setup an advertisement on dut1
+        2. Enable LE on the Bluetooth Adapter on dut0
+        3. Toggle BT off on dut1
+        4. Start a LE scan on dut0
+        5. Find the advertisement from dut1
+
+        Expected Result:
+        Find a advertisement from the scan instance.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Scanning, Background Scanning
+        Priority: 0
+        """
+        self._setup_generic_advertisement()
+        self.scn_droid.bluetoothEnableBLE()
+        self.scn_droid.bluetoothToggleState(False)
+        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
+        self._delete_me()
+        filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+            self.scn_droid)
+        try:
+            self.scn_droid.bleStartBleScan(
+                filter_list, scan_settings, scan_callback)
+            self.scn_ed.pop_event(scan_result.format(scan_callback))
+            self.log.info("Was able to start background scan even though ble "
+                          "was disabled.")
+            return False
+        except Exception:
+            self.log.info(
+                "Was not able to start a background scan as expected.")
+        return True
