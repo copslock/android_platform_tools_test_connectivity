@@ -71,7 +71,6 @@ class GattConnectTest(BluetoothBaseTest):
             "test_gatt_connect_with_service_uuid_variations",
             "test_gatt_connect_in_quick_succession",
             "test_write_descriptor_stress",
-            "test_write_characteristic_stress",
         )
 
     def teardown_test(self):

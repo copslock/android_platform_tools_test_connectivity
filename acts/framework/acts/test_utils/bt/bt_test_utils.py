@@ -214,7 +214,6 @@ def get_advanced_droid_list(droids, eds):
         d = droids[i]
         e = eds[i]
         model = d.getBuildModel()
-        print (model)
         max_advertisements = 0
         batch_scan_supported = True
         if model in advertisements_to_devices.keys():

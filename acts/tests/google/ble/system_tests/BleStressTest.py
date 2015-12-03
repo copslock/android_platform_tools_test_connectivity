@@ -41,12 +41,13 @@ class BleStressTest(BluetoothBaseTest):
         self.tests = (
             "test_loop_scanning_1000",
             "test_restart_scan_callback_after_bt_toggle",
-            "test_loop_scanning_100_verify_no_hci_timeout",
             "test_start_le_scan_while_toggling_bt",
         )
         if self.droid_list[0]['max_advertisements'] > 0:
             self.tests = self.tests + ("test_loop_advertising_100",
                                        "test_restart_advertise_callback_after_bt_toggle",)
+        if self.droid_list[1]['max_advertisements'] >= 4:
+            self.tests = self.tests + ("test_loop_scanning_100_verify_no_hci_timeout",)
 
     def bleadvertise_verify_onsuccess_handler(self, event):
         test_result = True
@@ -111,11 +112,11 @@ class BleStressTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Stress
         Priority: 1
         """
-        adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
-            self.adv_droid)
-        self.adv_droid.bleStartBleAdvertising(
-            adv_callback, adv_data, adv_settings)
-        test_result = True
+        for _ in range(self.droid_list[1]['max_advertisements']):
+            adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
+                self.adv_droid)
+            self.adv_droid.bleStartBleAdvertising(
+                adv_callback, adv_data, adv_settings)
         for _ in range(100):
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
                 self.scn_droid)
@@ -125,7 +126,7 @@ class BleStressTest(BluetoothBaseTest):
                 scan_result.format(scan_callback)))
             self.scn_droid.bleStopBleScan(scan_callback)
             time.sleep(1)
-        return test_result
+        return True
 
     @BluetoothBaseTest.bt_test_wrap
     def test_loop_advertising_100(self):
