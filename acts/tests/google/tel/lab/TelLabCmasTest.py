@@ -1,0 +1,397 @@
+#!/usr/bin/python3.4
+# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab
+
+# Copyright (C) 2014- The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Sanity tests for voice tests in telephony
+"""
+from acts.base_test import BaseTestClass
+from acts.controllers.tel.md8475a import MD8475A
+from acts.controllers.tel._anritsu_utils import AnritsuError
+from acts.controllers.tel.md8475a import CTCHSetup
+from acts.test_utils.tel.tel_test_anritsu_utils import *
+from acts.test_utils.tel.tel_test_utils import *
+from acts.test_utils.tel.tel_voice_utils import *
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.controllers.tel.md8475a import CBCHSetup
+
+class TelLabCmasTest(TelephonyBaseTest):
+    SERIAL_NO = cb_serial_number()
+    CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
+
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
+        self.tests = (
+                      "test_cmas_presidential_alert_lte",
+                      "test_cmas_extreme_immediate_likely_lte",
+                      "test_cmas_child_abduction_emergency_lte",
+                      "test_cmas_presidential_alert_wcdma",
+                      "test_cmas_extreme_immediate_likely_wcdma",
+                      "test_cmas_child_abduction_emergency_wcdma",
+                      "test_cmas_presidential_alert_1x",
+                      "test_cmas_extreme_immediate_likely_1x",
+                      "test_cmas_child_abduction_emergency_1x",
+                      "test_cmas_presidential_alert_gsm",
+                      "test_cmas_extreme_immediate_likely_gsm",
+                      "test_cmas_child_abduction_emergency_gsm",
+                    )
+        self.ad = self.android_devices[0]
+        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+
+    def setup_class(self):
+        try:
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
+        except AnritsuError:
+            self.log.error("Error in connecting to Anritsu Simulator")
+            return False
+        return True
+
+    def setup_test(self):
+        ensure_phones_idle(self.log, self.android_devices)
+        toggle_airplane_mode(self.log, self.ad, True)
+        return True
+
+    def teardown_test(self):
+        self.log.info("Stopping Simulation")
+        self.anritsu.stop_simulation()
+        toggle_airplane_mode(self.log, self.ad, True)
+        return True
+
+    def teardown_class(self):
+        self.anritsu.disconnect()
+        return True
+
+    def _send_receive_cmas_message(self, set_simulation_func, rat,
+            message_id, warning_message,
+            c2k_response_type=CMAS_C2K_RESPONSETYPE_SHELTER,
+            c2k_severity=CMAS_C2K_SEVERITY_EXTREME,
+            c2k_urgency=CMAS_C2K_URGENCY_IMMEDIATE,
+            c2k_certainty=CMAS_C2K_CERTIANTY_OBSERVED):
+        try:
+            self.anritsu.reset()
+            self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params)
+            self.anritsu.start_simulation()
+
+            if rat == RAT_LTE:
+                phone_setup_func = phone_setup_csfb
+                pref_network_type = NETWORK_MODE_LTE_GSM_WCDMA
+            elif rat == RAT_WCDMA:
+                phone_setup_func = phone_setup_3g
+                pref_network_type = NETWORK_MODE_WCDMA_PREF
+                self.bts1.wcdma_ctch = CTCHSetup.CTCH_ENABLE
+                self.ad.droid.toggleDataConnection(False)
+            elif rat == RAT_GSM:
+                phone_setup_func = phone_setup_2g
+                pref_network_type = NETWORK_MODE_GSM_ONLY
+                self.bts1.gsm_cbch = CBCHSetup.CBCH_ENABLE
+                self.ad.droid.toggleDataConnection(False)
+            elif rat == RAT_1XRTT:
+                phone_setup_func = phone_setup_3g
+                pref_network_type = NETWORK_MODE_CDMA
+            else:
+                phone_setup_func = phone_setup_csfb
+                network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+
+            self.ad.droid.setPreferredNetwork(pref_network_type)
+            if not phone_setup_func(self.log, self.ad):
+                self.log.error("Phone {} Failed to Set Up Properly"
+                               .format(self.ad.serial))
+                return False
+            self.anritsu.wait_for_registration_state()
+            if rat != RAT_1XRTT:
+                if not cmas_receive_verify_message_lte_wcdma(self.log, self.ad,
+                                                        self.anritsu,
+                                                        next(TelLabCmasTest.SERIAL_NO),
+                                                        message_id,
+                                                        warning_message ):
+                    self.log.error("Phone {} Failed to receive CMAS message"
+                              .format(self.ad.serial))
+                    return False
+            else:
+                if not cmas_receive_verify_message_cdma1x(self.log, self.ad,
+                                                        self.anritsu,
+                                                        next(TelLabCmasTest.SERIAL_NO),
+                                                        message_id,
+                                                        warning_message,
+                                                        c2k_response_type,
+                                                        c2k_severity,
+                                                        c2k_urgency,
+                                                        c2k_certainty):
+                    self.log.error("Phone {} Failed to receive CMAS message"
+                              .format(self.ad.serial))
+                    return False
+        except AnritsuError as e:
+            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            return False
+        except Exception as e:
+            self.log.error("Exception during CMAS send/receive: " + str(e) )
+            return False
+        return True
+
+    """ Tests Begin """
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_presidential_alert_lte(self):
+        """CMAS Presidential alert message reception on LTE
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS presedential alert message when camped on LTE newtork
+
+        Steps:
+        1. Make Sure Phone is camped on LTE network
+        2. Send CMAS Presidential message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Presidential alert message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_lte, RAT_LTE,
+                                               CMAS_MESSAGE_PRESIDENTIAL_ALERT,
+                                               "LTE CMAS Presidential Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_extreme_immediate_likely_lte(self):
+        """CMAS Extreme immediate likely message reception on LTE
+
+        Tests the capability of device to receive and inform the user
+        about the Extreme immediate likely message when camped on LTE newtork
+
+        1. Make Sure Phone is camped on LTE network
+        2. Send CMAS Extreme immediate likely message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Extreme immediate likely message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_lte, RAT_LTE,
+                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+                                               "LTE CMAS Extreme Immediate Likely")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_child_abduction_emergency_lte(self):
+        """CMAS Child abduction emergency message reception on LTE
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS Child abduction emergency message when camped on LTE newtork
+
+        1. Make Sure Phone is camped on LTE network
+        2. Send CMAS Child abduction emergency message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Child abduction emergency message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_lte, RAT_LTE,
+                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+                                               "LTE CMAS Child abduction Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_presidential_alert_wcdma(self):
+        """CMAS Presidential alert message reception on WCDMA
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS presedential alert message when camped on WCDMA newtork
+
+        Steps:
+        1. Make Sure Phone is camped on WCDMA network
+        2. Send CMAS Presidential message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Presidential alert message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
+                                               CMAS_MESSAGE_PRESIDENTIAL_ALERT,
+                                               "WCDMA CMAS Presidential Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_extreme_immediate_likely_wcdma(self):
+        """CMAS Extreme immediate likely message reception on WCDMA
+
+        Tests the capability of device to receive and inform the user
+        about the Extreme immediate likely message when camped on WCDMA newtork
+
+        1. Make Sure Phone is camped on WCDMA network
+        2. Send CMAS Extreme immediate likely message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Extreme immediate likely message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
+                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+                                               "WCDMA CMAS Extreme Immediate Likely")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_child_abduction_emergency_wcdma(self):
+        """CMAS Child abduction emergency message reception on WCDMA
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS Child abduction emergency message when camped on WCDMA newtork
+
+        1. Make Sure Phone is camped on WCDMA network
+        2. Send CMAS Child abduction emergency message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Child abduction emergency message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
+                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+                                               "WCDMA CMAS Child abduction Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_presidential_alert_1x(self):
+        """CMAS Presidential alert message reception on 1x
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS presedential alert message when camped on 1x newtork
+
+        Steps:
+        1. Make Sure Phone is camped on 1x network
+        2. Send CMAS Presidential message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Presidential alert message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_1x, RAT_1XRTT,
+                                               CMAS_C2K_CATEGORY_PRESIDENTIAL,
+                                               "1X CMAS Presidential Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_extreme_immediate_likely_1x(self):
+        """CMAS Extreme immediate likely message reception on 1x
+
+        Tests the capability of device to receive and inform the user
+        about the Extreme immediate likely message when camped on 1x newtork
+
+        1. Make Sure Phone is camped on 1x network
+        2. Send CMAS Extreme immediate likely message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Extreme immediate likely message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_1x, RAT_1XRTT,
+                                               CMAS_C2K_CATEGORY_EXTREME,
+                                               "1X CMAS Extreme Immediate Likely",
+                                               CMAS_C2K_RESPONSETYPE_EVACUATE,
+                                               CMAS_C2K_SEVERITY_EXTREME,
+                                               CMAS_C2K_URGENCY_IMMEDIATE,
+                                               CMAS_C2K_CERTIANTY_LIKELY)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_child_abduction_emergency_1x(self):
+        """CMAS Child abduction emergency message reception on 1x
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS Child abduction emergency message when camped on 1x newtork
+
+        1. Make Sure Phone is camped on 1x network
+        2. Send CMAS Child abduction emergency message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Child abduction emergency message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_1x, RAT_1XRTT,
+                                               CMAS_C2K_CATEGORY_AMBER,
+                                               "1X CMAS Child abduction Alert",
+                                               CMAS_C2K_RESPONSETYPE_MONITOR,
+                                               CMAS_C2K_SEVERITY_EXTREME,
+                                               CMAS_C2K_URGENCY_IMMEDIATE,
+                                               CMAS_C2K_CERTIANTY_OBSERVED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_presidential_alert_gsm(self):
+        """CMAS Presidential alert message reception on GSM
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS presedential alert message when camped on GSM newtork
+
+        Steps:
+        1. Make Sure Phone is camped on GSM network
+        2. Send CMAS Presidential message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Presidential alert message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_gsm, RAT_GSM,
+                                               CMAS_MESSAGE_PRESIDENTIAL_ALERT,
+                                               "GSM CMAS Presidential Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_extreme_immediate_likely_gsm(self):
+        """CMAS Extreme immediate likely message reception on GSM
+
+        Tests the capability of device to receive and inform the user
+        about the Extreme immediate likely message when camped on GSM newtork
+
+        1. Make Sure Phone is camped on GSM network
+        2. Send CMAS Extreme immediate likely message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Extreme immediate likely message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_gsm, RAT_GSM,
+                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+                                               "GSM CMAS Extreme Immediate Likely")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_child_abduction_emergency_gsm(self):
+        """CMAS Child abduction emergency message reception on GSM
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS Child abduction emergency message when camped on GSM newtork
+
+        1. Make Sure Phone is camped on GSM network
+        2. Send CMAS Child abduction emergency message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Child abduction emergency message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(set_system_model_gsm, RAT_GSM,
+                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+                                               "GSM CMAS Child abduction Alert")
+    """ Tests End """
