@@ -13,6 +13,6 @@ setup(
     install_requires = [
         'pyserial',
     ],
-    scripts = ['acts/act.py','acts/monsoon.py'],
+    scripts = ['acts/bin/act.py','acts/bin/monsoon.py'],
     url = "http://www.android.com/"
 )
