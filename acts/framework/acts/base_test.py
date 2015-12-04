@@ -587,8 +587,8 @@ class BaseTestClass(object):
             self.results.requested.remove(test_name)
         except Exception as e:
             # Exception happened during test.
-            self.log.exception("Exception in " + test_name)
-            tr_record.test_fail(e)
+            self.log.exception("Uncaught exception in " + test_name)
+            tr_record.test_unknown(e)
             bt = logger.epoch_to_log_line_timestamp(tr_record.begin_time)
             self._exec_func(self.on_exception, tr_record.test_name, bt)
             self._exec_func(self._on_fail, tr_record)

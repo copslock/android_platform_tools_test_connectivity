@@ -25,7 +25,6 @@ from acts.signals import TestSignal
 from acts.utils import epoch_to_human_time
 from acts.utils import get_current_epoch_time
 
-
 class TestResultEnums(object):
     """Enums used for TestResultRecord class.
 
@@ -43,6 +42,7 @@ class TestResultEnums(object):
     TEST_RESULT_PASS = "PASS"
     TEST_RESULT_FAIL = "FAIL"
     TEST_RESULT_SKIP = "SKIP"
+    TEST_RESULT_UNKNOWN = "UNKNOWN"
 
 class TestResultRecord(object):
     """A record that holds the information of a test case execution.
@@ -117,6 +117,14 @@ class TestResultRecord(object):
             e: An instance of acts.signals.TestSkip.
         """
         self._test_end(TestResultEnums.TEST_RESULT_SKIP, e)
+
+    def test_unknown(self, e=None):
+        """To mark the test as unknown in this record.
+
+        Args:
+            e: An exception object.
+        """
+        self._test_end(TestResultEnums.TEST_RESULT_UNKNOWN, e)
 
     def __str__(self):
         d = self.to_dict()
