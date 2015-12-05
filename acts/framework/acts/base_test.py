@@ -112,7 +112,7 @@ class BaseTestClass(object):
     def __exit__(self, *args):
         self._exec_func(self.clean_up)
 
-    def unpack_userparams(self, req_param_names, opt_param_names=[]):
+    def unpack_userparams(self, req_param_names=[], opt_param_names=[], **kwargs):
         """Unpacks user defined parameters in test config into individual
         variables.
 
@@ -127,11 +127,17 @@ class BaseTestClass(object):
         Args:
             req_param_names: A list of names of the required user params.
             opt_param_names: A list of names of the optional user params.
+            **kwargs: Arguments that provide default values.
+                e.g. unpack_userparams(required_list, opt_list, arg_a="hello")
+                     self.arg_a will be "hello" unless it is specified again in
+                     required_list or opt_list.
 
         Returns:
             True if all required user params were set. False otherwise.
         """
         missing = False
+        for k, v in kwargs.items():
+            setattr(self, k, v)
         for name in req_param_names:
             if name not in self.user_params:
                 missing = True

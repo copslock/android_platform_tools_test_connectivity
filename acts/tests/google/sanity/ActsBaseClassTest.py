@@ -72,6 +72,11 @@ class ActsBaseClassTest(BaseTestClass):
             "test_generated_explicit_pass_with_str_extra",
             "test_test_args",
             "test_explicit_pass",
+            "test_unpack_userparams_required",
+            "test_unpack_userparams_optional",
+            "test_unpack_userparams_default",
+            "test_unpack_userparams_default_overwrite",
+            "test_unpack_userparams_default_None",
             "test_generated_explicit_pass",
             "test_invalid_signal_details",
             "test_invalid_signal_extras"
@@ -211,6 +216,44 @@ class ActsBaseClassTest(BaseTestClass):
             "You should either specify more than one for --test_args, or no "
             "--test_args at all.".format(one_arg))
         self.assert_true(False, "BAD!!")
+
+    def test_unpack_userparams_required(self):
+        required_param = "something"
+        required = [required_param]
+        self.assert_true(not self.unpack_userparams(required), ("Required "
+                         "param '%s' missing, unpack funtion should have "
+                         "returned False.") % required_param)
+
+    def test_unpack_userparams_optional(self):
+        optional_param = "something"
+        opt = [optional_param]
+        self.assert_true(self.unpack_userparams(opt_param_names=opt),
+                        ("Optional param '%s' missing, unpack function should"
+                         "have returned True.") % optional_param)
+
+    def test_unpack_userparams_default(self):
+        arg = "haha"
+        self.unpack_userparams(arg1=arg)
+        self.assert_true(self.arg1 == arg,
+                         ("Expected to have self.arg1 set to %s on the test "
+                         "class, got %s") % (arg, self.arg1))
+
+    def test_unpack_userparams_default_overwrite(self):
+        default_arg_val = "haha"
+        actual_arg_val = "wawa"
+        arg_name = "arg1"
+        self.user_params[arg_name] = actual_arg_val
+        self.unpack_userparams(opt_param_names=[arg_name],
+                               arg1=default_arg_val)
+        self.assert_true(self.arg1 == actual_arg_val,
+                         ("Expected to have self.arg1 set to %s on the test "
+                         "class, got %s") % (actual_arg_val, self.arg1))
+
+    def test_unpack_userparams_default_None(self):
+        self.unpack_userparams(arg1=None)
+        self.assert_true(self.arg1 is None,
+                         ("Expected to have self.arg1 set to None on the test "
+                         "class, got %s") % self.arg1)
 
     def test_unsolicited_test_args(self):
         self.log.error("This test should have been skipped. Did you run with "
