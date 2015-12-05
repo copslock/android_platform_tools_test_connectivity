@@ -217,6 +217,7 @@ def _run_test(test_runner, repeat=1):
         print("Exception when executing {}, iteration {}.".format(
             test_runner.testbed_name, i))
         print(traceback.format_exc())
+        return False
     finally:
         test_runner.stop()
 
@@ -229,11 +230,17 @@ def _gen_term_signal_handler(test_runners):
 
 def _run_tests_parallel(process_args):
     print("Executing {} concurrent test runs.".format(len(process_args)))
-    concurrent_exec(_run_test, process_args)
+    results = concurrent_exec(_run_test, process_args)
+    for r in results:
+        if r is False or isinstance(r, Exception):
+            return False
 
 def _run_tests_sequential(process_args):
+    ok = True
     for args in process_args:
-        _run_test(*args)
+        if _run_test(*args) is False:
+            ok = False
+    return ok
 
 def _parse_test_file(fpath):
     try:
@@ -315,7 +322,9 @@ if __name__ == "__main__":
         signal.signal(signal.SIGINT, handler)
     # Execute test runners.
     if args.parallel and len(process_args) > 1:
-        _run_tests_parallel(process_args)
+        exec_result = _run_tests_parallel(process_args)
     else:
-        _run_tests_sequential(process_args)
+        exec_result = _run_tests_sequential(process_args)
+    if exec_result is False:
+        sys.exit(1)
     sys.exit(0)
