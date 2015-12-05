@@ -29,8 +29,10 @@ from acts.signals import ControllerError
 from acts.utils import exe_cmd
 
 def create(configs, logger):
-    if not configs:
+    if configs is None:
         ads = get_all_instances()
+    elif not configs:
+        return []
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
         ads = get_instances(configs, logger)
