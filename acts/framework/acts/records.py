@@ -89,7 +89,7 @@ class TestResultRecord(object):
         if isinstance(e, TestSignal):
             self.details = e.details
             self.extras = e.extras
-        else:
+        elif e:
             self.details = str(e)
 
     def test_pass(self, e=None):
