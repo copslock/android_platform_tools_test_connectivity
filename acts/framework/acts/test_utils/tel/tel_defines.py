@@ -204,6 +204,8 @@ CARRIER_VZW = 'vzw'
 CARRIER_ATT = 'att'
 CARRIER_TMO = 'tmo'
 CARRIER_SPT = 'spt'
+CARRIER_EEUK = 'eeuk'
+CARRIER_VFUK = 'vfuk'
 CARRIER_UNKNOWN = 'unknown'
 
 RAT_FAMILY_CDMA = 'cdma'

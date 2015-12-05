@@ -183,7 +183,15 @@ class _TelTables():
         '311870': tel_defines.CARRIER_SPT,
         '311880': tel_defines.CARRIER_SPT,
         '312190': tel_defines.CARRIER_SPT,   #Sprint-Nextel Communications Inc
-        '316010': tel_defines.CARRIER_SPT    #Sprint-Nextel Communications Inc
+        '316010': tel_defines.CARRIER_SPT,   #Sprint-Nextel Communications Inc
+
+        '23433': tel_defines.CARRIER_EEUK,   #Orange
+        '23434': tel_defines.CARRIER_EEUK,   #Orange
+        '23430': tel_defines.CARRIER_EEUK,   #T-Mobile UK
+        '23431': tel_defines.CARRIER_EEUK,   #Virgin Mobile (MVNO)
+        '23432': tel_defines.CARRIER_EEUK,   #Virgin Mobile (MVNO)
+
+        '23415': tel_defines.CARRIER_VFUK
     }
 
     technology_gen_tbl = [tel_defines.RAT_2G, tel_defines.RAT_3G,
@@ -385,6 +393,8 @@ class _TelTables():
         tel_defines.CARRIER_SPT: _operator_na_cdma_tbl,
         tel_defines.CARRIER_ATT: _operator_na_umts_tbl,
         tel_defines.CARRIER_TMO: _operator_na_umts_tbl,
+        tel_defines.CARRIER_EEUK: _operator_na_umts_tbl,
+        tel_defines.CARRIER_VFUK: _operator_na_umts_tbl
     }
 
 device_capabilities = {
@@ -413,4 +423,8 @@ operator_capabilities = {
          tel_defines.CAPABILITY_WFC],
     tel_defines.CARRIER_SPT:
         [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_EEUK:
+        [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_VFUK:
+        [tel_defines.CAPABILITY_PHONE]
 }
