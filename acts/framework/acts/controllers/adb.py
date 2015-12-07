@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import random
+import socket
 import time
 
 from acts.utils import exe_cmd
@@ -25,32 +27,50 @@ SL4A_LAUNCH_CMD=("am start -a com.googlecode.android_scripting.action.LAUNCH_SER
     "-n com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher "
     "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {}")
 
-def get_available_host_ports(num):
-    """Gets available host port numbers for adb forward.
-
-    Starting from 9999 and counting down, check if the port is already used by
-    adb forward. If so, continue to the next number.
-
-    Args:
-        num: Number of port numbers needed.
+def get_available_host_port():
+    """Gets a host port number available for adb forward.
 
     Returns:
-        A list of integers each representing a port number available for adb
+        An integer representing a port number on the host available for adb
         forward.
     """
-    used_ports = list_occupied_ports()
-    results = []
-    port = 9999
-    cnt = 0
-    while cnt < num and port > 1024:
-        if port not in used_ports:
-            results.append(port)
-            cnt += 1
-        port -= 1
-    return results
+    while True:
+        port = random.randint(1024, 9900)
+        if is_port_available(port):
+            return port
 
-def list_occupied_ports():
+def is_port_available(port):
+    """Checks if a given port number is available on the system.
+
+    Args:
+        port: An integer which is the port number to check.
+
+    Returns:
+        True if the port is available; False otherwise.
+    """
+    # Make sure adb is not using this port so we don't accidentally interrupt
+    # ongoing runs by trying to bind to the port.
+    if port in list_occupied_adb_ports():
+        return False
+    s = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('localhost', port))
+        return True
+    except OSError:
+        return False
+    finally:
+        if s:
+            s.close()
+
+def list_occupied_adb_ports():
     """Lists all the host ports occupied by adb forward.
+
+    This is useful because adb will silently override the binding if an attempt
+    to bind to a port already used by adb was made, instead of throwing binding
+    error. So one should always check what ports adb is using before trying to
+    bind to a port with adb.
 
     Returns:
         A list of integers representing occupied host ports.
@@ -64,17 +84,6 @@ def list_occupied_ports():
             continue
         used_ports.append(int(tokens[1]))
     return used_ports
-
-def is_port_availble(port):
-    """Checks if a port number on the host is available.
-
-    Args:
-        port: The host port number to check.
-
-    Returns:
-        True is this port is available for adb forward.
-    """
-    return port not in list_occupied_ports()
 
 class AdbProxy():
     """Proxy class for ADB.

@@ -20,8 +20,8 @@ import traceback
 import acts.controllers.android as android
 
 from acts.controllers.adb import AdbProxy
-from acts.controllers.adb import is_port_availble
-from acts.controllers.adb import get_available_host_ports
+from acts.controllers.adb import is_port_available
+from acts.controllers.adb import get_available_host_port
 from acts.controllers.fastboot import FastbootProxy
 from acts.event_dispatcher import EventDispatcher
 from acts.logger import LoggerProxy
@@ -380,8 +380,8 @@ class AndroidDevice:
             >>> ad = AndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        if not self.h_port or not is_port_availble(self.h_port):
-            self.h_port = get_available_host_ports(1)[0]
+        if not self.h_port or not is_port_available(self.h_port):
+            self.h_port = get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
         try:
             droid = self.start_new_session()
