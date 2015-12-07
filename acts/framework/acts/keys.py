@@ -30,6 +30,7 @@ class Config(enum.Enum):
     key_testbed_name = "name"
     key_test_paths = "testpaths"
     key_android_device = "AndroidDevice"
+    key_native_android_device = "NativeAndroidDevice"
     key_access_point = "AP"
     key_attenuator = "Attenuator"
     key_port = "Port"
@@ -42,6 +43,7 @@ class Config(enum.Enum):
     ikey_lock = "lock"
     ikey_user_param = "user_params"
     ikey_android_device = "android_devices"
+    ikey_native_android_device = "native_android_devices"
     ikey_access_point = "access_points"
     ikey_attenuator = "attenuators"
     ikey_testbed_name = "testbed_name"
@@ -56,6 +58,7 @@ class Config(enum.Enum):
     # module name of controllers
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
+    m_key_native_android_device = "native_android_device"
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
@@ -66,6 +69,7 @@ class Config(enum.Enum):
 
     controller_names = [
         key_android_device,
+        key_native_android_device,
         key_access_point,
         key_attenuator,
         key_iperf_server,
