@@ -26,6 +26,15 @@ def rat_family_from_type(rat_type):
 def rat_generation_from_type(rat_type):
     return _TelTables.technology_tbl[rat_type]['generation']
 
+def network_preference_for_generaton(generation, operator):
+    return _TelTables.operator_network_tbl[operator][generation]['network_preference']
+
+def rat_families_for_network_preference(network_preference):
+    return _TelTables.network_preference_tbl[network_preference]['rat_family_list']
+
+def rat_family_for_generation(generation, operator):
+    return _TelTables.operator_network_tbl[operator][generation]['rat_family']
+
 def operator_name_from_plmn_id(plmn_id):
     return _TelTables.operator_id_to_name[plmn_id]
 
@@ -194,63 +203,63 @@ class _TelTables():
         '23415': tel_defines.CARRIER_VFUK
     }
 
-    technology_gen_tbl = [tel_defines.RAT_2G, tel_defines.RAT_3G,
-                          tel_defines.RAT_4G]
+    technology_gen_tbl = [tel_defines.GEN_2G, tel_defines.GEN_3G,
+                          tel_defines.GEN_4G]
 
     technology_tbl = {
         tel_defines.RAT_1XRTT: {
             'is_voice_rat': True,
             'is_data_rat': False,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_EDGE: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_2G,
+            'generation': tel_defines.GEN_2G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_GSM
         },
         tel_defines.RAT_GPRS: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_2G,
+            'generation': tel_defines.GEN_2G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_GSM
         },
         tel_defines.RAT_GSM: {
             'is_voice_rat': True,
             'is_data_rat': False,
-            'generation': tel_defines.RAT_2G,
+            'generation': tel_defines.GEN_2G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_GSM
         },
         tel_defines.RAT_UMTS: {
             'is_voice_rat': True,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_WCDMA: {
             'is_voice_rat': True,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_HSDPA: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_HSUPA: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
@@ -258,102 +267,166 @@ class _TelTables():
         tel_defines.RAT_CDMA: {
             'is_voice_rat': True,
             'is_data_rat': False,
-            'generation': tel_defines.RAT_2G,
+            'generation': tel_defines.GEN_2G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA
         },
         tel_defines.RAT_EVDO: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_EVDO_0: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_EVDO_A: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_EVDO_B: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_IDEN: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_2G,
+            'generation': tel_defines.GEN_2G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_IDEN
         },
         tel_defines.RAT_LTE: {
             'is_voice_rat': True,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_4G,
+            'generation': tel_defines.GEN_4G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_LTE
         },
         tel_defines.RAT_EHRPD: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_CDMA2000
         },
         tel_defines.RAT_HSPA: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_HSPAP: {
             'is_voice_rat': False,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_IWLAN: {
             'is_voice_rat': True,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_4G,
+            'generation': tel_defines.GEN_4G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_WLAN
         },
         tel_defines.RAT_TD_SCDMA: {
             'is_voice_rat': True,
             'is_data_rat': True,
-            'generation': tel_defines.RAT_3G,
+            'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
         tel_defines.RAT_UNKNOWN: {
             'is_voice_rat': False,
             'is_data_rat': False,
-            'generation': tel_defines.RAT_UNKNOWN,
+            'generation': tel_defines.GEN_UNKNOWN,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UNKNOWN
         },
         tel_defines.RAT_GLOBAL: {
             'is_voice_rat': False,
             'is_data_rat': False,
-            'generation': tel_defines.RAT_UNKNOWN,
+            'generation': tel_defines.GEN_UNKNOWN,
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UNKNOWN
         }
 
+    }
+
+    network_preference_tbl = {
+        tel_defines.NetworkModeLteGsmWcdma: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+            tel_defines.RAT_FAMILY_UMTS, tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NetworkModeGsmUmts: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_UMTS,
+            tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NetworkModeGsmOnly: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NetworkModeLteCdmaEvdo: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+            tel_defines.RAT_FAMILY_CDMA2000]
+        },
+        tel_defines.NetworkModeLteCdmaEvdo: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+            tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NetworkModeCdma: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
+            tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NetworkModeCdmaNoEvdo: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
+            tel_defines.RAT_FAMILY_CDMA]
+        }
+    }
+    default_umts_operator_network_tbl = {
+        tel_defines.GEN_4G: {
+            'rat_family' : tel_defines.RAT_FAMILY_LTE,
+            'network_preference' : tel_defines.NetworkModeLteGsmWcdma
+        },
+        tel_defines.GEN_3G: {
+            'rat_family' : tel_defines.RAT_FAMILY_UMTS,
+            'network_preference' : tel_defines.NetworkModeGsmUmts
+        },
+        tel_defines.GEN_2G: {
+            'rat_family' : tel_defines.RAT_FAMILY_GSM,
+            'network_preference' : tel_defines.NetworkModeGsmOnly
+        }
+    }
+    default_cdma_operator_network_tbl = {
+        tel_defines.GEN_4G: {
+            'rat_family' : tel_defines.RAT_FAMILY_LTE,
+            'network_preference' : tel_defines.NetworkModeLteCdmaEvdo
+        },
+        tel_defines.GEN_3G: {
+            'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
+            'network_preference' : tel_defines.NetworkModeCdma
+        },
+        tel_defines.GEN_2G: {
+            'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
+            'network_preference' : tel_defines.NetworkModeCdmaNoEvdo
+        }
+    }
+    operator_network_tbl = {
+        tel_defines.CARRIER_TMO: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_ATT: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_VZW: default_cdma_operator_network_tbl,
+        tel_defines.CARRIER_SPT: default_cdma_operator_network_tbl
     }
 
     voice_mail_number_get_function_tbl = {

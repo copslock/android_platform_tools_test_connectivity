@@ -183,7 +183,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
                                    self.wifi_network_ssid, self.wifi_network_pass,
-                                   RAT_LTE)
+                                   GEN_4G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_wifi_switching(self):
@@ -201,7 +201,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
                                    self.wifi_network_ssid, self.wifi_network_pass,
-                                   RAT_WCDMA)
+                                   GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_gsm_wifi_switching(self):
@@ -219,7 +219,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
                                    self.wifi_network_ssid, self.wifi_network_pass,
-                                   RAT_GSM)
+                                   GEN_2G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_multi_bearer(self):
@@ -240,19 +240,18 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         toggle_volte(self.log, self.android_devices[0], True)
 
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION):
+        if not ensure_network_generation(
+                self.log, self.android_devices[0], GEN_4G):
 
             self.log.error("Device {} failed to reselect in {}s.".format(
                 self.android_devices[0].serial, WAIT_TIME_NW_SELECTION))
             return False
 
-        wait_for_droid_in_network_rat(
-            self.log, self.android_devices[0], RAT_LTE,
-            WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+        if not wait_for_network_rat(self.log, self.android_devices[0],
+            RAT_FAMILY_LTE, voice_or_data=NETWORK_SERVICE_VOICE):
+            return False
 
-        return self._test_data_connectivity_multi_bearer(RAT_LTE)
+        return self._test_data_connectivity_multi_bearer(GEN_4G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_multi_bearer(self):
@@ -270,7 +269,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
 
-        return self._test_data_connectivity_multi_bearer(RAT_WCDMA)
+        return self._test_data_connectivity_multi_bearer(GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_multi_bearer_stress(self):
@@ -354,7 +353,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """Test data connection before call and in call.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
-        Make sure phone in WCDMA, verify Internet.
+        Make sure phone in <nw_gen>, verify Internet.
         Initiate a voice call. verify Internet.
         Disable Cellular Data, verify Internet is inaccessible.
         Enable Cellular Data, verify Internet.
@@ -370,7 +369,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad_list = [self.android_devices[0], self.android_devices[1]]
         ensure_phones_idle(self.log, ad_list)
 
-        if not ensure_network_rat(
+        if not ensure_network_generation(
                 self.log, self.android_devices[0], nw_gen,
                 WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
 
@@ -1302,7 +1301,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             return wifi_cell_switching(self.log, self.android_devices[0],
                                        self.wifi_network_ssid, self.wifi_network_pass,
-                                       RAT_WCDMA)
+                                       GEN_3G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -1332,7 +1331,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             return wifi_cell_switching(self.log, self.android_devices[0],
                                        self.wifi_network_ssid, self.wifi_network_pass,
-                                       RAT_GSM)
+                                       GEN_2G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -1907,10 +1906,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                         True, False, False, False, False,
                             False, False, False, False]
 
-        if not ensure_network_rat(
-                self.log, ad, RAT_LTE,
-                WAIT_TIME_NW_SELECTION):
-
+        if not ensure_network_generation(self.log, ad, GEN_4G):
             self.log.error("Device {} failed to reselect in {}s.".format(
                 ad.serial, WAIT_TIME_NW_SELECTION))
             return False

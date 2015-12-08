@@ -252,9 +252,8 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
     toggle_volte_for_subscription(log, ad, sub_id, True)
-    if not ensure_network_rat_for_subscription(
-            log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_4G,
+        voice_or_data=NETWORK_SERVICE_DATA):
         return False
     return phone_idle_volte_for_subscription(log, ad, sub_id)
 
@@ -308,9 +307,9 @@ def phone_setup_iwlan_for_subscription(log, ad, sub_id, is_airplane_mode, wfc_mo
 
     toggle_airplane_mode(log, ad, False)
     toggle_volte(log, ad, True)
-    if not is_airplane_mode and not ensure_network_rat_for_subscription(
-        log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-            return False
+    if not is_airplane_mode and not ensure_network_generation_for_subscription(
+        log, ad, sub_id, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+        return False
 
     if not set_wfc_mode(log, ad, wfc_mode):
         log.error("{} set WFC mode failed.".format(ad.serial))
@@ -346,8 +345,8 @@ def phone_setup_iwlan_cellular_preferred(log, ad, wifi_ssid=None,
     """
     toggle_airplane_mode(log, ad, False)
     toggle_volte(log, ad, True)
-    if not ensure_network_rat(
-            log, ad, RAT_LTE, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+    if not ensure_network_generation(
+        log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
         return False
     if not set_wfc_mode(log, ad, WFC_MODE_CELLULAR_PREFERRED):
         log.error("{} set WFC mode failed.".format(ad.serial))
@@ -356,8 +355,8 @@ def phone_setup_iwlan_cellular_preferred(log, ad, wifi_ssid=None,
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
             log.error("{} connect to WiFi failed.".format(ad.serial))
             return False
-    if wait_for_droid_in_network_rat(
-        log, ad, RAT_IWLAN, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+    if wait_for_network_rat(log, ad, RAT_FAMILY_WLAN,
+        voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat in iwlan mode.".format(ad.serial))
         return False
     if wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
@@ -403,9 +402,8 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         return False
     if ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         toggle_volte(log, ad, False)
-    if not ensure_network_rat_for_subscription(
-            log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_4G,
+        voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     # FIXME: Delete when getVoiceNetworkType() is fixed
@@ -444,31 +442,30 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-    if not ensure_network_generation_for_subscription(
-            log, ad, sub_id, RAT_3G, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
+        voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     # FIXME: Delete when getVoiceNetworkType() is fixed
     if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
         time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
 
-    return wait_for_droid_in_network_generation_for_subscription(
-        log, ad, sub_id, RAT_3G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+    return phone_idle_3g_for_subscription(log, ad, sub_id)
 
 def phone_setup_voice_3g(log, ad):
     return phone_setup_voice_3g_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
-
 
 def phone_setup_voice_3g_for_subscription(log, ad, sub_id):
     toggle_airplane_mode(log, ad, False)
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-
-    return ensure_network_generation_for_subscription(
-        log, ad, sub_id, RAT_3G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
+        voice_or_data=NETWORK_SERVICE_VOICE):
+        return False
+    return phone_idle_3g_for_subscription(log, ad, sub_id)
 
 def phone_setup_2g(log, ad):
     """Setup phone for 2G call test.
@@ -499,12 +496,10 @@ def phone_setup_2g_for_subscription(log, ad, sub_id):
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-    if not ensure_network_generation_for_subscription(
-            log, ad, sub_id, RAT_2G, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
+        voice_or_data=NETWORK_SERVICE_DATA):
         return False
-    return ensure_network_generation_for_subscription(
-        log, ad, sub_id, RAT_2G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+    return phone_idle_2g_for_subscription(log, ad, sub_id)
 
 def phone_setup_voice_2g(log, ad):
     return phone_setup_voice_2g_for_subscription(
@@ -517,8 +512,10 @@ def phone_setup_voice_2g_for_subscription(log, ad, sub_id):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
 
-    return ensure_network_generation_for_subscription(
-        log, ad, sub_id, RAT_2G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
+        voice_or_data=NETWORK_SERVICE_VOICE):
+        return False
+    return phone_idle_2g_for_subscription(log, ad, sub_id)
 
 def phone_setup_voice_general(log, ad):
     """Setup phone for voice general call test.
@@ -563,6 +560,55 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
 
     return True
 
+def phone_setup_rat_for_subscription(log, ad, sub_id, network_preference,
+    rat_family):
+    toggle_airplane_mode(log, ad, False)
+    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
+        log.error("{} Disable WFC failed.".format(ad.serial))
+        return False
+    return ensure_network_rat_for_subscription(log, ad, sub_id,
+        network_preference, rat_family)
+
+def phone_setup_lte_gsm_wcdma(log, ad):
+    return phone_setup_lte_gsm_wcdma_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId())
+
+def phone_setup_lte_gsm_wcdma_for_subscription(log, ad, sub_id):
+    return phone_setup_rat_for_subscription(log, ad, sub_id,
+        NetworkModeLteGsmWcdma, RAT_FAMILY_LTE)
+
+def phone_setup_gsm_umts(log, ad):
+    return phone_setup_gsm_umts_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId())
+
+def phone_setup_gsm_umts_for_subscription(log, ad, sub_id):
+    return phone_setup_rat_for_subscription(log, ad, sub_id,
+        NetworkModeGsmUmts, RAT_FAMILY_UMTS)
+
+def phone_setup_gsm_only(log, ad):
+    return phone_setup_gsm_only_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId())
+
+def phone_setup_gsm_only_for_subscription(log, ad, sub_id):
+    return phone_setup_rat_for_subscription(log, ad, sub_id,
+        NetworkModeGsmOnly, RAT_FAMILY_GSM)
+
+def phone_setup_lte_cdma_evdo(log, ad):
+    return phone_setup_lte_cdma_evdo_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId())
+
+def phone_setup_lte_cdma_evdo_for_subscription(log, ad, sub_id):
+    return phone_setup_rat_for_subscription(log, ad, sub_id,
+        NetworkModeLteCdmaEvdo, RAT_FAMILY_LTE)
+
+def phone_setup_cdma(log, ad):
+    return phone_setup_cdma_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId())
+
+def phone_setup_cdma_for_subscription(log, ad, sub_id):
+    return phone_setup_rat_for_subscription(log, ad, sub_id,
+        NetworkModeCdma, RAT_FAMILY_CDMA2000)
+
 def phone_idle_volte(log, ad):
     """Return if phone is idle for VoLTE call test.
 
@@ -572,7 +618,6 @@ def phone_idle_volte(log, ad):
     return phone_idle_volte_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
 
-
 def phone_idle_volte_for_subscription(log, ad, sub_id):
     """Return if phone is idle for VoLTE call test for subscription id.
 
@@ -580,9 +625,8 @@ def phone_idle_volte_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_droid_in_network_rat_for_subscription(
-        log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION,
-        NETWORK_SERVICE_VOICE):
+    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_LTE,
+        voice_or_data=NETWORK_SERVICE_VOICE):
         log.error("{} voice rat not in LTE mode.".format(ad.serial))
         return False
     if not wait_for_volte_enabled(log, ad, WAIT_TIME_VOLTE_ENABLED):
@@ -607,9 +651,8 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_droid_in_network_rat_for_subscription(
-        log, ad, sub_id, RAT_IWLAN, WAIT_TIME_NW_SELECTION,
-        NETWORK_SERVICE_DATA):
+    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_WLAN,
+        voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in iwlan mode.".format(ad.serial))
         return False
     if not wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
@@ -617,7 +660,6 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
                   format(ad.serial, WAIT_TIME_WFC_ENABLED))
         return False
     return True
-
 
 def phone_idle_csfb(log, ad):
     """Return if phone is idle for CSFB call test.
@@ -636,9 +678,8 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_droid_in_network_rat_for_subscription(
-            log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_LTE,
+        voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in lte mode.".format(ad.serial))
         return False
 
@@ -667,9 +708,8 @@ def phone_idle_3g_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    return wait_for_droid_in_network_generation_for_subscription(
-        log, ad, sub_id, RAT_3G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
-
+    return wait_for_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
+        voice_or_data=NETWORK_SERVICE_VOICE)
 
 def phone_idle_2g(log, ad):
     """Return if phone is idle for 2G call test.
@@ -680,7 +720,6 @@ def phone_idle_2g(log, ad):
     return phone_idle_2g_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
 
-
 def phone_idle_2g_for_subscription(log, ad, sub_id):
     """Return if phone is idle for 2G call test for subscription id.
 
@@ -688,8 +727,8 @@ def phone_idle_2g_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    return wait_for_droid_in_network_generation_for_subscription(
-        log, ad, sub_id, RAT_2G, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_VOICE)
+    return wait_for_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
+        voice_or_data=NETWORK_SERVICE_VOICE)
 
 def is_phone_in_call_volte(log, ad):
     """Return if phone is in VoLTE call.
@@ -767,7 +806,7 @@ def is_phone_in_call_3g_for_subscription(log, ad, sub_id):
         return False
     nw_gen = get_network_gen_for_subscription(log, ad, sub_id,
                                               NETWORK_SERVICE_VOICE)
-    if nw_gen != RAT_3G:
+    if nw_gen != GEN_3G:
         log.error("{} voice rat on: {}. Expected: 3g".format(ad.serial, nw_gen))
         return False
     return True
@@ -795,7 +834,7 @@ def is_phone_in_call_2g_for_subscription(log, ad, sub_id):
         return False
     nw_gen = get_network_gen_for_subscription(log, ad, sub_id,
                                               NETWORK_SERVICE_VOICE)
-    if nw_gen != RAT_2G:
+    if nw_gen != GEN_2G:
         log.error("{} voice rat on: {}. Expected: 2g".format(ad.serial, nw_gen))
         return False
     return True

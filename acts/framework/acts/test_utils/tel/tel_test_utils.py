@@ -493,7 +493,6 @@ def wait_and_reject_call_for_subscription(log, ad, sub_id, incoming_number=None,
         ad.droid.phoneStopTrackingCallStateChangeForSubscription(sub_id)
     return True
 
-
 def hangup_call(log, ad):
     """Hang up ongoing active call.
     """
@@ -1158,7 +1157,6 @@ def wait_for_cell_data_connection_for_subscription(log, ad, sub_id, state,
     finally:
         ad.droid.phoneStopTrackingDataConnectionStateChangeForSubscription(sub_id)
 
-
 def wait_for_wifi_data_connection(log, ad, state,
                                   timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
     """Wait for data connection status to be expected value and connection is by WiFi.
@@ -1334,7 +1332,6 @@ def verify_active_call_number(log, ad, expected_number):
         return False
     return True
 
-
 def num_active_calls(log, ad):
     """Get the count of current active calls.
 
@@ -1347,7 +1344,6 @@ def num_active_calls(log, ad):
     """
     calls = ad.droid.telecomCallGetCallIds()
     return len(calls) if calls else 0
-
 
 def toggle_volte(log, ad, new_state=None):
     """Toggle enable/disable VoLTE for default voice subscription.
@@ -1418,185 +1414,6 @@ def set_wfc_mode(log, ad, wfc_mode):
         return False
 
     return True
-
-
-def set_preferred_network_type(log, ad, network_type):
-    """Set preferred network type for default subscription.
-
-    Args:
-        ad: android_device object
-        network_type: Network type string. For example, "3G", "LTE", "2G".
-
-    Raises:
-        TelTestUtilsError if type is not supported.
-    """
-    return set_preferred_network_type_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(), network_type)
-
-
-def set_preferred_network_type_for_subscription(log, ad, sub_id, network_type):
-    """Set preferred network type for specified subscription.
-
-    Args:
-        ad: android_device object
-        sub_id: subscription ID
-        network_type: Network type string. For example, "3G", "LTE", "2G".
-
-    Raises:
-        TelTestUtilsError if type is not supported.
-    """
-
-    operator = get_operator_name(log, ad, sub_id)
-    if operator is None:
-        log.error('Unknown operator for {}'.format(ad.serial))
-        return False
-
-    # Temporarily using the integer network mode setting due to b/24880020
-    # We should switch back to "safe" api once resolved
-    network_mode = network_mode_by_operator_generation(operator, network_type)
-    if network_mode is None:
-        log.error("Couldn't determine appropriate network mode for operator"
-                  .format(operator))
-        return False
-
-    ad.droid.setPreferredNetworkForSubscription(sub_id, network_mode)
-
-    return True
-
-def is_droid_in_network_generation(log, ad, nw_gen, voice_or_data):
-    """Checks if a droid in expected network generation ("2g", "3g" or "4g").
-
-    Args:
-        log: log object.
-        ad: android device.
-        nw_gen: expected generation "4g", "3g", "2g".
-        voice_or_data: check voice network generation or data network generation
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected generation, function will return True.
-
-    Returns:
-        True if droid in expected network generation. Otherwise False.
-    """
-    return is_droid_in_network_generation_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(), nw_gen, voice_or_data)
-
-def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen, voice_or_data):
-    """Checks if a droid in expected network generation ("2g", "3g" or "4g").
-
-    Args:
-        log: log object.
-        ad: android device.
-        nw_gen: expected generation "4g", "3g", "2g".
-        voice_or_data: check voice network generation or data network generation
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected generation, function will return True.
-
-    Returns:
-        True if droid in expected network generation. Otherwise False.
-    """
-    service_list = ["data", "voice"]
-
-    if voice_or_data:
-        service_list = [voice_or_data]
-
-    for service in service_list:
-        nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
-
-        if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
-            continue
-
-        if rat_generation_from_type(nw_rat) == nw_gen:
-            return True
-        else:
-            return False
-
-    return False
-
-
-def is_droid_in_network_rat(log, ad, rat, voice_or_data=None):
-    """Checks if a droid in expected network rat for default subscription Id.
-
-    Args:
-        log: log object.
-        ad: android device.
-        rat: expected network rat
-        voice_or_data: check voice network rat or data network rat
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected rat, function will return True.
-
-    Returns:
-        True if droid in expected network rat. Otherwise False.
-    """
-    return is_droid_in_network_rat_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(), rat, voice_or_data)
-
-def is_droid_not_in_network_rat(log, ad, rat, voice_or_data=None):
-    """Checks if a droid not in network rat for default subscription Id.
-
-    Args:
-        log: log object.
-        ad: android device.
-        rat: network rat
-        voice_or_data: check voice network rat or data network rat
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected rat, function will return True.
-
-    Returns:
-        True if droid in expected network rat. Otherwise False.
-    """
-    return is_droid_not_in_network_rat_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(), rat, voice_or_data)
-
-
-def is_droid_in_network_rat_for_subscription(log, ad, sub_id, rat,
-                                             voice_or_data=None):
-    """Checks if a droid in expected network rat for specified subscription Id.
-
-    Args:
-        log: log object.
-        ad: android device.
-        sub_id: subscription Id
-        rat: expected network rat
-        voice_or_data: check voice network rat or data network rat
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected rat, function will return True.
-
-    Returns:
-        True if droid in expected network rat. Otherwise False.
-    """
-    service_list = [NETWORK_SERVICE_DATA, NETWORK_SERVICE_VOICE]
-
-    if voice_or_data:
-        service_list = [voice_or_data]
-
-    if not is_valid_rat(rat):
-        raise TelTestUtilsError("Invalid RAT {}".format(rat))
-
-    for service in service_list:
-        current_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
-        if rat_family_from_type(rat) == rat_family_from_type(current_rat):
-            return True
-
-    return False
-
-def is_droid_not_in_network_rat_for_subscription(log, ad, sub_id, rat,
-                                                 voice_or_data=None):
-    """Checks if a droid not in expected network rat for specified subscription Id.
-
-    Args:
-        log: log object.
-        ad: android device.
-        sub_id: subscription Id
-        rat: expected network rat
-        voice_or_data: check voice network rat or data network rat
-            This parameter is optional. If voice_or_data is None, then if
-            either voice or data in expected rat, function will return True.
-
-    Returns:
-        True if droid not in expected network rat. Otherwise False.
-    """
-    return not is_droid_in_network_rat_for_subscription(
-        log, ad, sub_id, rat, voice_or_data)
 
 def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args, **kwargs):
     while max_time > 0:
@@ -1682,139 +1499,6 @@ def wait_for_droid_not_in_call(log, ad, max_time):
     """
     return _wait_for_droid_in_state(log, ad, max_time, is_phone_not_in_call)
 
-def wait_for_droid_in_network_generation(
-        log, ad, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ad:  android device.
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-    return _wait_for_droid_in_state(
-        log, ad, max_time,
-        is_droid_in_network_generation, network_type, voice_or_data)
-
-
-def wait_for_droid_in_network_generation_for_subscription(
-        log, ad, sub_id, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ad:  android device.
-        sub_id: subscription Id
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-    return _wait_for_droid_in_state_for_subscription(
-        log, ad, sub_id, max_time, is_droid_in_network_generation_for_subscription,
-        network_type, voice_or_data)
-
-
-def wait_for_droid_in_network_rat(
-        log, ad, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ad:  android device.
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-
-    return _wait_for_droid_in_state(
-        log, ad, max_time,
-        is_droid_in_network_rat, network_type, voice_or_data)
-
-def wait_for_droid_not_in_network_rat(
-        log, ad, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be not in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ad:  android device.
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-
-    return _wait_for_droid_in_state(
-        log, ad, max_time,
-        is_droid_not_in_network_rat, network_type, voice_or_data)
-
-
-def wait_for_droid_in_network_rat_for_subscription(
-        log, ad, sub_id, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ad:  android device.
-        sub_id: subscription Id
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-
-    return _wait_for_droid_in_state_for_subscription(
-        log, ad, sub_id, max_time,
-        is_droid_in_network_rat_for_subscription, network_type, voice_or_data)
-
-
-def wait_for_droids_in_network_generation(
-        log, ads, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ads: array of android device.
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-    # TODO(yangxliu): replace loop time wait with SL4A event.
-
-    return _wait_for_droids_in_state(
-        log, ads, max_time,
-        is_droid_in_network_generation, network_type, voice_or_data)
-
-
-def wait_for_droids_in_network_rat(
-        log, ads, network_type, max_time, voice_or_data=None):
-    """Wait for droid to be in certain connection mode (e.g. lte, 3g).
-
-    Args:
-        log: log object.
-        ads: array of android device.
-        max_time: max number of seconds to wait (each droid in the droids list).
-        network_type: expected connection network type. e.g. lte, 3g, 2g.
-        voice_or_data: check droid's voice network type or data network type.
-            Optional, default value is None.
-
-    """
-
-    return _wait_for_droids_in_state(
-        log, ads, max_time,
-        is_droid_in_network_rat, network_type, voice_or_data)
-
-
 def _is_attached(log, ad, voice_or_data):
     return _is_attached_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), voice_or_data)
@@ -1825,7 +1509,6 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
         return True
     else:
         return False
-
 
 def wait_for_voice_attach(log, ad, max_time):
     """Wait for android device to attach on voice.
@@ -2220,7 +1903,6 @@ def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
                      ad_rx.droid.subscriptionGetDefaultSmsSubId(),
                      array_message)
 
-
 #FIXME: This function is still a WIP and is disabled
 def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         subid_rx, array_payload):
@@ -2291,39 +1973,283 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
     return True
 
+def ensure_network_rat(log, ad, network_preference, rat_family,
+    voice_or_data=None, max_wait_time=WAIT_TIME_NW_SELECTION,
+    toggle_apm_after_setting=False):
+    """Ensure ad's current network is in expected rat_family.
+    """
+    return ensure_network_rat_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), network_preference,
+        rat_family, voice_or_data, max_wait_time, toggle_apm_after_setting)
 
-def get_preferred_network_rat(log, ad):
-    """Get preferred network type settings for default subscription
+def ensure_network_rat_for_subscription(log, ad, sub_id,
+    network_preference, rat_family,
+    voice_or_data=None, max_wait_time=WAIT_TIME_NW_SELECTION,
+    toggle_apm_after_setting=False):
+    """Ensure ad's current network is in expected rat_family.
+    """
+    if not ad.droid.phoneSetPreferredNetworkTypesForSubscription(network_preference,
+        sub_id):
+        log.error("Set Preferred Networks failed.")
+        return False
+    if is_droid_in_rat_family_for_subscription(log, ad, sub_id, rat_family,
+        voice_or_data):
+        return True
+
+    if toggle_apm_after_setting:
+        toggle_airplane_mode(log, ad, True)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        toggle_airplane_mode(log, ad, False)
+
+    result = wait_for_network_rat_for_subscription(
+        log, ad, sub_id, rat_family, max_wait_time, voice_or_data)
+
+    log.info("End of ensure_network_rat_for_subscription for {}. "
+             "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
+             "data: {}(family: {})".
+             format(ad.serial, network_preference, rat_family, voice_or_data,
+                ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+                rat_family_from_type(
+                    ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
+                ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id),
+                rat_family_from_type(
+                    ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id))))
+    return result
+
+def ensure_network_preference(log, ad, network_preference, voice_or_data=None,
+    max_wait_time=WAIT_TIME_NW_SELECTION, toggle_apm_after_setting=False):
+    """Ensure that current rat is within the device's preferred network rats.
+    """
+    return ensure_network_preference_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), network_preference,
+        voice_or_data, max_wait_time, toggle_apm_after_setting)
+
+def ensure_network_preference_for_subscription(log, ad, sub_id,
+    network_preference, voice_or_data=None,
+    max_wait_time=WAIT_TIME_NW_SELECTION, toggle_apm_after_setting=False):
+    """Ensure ad's network preference is <network_preference> for sub_id.
+    """
+    rat_family_list = rat_families_for_network_preference(network_preference)
+    if not ad.droid.phoneSetPreferredNetworkTypesForSubscription(network_preference,
+        sub_id):
+        log.error("Set Preferred Networks failed.")
+        return False
+    if is_droid_in_rat_family_list_for_subscription(log, ad, sub_id,
+        rat_family_list, voice_or_data):
+        return True
+
+    if toggle_apm_after_setting:
+        toggle_airplane_mode(log, ad, True)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        toggle_airplane_mode(log, ad, False)
+
+    result = wait_for_preferred_network_for_subscription(
+        log, ad, sub_id, network_preference, max_wait_time, voice_or_data)
+
+    log.info("End of ensure_network_preference_for_subscription for {}. "
+             "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
+             "data: {}(family: {})".
+             format(ad.serial, network_preference, rat_family_list, voice_or_data,
+                ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+                rat_family_from_type(
+                    ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
+                ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id),
+                rat_family_from_type(
+                    ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id))))
+    return result
+
+def ensure_network_generation(log, ad, generation,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None,
+    toggle_apm_after_setting=False):
+    """Ensure ad's network is <network generation> for default subscription ID.
+
+    Set preferred network generation to <generation>.
+    Toggle ON/OFF airplane mode if necessary.
+    Wait for ad in expected network type.
+    """
+    return ensure_network_generation_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId(),
+        generation, max_wait_time, voice_or_data, toggle_apm_after_setting)
+
+def ensure_network_generation_for_subscription(log, ad, sub_id, generation,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None,
+    toggle_apm_after_setting=False):
+    """Ensure ad's network is <network generation> for specified subscription ID.
+
+    Set preferred network generation to <generation>.
+    Toggle ON/OFF airplane mode if necessary.
+    Wait for ad in expected network type.
+    """
+    if is_droid_in_network_generation_for_subscription(log, ad, sub_id,
+        generation, voice_or_data):
+        return True
+
+    operator = get_operator_name(log, ad, sub_id)
+    try:
+        network_preference = network_preference_for_generaton(generation, operator)
+        rat_family = rat_family_for_generation(generation, operator)
+    except KeyError:
+        log.error("Failed to find a rat_family entry for "
+            "PLMN: {}, operator:{}, generation{}".format(
+                ad.droid.getSimOperatorForSubscription(sub_id), operator,
+                generation))
+        return False
+
+    if not ad.droid.phoneSetPreferredNetworkTypesForSubscription(network_preference,
+        sub_id):
+        log.error("Set Preferred Networks failed.")
+        return False
+
+    if toggle_apm_after_setting:
+        toggle_airplane_mode(log, ad, True)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        toggle_airplane_mode(log, ad, False)
+
+    result = wait_for_network_generation_for_subscription(
+        log, ad, sub_id, generation, max_wait_time, voice_or_data)
+
+    log.info("End of ensure_network_generation_for_subscription for {}. "
+             "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
+             "data: {}(family: {})".
+             format(ad.serial, network_preference, generation, voice_or_data,
+                ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+                rat_generation_from_type(
+                    ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
+                ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id),
+                rat_generation_from_type(
+                    ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id))))
+
+    return result
+
+def wait_for_network_rat(log, ad, rat_family,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return wait_for_network_rat_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), rat_family, max_wait_time,
+        voice_or_data)
+
+def wait_for_network_rat_for_subscription(log, ad, sub_id, rat_family,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return _wait_for_droid_in_state_for_subscription(
+        log, ad, sub_id, max_wait_time,
+        is_droid_in_rat_family_for_subscription, rat_family, voice_or_data)
+
+def wait_for_not_network_rat(log, ad, rat_family,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return wait_for_not_network_rat_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), rat_family, max_wait_time,
+        voice_or_data)
+
+def wait_for_not_network_rat_for_subscription(log, ad, sub_id, rat_family,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return _wait_for_droid_in_state_for_subscription(
+        log, ad, sub_id, max_wait_time,
+        lambda log, ad, sub_id, *args, **kwargs :
+            not is_droid_in_rat_family_for_subscription(
+                log, ad, sub_id, rat_family, voice_or_data))
+
+def wait_for_preferred_network(log, ad, network_preference,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return wait_for_preferred_network_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), network_preference,
+        max_wait_time, voice_or_data)
+
+def wait_for_preferred_network_for_subscription(log, ad, sub_id,
+    network_preference, max_wait_time=WAIT_TIME_NW_SELECTION,
+    voice_or_data=None):
+    rat_family_list = rat_families_for_network_preference(network_preference)
+    return _wait_for_droid_in_state_for_subscription(
+        log, ad, sub_id, max_wait_time,
+        is_droid_in_rat_family_list_for_subscription, rat_family_list,
+        voice_or_data)
+
+def wait_for_network_generation(log, ad, generation,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return wait_for_network_generation_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), generation, max_wait_time,
+        voice_or_data)
+
+def wait_for_network_generation_for_subscription(log, ad, sub_id, generation,
+    max_wait_time=WAIT_TIME_NW_SELECTION, voice_or_data=None):
+    return _wait_for_droid_in_state_for_subscription(log, ad, sub_id,
+        max_wait_time, is_droid_in_network_generation_for_subscription,
+        generation, voice_or_data)
+
+def is_droid_in_rat_family(log, ad, rat_family, voice_or_data=None):
+    return is_droid_in_rat_family_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), rat_family, voice_or_data)
+
+def is_droid_in_rat_family_for_subscription(log, ad, sub_id, rat_family,
+    voice_or_data=None):
+    return is_droid_in_rat_family_list_for_subscription(log, ad,
+        sub_id, [rat_family], voice_or_data)
+
+def is_droid_in_rat_familiy_list(log, ad, rat_family_list,
+    voice_or_data=None):
+    return is_droid_in_rat_family_list_for_subscription(log, ad,
+        ad.droid.subscriptionGetDefaultSubId(), rat_family_list, voice_or_data)
+
+def is_droid_in_rat_family_list_for_subscription(log, ad, sub_id,
+    rat_family_list, voice_or_data=None):
+    service_list = [NETWORK_SERVICE_DATA, NETWORK_SERVICE_VOICE]
+    if voice_or_data:
+        service_list = [voice_or_data]
+
+    for service in service_list:
+        nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
+        if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
+            continue
+        if rat_family_from_type(nw_rat) in rat_family_list:
+            return True
+    return False
+
+def is_droid_in_network_generation(log, ad, nw_gen, voice_or_data):
+    """Checks if a droid in expected network generation ("2g", "3g" or "4g").
 
     Args:
-        ad: Android Device Object
+        log: log object.
+        ad: android device.
+        nw_gen: expected generation "4g", "3g", "2g".
+        voice_or_data: check voice network generation or data network generation
+            This parameter is optional. If voice_or_data is None, then if
+            either voice or data in expected generation, function will return True.
 
     Returns:
-        Current voice/data network type.
+        True if droid in expected network generation. Otherwise False.
     """
-    return get_preferred_network_rat_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId())
+    return is_droid_in_network_generation_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId(), nw_gen, voice_or_data)
 
-
-def get_preferred_network_rat_for_subscription(log, ad, sub_id):
-    """Get preferred network type settings for specified subscription
+def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen, voice_or_data):
+    """Checks if a droid in expected network generation ("2g", "3g" or "4g").
 
     Args:
-        ad: Android Device Object
-        sub_id: subscription ID
+        log: log object.
+        ad: android device.
+        nw_gen: expected generation "4g", "3g", "2g".
+        voice_or_data: check voice network generation or data network generation
+            This parameter is optional. If voice_or_data is None, then if
+            either voice or data in expected generation, function will return True.
 
     Returns:
-        Current voice/data network type.
+        True if droid in expected network generation. Otherwise False.
     """
+    service_list = [NETWORK_SERVICE_DATA, NETWORK_SERVICE_VOICE]
 
-    ret_val = ad.droid.phoneGetPreferredNetworkTypeForSubscription(sub_id)
+    if voice_or_data:
+        service_list = [voice_or_data]
 
-    if ret_val is None:
-        log.error("get_preferred_network_rat(): Unexpected null return value")
-        return RAT_UNKNOWN
-    else:
-        return ret_val
+    for service in service_list:
+        nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
 
+        if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
+            continue
+
+        if rat_generation_from_type(nw_rat) == nw_gen:
+            return True
+        else:
+            return False
+
+    return False
 
 def get_network_rat(log, ad, voice_or_data):
     """Get current network type (Voice network type, or data network type)
@@ -2340,7 +2266,6 @@ def get_network_rat(log, ad, voice_or_data):
     return get_network_rat_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), voice_or_data)
 
-
 def get_network_rat_for_subscription(log, ad, sub_id, voice_or_data):
     """Get current network type (Voice network type, or data network type)
        for specified subscription id
@@ -2355,9 +2280,9 @@ def get_network_rat_for_subscription(log, ad, sub_id, voice_or_data):
         Current voice/data network type.
     """
     if voice_or_data == NETWORK_SERVICE_VOICE:
-        ret_val = ad.droid.getVoiceNetworkTypeForSubscription(sub_id)
+        ret_val = ad.droid.phoneGetCurrentVoiceNetworkTypeForSubscription(sub_id)
     elif voice_or_data == NETWORK_SERVICE_DATA:
-        ret_val = ad.droid.getDataNetworkTypeForSubscription(sub_id)
+        ret_val = ad.droid.phoneGetCurrentDataNetworkTypeForSubscription(sub_id)
     else:
         ret_val = ad.droid.getNetworkTypeForSubscription(sub_id)
 
@@ -2366,7 +2291,6 @@ def get_network_rat_for_subscription(log, ad, sub_id, voice_or_data):
         return RAT_UNKNOWN
     else:
         return ret_val
-
 
 def get_network_gen(log, ad, voice_or_data):
     """Get current network generation string (Voice network type, or data network type)
@@ -2400,19 +2324,7 @@ def get_network_gen_for_subscription(log, ad, sub_id, voice_or_data):
         log.error("KeyError happened in get_network_gen, ad:{}, d/v: {}, rat: {}".
             format(ad.serial, voice_or_data, get_network_rat_for_subscription(log, ad,
                                                            sub_id, voice_or_data)))
-        return RAT_UNKNOWN
-
-def ensure_network_generation(log, ad, generation, max_wait_time=120,
-                              voice_or_data=None, toggle_apm_after_setting=True):
-    """Ensure ad's network is <network generation> for default subscription ID.
-
-    Set preferred network generation to <generation>.
-    Toggle ON/OFF airplane mode if necessary.
-    Wait for ad in expected network type.
-    """
-    return ensure_network_generation_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(),
-        generation, max_wait_time, voice_or_data, toggle_apm_after_setting)
+        return GEN_UNKNOWN
 
 def check_voice_mail_count(log, ad, voice_mail_count_before, voice_mail_count_after):
     """function to check if voice mail count is correct after leaving a new voice message.
@@ -2427,99 +2339,6 @@ def get_voice_mail_number(log, ad):
     if voice_mail_number is None:
         return get_phone_number(log, ad)
     return voice_mail_number
-
-
-def ensure_network_generation_for_subscription(log, ad, sub_id, generation,
-                                               max_wait_time=120,
-                                               voice_or_data=None,
-                                               toggle_apm_after_setting=True):
-    """Ensure ad's network is <network generation> for specified subscription ID.
-
-    Set preferred network generation to <generation>.
-    Toggle ON/OFF airplane mode if necessary.
-    Wait for ad in expected network type.
-    """
-
-    cur_pref_generation = rat_generation_from_type(
-        get_preferred_network_rat_for_subscription(log, ad, sub_id))
-
-    if cur_pref_generation != generation:
-        log.info("Set {} Gen {}, Cur Gen {}".format(
-            ad.serial, generation, cur_pref_generation))
-        set_preferred_network_type_for_subscription(log, ad, sub_id, generation)
-
-    if (get_network_gen_for_subscription(log, ad, sub_id, voice_or_data) == generation):
-            return True
-
-    log.info("NW Gen - {} current: {}, expected: {}".
-             format(ad.serial, get_network_gen_for_subscription(log, ad, sub_id,
-                                                    voice_or_data), generation))
-    if toggle_apm_after_setting:
-        toggle_airplane_mode(log, ad, True)
-        toggle_airplane_mode(log, ad, False)
-
-    result = wait_for_droids_in_network_generation(
-        log, [ad], generation, max_wait_time, voice_or_data)
-
-    log.info("End of ensure_network_generation NW Gen - {} current: {}, expected: {}".
-        format(ad.serial, get_network_gen_for_subscription(log, ad, sub_id,
-                                                           voice_or_data), generation))
-
-    return result
-
-
-def ensure_network_rat(
-        log, ad, network_rat, max_wait_time=120, voice_or_data=None):
-    """Ensure ad's network is <network_type_string> for default subscription ID.
-
-    Set preferred network to <network_type_string>.
-    Toggle ON/OFF airplane mode if necessary.
-    Wait for ad in expected network type.
-    """
-    return ensure_network_rat_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultSubId(), network_rat,
-        max_wait_time, voice_or_data)
-
-
-def ensure_network_rat_for_subscription(
-        log, ad, sub_id, network_rat, max_wait_time=120, voice_or_data=None):
-    """Ensure ad's network is <network_type_string> for specified subscription ID.
-
-    Set preferred network to <network_type_string>.
-    Toggle ON/OFF airplane mode if necessary.
-    Wait for ad in expected network type.
-    """
-
-    cur_pref_nw_type = get_preferred_network_rat_for_subscription(log, ad, sub_id)
-
-    if rat_family_from_type(cur_pref_nw_type) != rat_family_from_type(
-            network_rat):
-        log.info("Set {} Type {}, Cur Type {}".format(
-            ad.serial, network_rat, cur_pref_nw_type))
-        set_preferred_network_type_for_subscription(log, ad, sub_id, network_rat)
-
-    if (rat_family_from_type(get_network_rat_for_subscription(log, ad, sub_id, voice_or_data)) ==
-            rat_family_from_type(network_rat)):
-        return True
-
-    current_rat = get_network_rat(log, ad, voice_or_data)
-    log.info("NW RAT - {} current: {}(family: {}), expected: {}(family: {})".
-             format(ad.serial, current_rat, rat_family_from_type(current_rat),
-                    network_rat, rat_family_from_type(network_rat)))
-    toggle_airplane_mode(log, ad, True)
-    time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    toggle_airplane_mode(log, ad, False)
-
-    result = wait_for_droid_in_network_rat_for_subscription(
-        log, ad, sub_id, network_rat, max_wait_time, voice_or_data)
-
-    current_rat = get_network_rat(log, ad, voice_or_data)
-    log.info("End of ensure_network_rat. NW RAT - {} current: {}(family: {}), "
-             "expected: {}(family: {})".
-             format(ad.serial, current_rat, rat_family_from_type(current_rat),
-                    network_rat, rat_family_from_type(network_rat)))
-
-    return result
 
 def ensure_phones_idle(log, ads,
                        settling_time=WAIT_TIME_ANDROID_STATE_SETTLING):
@@ -2551,20 +2370,17 @@ def ensure_phone_default_state(log, ad):
 
     # FIXME: bug/23906084 We shouldn't force the device using modes unavailable
     #        to a normal user
-    if is_droid_in_network_rat(log, ad, RAT_GSM, NETWORK_SERVICE_VOICE):
+    if is_droid_in_rat_family(log, ad, RAT_FAMILY_GSM, NETWORK_SERVICE_VOICE):
         log.error("Device is stuck in GSM... Attempting to Un-stick")
-        ad.droid.setPreferredNetwork(NETWORK_MODE_LTE_ONLY)
-        if not wait_for_droid_in_network_rat(
-                log, ad, RAT_LTE, WAIT_TIME_NW_SELECTION):
-            if not wait_for_droid_in_network_rat(
-                    log, ad, RAT_WCDMA, WAIT_TIME_NW_SELECTION):
+        ad.droid.phoneSetPreferredNetworkTypes(NetworkModeLteOnly)
+        if not wait_for_network_rat(log, ad, RAT_FAMILY_LTE):
+            if not wait_for_network_rat(log, ad, RAT_FAMILY_UMTS):
                 log.error("Device failed to un-stick from GSM."
                             "Game over man, game over.")
                 result = False
 
-    if not wait_for_droid_not_in_network_rat(log, ad, RAT_IWLAN,
-                                             WAIT_TIME_NW_SELECTION,
-                                             NETWORK_SERVICE_DATA):
+    if not wait_for_not_network_rat(log, ad, RAT_FAMILY_WLAN,
+        voice_or_data=NETWORK_SERVICE_DATA):
         log.error("ensure_phones_default_state: wait_for_droid_not_in iwlan fail {}.".
             format(ad.serial))
         result = False
