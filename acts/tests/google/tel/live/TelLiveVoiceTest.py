@@ -26,7 +26,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
-from acts.test_utils.tel.tel_defines import RAT_IWLAN
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
@@ -36,23 +36,23 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 
-from acts.test_utils.tel.tel_test_utils import multithread_func
-from acts.test_utils.tel.tel_test_utils import get_phone_number
-from acts.test_utils.tel.tel_test_utils import phone_number_formatter
-from acts.test_utils.tel.tel_test_utils import set_phone_number
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import verify_incall_state
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.tel.tel_test_utils import WifiUtils
-from acts.test_utils.tel.tel_test_utils import wait_for_droid_not_in_network_rat
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
-from acts.test_utils.tel.tel_test_utils import is_droid_in_network_rat
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import num_active_calls
+from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import set_phone_number
+from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import setup_sim
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
+from acts.test_utils.tel.tel_test_utils import WifiUtils
 
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
@@ -2519,7 +2519,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                      self.wifi_network_pass):
             self.log.error("{} connect to WiFi failed.".format(ad.serial))
             return False
-        if is_droid_in_network_rat(self.log, ad, RAT_IWLAN, NETWORK_SERVICE_DATA):
+        if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
+            NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
 
@@ -2532,8 +2533,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not set_wfc_mode(self.log, ad, WFC_MODE_DISABLED):
             self.log.error("{} Disable WFC failed.".format(ad.serial))
             return False
-        if not wait_for_droid_not_in_network_rat(self.log, ad,
-            RAT_IWLAN, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not wait_for_not_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
         return True
@@ -2560,7 +2561,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                      self.wifi_network_pass):
             self.log.error("{} connect to WiFi failed.".format(ad.serial))
             return False
-        if is_droid_in_network_rat(self.log, ad, RAT_IWLAN, NETWORK_SERVICE_DATA):
+        if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
+            NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
 
@@ -2573,8 +2575,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not set_wfc_mode(self.log, ad, WFC_MODE_DISABLED):
             self.log.error("{} Disable WFC failed.".format(ad.serial))
             return False
-        if not wait_for_droid_not_in_network_rat(self.log, ad,
-            RAT_IWLAN, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not wait_for_not_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
         return True
@@ -2595,7 +2597,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("{} set WFC mode failed.".format(ad.serial))
             return False
         toggle_airplane_mode(self.log, ad, True)
-        if is_droid_in_network_rat(self.log, ad, RAT_IWLAN, NETWORK_SERVICE_DATA):
+        if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
+            NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
 
@@ -2610,8 +2613,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not WifiUtils.wifi_toggle_state(self.log, ad, False):
             self.log.error("{} disconnect WiFi failed.".format(ad.serial))
             return False
-        if not wait_for_droid_not_in_network_rat(self.log, ad,
-            RAT_IWLAN, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not wait_for_not_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("{} in iwlan. Expected not in iwlan.".format(ad.serial))
             return False
         return True

@@ -81,9 +81,8 @@ def phone_idle_video_for_subscription(log, ad, sub_id):
     Returns:
         True if ad (sub_id) is idle for video call.
     """
-    if not wait_for_droid_in_network_rat_for_subscription(
-            log, ad, sub_id, RAT_LTE, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_VOICE):
+    if not wait_for_network_rat_for_subscription(log, ad, sub_id,
+        RAT_FAMILY_LTE, voice_or_data=NETWORK_SERVICE_VOICE):
         log.error("{} voice not in LTE mode.".format(ad.serial))
         return False
     if not wait_for_video_enabled(log, ad, WAIT_TIME_VOLTE_ENABLED):
