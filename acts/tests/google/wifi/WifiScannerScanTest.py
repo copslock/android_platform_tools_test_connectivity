@@ -427,7 +427,8 @@ class WifiScannerScanTest(BaseTestClass):
                 number_bucket = 10
         else:
             time_cache = scan_setting['periodInMs'] #need while waiting for seconds resutls
-        wait_time = int((time_cache + scan_time)/1000) + self.leeway
+        # multiply cache time by two to account for scheduler changing period
+        wait_time = (time_cache * 2 + scan_time) / 1000 + self.leeway
         validity = False
         try:
             for snumber in range(1,3):
@@ -918,7 +919,8 @@ class WifiScannerScanTest(BaseTestClass):
         number_bucket = 10
         time_cache = self.default_batch_scan_setting['periodInMs'] * number_bucket #default cache
         #add 2 seconds extra time for switch between the channel for connection scan
-        wait_time = int((time_cache + scan_time )/1000) + self.leeway + 2
+        #multiply cache time by two to account for scheduler changing period
+        wait_time = (time_cache * 2 + scan_time) / 1000 + self.leeway + 2
         result_flag = 0
         try:
           for snumber in range(1,7):
