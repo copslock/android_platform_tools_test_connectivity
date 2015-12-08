@@ -193,10 +193,10 @@ def tethering_check_internet_connection(log, provider, client_list,
     return True
 
 def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
-                        nw_type=None):
-    """Test data connection network switching when phone camped on <nw_type>.
+                        nw_gen):
+    """Test data connection network switching when phone on <nw_gen>.
 
-    Ensure phone is camped on <nw_type>
+    Ensure phone is on <nw_gen>
     Ensure WiFi can connect to live network,
     Airplane mode is off, data connection is on, WiFi is on.
     Turn off WiFi, verify data is on cell and browse to google.com is OK.
@@ -208,7 +208,7 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
         ad: android object.
         wifi_network_ssid: ssid for live wifi network.
         wifi_network_pass: password for live wifi network.
-        nw_type: network rat the phone should be camped on.
+        nw_gen: network generation the phone should be camped on.
 
     Returns:
         True if pass.
@@ -217,9 +217,9 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
     # b/23354769
 
     try:
-        if not ensure_network_rat(log, ad, nw_type, WAIT_TIME_NW_SELECTION,
+        if not ensure_network_generation(log, ad, nw_gen, WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
-            log.error("Device failed to register in {}".format(nw_type))
+            log.error("Device failed to register in {}".format(nw_gen))
             return False
 
         # Temporary hack to give phone enough time to register.

@@ -94,12 +94,11 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         self.log.info("WifiData After {}s".format(
             time_values['wifi_data'] - time_values['wifi_connected']))
 
-        if not wait_for_droid_in_network_rat(
-                self.log, ad, RAT_IWLAN, WAIT_TIME_NW_SELECTION,
-                NETWORK_SERVICE_DATA):
+        if not wait_for_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Failed to set-up iwlan, aborting!")
-            if is_droid_in_network_rat(self.log, ad, RAT_IWLAN,
-                                       NETWORK_SERVICE_DATA):
+            if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
+                NETWORK_SERVICE_DATA):
                 self.log.error("Never received the event, but droid in iwlan")
             else:
                 return False
@@ -125,9 +124,8 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
         set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
-        wait_for_droid_not_in_network_rat(
-            self.log, ad, RAT_IWLAN, WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA)
+        wait_for_not_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA)
 
         # TODO: Format the output nicely in the log
         self.log.info(time_values)
@@ -212,9 +210,8 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
             # This isn't a real network selection
             # it's iwlan tunnel establishment, which should take <<30s
-            if not wait_for_droid_in_network_rat(
-                    self.log, ad, RAT_IWLAN, WAIT_TIME_NW_SELECTION,
-                    NETWORK_SERVICE_DATA):
+            if not wait_for_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
                 self.log.error("Failed to set-up iwlan!")
                 return False
 
@@ -239,9 +236,8 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
             set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
-            if not wait_for_droid_in_network_rat(
-                    self.log, ad, RAT_LTE, WAIT_TIME_NW_SELECTION,
-                    NETWORK_SERVICE_DATA):
+            if not wait_for_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
                 self.log.error("Device never returned to LTE!")
                 return False
 
@@ -323,9 +319,8 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
             # This isn't a real network selection
             # it's iwlan tunnel establishment, which should take <<30s
-            if not wait_for_droid_in_network_rat(
-                    self.log, ad, RAT_IWLAN, WAIT_TIME_NW_SELECTION,
-                    NETWORK_SERVICE_DATA):
+            if not wait_for_network_rat(self.log, ad, RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
                 self.log.error("Failed to set-up iwlan!")
                 return False
 
@@ -351,9 +346,8 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
             iwlan_out_func()
 
-            if not wait_for_droid_in_network_rat(
-                    self.log, ad, RAT_LTE, WAIT_TIME_NW_SELECTION,
-                    NETWORK_SERVICE_DATA):
+            if not wait_for_network_rat(self.log, ad, RAT_FAMILY_LTE,
+                voice_or_data=NETWORK_SERVICE_DATA):
                 self.log.error("Failed to return to LTE!")
                 return False
 
