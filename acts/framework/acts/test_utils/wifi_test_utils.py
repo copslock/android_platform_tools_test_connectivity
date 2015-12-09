@@ -615,33 +615,31 @@ def stop_wifi_tethering(ad):
         lambda x : not x["data"]["ACTIVE_TETHER"], 30)
     droid.wifiStopTrackingStateChange()
 
-def wifi_connect(ad, ssid, pwd=None):
-    """Connects to a wifi network.
+def wifi_connect(ad, network):
+    """Connect an Android device to a wifi network.
 
     Initiate connection to a wifi network, wait for the "connected" event, then
-    confirm the connected ssid is the one requested. If pwd is not given, treat
-    the ssid as open network.
+    confirm the connected ssid is the one requested.
 
     Args:
         ad: android_device object to initiate connection on.
-        ssid: SSID of the wifi network to connect to.
-        pwd: Password of the wifi network.
-
-    Returns:
-        True if connection is successful, False otherwise.
+        network: A dictionary representing the network to connect to. The
+            dictionary must have the key "SSID".
     """
-    droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
+    assert WifiEnums.SSID_KEY in network, ("Key '%s' must be present in "
+        "network definition.") % WifiEnums.SSID_KEY
+    ad.droid.wifiStartTrackingStateChange()
     try:
-        c = {WifiEnums.SSID_KEY: ssid}
-        if pwd:
-            c["password"] = pwd
-        if droid.wifiConnect(c):
-            event = ed.pop_event("WifiNetworkConnected", 120)
-            return event['data'][WifiEnums.SSID_KEY] == ssid
-        return False
+        assert ad.droid.wifiConnect(network), "WiFi connect returned false."
+        connect_result = ad.ed.pop_event(WifiEventNames.WIFI_CONNECTED)
+        log.debug("Connection result: %s." % connect_result)
+        expected_ssid = network[WifiEnums.SSID_KEY]
+        actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
+        assert actual_ssid == expected_ssid, ("Expected to connect to %s, "
+            "connected to %s") % (expected_ssid, actual_ssid)
+        log.info("Successfully connected to %s" % actual_ssid)
     finally:
-        droid.wifiStopTrackingStateChange()
+        ad.droid.wifiStopTrackingStateChange()
 
 def start_wifi_single_scan(ad, scan_setting):
     """Starts wifi single shot scan.
