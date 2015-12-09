@@ -241,17 +241,25 @@ def concurrent_exec(func, param_list):
         func: The function that parforms a task.
         param_list: A list of iterables, each being a set of params to be
             passed into the function.
+
+    Returns:
+        A list of return values from each function execution. If an execution
+        caused an exception, the exception object will be the corresponding
+        result.
     """
     with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
         # Start the load operations and mark each future with its params
         future_to_params = {executor.submit(func, *p): p for p in param_list}
+        return_vals = []
         for future in concurrent.futures.as_completed(future_to_params):
             params = future_to_params[future]
             try:
-                data = future.result()
+                return_vals.append(future.result())
             except Exception as exc:
                 print("{} generated an exception: {}".format(params,
                     traceback.format_exc()))
+                return_vals.append(exc)
+        return return_vals
 
 def exe_cmd(*cmds):
     """Executes commands in a new shell.
