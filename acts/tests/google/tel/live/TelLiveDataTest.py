@@ -111,10 +111,6 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_toggle_apm_during_active_wifi_tethering",
                       "test_toggle_data_during_active_wifi_tethering",
                       "test_disable_wifi_tethering_resume_connected_wifi",
-                      "test_change_rat_during_active_wifi_tethering_lte_to_3g",
-                      "test_change_rat_during_active_wifi_tethering_3g_to_lte",
-                      "test_change_rat_during_active_wifi_tethering_3g_to_2g",
-                      "test_change_rat_during_active_wifi_tethering_2g_to_3g",
                       "test_tethering_wifi_ssid_quotes",
                       "test_tethering_wifi_no_password",
                       "test_tethering_wifi_password_escaping_characters",
@@ -970,6 +966,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    # Invalid Live Test. Can't rely on the result of this test with live network.
+    # Network may decide not to change the RAT when data conenction is active.
     @TelephonyBaseTest.tel_test_wrap
     def test_change_rat_during_active_wifi_tethering_lte_to_3g(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from LTE to 3G,
@@ -1024,6 +1022,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    # Invalid Live Test. Can't rely on the result of this test with live network.
+    # Network may decide not to change the RAT when data conenction is active.
     @TelephonyBaseTest.tel_test_wrap
     def test_change_rat_during_active_wifi_tethering_3g_to_lte(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from 3G to LTE,
