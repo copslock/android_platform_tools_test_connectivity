@@ -27,7 +27,7 @@ from acts.utils import rand_ascii_str
 from acts.utils import sync_device_time
 
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.wifi_test_utils import reset_droid_wifi
+from acts.test_utils.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
 from acts.test_utils.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi_test_utils import wifi_toggle_state
@@ -54,7 +54,7 @@ class WifiPowerTest(BaseTestClass):
         )
         assert self.unpack_userparams(required_userparam_names)
         sync_device_time(self.ad)
-        reset_droid_wifi(self.ad.droid, self.ad.ed)
+        reset_wifi(self.ad.droid, self.ad.ed)
         return True
 
     def test_power(self):
@@ -74,10 +74,10 @@ class WifiPowerTest(BaseTestClass):
         # Start pmc app.
         self.ad.adb.shell(start_pmc)
         def wifi_off(ad):
-            assert wifi_toggle_state(ad.droid, ad.ed, False)
+            assert wifi_toggle_state(ad, False)
             return True
         def wifi_on(ad):
-            assert wifi_toggle_state(ad.droid, ad.ed, True)
+            assert wifi_toggle_state(ad, True)
             return True
         def wifi_on_with_connectivity_scan(ad):
             ad.adb.shell(pmc_start_connect_scan)
@@ -86,7 +86,7 @@ class WifiPowerTest(BaseTestClass):
         def connected_to_2g(ad):
             ad.adb.shell(pmc_stop_connect_scan)
             self.log.info("Stoped connectivity scan.")
-            reset_droid_wifi(ad.droid, ad.ed)
+            reset_wifi(ad)
             ssid = self.network_2g["SSID"]
             pwd = self.network_2g["password"]
             msg = "Failed to connect to %s" % ssid
@@ -100,7 +100,7 @@ class WifiPowerTest(BaseTestClass):
         def connected_to_5g(ad):
             ad.adb.shell(pmc_stop_1MB_download)
             self.log.info("Stopped downloading 1MB file.")
-            reset_droid_wifi(ad.droid, ad.ed)
+            reset_wifi(ad)
             ssid = self.network_5g["SSID"]
             pwd = self.network_5g["password"]
             msg = "Failed to connect to %s" % ssid
@@ -112,7 +112,7 @@ class WifiPowerTest(BaseTestClass):
             ad.adb.shell(pmc_start_1MB_download)
             return True
         def gscan_with_three_channels(ad):
-            reset_droid_wifi(ad.droid, ad.ed)
+            reset_wifi(ad)
             self.log.info("Disconnected from wifi.")
             ad.adb.shell(pmc_stop_1MB_download)
             self.log.info("Stopped downloading 1MB file.")
@@ -127,7 +127,7 @@ class WifiPowerTest(BaseTestClass):
             return True
         def clean_up(ad):
             ad.adb.shell(pmc_stop_gscan)
-            reset_droid_wifi(ad.droid, ad.ed)
+            reset_wifi(ad)
             return False
         funcs = (
             wifi_off,

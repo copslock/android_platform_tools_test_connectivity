@@ -23,7 +23,7 @@ from queue import Empty
 
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi_test_utils import match_networks
-from acts.test_utils.wifi_test_utils import reset_droid_wifi
+from acts.test_utils.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
 from acts.test_utils.wifi_test_utils import wifi_forget_network
 from acts.test_utils.wifi_test_utils import wifi_test_device_init
@@ -62,7 +62,7 @@ class WifiManagerTest(BaseTestClass):
             "Failed to unpack user params")
         self.assert_true(len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
-        self.assert_true(wifi_toggle_state(self.droid, self.ed, True),
+        self.assert_true(wifi_toggle_state(self.dut, True),
             "Failed to turn on wifi before tests.")
         self.iot_networks = self.iot_networks + [self.open_network]
         self.iperf_server = self.iperf_servers[0]
@@ -77,7 +77,7 @@ class WifiManagerTest(BaseTestClass):
     def teardown_test(self):
         self.droid.wakeLockRelease()
         self.droid.goToSleepNow()
-        reset_droid_wifi(self.droid, self.ed)
+        reset_wifi(self.dut)
         self.iperf_server.stop()
 
     """Helper Functions"""
@@ -102,7 +102,7 @@ class WifiManagerTest(BaseTestClass):
         SSID = network[WifiEnums.SSID_KEY]
         try:
             ed.clear_all_events()
-            start_wifi_connection_scan(droid, ed)
+            start_wifi_connection_scan(ad)
             droid.wifiStartTrackingStateChange()
             self.assert_true(droid.wifiConnect(network),
                 "wifi connect returned false.")
@@ -146,9 +146,9 @@ class WifiManagerTest(BaseTestClass):
     def test_toggle_state(self):
         """Test toggling wifi"""
         self.log.debug("Going from on to off.")
-        assert wifi_toggle_state(self.droid, self.ed, False)
+        assert wifi_toggle_state(self.dut, False)
         self.log.debug("Going from off to on.")
-        assert wifi_toggle_state(self.droid, self.ed, True)
+        assert wifi_toggle_state(self.dut, True)
         return True
 
     def test_toggle_with_screen(self):
@@ -160,10 +160,10 @@ class WifiManagerTest(BaseTestClass):
         time.sleep(wait_time)
         self.log.debug("Going from on to off.")
         try:
-            assert wifi_toggle_state(self.droid, self.ed, False)
+            assert wifi_toggle_state(self.dut, False)
             time.sleep(wait_time)
             self.log.debug("Going from off to on.")
-            assert wifi_toggle_state(self.droid, self.ed, True)
+            assert wifi_toggle_state(self.dut, True)
         finally:
             self.droid.wakeLockRelease()
             time.sleep(wait_time)
@@ -172,9 +172,9 @@ class WifiManagerTest(BaseTestClass):
 
     def test_scan(self):
         """Test wifi connection scan can start and find expected networks."""
-        wifi_toggle_state(self.droid, self.ed, True)
+        wifi_toggle_state(self.dut, True)
         self.log.debug("Start regular wifi scan.")
-        start_wifi_connection_scan(self.droid, self.ed)
+        start_wifi_connection_scan(self.dut)
         wifi_results = self.droid.wifiGetScanResults()
         self.log.debug("Scan results: %s" % wifi_results)
         condition = {WifiEnums.SSID_KEY: self.open_network[WifiEnums.SSID_KEY]}
@@ -265,7 +265,7 @@ class WifiManagerTest(BaseTestClass):
                 "Idle time decreased: previous %d, now %d" % (idle_time,
                     new_idle_time))
             idle_time = new_idle_time
-            start_wifi_connection_scan(self.droid, self.ed)
+            start_wifi_connection_scan(self.dut)
         return True
 
 if __name__ == "__main__":

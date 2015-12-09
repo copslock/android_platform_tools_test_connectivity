@@ -305,7 +305,7 @@ class WifiAutoJoinTest(BaseTestClass):
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
         try:
-            start_wifi_connection_scan(self.droid, self.ed)
+            start_wifi_connection_scan(self.dut)
             wifi_results = self.droid.wifiGetScanResults()
             self.log.debug("Scan result {}".format(wifi_results))
             time.sleep(20)
@@ -430,7 +430,7 @@ class WifiAutoJoinTest(BaseTestClass):
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
         try:
-            start_wifi_connection_scan(self.droid, self.ed)
+            start_wifi_connection_scan(self.dut)
             wifi_results = self.droid.wifiGetScanResults()
             self.log.debug("Scan result {}".format(wifi_results))
             time.sleep(20)
