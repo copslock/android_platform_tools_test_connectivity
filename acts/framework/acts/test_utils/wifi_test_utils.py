@@ -479,28 +479,28 @@ def reset_wifi(ad):
             raise WifiTestUtilsError("Failed to remove network {}.".format(n))
 
 def wifi_forget_network(ad, net_ssid):
-  """Remove configured Wifi network on an android device.
+    """Remove configured Wifi network on an android device.
 
-  Args:
-    ad: android_device object for forget network.
-    net_ssid: ssid of network to be forget
+    Args:
+        ad: android_device object for forget network.
+        net_ssid: ssid of network to be forget
 
-  Raises:
-    WifiTestUtilsError is raised if forget network operation failed.
-  """
-  droid, ed = ad.droid, ad.ed
-  droid.wifiToggleState(True)
-  networks = droid.wifiGetConfiguredNetworks()
-  if not networks:
-    return
-  for n in networks:
-    if net_ssid in n[WifiEnums.SSID_KEY]:
-      droid.wifiForgetNetwork(n['networkId'])
-      try:
-        event = ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
-            SHORT_TIMEOUT)
-      except Empty:
-        raise WifiTestUtilsError("Failed to remove network {}.".format(n))
+    Raises:
+        WifiTestUtilsError is raised if forget network operation failed.
+    """
+    droid, ed = ad.droid, ad.ed
+    droid.wifiToggleState(True)
+    networks = droid.wifiGetConfiguredNetworks()
+    if not networks:
+        return
+    for n in networks:
+        if net_ssid in n[WifiEnums.SSID_KEY]:
+            droid.wifiForgetNetwork(n['networkId'])
+            try:
+                event = ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+                        SHORT_TIMEOUT)
+            except Empty:
+                raise WifiTestUtilsError("Failed to remove network %s." % n)
 
 def wifi_test_device_init(ad):
     """Initializes an android device for wifi testing.
@@ -524,7 +524,7 @@ def wifi_test_device_init(ad):
     msg = "Failed to clear configured networks."
     assert not ad.droid.wifiGetConfiguredNetworks(), msg
     ad.droid.wifiEnableVerboseLogging(1)
-    msg = "Failed to enable WiFi verbose loggin."
+    msg = "Failed to enable WiFi verbose logging."
     assert ad.droid.wifiGetVerboseLoggingLevel() == 1, msg
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     # We don't verify the following settings since they are not critical.
@@ -535,16 +535,16 @@ def wifi_test_device_init(ad):
     ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
 
 def sort_wifi_scan_results(results, key="level"):
-  """Sort wifi scan results by key.
+    """Sort wifi scan results by key.
 
-  Args:
-    results: A list of results to sort.
-    key: Name of the field to sort the results by.
+    Args:
+        results: A list of results to sort.
+        key: Name of the field to sort the results by.
 
-  Returns:
-    A list of results in sorted order.
-  """
-  return sorted(results, lambda d: (key not in d, d[key]))
+    Returns:
+        A list of results in sorted order.
+    """
+    return sorted(results, lambda d: (key not in d, d[key]))
 
 def start_wifi_connection_scan(ad):
     """Starts a wifi connection scan and wait for results to become available.
@@ -675,12 +675,12 @@ def track_connection(ad, network_ssid, check_connection_count):
     droid, ed = ad.droid, ad.ed
     droid.wifiStartTrackingStateChange()
     while check_connection_count > 0:
-      connect_network = ed.pop_event("WifiNetworkConnected", 120)
-      log.info("connect_network {}".format(connect_network))
-      if (WifiEnums.SSID_KEY in connect_network['data']
-                            and connect_network['data'][WifiEnums.SSID_KEY] == network_ssid):
-        return True
-      check_connection_count -= 1
+        connect_network = ed.pop_event("WifiNetworkConnected", 120)
+        log.info("connect_network {}".format(connect_network))
+        if (WifiEnums.SSID_KEY in connect_network['data']
+            and connect_network['data'][WifiEnums.SSID_KEY] == network_ssid):
+                return True
+        check_connection_count -= 1
     droid.wifiStopTrackingStateChange()
     return False
 
@@ -700,13 +700,13 @@ def get_scan_time_and_channels(wifi_chs, scan_setting, stime_channel):
     scan_time = 0
     scan_channels = []
     if "band" in scan_setting and "channels" not in scan_setting:
-      scan_channels = wifi_chs.band_to_freq(scan_setting["band"])
+        scan_channels = wifi_chs.band_to_freq(scan_setting["band"])
     elif "channels" in scan_setting and "band" not in scan_setting:
-      scan_channels = scan_setting["channels"]
+        scan_channels = scan_setting["channels"]
     scan_time = len(scan_channels) * stime_channel
     for channel in scan_channels:
-      if channel in WifiEnums.DFS_5G_FREQUENCIES:
-        scan_time += 132 #passive scan time on DFS
+        if channel in WifiEnums.DFS_5G_FREQUENCIES:
+            scan_time += 132 #passive scan time on DFS
     return scan_time, scan_channels
 
 def start_wifi_track_bssid(ad, track_setting):
