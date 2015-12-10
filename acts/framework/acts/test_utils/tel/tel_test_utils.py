@@ -2758,7 +2758,7 @@ class WifiUtils():
     @staticmethod
     def wifi_toggle_state(log, ad, state):
         try:
-            WifiUtils._wifi_toggle_state(ad.droid, ad.ed, state)
+            WifiUtils._wifi_toggle_state(ad, state)
         except Exception as e:
             log.error("WifiUtils.wifi_toggle_state exception: {}".format(e))
             return False
@@ -2767,7 +2767,7 @@ class WifiUtils():
     @staticmethod
     def wifi_reset(log, ad, disable_wifi=True):
         try:
-            WifiUtils._reset_droid_wifi(ad.droid, ad.ed)
+            WifiUtils._reset_wifi(ad)
         except Exception as e:
             log.error("WifiUtils.wifi_reset exception: {}".format(e))
             return False
