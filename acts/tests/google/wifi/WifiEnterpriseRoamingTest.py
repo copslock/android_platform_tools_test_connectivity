@@ -14,17 +14,13 @@
 #   limitations under the License.
 
 import pprint
+import random
 import time
 
-from random import shuffle
-
-from acts.base_test import BaseTestClass
-from acts.test_utils.wifi_test_utils import eap_connect
-from acts.test_utils.wifi_test_utils import expand_enterprise_config_by_phase2
-from acts.test_utils.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi_test_utils import verify_wifi_connection_info
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiEnums
+import acts.base_test
+import acts.signals.generated_test as generated_test
+import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
 
 # EAP Macros
 EAP = WifiEnums.Eap
@@ -33,7 +29,7 @@ EapPhase2 = WifiEnums.EapPhase2
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
 
-class WifiEnterpriseRoamingTest(BaseTestClass):
+class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
@@ -43,7 +39,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        wifi_test_device_init(self.dut)
+        wutils.wifi_test_device_init(self.dut)
         req_params = (
             "ent_roaming_ssid",
             "bssid_a",
@@ -95,7 +91,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut)
         self.droid.disableDevicePassword()
         self.ed.clear_all_events()
         self.set_attns("default")
@@ -104,7 +100,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         self.droid.wifiStartTrackingStateChange()
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
-        reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut)
         self.ed.clear_all_events()
         return True
 
@@ -138,8 +134,8 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         """
         configs = [self.config_tls]
                    # self.config_sim
-        configs += expand_enterprise_config_by_phase2(self.config_ttls)
-        configs += expand_enterprise_config_by_phase2(self.config_peap)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_ttls)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap)
         return configs
 
     def gen_eap_roaming_test_name(self, config):
@@ -171,7 +167,7 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         try:
             self.droid.wakeLockAcquireBright()
             self.droid.wakeUpNow()
-            verify_wifi_connection_info(self.dut, expected_con)
+            wutils.verify_wifi_connection_info(self.dut, expected_con)
             expected_bssid = expected_con[WifiEnums.BSSID_KEY]
             self.log.info("Roamed to %s successfully" % expected_bssid)
         finally:
@@ -198,8 +194,11 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
         self.set_attns("a_on_b_off")
-        assert eap_connect(config, self.dut, validate_con=False)
-        verify_wifi_connection_info(self.dut, expected_con_to_a)
+        self.assert_true(
+            wutils.eap_connect(config, self.dut, validate_con=False),
+            "Failed to connect to %s" % config
+            )
+        wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s" % (self.bssid_a, self.bssid_b))
         self.trigger_roaming_and_validate("b_on_a_off", expected_con_to_b)
         self.log.info("Roaming from %s to %s" % (self.bssid_b, self.bssid_a))
@@ -207,10 +206,11 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         return True
 
     """ Tests Begin """
+    @generated_test
     def test_roaming_with_different_auth_method(self):
         eap_configs = self.gen_eap_configs()
         self.log.info("Testing %d different configs." % len(eap_configs))
-        shuffle(eap_configs)
+        random.shuffle(eap_configs)
         failed = self.run_generated_testcases(
             self.roaming_between_a_and_b_logic,
             eap_configs,
@@ -218,5 +218,4 @@ class WifiEnterpriseRoamingTest(BaseTestClass):
         msg = ("The following configs failed enterprise roaming test: %s" %
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
-        return True
     """ Tests End """

@@ -15,17 +15,13 @@
 # the License.
 
 import pprint
+import queue
 
-from queue import Empty
-from acts.base_test import BaseTestClass
+import acts.base_test
+import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
+import acts.utils.trim_model_name as trim_model_name
 from acts.controllers.android import SL4AAPIError
-from acts.test_utils.wifi_test_utils import match_networks
-from acts.test_utils.wifi_test_utils import SPEED_OF_LIGHT
-from acts.test_utils.wifi_test_utils import start_wifi_single_scan
-from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
-from acts.test_utils.wifi_test_utils import trim_model_name
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiEnums
 
 # Macros for RttParam keywords
 RttParam = WifiEnums.RttParam
@@ -42,7 +38,7 @@ RTT_MARGIN_OF_ERROR = WifiEnums.RTT_MARGIN_OF_ERROR
 class WifiRTTRangingError (Exception):
      """Error in WifiScanner Rtt."""
 
-class WifiRttManagerTest(BaseTestClass):
+class WifiRttManagerTest(acts.base_test.BaseTestClass):
     """Tests for wifi's RttManager APIs."""
     tests = None
     MAX_RTT_AP = 10
@@ -60,7 +56,7 @@ class WifiRttManagerTest(BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        wifi_test_device_init(self.dut)
+        wutils.wifi_test_device_init(self.dut)
         required_params = (
             "support_models",
             "stress_num",
@@ -165,7 +161,7 @@ class WifiRttManagerTest(BaseTestClass):
                     r[RttParam.margin] = RTT_MARGIN_OF_ERROR[bw_mode]
             self.log.debug(pprint.pformat(event))
             return event
-        except Empty:
+        except queue.Empty:
             self.log.error("Waiting for RTT event timed out.")
             return None
 
@@ -208,7 +204,7 @@ class WifiRttManagerTest(BaseTestClass):
         Returns:
             A list of networks that have RTTResponders.
         """
-        start_wifi_connection_scan(self.dut)
+        wutils.start_wifi_connection_scan(self.dut)
         networks = self.droid.wifiGetScanResults()
         rtt_networks = []
         for nw in networks:
@@ -230,7 +226,7 @@ class WifiRttManagerTest(BaseTestClass):
             "periodInMs": 10000,
             "numBssidsPerScan": 32
         }
-        idx = start_wifi_single_scan(self.android_devices[0], s)["Index"]
+        idx = wutils.start_wifi_single_scan(self.android_devices[0], s)["Index"]
         self.log.info("Scan index is %d" % idx)
         event_name = "WifiScannerScan%donFullResult" % idx
         def condition(event):
@@ -248,7 +244,7 @@ class WifiRttManagerTest(BaseTestClass):
             self.log.info("Found %d networks in total." % total_network_cnt)
             self.log.debug(rtt_networks)
             return rtt_networks
-        except Empty:
+        except queue.Empty:
             self.log.error("Timed out waiting for gscan result.")
 
     def process_rtt_events(self, events):
@@ -297,7 +293,7 @@ class WifiRttManagerTest(BaseTestClass):
                             out_of_range += 1
                         continue
                     # Check if the RTT value is in range.
-                    d = (value / 2) / 1E10 * SPEED_OF_LIGHT
+                    d = (value / 2) / 1E10 * wutils.SPEED_OF_LIGHT
                     is_rtt_valid = (acd - margin) <= d <= (acd + margin)
                     if not is_rtt_valid:
                         self.log.warning(
@@ -483,11 +479,11 @@ class WifiRttManagerTest(BaseTestClass):
             All the non-RTT networks show up in scan results and their
             "is80211McRTTResponder" is False.
         """
-        start_wifi_connection_scan(self.dut)
+        wutils.start_wifi_connection_scan(self.dut)
         scan_results = self.droid.wifiGetScanResults()
         self.log.debug(scan_results)
         for n in visible_networks:
-            self.assert_true(match_networks(n, scan_results),
+            self.assert_true(wutils.match_networks(n, scan_results),
                 "Network %s was not discovered properly." % n)
         return True
 
@@ -505,7 +501,6 @@ class WifiRttManagerTest(BaseTestClass):
         results = self.get_rtt_results([p])
         self.assert_true(results, "Did not get any result.")
         self.log.info(pprint.pformat(results))
-        return True
 
     def test_rtt_ranging_single_AP_stress(self):
         """Stress test for Rtt against one AP.
@@ -533,7 +528,6 @@ class WifiRttManagerTest(BaseTestClass):
             else:
                 self.log.warning("Did not get result for iteration %d." % i)
         frate = self.process_rtt_events(all_results)
-        return True
 
     def test_regular_scan_then_rtt_ranging_stress(self):
         """Stress test for regular scan then start rtt ranging against the RTT
@@ -551,7 +545,6 @@ class WifiRttManagerTest(BaseTestClass):
         """
         scan_func = self.regular_scan_for_rtt_networks
         self.scan_then_rtt_ranging_stress_logic(scan_func)
-        return True
 
     def test_gscan_then_rtt_ranging_stress(self):
         """Stress test for gscan then start rtt ranging against the RTT
@@ -568,4 +561,3 @@ class WifiRttManagerTest(BaseTestClass):
         """
         scan_func = self.gscan_for_rtt_networks
         self.scan_then_rtt_ranging_stress_logic(scan_func)
-        return True

@@ -15,19 +15,13 @@
 #   limitations under the License.
 
 import pprint
+import random
 import time
 
-from queue import Empty
-from random import shuffle
-
-from acts.base_test import BaseTestClass
-from acts.test_utils.wifi_test_utils import eap_connect
-from acts.test_utils.wifi_test_utils import expand_enterprise_config_by_phase2
-from acts.test_utils.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi_test_utils import WifiEventNames
+import acts.base_test
+import acts.signals.generated_test as generated_test
+import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
 
 # EAP Macros
 EAP = WifiEnums.Eap
@@ -35,11 +29,8 @@ EapPhase2 = WifiEnums.EapPhase2
 
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
-# Event name macros
-Event = WifiEventNames
 
-
-class WifiEnterpriseTest(BaseTestClass):
+class WifiEnterpriseTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
@@ -52,7 +43,7 @@ class WifiEnterpriseTest(BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        wifi_test_device_init(self.dut)
+        wutils.wifi_test_device_init(self.dut)
         required_userparam_names = (
             "ca_cert",
             "client_cert",
@@ -138,7 +129,7 @@ class WifiEnterpriseTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut)
         self.droid.disableDevicePassword()
         self.ed.clear_all_events()
 
@@ -146,7 +137,7 @@ class WifiEnterpriseTest(BaseTestClass):
         self.droid.wifiStartTrackingStateChange()
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
-        reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut)
         self.ed.clear_all_events()
         return True
 
@@ -167,7 +158,7 @@ class WifiEnterpriseTest(BaseTestClass):
         Returns:
             True if connection failed as expected, False otherwise.
         """
-        verdict = eap_connect(config, ad)
+        verdict = wutils.eap_connect(config, ad)
         self.assert_true(not verdict, "Connection should have failed.")
         self.log.info("Connection failed as expected.")
         return True
@@ -200,8 +191,8 @@ class WifiEnterpriseTest(BaseTestClass):
         """
         configs = [self.config_tls]
                    # self.config_sim
-        configs += expand_enterprise_config_by_phase2(self.config_ttls)
-        configs += expand_enterprise_config_by_phase2(self.config_peap)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_ttls)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap)
         return configs
 
     def gen_passpoint_configs(self):
@@ -213,7 +204,7 @@ class WifiEnterpriseTest(BaseTestClass):
             passpoint networks.
         """
         configs = [self.config_passpoint_tls]
-        configs += expand_enterprise_config_by_phase2(self.config_passpoint_ttls)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_passpoint_ttls)
         return configs
 
     def gen_negative_configs(self, configs, neg_params):
@@ -324,6 +315,7 @@ class WifiEnterpriseTest(BaseTestClass):
         return name
 
     """Tests"""
+    @generated_test
     def test_eap_connect(self):
         """Test connecting to enterprise networks of different authentication
         types.
@@ -344,17 +336,17 @@ class WifiEnterpriseTest(BaseTestClass):
         """
         eap_configs = self.gen_eap_configs()
         self.log.info("Testing %d different configs." % len(eap_configs))
-        shuffle(eap_configs)
+        random.shuffle(eap_configs)
         failed = self.run_generated_testcases(
-            eap_connect,
+            wutils.eap_connect,
             eap_configs,
             self.dut,
             name_func=self.gen_eap_test_name)
         msg = ("The following configs failed EAP connect test: %s" %
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
-        return True
 
+    @generated_test
     def test_eap_connect_negative(self):
         """Test connecting to enterprise networks.
 
@@ -367,7 +359,7 @@ class WifiEnterpriseTest(BaseTestClass):
         """
         neg_eap_configs = self.gen_negative_eap_configs()
         self.log.info("Testing %d different configs." % len(neg_eap_configs))
-        shuffle(neg_eap_configs)
+        random.shuffle(neg_eap_configs)
         def name_gen(config, ad):
             name = self.gen_eap_test_name(config, ad)
             name += "-with_wrong-{}".format(config["invalid_field"])
@@ -380,8 +372,8 @@ class WifiEnterpriseTest(BaseTestClass):
         msg = ("The following configs failed negative EAP connect test: %s" %
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
-        return True
 
+    @generated_test
     def test_passpoint_connect(self):
         """Test connecting to enterprise networks of different authentication
         types with passpoint support.
@@ -403,17 +395,17 @@ class WifiEnterpriseTest(BaseTestClass):
             "Passpoint is not supported on device %s" % self.dut.model)
         passpoint_configs = self.gen_passpoint_configs()
         self.log.info("Testing %d different configs." % len(passpoint_configs))
-        shuffle(passpoint_configs)
+        random.shuffle(passpoint_configs)
         failed = self.run_generated_testcases(
-            eap_connect,
+            wutils.eap_connect,
             passpoint_configs,
             self.dut,
             name_func=self.gen_passpoint_test_name)
         msg = ("The following configs failed passpoint connect test: %s" %
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
-        return True
 
+    @generated_test
     def test_passpoint_connect_negative(self):
         """Test connecting to enterprise networks.
 
@@ -428,7 +420,7 @@ class WifiEnterpriseTest(BaseTestClass):
             "Passpoint is not supported on device %s" % self.dut.model)
         neg_passpoint_configs = self.gen_negative_passpoint_configs()
         self.log.info("Testing %d different configs." % len(neg_passpoint_configs))
-        shuffle(neg_passpoint_configs)
+        random.shuffle(neg_passpoint_configs)
         def name_gen(config, ad):
             name = self.gen_passpoint_test_name(config, ad)
             name += "-with_wrong-{}".format(config["invalid_field"])
@@ -441,7 +433,3 @@ class WifiEnterpriseTest(BaseTestClass):
         msg = ("The following configs failed negative passpoint connect test: "
                "%s") % pprint.pformat(failed)
         self.assert_true(len(failed) == 0, msg)
-        return True
-
-if __name__ == "__main__":
-    pass
