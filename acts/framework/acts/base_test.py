@@ -542,7 +542,7 @@ class BaseTestClass(object):
         ad.adb.bugreport(" > %s" % full_out_path)
         self.log.info("Finished taking bugreport on {}".format(serial))
 
-    def exec_one_testcase(self, test_name, test_func, pms=None):
+    def exec_one_testcase(self, test_name, test_func, args, **kwargs):
         """Executes one test case and update test results.
 
         Executes one test case, create a TestResultRecord object with the
@@ -552,7 +552,8 @@ class BaseTestClass(object):
         Args:
             test_name: Name of the test.
             test_func: The test function.
-            pms: Params to be passed to the test function.
+            args: A tuple of params.
+            kwargs: Extra kwargs.
         """
         is_generate_trigger = False
         tr_record = TestResultRecord(test_name)
@@ -563,14 +564,16 @@ class BaseTestClass(object):
             self.skip_if(not self._exec_func(self._setup_test, test_name),
                 "Setup for %s failed." % test_name)
             try:
-                if pms:
-                        verdict = test_func(*pms)
+                if args or kwargs:
+                    verdict = test_func(*args, **kwargs)
                 else:
                     verdict = test_func()
             except TypeError as e:
                 e_str = str(e)
                 if test_name in e_str:
-                    raise TestSkip(e_str + ". Got args: {}".format(pms))
+                    raise TestSkip("%s. Got args: %s, kwargs %s." % (e_str,
+                                                                    args,
+                                                                    kwargs))
                 raise e
         except (TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
@@ -617,7 +620,7 @@ class BaseTestClass(object):
                 self.reporter.write(repr(tr_record) + '\n')
 
     def run_generated_testcases(self, test_func, settings, *args, tag="",
-                                name_func=None):
+                                name_func=None, **kwargs):
         """Runs generated test cases.
 
         Generated test cases are not written down as functions, but as a list
@@ -645,7 +648,7 @@ class BaseTestClass(object):
             test_name = "{} {}".format(tag, s)
             if name_func:
                 try:
-                    test_name = name_func(s, *args)
+                    test_name = name_func(s, *args, **kwargs)
                 except:
                     msg = ("Failed to get test name from test_func. Fall back "
                         "to default %s") % test_name
@@ -654,7 +657,7 @@ class BaseTestClass(object):
             if len(test_name) > MAX_FILENAME_LEN:
                 test_name = test_name[:MAX_FILENAME_LEN]
             previous_success_cnt = len(self.results.passed)
-            self.exec_one_testcase(test_name, test_func, (s,) + args)
+            self.exec_one_testcase(test_name, test_func, (s,) + args, **kwargs)
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(s)
         return failed_settings
