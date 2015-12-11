@@ -19,9 +19,10 @@ import random
 import time
 
 import acts.base_test
-import acts.signals.generated_test as generated_test
+import acts.signals
 import acts.test_utils.wifi_test_utils as wutils
-import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
+
+WifiEnums = wutils.WifiEnums
 
 # EAP Macros
 EAP = WifiEnums.Eap
@@ -33,7 +34,7 @@ Ent = WifiEnums.Enterprise
 class WifiEnterpriseTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        acts.base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_eap_connect",
             "test_eap_connect_negative",
@@ -315,7 +316,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         return name
 
     """Tests"""
-    @generated_test
+    @acts.signals.generated_test
     def test_eap_connect(self):
         """Test connecting to enterprise networks of different authentication
         types.
@@ -346,7 +347,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
 
-    @generated_test
+    @acts.signals.generated_test
     def test_eap_connect_negative(self):
         """Test connecting to enterprise networks.
 
@@ -373,7 +374,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
 
-    @generated_test
+    @acts.signals.generated_test
     def test_passpoint_connect(self):
         """Test connecting to enterprise networks of different authentication
         types with passpoint support.
@@ -405,7 +406,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
                pprint.pformat(failed))
         self.assert_true(len(failed) == 0, msg)
 
-    @generated_test
+    @acts.signals.generated_test
     def test_passpoint_connect_negative(self):
         """Test connecting to enterprise networks.
 

@@ -18,9 +18,10 @@ import random
 import time
 
 import acts.base_test
-import acts.signals.generated_test as generated_test
+import acts.signals
 import acts.test_utils.wifi_test_utils as wutils
-import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
+
+WifiEnums = wutils.WifiEnums
 
 # EAP Macros
 EAP = WifiEnums.Eap
@@ -32,7 +33,7 @@ Ent = WifiEnums.Enterprise
 class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        acts.base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_roaming_with_different_auth_method",
         )
@@ -206,7 +207,7 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
         return True
 
     """ Tests Begin """
-    @generated_test
+    @acts.signals.generated_test
     def test_roaming_with_different_auth_method(self):
         eap_configs = self.gen_eap_configs()
         self.log.info("Testing %d different configs." % len(eap_configs))

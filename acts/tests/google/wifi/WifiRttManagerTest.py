@@ -19,9 +19,10 @@ import queue
 
 import acts.base_test
 import acts.test_utils.wifi_test_utils as wutils
-import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
-import acts.utils.trim_model_name as trim_model_name
+import acts.utils
 from acts.controllers.android import SL4AAPIError
+
+WifiEnums = wutils.WifiEnums
 
 # Macros for RttParam keywords
 RttParam = WifiEnums.RttParam
@@ -44,7 +45,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
     MAX_RTT_AP = 10
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        acts.base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_support_check",
             "test_invalid_params",
@@ -436,7 +437,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         """No device supports device-to-device RTT; only shamu and volantis
         devices support device-to-ap RTT.
         """
-        model = trim_model_name(self.dut.model)
+        model = acts.utils.trim_model_name(self.dut.model)
         self.assert_true(not self.droid.wifiIsDeviceToDeviceRttSupported(),
             "Device to device is not supposed to be supported.")
         if any([model in m for m in self.support_models]):
@@ -457,7 +458,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         caps = self.droid.wifiRttGetCapabilities()
         self.assert_true(caps, "Unable to get rtt capabilities.")
         self.log.debug("Got rtt capabilities %s" % caps)
-        model = trim_model_name(self.dut.model)
+        model = acts.utils.trim_model_name(self.dut.model)
         self.assert_true(model in self.rtt_cap_table, "Unknown model %s" % model)
         expected_caps = self.rtt_cap_table[model]
         for k, v in expected_caps.items():

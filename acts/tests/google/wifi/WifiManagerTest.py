@@ -16,19 +16,20 @@
 
 import itertools
 import pprint
+import queue
 import time
-from queue import Empty
 
 import acts.base_test
-import acts.signals.generated_test as generated_test
+import acts.signals
 import acts.test_utils.wifi_test_utils as wutils
-import acts.test_utils.wifi_test_utils.WifiEnums as WifiEnums
-import acts.test_utils.wifi_test_utils.WifiEventNames as WifiEventNames
+
+WifiEnums = wutils.WifiEnums
+WifiEventNames = wutils.WifiEventNames
 
 class WifiManagerTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        acts.base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_toggle_state",
             "test_toggle_with_screen",
@@ -108,7 +109,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                 result, data = ad.run_iperf_client(self.iperf_server_address,
                                                    port_arg)
                 self.log.debug(pprint.pformat(data))
-        except Empty:
+        except queue.Empty:
             self.log.exception("Failed to connect to {}".format(SSID))
         finally:
             droid.wifiStopTrackingStateChange()
@@ -197,7 +198,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.assert_true(nw[WifiEnums.BSSID_KEY] != ssid,
                 "Found forgotten network %s in configured networks." % ssid)
 
-    @generated_test
+    @acts.signals.generated_test
     def test_iot_with_password(self):
         params = list(itertools.product(self.iot_networks, self.android_devices))
         name_gen = lambda p : "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
