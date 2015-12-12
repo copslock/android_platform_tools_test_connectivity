@@ -79,7 +79,8 @@ class ActsBaseClassTest(BaseTestClass):
             "test_unpack_userparams_default_None",
             "test_generated_explicit_pass",
             "test_invalid_signal_details",
-            "test_invalid_signal_extras"
+            "test_invalid_signal_extras",
+            "test_generated_test_with_kwargs_case"
         )
         assert test_name in expected_success, msg
 
@@ -300,5 +301,42 @@ class ActsBaseClassTest(BaseTestClass):
             name_func=self.name_gen)
         expected_fails = params[1:]
         self.assert_true(expected_fails == failed, "This should pass.")
-        return True
+
+    @generated_test
+    def test_generated_test_with_kwargs(self):
+        kwarg1_name = "kwarg_1"
+        kwarg1_val = "whatever"
+        kwarg2_name = "kwarg_2"
+        kwarg2_val = "whateverAgain"
+        param = "I'm a param."
+        def func(p, extra, **kwargs):
+            self.assert_true(p == param, ("Expected to get param '%s', got "
+                                          "'%s'") % (param, p))
+            self.assert_true(kwarg1_name in kwargs,
+                             "Missing expected kwarg %s." % kwarg1_name)
+            self.assert_true(kwargs[kwarg1_name] == kwarg1_val,
+                             "Expected %s to be %s, got %s" % (
+                                kwarg1_name,
+                                kwarg1_val,
+                                kwargs[kwarg1_name]))
+            self.assert_true(kwarg2_name in kwargs,
+                             "Missing expected kwarg %s." % kwarg2_name)
+            self.assert_true(kwargs[kwarg2_name] == kwarg2_val,
+                             "Expected %s to be %s, got %s" % (
+                                kwarg2_name,
+                                kwarg2_val,
+                                kwargs[kwarg2_name]))
+            self.log.info(("Got expected param '%s', arg '%s', and kwarg '%s'."
+                          ) % (p, extra, kwargs))
+        def name_func(p, extra, **kwargs):
+            func(p, extra, **kwargs)
+            return "test_generated_test_with_kwargs_case"
+        self.run_generated_testcases(
+            func,
+            [param],
+            kwarg_2=kwarg2_val,
+            name_func=name_func,
+            extra=self.EXTRA_ARG,
+            kwarg_1=kwarg1_val)
+
     """ End of Tests """
