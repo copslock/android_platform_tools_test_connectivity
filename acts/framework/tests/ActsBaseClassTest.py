@@ -57,7 +57,10 @@ class ActsBaseClassTest(BaseTestClass):
 
     def setup_class(self):
         self.log.info("In setup_class.")
-        return True
+
+    def setup_test(self):
+        """Make sure empty setup_test does not block.
+        """
 
     def on_success(self, test_name, begin_time):
         self.log.info("In on_success.")
