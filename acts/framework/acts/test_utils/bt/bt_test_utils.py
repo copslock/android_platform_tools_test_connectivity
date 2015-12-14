@@ -676,7 +676,7 @@ def take_btsnoop_log(droid, testcase, test_name):
         device_model = droid.getBuildModel()
         device_model = device_model.replace(" ", "")
         out_name = ','.join((test_name, device_model, serial))
-        cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log > ",
+        cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
                        testcase.log_path + "/" + out_name,
                        ".btsnoop_hci.log"))
         testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
