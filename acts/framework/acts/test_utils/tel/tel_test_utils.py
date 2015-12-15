@@ -2710,12 +2710,20 @@ def is_uri_equivalent(uri1, uri2):
     Returns:
         True if two uris match. Otherwise False.
     """
-    if uri1.startswith('tel:') and uri2.startswith('tel:'):
-        uri1_number = ''.join(i for i in urllib.parse.unquote(uri1) if i.isdigit())
-        uri2_number = ''.join(i for i in urllib.parse.unquote(uri2) if i.isdigit())
-        return check_phone_number_match(uri1_number, uri2_number)
-    else:
-        return uri1 == uri2
+
+    #If either is None/empty we return false
+    if not uri1 or not uri2:
+        return False
+
+    try:
+        if uri1.startswith('tel:') and uri2.startswith('tel:'):
+            uri1_number = ''.join(i for i in urllib.parse.unquote(uri1) if i.isdigit())
+            uri2_number = ''.join(i for i in urllib.parse.unquote(uri2) if i.isdigit())
+            return check_phone_number_match(uri1_number, uri2_number)
+        else:
+            return uri1 == uri2
+    except AttributeError as e:
+        return False
 
 def get_call_uri(ad, call_id):
     """Get call's uri field.
