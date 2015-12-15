@@ -361,8 +361,9 @@ class WifiScannerScanTest(BaseTestClass):
         scan_time, scan_channels = get_scan_time_and_channels(self.wifi_chs,
                                                               scan_setting,
                                                               self.stime_channel)
-        scan_time += scan_setting['periodInMs'] #add scan period delay for next cycle
-        wait_time = int(scan_time/1000) + self.leeway
+        # multiply scan period by two to account for scheduler changing period
+        scan_time += scan_setting['periodInMs'] * 2 #add scan period delay for next cycle
+        wait_time = scan_time / 1000 + self.leeway
         validity = False
         try:
             for snumber in range(1,3):
