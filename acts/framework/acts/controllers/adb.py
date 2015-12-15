@@ -24,8 +24,8 @@ class AdbError(Exception):
     """Raised when there is an error in adb operations."""
 
 SL4A_LAUNCH_CMD=("am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
-    "-n com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher "
-    "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {}")
+    "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
+    "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher" )
 
 def get_available_host_port():
     """Gets a host port number available for adb forward.
