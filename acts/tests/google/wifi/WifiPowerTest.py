@@ -14,38 +14,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
-import json
-import time
-import traceback
+import acts.base_test
+import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.tel.tel_test_utils as tel_utils
 
-from queue import Empty
-
-from acts.base_test import BaseTestClass
-from acts.utils import find_field
-from acts.utils import rand_ascii_str
-from acts.utils import sync_device_time
-
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
-from acts.test_utils.wifi_test_utils import wifi_connect
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
-from acts.test_utils.wifi_test_utils import WifiEnums
-
-class WifiPowerTest(BaseTestClass):
+class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
+        super(WifiPowerTest, self).__init__(controllers)
         self.tests = (
             "test_power",
-            )
-        BaseTestClass.__init__(self, controllers)
+        )
 
     def setup_class(self):
         self.mon = self.monsoons[0]
         self.mon.set_voltage(4.2)
         self.mon.set_max_current(7.8)
-        self.ad = self.android_devices[0]
+        self.dut = self.android_devices[0]
         required_userparam_names = (
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
@@ -53,93 +38,105 @@ class WifiPowerTest(BaseTestClass):
             "network_5g"
         )
         assert self.unpack_userparams(required_userparam_names)
-        sync_device_time(self.ad)
-        reset_wifi(self.ad.droid, self.ad.ed)
+        wutils.wifi_test_device_init(self.dut)
+        start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
+            "PMCMainActivity")
+        # Start pmc app.
+        self.dut.adb.shell(start_pmc_cmd)
+        pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
+                        " PowerAction ")
+        self.pmc_start_connect_scan_cmd = pmc_base_cmd + "StartConnectivityScan"
+        self.pmc_stop_connect_scan_cmd = pmc_base_cmd + "StopConnectivityScan"
+        self.pmc_start_gscan_no_dfs_cmd = pmc_base_cmd + "StartGScanBand"
+        self.pmc_start_gscan_specific_channels_cmd = pmc_base_cmd + "StartGScanChannel"
+        self.pmc_stop_gscan_cmd = pmc_base_cmd + "StopGScan"
+        self.pmc_start_1MB_download_cmd = pmc_base_cmd + "Download1MB"
+        self.pmc_stop_1MB_download_cmd = pmc_base_cmd + "StopDownload"
+        tel_utils.toggle_airplane_mode(self.log, self.dut, True)
+        return True
+
+    def teardown_class(self):
+        self.dut.adb.shell(self.pmc_stop_gscan_cmd)
+        wutils.reset_wifi(self.dut)
+
+    def teardown_test(self):
+        # TODO(angli): save monsoon data and bugreport.
+        pass
+
+    def wifi_off(self, ad):
+        self.assert_true(wutils.wifi_toggle_state(self.dut, False),
+                         "Failed to toggle wifi off.")
+        return True
+
+    def wifi_on(self, ad):
+        self.assert_true(wutils.wifi_toggle_state(self.dut, True),
+                         "Failed to toggle wifi on.")
+        return True
+
+    def wifi_on_with_connectivity_scan(self, ad):
+        self.dut.adb.shell(self.pmc_start_connect_scan_cmd)
+        self.log.info("Started connectivity scan.")
+        return True
+
+    def connected_to_2g(self, ad):
+        self.dut.adb.shell(self.pmc_stop_connect_scan_cmd)
+        self.log.info("Stoped connectivity scan.")
+        wutils.reset_wifi(self.dut)
+        wutils.wifi_connect(self.dut, self.network_2g)
+        return True
+
+    def connected_to_2g_download_1MB(self, ad):
+        self.log.info("Start downloading 1MB file consecutively.")
+        self.dut.adb.shell(self.pmc_start_1MB_download_cmd)
+        return True
+
+    def connected_to_5g(self, ad):
+        self.dut.adb.shell(self.pmc_stop_1MB_download_cmd)
+        self.log.info("Stopped downloading 1MB file.")
+        wutils.reset_wifi(ad)
+        wutils.wifi_connect(self.dut, self.network_5g)
+        return True
+
+    def connected_to_5g_download_1MB(self, ad):
+        self.log.info("Start downloading 1MB file consecutively.")
+        self.dut.adb.shell(self.pmc_start_1MB_download_cmd)
+        return True
+
+    def gscan_with_three_channels(self, ad):
+        wutils.reset_wifi(self.dut)
+        self.log.info("Disconnected from wifi.")
+        self.dut.adb.shell(self.pmc_stop_1MB_download_cmd)
+        self.log.info("Stopped downloading 1MB file.")
+        self.dut.adb.shell(self.pmc_start_gscan_specific_channels_cmd)
+        self.log.info("Started gscan for the three main 2G channels.")
+        return True
+
+    def gscan_with_all_channels(self, ad):
+        self.dut.adb.shell(self.pmc_stop_gscan_cmd)
+        self.log.info("Stopped gscan with channels.")
+        self.dut.adb.shell(self.pmc_start_gscan_no_dfs_cmd)
+        self.log.info("Started gscan for all but DFS channels.")
         return True
 
     def test_power(self):
-        toggle_airplane_mode(self.log, self.ad, True)
-        # 30min for each measurement.
         durations = 1
-        start_pmc = ("am start -n com.android.pmc/com.android.pmc."
-            "PMCMainActivity")
-        pmc_base_cmd = "am broadcast -a com.android.pmc.action.AUTOPOWER --es PowerAction "
-        pmc_start_connect_scan = pmc_base_cmd + "StartConnectivityScan"
-        pmc_stop_connect_scan = pmc_base_cmd + "StopConnectivityScan"
-        pmc_start_gscan_no_dfs = pmc_base_cmd + "StartGScanBand"
-        pmc_start_gscan_specific_channels = pmc_base_cmd + "StartGScanChannel"
-        pmc_stop_gscan = pmc_base_cmd + "StopGScan"
-        pmc_start_1MB_download = pmc_base_cmd + "Download1MB"
-        pmc_stop_1MB_download = pmc_base_cmd + "StopDownload"
-        # Start pmc app.
-        self.ad.adb.shell(start_pmc)
-        def wifi_off(ad):
-            assert wifi_toggle_state(ad, False)
-            return True
-        def wifi_on(ad):
-            assert wifi_toggle_state(ad, True)
-            return True
-        def wifi_on_with_connectivity_scan(ad):
-            ad.adb.shell(pmc_start_connect_scan)
-            self.log.info("Started connectivity scan.")
-            return True
-        def connected_to_2g(ad):
-            ad.adb.shell(pmc_stop_connect_scan)
-            self.log.info("Stoped connectivity scan.")
-            reset_wifi(ad)
-            ssid = self.network_2g["SSID"]
-            pwd = self.network_2g["password"]
-            msg = "Failed to connect to %s" % ssid
-            assert wifi_connect(ad, ssid, pwd), msg
-            self.log.info("Connected to %s" % ssid)
-            return True
-        def connected_to_2g_download_1MB(ad):
-            self.log.info("Start downloading 1MB file consecutively.")
-            ad.adb.shell(pmc_start_1MB_download)
-            return True
-        def connected_to_5g(ad):
-            ad.adb.shell(pmc_stop_1MB_download)
-            self.log.info("Stopped downloading 1MB file.")
-            reset_wifi(ad)
-            ssid = self.network_5g["SSID"]
-            pwd = self.network_5g["password"]
-            msg = "Failed to connect to %s" % ssid
-            assert wifi_connect(ad, ssid, pwd), msg
-            self.log.info("Connected to %s" % ssid)
-            return True
-        def connected_to_5g_download_1MB(ad):
-            self.log.info("Start downloading 1MB file consecutively.")
-            ad.adb.shell(pmc_start_1MB_download)
-            return True
-        def gscan_with_three_channels(ad):
-            reset_wifi(ad)
-            self.log.info("Disconnected from wifi.")
-            ad.adb.shell(pmc_stop_1MB_download)
-            self.log.info("Stopped downloading 1MB file.")
-            ad.adb.shell(pmc_start_gscan_specific_channels)
-            self.log.info("Started gscan for the three main 2G channels.")
-            return True
-        def gscan_with_all_channels(ad):
-            ad.adb.shell(pmc_stop_gscan)
-            self.log.info("Stopped gscan with channels.")
-            ad.adb.shell(pmc_start_gscan_no_dfs)
-            self.log.info("Started gscan for all but DFS channels.")
-            return True
-        def clean_up(ad):
-            ad.adb.shell(pmc_stop_gscan)
-            reset_wifi(ad)
-            return False
-        funcs = (
-            wifi_off,
-            wifi_on,
-            wifi_on_with_connectivity_scan,
-            connected_to_2g,
-            connected_to_2g_download_1MB,
-            connected_to_5g,
-            connected_to_5g_download_1MB,
-            gscan_with_three_channels,
-            gscan_with_all_channels
-        )
-        results = self.mon.execute_sequence_and_measure(10, durations, funcs, self.ad, offset_sec=30)
-        assert len(results) == len(funcs), "Did not get enough results!"
-        return True
+        funcs = [
+            self.wifi_off,
+            self.wifi_on,
+            self.wifi_on_with_connectivity_scan,
+            self.connected_to_2g,
+            self.connected_to_2g_download_1MB,
+            self.connected_to_5g,
+            self.connected_to_5g_download_1MB,
+            self.gscan_with_three_channels,
+            self.gscan_with_all_channels
+        ]
+        params = [[func] for func in funcs]
+        def gen_name(step_funcs, hz, duration, ad, offset_sec):
+            return "test_%s" % step_funcs[0].__name__
+        self.run_generated_testcases(
+                self.mon.execute_sequence_and_measure,
+                params,
+                10, 1, self.dut, 30,
+                name_func=gen_name
+            )
