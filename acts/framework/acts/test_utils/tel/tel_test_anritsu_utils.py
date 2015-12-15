@@ -421,6 +421,28 @@ def set_system_model_lte_gsm(anritsu_handle, user_params):
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [lte_bts, gsm_bts]
 
+def set_system_model_lte_1x(anritsu_handle, user_params):
+    """ Configures Anritsu system for LTE and 1x simulation
+
+    Args:
+        anritsu_handle: anritusu device object.
+        user_params: pointer to user supplied parameters
+
+    Returns:
+        Lte and 1x BTS objects
+    """
+    anritsu_handle.set_simulation_model(BtsTechnology.LTE,
+                                       BtsTechnology.CDMA1X)
+    # setting BTS parameters
+    lte_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
+    cdma1x_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
+    _init_lte_bts(lte_bts, user_params, CELL_1)
+    _init_1x_bts(cdma1x_bts, user_params, CELL_2)
+    pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    # Initialize PDN IP address for internet connection sharing
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    return [lte_bts, cdma1x_bts]
+
 def set_system_model_wcdma_gsm(anritsu_handle, user_params):
     """ Configures Anritsu system for WCDMA and GSM simulation
 
@@ -611,55 +633,68 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
 
 
 def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
-        teardown_side=CALL_TEARDOWN_PHONE, emergency=False):
+        teardown_side=CALL_TEARDOWN_PHONE, is_emergency=False,
+        wait_time_in_call=WAIT_TIME_IN_CALL):
     """ Makes a MO call and tear down the call
 
     Args:
         ad: Android device object.
-        virtual_phone_handle: Anritus virtual phone handle
-        callee_number = Number to be called
-        teardown_side = specifiy the side to end the call (Phone or remote)
-        emergency : specify the call is emergency
+        virtual_phone_handle: Anritsu virtual phone handle.
+        callee_number: Number to be called.
+        teardown_side: the side to end the call (Phone or remote).
+        is_emergency: is the call an emergency call.
+        wait_time_in_call: Time to wait when phone in call.
 
     Returns:
         True for success False for failure
     """
+    class _CallSequenceException(Exception):
+        pass
+
     log.info("Making Call to " + callee_number)
 
     try:
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
                                            VirtualPhoneStatus.STATUS_IDLE):
-            raise Exception("Virtual Phone is not in a state to start call")
+            raise _CallSequenceException("Virtual Phone not idle.")
 
-        if not initiate_call(log, ad, callee_number, emergency):
-            raise Exception("Initiate call failed.")
+        if not initiate_call(log, ad, callee_number, is_emergency):
+            raise _CallSequenceException("Initiate call failed.")
 
         # check Virtual phone answered the call
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
-                     VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
-            raise Exception("Virtual Phone did not answer the call.")
+            VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
+            raise _CallSequenceException("Virtual Phone not in call.")
 
-        time.sleep(WAIT_TIME_IN_CALL)
+        time.sleep(wait_time_in_call)
 
         if not ad.droid.telecomIsInCall():
-            raise Exception(
-                "Call ended before delay_in_call.")
-    except Exception:
-        return False
+            raise _CallSequenceException("Call ended before delay_in_call.")
 
-    if ad.droid.telecomIsInCall():
         if teardown_side is CALL_TEARDOWN_REMOTE:
             log.info("Disconnecting the call from Remote")
             virtual_phone_handle.set_voice_on_hook()
+            if not wait_for_droid_not_in_call(log, ad, WAIT_TIME_CALL_DROP):
+                raise _CallSequenceException("DUT call not drop.")
         else:
-            log.info("Disconnecting the call from Phone")
-            ad.droid.telecomEndCall()
+            log.info("Disconnecting the call from DUT")
+            if not hangup_call(log, ad):
+                raise _CallSequenceException("Error in Hanging-Up Call on DUT.")
 
-    wait_for_virtualphone_state(log, virtual_phone_handle,
-                                VirtualPhoneStatus.STATUS_IDLE)
-    ensure_phone_idle(log, ad)
-    return True
+        if not wait_for_virtualphone_state(log, virtual_phone_handle,
+            VirtualPhoneStatus.STATUS_IDLE):
+            raise _CallSequenceException("Virtual Phone not idle after hangup.")
+        return True
 
+    except _CallSequenceException as e:
+        log.error(e)
+        return False
+    finally:
+        try:
+            if ad.droid.telecomIsInCall():
+                ad.droid.telecomEndCall()
+        except Exception as e:
+            log.error(str(e))
 
 def call_mt_setup_teardown(log, ad, virtual_phone_handle, caller_number=None,
         teardown_side=CALL_TEARDOWN_PHONE, rat=""):
@@ -822,7 +857,8 @@ def sms_mt_receive_verify(log, ad, vp_handle, sender_number, message, rat=""):
         ad.droid.smsStopTrackingIncomingMessage()
     return True
 
-def wait_for_virtualphone_state(log, vp_handle, state, timeout=30):
+def wait_for_virtualphone_state(log, vp_handle, state,
+    timeout=WAIT_TIME_FOR_VIRTUAL_PHONE_STATE):
     """ Waits for Anritsu Virtual phone to be in expected state
 
     Args:

@@ -165,6 +165,9 @@ WAIT_TIME_ANRITSU_REG_AND_CALL = 10
 # network in Anritsu
 WAIT_TIME_ANRITSU_REG_AND_OPER = 10
 
+# Time to wait for Anritsu's virtual phone state change
+WAIT_TIME_FOR_VIRTUAL_PHONE_STATE = 45
+
 # SIM1 slot index
 SIM1_SLOT_INDEX = 0
 
