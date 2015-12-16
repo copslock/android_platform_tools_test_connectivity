@@ -121,8 +121,8 @@ class BaseTestClass(object):
 
         All missing required params will be logged in error. If an optional
         param is missing, log a note and continue. You can assert on the return
-        value of this funtion in setup_class to ensure the required user params
-        are found in test config and set.
+        value of this function in setup_class to ensure the required user
+        params are found in test config and set.
 
         Args:
             req_param_names: A list of names of the required user params.
@@ -157,18 +157,18 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        try:
-            return self.setup_class()
-        except TestAbortClass:
-            return False
+        return self.setup_class()
 
     def setup_class(self):
         """Setup function that will be called before executing any test case in
         the test class.
 
+        To signal setup failure, return False or raise an exception. If
+        exceptions were raised, the stack trace would appear in log, but the
+        exceptions would not propagate to upper levels.
+
         Implementation is optional.
         """
-        return True
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected test
@@ -176,7 +176,6 @@ class BaseTestClass(object):
 
         Implementation is optional.
         """
-        pass
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
@@ -194,9 +193,12 @@ class BaseTestClass(object):
         """Setup function that will be called every time before executing each
         test case in the test class.
 
+        To signal setup failure, return False or raise an exception. If
+        exceptions were raised, the stack trace would appear in log, but the
+        exceptions would not propagate to upper levels.
+
         Implementation is optional.
         """
-        return True
 
     def _teardown_test(self, test_name):
         """Proxy function to guarantee the base implementation of teardown_test
@@ -216,7 +218,6 @@ class BaseTestClass(object):
 
         Implementation is optional.
         """
-        pass
 
     def _on_fail(self, record):
         """Proxy function to guarantee the base implementation of on_fail is
@@ -248,7 +249,6 @@ class BaseTestClass(object):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-        pass
 
     def _on_success(self, record):
         """Proxy function to guarantee the base implementation of on_success is
@@ -274,7 +274,6 @@ class BaseTestClass(object):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-        pass
 
     def _on_skip(self, record):
         """Proxy function to guarantee the base implementation of on_skip is
@@ -298,7 +297,6 @@ class BaseTestClass(object):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-        pass
 
     def on_exception(self, test_name, begin_time):
         """A function that is executed upon an unhandled exception from a test
@@ -310,13 +308,12 @@ class BaseTestClass(object):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-        pass
 
     def fail(self, msg, extras=None):
         """Explicitly fail a test case.
 
         Args:
-            msg: A string explaining the datails of the failure.
+            msg: A string explaining the details of the failure.
             extras: An optional field for extra information to be included in
                 test result.
 
@@ -561,8 +558,8 @@ class BaseTestClass(object):
         self.log.info("[Test Case] %s" % test_name)
         verdict = None
         try:
-            self.skip_if(not self._exec_func(self._setup_test, test_name),
-                "Setup for %s failed." % test_name)
+            self.skip_if(self._exec_func(self._setup_test, test_name) is False,
+                "Setup for %s failed, skip." % test_name)
             try:
                 if args or kwargs:
                     verdict = test_func(*args, **kwargs)
@@ -730,7 +727,7 @@ class BaseTestClass(object):
             # No test case specified and no default list, abort.
             return self.results
         # Setup for the class.
-        if not self._exec_func(self._setup_class):
+        if self._exec_func(self._setup_class) is False:
             self.log.error("Failed to setup {}, skipping.".format(self.TAG))
             skip_signal = TestSkip("Test class %s failed to setup." % self.TAG)
             self.results.skip_all(skip_signal)
@@ -763,4 +760,3 @@ class BaseTestClass(object):
         This function should clean up objects initialized in the constructor by
         user.
         """
-        pass
