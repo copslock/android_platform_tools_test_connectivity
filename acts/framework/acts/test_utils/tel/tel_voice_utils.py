@@ -406,7 +406,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
-    # FIXME: Delete when getVoiceNetworkType() is fixed
+    # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
     if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
         time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
 
@@ -447,7 +447,7 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
         voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
-    # FIXME: Delete when getVoiceNetworkType() is fixed
+    # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
     if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
         time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
 
@@ -554,7 +554,7 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
         # if phone can not attach voice, try phone_setup_3g
         return phone_setup_3g_for_subscription(log, ad, sub_id)
 
-   # FIXME: Delete when getVoiceNetworkType() is fixed
+   # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
     if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
         time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
 
@@ -683,7 +683,7 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id):
         log.error("{} data rat not in lte mode.".format(ad.serial))
         return False
 
-#    FIXME: Re-enable when getVoiceNetworkType() is fixed
+#    FIXME: Re-enable when telephonyGetVoiceNetworkType() is fixed
 #    FIXME:Support 2g
 #    if not wait_for_droid_in_network_generation(
 #            log, ad, WAIT_TIME_NW_SELECTION, RAT_3G, NETWORK_SERVICE_VOICE):

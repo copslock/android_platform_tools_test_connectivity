@@ -93,8 +93,8 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
                 self.log.error("Invalid RAT - Please specify a valid RAT")
                 return False
 
-            self.ad.droid.setPreferredNetwork(pref_network_type)
-            self.ad.droid.toggleDataConnection(True)
+            self.ad.droid.telephonySetPreferredNetwork(pref_network_type)
+            self.ad.droid.telephonyToggleDataConnection(True)
             if not phone_setup_func(self.log, self.ad):
                 self.log.error("Phone {} Failed to Set Up Properly"
                                .format(self.ad.serial))

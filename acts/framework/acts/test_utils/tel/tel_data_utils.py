@@ -38,7 +38,7 @@ def wifi_tethering_cleanup(log, provider, client_list):
         True if no error happened. False otherwise.
     """
     for client in client_list:
-        client.droid.toggleDataConnection(True)
+        client.droid.telephonyToggleDataConnection(True)
         if not WifiUtils.wifi_reset(log, client):
             log.error("Reset client WiFi failed. {}".format(client.serial))
             return False
@@ -104,7 +104,7 @@ def wifi_tethering_setup_teardown(log, provider, client_list,
         for client in client_list:
             log.info("Client: {}".format(client.serial))
             WifiUtils.wifi_toggle_state(log, client, False)
-            client.droid.toggleDataConnection(False)
+            client.droid.telephonyToggleDataConnection(False)
         log.info("WiFI Tethering: Verify client have no Internet access.")
         for client in client_list:
             if verify_http_connection(log, client):
@@ -237,7 +237,7 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
         log.info("Step1 Airplane Off, WiFi On, Data On.")
         toggle_airplane_mode(log, ad, False)
         WifiUtils.wifi_toggle_state(log, ad, True)
-        ad.droid.toggleDataConnection(True)
+        ad.droid.telephonyToggleDataConnection(True)
         #TODO: Add a check to ensure data routes through wifi here
 
         log.info("Step2 WiFi is Off, Data is on Cell.")
@@ -285,7 +285,7 @@ def airplane_mode_test(log, ad):
         return False
 
     try:
-        ad.droid.toggleDataConnection(True)
+        ad.droid.telephonyToggleDataConnection(True)
         WifiUtils.wifi_toggle_state(log, ad, False)
 
         log.info("Step1: ensure attach")
@@ -357,7 +357,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     try:
         log.info("Step1 Airplane Off, Data On.")
         toggle_airplane_mode(log, ad, False)
-        ad.droid.toggleDataConnection(True)
+        ad.droid.telephonyToggleDataConnection(True)
         if not wait_for_cell_data_connection(log, ad, True):
             log.error("Failed to enable data connection.")
             return False
@@ -368,7 +368,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         log.info("Step3 Turn off data and verify not connected.")
-        ad.droid.toggleDataConnection(False)
+        ad.droid.telephonyToggleDataConnection(False)
         if not wait_for_cell_data_connection(log, ad, False):
             log.error("Step3 Failed to disable data connection.")
             return False
@@ -378,7 +378,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         log.info("Step4 Re-enable data.")
-        ad.droid.toggleDataConnection(True)
+        ad.droid.telephonyToggleDataConnection(True)
         if not wait_for_cell_data_connection(log, ad, True):
             log.error("Step4 failed to re-enable data.")
             return False
@@ -398,4 +398,4 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
         return True
     finally:
-        ad.droid.toggleDataConnection(True)
+        ad.droid.telephonyToggleDataConnection(True)

@@ -81,7 +81,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             set_simulation_func(self.anritsu, self.user_params)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON, 2)
             self.anritsu.start_simulation()
-            self.ad.droid.toggleDataConnection(False)
+            self.ad.droid.telephonyToggleDataConnection(False)
 
             if csfb_type is not None:
                 self.anritsu.csfb_type = csfb_type

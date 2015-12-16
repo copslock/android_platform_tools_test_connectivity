@@ -109,10 +109,10 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.mg3710a.set_arb_pattern_aorb_state("B", "OFF", 2)
         self.mg3710a.set_freq_relative_display_status("OFF", 1)
         self.mg3710a.set_freq_relative_display_status("OFF", 2)
-        self.ad.droid.setPreferredNetwork(NETWORK_MODE_LTE_GSM_WCDMA)
+        self.ad.droid.telephonySetPreferredNetwork(NETWORK_MODE_LTE_GSM_WCDMA)
         ensure_phones_idle(self.log, self.android_devices)
         self.ad.droid.connectivityToggleAirplaneMode(True)
-        self.ad.droid.toggleDataConnection(True)
+        self.ad.droid.telephonyToggleDataConnection(True)
         return True
 
     def teardown_test(self):
@@ -227,7 +227,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
 
     def _verify_lte_cells_information( self, expected_no_cells, pcid_list,
             pcid_power_map):
-        acell = self.ad.droid.getAllCellInfo()
+        acell = self.ad.droid.telephonyGetAllCellInfo()
         if acell is not None:
             self.log.info("All Cell Info")
             self.log.info(acell)
@@ -361,7 +361,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         return found
 
     def _verify_cells_information( self, expected_no_cells, params):
-        acell = self.ad.droid.getAllCellInfo()
+        acell = self.ad.droid.telephonyGetAllCellInfo()
         if acell is not None:
             self.log.info("All Cell Info")
             self.log.info(acell)
@@ -871,7 +871,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_csfb(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -921,7 +921,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_csfb(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -975,7 +975,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_csfb(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1024,7 +1024,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_csfb(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1072,7 +1072,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_csfb(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1303,7 +1303,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         #To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_3g(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1351,7 +1351,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_3g(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1402,7 +1402,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_3g(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1451,7 +1451,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts1.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_3g(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1499,7 +1499,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_voice_general(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1721,7 +1721,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 1, "GSM_1900_C640_F1955_CID56")
         self.md8475a.start_simulation()
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_voice_general(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1768,7 +1768,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 2, "GSM_1900_C750_F1977_CID57")
         self.md8475a.start_simulation()
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_voice_general(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1818,7 +1818,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 2, "GSM_850_C251_F893_CID59")
         self.md8475a.start_simulation()
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_voice_general(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
@@ -1868,7 +1868,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("WCDMA", 2, "WCDM_1_C10700_F2140_CID31")
         self.md8475a.start_simulation()
 
-        self.ad.droid.toggleDataConnection(False)
+        self.ad.droid.telephonyToggleDataConnection(False)
         if not phone_setup_voice_general(self.log, self.ad):
             self.log.error("Phone {} Failed to Set Up Properly"
                            .format(self.ad.serial))
