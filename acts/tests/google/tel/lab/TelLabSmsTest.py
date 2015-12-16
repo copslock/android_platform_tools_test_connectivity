@@ -139,7 +139,7 @@ class TelLabSmsTest(TelephonyBaseTest):
                 phone_setup_func = phone_setup_csfb
                 network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 
-            self.ad.droid.setPreferredNetwork(pref_network_type)
+            self.ad.droid.telephonySetPreferredNetwork(pref_network_type)
             if not phone_setup_func(self.log, self.ad):
                 self.log.error("Phone {} Failed to Set Up Properly"
                                .format(self.ad.serial))

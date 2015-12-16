@@ -605,7 +605,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_CDMA):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
             self.log.error("{} not CDMA phone, abort this 1x test.".
                             format(ads[0].serial))
             return None, None, None
@@ -645,7 +645,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_CDMA):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
             self.log.error("{} not CDMA phone, abort this 1x test.".
                             format(ads[0].serial))
             return None, None, None
@@ -693,7 +693,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_CDMA):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
             self.log.error("{} not CDMA phone, abort this 1x test.".
                             format(ads[0].serial))
             return None, None, None
@@ -1007,7 +1007,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -1056,7 +1056,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -1105,7 +1105,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -1154,7 +1154,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -1203,7 +1203,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -1252,7 +1252,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -1300,7 +1300,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                            format(ads[0].serial))
             return None, None
@@ -1348,7 +1348,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                            format(ads[0].serial))
             return None, None
@@ -1396,7 +1396,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                             format(ads[0].serial))
             return None, None
@@ -1444,7 +1444,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                             format(ads[0].serial))
             return None, None
@@ -1492,7 +1492,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                             format(ads[0].serial))
             return None, None
@@ -2263,7 +2263,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -2314,7 +2314,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -2365,7 +2365,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("{} not GSM phone, abort wcdma swap test.".
                                format(ad.serial))
                 return None, None
@@ -2416,7 +2416,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -2467,7 +2467,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -2518,7 +2518,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
-            if (ad.droid.getPhoneType() != PHONE_TYPE_CDMA):
+            if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
                 self.log.error("{} not CDMA phone, abort 1x swap test.".
                                format(ad.serial))
                 return None, None
@@ -9048,7 +9048,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                            format(ads[0].serial))
             return None, None
@@ -9096,7 +9096,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("{} not GSM phone, abort wcdma swap test.".
                            format(ads[0].serial))
             return None, None
@@ -9232,7 +9232,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True)
-        ads[0].droid.phoneSetPreferredNetworkTypeForSubscription(
+        ads[0].droid.telephonySetPreferredNetworkTypeForSubscription(
                 RAT_3G, self.sim_sub_ids[0][0])
 
     @TelephonyBaseTest.tel_test_wrap

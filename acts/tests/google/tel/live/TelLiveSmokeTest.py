@@ -304,7 +304,7 @@ class TelLiveSmokeTest(TelephonyBaseTest):
                                                self.wifi_network_ssid,
                                                self.wifi_network_pass,
                                                GEN_4G)
-        if ads[0].droid.phoneIsTetheringModeAllowed(TETHERING_MODE_WIFI,
+        if ads[0].droid.carrierConfigIsTetheringModeAllowed(TETHERING_MODE_WIFI,
             TETHERING_ENTITLEMENT_CHECK_TIMEOUT):
             self.log.info("3. Verify WiFi Tethering.")
             if ads[0].droid.wifiIsApEnabled():

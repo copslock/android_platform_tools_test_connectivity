@@ -76,19 +76,19 @@ class TelLiveMsimTest(TelephonyBaseTest):
             setattr(self,"phone_number_0_sim" + str(i), num)
             # TODO: we shouldn't access TelEnums directly: create accessor func
             operator_name = get_operator_name(
-                self.droid0.getSimOperatorBySubId(subId))
+                self.droid0.telephonyGetSimOperatorForSubscription(subId))
             self.operator_tbl[subId] = operator_name
             setattr(self,"operator_name_droid0_sim" + str(i), operator_name)
             self.log.info("Information for PhoneA subId: {}".format(subId))
             self.log.info("phone_number_0_sim{} : {} <{}>".format(i, num,
                                                                   operator_name))
             self.log.info("IMEI: {}".
-                          format(self.droid0.getDeviceIdBySlotId(subInfo[i]["slotId"])))
+                          format(self.droid0.telephonyGetDeviceIdBySlotId(subInfo[i]["slotId"])))
             self.log.info("Roaming: {}".
-                          format(self.droid0.checkNetworkRoamingBySubId(subId)))
+                          format(self.droid0.telephonyCheckNetworkRoamingBySubId(subId)))
             self.log.info("Current Network Type: Voice {}, Data {}.".
-                          format(self.droid0.getVoiceNetworkTypeForSubscriber(subId),
-                                 self.droid0.getDataNetworkTypeForSubscriber(subId)))
+                          format(self.droid0.telephonyGetVoiceNetworkTypeForSubscriber(subId),
+                                 self.droid0.telephonyGetDataNetworkTypeForSubscriber(subId)))
 
         self.phone_number_1 = get_phone_number(self.log, self.droid1, self.simconf)
         assert self.phone_number_1, "Fail to get phone number on PhoneB"
@@ -143,7 +143,7 @@ class TelLiveMsimTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.droid1, self.ed1, False)
         self.log.info("Turn off Wifi, turn on Data.")
         wifi_toggle_state(self.droid0, self.ed0, False)
-        self.droid0.toggleDataConnection(True)
+        self.droid0.telephonyToggleDataConnection(True)
 
         subInfo = self.droid0.subscriptionGetAllSubInfoList()
         for i in range(len(subInfo)):
@@ -151,23 +151,23 @@ class TelLiveMsimTest(TelephonyBaseTest):
             self.log.info("Setting Data/Voice/Sms to subId: {}".format(subId))
             self._setting_subId_for_voice_data_sms(self.droid0, subId, subId, subId)
             time.sleep(5)
-            print(self.droid0.getDataConnectionState())
-            if self.droid0.getDataConnectionState() != DATA_STATE_CONNECTED:
+            print(self.droid0.telephonyGetDataConnectionState())
+            if self.droid0.telephonyGetDataConnectionState() != DATA_STATE_CONNECTED:
                 result = wait_for_data_connection_status(self.log, self.droid0,
                                                           self.ed0, True)
                 print("wait for connected")
                 print(result)
                 assert result, "Data not connected on PhoneA subId: {}".format(subId)
-            self.droid0.toggleDataConnection(False)
+            self.droid0.telephonyToggleDataConnection(False)
             time.sleep(5)
-            print(self.droid0.getDataConnectionState())
-            if self.droid0.getDataConnectionState() != DATA_STATE_DISCONNECTED:
+            print(self.droid0.telephonyGetDataConnectionState())
+            if self.droid0.telephonyGetDataConnectionState() != DATA_STATE_DISCONNECTED:
                 result = wait_for_data_connection_status(self.log, self.droid0,
                                                           self.ed0, False)
                 print("wait for disconnected")
                 print(result)
                 assert result, "Disable data fail on PhoneA subId: {}".format(subId)
-            self.droid0.toggleDataConnection(True)
+            self.droid0.telephonyToggleDataConnection(True)
             time.sleep(5)
         return True
 
@@ -292,11 +292,11 @@ class TelLiveMsimTest(TelephonyBaseTest):
         Returns:
             True if pass.
         """
-        self.droid0.phoneStartTrackingDataConnectionStateChange()
+        self.droid0.telephonyStartTrackingDataConnectionStateChange()
         self.log.info("Step1 Airplane Off, Wifi On, Data On.")
         toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
         wifi_toggle_state(self.droid0, self.ed0, True)
-        self.droid0.toggleDataConnection(True)
+        self.droid0.telephonyToggleDataConnection(True)
         self.log.info("Step2 Wifi is Off, Data is on Cell.")
         toggle_wifi_verify_data_connection(self.log, self.droid0,
                                            self.ed0, False)
@@ -349,11 +349,11 @@ class TelLiveMsimTest(TelephonyBaseTest):
         self.log.info("Waiting for droids to be in 3g mode.")
         wait_for_droids_in_network_generation(
             self.log, [self.droid0, self.droid1], RAT_3G, WAIT_TIME_NW_SELECTION)
-        self.droid0.phoneStartTrackingDataConnectionStateChange()
+        self.droid0.telephonyStartTrackingDataConnectionStateChange()
         self.log.info("Step1 Airplane Off, Wifi Off, Data On, verify internet.")
         toggle_airplane_mode(self.log, self.droid0, self.ed0, False)
         wifi_toggle_state(self.droid0, self.ed0, False)
-        self.droid0.toggleDataConnection(True)
+        self.droid0.telephonyToggleDataConnection(True)
         toggle_wifi_verify_data_connection(self.log, self.droid0,
                                            self.ed0, False)
         self.log.info("Step2 Initiate call and accept.")
@@ -370,7 +370,7 @@ class TelLiveMsimTest(TelephonyBaseTest):
             self.log.info("Step3 Verify internet.")
             verify_http_connection(self.log, self.droid0)
             self.log.info("Step4 Turn off data and verify not connected.")
-            self.droid0.toggleDataConnection(False)
+            self.droid0.telephonyToggleDataConnection(False)
             wait_for_data_connection_status(self.log, self.droid0, self.ed0, False)
             result = True
             try:
@@ -380,7 +380,7 @@ class TelLiveMsimTest(TelephonyBaseTest):
             if result:
                 self.log.error("Step4 turn off data failed.")
                 return False
-            self.droid0.toggleDataConnection(True)
+            self.droid0.telephonyToggleDataConnection(True)
             wait_for_data_connection_status(self.log, self.droid0, self.ed0, True)
         else:
             self.log.info("Skip Verify internet.")
@@ -514,9 +514,9 @@ def call_process(log, ad_caller, ad_callee, delay_in_call,
                   DeprecationWarning)
 
     if not caller_number:
-        caller_number = ad_caller.droid.getLine1Number()
+        caller_number = ad_caller.droid.telephonyGetLine1Number()
     if not callee_number:
-        callee_number = ad_callee.droid.getLine1Number()
+        callee_number = ad_callee.droid.telephonyGetLine1Number()
     if not caller_number or not callee_number:
         log.error("Caller or Callee number invalid.")
         return False

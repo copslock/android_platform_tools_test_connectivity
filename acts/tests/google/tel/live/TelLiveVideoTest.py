@@ -2149,7 +2149,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         try:
             self.log.info("Step2 Turn off data and verify not connected.")
-            ads[0].droid.toggleDataConnection(False)
+            ads[0].droid.telephonyToggleDataConnection(False)
             if verify_http_connection(self.log, ads[0]):
                 self.log.error("Internet Accessible when Disabled")
                 return False
@@ -2171,7 +2171,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 return False
 
         finally:
-            ads[0].droid.toggleDataConnection(True)
+            ads[0].droid.telephonyToggleDataConnection(True)
 
         return True
 """ Tests End """

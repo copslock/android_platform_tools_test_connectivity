@@ -289,7 +289,7 @@ def initiate_video_call(log, ad_caller, callee_number):
     """
 
     wait_time_for_incall_state = WAIT_TIME_CALL_INITIATION
-    ad_caller.droid.phoneCallNumber(callee_number, True)
+    ad_caller.droid.telecomCallNumber(callee_number, True)
     while wait_time_for_incall_state > 0:
         wait_time_for_incall_state -= 1
         if ad_caller.droid.telecomIsInCall():
@@ -354,9 +354,9 @@ def wait_and_answer_video_call_for_subscription(
         False: for errors
     """
     ad.ed.clear_all_events()
-    ad.droid.phoneStartTrackingCallStateForSubscription(sub_id)
+    ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     if (not ad.droid.telecomIsRinging() and
-            ad.droid.getCallStateForSubscription(sub_id) != TELEPHONY_STATE_RINGING):
+            ad.droid.telephonyGetCallStateForSubscription(sub_id) != TELEPHONY_STATE_RINGING):
         try:
             event_ringing = wait_for_ringing_event(log, ad,
                                                    WAIT_TIME_CALLEE_RINGING)
@@ -364,7 +364,7 @@ def wait_and_answer_video_call_for_subscription(
                 log.error("No Ringing Event.")
                 return False
         finally:
-            ad.droid.phoneStopTrackingCallStateChangeForSubscription(sub_id)
+            ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
 
         if not incoming_number:
             result = True
@@ -398,7 +398,7 @@ def wait_and_answer_video_call_for_subscription(
         log.error("Couldn't find a ringing call by ID!")
         return False
 
-    ad.droid.phoneStartTrackingCallStateForSubscription(sub_id)
+    ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     # Delay between ringing and answer.
     time.sleep(delay_answer)
 
@@ -415,7 +415,7 @@ def wait_and_answer_video_call_for_subscription(
             log.error("Accept call failed.")
             return False
     finally:
-        ad.droid.phoneStopTrackingCallStateChangeForSubscription(sub_id)
+        ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
     if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
         ad.droid.telecomShowInCallScreen()
     elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:

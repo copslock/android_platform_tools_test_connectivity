@@ -93,12 +93,12 @@ class TelLabCmasTest(TelephonyBaseTest):
                 phone_setup_func = phone_setup_3g
                 pref_network_type = NETWORK_MODE_WCDMA_PREF
                 self.bts1.wcdma_ctch = CTCHSetup.CTCH_ENABLE
-                self.ad.droid.toggleDataConnection(False)
+                self.ad.droid.telephonyToggleDataConnection(False)
             elif rat == RAT_GSM:
                 phone_setup_func = phone_setup_2g
                 pref_network_type = NETWORK_MODE_GSM_ONLY
                 self.bts1.gsm_cbch = CBCHSetup.CBCH_ENABLE
-                self.ad.droid.toggleDataConnection(False)
+                self.ad.droid.telephonyToggleDataConnection(False)
             elif rat == RAT_1XRTT:
                 phone_setup_func = phone_setup_3g
                 pref_network_type = NETWORK_MODE_CDMA
@@ -106,7 +106,7 @@ class TelLabCmasTest(TelephonyBaseTest):
                 phone_setup_func = phone_setup_csfb
                 network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 
-            self.ad.droid.setPreferredNetwork(pref_network_type)
+            self.ad.droid.telephonySetPreferredNetwork(pref_network_type)
             if not phone_setup_func(self.log, self.ad):
                 self.log.error("Phone {} Failed to Set Up Properly"
                                .format(self.ad.serial))
