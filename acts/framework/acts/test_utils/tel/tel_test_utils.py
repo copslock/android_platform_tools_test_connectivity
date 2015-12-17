@@ -2090,7 +2090,7 @@ def ensure_network_generation_for_subscription(log, ad, sub_id, generation,
         rat_family = rat_family_for_generation(generation, operator)
     except KeyError:
         log.error("Failed to find a rat_family entry for "
-            "PLMN: {}, operator:{}, generation{}".format(
+            "PLMN: {}, operator:{}, generation: {}".format(
                 ad.droid.getSimOperatorForSubscription(sub_id), operator,
                 generation))
         return False
@@ -2762,6 +2762,7 @@ class WifiUtils():
     WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
     WIFI_CONFIG_APBAND_5G = _WifiEnums.WIFI_CONFIG_APBAND_5G
     SSID_KEY = _WifiEnums.SSID_KEY
+    PWD_KEY = _WifiEnums.PWD_KEY
 
     @staticmethod
     def wifi_toggle_state(log, ad, state):
@@ -2791,7 +2792,10 @@ class WifiUtils():
         if password == "":
             password = None
         try:
-            return WifiUtils._wifi_connect(ad, ssid, password)
+            network = {WifiUtils.SSID_KEY: ssid}
+            if password:
+                network[WifiUtils.PWD_KEY] = password
+            WifiUtils._wifi_connect(ad, network)
         except Empty:
             # did not get event, then check connection info
             try:
@@ -2809,6 +2813,7 @@ class WifiUtils():
         except Exception as e:
             log.error("WifiUtils.wifi_connect exception: {}".format(e))
             return False
+        return True
 
     @staticmethod
     def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
