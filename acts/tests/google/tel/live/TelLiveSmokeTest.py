@@ -303,7 +303,7 @@ class TelLiveSmokeTest(TelephonyBaseTest):
         nw_switch_result = wifi_cell_switching(self.log, ads[0],
                                                self.wifi_network_ssid,
                                                self.wifi_network_pass,
-                                               RAT_LTE)
+                                               GEN_4G)
         if ads[0].droid.phoneIsTetheringModeAllowed(TETHERING_MODE_WIFI,
             TETHERING_ENTITLEMENT_CHECK_TIMEOUT):
             self.log.info("3. Verify WiFi Tethering.")
