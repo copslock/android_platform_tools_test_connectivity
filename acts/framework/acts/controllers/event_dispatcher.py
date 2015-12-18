@@ -46,7 +46,7 @@ class EventDispatcher:
         self.poller = None
         self.event_dict = {}
         self.handlers = {}
-        self.lock = threading.RLock()   
+        self.lock = threading.RLock()
 
     def poll_events(self):
         """Continuously polls all types of events from sl4a.

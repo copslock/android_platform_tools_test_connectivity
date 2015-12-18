@@ -23,7 +23,7 @@ from acts.controllers.adb import AdbProxy
 from acts.controllers.adb import is_port_available
 from acts.controllers.adb import get_available_host_port
 from acts.controllers.fastboot import FastbootProxy
-from acts.event_dispatcher import EventDispatcher
+from acts.controllers.event_dispatcher import EventDispatcher
 from acts.logger import LoggerProxy
 from acts.signals import ControllerError
 from acts.utils import exe_cmd
@@ -200,7 +200,7 @@ def get_device(ads, **kwargs):
             elif getattr(ad, k) != v:
                 return False
         return True
-    filtered = filter_devices(ads, _get_device_filter)  
+    filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
         raise AndroidDeviceError("No device matched")
     elif len(filtered) == 1:
