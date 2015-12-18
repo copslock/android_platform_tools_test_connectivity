@@ -50,15 +50,15 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         self.lte_bts, self.wcdma_bts = tel_utils.set_system_model(self.anritsu,
                                                                   "LTE_WCDMA")
         tel_utils.init_phone(self.droid, self.ed)
-        self.droid.phoneStartTrackingServiceStateChange()
-        self.droid.phoneStartTrackingDataConnectionStateChange()
+        self.droid.telephonyStartTrackingServiceStateChange()
+        self.droid.telephonyStartTrackingDataConnectionStateChange()
         self.log.info("Starting Simulation")
         self.anritsu.start_simulation()
         return True
 
     def teardown_test(self):
-        self.droid.phoneStopTrackingServiceStateChange()
-        self.droid.phoneStopTrackingDataConnectionStateChange()
+        self.droid.telephonyStopTrackingServiceStateChange()
+        self.droid.telephonyStopTrackingDataConnectionStateChange()
         self.log.info("Stopping Simulation")
         self.anritsu.stop_simulation()
         # turn off modem
@@ -428,7 +428,7 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             else:
                 raise ValueError("Incorrect value of RAT returned by MD8475A")
             self.log.info("Setting preferred Network to " + expected_nwtype)
-            self.droid.setPreferredNetwork(pref_nwtype)
+            self.droid.telephonySetPreferredNetwork(pref_nwtype)
             self.log.info("Waiting for service state: IN_SERVICE in "
                           + expected_nwtype)
             test_status, event = tel_utils.wait_for_network_registration(
@@ -452,7 +452,7 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             else:
                 raise ValueError("Incorrect value of RAT returned by MD8475A")
             self.log.info("Setting preferred Network to " + expected_nwtype)
-            self.droid.setPreferredNetwork(pref_nwtype)
+            self.droid.telephonySetPreferredNetwork(pref_nwtype)
             self.log.info("Waiting for service state: IN_SERVICE in "
                           + expected_nwtype)
             test_status, event = tel_utils.wait_for_network_registration(
@@ -461,7 +461,7 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
                                                                 self.log,
                                                                 expected_nwtype)
         # setting the preferred network type to default
-        self.droid.setPreferredNetwork(tel_utils.NETWORK_MODE_LTE_GSM_WCDMA)
+        self.droid.telephonySetPreferredNetwork(tel_utils.NETWORK_MODE_LTE_GSM_WCDMA)
 
         if test_status == "passed":
             self.log.info("TEL-CO-07: Setting preferred Network"

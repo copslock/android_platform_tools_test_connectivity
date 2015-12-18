@@ -273,11 +273,11 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         for ad in self.android_devices:
             #TODO : Move these "always" calls to generic setup/cleanup function
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
         self.android_devices[0].droid.stopTrackingSignalStrengths()
         return True

@@ -79,11 +79,11 @@ class TelephonyBaseTest(BaseTestClass):
                 self.info.error("Failed to set phone silent mode.")
                 return False
 
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
 
             if "enable_wifi_verbose_logging" in self.user_params:
@@ -98,11 +98,11 @@ class TelephonyBaseTest(BaseTestClass):
         ensure_phones_default_state(self.log, self.android_devices)
 
         for ad in self.android_devices:
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
-            ad.droid.phoneAdjustPreciseCallStateListenLevel(
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
             if "enable_wifi_verbose_logging" in self.user_params:
                 ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_DISABLED)

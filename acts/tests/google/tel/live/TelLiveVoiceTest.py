@@ -442,7 +442,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # Make Sure PhoneB is CDMA phone.
-        if ads[1].droid.getPhoneType() != PHONE_TYPE_CDMA:
+        if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA:
             self.log.error("PhoneB not cdma phone, can not csfb 1x. Stop test.")
             return False
 
@@ -478,7 +478,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # Make Sure PhoneB is GSM phone.
-        if ads[1].droid.getPhoneType() != PHONE_TYPE_GSM:
+        if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM:
             self.log.error(
                 "PhoneB not gsm phone, can not csfb wcdma. Stop test.")
             return False
@@ -545,7 +545,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # Make Sure PhoneB is CDMA phone.
-        if ads[1].droid.getPhoneType() != PHONE_TYPE_CDMA:
+        if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA:
             self.log.error("PhoneB not cdma phone, can not 3g 1x. Stop test.")
             return False
 
@@ -581,7 +581,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # Make Sure PhoneB is GSM phone.
-        if ads[1].droid.getPhoneType() != PHONE_TYPE_GSM:
+        if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM:
             self.log.error("PhoneB not gsm phone, can not 3g wcdma. Stop test.")
             return False
 
@@ -2339,7 +2339,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -2382,7 +2382,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -2425,7 +2425,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -2468,7 +2468,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -2631,7 +2631,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             For ATT, the number is phone's number.
             For SPT, the number is phone's number.
         3. Use DTMF to delete all pending voice messages.
-        4. Check getVoiceMailCount result. it should be 0.
+        4. Check telephonyGetVoiceMailCount result. it should be 0.
 
         Returns:
             False if error happens. True is succeed.
@@ -2950,7 +2950,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -2992,7 +2992,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
@@ -3027,13 +3027,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, True)
-        ads[0].droid.phoneSetPreferredNetworkTypeForSubscription(
+        ads[0].droid.telephonySetPreferredNetworkTypeForSubscription(
                 RAT_3G, self.sim_sub_ids[0][0])
         set_call_state_listen_level(self.log, ads[0], False,
             self.sim_sub_ids[1][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[1], self.sim_sub_ids[1][0], True, True)
-        ads[1].droid.phoneSetPreferredNetworkTypeForSubscription(
+        ads[1].droid.telephonySetPreferredNetworkTypeForSubscription(
                 RAT_3G, self.sim_sub_ids[1][0])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3134,7 +3134,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 return False
 
             # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
                 return False
 
@@ -3186,7 +3186,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 return False
 
             # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
                 return False
 
@@ -3395,7 +3395,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 return False
 
             # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
                 return False
 
@@ -3446,7 +3446,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 return False
 
             # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.getPhoneType() != PHONE_TYPE_GSM):
+            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
                 self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
                 return False
 
