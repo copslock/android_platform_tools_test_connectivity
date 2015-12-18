@@ -18,7 +18,7 @@ import pprint
 import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.event_dispatcher import IllegalStateError
+from acts.controllers.event_dispatcher import IllegalStateError
 from queue import Empty
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
