@@ -24,7 +24,7 @@ import warnings
 from queue import Empty
 from .tel_defines import *
 from .tel_lookup_tables import *
-from acts.event_dispatcher import EventDispatcher
+from acts.controllers.event_dispatcher import EventDispatcher
 from acts.utils import load_config
 from acts.controllers.android_device import AndroidDevice
 from acts.logger import LoggerProxy
