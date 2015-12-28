@@ -19,7 +19,7 @@
 
 import time
 from acts.utils import load_config
-
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -29,13 +29,12 @@ from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
-
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
@@ -53,35 +52,32 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import WifiUtils
-
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
-from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
-from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import \
     phone_setup_iwlan_cellular_preferred
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
-from acts.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import phone_idle_2g
+from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
+from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
+from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
 class TelLiveVoiceTest(TelephonyBaseTest):
 

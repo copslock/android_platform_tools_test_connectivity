@@ -17,7 +17,13 @@
 Sanity tests for voice tests in telephony
 """
 from acts.controllers.tel.md8475a import BtsBandwidth
-from acts.test_utils.tel.tel_test_anritsu_utils import *
+from acts.test_utils.tel.tel_test_anritsu_utils import GSM_BAND_PCS1900
+from acts.test_utils.tel.tel_test_anritsu_utils import GSM_BAND_GSM850
+from acts.test_utils.tel.tel_test_anritsu_utils import LTE_BAND_2
+from acts.test_utils.tel.tel_test_anritsu_utils import LTE_BAND_4
+from acts.test_utils.tel.tel_test_anritsu_utils import LTE_BAND_12
+from acts.test_utils.tel.tel_test_anritsu_utils import WCDMA_BAND_1
+from acts.test_utils.tel.tel_test_anritsu_utils import WCDMA_BAND_2
 
 # Different Cell configurations
 # TMO bands

@@ -19,15 +19,36 @@
 Sanity tests for connectivity tests in telephony
 """
 
-from acts.base_test import BaseTestClass
+import time
+from acts.controllers.tel._anritsu_utils import AnritsuError
 from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import VirtualPhoneStatus
-from acts.test_utils.tel.tel_test_anritsu_utils import *
-from acts.controllers.tel._anritsu_utils import AnritsuError
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
-from acts.utils import rand_ascii_str
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import MOBILE_ORIGINATED
+from acts.test_utils.tel.tel_defines import MOBILE_TERMINATED
+from acts.test_utils.tel.tel_defines import RAT_1XRTT
+from acts.test_utils.tel.tel_defines import RAT_GSM
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import RAT_WCDMA
+from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_test_anritsu_utils import \
+    NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+from acts.test_utils.tel.tel_test_anritsu_utils import \
+    NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_WCDMA_PREF
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_1x
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.tel_test_anritsu_utils import sms_mo_send
+from acts.test_utils.tel.tel_test_anritsu_utils import sms_mt_receive_verify
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.utils import rand_ascii_str
+
 
 SINGLE_PART_LEN = 40
 MULTI_PART_LEN = 180

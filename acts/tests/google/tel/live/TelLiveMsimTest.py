@@ -18,7 +18,6 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
 from queue import Empty
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
@@ -37,9 +36,6 @@ from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts.utils import load_config
-from acts.test_utils.wifi_test_utils import reset_droid_wifi
-from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
 
 class TelLiveMsimTest(TelephonyBaseTest):
 

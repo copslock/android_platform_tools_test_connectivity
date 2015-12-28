@@ -18,16 +18,33 @@
 """
 Sanity tests for voice tests in telephony
 """
-from acts.base_test import BaseTestClass
-from acts.controllers.tel.md8475a import MD8475A
+import time
+
 from acts.controllers.tel._anritsu_utils import AnritsuError
-from acts.controllers.tel.md8475a import VirtualPhoneStatus
-from acts.test_utils.tel.tel_test_anritsu_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
 from acts.controllers.tel.md8475a import CsfbType
+from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import VirtualPhoneAutoAnswer
+from acts.controllers.tel.md8475a import VirtualPhoneStatus
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANRITSU_REG_AND_CALL
+from acts.test_utils.tel.tel_defines import NetworkModeCdma
+from acts.test_utils.tel.tel_defines import NetworkModeGsmOnly
+from acts.test_utils.tel.tel_defines import NetworkModeGsmUmts
+from acts.test_utils.tel.tel_defines import NetworkModeLteCdmaEvdo
+from acts.test_utils.tel.tel_defines import NetworkModeLteGsmWcdma
+from acts.test_utils.tel.tel_test_anritsu_utils import call_mo_setup_teardown
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_1x
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte_1x
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte_wcdma
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.tel_test_utils import ensure_network_rat
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
 class TelLabEmergencyCallTest(TelephonyBaseTest):
 

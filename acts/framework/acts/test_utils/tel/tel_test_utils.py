@@ -15,18 +15,89 @@
 #   limitations under the License.
 
 import concurrent.futures
-import random
-import string
 import urllib.parse
 import time
-import warnings
 
 from queue import Empty
-from .tel_defines import *
-from .tel_lookup_tables import *
-from acts.controllers.event_dispatcher import EventDispatcher
-from acts.utils import load_config
 from acts.controllers.android_device import AndroidDevice
+from acts.controllers.event_dispatcher import EventDispatcher
+from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
+from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
+from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
+from acts.test_utils.tel.tel_defines import GEN_UNKNOWN
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
+from acts.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
+from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
+from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_VOICE_MAIL_COUNT
+from acts.test_utils.tel.tel_defines import NetworkModeLteOnly
+from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
+from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_7_DIGIT
+from acts.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_10_DIGIT
+from acts.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_11_DIGIT
+from acts.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_12_DIGIT
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
+from acts.test_utils.tel.tel_defines import RAT_1XRTT
+from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
+from acts.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
+from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
+from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
+from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+from acts.test_utils.tel.tel_defines import SIM_STATE_READY
+from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
+from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
+from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
+from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
+from acts.test_utils.tel.tel_defines import VOICE_MAIL_SERVER_RESPONSE_DELAY
+from acts.test_utils.tel.tel_defines import \
+    WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AIRPLANEMODE_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_INITIATION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CONNECTION_STATE_UPDATE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_DATA_SUB_CHANGE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_HANGUP_TO_IDLE_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_SMS_RECEIVE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_SMS_SENT_SUCCESS
+from acts.test_utils.tel.tel_defines import WAIT_TIME_TO_LEAVE_VOICE_MAIL
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import EventCallStateChanged
+from acts.test_utils.tel.tel_defines import EventConnectivityChanged
+from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
+from acts.test_utils.tel.tel_defines import EventDataSmsReceived
+from acts.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
+from acts.test_utils.tel.tel_defines import EventServiceStateChanged
+from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
+from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
+from acts.test_utils.tel.tel_lookup_tables import \
+    connection_type_from_type_string
+from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
+from acts.test_utils.tel.tel_lookup_tables import \
+    get_voice_mail_count_check_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_number_function
+from acts.test_utils.tel.tel_lookup_tables import \
+    network_preference_for_generaton
+from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
+from acts.test_utils.tel.tel_lookup_tables import \
+    rat_families_for_network_preference
+from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
+from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
+from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
+from acts.utils import load_config
 from acts.logger import LoggerProxy
 log = LoggerProxy()
 

@@ -18,17 +18,38 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
 from queue import Empty
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
+from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
+from acts.test_utils.tel.tel_defines import RAT_3G
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import setup_sim
+from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
 from acts.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.utils import load_config
 from acts.utils import rand_ascii_str
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-
 
 class TelLiveSmsTest(TelephonyBaseTest):
 

@@ -18,12 +18,46 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
-from queue import Empty
-from acts.test_utils.tel.tel_voice_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import CARRIER_VZW
+from acts.test_utils.tel.tel_defines import RAT_3G
+from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
+from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import get_call_uri
+from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import is_uri_equivalent
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import num_active_calls
+from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import setup_sim
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import swap_calls
+from acts.utils import load_config
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
 

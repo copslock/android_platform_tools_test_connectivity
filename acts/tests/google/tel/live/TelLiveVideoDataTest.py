@@ -16,15 +16,16 @@
 """
     Test Script for VT Data test
 """
-
-import time
-from queue import Empty
-
-from acts.base_test import BaseTestClass
-from acts.test_utils.tel.tel_video_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_video_utils import \
+    is_phone_in_call_video_bidirectional
+from acts.test_utils.tel.tel_video_utils import phone_setup_video
+from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts.utils import load_config
 
 class TelLiveVideoDataTest(TelephonyBaseTest):
 

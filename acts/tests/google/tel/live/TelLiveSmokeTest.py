@@ -18,15 +18,37 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
-from queue import Empty
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_data_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
-from acts.utils import load_config
-from acts.utils import rand_ascii_str
 from acts.keys import Config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import TETHERING_ENTITLEMENT_CHECK_TIMEOUT
+from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
+from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import get_network_rat
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.utils import load_config
+from acts.utils import rand_ascii_str
 
 SKIP = 'Skip'
 

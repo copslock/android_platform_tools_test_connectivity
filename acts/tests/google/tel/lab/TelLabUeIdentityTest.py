@@ -18,14 +18,29 @@
 """
 Tests for reading UE Identity
 """
-from acts.base_test import BaseTestClass
-from acts.controllers.tel.md8475a import MD8475A
+import time
 from acts.controllers.tel._anritsu_utils import AnritsuError
-from acts.test_utils.tel.tel_test_anritsu_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
+from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import UEIdentityType
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import RAT_1XRTT
+from acts.test_utils.tel.tel_defines import RAT_GSM
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import RAT_WCDMA
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANRITSU_REG_AND_OPER
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_WCDMA_PREF
+from acts.test_utils.tel.tel_test_anritsu_utils import read_ue_identity
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte
+from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 
 class TelLabUeIdentityTest(TelephonyBaseTest):
 
