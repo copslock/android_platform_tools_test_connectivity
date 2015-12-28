@@ -15,7 +15,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.base_test import BaseTestClass
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_atten_utils import set_rssi
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE

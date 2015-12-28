@@ -19,16 +19,31 @@ import time
 from queue import Empty
 from datetime import datetime
 
-from acts.controllers.tel.md8475a import BtsNumber
-from acts.controllers.tel.md8475a import BtsTechnology
-from acts.controllers.tel.md8475a import BtsNwNameEnable
-from acts.controllers.tel.md8475a import CsfbType
-from acts.controllers.tel.md8475a import ReturnToEUTRAN
-from acts.controllers.tel.md8475a import MD8475A
-from acts.controllers.tel.md8475a import BtsServiceState
-from acts.controllers.tel.md8475a import VirtualPhoneStatus
-from . tel_test_utils import *
 from acts.controllers.tel._anritsu_utils import AnritsuUtils
+from acts.controllers.tel.md8475a import BtsNumber
+from acts.controllers.tel.md8475a import BtsNwNameEnable
+from acts.controllers.tel.md8475a import BtsServiceState
+from acts.controllers.tel.md8475a import BtsTechnology
+from acts.controllers.tel.md8475a import CsfbType
+from acts.controllers.tel.md8475a import MD8475A
+from acts.controllers.tel.md8475a import ReturnToEUTRAN
+from acts.controllers.tel.md8475a import VirtualPhoneStatus
+from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
+from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
+from acts.test_utils.tel.tel_defines import RAT_1XRTT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_DROP
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_VIRTUAL_PHONE_STATE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import EventCmasReceived
+from acts.test_utils.tel.tel_defines import EventEtwsReceived
+from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
+from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
+from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts.test_utils.tel.tel_test_utils import wait_for_droid_not_in_call
 
 # Test PLMN information
 TEST_PLMN_LTE_NAME = "MD8475A_LTE"

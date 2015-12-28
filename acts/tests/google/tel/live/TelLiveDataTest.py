@@ -20,17 +20,61 @@
 import time
 from acts.base_test import BaseTestClass
 from queue import Empty
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.tel.tel_lookup_tables import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_data_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.utils import load_config
-from acts.utils import enable_doze
+from acts.test_utils.tel.tel_defines import GEN_2G
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import RAT_2G
+from acts.test_utils.tel.tel_defines import RAT_3G
+from acts.test_utils.tel.tel_defines import RAT_4G
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import TETHERING_ENTITLEMENT_CHECK_TIMEOUT
+from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
+from acts.test_utils.tel.tel_defines import \
+    WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_TETHERING_AFTER_REBOOT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_CONNECTION
+from acts.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
+from acts.test_utils.tel.tel_data_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connection
+from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
+from acts.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
+from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
+from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import setup_sim
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.wifi_test_utils import WifiEnums
 from acts.utils import disable_doze
-
-
+from acts.utils import enable_doze
+from acts.utils import load_config
+from acts.utils import rand_ascii_str
 
 class TelLiveDataTest(TelephonyBaseTest):
 

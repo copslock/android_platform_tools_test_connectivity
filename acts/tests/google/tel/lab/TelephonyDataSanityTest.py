@@ -21,12 +21,11 @@ Sanity tests for connectivity tests in telephony
 
 import time
 from queue import Empty
-from base_test import BaseTestClass
 
-from tel.md8475a import MD8475A
-from tel.md8475a import BtsNumber
-from tel.md8475a import BtsTechnology
-import tel_utils
+from acts.controllers.tel.md8475a import BtsNumber
+from acts.controllers.tel.md8475a import BtsTechnology
+from acts.controllers.tel.md8475a import MD8475A
+from acts.test_utils.tel import tel_test_utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 class TelephonyDataSanityTest(TelephonyBaseTest):

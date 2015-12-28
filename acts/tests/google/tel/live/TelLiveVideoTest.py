@@ -19,13 +19,48 @@
 
 import time
 from queue import Empty
-
-from acts.base_test import BaseTestClass
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_video_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
+from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
+from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL_PAUSED
+from acts.test_utils.tel.tel_defines import VT_VIDEO_QUALITY_DEFAULT
+from acts.test_utils.tel.tel_defines import VT_STATE_RX_ENABLED
+from acts.test_utils.tel.tel_defines import VT_STATE_TX_ENABLED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VIDEO_SESSION_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
+from acts.test_utils.tel.tel_defines import EventSessionEvent
+from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionEvent
+from acts.test_utils.tel.tel_defines import SessionEventRxPause
+from acts.test_utils.tel.tel_defines import SessionEventRxResume
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import disconnect_call_by_id
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import num_active_calls
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_video_enabled
+from acts.test_utils.tel.tel_video_utils import get_call_id_in_video_state
+from acts.test_utils.tel.tel_video_utils import \
+    is_phone_in_call_video_bidirectional
+from acts.test_utils.tel.tel_video_utils import is_phone_in_call_voice_hd
+from acts.test_utils.tel.tel_video_utils import phone_setup_video
+from acts.test_utils.tel.tel_video_utils import \
+    verify_video_call_in_expected_state
+from acts.test_utils.tel.tel_video_utils import video_call_downgrade
+from acts.test_utils.tel.tel_video_utils import video_call_modify_video
+from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts.test_utils.tel.tel_voice_utils import get_audio_route
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import set_audio_route
+from acts.utils import load_config
 
 class TelLiveVideoTest(TelephonyBaseTest):
 

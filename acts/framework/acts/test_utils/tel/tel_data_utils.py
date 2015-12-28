@@ -14,14 +14,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import random
-import string
 import time
-import warnings
 
 from acts.utils import rand_ascii_str
-from acts.test_utils.tel.tel_defines import *
-from acts.test_utils.tel.tel_test_utils import *
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
+from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 
 def wifi_tethering_cleanup(log, provider, client_list):
     """Clean up steps for WiFi Tethering.

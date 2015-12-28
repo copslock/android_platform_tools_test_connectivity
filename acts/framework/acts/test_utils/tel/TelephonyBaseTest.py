@@ -21,16 +21,16 @@ import time
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 
-from .tel_test_utils import ensure_phones_default_state
-from .tel_test_utils import get_sub_ids_for_sim_slots
-from .tel_test_utils import set_phone_screen_on
-from .tel_test_utils import set_phone_silent_mode
-from .tel_test_utils import setup_droid_properties
-from .tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
-from .tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
-from .tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
-from .tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
-from .tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
+from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
+from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
+from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
+from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 
 
 class TelephonyBaseTest(BaseTestClass):

@@ -16,7 +16,10 @@
 
 import time
 import math
-from .tel_defines import *
+from acts.test_utils.tel.tel_defines import ATTEN_MAX_VALUE
+from acts.test_utils.tel.tel_defines import ATTEN_MIN_VALUE
+from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 
 def get_atten(log, atten_obj):
     """Get attenuator current attenuation value.

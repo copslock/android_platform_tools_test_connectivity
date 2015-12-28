@@ -14,8 +14,64 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .tel_lookup_tables import *
-from .tel_test_utils import *
+import time
+from acts.test_utils.tel.tel_defines import CALL_PROPERTY_HIGH_DEF_AUDIO
+from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
+from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import GEN_2G
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
+from acts.test_utils.tel.tel_defines import RAT_1XRTT
+from acts.test_utils.tel.tel_defines import RAT_IWLAN
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import RAT_UMTS
+from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_TO_LEAVE_VOICE_MAIL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_WFC_ENABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts.test_utils.tel.tel_defines import NetworkModeCdma
+from acts.test_utils.tel.tel_defines import NetworkModeGsmOnly
+from acts.test_utils.tel.tel_defines import NetworkModeGsmUmts
+from acts.test_utils.tel.tel_defines import NetworkModeLteCdmaEvdo
+from acts.test_utils.tel.tel_defines import NetworkModeLteGsmWcdma
+from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_network_gen_for_subscription
+from acts.test_utils.tel.tel_test_utils import get_network_rat
+from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import \
+    wait_for_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
+from acts.test_utils.tel.tel_test_utils import \
+    wait_for_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_volte_enabled
+from acts.test_utils.tel.tel_test_utils import \
+    wait_for_voice_attach_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 
 def two_phone_call_leave_voice_mail(
         log,

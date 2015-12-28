@@ -18,17 +18,8 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
 from queue import Empty
-from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
-from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
+from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CAPABILITY_PHONE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
@@ -43,12 +34,16 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
-from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-
-
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
+from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
+from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import load_config
-
-
 
 class TelLivePreflightTest(TelephonyBaseTest):
 
