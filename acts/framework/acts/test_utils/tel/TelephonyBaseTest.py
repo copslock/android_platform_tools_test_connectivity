@@ -51,7 +51,7 @@ class TelephonyBaseTest(BaseTestClass):
             try:
                 for ad in self.android_devices:
                     ad.droid.logI("Started "+log_string)
-                # TODO: start QXDM Logging b/19002120
+                # TODO: b/19002120 start QXDM Logging
                 return fn(self, *args, **kwargs)
             except TestSignal:
                 raise
@@ -59,7 +59,7 @@ class TelephonyBaseTest(BaseTestClass):
                 self.log.error(str(e))
                 return False
             finally:
-                # TODO: stop QXDM Logging b/19002120
+                # TODO: b/19002120 stop QXDM Logging
                 for ad in self.android_devices:
                     try:
                         ad.adb.wait_for_device()
@@ -127,8 +127,8 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.adb.wait_for_device()
                     ad.take_bug_reports(
                         test_name, begin_time, self.android_devices)
-                    # FIXME(nharold): rename tombstone files correctly
-                    # TODO(nharold): make support generic and move to
+                    # TODO: b/25290103 rename tombstone files correctly
+                    # and make support generic and move to
                     # base_test and utils respectively
                     ad.adb.pull('/data/tombstones/', self.log_path)
                 except:

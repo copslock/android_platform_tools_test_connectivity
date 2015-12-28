@@ -35,12 +35,12 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
                     "test_data_conn_state_when_access_enabled",
                     "test_data_conn_state_when_access_disabled",
                     )
-        self.anritsu = MD8475A(tel_utils.MD8475A_IP_ADDRESS)
+        self.anritsu = MD8475A(tel_test_utils.MD8475A_IP_ADDRESS)
 
     def setup_test(self):
-        self.lte_bts, self.wcdma_bts = tel_utils.set_system_model(self.anritsu,
+        self.lte_bts, self.wcdma_bts = tel_test_utils.set_system_model(self.anritsu,
                                                                   "LTE_WCDMA")
-        tel_utils.init_phone(self.droid, self.ed)
+        tel_test_utils.init_phone(self.droid, self.ed)
         self.droid.telephonyStartTrackingServiceStateChange()
         self.droid.telephonyStartTrackingDataConnectionStateChange()
         self.log.info("Starting Simulation")
@@ -53,7 +53,7 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
         self.log.info("Stopping Simulation")
         self.anritsu.stop_simulation()
         # turn off modem
-        tel_utils.turn_off_modem(self.droid)
+        tel_test_utils.turn_off_modem(self.droid)
 
     def teardown_class(self):
         self.anritsu.disconnect()
@@ -89,16 +89,16 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
         '''
         test_status = "failed"
         # turn on modem to start registration
-        tel_utils.turn_on_modem(self.droid)
+        tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_utils.wait_for_network_registration(self.ed,
+        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
                                                                 self.anritsu,
                                                                 self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_utils.wait_for_data_state(self.ed,
+            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
                                                            self.log,
                                                            "DATA_CONNECTED",
                                                            120)
@@ -126,16 +126,16 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
         '''
         test_status = "failed"
         # turn on modem to start registration
-        tel_utils.turn_on_modem(self.droid)
+        tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_utils.wait_for_network_registration(self.ed,
+        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
                                                                  self.anritsu,
                                                                  self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_utils.wait_for_data_state(self.ed,
+            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
                                                                self.log,
                                                                "DATA_CONNECTED",
                                                                120)
@@ -145,7 +145,7 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
             self.log.info("Disabling data access")
             self.droid.telephonyToggleDataConnection(False)
             self.log.info("Waiting for data state: DATA_DISCONNECTED")
-            test_status, event = tel_utils.wait_for_data_state(self.ed,
+            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
                                                             self.log,
                                                             "DATA_DISCONNECTED",
                                                             120)

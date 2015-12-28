@@ -181,15 +181,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                       "test_call_epdg_wfc_wifi_preferred_e4g_disabled_wifi_not_connected",
                       "test_call_epdg_wfc_wifi_preferred_e4g_disabled_leave_wifi_coverage",
 
-
-                      # FIXME
-                      # TODO(yangxliu): Below Not verified yet.
-                      # These need to set Cellular RSSI lower than -116dBm.
-                      # However, current shield box can only make Cellular RSSI
-                      # as low as ~ -116dBm. So These tests logic need to
-                      # modify/verify once shield box have the capability to
-                      # set Cellular RSSI lower.
-
                       # ePDG Active-Mode Mobility: Hand-in, Hand-out test
                       "test_hand_out_cellular_preferred",
                       "test_hand_in_cellular_preferred",
@@ -325,14 +316,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def teardown_class(self):
 
-        for ad in self.android_devices:
-            #TODO : Move these "always" calls to generic setup/cleanup function
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
+        super().teardown_class()
+
         self.android_devices[0].droid.stopTrackingSignalStrengths()
         return True
 
@@ -492,18 +477,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         self.log.info("_phone_wait_for_not_wfc: WFC_disabled is {}".format(result))
         if not result:
             return False
-        # Check network RAT. Should not be iwlan
-        # TODO: Because of b/24276954, this check will fail for BH/Angler/Shamu
-        # So temporarily disable this check.
-        # Re-enable this check after b/24276954 is fixed.
-        """
-        nw_type = get_network_rat(self.log, self.android_devices[0],
-            NETWORK_SERVICE_DATA)
-        if nw_type == RAT_IWLAN:
-            self.log.error("_phone_wait_for_not_wfc Data Rat is {}, expecting not {}".
-                           format(nw_type, RAT_IWLAN))
-            return False
-        """
+        # TODO: b/26338343 Need to check Data RAT. Data RAT should not be iwlan.
         return True
     def _phone_wait_for_wfc(self):
         result = wait_for_wfc_enabled(self.log, self.android_devices[0],
@@ -3159,12 +3133,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self.log.error("Phone hand-in to wfc.")
             return False
 
-        # TODO(yangxliu) Currently shield box can set Cell RSSI as low as -116dBm
-        # In such RSSI, call will not drop nor hand over to 3g.
-        # Need to fix this logic once shield box can set Cell RSSI lower.
-        return True
-        # FIXME
-        # Make sure phone either drop or hands over to 2g/3g.
         if is_phone_not_in_call(self.log, self.android_devices[0]):
             self.log.info("Call drop.")
             return True
@@ -3184,9 +3152,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should not hand-in to WFC.
         PhoneA should either drop or hands over to 3g/2g.
         """
-        # TODO(yangxliu) Currently shield box can set Cell RSSI as low as -116dBm
-        # In such RSSI, call will not drop nor hand over to 3g.
-        # Need to fix this logic once shield box can set Cell RSSI lower.
         return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
                                         "mo",
                                         self._wfc_set_wifi_strong_cell_strong,
@@ -3532,9 +3497,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        # TODO(yangxliu) Currently shield box can set Cell RSSI as low as -116dBm
-        # In such RSSI, phone (cellular preferred mode) will not select to iwlan.
-        # Need to fix this logic once shield box can set Cell RSSI lower.
         return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
                                         "mo",
                                         self._wfc_set_wifi_strong_cell_absent,

@@ -1463,7 +1463,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1523,7 +1523,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1585,7 +1585,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1647,7 +1647,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1709,7 +1709,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1771,7 +1771,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1828,7 +1828,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        # TODO : Make this a parameter
+        # TODO: b/26338422 Make this a parameter
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
@@ -1897,7 +1897,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
                            format(call_id, ads[0].droid.telecomCallGetCallState(call_id)))
             return False
-        # TODO: Future add voice check.
+        # TODO: b/26296375 add voice check.
 
         self.log.info("Hold call_id {} on PhoneA".format(call_id))
         ads[0].droid.telecomCallHold(call_id)
@@ -1906,7 +1906,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Call_id:{}, state:{}, expected: STATE_HOLDING".
                            format(call_id, ads[0].droid.telecomCallGetCallState(call_id)))
             return False
-        # TODO: Future add voice check.
+        # TODO: b/26296375 add voice check.
 
         self.log.info("Unhold call_id {} on PhoneA".format(call_id))
         ads[0].droid.telecomCallUnhold(call_id)
@@ -1915,7 +1915,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
                            format(call_id, ads[0].droid.telecomCallGetCallState(call_id)))
             return False
-        # TODO: Future add voice check.
+        # TODO: b/26296375 add voice check.
 
         if not verify_incall_state(self.log, [ads[0], ads[1]], True):
             self.log.error("Caller/Callee dropped call.")

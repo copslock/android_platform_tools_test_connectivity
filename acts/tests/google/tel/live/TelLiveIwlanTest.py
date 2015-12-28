@@ -55,7 +55,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         self.wifi_network_pass = self.user_params["wifi_network_pass"]
 
-    # TODO: Set pass/fail criteria
+    # TODO: b/26338119 Set pass/fail criteria
     @TelephonyBaseTest.tel_test_wrap
     def test_iwlan_setup_delay_wifi_on(self):
 
@@ -95,7 +95,6 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         WifiUtils.wifi_connect(
             self.log, ad, self.wifi_network_ssid, self.wifi_network_pass)
 
-        # FIXME: bug/25296245
         ad.droid.wakeUpNow()
 
         if not wait_for_wifi_data_connection(
@@ -149,7 +148,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         wait_for_not_network_rat(self.log, ad, RAT_FAMILY_WLAN,
             voice_or_data=NETWORK_SERVICE_DATA)
 
-        # TODO: Format the output nicely in the log
+        # TODO: b/26337885 Format the output nicely in the log
         self.log.info(time_values)
         return True
 
@@ -205,7 +204,6 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         WifiUtils.wifi_connect(
             self.log, ad, self.wifi_network_ssid, self.wifi_network_pass)
 
-        # FIXME: bug/25296245
         ad.droid.wakeUpNow()
 
         if not wait_for_wifi_data_connection(
@@ -219,7 +217,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             self.log.error("No data over WiFi!")
             return False
 
-        # FIXME this number should be a parameter
+        # TODO: b/26338116 this number should be a parameter
         for i in range(1, 6):
 
             self.log.info("Step {}-1: Set WiFi Preferred".format(i))
@@ -313,14 +311,13 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
         set_wfc_mode(self.log, ad, "WIFI_PREFERRED")
 
-        # FIXME this number should be a parameter
+        # TODO: b/26338116 this number should be a parameter
         for i in range(1, 6):
 
             self.log.info("Step {}-1: Connect to WiFi".format(i))
 
             iwlan_in_func()
 
-            # FIXME: bug/25296245
             ad.droid.wakeUpNow()
 
             if not wait_for_wifi_data_connection(

@@ -95,8 +95,8 @@ from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_lookup_tables import \
     rat_families_for_network_preference
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
-from acts.test_utils.tel.tel_lookup_tables import rat_family_from_type
-from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_type
+from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
+from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
 from acts.utils import load_config
 from acts.logger import LoggerProxy
 log = LoggerProxy()
@@ -770,8 +770,8 @@ def call_reject_leave_message_for_subscription(log, ad_caller, ad_callee,
             raise _CallSequenceException(
                 "Caller not in correct state!")
 
-        # TODO: Need to play some sound to leave message. Otherwise carrier
-        # voice mail server have a big chance to drop this voice mail.
+        # TODO: b/26293512 Need to play some sound to leave message.
+        # Otherwise carrier voice mail server may drop this voice mail.
 
         time.sleep(wait_time_in_call)
 
@@ -1190,7 +1190,8 @@ def wait_for_cell_data_connection_for_subscription(log, ad, sub_id, state,
     ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(sub_id)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
     try:
-        # TODO There is no framework API to get data connection state by sub id
+        # TODO: b/26293147 There is no framework API to get data connection
+        # state by sub id
         data_state = ad.droid.telephonyGetDataConnectionState()
         if data_state == state_str:
             return _wait_for_nw_data_connection(log, ad, state,
@@ -1210,11 +1211,11 @@ def wait_for_cell_data_connection_for_subscription(log, ad, sub_id, state,
         # data connection state.
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
-        # will remove this sleep once bug fixed.
 
-        # FIXME: previously we use _is_data_connection_state_match
-        # but telephonyGetDataConnectionState sometimes return wrong value. (b/22612607)
-        # Use _is_network_connected_state_match temporarily, until b/22612607 fixed.
+        # Previously we use _is_data_connection_state_match,
+        # but telephonyGetDataConnectionState sometimes return wrong value.
+        # The bug is tracked here: b/22612607
+        # So we use _is_network_connected_state_match.
 
         if _wait_for_droid_in_state(log, ad,
             WAIT_TIME_CONNECTION_STATE_UPDATE, _is_network_connected_state_match,
@@ -1333,7 +1334,6 @@ def _wait_for_nw_data_connection(log, ad, is_connected, connection_type=None,
         # data connection state.
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
-        # will remove this sleep once bug fixed.
         if _wait_for_droid_in_state(log, ad,
             WAIT_TIME_CONNECTION_STATE_UPDATE, _is_network_connected_state_match,
             is_connected):
@@ -1445,8 +1445,7 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     Raises:
         TelTestUtilsError if platform does not support VoLTE.
     """
-    # TODO Need to take care of sub_id. No framework API support to get IMS
-    # setting for subscription
+    # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         raise TelTestUtilsError("VoLTE not supported by platform.")
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
@@ -1609,9 +1608,16 @@ def wait_for_voice_attach_for_subscription(log, ad, sub_id, max_time):
         Return True if device attach voice within max_time.
         Return False if timeout.
     """
-    return _wait_for_droid_in_state_for_subscription(
+    if not _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_time, _is_attached_for_subscription,
-        NETWORK_SERVICE_VOICE)
+        NETWORK_SERVICE_VOICE):
+        return False
+
+    # TODO: b/26295983 if pone attach to 1xrtt from unknown, phone may not
+    # receive incoming call immediately.
+    if ad.droid.telephonyGetCurrentVoiceNetworkType() == RAT_1XRTT:
+        time.sleep(WAIT_TIME_FOR_1XRTT_VOICE_ATTACH)
+    return True
 
 def wait_for_data_attach(log, ad, max_time):
     """Wait for android device to attach on data.
@@ -1974,7 +1980,7 @@ def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
                      ad_rx.droid.subscriptionGetDefaultSmsSubId(),
                      array_message)
 
-#FIXME: This function is still a WIP and is disabled
+#TODO: b/21569494 This function is still a WIP and is disabled
 def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         subid_rx, array_payload):
     """Send SMS, receive SMS, and verify content and sender's number.
@@ -2080,10 +2086,10 @@ def ensure_network_rat_for_subscription(log, ad, sub_id,
              "data: {}(family: {})".
              format(ad.serial, network_preference, rat_family, voice_or_data,
                 ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-                rat_family_from_type(
+                rat_family_from_rat(
                     ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
                 ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
-                rat_family_from_type(
+                rat_family_from_rat(
                     ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))))
     return result
 
@@ -2122,10 +2128,10 @@ def ensure_network_preference_for_subscription(log, ad, sub_id,
              "data: {}(family: {})".
              format(ad.serial, network_preference, rat_family_list, voice_or_data,
                 ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-                rat_family_from_type(
+                rat_family_from_rat(
                     ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
                 ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
-                rat_family_from_type(
+                rat_family_from_rat(
                     ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))))
     return result
 
@@ -2184,10 +2190,10 @@ def ensure_network_generation_for_subscription(log, ad, sub_id, generation,
              "data: {}(family: {})".
              format(ad.serial, network_preference, generation, voice_or_data,
                 ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-                rat_generation_from_type(
+                rat_generation_from_rat(
                     ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id)),
                 ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
-                rat_generation_from_type(
+                rat_generation_from_rat(
                     ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))))
 
     return result
@@ -2269,7 +2275,7 @@ def is_droid_in_rat_family_list_for_subscription(log, ad, sub_id,
         nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
         if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
             continue
-        if rat_family_from_type(nw_rat) in rat_family_list:
+        if rat_family_from_rat(nw_rat) in rat_family_list:
             return True
     return False
 
@@ -2315,7 +2321,7 @@ def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen, voi
         if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
             continue
 
-        if rat_generation_from_type(nw_rat) == nw_gen:
+        if rat_generation_from_rat(nw_rat) == nw_gen:
             return True
         else:
             return False
@@ -2389,7 +2395,7 @@ def get_network_gen_for_subscription(log, ad, sub_id, voice_or_data):
         Current voice/data network generation.
     """
     try:
-        return rat_generation_from_type(get_network_rat_for_subscription(log, ad,
+        return rat_generation_from_rat(get_network_rat_for_subscription(log, ad,
                                                           sub_id, voice_or_data))
     except KeyError:
         log.error("KeyError happened in get_network_gen, ad:{}, d/v: {}, rat: {}".
@@ -2439,8 +2445,8 @@ def ensure_phone_default_state(log, ad):
         ad.droid.telecomEndCall()
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
-    # FIXME: bug/23906084 We shouldn't force the device using modes unavailable
-    #        to a normal user
+    # TODO: b/26348141 We should remove this code or make it generic.
+    # The purpose of this code is to recover DUT if b/23906084 happens.
     if is_droid_in_rat_family(log, ad, RAT_FAMILY_GSM, NETWORK_SERVICE_VOICE):
         log.error("Device is stuck in GSM... Attempting to Un-stick")
         ad.droid.telephonySetPreferredNetworkTypes(NetworkModeLteOnly)
@@ -2814,7 +2820,7 @@ def get_call_uri(ad, call_id):
     except:
         return None
 
-# FIXME: Remove wrapper class once wifi_utils methods updated
+# TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
 class WifiUtils():
 
     from acts.test_utils.wifi_test_utils \

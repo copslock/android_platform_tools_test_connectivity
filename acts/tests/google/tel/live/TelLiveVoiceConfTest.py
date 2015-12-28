@@ -888,7 +888,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         if not verify_incall_state(self.log, participant_list, True):
             return False
-        # TODO(yangxliu): use difference method to verify call merged for 1x.
         if (CALL_CAPABILITY_MERGE_CONFERENCE in
             host.droid.telecomCallGetCapabilities(call_conf_id)):
             self.log.error("Merge conference failed.")
@@ -1613,22 +1612,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[2]], False):
             return False
 
-        # Given the fact that VZW VoLTE(b/18413009),
-        # Even if all participants drop, Conference call is active is WAI.
-        # So return True without checking.
-        # TODO: delete operator-specific code.
-        sub_id = ads[0].droid.subscriptionGetDefaultVoiceSubId()
-        if(ads[0].cfg['subscription'][sub_id]['operator'] == CARRIER_VZW):
-            ads[0].droid.telecomEndCall()
-            ads[1].droid.telecomEndCall()
-            return True
-        else:
-            self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-            ads[1].droid.telecomEndCall()
-            time.sleep(WAIT_TIME_IN_CALL)
-            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
-                return False
-            return True
+        # Because of b/18413009, VZW VoLTE conference host will not drop call
+        # even if all participants drop. The reason is VZW network is not
+        # providing such information to DUT.
+        # So this test probably will fail on the last step for VZW.
+        self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
+        ads[1].droid.telecomEndCall()
+        time.sleep(WAIT_TIME_IN_CALL)
+        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
+            return False
+        return True
 
     def _merge_cep_conference_call(self, call_ab_id, call_ac_id):
         """Merge CEP conference call.
@@ -2004,7 +1997,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                                   ad_verify.droid.telecomCallGetCallState(call_id),
                                   call_state))
             return False
-        # TODO: Future add voice check.
+        # TODO: b/26296375 add voice check.
 
         if not verify_incall_state(self.log, ads_active, True):
             return False

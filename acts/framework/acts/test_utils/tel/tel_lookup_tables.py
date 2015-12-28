@@ -16,14 +16,10 @@
 from acts.utils import NexusModelNames
 from acts.test_utils.tel import tel_defines
 
-# TODO: rename to remove the word "type"
-# rat_family_from_rat()
-def rat_family_from_type(rat_type):
+def rat_family_from_rat(rat_type):
     return _TelTables.technology_tbl[rat_type]['rat_family']
 
-# TODO: rename to remove the word "type"
-# rat_generation_from_rat()
-def rat_generation_from_type(rat_type):
+def rat_generation_from_rat(rat_type):
     return _TelTables.technology_tbl[rat_type]['generation']
 
 def network_preference_for_generaton(generation, operator):
@@ -53,7 +49,6 @@ def network_mode_by_operator_generation(operator, generation):
     except KeyError:
         return None
 
-# TODO: Create a networking lookup tables file and move
 def connection_type_from_type_string(input_string):
     if input_string in _ConnectionTables.connection_type_tbl:
         return _ConnectionTables.connection_type_tbl[input_string]
@@ -101,8 +96,9 @@ class _ConnectionTables():
         'MOBILE': tel_defines.NETWORK_CONNECTION_TYPE_CELL,
         'MOBILE_DUN': tel_defines.NETWORK_CONNECTION_TYPE_CELL,
         'MOBILE_HIPRI': tel_defines.NETWORK_CONNECTION_TYPE_HIPRI,
-        # TODO: add support for 'MOBILE_SUPL', 'MOBILE_HIPRI', 'MOBILE_FOTA',
-        # 'MOBILE_IMS', 'MOBILE_CBS', 'MOBILE_IA', 'MOBILE_EMERGENCY'
+        # TODO: b/26296489 add support for 'MOBILE_SUPL', 'MOBILE_HIPRI',
+        # 'MOBILE_FOTA', 'MOBILE_IMS', 'MOBILE_CBS', 'MOBILE_IA',
+        # 'MOBILE_EMERGENCY'
         'MOBILE_MMS': tel_defines.NETWORK_CONNECTION_TYPE_MMS
     }
 
@@ -263,7 +259,6 @@ class _TelTables():
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UMTS
         },
-        # TODO: Confirm whether this is for IS-95
         tel_defines.RAT_CDMA: {
             'is_voice_rat': True,
             'is_data_rat': False,

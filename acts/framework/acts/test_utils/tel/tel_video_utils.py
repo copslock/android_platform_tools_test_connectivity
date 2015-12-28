@@ -187,7 +187,6 @@ def is_phone_in_call_video_for_subscription(log, ad, sub_id, video_state=None):
                 VT_STATE_RX_PAUSED: True,
                 VT_STATE_BIDIRECTIONAL: True,
                 VT_STATE_BIDIRECTIONAL_PAUSED: True,
-                VT_STATE_PAUSED: False,
                 VT_STATE_STATE_INVALID: False
             }[state]:
                 return True
@@ -429,7 +428,7 @@ def wait_and_answer_video_call_for_subscription(
 
     ringing_call_id = None
 
-    #FIXME: magic polling loop
+    #TODO: b/26346479 use new API to accept ringing call with video state.
     for i in range(10):
         calls = ad.droid.telecomCallGetCallIds()
         for call in calls:
@@ -437,7 +436,6 @@ def wait_and_answer_video_call_for_subscription(
             if call_state == CALL_STATE_RINGING:
                 ringing_call_id = call
                 break
-        #FIXME: magic number is magical
         time.sleep(.2)
 
     if not ringing_call_id:
@@ -514,7 +512,8 @@ def video_call_setup_teardown(
         incall_ui_display)
 
 
-#TODO: Might be able to refactor call_setup_teardown and add. Minimal changes.
+# TODO: b/26337151 Might be able to re-factor call_setup_teardown and add.
+# Minimal changes.
 def video_call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup=None,
         video_state=VT_STATE_BIDIRECTIONAL, verify_caller_func=None,
@@ -572,10 +571,9 @@ def video_call_setup_teardown_for_subscription(
             raise _CallSequenceException("Answer call fail.")
 
         # ensure that all internal states are updated in telecom
-        # FIXME: more magic sleeps
-        time.sleep(2)
+        time.sleep(WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE)
 
-        # Check if caller/callee dropped call. This is temporary code.
+        # Check if caller/callee dropped call.
         if not verify_incall_state(log, [ad_callee, ad_caller], True):
             raise _CallSequenceException("Call Drop!")
         # Check Callee first
@@ -587,7 +585,7 @@ def video_call_setup_teardown_for_subscription(
             raise _CallSequenceException(
                 "Caller not in correct state!")
 
-        #FIXME: Replace with reducing the volume as we want
+        # TODO: b/26291165 Replace with reducing the volume as we want
         # to test route switching
         ad_caller.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
         ad_callee.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
@@ -702,7 +700,8 @@ def video_call_modify_video(
         log.error("verify_func_between_request_and_response failed.")
         return False
 
-    #FIXME: Replace with reducing the volume as we want to test route switching
+    # TODO: b/26291165 Replace with reducing the volume as we want
+    # to test route switching
     ad_requester.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
 
     ad_requester.droid.telecomCallVideoStartListeningForEvent(
@@ -723,7 +722,8 @@ def video_call_modify_video(
         ad_requester.droid.telecomCallVideoStopListeningForEvent(
             call_id_requester, EventSessionModifyResponsetRceived)
 
-    #FIXME: Replace with reducing the volume as we want to test route switching
+    # TODO: b/26291165 Replace with reducing the volume as we want
+    # to test route switching
     ad_responder.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
 
     return True
@@ -788,7 +788,6 @@ def video_call_downgrade(log,
     Returns:
         True if downgrade succeed.
     """
-    # TODO(yangxliu): This util may need further change.
     if (call_id_requester is None) or (call_id_responder is None):
         log.error("call_id_requester: {}, call_id_responder: {}".
             format(call_id_requester, call_id_responder))
@@ -831,7 +830,7 @@ def video_call_downgrade(log,
             call_id_requester, EventSessionModifyResponsetRceived)
 
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-    # FIXME: Replace with reducing the volume as we want
+    # TODO: b/26291165 Replace with reducing the volume as we want
     # to test route switching
     ad_requester.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
     ad_responder.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)

@@ -84,7 +84,6 @@ class TelLiveMsimTest(TelephonyBaseTest):
             assert num, "Fail to get phone number on phoneA sim{}".format(i)
             self.phone_number_tbl[subId] = num
             setattr(self,"phone_number_0_sim" + str(i), num)
-            # TODO: we shouldn't access TelEnums directly: create accessor func
             operator_name = get_operator_name(
                 self.droid0.telephonyGetSimOperatorForSubscription(subId))
             self.operator_tbl[subId] = operator_name
@@ -252,7 +251,7 @@ class TelLiveMsimTest(TelephonyBaseTest):
                                    hangup = True, droid_hangup = self.droid0)
         if not result_call:
             self.log.error("Step4 verify call error")
-            # FIXME: Why doesn't this return a failure here!??!?
+            return False
         wait_for_data_connection_status(self.log, self.droid0, self.ed0, True)
 
         self.log.debug("Step5 verify internet: " + self.phone_number_0)
@@ -278,7 +277,7 @@ class TelLiveMsimTest(TelephonyBaseTest):
         Returns:
             True if pass.
         """
-        reset_droid_wifi(self.droid0, self.ed0)
+        reset_wifi(self.droid0, self.ed0)
         wifi_toggle_state(self.droid0, self.ed0, True)
         start_wifi_connection_scan(self.droid0, self.ed0)
         wifi_results = self.droid0.wifiGetScanResults()

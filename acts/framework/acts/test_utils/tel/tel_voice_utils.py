@@ -114,8 +114,7 @@ def two_phone_call_leave_voice_mail(
         log.error("Callee Failed to Reselect")
         return False
 
-    # Temporary hack to give phone enough time to register.
-    # TODO: Proper check using SL4A API.
+    # TODO: b/26337871 Need to use proper API to check phone registered.
     time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
     # Make call and leave a message.
@@ -162,8 +161,6 @@ def two_phone_call_short_seq(
         True: if call sequence succeed.
         False: for errors
     """
-# TODO: call_sequence_func. Define the sequence of calls
-
     ads = [phone_a, phone_b]
 
     call_params = [(ads[0], ads[1], ads[0],
@@ -184,8 +181,7 @@ def two_phone_call_short_seq(
             log.error("Phone B Failed to Reselect")
             return False
 
-        # Temporary hack to give phone enough time to register.
-        # TODO: Proper check using SL4A API.
+        # TODO: b/26337871 Need to use proper API to check phone registered.
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
         # Make call.
@@ -237,8 +233,6 @@ def two_phone_call_long_seq(
         True: if call sequence succeed.
         False: for errors
     """
-# TODO: call_sequence_func. Define the sequence of calls
-
     ads = [phone_a, phone_b]
 
     call_params = [(ads[0], ads[1], ads[0],
@@ -265,8 +259,7 @@ def two_phone_call_long_seq(
             log.error("Phone B Failed to Reselect")
             return False
 
-        # Temporary hack to give phone enough time to register.
-        # TODO: Proper check using SL4A API.
+        # TODO: b/26337871 Need to use proper API to check phone registered.
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
         # Make call.
@@ -462,9 +455,9 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
-    # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
-    if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
-        time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
+    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
+        WAIT_TIME_NW_SELECTION):
+        return False
 
     return phone_idle_csfb_for_subscription(log, ad, sub_id)
 
@@ -503,9 +496,9 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
         voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
-    # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
-    if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
-        time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
+    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
+        WAIT_TIME_NW_SELECTION):
+        return False
 
     return phone_idle_3g_for_subscription(log, ad, sub_id)
 
@@ -609,10 +602,6 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
                                           WAIT_TIME_NW_SELECTION):
         # if phone can not attach voice, try phone_setup_3g
         return phone_setup_3g_for_subscription(log, ad, sub_id)
-
-   # FIXME: Delete when telephonyGetVoiceNetworkType() is fixed
-    if get_operator_name(log, ad, sub_id) == CARRIER_VZW:
-        time.sleep(VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC)
 
     return True
 
@@ -738,12 +727,6 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id):
         voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in lte mode.".format(ad.serial))
         return False
-
-#    FIXME: Re-enable when telephonyGetVoiceNetworkType() is fixed
-#    FIXME:Support 2g
-#    if not wait_for_droid_in_network_generation(
-#            log, ad, WAIT_TIME_NW_SELECTION, RAT_3G, NETWORK_SERVICE_VOICE):
-#        return False
     return True
 
 
@@ -1045,7 +1028,7 @@ def swap_calls(log, ads, call_hold_id, call_active_id, num_swaps=1,
                     format(call_hold_id,
                            ads[0].droid.telecomCallGetCallState(call_hold_id)))
                 return False
-        # TODO: Future add voice check.
+        # TODO: b/26296375 add voice check.
 
         i += 1
 

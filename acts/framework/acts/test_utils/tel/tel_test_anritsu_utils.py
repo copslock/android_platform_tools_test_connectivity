@@ -324,7 +324,7 @@ def _init_evdo_bts(bts, user_params, cell_no):
     Returns:
         None
     """
-    #TODO
+    # TODO: b/26296702 add logic to initialize EVDO BTS
     pass
 
 
@@ -812,15 +812,15 @@ def verify_anritsu_received_sms(log, vp_handle, receiver_number, message, rat):
     split = receive_sms.split('&')
     text = ""
     if rat == RAT_1XRTT:
-        #TODO There is some problem when retreiving message with é from Anritsu.
-        #Anritsu receives the message with é.
+        # TODO: b/26296388 There is some problem when retrieving message with é
+        # from Anritsu.
         return True
     for i in range(len(split)):
         if split[i].startswith('Text='):
             text = split[i][5:]
             text = AnritsuUtils.gsm_decode(text)
             break
-    # TODO Verify Phone number
+    # TODO: b/26296388 Verify Phone number
     if text != message:
         log.error("Wrong message received")
         return False
@@ -1027,7 +1027,7 @@ def etws_receive_verify_message_lte_wcdma(log, ad, anritsu_handle,  serial_numbe
         event = ad.ed.pop_event(EventEtwsReceived, 60)
         status = True
         log.info(event)
-        #TODO Event data verification
+        # TODO: b/26296388 Event data verification
     except Empty:
         log.info("Timeout: Expected event is not received.")
 
@@ -1052,7 +1052,7 @@ def etws_receive_verify_message_cdma1x(log, ad, anritsu_handle,  serial_number,
     """
     status = False
     event = None
-    #TODO
+    # TODO: b/26296388 need to add logic to check etws.
     return status
 
 def read_ue_identity(log, ad, anritsu_handle, identity_type):
@@ -1080,7 +1080,6 @@ def get_lte_band(user_params, cell_no):
     Returns:
         LTE BAND to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_lte_band".format(cell_no)
     try:
         lte_band = user_params[key]
@@ -1101,7 +1100,6 @@ def get_wcdma_band(user_params, cell_no):
     Returns:
         WCDMA BAND to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_wcdma_band".format(cell_no)
     try:
         wcdma_band = user_params[key]
@@ -1122,7 +1120,6 @@ def get_gsm_band(user_params, cell_no):
     Returns:
         GSM BAND to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_gsm_band".format(cell_no)
     try:
         gsm_band = user_params[key]
@@ -1143,7 +1140,6 @@ def get_1x_band(user_params, cell_no):
     Returns:
         1X BAND to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_1x_band".format(cell_no)
     try:
         cdma_1x_band = user_params[key]
@@ -1163,7 +1159,6 @@ def get_wcdma_rac(user_params, cell_no):
     Returns:
         WCDMA RAC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_wcdma_rac".format(cell_no)
     try:
         wcdma_rac = user_params[key]
@@ -1184,7 +1179,6 @@ def get_gsm_rac(user_params, cell_no):
     Returns:
         GSM RAC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_gsm_rac".format(cell_no)
     try:
         gsm_rac = user_params[key]
@@ -1205,7 +1199,6 @@ def get_wcdma_lac(user_params, cell_no):
     Returns:
         WCDMA LAC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_wcdma_lac".format(cell_no)
     try:
         wcdma_lac = user_params[key]
@@ -1226,7 +1219,6 @@ def get_gsm_lac(user_params, cell_no):
     Returns:
         GSM LAC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_gsm_lac".format(cell_no)
     try:
         gsm_lac = user_params[key]
@@ -1247,7 +1239,6 @@ def get_lte_mcc(user_params, cell_no):
     Returns:
         LTE MCC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_lte_mcc".format(cell_no)
     try:
         lte_mcc = user_params[key]
@@ -1268,7 +1259,6 @@ def get_lte_mnc(user_params, cell_no):
     Returns:
         LTE MNC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_lte_mnc".format(cell_no)
     try:
         lte_mnc = user_params[key]
@@ -1289,7 +1279,6 @@ def get_wcdma_mcc(user_params, cell_no):
     Returns:
         WCDMA MCC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_wcdma_mcc".format(cell_no)
     try:
         wcdma_mcc = user_params[key]
@@ -1310,7 +1299,6 @@ def get_wcdma_mnc(user_params, cell_no):
     Returns:
         WCDMA MNC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_wcdma_mnc".format(cell_no)
     try:
         wcdma_mnc = user_params[key]
@@ -1331,7 +1319,6 @@ def get_gsm_mcc(user_params, cell_no):
     Returns:
         GSM MCC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_gsm_mcc".format(cell_no)
     try:
         gsm_mcc = user_params[key]
@@ -1352,7 +1339,6 @@ def get_gsm_mnc(user_params, cell_no):
     Returns:
         GSM MNC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_gsm_mnc".format(cell_no)
     try:
         gsm_mnc = user_params[key]
@@ -1373,7 +1359,6 @@ def get_1x_mcc(user_params, cell_no):
     Returns:
         1X MCC to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_1x_mcc".format(cell_no)
     try:
         cdma_1x_mcc = user_params[key]
@@ -1413,7 +1398,6 @@ def get_1x_sid(user_params, cell_no):
     Returns:
         1X SID to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_1x_sid".format(cell_no)
     try:
         cdma_1x_sid = user_params[key]
@@ -1434,7 +1418,6 @@ def get_1x_nid(user_params, cell_no):
     Returns:
         1X NID to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     key = "cell{}_1x_nid".format(cell_no)
     try:
         cdma_1x_nid = user_params[key]
@@ -1455,7 +1438,6 @@ def get_csfb_type(user_params):
     Returns:
         CSFB Type to be used
     """
-    #TODO : Need to re look in the logic of passing parameters to test case
     try:
         csfb_type = user_params["csfb_type"]
     except KeyError:
