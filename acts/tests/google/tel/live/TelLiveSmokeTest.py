@@ -85,7 +85,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up VoLTE.")
             return False
 
-        # TODO: this is hack to reduce call fail in VoLTE mode.
+        # This is to reduce call fail in VoLTE mode.
+        # TODO: b/26338170 remove sleep, use proper API to check DUT status.
         time.sleep(10)
 
         self.log.info("1. SMS in LTE idle.")
@@ -145,7 +146,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up CSFB_3G.")
             return False
 
-        # TODO: this is hack to reduce SMS send failure in CSFB mode.
+        # This is to reduce SMS send failure in CSFB mode.
+        # TODO: b/26338170 remove sleep, use proper API to check DUT status.
         time.sleep(10)
 
         self.log.info("1. SMS in LTE idle (no IMS).")

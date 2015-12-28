@@ -370,9 +370,11 @@ class TelLiveDataTest(TelephonyBaseTest):
                 WAIT_TIME_NW_SELECTION))
             return False
 
-        # Temporary hack to give phone enough time to register.
-        # TODO: Proper check using SL4A API.
-        time.sleep(5)
+        if not wait_for_voice_attach_for_subscription(
+            self.log, self.android_devices[0],
+            self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId(),
+            WAIT_TIME_NW_SELECTION):
+            return False
 
         self.log.info("Step1 WiFi is Off, Data is on Cell.")
         toggle_airplane_mode(self.log, self.android_devices[0], False)
@@ -1344,7 +1346,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        # TODO (yangxliu): Add more test for Hotspot SSID. b/23312590
         ads = self.android_devices
         if not self._test_setup_tethering(ads, RAT_4G):
             self.log.error("Verify 4G Internet access failed.")
@@ -1371,7 +1372,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        # TODO (yangxliu): Add more test for Hotspot password. b/23313568
         ads = self.android_devices
         if not self._test_setup_tethering(ads, RAT_4G):
             self.log.error("Verify 4G Internet access failed.")
@@ -1735,7 +1735,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(log, ads[0], self.wifi_network_ssid,
+        if ((not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                                      self.wifi_network_pass)) or
             (not verify_http_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")
@@ -1801,7 +1801,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(log, ads[0], self.wifi_network_ssid,
+        if ((not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                                      self.wifi_network_pass)) or
             (not verify_http_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")

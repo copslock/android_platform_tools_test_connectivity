@@ -145,7 +145,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
                     if(capability in device_capabilities[model] and
                        capability in operator_capabilities[operator]):
                         if not {
-                            # FIXME: make the check table global
+                            # TODO: b/26337715 make the check table global
                             CAPABILITY_PHONE: droid_has_phone,
                             CAPABILITY_OMADM: droid_has_provisioning,
                             CAPABILITY_VOLTE: droid_has_volte,

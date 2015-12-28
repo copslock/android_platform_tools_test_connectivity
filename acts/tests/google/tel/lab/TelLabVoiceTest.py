@@ -129,7 +129,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
                 pref_network_type = NETWORK_MODE_CDMA
             else:
                 phone_setup_func = phone_setup_csfb
-                network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+                pref_network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 
             self.ad.droid.telephonySetPreferredNetwork(pref_network_type)
             if not phone_setup_func(self.log, self.ad):

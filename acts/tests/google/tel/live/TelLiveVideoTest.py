@@ -1046,7 +1046,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_SPEAKER:
                 self.log.error("{} Audio is not on speaker.".format(ad.serial))
-                # TODO: Define expected behavior. Return false or not.
+                # TODO: b/26337892 Define expected audio route behavior.
 
             set_audio_route(self.log, ad, AUDIO_ROUTE_EARPIECE)
 
@@ -1150,7 +1150,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_SPEAKER:
                 self.log.error("{} Audio is not on speaker.".format(ad.serial))
-                # TODO: Define expected behavior. Return false or not.
+                # TODO: b/26337892 Define expected audio route behavior.
             set_audio_route(self.log, ad, AUDIO_ROUTE_EARPIECE)
 
         time.sleep(WAIT_TIME_IN_CALL)
@@ -1174,7 +1174,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
                 self.log.error("{} Audio is not on EARPIECE.".format(ad.serial))
-                # TODO: Define expected behavior. Return false or not.
+                # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
@@ -1203,7 +1203,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
                 self.log.error("{} Audio is not on EARPIECE.".format(ad.serial))
-                # TODO: Define expected behavior. Return false or not.
+                # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_video_call_in_expected_state(self.log, ads[0],
@@ -1229,7 +1229,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Verify both calls remain active.
         """
         # This test case is not supported by VZW.
-        # TODO: (b/21435901). Test will fail. 2nd Video call can not be added.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])),
@@ -1296,8 +1295,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneC.
         Hang up on PhoneA.
         """
-        # TODO (b/21437650):
-        # Test will fail. After established 2nd call ~15s, Phone C will drop call.
+        # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
+        # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])),
@@ -1376,8 +1375,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneC.
         Hang up on PhoneA.
         """
-        # TODO (b/21437650):
-        # Test will fail. After established 2nd call ~15s, Phone C will drop call.
+        # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
+        # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])),
@@ -1455,7 +1454,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Verify both calls remain active.
         """
         # This test case is not supported by VZW.
-        # TODO: (b/21435901). Test will fail. 2nd Video call can not be added.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])),
@@ -1901,7 +1899,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_SPEAKER:
                 self.log.error("{} Audio is not on speaker.".format(ad.serial))
-                # TODO: Define expected behavior. Return false or not.
+                # TODO: b/26337892 Define expected audio route behavior.
             set_audio_route(self.log, ad, AUDIO_ROUTE_EARPIECE)
 
         time.sleep(WAIT_TIME_IN_CALL)
@@ -2070,8 +2068,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
-        # TODO (b/21437650):
-        # Test will fail. After established 2nd call ~15s, Phone C will drop call.
+        # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
+        # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])),
@@ -2170,8 +2168,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Attempt to make a VT call from PhoneA to PhoneB,
         Verify the call succeed as Voice call.
         """
-        # TODO: Currently this test will fail at step3.
-        # Reason is b/21473800.
 
         self.log.info("Step1 Make sure Phones are able make VT call")
         ads = self.android_devices

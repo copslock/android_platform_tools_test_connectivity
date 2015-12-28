@@ -50,6 +50,9 @@ WAIT_TIME_TO_LEAVE_VOICE_MAIL = 30
 # callee start ringing
 WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
 
+# Time to wait after accept video call and before checking state
+WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE = 2
+
 # Time to wait after ad end a call and before get
 # "onCallStatehangedIdle" event
 WAIT_TIME_HANGUP_TO_IDLE_EVENT = 30
@@ -85,14 +88,17 @@ WAIT_TIME_IMS_REGISTRATION = 120
 # Max time to wait after initiating a call for telecom to report in-call
 WAIT_TIME_CALL_INITIATION = 15
 
-# Time to wait for VZW phone in phone setup function
-VZW_WAIT_TIME_IN_PHONE_SETUP_FUNC = 30
+# Time to wait for 1xrtt voice attach check
+# After DUT voice network type report 1xrtt (from unknown), it need to wait for
+# several seconds before the DUT can receive incoming call.
+WAIT_TIME_FOR_1XRTT_VOICE_ATTACH = 30
 
-# FIXME : This timer should only be used for wait after IMS Registration
+# TODO: b/26338156 WAIT_TIME_VOLTE_ENABLED and WAIT_TIME_WFC_ENABLED should only
+# be used for wait after IMS registration.
+
 # Max time to wait for VoLTE enabled flag to be True
 WAIT_TIME_VOLTE_ENABLED = WAIT_TIME_IMS_REGISTRATION + 20
 
-# FIXME : This timer should only be used for wait after IMS Registration
 # Max time to wait for WFC enabled flag to be True
 WAIT_TIME_WFC_ENABLED = WAIT_TIME_IMS_REGISTRATION + 50
 

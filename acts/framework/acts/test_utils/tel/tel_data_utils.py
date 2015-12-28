@@ -26,7 +26,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
-from acts.test_utils.tel.tel_test_utils import rat_generation_from_type
+from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
@@ -226,18 +226,11 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
     Returns:
         True if pass.
     """
-    # TODO: take wifi_cell_switching out of tel_data_utils.py
-    # b/23354769
-
     try:
         if not ensure_network_generation(log, ad, nw_gen, WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
-
-        # Temporary hack to give phone enough time to register.
-        # TODO: Proper check using SL4A API.
-        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
         # Ensure WiFi can connect to live network
         log.info("Make sure phone can connect to live network by WIFI")
@@ -251,7 +244,10 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
         toggle_airplane_mode(log, ad, False)
         WifiUtils.wifi_toggle_state(log, ad, True)
         ad.droid.telephonyToggleDataConnection(True)
-        #TODO: Add a check to ensure data routes through wifi here
+        if (not wait_for_wifi_data_connection(log, ad, True) or not
+                verify_http_connection(log, ad)):
+            log.error("Data is not on WiFi")
+            return False
 
         log.info("Step2 WiFi is Off, Data is on Cell.")
         WifiUtils.wifi_toggle_state(log, ad, False)
@@ -363,10 +359,6 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             WAIT_TIME_NW_SELECTION))
         return False
 
-    # Temporary hack to give phone enough time to register.
-    # TODO: Proper check using SL4A API.
-    time.sleep(5)
-
     try:
         log.info("Step1 Airplane Off, Data On.")
         toggle_airplane_mode(log, ad, False)
@@ -404,7 +396,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
                 NETWORK_SERVICE_DATA):
             log.error("Failed: droid is no longer on correct network")
             log.info("Expected:{}, Current:{}".format(nw_gen,
-                rat_generation_from_type(
+                rat_generation_from_rat(
                     get_network_rat_for_subscription(log, ad,
                     ad.droid.subscriptionGetDefaultSubId(),
                     NETWORK_SERVICE_DATA))))

@@ -75,6 +75,7 @@ WAKEUP_PING_TEST_NUMBER_OF_ALARM = math.ceil(
 class TelPowerTest(TelephonyBaseTest):
 
     def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
             # Note: For all these power tests, please do environment calibration
             # and baseline for pass criteria.
@@ -96,7 +97,6 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_idle_lte_volte_disabled_wakeup_ping",
             "test_power_idle_3g_wakeup_ping",
             )
-        TelephonyBaseTest.__init__(self, controllers)
 
     def setup_class(self):
         super().setup_class()
@@ -194,7 +194,6 @@ class TelPowerTest(TelephonyBaseTest):
                 format(average_current, pass_criteria))
 
     def _start_alarm(self):
-        # FIXME: This is temporary code to start Alarm.
         alarm_id = self.ad.droid.phoneStartRecurringAlarm(
             WAKEUP_PING_TEST_NUMBER_OF_ALARM,
             1000*WAKEUP_PING_TEST_WAKEUP_FREQ,
@@ -694,7 +693,7 @@ class TelPowerTest(TelephonyBaseTest):
                 self.user_params["pass_criteria_idle_lte_volte_enabled_wakeup_ping"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
-        # TODO: need a SL4A API to clear all existing alarms.
+        # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
         result = self._test_power_idle(
             "test_power_idle_lte_volte_enabled_wakeup_ping",
@@ -729,7 +728,7 @@ class TelPowerTest(TelephonyBaseTest):
                 self.user_params["pass_criteria_idle_lte_volte_disabled_wakeup_ping"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
-        # TODO: need a SL4A API to clear all existing alarms.
+        # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
         result = self._test_power_idle(
             "test_power_idle_lte_volte_disabled_wakeup_ping",
@@ -762,7 +761,7 @@ class TelPowerTest(TelephonyBaseTest):
                 self.user_params["pass_criteria_idle_3g_wakeup_ping"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
-        # TODO: need SL4A API to clear all existing alarms.
+        # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
         result = self._test_power_idle(
             "test_power_idle_3g_wakeup_ping",

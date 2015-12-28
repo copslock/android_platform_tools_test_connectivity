@@ -966,8 +966,7 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        # TODO  This test is failing now. It seems anritsu is not sending message.
-        # Need to debug
+        # TODO: b/26346258 Anritsu is not sending message.
         return self._setup_sms(set_system_model_1x, RAT_1XRTT, self.phoneNumber,
                                rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
     """ Tests End """
