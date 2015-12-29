@@ -95,8 +95,8 @@ from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_lookup_tables import \
     rat_families_for_network_preference
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
-from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
-from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
+from acts.test_utils.tel.tel_lookup_tables import rat_family_from_type
+from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_type
 from acts.utils import load_config
 from acts.logger import LoggerProxy
 log = LoggerProxy()
