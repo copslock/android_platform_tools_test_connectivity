@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/bin/env python3.4
 
 from setuptools import setup
 from setuptools import find_packages
