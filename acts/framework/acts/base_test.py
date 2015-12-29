@@ -250,8 +250,8 @@ class BaseTestClass(object):
             begin_time: Logline format timestamp taken when the test started.
         """
 
-    def _on_success(self, record):
-        """Proxy function to guarantee the base implementation of on_success is
+    def _on_pass(self, record):
+        """Proxy function to guarantee the base implementation of on_pass is
         called.
 
         Args:
@@ -263,9 +263,9 @@ class BaseTestClass(object):
         if msg:
             self.log.info(msg)
         self.log.info(RESULT_LINE_TEMPLATE % (test_name, record.result))
-        self.on_success(test_name, begin_time)
+        self.on_pass(test_name, begin_time)
 
-    def on_success(self, test_name, begin_time):
+    def on_pass(self, test_name, begin_time):
         """A function that is executed upon a test case passing.
 
         Implementation is optional.
@@ -586,7 +586,7 @@ class BaseTestClass(object):
         except TestPass as e:
             # Explicit test pass.
             tr_record.test_pass(e)
-            self._exec_func(self._on_success, tr_record)
+            self._exec_func(self._on_pass, tr_record)
         except TestSilent as e:
             # This is a trigger test for generated tests, suppress reporting.
             is_generate_trigger = True
@@ -604,7 +604,7 @@ class BaseTestClass(object):
             if verdict or (verdict is None):
                 # Test passed.
                 tr_record.test_pass()
-                self._exec_func(self._on_success, tr_record)
+                self._exec_func(self._on_pass, tr_record)
                 return
             # Test failed because it didn't return True.
             # This should be removed eventually.

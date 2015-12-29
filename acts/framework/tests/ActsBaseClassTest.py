@@ -62,8 +62,8 @@ class ActsBaseClassTest(BaseTestClass):
         """Make sure empty setup_test does not block.
         """
 
-    def on_success(self, test_name, begin_time):
-        self.log.info("In on_success.")
+    def on_pass(self, test_name, begin_time):
+        self.log.info("In on_pass.")
         msg = "%s should not have passed." % test_name
         expected_success = (
             "test_return_True",
