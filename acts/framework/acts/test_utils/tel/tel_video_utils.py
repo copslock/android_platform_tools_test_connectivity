@@ -14,9 +14,55 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.tel.tel_lookup_tables import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
+import time
+from queue import Empty
+from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
+from acts.test_utils.tel.tel_defines import CALL_STATE_RINGING
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
+from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
+from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL_PAUSED
+from acts.test_utils.tel.tel_defines import VT_STATE_RX_ENABLED
+from acts.test_utils.tel.tel_defines import VT_STATE_RX_PAUSED
+from acts.test_utils.tel.tel_defines import VT_STATE_TX_ENABLED
+from acts.test_utils.tel.tel_defines import VT_STATE_TX_PAUSED
+from acts.test_utils.tel.tel_defines import VT_STATE_STATE_INVALID
+from acts.test_utils.tel.tel_defines import VT_VIDEO_QUALITY_DEFAULT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_VIDEO_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_INITIATION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VIDEO_SESSION_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import EventCallStateChanged
+from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRequestReceived
+from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyResponseReceived
+from acts.test_utils.tel.tel_defines import EventSessionModifyResponsetRceived
+from acts.test_utils.tel.tel_defines import EventSessionModifyRequestRceived
+from acts.test_utils.tel.tel_test_utils import check_phone_number_match
+from acts.test_utils.tel.tel_test_utils import ensure_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import is_sub_event_match
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_ringing_event
+from acts.test_utils.tel.tel_test_utils import wait_for_video_enabled
+from acts.test_utils.tel.tel_voice_utils import is_call_hd
 
 def phone_setup_video(log, ad):
     """Setup phone default sub_id to make video call

@@ -20,15 +20,14 @@ Sanity tests for connectivity tests in telephony
 """
 
 import time
-from base_test import BaseTestClass
 
-from tel.md8475a import MD8475A
-from tel.md8475a import BtsTechnology
-from tel.md8475a import ProcessingStatus
-from tel.md8475a import BtsServiceState
-from tel.md8475a import TriggerMessageIDs
-from tel.md8475a import TriggerMessageReply
-import tel_utils
+from acts.controllers.tel.md8475a import BtsServiceState
+from acts.controllers.tel.md8475a import BtsTechnology
+from acts.controllers.tel.md8475a import MD8475A
+from acts.controllers.tel.md8475a import ProcessingStatus
+from acts.controllers.tel.md8475a import TriggerMessageIDs
+from acts.controllers.tel.md8475a import TriggerMessageReply
+from acts.test_utils.tel import tel_test_utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 class TelephonyConnectivitySanityTest(TelephonyBaseTest):

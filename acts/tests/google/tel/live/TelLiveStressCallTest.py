@@ -21,14 +21,14 @@ import time
 from acts.base_test import BaseTestClass
 from queue import Empty
 from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import verify_active_call_number
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 
 MAX_NUMBER_REDIALS = 20
 INCORRECT_STATE_MSG = "Caller not in correct state!"

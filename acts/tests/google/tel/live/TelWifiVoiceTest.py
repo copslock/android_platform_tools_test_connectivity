@@ -17,15 +17,69 @@
     Test Script for epdg RF shield box related tests.
 """
 
-import random
 import time
-from acts.base_test import BaseTestClass
 from queue import Empty
-from acts.test_utils.tel.tel_atten_utils import *
-from acts.test_utils.tel.tel_voice_utils import *
-from acts.test_utils.tel.tel_test_utils import *
-from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_atten_utils import set_rssi
+from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
+from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
+from acts.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
+from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import RAT_IWLAN
+from acts.test_utils.tel.tel_defines import RAT_WCDMA
+from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_DROP
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
+from acts.test_utils.tel.tel_defines import NetworkCallBack
+from acts.test_utils.tel.tel_defines import NetworkCallBackAvailable
+from acts.test_utils.tel.tel_defines import NetworkCallBackLost
+from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import ensure_network_rat
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_network_rat
+from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_network_call_back_event_match
+from acts.test_utils.tel.tel_test_utils import is_phone_in_call
+from acts.test_utils.tel.tel_test_utils import is_phone_not_in_call
+from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_droid_not_in_call
+from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
+from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
+from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts.utils import load_config
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI = 'wifi0'
