@@ -2823,17 +2823,17 @@ def get_call_uri(ad, call_id):
 # TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
 class WifiUtils():
 
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import reset_wifi as _reset_wifi
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import wifi_connect as _wifi_connect
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import wifi_toggle_state as _wifi_toggle_state
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import start_wifi_tethering as _start_wifi_tethering
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import stop_wifi_tethering as _stop_wifi_tethering
-    from acts.test_utils.wifi_test_utils \
+    from acts.test_utils.wifi.wifi_test_utils \
         import WifiEnums as _WifiEnums
 
     WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
