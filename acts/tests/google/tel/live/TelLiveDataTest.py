@@ -1207,8 +1207,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                                     self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, False, True)
-        ads[0].droid.telephonySetPreferredNetworkTypeForSubscription(
-                RAT_3G, self.sim_sub_ids[0][0])
+        ensure_network_generation_for_subscription(self.log, ads[0],
+                 self.sim_sub_ids[0][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_sim2(self):
