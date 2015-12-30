@@ -22,15 +22,18 @@ from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import CBCHSetup
 from acts.controllers.tel.md8475a import CTCHSetup
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_GSM
 from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import RAT_WCDMA
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_PREF
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_test_anritsu_utils import ETWS_WARNING_EARTHQUAKETSUNAMI
 from acts.test_utils.tel.tel_test_anritsu_utils import ETWS_WARNING_OTHER_EMERGENCY
 from acts.test_utils.tel.tel_test_anritsu_utils import cb_serial_number
@@ -38,11 +41,9 @@ from acts.test_utils.tel.tel_test_anritsu_utils import etws_receive_verify_messa
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 
 class TelLabEtwsTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
@@ -92,36 +93,38 @@ class TelLabEtwsTest(TelephonyBaseTest):
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
-                phone_setup_func = phone_setup_csfb
-                pref_network_type = NETWORK_MODE_LTE_GSM_WCDMA
+                preferred_network_setting = NETWORK_MODE_LTE_GSM_WCDMA
+                rat_family = RAT_FAMILY_LTE
             elif rat == RAT_WCDMA:
-                phone_setup_func = phone_setup_3g
-                pref_network_type = NETWORK_MODE_WCDMA_PREF
                 self.bts1.wcdma_ctch = CTCHSetup.CTCH_ENABLE
                 self.ad.droid.telephonyToggleDataConnection(False)
+                preferred_network_setting = NETWORK_MODE_GSM_UMTS
+                rat_family = RAT_FAMILY_UMTS
             elif rat == RAT_GSM:
-                phone_setup_func = phone_setup_2g
-                pref_network_type = NETWORK_MODE_GSM_ONLY
                 self.bts1.gsm_cbch = CBCHSetup.CBCH_ENABLE
                 self.ad.droid.telephonyToggleDataConnection(False)
+                preferred_network_setting = NETWORK_MODE_GSM_ONLY
+                rat_family = RAT_FAMILY_GSM
             elif rat == RAT_1XRTT:
-                phone_setup_func = phone_setup_3g
-                pref_network_type = NETWORK_MODE_CDMA
+                preferred_network_setting = NETWORK_MODE_CDMA
+                rat_family = RAT_FAMILY_CDMA2000
             else:
-                phone_setup_func = phone_setup_csfb
-                network_type = NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
-
-            self.ad.droid.telephonySetPreferredNetwork(pref_network_type)
-            if not phone_setup_func(self.log, self.ad):
-                self.log.error("Phone {} Failed to Set Up Properly"
-                               .format(self.ad.serial))
+                self.log.error("No valid RAT provided for ETWS test.")
                 return False
+
+            if not ensure_network_rat(self.log, self.ad,
+                preferred_network_setting, rat_family,
+                toggle_apm_after_setting=True):
+                self.log.error("Failed to set rat family {}, preferred network:{}".
+                    format(rat_family, preferred_network_setting))
+                return False
+
             self.anritsu.wait_for_registration_state()
             if not etws_receive_verify_message_lte_wcdma(self.log, self.ad,
                                                         self.anritsu,
                                                         next(TelLabEtwsTest.SERIAL_NO),
                                                         message_id,
-                                                        warning_message ):
+                                                        warning_message):
                 self.log.error("Phone {} Failed to receive ETWS message"
                                .format(self.ad.serial))
                 return False
