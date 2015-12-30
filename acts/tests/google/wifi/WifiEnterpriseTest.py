@@ -38,8 +38,6 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         self.tests = (
             "test_eap_connect",
             "test_eap_connect_negative",
-            # "test_passpoint_connect",
-            # "test_passpoint_connect_negative"
         )
 
     def setup_class(self):

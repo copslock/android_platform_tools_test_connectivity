@@ -16,8 +16,8 @@
 
 from queue import Empty
 from acts.base_test import BaseTestClass
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
-from acts.test_utils.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 
 class Sl4aSanityTest(BaseTestClass):
     """Tests for sl4a basic sanity.

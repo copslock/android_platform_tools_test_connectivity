@@ -22,12 +22,12 @@ import itertools
 from queue import Empty
 from acts.base_test import BaseTestClass
 from acts.utils import load_config
-from acts.test_utils.wifi_test_utils import start_wifi_track_bssid
-from acts.test_utils.wifi_test_utils import start_wifi_background_scan
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiChannelUS
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi_test_utils import get_scan_time_and_channels
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_track_bssid
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_background_scan
+from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
+from acts.test_utils.wifi.wifi_test_utils import WifiChannelUS
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import get_scan_time_and_channels
 
 
 BSSID_EVENT_WAIT = 30

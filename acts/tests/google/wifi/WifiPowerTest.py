@@ -60,7 +60,6 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         wutils.reset_wifi(self.dut)
 
     def teardown_test(self):
-        # TODO(angli): save monsoon data and bugreport.
         pass
 
     def wifi_off(self, ad):

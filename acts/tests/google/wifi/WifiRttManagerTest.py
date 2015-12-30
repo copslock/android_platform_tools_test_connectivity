@@ -62,8 +62,6 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "support_models",
             "stress_num",
             "vht80_5g",
-            # "no_11mc",
-            # "ht40_2g"
             "actual_distance"
         )
         msg = "Failed to unpack user params."
@@ -72,8 +70,6 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "Actual distance should be no shorter than 5 meters.")
         self.visible_networks = (
             self.vht80_5g,
-            # self.no_11mc,
-            # self.ht40_2g
         )
         self.default_rtt_params = {
             RttParam.request_type: RttType.TYPE_TWO_SIDED,

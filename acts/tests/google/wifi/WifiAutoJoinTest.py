@@ -17,12 +17,12 @@
 import time
 
 from acts.base_test import BaseTestClass
-from acts.test_utils.wifi_test_utils import wifi_forget_network
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi_test_utils import start_wifi_connection_scan
-from acts.test_utils.wifi_test_utils import check_internet_connection
-from acts.test_utils.wifi_test_utils import track_connection
+from acts.test_utils.wifi.wifi_test_utils import wifi_forget_network
+from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_connection_scan
+from acts.test_utils.wifi.wifi_test_utils import check_internet_connection
+from acts.test_utils.wifi.wifi_test_utils import track_connection
 
 NETWORK_ID_ERROR = "Network don't have ID"
 NETWORK_ERROR = "Device is not connected to reference network"

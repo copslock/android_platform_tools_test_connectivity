@@ -22,9 +22,9 @@ from queue import Empty
 from acts.controllers.ap.access_point import AP
 from acts.base_test import BaseTestClass
 from acts.utils import load_config
-from acts.test_utils.wifi_test_utils import start_wifi_tracking_change
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_tracking_change
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 
 SCANCHANNEL = [2412,2437,2457,2462,5180,5200,5220,5745]
 SCANTIME = 5000
