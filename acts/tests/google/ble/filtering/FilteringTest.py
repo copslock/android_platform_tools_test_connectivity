@@ -180,10 +180,8 @@ class FilteringTest(BluetoothBaseTest):
             "test_filters_suite",
             "test_filters_suite_opportunistic_scan",
             "test_non_connectable_advertise_data",
-            # "test_multi_manufacturer_specific_data",
         )
 
-    # Handler Functions Begin
     def blescan_verify_onfailure_event_handler(self, event):
         self.log.debug("Verifying {} event".format(adv_fail))
         self.log.debug(pprint.pformat(event))
@@ -222,11 +220,6 @@ class FilteringTest(BluetoothBaseTest):
                 self.log.error(
                     "Expected to find tx power level in event but found none.")
                 test_result = False
-        # TODO: (tturney) Need to investigate, possible bug here
-        # elif 'txPowerLevel' in event['data']['Result'].keys():
-        #  self.log.error("Tx power level found when it wasn't meant "
-        # "to be included.")
-        #  test_result = False
         if not event['data']['Result']['rssi']:
             self.log.error("Expected rssi in the advertisement, found none.")
             test_result = False
@@ -278,8 +271,6 @@ class FilteringTest(BluetoothBaseTest):
                            " was found.")
             test_result = False
         return test_result
-
-    # Handler Functions End
 
     def _magic(self, params):
         (filters, settings_in_effect) = params
@@ -622,20 +613,6 @@ class FilteringTest(BluetoothBaseTest):
         if failed:
             return False
         return True
-
-    @BluetoothBaseTest.bt_test_wrap
-    def test_multi_manufacturer_specific_data(self):
-
-        settings = [
-            {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
-        multi = self._get_combinations(
-            self.multi_manufacturer_specific_data_suite)
-        params = list(it.product(multi, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="multi_manu_data")
-        if failed:
-            return True
-        return False
 
     @BluetoothBaseTest.bt_test_wrap
     def test_non_connectable_advertise_data(self):

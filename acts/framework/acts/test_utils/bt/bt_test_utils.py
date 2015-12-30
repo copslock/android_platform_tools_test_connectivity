@@ -577,7 +577,6 @@ def set_bt_scan_mode(droid, ed, scan_mode_value):
 
 def set_device_name(droid, name):
     droid.bluetoothSetLocalName(name)
-    # temporary (todo:tturney fix)
     time.sleep(2)
     droid_name = droid.bluetoothGetLocalName()
     if droid_name != name:
@@ -655,8 +654,6 @@ def get_client_server_bt_mac_address(droid, droid1):
 def take_btsnoop_logs(droids, testcase, testname):
     for d in droids:
         take_btsnoop_log(d, testcase, testname)
-
-# TODO (tturney): Fix this.
 
 
 def take_btsnoop_log(droid, testcase, test_name):

@@ -1276,7 +1276,6 @@ class BleScanApiTest(BluetoothBaseTest):
         scan_callback = droid.bleGenLeScanCallback()
         return self.verify_classic_ble_scan_with_service_uuids(
             droid, scan_callback, service_uuid_list)
-    # TODO: remove this when refactoring code
 
     def verify_classic_ble_scan_with_service_uuids(
         self, droid, scan_callback, service_uuid_list):

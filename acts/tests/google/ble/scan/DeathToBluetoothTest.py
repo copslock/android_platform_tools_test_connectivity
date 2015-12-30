@@ -43,8 +43,6 @@ class DeathToBluetoothTest(BluetoothBaseTest):
         )
 
     def teardown_test(self):
-#    cleanup_scanners_and_advertisers(self.scn_droid, self.scn_ed, self.active_adv_callback_list,
-# self.adv_droid, self.adv_ed, self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
