@@ -32,7 +32,7 @@ from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_VOICE_MAIL_COUNT
-from acts.test_utils.tel.tel_defines import NetworkModeLteOnly
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -2449,7 +2449,7 @@ def ensure_phone_default_state(log, ad):
     # The purpose of this code is to recover DUT if b/23906084 happens.
     if is_droid_in_rat_family(log, ad, RAT_FAMILY_GSM, NETWORK_SERVICE_VOICE):
         log.error("Device is stuck in GSM... Attempting to Un-stick")
-        ad.droid.telephonySetPreferredNetworkTypes(NetworkModeLteOnly)
+        ad.droid.telephonySetPreferredNetworkTypes(NETWORK_MODE_LTE_ONLY)
         if not wait_for_network_rat(log, ad, RAT_FAMILY_LTE):
             if not wait_for_network_rat(log, ad, RAT_FAMILY_UMTS):
                 log.error("Device failed to un-stick from GSM."

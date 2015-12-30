@@ -32,11 +32,6 @@ from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_GSM
 from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import RAT_WCDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_CDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_GSM_ONLY
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_LTE_GSM_WCDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_WCDMA_PREF
 from acts.test_utils.tel.tel_test_anritsu_utils import call_mo_setup_teardown
 from acts.test_utils.tel.tel_test_anritsu_utils import call_mt_setup_teardown
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_1x

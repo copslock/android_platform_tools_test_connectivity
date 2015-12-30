@@ -43,12 +43,6 @@ def is_valid_generation(gen):
 def is_rat_svd_capable(rat):
     return _TelTables.technology_tbl[rat]["simultaneous_voice_data"]
 
-def network_mode_by_operator_generation(operator, generation):
-    try:
-        return _TelTables.operator_network_mode_preference_tbl[operator][generation]
-    except KeyError:
-        return None
-
 def connection_type_from_type_string(input_string):
     if input_string in _ConnectionTables.connection_type_tbl:
         return _ConnectionTables.connection_type_tbl[input_string]
@@ -361,30 +355,30 @@ class _TelTables():
     }
 
     network_preference_tbl = {
-        tel_defines.NetworkModeLteGsmWcdma: {
+        tel_defines.NETWORK_MODE_LTE_GSM_WCDMA: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
             tel_defines.RAT_FAMILY_UMTS, tel_defines.RAT_FAMILY_GSM]
         },
-        tel_defines.NetworkModeGsmUmts: {
+        tel_defines.NETWORK_MODE_GSM_UMTS: {
             'rat_family_list': [tel_defines.RAT_FAMILY_UMTS,
             tel_defines.RAT_FAMILY_GSM]
         },
-        tel_defines.NetworkModeGsmOnly: {
+        tel_defines.NETWORK_MODE_GSM_ONLY: {
             'rat_family_list': [tel_defines.RAT_FAMILY_GSM]
         },
-        tel_defines.NetworkModeLteCdmaEvdo: {
+        tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
             tel_defines.RAT_FAMILY_CDMA2000]
         },
-        tel_defines.NetworkModeLteCdmaEvdo: {
+        tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
             tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
         },
-        tel_defines.NetworkModeCdma: {
+        tel_defines.NETWORK_MODE_CDMA: {
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
             tel_defines.RAT_FAMILY_CDMA]
         },
-        tel_defines.NetworkModeCdmaNoEvdo: {
+        tel_defines.NETWORK_MODE_CDMA_NO_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
             tel_defines.RAT_FAMILY_CDMA]
         }
@@ -392,29 +386,29 @@ class _TelTables():
     default_umts_operator_network_tbl = {
         tel_defines.GEN_4G: {
             'rat_family' : tel_defines.RAT_FAMILY_LTE,
-            'network_preference' : tel_defines.NetworkModeLteGsmWcdma
+            'network_preference' : tel_defines.NETWORK_MODE_LTE_GSM_WCDMA
         },
         tel_defines.GEN_3G: {
             'rat_family' : tel_defines.RAT_FAMILY_UMTS,
-            'network_preference' : tel_defines.NetworkModeGsmUmts
+            'network_preference' : tel_defines.NETWORK_MODE_GSM_UMTS
         },
         tel_defines.GEN_2G: {
             'rat_family' : tel_defines.RAT_FAMILY_GSM,
-            'network_preference' : tel_defines.NetworkModeGsmOnly
+            'network_preference' : tel_defines.NETWORK_MODE_GSM_ONLY
         }
     }
     default_cdma_operator_network_tbl = {
         tel_defines.GEN_4G: {
             'rat_family' : tel_defines.RAT_FAMILY_LTE,
-            'network_preference' : tel_defines.NetworkModeLteCdmaEvdo
+            'network_preference' : tel_defines.NETWORK_MODE_LTE_CDMA_EVDO
         },
         tel_defines.GEN_3G: {
             'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
-            'network_preference' : tel_defines.NetworkModeCdma
+            'network_preference' : tel_defines.NETWORK_MODE_CDMA
         },
         tel_defines.GEN_2G: {
             'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
-            'network_preference' : tel_defines.NetworkModeCdmaNoEvdo
+            'network_preference' : tel_defines.NETWORK_MODE_CDMA_NO_EVDO
         }
     }
     operator_network_tbl = {
@@ -434,35 +428,6 @@ class _TelTables():
         tel_defines.CARRIER_TMO: check_tmo_voice_mail_count,
         tel_defines.CARRIER_ATT: check_att_voice_mail_count,
         tel_defines.CARRIER_SPT: check_spt_voice_mail_count
-    }
-
-    _operator_na_cdma_tbl = {
-        tel_defines.RAT_2G: tel_defines.NETWORK_MODE_CDMA_NO_EVDO,
-        tel_defines.RAT_1XRTT: tel_defines.NETWORK_MODE_CDMA_NO_EVDO,
-        tel_defines.RAT_3G: tel_defines.NETWORK_MODE_CDMA,
-        tel_defines.RAT_EVDO: tel_defines.NETWORK_MODE_CDMA,
-        tel_defines.RAT_4G: tel_defines.NETWORK_MODE_LTE_CDMA_EVDO,
-        tel_defines.RAT_LTE: tel_defines.NETWORK_MODE_LTE_CDMA_EVDO,
-        tel_defines.RAT_GLOBAL: tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
-    }
-
-    _operator_na_umts_tbl = {
-        tel_defines.RAT_2G: tel_defines.NETWORK_MODE_GSM_ONLY,
-        tel_defines.RAT_GSM: tel_defines.NETWORK_MODE_GSM_ONLY,
-        tel_defines.RAT_3G: tel_defines.NETWORK_MODE_WCDMA_PREF,
-        tel_defines.RAT_WCDMA: tel_defines.NETWORK_MODE_WCDMA_PREF,
-        tel_defines.RAT_4G: tel_defines.NETWORK_MODE_LTE_GSM_WCDMA,
-        tel_defines.RAT_LTE: tel_defines.NETWORK_MODE_LTE_GSM_WCDMA,
-        tel_defines.RAT_GLOBAL: tel_defines.NETWORK_MODE_LTE_GSM_WCDMA
-    }
-
-    operator_network_mode_preference_tbl = {
-        tel_defines.CARRIER_VZW: _operator_na_cdma_tbl,
-        tel_defines.CARRIER_SPT: _operator_na_cdma_tbl,
-        tel_defines.CARRIER_ATT: _operator_na_umts_tbl,
-        tel_defines.CARRIER_TMO: _operator_na_umts_tbl,
-        tel_defines.CARRIER_EEUK: _operator_na_umts_tbl,
-        tel_defines.CARRIER_VFUK: _operator_na_umts_tbl
     }
 
 device_capabilities = {

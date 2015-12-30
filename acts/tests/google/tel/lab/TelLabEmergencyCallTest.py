@@ -31,11 +31,11 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANRITSU_REG_AND_CALL
-from acts.test_utils.tel.tel_defines import NetworkModeCdma
-from acts.test_utils.tel.tel_defines import NetworkModeGsmOnly
-from acts.test_utils.tel.tel_defines import NetworkModeGsmUmts
-from acts.test_utils.tel.tel_defines import NetworkModeLteCdmaEvdo
-from acts.test_utils.tel.tel_defines import NetworkModeLteGsmWcdma
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_test_anritsu_utils import call_mo_setup_teardown
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_1x
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
@@ -127,27 +127,27 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def _phone_setup_lte_wcdma(self, ad):
-        ensure_network_rat(self.log, ad, NetworkModeLteGsmWcdma,
+        ensure_network_rat(self.log, ad, NETWORK_MODE_LTE_GSM_WCDMA,
             RAT_FAMILY_LTE, toggle_apm_after_setting=True)
         return True
 
     def _phone_setup_lte_1x(self, ad):
-        ensure_network_rat(self.log, ad, NetworkModeLteCdmaEvdo,
+        ensure_network_rat(self.log, ad, NETWORK_MODE_LTE_CDMA_EVDO,
             RAT_FAMILY_LTE, toggle_apm_after_setting=True)
         return True
 
     def _phone_setup_wcdma(self, ad):
-        ensure_network_rat(self.log, ad, NetworkModeGsmUmts,
+        ensure_network_rat(self.log, ad, NETWORK_MODE_GSM_UMTS,
             RAT_FAMILY_UMTS, toggle_apm_after_setting=True)
         return True
 
     def _phone_setup_gsm(self, ad):
-        ensure_network_rat(self.log, ad, NetworkModeGsmOnly,
+        ensure_network_rat(self.log, ad, NETWORK_MODE_GSM_ONLY,
             RAT_FAMILY_GSM, toggle_apm_after_setting=True)
         return True
 
     def _phone_setup_1x(self, ad):
-        ensure_network_rat(self.log, ad, NetworkModeCdma,
+        ensure_network_rat(self.log, ad, NETWORK_MODE_CDMA,
             RAT_FAMILY_CDMA2000, toggle_apm_after_setting=True)
         return True
 

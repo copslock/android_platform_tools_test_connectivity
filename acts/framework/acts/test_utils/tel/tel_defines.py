@@ -381,36 +381,6 @@ RAT_TD_SCDMA = "TD_SCDMA"
 RAT_GLOBAL = "GLOBAL"
 RAT_UNKNOWN = "UNKNOWN"
 
-# NETWORK_MODE_* See ril.h RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE
-NETWORK_MODE_WCDMA_PREF     = 0 # GSM/WCDMA (WCDMA preferred)
-NETWORK_MODE_GSM_ONLY       = 1 # GSM only
-NETWORK_MODE_WCDMA_ONLY     = 2 # WCDMA only
-NETWORK_MODE_GSM_UMTS       = 3 # GSM/WCDMA (auto mode, according to PRL)
-                                #     AVAILABLE Application Settings menu
-NETWORK_MODE_CDMA           = 4 # CDMA and EvDo (auto mode, according to PRL)
-                                #    AVAILABLE Application Settings menu
-NETWORK_MODE_CDMA_NO_EVDO   = 5 # CDMA only
-NETWORK_MODE_EVDO_NO_CDMA   = 6 # EvDo only
-NETWORK_MODE_GLOBAL         = 7 # GSM/WCDMA, CDMA, and EvDo
-                                #    (auto mode, according to PRL)
-                                #     AVAILABLE Application Settings menu
-NETWORK_MODE_LTE_CDMA_EVDO  = 8 # LTE, CDMA and EvDo
-NETWORK_MODE_LTE_GSM_WCDMA  = 9 # LTE, GSM/WCDMA
-NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA = 10 # LTE, CDMA, EvDo, GSM/WCDMA
-NETWORK_MODE_LTE_ONLY       = 11 # LTE Only mode
-NETWORK_MODE_LTE_WCDMA      = 12 # LTE/WCDMA
-NETWORK_MODE_TDSCDMA_ONLY            = 13 # TD-SCDMA only
-NETWORK_MODE_TDSCDMA_WCDMA           = 14 # TD-SCDMA and WCDMA
-NETWORK_MODE_LTE_TDSCDMA             = 15 # TD-SCDMA and LTE
-NETWORK_MODE_TDSCDMA_GSM             = 16 # TD-SCDMA and GSM
-NETWORK_MODE_LTE_TDSCDMA_GSM         = 17 # TD-SCDMA,GSM and LTE
-NETWORK_MODE_TDSCDMA_GSM_WCDMA       = 18 # TD-SCDMA, GSM/WCDMA
-NETWORK_MODE_LTE_TDSCDMA_WCDMA       = 19 # TD-SCDMA, WCDMA and LTE
-NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA   = 20 # TD-SCDMA, GSM/WCDMA and LTE
-NETWORK_MODE_TDSCDMA_CDMA_EVDO_GSM_WCDMA  = 21 # TD-SCDMA,EvDo,CDMA,GSM/WCDMA
-NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = 22 # TD-SCDMA/LTE/GSM/WCDMA,
-                                                  #    CDMA, and EvDo
-
 # Constant for Phone Type
 PHONE_TYPE_GSM = "GSM"
 PHONE_TYPE_NONE = "NONE"
@@ -549,29 +519,29 @@ NetworkCallBackResumed = "Resumed"
 NetworkCallBackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallBackInvalid = "Invalid"
 
-NetworkModeWcdmaPref = "NetworkModeWcdmaPref"
-NetworkModeGsmOnly = "NetworkModeGsmOnly"
-NetworkModeWcdmaOnly = "NetworkModeWcdmaOnly"
-NetworkModeGsmUmts = "NetworkModeGsmUmts"
-NetworkModeCdma = "NetworkModeCdma"
-NetworkModeCdmaNoEvdo = "NetworkModeCdmaNoEvdo"
-NetworkModeEvdoNoCdma = "NetworkModeEvdoNoCdma"
-NetworkModeGlobal = "NetworkModeGlobal"
-NetworkModeLteCdmaEvdo = "NetworkModeLteCdmaEvdo"
-NetworkModeLteGsmWcdma = "NetworkModeLteGsmWcdma"
-NetworkModeLteCdmaEvdoGsmWcdma = "NetworkModeLteCdmaEvdoGsmWcdma"
-NetworkModeLteOnly = "NetworkModeLteOnly"
-NetworkModeLteWcdma = "NetworkModeLteWcdma"
-NetworkModeTdscdmaOnly = "NetworkModeTdscdmaOnly"
-NetworkModeTdscdmaWcdma = "NetworkModeTdscdmaWcdma"
-NetworkModeLteTdscdma = "NetworkModeLteTdscdma"
-NetworkModeTdsdmaGsm = "NetworkModeTdsdmaGsm"
-NetworkModeLteTdscdmaGsm = "NetworkModeLteTdscdmaGsm"
-NetworkModeTdscdmaGsmWcdma = "NetworkModeTdscdmaGsmWcdma"
-NetworkModeLteTdscdmaWcdma = "NetworkModeLteTdscdmaWcdma"
-NetworkModeLteTdscdmaGsmWcdma = "NetworkModeLteTdscdmaGsmWcdma"
-NetworkModeTdscdmaCdmaEvdoGsmWcdma = "NetworkModeTdscdmaCdmaEvdoGsmWcdma"
-NetworkModeLteTdscdmaCdmaEvdoGsmWcdma = "NetworkModeLteTdscdmaCdmaEvdoGsmWcdma"
+NETWORK_MODE_WCDMA_PREF = "NETWORK_MODE_WCDMA_PREF"
+NETWORK_MODE_GSM_ONLY = "NETWORK_MODE_GSM_ONLY"
+NETWORK_MODE_WCDMA_ONLY = "NETWORK_MODE_WCDMA_ONLY"
+NETWORK_MODE_GSM_UMTS = "NETWORK_MODE_GSM_UMTS"
+NETWORK_MODE_CDMA = "NETWORK_MODE_CDMA"
+NETWORK_MODE_CDMA_NO_EVDO = "NETWORK_MODE_CDMA_NO_EVDO"
+NETWORK_MODE_EVDO_NO_CDMA = "NETWORK_MODE_EVDO_NO_CDMA"
+NETWORK_MODE_GLOBAL = "NETWORK_MODE_GLOBAL"
+NETWORK_MODE_LTE_CDMA_EVDO = "NETWORK_MODE_LTE_CDMA_EVDO"
+NETWORK_MODE_LTE_GSM_WCDMA = "NETWORK_MODE_LTE_GSM_WCDMA"
+NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA"
+NETWORK_MODE_LTE_ONLY = "NETWORK_MODE_LTE_ONLY"
+NETWORK_MODE_LTE_WCDMA = "NETWORK_MODE_LTE_WCDMA"
+NETWORK_MODE_TDSCDMA_ONLY = "NETWORK_MODE_TDSCDMA_ONLY"
+NETWORK_MODE_TDSCDMA_WCDMA = "NETWORK_MODE_TDSCDMA_WCDMA"
+NETWORK_MODE_LTE_TDSCDMA = "NETWORK_MODE_LTE_TDSCDMA"
+NETWORK_MODE_TDSCDMA_GSM = "NETWORK_MODE_TDSCDMA_GSM"
+NETWORK_MODE_LTE_TDSCDMA_GSM = "NETWORK_MODE_LTE_TDSCDMA_GSM"
+NETWORK_MODE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_TDSCDMA_GSM_WCDMA"
+NETWORK_MODE_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_WCDMA"
+NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA"
+NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA = "NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA"
+NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
 """
 End shared constant define for both Python and Java
