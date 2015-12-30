@@ -501,8 +501,8 @@ EventTelecomVideoCallDataUsageChanged = "TelecomVideoCallDataUsageChanged"
 EventTelecomVideoCallCameraCapabilities = "TelecomVideoCallCameraCapabilities"
 
 # Constant for Video Call Call-Back Event Name
-EventSessionModifyRequestRceived = "SessionModifyRequestRceived"
-EventSessionModifyResponsetRceived = "SessionModifyResponsetRceived"
+EventSessionModifyRequestReceived = "SessionModifyRequestReceived"
+EventSessionModifyResponseReceived = "SessionModifyResponseReceived"
 EventSessionEvent = "SessionEvent"
 EventPeerDimensionsChanged = "PeerDimensionsChanged"
 EventVideoQualityChanged = "VideoQualityChanged"
