@@ -26,6 +26,14 @@ from acts.controllers.tel.md8475a import BtsServiceState
 from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.mg3710a import MG3710A
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_test_anritsu_utils import LTE_BAND_2
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte
@@ -34,11 +42,8 @@ from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte_wcdm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma_gsm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma_wcdma
+from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from cell_configurations import gsm_band850_ch128_fr869_cid58_cell
 from cell_configurations import gsm_band850_ch251_fr893_cid59_cell
 from cell_configurations import gsm_band1900_ch512_fr1930_cid51_cell
@@ -454,9 +459,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
                                      serving_cell_pcid)
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.SETTLING_TIME)
@@ -497,10 +504,12 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
                                                neigh_cell_cid, neigh_cell_pcid)
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-                self.log.error("Phone {} Failed to Set Up Properly"
-                               .format(self.ad.serial))
-                return False
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
+            return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.SETTLING_TIME)
         return self._verify_lte_cells_information(expected_no_cells,
@@ -546,10 +555,12 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
                                                neigh_cell_1_cid, neigh_cell_1_pcid)
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-                self.log.error("Phone {} Failed to Set Up Properly"
-                               .format(self.ad.serial))
-                return False
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
+            return False
         self.md8475a.wait_for_registration_state()
 
         self.setup_3710a_waveform("1", "A", "1960MHZ", neigh_cell_2_dlpower,
@@ -604,10 +615,12 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
                                                neigh_cell_1_cid, neigh_cell_1_pcid)
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-                self.log.error("Phone {} Failed to Set Up Properly"
-                               .format(self.ad.serial))
-                return False
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
+            return False
         self.md8475a.wait_for_registration_state()
 
         self.setup_3710a_waveform("1", "A", "1960MHZ", neigh_cell_2_dlpower,
@@ -670,10 +683,12 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
                                                neigh_cell_1_cid, neigh_cell_1_pcid)
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-                self.log.error("Phone {} Failed to Set Up Properly"
-                               .format(self.ad.serial))
-                return False
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
+            return False
         self.md8475a.wait_for_registration_state()
 
         self.setup_3710a_waveform("1", "A", "1960MHZ", neigh_cell_2_dlpower,
@@ -713,9 +728,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self._setup_lte_cell_md8475a(bts1, serving_cell, serving_cell['power'] )
         self.md8475a.start_simulation()
 
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.SETTLING_TIME)
@@ -753,9 +770,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -800,9 +819,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -855,9 +876,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -905,9 +928,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -955,9 +980,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1009,9 +1036,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1058,9 +1087,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1106,9 +1137,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1144,9 +1177,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self._setup_wcdma_cell_md8475a(bts1, serving_cell, serving_cell['power'])
         self.md8475a.start_simulation()
 
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.SETTLING_TIME)
@@ -1184,9 +1219,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1231,9 +1268,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1286,9 +1325,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         # To make sure phone camps on BTS1
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1337,9 +1378,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1385,9 +1428,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1436,9 +1481,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1485,9 +1532,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_3g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1533,9 +1582,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts2.service_state =  BtsServiceState.SERVICE_STATE_OUT
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_UMTS, NETWORK_MODE_GSM_UMTS))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1568,10 +1619,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         [bts1] = set_system_model_gsm(self.md8475a, self.user_params)
         self._setup_gsm_cell_md8475a(bts1, serving_cell, serving_cell['power'])
         self.md8475a.start_simulation()
-
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.SETTLING_TIME)
@@ -1606,9 +1658,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 1, "GSM_1900_C512_F1930_CID52")
         self.md8475a.start_simulation()
 
-        if not phone_setup_2g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         time.sleep(self.ANRITSU_SETTLING_TIME)
@@ -1653,9 +1707,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 2, "GSM_1900_C512_F1930_CID53")
         self.md8475a.start_simulation()
 
-        if not phone_setup_2g(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "1930.2MHz", neighbor_cell_1['power'],
@@ -1706,9 +1762,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         bts1.set_neighbor_cell_name("GSM", 3, "GSM_1900_C512_F1930_CID53")
         self.md8475a.start_simulation()
 
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "1930.2MHz", neighbor_cell_1['power'],
@@ -1755,9 +1813,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.md8475a.start_simulation()
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "1955.8MHz", neighbor_cell_1['power'],
@@ -1802,9 +1862,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.md8475a.start_simulation()
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "1955.8MHz", neighbor_cell_1['power'],
@@ -1852,9 +1914,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.md8475a.start_simulation()
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "869MHz", neighbor_cell_1['power'],
@@ -1902,9 +1966,11 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.md8475a.start_simulation()
 
         self.ad.droid.telephonyToggleDataConnection(False)
-        if not phone_setup_voice_general(self.log, self.ad):
-            self.log.error("Phone {} Failed to Set Up Properly"
-                           .format(self.ad.serial))
+        if not ensure_network_rat(self.log, self.ad,
+            NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM,
+            toggle_apm_after_setting=True):
+            self.log.error("Failed to set rat family {}, preferred network:{}".
+                format(RAT_FAMILY_GSM, NETWORK_MODE_GSM_ONLY))
             return False
         self.md8475a.wait_for_registration_state()
         self.setup_3710a_waveform("1", "A", "2115MHz", neighbor_cell_1['power'],
