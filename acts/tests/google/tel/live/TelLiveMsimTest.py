@@ -33,8 +33,8 @@ from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
+from acts.test_utils.wifi.wifi_test_utils import reset_wifi
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts.utils import load_config
 
 class TelLiveMsimTest(TelephonyBaseTest):

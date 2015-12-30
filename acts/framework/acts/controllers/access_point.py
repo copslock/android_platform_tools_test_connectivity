@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 import acts.jsonrpc as jsonrpc
-from acts.test_utils.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 
 def create(configs, logger):
     results = []

@@ -220,8 +220,6 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                              ("TDLS should not be supported on %s, but device "
                               "is reporting supported.") % model)
 
-    # TODO(angli): Actually connect to a network and do an http request between
-    # iterations.
     def test_energy_info(self):
         """Verify the WiFi energy info reporting feature.
 

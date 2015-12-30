@@ -20,16 +20,16 @@ import threading, time, traceback
 
 from acts.base_test import BaseTestClass
 from acts.utils import load_config
-from acts.test_utils.wifi_test_utils import get_scan_time_and_channels
-from acts.test_utils.wifi_test_utils import check_internet_connection
-from acts.test_utils.wifi_test_utils import start_wifi_background_scan
-from acts.test_utils.wifi_test_utils import start_wifi_single_scan
-from acts.test_utils.wifi_test_utils import track_connection
-from acts.test_utils.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi_test_utils import WifiChannelUS
-from acts.test_utils.wifi_test_utils import wifi_forget_network
-from acts.test_utils.wifi_test_utils import wifi_toggle_state
+from acts.test_utils.wifi.wifi_test_utils import get_scan_time_and_channels
+from acts.test_utils.wifi.wifi_test_utils import check_internet_connection
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_background_scan
+from acts.test_utils.wifi.wifi_test_utils import start_wifi_single_scan
+from acts.test_utils.wifi.wifi_test_utils import track_connection
+from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import WifiChannelUS
+from acts.test_utils.wifi.wifi_test_utils import wifi_forget_network
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 
 SCANTIME = 10000 #framework support only 10s as minimum scan interval
 NUMBSSIDPERSCAN = 8
