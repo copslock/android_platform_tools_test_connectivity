@@ -426,28 +426,20 @@ def wait_and_answer_video_call_for_subscription(
 
     ad.ed.clear_all_events()
 
-    ringing_call_id = None
-
-    #TODO: b/26346479 use new API to accept ringing call with video state.
-    for i in range(10):
-        calls = ad.droid.telecomCallGetCallIds()
-        for call in calls:
-            call_state = ad.droid.telecomCallGetCallState(call)
-            if call_state == CALL_STATE_RINGING:
-                ringing_call_id = call
-                break
-        time.sleep(.2)
-
-    if not ringing_call_id:
-        log.error("Couldn't find a ringing call by ID!")
-        return False
-
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
+
+    #FIXME b/26349361 I believe this delay exists so that the call provider
+    # presents an incoming call to telecom. We should replace this with
+    # a programmatic check for ringing in telecom and deprecate the delay.
     # Delay between ringing and answer.
     time.sleep(delay_answer)
 
+    if not ad.droid.telecomIsRinging():
+        log.error("Call not ringing at Telecom")
+        return False
+
     log.info("Accept on callee.")
-    ad.droid.telecomCallAnswer(ringing_call_id, video_state)
+    ad.droid.telecomAcceptRingingCall(video_state)
 
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
