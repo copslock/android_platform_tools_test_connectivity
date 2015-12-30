@@ -27,10 +27,6 @@ from acts.test_utils.tel.tel_defines import RAT_GSM
 from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import RAT_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANRITSU_REG_AND_OPER
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_CDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_GSM_ONLY
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_LTE_GSM_WCDMA
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_WCDMA_PREF
 from acts.test_utils.tel.tel_test_anritsu_utils import read_ue_identity
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte

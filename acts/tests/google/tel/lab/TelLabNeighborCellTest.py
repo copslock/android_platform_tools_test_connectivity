@@ -27,7 +27,6 @@ from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.mg3710a import MG3710A
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_test_anritsu_utils import LTE_BAND_2
-from acts.test_utils.tel.tel_test_anritsu_utils import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_lte_lte
