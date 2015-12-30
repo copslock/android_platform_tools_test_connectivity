@@ -3023,14 +3023,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, True)
-        ads[0].droid.telephonySetPreferredNetworkTypeForSubscription(
-                RAT_3G, self.sim_sub_ids[0][0])
+        ensure_network_generation_for_subscription(self.log, ads[0],
+                self.sim_sub_ids[0][0], GEN_3G)
         set_call_state_listen_level(self.log, ads[0], False,
             self.sim_sub_ids[1][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[1], self.sim_sub_ids[1][0], True, True)
-        ads[1].droid.telephonySetPreferredNetworkTypeForSubscription(
-                RAT_3G, self.sim_sub_ids[1][0])
+        ensure_network_generation_for_subscription(self.log, ads[1],
+                self.sim_sub_ids[1][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_3g_to_3g_sim2(self):
