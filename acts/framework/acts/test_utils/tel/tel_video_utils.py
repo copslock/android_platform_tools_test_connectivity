@@ -49,8 +49,8 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRequestReceived
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyResponseReceived
-from acts.test_utils.tel.tel_defines import EventSessionModifyResponsetRceived
-from acts.test_utils.tel.tel_defines import EventSessionModifyRequestRceived
+from acts.test_utils.tel.tel_defines import EventSessionModifyResponseReceived
+from acts.test_utils.tel.tel_defines import EventSessionModifyRequestReceived
 from acts.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import is_sub_event_match
@@ -676,7 +676,7 @@ def video_call_modify_video(
         EventTelecomVideoCallSessionModifyRequestReceived)
 
     ad_responder.droid.telecomCallVideoStartListeningForEvent(
-        call_id_responder, EventSessionModifyRequestRceived
+        call_id_responder, EventSessionModifyRequestReceived
     )
 
     ad_requester.droid.telecomCallVideoSendSessionModifyRequest(
@@ -692,7 +692,7 @@ def video_call_modify_video(
         return False
     finally:
         ad_responder.droid.telecomCallVideoStopListeningForEvent(
-            call_id_responder, EventSessionModifyRequestRceived
+            call_id_responder, EventSessionModifyRequestReceived
         )
 
     if (verify_func_between_request_and_response and
@@ -705,7 +705,7 @@ def video_call_modify_video(
     ad_requester.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
 
     ad_requester.droid.telecomCallVideoStartListeningForEvent(
-        call_id_requester, EventSessionModifyResponsetRceived)
+        call_id_requester, EventSessionModifyResponseReceived)
 
     ad_responder.droid.telecomCallVideoSendSessionModifyResponse(
         call_id_responder, video_state_response, video_quality_response)
@@ -720,7 +720,7 @@ def video_call_modify_video(
         return False
     finally:
         ad_requester.droid.telecomCallVideoStopListeningForEvent(
-            call_id_requester, EventSessionModifyResponsetRceived)
+            call_id_requester, EventSessionModifyResponseReceived)
 
     # TODO: b/26291165 Replace with reducing the volume as we want
     # to test route switching
@@ -812,7 +812,7 @@ def video_call_downgrade(log,
     }[video_state_request]
 
     ad_requester.droid.telecomCallVideoStartListeningForEvent(
-        call_id_requester, EventSessionModifyResponsetRceived)
+        call_id_requester, EventSessionModifyResponseReceived)
 
     ad_requester.droid.telecomCallVideoSendSessionModifyRequest(
         call_id_requester, video_state_request, video_quality_request)
@@ -827,7 +827,7 @@ def video_call_downgrade(log,
         return False
     finally:
         ad_requester.droid.telecomCallVideoStopListeningForEvent(
-            call_id_requester, EventSessionModifyResponsetRceived)
+            call_id_requester, EventSessionModifyResponseReceived)
 
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
     # TODO: b/26291165 Replace with reducing the volume as we want
