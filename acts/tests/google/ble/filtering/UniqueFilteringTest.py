@@ -392,8 +392,6 @@ class UniqueFilteringTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning
         Priority: 2
         """
-        # TODO: (tturney) waiting on input from team on how we handle this
-        # situation.
         test_result = True
         self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)

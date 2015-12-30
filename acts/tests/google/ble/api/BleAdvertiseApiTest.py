@@ -30,8 +30,6 @@ from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
 from acts.test_utils.bt.BleEnum import JavaInteger
 
-# TODO: Refactor to work like BleScanApiTest.
-
 
 class BleAdvertiseVerificationError(Exception):
 
@@ -1076,7 +1074,6 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
             return False
         return test_result
 
-    # TODO: in code refactor, remove all verify helper functions.
     def verify_adv_settings_adv_mode(self, droid, exp_adv_mode):
         try:
             droid.bleSetAdvertiseSettingsAdvertiseMode(exp_adv_mode)

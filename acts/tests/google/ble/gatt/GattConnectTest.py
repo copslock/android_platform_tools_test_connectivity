@@ -676,7 +676,6 @@ class GattConnectTest(BluetoothBaseTest):
                                 self.default_timeout)))
         return True
 
-    #TODO (tturney): Refactor to make this easier to run.
     @BluetoothBaseTest.bt_test_wrap
     def test_write_characteristic(self):
         """Test GATT connection writing characteristics.
@@ -817,9 +816,36 @@ class GattConnectTest(BluetoothBaseTest):
         )
         return True
 
-    # TODO: (tturney) fix this, documentation
     @BluetoothBaseTest.bt_test_wrap
     def test_write_characteristic_stress(self):
+        """Test GATT connection writing characteristics in quick succession.
+
+        Test establishing a gatt connection between a GATT server and GATT
+        client and exercise writing a characteristic. Do this quickly 100 times.
+
+        Steps:
+        1. Start a generic advertisement.
+        2. Start a generic scanner.
+        3. Find the advertisement and extract the mac address.
+        4. Stop the first scanner.
+        5. Create a GATT connection between the scanner and advertiser.
+        6. Discover services.
+        7. Set discovered characteristic notification to True.
+        8. Write data to the characteristic 100 times as fast as possible.
+        9. Send a response from the peripheral to the central.
+        10. Disconnect the GATT connection.
+
+        Expected Result:
+        The characteristic data should be written successfully each iteration
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Filtering, Scanning, GATT, Stress,
+        Characteristics, Descriptors
+        Priority: 1
+        """
         gatt_server_callback, gatt_server = self._setup_multiple_services()
         if not gatt_server_callback or not gatt_server:
             return False
@@ -893,79 +919,6 @@ class GattConnectTest(BluetoothBaseTest):
                             self.cen_ed.pop_event(
                                 characteristic_write.format(bluetooth_gatt),
                                 self.default_timeout)))
-        return True
-
-    # TODO: (tturney) Work in progress...
-    @BluetoothBaseTest.bt_test_wrap
-    def test_cross_key_pairing(self):
-        # gatt_server_callback, gatt_server = self._setup_multiple_services()
-        gatt_server_callback = (
-            self.per_droid.gattServerCreateGattServerCallback())
-        gatt_server = self.per_droid.gattServerOpenGattServer(
-            gatt_server_callback)
-        characteristic_input = [
-            {
-                'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-                'property': BluetoothGattCharacteristic.PROPERTY_WRITE.value |
-                            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-                'permission': BluetoothGattCharacteristic.PROPERTY_WRITE.value
-            },
-        ]
-        characteristic_list = setup_gatt_characteristics(
-            self.per_droid, characteristic_input)
-        gatt_service = self.per_droid.gattServerCreateService(
-            "3846d7a0-69c8-11e4-ba00-0002a5d5c51b",
-            BluetoothGattService.SERVICE_TYPE_PRIMARY.value)
-        self.per_droid.gatt_serviceAddCharacteristicToService(
-            gatt_service, characteristic_list[0])
-        self.per_droid.gattServerAddService(gatt_server, gatt_service)
-        self.per_droid.gattServerAddService(gatt_server, gatt_service)
-        self.per_droid.gattServerAddService(gatt_server, gatt_service)
-        result = self._find_service_added_event(
-            gatt_server_callback,
-            "3846d7a0-69c8-11e4-ba00-0002a5d5c51b")
-        if not result:
-            return False
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_droid, self.cen_ed,
-                                        self.per_droid, self.per_ed))
-        self.adv_instances.append(adv_callback)
-        if self.cen_droid.gattClientDiscoverServices(bluetooth_gatt):
-            event = self.cen_ed.pop_event(
-                gatt_services_discovered.format(gatt_callback),
-                self.default_timeout)
-            discovered_services_index = event['data']['ServicesIndex']
-        else:
-            self.log.info("Failed to discover services.")
-            return False
-        services_count = self.cen_droid.gattClientGetDiscoveredServicesCount(
-            discovered_services_index)
-        print("services count {}".format(services_count))
-        connected_device_list = self.per_droid.gattServerGetConnectedDevices(
-            gatt_server)
-        if len(connected_device_list) == 0:
-            self.log.info("No devices connected from peripheral.")
-            return False
-        bt_device_id = 0
-        status = 1
-        offset = 1
-        test_value = "1,2,3,4,5,6,7"
-        test_value_return = "1,2,3"
-        for i in range(services_count):
-            characteristic_uuids = (
-                self.cen_droid.gattClientGetDiscoveredCharacteristicUuids(
-                    discovered_services_index, i))
-            print(characteristic_uuids)
-            for characteristic in characteristic_uuids:
-                self.cen_droid.gattClientCharacteristicSetValue(
-                    bluetooth_gatt, discovered_services_index, i,
-                    characteristic, test_value)
-                print (self.cen_droid.gattClientWriteCharacteristic(
-                       bluetooth_gatt, discovered_services_index, i,
-                       characteristic))
-                self.cen_droid.gattClientReadCharacteristic(
-                    bluetooth_gatt, discovered_services_index, i,
-                    characteristic)
         return True
 
     def test_gatt_connect_mitm_attack(self):
