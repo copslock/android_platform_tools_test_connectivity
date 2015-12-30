@@ -40,11 +40,11 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import NetworkModeCdma
-from acts.test_utils.tel.tel_defines import NetworkModeGsmOnly
-from acts.test_utils.tel.tel_defines import NetworkModeGsmUmts
-from acts.test_utils.tel.tel_defines import NetworkModeLteCdmaEvdo
-from acts.test_utils.tel.tel_defines import NetworkModeLteGsmWcdma
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -620,7 +620,7 @@ def phone_setup_lte_gsm_wcdma(log, ad):
 
 def phone_setup_lte_gsm_wcdma_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NetworkModeLteGsmWcdma, RAT_FAMILY_LTE)
+        NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE)
 
 def phone_setup_gsm_umts(log, ad):
     return phone_setup_gsm_umts_for_subscription(log, ad,
@@ -628,7 +628,7 @@ def phone_setup_gsm_umts(log, ad):
 
 def phone_setup_gsm_umts_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NetworkModeGsmUmts, RAT_FAMILY_UMTS)
+        NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS)
 
 def phone_setup_gsm_only(log, ad):
     return phone_setup_gsm_only_for_subscription(log, ad,
@@ -636,7 +636,7 @@ def phone_setup_gsm_only(log, ad):
 
 def phone_setup_gsm_only_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NetworkModeGsmOnly, RAT_FAMILY_GSM)
+        NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM)
 
 def phone_setup_lte_cdma_evdo(log, ad):
     return phone_setup_lte_cdma_evdo_for_subscription(log, ad,
@@ -644,7 +644,7 @@ def phone_setup_lte_cdma_evdo(log, ad):
 
 def phone_setup_lte_cdma_evdo_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NetworkModeLteCdmaEvdo, RAT_FAMILY_LTE)
+        NETWORK_MODE_LTE_CDMA_EVDO, RAT_FAMILY_LTE)
 
 def phone_setup_cdma(log, ad):
     return phone_setup_cdma_for_subscription(log, ad,
@@ -652,7 +652,7 @@ def phone_setup_cdma(log, ad):
 
 def phone_setup_cdma_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NetworkModeCdma, RAT_FAMILY_CDMA2000)
+        NETWORK_MODE_CDMA, RAT_FAMILY_CDMA2000)
 
 def phone_idle_volte(log, ad):
     """Return if phone is idle for VoLTE call test.
