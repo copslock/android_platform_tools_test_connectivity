@@ -48,10 +48,6 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             "test_scan_mode_none",
             "test_scan_mode_connectable",
             "test_scan_mode_connectable_discoverable",
-            #"test_if_support_hid_profile",
-            #"test_if_support_hsp_profile",
-            #"test_if_support_a2dp_profile",
-            #"test_if_support_avrcp_profile",
         )
 
     def setup_class(self):
