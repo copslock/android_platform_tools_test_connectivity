@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for connectivity tests in telephony
 """
@@ -47,10 +46,10 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.utils import rand_ascii_str
 
-
 SINGLE_PART_LEN = 40
 MULTI_PART_LEN = 180
 SINGLE_PART_LEN_75 = 75
+
 
 class TelLabSmsTest(TelephonyBaseTest):
     phoneNumber = "11234123412"
@@ -59,56 +58,55 @@ class TelLabSmsTest(TelephonyBaseTest):
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                   "test_mo_sms_singlepart_lte",
-                   "test_mt_sms_singlepart_lte",
-                   "test_mo_sms_multipart_lte",
-                   "test_mt_sms_multipart_lte",
-                   "test_mo_sms_singlepart_eacute_lte",
-                   "test_mt_sms_singlepart_eacute_lte",
-                   "test_mo_sms_multipart1_eacute_lte",
-                   "test_mt_sms_multipart1_eacute_lte",
-                   "test_mo_sms_multipart2_eacute_lte",
-                   "test_mt_sms_multipart2_eacute_lte",
-                   "test_mo_sms_multipart12_eacute_lte",
-                   "test_mt_sms_multipart12_eacute_lte",
-                   "test_mo_sms_singlepart_71chars_eacute_lte",
-                   "test_mt_sms_singlepart_71chars_eacute_lte",
-                   "test_mo_sms_singlepart_wcdma",
-                   "test_mt_sms_singlepart_wcdma",
-                   "test_mo_sms_multipart_wcdma",
-                   "test_mt_sms_multipart_wcdma",
-                   "test_mo_sms_singlepart_eacute_wcdma",
-                   "test_mt_sms_singlepart_eacute_wcdma",
-                   "test_mo_sms_multipart1_eacute_wcdma",
-                   "test_mt_sms_multipart1_eacute_wcdma",
-                   "test_mo_sms_multipart2_eacute_wcdma",
-                   "test_mt_sms_multipart2_eacute_wcdma",
-                   "test_mo_sms_multipart12_eacute_wcdma",
-                   "test_mt_sms_multipart12_eacute_wcdma",
-                   "test_mo_sms_singlepart_71chars_eacute_wcdma",
-                   "test_mt_sms_singlepart_71chars_eacute_wcdma",
-                   "test_mo_sms_singlepart_gsm",
-                   "test_mt_sms_singlepart_gsm",
-                   "test_mo_sms_multipart_gsm",
-                   "test_mt_sms_multipart_gsm",
-                   "test_mo_sms_singlepart_eacute_gsm",
-                   "test_mt_sms_singlepart_eacute_gsm",
-                   "test_mo_sms_multipart1_eacute_gsm",
-                   "test_mt_sms_multipart1_eacute_gsm",
-                   "test_mo_sms_multipart2_eacute_gsm",
-                   "test_mt_sms_multipart2_eacute_gsm",
-                   "test_mo_sms_multipart12_eacute_gsm",
-                   "test_mt_sms_multipart12_eacute_gsm",
-                   "test_mo_sms_singlepart_71chars_eacute_gsm",
-                   "test_mt_sms_singlepart_71chars_eacute_gsm",
-                   "test_mo_sms_singlepart_1x",
-                   "test_mt_sms_singlepart_1x",
-                   "test_mo_sms_multipart_1x",
-                   "test_mt_sms_multipart_1x",
-                   )
+        self.tests = ("test_mo_sms_singlepart_lte",
+                      "test_mt_sms_singlepart_lte",
+                      "test_mo_sms_multipart_lte",
+                      "test_mt_sms_multipart_lte",
+                      "test_mo_sms_singlepart_eacute_lte",
+                      "test_mt_sms_singlepart_eacute_lte",
+                      "test_mo_sms_multipart1_eacute_lte",
+                      "test_mt_sms_multipart1_eacute_lte",
+                      "test_mo_sms_multipart2_eacute_lte",
+                      "test_mt_sms_multipart2_eacute_lte",
+                      "test_mo_sms_multipart12_eacute_lte",
+                      "test_mt_sms_multipart12_eacute_lte",
+                      "test_mo_sms_singlepart_71chars_eacute_lte",
+                      "test_mt_sms_singlepart_71chars_eacute_lte",
+                      "test_mo_sms_singlepart_wcdma",
+                      "test_mt_sms_singlepart_wcdma",
+                      "test_mo_sms_multipart_wcdma",
+                      "test_mt_sms_multipart_wcdma",
+                      "test_mo_sms_singlepart_eacute_wcdma",
+                      "test_mt_sms_singlepart_eacute_wcdma",
+                      "test_mo_sms_multipart1_eacute_wcdma",
+                      "test_mt_sms_multipart1_eacute_wcdma",
+                      "test_mo_sms_multipart2_eacute_wcdma",
+                      "test_mt_sms_multipart2_eacute_wcdma",
+                      "test_mo_sms_multipart12_eacute_wcdma",
+                      "test_mt_sms_multipart12_eacute_wcdma",
+                      "test_mo_sms_singlepart_71chars_eacute_wcdma",
+                      "test_mt_sms_singlepart_71chars_eacute_wcdma",
+                      "test_mo_sms_singlepart_gsm",
+                      "test_mt_sms_singlepart_gsm",
+                      "test_mo_sms_multipart_gsm",
+                      "test_mt_sms_multipart_gsm",
+                      "test_mo_sms_singlepart_eacute_gsm",
+                      "test_mt_sms_singlepart_eacute_gsm",
+                      "test_mo_sms_multipart1_eacute_gsm",
+                      "test_mt_sms_multipart1_eacute_gsm",
+                      "test_mo_sms_multipart2_eacute_gsm",
+                      "test_mt_sms_multipart2_eacute_gsm",
+                      "test_mo_sms_multipart12_eacute_gsm",
+                      "test_mt_sms_multipart12_eacute_gsm",
+                      "test_mo_sms_singlepart_71chars_eacute_gsm",
+                      "test_mt_sms_singlepart_71chars_eacute_gsm",
+                      "test_mo_sms_singlepart_1x",
+                      "test_mt_sms_singlepart_1x",
+                      "test_mo_sms_multipart_1x",
+                      "test_mt_sms_multipart_1x", )
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
 
     def setup_class(self):
         try:
@@ -134,8 +132,12 @@ class TelLabSmsTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def _setup_sms(self, set_simulation_func, rat, phone_number, message,
-            mo_mt=MOBILE_ORIGINATED):
+    def _setup_sms(self,
+                   set_simulation_func,
+                   rat,
+                   phone_number,
+                   message,
+                   mo_mt=MOBILE_ORIGINATED):
         try:
             self.anritsu.reset()
             self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
@@ -158,11 +160,14 @@ class TelLabSmsTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for SMS test.")
                 return False
 
-            if not ensure_network_rat(self.log, self.ad,
-                preferred_network_setting, rat_family,
-                toggle_apm_after_setting=True):
-                self.log.error("Failed to set rat family {}, preferred network:{}".
-                    format(rat_family, preferred_network_setting))
+            if not ensure_network_rat(self.log,
+                                      self.ad,
+                                      preferred_network_setting,
+                                      rat_family,
+                                      toggle_apm_after_setting=True):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
                 return False
 
             self.anritsu.wait_for_registration_state()
@@ -182,10 +187,12 @@ class TelLabSmsTest(TelephonyBaseTest):
                     return False
 
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
             return False
         except Exception as e:
-            self.log.error("Exception during emergency call procedure: " + str(e))
+            self.log.error("Exception during emergency call procedure: " + str(
+                e))
             return False
         return True
 
@@ -193,6 +200,7 @@ class TelLabSmsTest(TelephonyBaseTest):
         return message[:index] + string + message[index:]
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_lte(self):
         """ Test MO SMS(less than 160 charcters) functionality on LTE
@@ -205,7 +213,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
+                               rand_ascii_str(SINGLE_PART_LEN),
+                               MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_lte(self):
@@ -219,7 +228,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
+                               rand_ascii_str(SINGLE_PART_LEN),
+                               MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart_lte(self):
@@ -233,7 +243,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
+                               rand_ascii_str(MULTI_PART_LEN),
+                               MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart_lte(self):
@@ -247,7 +258,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
+                               rand_ascii_str(MULTI_PART_LEN),
+                               MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_eacute_lte(self):
@@ -260,9 +272,8 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -277,9 +288,8 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -295,9 +305,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -313,9 +323,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -331,9 +341,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               170)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 170)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -349,9 +359,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 10)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -367,12 +377,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -388,12 +394,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -409,9 +411,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -427,9 +429,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
         return self._setup_sms(set_system_model_lte, RAT_LTE, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -444,8 +446,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
+        return self._setup_sms(
+            set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
+            rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_wcdma(self):
@@ -458,8 +461,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
+        return self._setup_sms(
+            set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
+            rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart_wcdma(self):
@@ -472,8 +476,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
+        return self._setup_sms(
+            set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
+            rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart_wcdma(self):
@@ -486,8 +491,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
+        return self._setup_sms(
+            set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
+            rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_eacute_wcdma(self):
@@ -500,11 +506,10 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_ORIGINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_eacute_wcdma(self):
@@ -517,11 +522,10 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_TERMINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart1_eacute_wcdma(self):
@@ -535,11 +539,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_ORIGINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart1_eacute_wcdma(self):
@@ -553,11 +557,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_TERMINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart2_eacute_wcdma(self):
@@ -571,11 +575,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               170)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_ORIGINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 170)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart2_eacute_wcdma(self):
@@ -589,11 +593,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               10)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_TERMINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 10)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart12_eacute_wcdma(self):
@@ -607,14 +611,10 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_ORIGINATED)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart12_eacute_wcdma(self):
@@ -628,14 +628,10 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_TERMINATED)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_71chars_eacute_wcdma(self):
@@ -649,11 +645,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_ORIGINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_71chars_eacute_wcdma(self):
@@ -667,11 +663,11 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
-        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA, self.phoneNumber,
-                               text, MOBILE_TERMINATED)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
+        return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
+                               self.phoneNumber, text, MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_gsm(self):
@@ -685,7 +681,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
+                               rand_ascii_str(SINGLE_PART_LEN),
+                               MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_gsm(self):
@@ -699,7 +696,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
+                               rand_ascii_str(SINGLE_PART_LEN),
+                               MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart_gsm(self):
@@ -713,7 +711,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
+                               rand_ascii_str(MULTI_PART_LEN),
+                               MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart_gsm(self):
@@ -727,7 +726,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
+                               rand_ascii_str(MULTI_PART_LEN),
+                               MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_eacute_gsm(self):
@@ -740,9 +740,8 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -757,9 +756,8 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN),
-                                               "single part contains é",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN), "single part contains é", 10)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -775,9 +773,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -793,9 +791,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in first part",
-                                               10)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in first part", 10)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -811,9 +809,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               170)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 170)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -829,9 +827,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(MULTI_PART_LEN),
-                                               "multi part contains é in second part",
-                                               170)
+        text = self.insert_string_into_message(
+            rand_ascii_str(MULTI_PART_LEN),
+            "multi part contains é in second part", 170)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -847,12 +845,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -868,12 +862,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         text = rand_ascii_str(MULTI_PART_LEN)
-        text = self.insert_string_into_message(text,
-                                               "é in first part",
-                                               50)
-        text = self.insert_string_into_message(text,
-                                               "é in second part",
-                                               170)
+        text = self.insert_string_into_message(text, "é in first part", 50)
+        text = self.insert_string_into_message(text, "é in second part", 170)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -889,9 +879,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_ORIGINATED)
 
@@ -907,9 +897,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        text = self.insert_string_into_message(rand_ascii_str(SINGLE_PART_LEN_75),
-                                               "single part more than 71 characters with é",
-                                               72)
+        text = self.insert_string_into_message(
+            rand_ascii_str(SINGLE_PART_LEN_75),
+            "single part more than 71 characters with é", 72)
         return self._setup_sms(set_system_model_gsm, RAT_GSM, self.phoneNumber,
                                text, MOBILE_TERMINATED)
 
@@ -924,8 +914,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_1x, RAT_1XRTT, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
+        return self._setup_sms(
+            set_system_model_1x, RAT_1XRTT, self.phoneNumber,
+            rand_ascii_str(SINGLE_PART_LEN), MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_singlepart_1x(self):
@@ -938,8 +929,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_1x, RAT_1XRTT, self.phoneNumber,
-                               rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
+        return self._setup_sms(
+            set_system_model_1x, RAT_1XRTT, self.phoneNumber,
+            rand_ascii_str(SINGLE_PART_LEN), MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_multipart_1x(self):
@@ -952,8 +944,9 @@ class TelLabSmsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_sms(set_system_model_1x, RAT_1XRTT, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
+        return self._setup_sms(
+            set_system_model_1x, RAT_1XRTT, self.phoneNumber,
+            rand_ascii_str(MULTI_PART_LEN), MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart_1x(self):
@@ -967,6 +960,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         # TODO: b/26346258 Anritsu is not sending message.
-        return self._setup_sms(set_system_model_1x, RAT_1XRTT, self.phoneNumber,
-                               rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
+        return self._setup_sms(
+            set_system_model_1x, RAT_1XRTT, self.phoneNumber,
+            rand_ascii_str(MULTI_PART_LEN), MOBILE_TERMINATED)
+
     """ Tests End """

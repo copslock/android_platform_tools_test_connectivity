@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for voice tests in telephony
 """
@@ -49,6 +48,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
+
 class TelLabVoiceTest(TelephonyBaseTest):
 
     CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
@@ -56,29 +56,29 @@ class TelLabVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
-                    "test_mo_voice_call_lte_wcdma_csfb_redirection_phone_hangup",
-                    "test_mo_voice_call_lte_wcdma_csfb_redirection_remote_hangup",
-                    "test_mo_voice_call_lte_wcdma_csfb_handover_phone_hangup",
-                    "test_mo_voice_call_lte_wcdma_csfb_handover_remote_hangup",
-                    "test_mt_voice_call_lte_wcdma_csfb_redirection_phone_hangup",
-                    "test_mt_voice_call_lte_wcdma_csfb_redirection_remote_hangup",
-                    "test_mt_voice_call_lte_wcdma_csfb_handover_phone_hangup",
-                    "test_mt_voice_call_lte_wcdma_csfb_handover_remote_hangup",
-                    "test_mo_voice_call_wcdma_phone_hangup",
-                    "test_mo_voice_call_wcdma_remote_hangup",
-                    "test_mt_voice_call_wcdma_phone_hangup",
-                    "test_mt_voice_call_wcdma_remote_hangup",
-                    "test_mo_voice_call_gsm_phone_hangup",
-                    "test_mo_voice_call_gsm_remote_hangup",
-                    "test_mt_voice_call_gsm_phone_hangup",
-                    "test_mt_voice_call_gsm_remote_hangup",
-                    "test_mo_voice_call_1x_phone_hangup",
-                    "test_mo_voice_call_1x_remote_hangup",
-                    "test_mt_voice_call_1x_phone_hangup",
-                    "test_mt_voice_call_1x_remote_hangup",
-                    )
+            "test_mo_voice_call_lte_wcdma_csfb_redirection_phone_hangup",
+            "test_mo_voice_call_lte_wcdma_csfb_redirection_remote_hangup",
+            "test_mo_voice_call_lte_wcdma_csfb_handover_phone_hangup",
+            "test_mo_voice_call_lte_wcdma_csfb_handover_remote_hangup",
+            "test_mt_voice_call_lte_wcdma_csfb_redirection_phone_hangup",
+            "test_mt_voice_call_lte_wcdma_csfb_redirection_remote_hangup",
+            "test_mt_voice_call_lte_wcdma_csfb_handover_phone_hangup",
+            "test_mt_voice_call_lte_wcdma_csfb_handover_remote_hangup",
+            "test_mo_voice_call_wcdma_phone_hangup",
+            "test_mo_voice_call_wcdma_remote_hangup",
+            "test_mt_voice_call_wcdma_phone_hangup",
+            "test_mt_voice_call_wcdma_remote_hangup",
+            "test_mo_voice_call_gsm_phone_hangup",
+            "test_mo_voice_call_gsm_remote_hangup",
+            "test_mt_voice_call_gsm_phone_hangup",
+            "test_mt_voice_call_gsm_remote_hangup",
+            "test_mo_voice_call_1x_phone_hangup",
+            "test_mo_voice_call_1x_remote_hangup",
+            "test_mt_voice_call_1x_phone_hangup",
+            "test_mt_voice_call_1x_remote_hangup", )
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
 
     def setup_class(self):
         try:
@@ -104,13 +104,18 @@ class TelLabVoiceTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def _setup_voice_call(self, set_simulation_func, rat, mo_mt=MOBILE_ORIGINATED,
-        teardown_side=CALL_TEARDOWN_PHONE, csfb_type=None):
+    def _setup_voice_call(self,
+                          set_simulation_func,
+                          rat,
+                          mo_mt=MOBILE_ORIGINATED,
+                          teardown_side=CALL_TEARDOWN_PHONE,
+                          csfb_type=None):
         try:
             self.anritsu.reset()
             self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
             set_simulation_func(self.anritsu, self.user_params)
-            self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON, 2)
+            self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
+                                                   2)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -131,40 +136,49 @@ class TelLabVoiceTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for Voice test.")
                 return False
 
-            if not ensure_network_rat(self.log, self.ad,
-                preferred_network_setting, rat_family,
-                toggle_apm_after_setting=True):
-                self.log.error("Failed to set rat family {}, preferred network:{}".
-                    format(rat_family, preferred_network_setting))
+            if not ensure_network_rat(self.log,
+                                      self.ad,
+                                      preferred_network_setting,
+                                      rat_family,
+                                      toggle_apm_after_setting=True):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
                 return False
 
             self.anritsu.wait_for_registration_state()
             time.sleep(10)
             if mo_mt == MOBILE_ORIGINATED:
-                if not call_mo_setup_teardown(self.log, self.ad,
-                                             self.virtualPhoneHandle,
-                                             "777777", teardown_side,
-                                             emergency=False):
+                if not call_mo_setup_teardown(self.log,
+                                              self.ad,
+                                              self.virtualPhoneHandle,
+                                              "777777",
+                                              teardown_side,
+                                              emergency=False):
                     self.log.error("Phone {} Failed to make MO call to 777777"
-                                 .format(self.ad.serial))
+                                   .format(self.ad.serial))
                     return False
             else:
-                if not call_mt_setup_teardown(self.log, self.ad,
-                                             self.virtualPhoneHandle,
-                                             "777777", teardown_side, rat):
-                    self.log.error("Phone {} Failed to make MT call from 777777"
-                                 .format(self.ad.serial))
+                if not call_mt_setup_teardown(
+                        self.log, self.ad, self.virtualPhoneHandle, "777777",
+                        teardown_side, rat):
+                    self.log.error(
+                        "Phone {} Failed to make MT call from 777777"
+                        .format(self.ad.serial))
                     return False
 
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
             return False
         except Exception as e:
-            self.log.error("Exception during emergency call procedure: " + str(e))
+            self.log.error("Exception during emergency call procedure: " + str(
+                e))
             return False
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_lte_wcdma_csfb_redirection_phone_hangup(self):
         """ Test MO Call on LTE - CSFB Redirection, hangup at phone
@@ -179,9 +193,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_PHONE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_PHONE,
                                       CsfbType.CSFB_TYPE_REDIRECTION)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -198,9 +211,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE, MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_REMOTE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_REMOTE,
                                       CsfbType.CSFB_TYPE_REDIRECTION)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -217,9 +229,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_PHONE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_PHONE,
                                       CsfbType.CSFB_TYPE_HANDOVER)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -236,9 +247,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE, MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_REMOTE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_REMOTE,
                                       CsfbType.CSFB_TYPE_HANDOVER)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -255,9 +265,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_PHONE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_PHONE,
                                       CsfbType.CSFB_TYPE_REDIRECTION)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -274,9 +283,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_REMOTE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_REMOTE,
                                       CsfbType.CSFB_TYPE_REDIRECTION)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -293,9 +301,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_PHONE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_PHONE,
                                       CsfbType.CSFB_TYPE_HANDOVER)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -312,9 +319,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_lte_wcdma,
-                                      RAT_LTE,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_REMOTE,
+        return self._setup_voice_call(set_system_model_lte_wcdma, RAT_LTE,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_REMOTE,
                                       CsfbType.CSFB_TYPE_HANDOVER)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -331,9 +337,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_wcdma,
-                                      RAT_WCDMA,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_wcdma, RAT_WCDMA,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_wcdma_remote_hangup(self):
@@ -349,9 +354,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_wcdma,
-                                      RAT_WCDMA,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_wcdma, RAT_WCDMA,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_REMOTE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_wcdma_phone_hangup(self):
@@ -367,9 +371,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_wcdma,
-                                      RAT_WCDMA,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_wcdma, RAT_WCDMA,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_wcdma_remote_hangup(self):
@@ -385,9 +388,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_wcdma,
-                                      RAT_WCDMA,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_wcdma, RAT_WCDMA,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_REMOTE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_gsm_phone_hangup(self):
@@ -403,9 +405,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_gsm,
-                                      RAT_GSM,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_gsm, RAT_GSM,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_gsm_remote_hangup(self):
@@ -421,9 +422,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_gsm,
-                                      RAT_GSM,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_gsm, RAT_GSM,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_REMOTE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_gsm_phone_hangup(self):
@@ -439,9 +439,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_gsm,
-                                      RAT_GSM,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_gsm, RAT_GSM,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_gsm_remote_hangup(self):
@@ -457,9 +456,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_gsm,
-                                      RAT_GSM,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_gsm, RAT_GSM,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_REMOTE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_1x_phone_hangup(self):
@@ -475,9 +473,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_1x,
-                                      RAT_1XRTT,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_1x, RAT_1XRTT,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_voice_call_1x_remote_hangup(self):
@@ -493,9 +490,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_1x,
-                                      RAT_1XRTT,MOBILE_ORIGINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_1x, RAT_1XRTT,
+                                      MOBILE_ORIGINATED, CALL_TEARDOWN_REMOTE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_1x_phone_hangup(self):
@@ -511,9 +507,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_1x,
-                                      RAT_1XRTT,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_PHONE)
+        return self._setup_voice_call(set_system_model_1x, RAT_1XRTT,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_PHONE)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_voice_call_1x_remote_hangup(self):
@@ -529,7 +524,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_voice_call(set_system_model_1x,
-                                      RAT_1XRTT,MOBILE_TERMINATED,
-                                      CALL_TEARDOWN_REMOTE)
+        return self._setup_voice_call(set_system_model_1x, RAT_1XRTT,
+                                      MOBILE_TERMINATED, CALL_TEARDOWN_REMOTE)
+
     """ Tests End """

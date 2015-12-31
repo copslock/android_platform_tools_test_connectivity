@@ -32,13 +32,11 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 ATTEN_NAME_FOR_WIFI = 'wifi0'
 ATTEN_NAME_FOR_CELL = 'cell0'
 
-class TelWifiDataTest(TelephonyBaseTest):
 
+class TelWifiDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                      "test_wifi_cell_switching_stress",
-                      )
+        self.tests = ("test_wifi_cell_switching_stress", )
         self.stress_test_number = int(self.user_params["stress_test_number"])
         self.live_network_ssid = self.user_params["wifi_network_ssid"]
         try:
@@ -75,68 +73,68 @@ class TelWifiDataTest(TelephonyBaseTest):
         WIFI_RSSI_CHANGE_STEP_SIZE = 2
         WIFI_RSSI_CHANGE_DELAY_PER_STEP = 1
         # Set Attenuator Value for WiFi and Cell to 0.
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
-                 0, MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
-                 0, MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
+                 MAX_RSSI_RESERVED_VALUE)
 
         # Make sure DUT get Cell Data coverage (LTE).
         toggle_airplane_mode(self.log, self.android_devices[0], False)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
+                                  WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
             return False
 
         # Make sure DUT WiFi is connected.
         if not ensure_wifi_connected(self.log, self.android_devices[0],
                                      self.live_network_ssid,
                                      self.live_network_pwd):
-                self.log.error("{} connect WiFI failed".
-                    format(self.android_devices[0].serial))
-                return False
+            self.log.error("{} connect WiFI failed".format(
+                self.android_devices[0].serial))
+            return False
 
         total_iteration = self.stress_test_number
-        self.log.info("Stress test. Total iteration = {}.".
-                      format(total_iteration))
+        self.log.info("Stress test. Total iteration = {}.".format(
+            total_iteration))
         current_iteration = 1
-        while(current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".
-                          format(current_iteration, total_iteration))
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = {}/{}----<".format(
+                current_iteration, total_iteration))
 
             # Set WiFi RSSI to MAX.
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
-                     MAX_RSSI_RESERVED_VALUE,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     MAX_RSSI_RESERVED_VALUE, WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             # Wait for DUT report WiFi connected and Internet access OK.
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("Data not on WiFi")
                 break
 
             # Set WiFi RSSI to MIN (DUT lose WiFi coverage).
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
-                     MIN_RSSI_RESERVED_VALUE,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     MIN_RSSI_RESERVED_VALUE, WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             # Wait for DUT report Cellular Data connected and Internet access OK.
             if (not wait_for_cell_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("Data not on Cell")
                 break
 
-            self.log.info(">----Iteration : {}/{} succeed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} succeed.----<".format(
+                current_iteration, total_iteration))
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} failed.----<".format(
+                current_iteration, total_iteration))
             return False
         else:
             return True
 
+
 if __name__ == "__main__":
     raise Exception("Cannot run this class directly")
-

@@ -45,17 +45,16 @@ from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscri
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import load_config
 
-class TelLivePreflightTest(TelephonyBaseTest):
 
+class TelLivePreflightTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                      "test_pre_flight_check",
-                      )
+        self.tests = ("test_pre_flight_check", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_pre_flight_check(self):
         def droid_has_phone(log, ad):
@@ -65,15 +64,16 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 return False
             toggle_airplane_mode(log, ad, False)
             sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-            if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  WAIT_TIME_NW_SELECTION):
+            if not wait_for_voice_attach_for_subscription(
+                    log, ad, sub_id, WAIT_TIME_NW_SELECTION):
                 log.error("{} didn't find a cell network".format(ad.serial))
                 return False
             return True
+
         def droid_has_provisioning(log, ad):
             if not ad.droid.imsIsVolteProvisionedOnDevice():
-                log.error("{}: VoLTE Not Provisioned on the Platform".
-                    format(ad.serial))
+                log.error("{}: VoLTE Not Provisioned on the Platform".format(
+                    ad.serial))
                 return False
             else:
                 log.info("{} VoLTE Provisioned".format(ad.serial))
@@ -81,8 +81,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
         def droid_has_volte(log, ad):
             if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
-                log.error("{}: VoLTE Not Enabled on the Platform".
-                    format(ad.serial))
+                log.error("{}: VoLTE Not Enabled on the Platform".format(
+                    ad.serial))
                 return False
             else:
                 log.info("{} VoLTE Enabled by platform".format(ad.serial))
@@ -90,8 +90,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
         def droid_has_wifi_calling(log, ad):
             if not ad.droid.imsIsWfcEnabledByPlatform():
-                log.error("{}: WFC Not Enabled on the Platform".
-                    format(ad.serial))
+                log.error("{}: WFC Not Enabled on the Platform".format(
+                    ad.serial))
                 return False
             else:
                 log.info("{} WFC Enabled by platform".format(ad.serial))
@@ -99,8 +99,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
         def droid_has_vt(log, ad):
             if not ad.droid.imsIsVtEnabledByPlatform():
-                log.error("{}: VT Not Enabled on the Platform".
-                    format(ad.serial))
+                log.error("{}: VT Not Enabled on the Platform".format(
+                    ad.serial))
                 return False
             else:
                 log.info("{} VT Enabled by platform".format(ad.serial))
@@ -115,26 +115,27 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
                 # Special capability phone, needed to get SIM Operator
                 if not CAPABILITY_PHONE in device_capabilities[model]:
-                    self.log.info("Skipping {}:{}: not a phone".
-                                  format(ad.serial, model))
+                    self.log.info("Skipping {}:{}: not a phone".format(
+                        ad.serial, model))
                     return True
 
                 operator = get_operator_name(self.log, ad)
-                self.log.info("Pre-flight check for <{}>, <{}:{}>, build<{}>".
-                              format(operator, model, ad.serial,
-                                     ad.droid.getBuildID()))
+                self.log.info(
+                    "Pre-flight check for <{}>, <{}:{}>, build<{}>".format(
+                        operator, model, ad.serial, ad.droid.getBuildID()))
 
-                if("force_provisioning" in self.user_params and
-                   CAPABILITY_OMADM in device_capabilities[model] and
-                   CAPABILITY_OMADM in operator_capabilities[operator] and
-                   not droid_has_provisioning(self.log, ad)):
+                if ("force_provisioning" in self.user_params and
+                        CAPABILITY_OMADM in device_capabilities[model] and
+                        CAPABILITY_OMADM in operator_capabilities[operator] and
+                        not droid_has_provisioning(self.log, ad)):
                     self.log.info("{} not IMS Provisioned!!".format(ad.serial))
-                    self.log.info("{} Forcing IMS Provisioning!".format(ad.serial))
+                    self.log.info("{} Forcing IMS Provisioning!".format(
+                        ad.serial))
                     ad.droid.imsSetVolteProvisioning(True)
                     self.log.info("{} reboot!".format(ad.serial))
                     ad.reboot()
-                    self.log.info("{} wait {}s for radio up.".
-                        format(ad.serial, WAIT_TIME_AFTER_REBOOT))
+                    self.log.info("{} wait {}s for radio up.".format(
+                        ad.serial, WAIT_TIME_AFTER_REBOOT))
                     # This sleep WAIT_TIME_AFTER_REBOOT seconds is waiting for
                     # radio to initiate after phone reboot.
                     time.sleep(WAIT_TIME_AFTER_REBOOT)
@@ -142,19 +143,22 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 active_capabilities = [CAPABILITY_PHONE, CAPABILITY_OMADM,
                                        CAPABILITY_VOLTE, CAPABILITY_WFC]
                 for capability in active_capabilities:
-                    if(capability in device_capabilities[model] and
-                       capability in operator_capabilities[operator]):
+                    if (capability in device_capabilities[model] and
+                            capability in operator_capabilities[operator]):
                         if not {
-                            # TODO: b/26337715 make the check table global
-                            CAPABILITY_PHONE: droid_has_phone,
-                            CAPABILITY_OMADM: droid_has_provisioning,
-                            CAPABILITY_VOLTE: droid_has_volte,
-                            CAPABILITY_WFC: droid_has_wifi_calling,
-                            CAPABILITY_VT: droid_has_vt
+                                # TODO: b/26337715 make the check table global
+                                CAPABILITY_PHONE: droid_has_phone,
+                                CAPABILITY_OMADM: droid_has_provisioning,
+                                CAPABILITY_VOLTE: droid_has_volte,
+                                CAPABILITY_WFC: droid_has_wifi_calling,
+                                CAPABILITY_VT: droid_has_vt
                         }[capability](self.log, ad):
-                            self.abort_all("Pre-flight check FAILED for <{}>, <{}:{}>".
-                                           format(operator, model, ad.serial))
+                            self.abort_all(
+                                "Pre-flight check FAILED for <{}>, <{}:{}>".format(
+                                    operator, model, ad.serial))
         except Exception as e:
             self.abort_all("Pre-flight check exception: {}".format(e))
         return True
+
+
 """ Tests End """

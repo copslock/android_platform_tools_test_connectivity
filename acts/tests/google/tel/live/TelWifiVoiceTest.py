@@ -102,150 +102,149 @@ WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN = -50
 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT = -70
 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT = -85
 
-class TelWifiVoiceTest(TelephonyBaseTest):
 
+class TelWifiVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
-                      # WFC Call Routing tests.
-                      # epdg, WFC, APM, WiFi strong
-                      "test_call_epdg_wfc_wifi_only_wifi_strong_apm",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_strong_apm",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_strong_apm",
+            # WFC Call Routing tests.
+            # epdg, WFC, APM, WiFi strong
+            "test_call_epdg_wfc_wifi_only_wifi_strong_apm",
+            "test_call_epdg_wfc_wifi_preferred_wifi_strong_apm",
+            "test_call_epdg_wfc_cellular_preferred_wifi_strong_apm",
 
-                      # epdg, WFC, APM, WiFi Absent
-                      "test_call_epdg_wfc_wifi_only_wifi_absent_apm",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_absent_apm",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_absent_apm",
+            # epdg, WFC, APM, WiFi Absent
+            "test_call_epdg_wfc_wifi_only_wifi_absent_apm",
+            "test_call_epdg_wfc_wifi_preferred_wifi_absent_apm",
+            "test_call_epdg_wfc_cellular_preferred_wifi_absent_apm",
 
-                      # epdg, WFC, APM, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_only_wifi_disabled_apm",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_disabled_apm",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_disabled_apm",
+            # epdg, WFC, APM, WiFi Disabled
+            "test_call_epdg_wfc_wifi_only_wifi_disabled_apm",
+            "test_call_epdg_wfc_wifi_preferred_wifi_disabled_apm",
+            "test_call_epdg_wfc_cellular_preferred_wifi_disabled_apm",
 
-                      # epdg, WFC, cellular strong, WiFi strong
-                      "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_strong",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi strong
+            "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_strong",
+            "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi weak
-                      "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_strong",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi weak
+            "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_strong",
+            "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi Absent
-                      "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_strong",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi Absent
+            "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_strong",
+            "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_strong",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi Disabled
+            "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_strong",
+            "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_strong",
 
-                      # epdg, WFC, cellular weak, WiFi strong
-                      "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi strong
+            "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_weak",
 
-                      # epdg, WFC, cellular weak, WiFi Absent=
-                      "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_weak",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi Absent=
+            "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_weak",
+            "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_weak",
 
-                      # epdg, WFC, cellular weak, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_weak",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi Disabled
+            "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_weak",
+            "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_weak",
 
-                      # epdg, WiFI strong, WFC disabled
-                      "test_call_epdg_wfc_disabled_wifi_strong_apm",
-                      "test_call_epdg_wfc_disabled_wifi_strong_cellular_strong",
-                      "test_call_epdg_wfc_disabled_wifi_strong_cellular_weak",
+            # epdg, WiFI strong, WFC disabled
+            "test_call_epdg_wfc_disabled_wifi_strong_apm",
+            "test_call_epdg_wfc_disabled_wifi_strong_cellular_strong",
+            "test_call_epdg_wfc_disabled_wifi_strong_cellular_weak",
 
-                      # WFC Idle-Mode Mobility
-                      # Rove-in, Rove-out test
-                      "test_rove_in_lte_wifi_preferred",
-                      "test_rove_in_lte_wifi_only",
-                      "test_rove_in_wcdma_wifi_preferred",
-                      "test_rove_in_wcdma_wifi_only",
-                      "test_rove_out_lte_wifi_preferred",
-                      "test_rove_out_lte_wifi_only",
-                      "test_rove_out_wcdma_wifi_preferred",
-                      "test_rove_out_wcdma_wifi_only",
-                      "test_rove_out_in_stress",
+            # WFC Idle-Mode Mobility
+            # Rove-in, Rove-out test
+            "test_rove_in_lte_wifi_preferred",
+            "test_rove_in_lte_wifi_only",
+            "test_rove_in_wcdma_wifi_preferred",
+            "test_rove_in_wcdma_wifi_only",
+            "test_rove_out_lte_wifi_preferred",
+            "test_rove_out_lte_wifi_only",
+            "test_rove_out_wcdma_wifi_preferred",
+            "test_rove_out_wcdma_wifi_only",
+            "test_rove_out_in_stress",
 
-                      # WFC Active-Mode Mobility
-                      # Hand-in, Hand-out test
-                      "test_hand_out_wifi_only",
-                      "test_hand_out_wifi_preferred",
-                      "test_hand_out_in_wifi_preferred",
-                      "test_hand_in_wifi_preferred",
-                      "test_hand_in_out_wifi_preferred",
-                      "test_hand_out_in_stress",
+            # WFC Active-Mode Mobility
+            # Hand-in, Hand-out test
+            "test_hand_out_wifi_only",
+            "test_hand_out_wifi_preferred",
+            "test_hand_out_in_wifi_preferred",
+            "test_hand_in_wifi_preferred",
+            "test_hand_in_out_wifi_preferred",
+            "test_hand_out_in_stress",
 
-                      # WFC test with E4G disabled
-                      "test_call_epdg_wfc_wifi_preferred_e4g_disabled",
-                      "test_call_epdg_wfc_wifi_preferred_e4g_disabled_wifi_not_connected",
-                      "test_call_epdg_wfc_wifi_preferred_e4g_disabled_leave_wifi_coverage",
+            # WFC test with E4G disabled
+            "test_call_epdg_wfc_wifi_preferred_e4g_disabled",
+            "test_call_epdg_wfc_wifi_preferred_e4g_disabled_wifi_not_connected",
+            "test_call_epdg_wfc_wifi_preferred_e4g_disabled_leave_wifi_coverage",
 
-                      # ePDG Active-Mode Mobility: Hand-in, Hand-out test
-                      "test_hand_out_cellular_preferred",
-                      "test_hand_in_cellular_preferred",
+            # ePDG Active-Mode Mobility: Hand-in, Hand-out test
+            "test_hand_out_cellular_preferred",
+            "test_hand_in_cellular_preferred",
 
-                      # epdg, WFC, cellular weak, WiFi strong
-                      "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_weak",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi strong
+            "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_weak",
+            "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_weak",
 
-                      # epdg, WFC, cellular weak, WiFi weak
-                      "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_weak",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_weak",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi weak
+            "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_weak",
+            "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_weak",
+            "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_weak",
 
-                      # epdg, WFC, cellular weak, WiFi Absent
-                      "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi Absent
+            "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_weak",
 
-                      # epdg, WFC, cellular weak, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_weak",
+            # epdg, WFC, cellular weak, WiFi Disabled
+            "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_weak",
 
-                      # epdg, WFC, cellular absent, WiFi strong
-                      "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_absent",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_absent",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_absent",
+            # epdg, WFC, cellular absent, WiFi strong
+            "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_absent",
+            "test_call_epdg_wfc_wifi_preferred_wifi_strong_cellular_absent",
+            "test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_absent",
 
-                      # epdg, WFC, cellular absent, WiFi weak
-                      "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_absent",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_absent",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_absent",
+            # epdg, WFC, cellular absent, WiFi weak
+            "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_absent",
+            "test_call_epdg_wfc_wifi_preferred_wifi_weak_cellular_absent",
+            "test_call_epdg_wfc_cellular_preferred_wifi_weak_cellular_absent",
 
-                      # epdg, WFC, cellular absent, WiFi Absent
-                      "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_absent",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_absent",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_absent",
+            # epdg, WFC, cellular absent, WiFi Absent
+            "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_absent",
+            "test_call_epdg_wfc_wifi_preferred_wifi_absent_cellular_absent",
+            "test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_absent",
 
-                      # epdg, WFC, cellular absent, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_absent",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_absent",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_absent",
+            # epdg, WFC, cellular absent, WiFi Disabled
+            "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_absent",
+            "test_call_epdg_wfc_wifi_preferred_wifi_disabled_cellular_absent",
+            "test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_absent",
 
-                      # epdg, WiFI strong, WFC disabled
-                      "test_call_epdg_wfc_disabled_wifi_strong_cellular_absent",
+            # epdg, WiFI strong, WFC disabled
+            "test_call_epdg_wfc_disabled_wifi_strong_cellular_absent",
 
-                      # Below test fail now, because:
-                      # 1. wifi weak not working now. (phone don't rove-in)
-                      # 2. wifi-only mode not working now.
-                      # epdg, WFC, APM, WiFi weak
-                      "test_call_epdg_wfc_wifi_only_wifi_weak_apm",
-                      "test_call_epdg_wfc_wifi_preferred_wifi_weak_apm",
-                      "test_call_epdg_wfc_cellular_preferred_wifi_weak_apm",
+            # Below test fail now, because:
+            # 1. wifi weak not working now. (phone don't rove-in)
+            # 2. wifi-only mode not working now.
+            # epdg, WFC, APM, WiFi weak
+            "test_call_epdg_wfc_wifi_only_wifi_weak_apm",
+            "test_call_epdg_wfc_wifi_preferred_wifi_weak_apm",
+            "test_call_epdg_wfc_cellular_preferred_wifi_weak_apm",
 
-                      # epdg, WFC, cellular strong, WiFi strong
-                      "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi strong
+            "test_call_epdg_wfc_wifi_only_wifi_strong_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi weak
-                      "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi weak
+            "test_call_epdg_wfc_wifi_only_wifi_weak_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi Absent
-                      "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi Absent
+            "test_call_epdg_wfc_wifi_only_wifi_absent_cellular_strong",
 
-                      # epdg, WFC, cellular strong, WiFi Disabled
-                      "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_strong",
+            # epdg, WFC, cellular strong, WiFi Disabled
+            "test_call_epdg_wfc_wifi_only_wifi_disabled_cellular_strong",
 
-                      # RSSI monitoring
-                      "test_rssi_monitoring",
-                      )
+            # RSSI monitoring
+            "test_rssi_monitoring", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
@@ -264,29 +263,29 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         super().setup_class()
 
-        self.log.info("WFC phone: <{}> <{}>".
-                      format(self.android_devices[0].serial,
-                             get_phone_number(self.log, self.android_devices[0])))
+        self.log.info("WFC phone: <{}> <{}>".format(self.android_devices[
+            0].serial, get_phone_number(self.log, self.android_devices[0])))
         self.android_devices[0].droid.startTrackingSignalStrengths()
 
         # Do WiFi RSSI calibration.
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
-                 0, MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
-                 0, MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
+                 MAX_RSSI_RESERVED_VALUE)
         if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-            WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                                  WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
             self.log.error("Setup_class: phone failed to select to LTE.")
             return False
         if not ensure_wifi_connected(self.log, self.android_devices[0],
-                                     self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI failed".
-                    format(self.android_devices[0].serial))
-                return False
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed".format(
+                self.android_devices[0].serial))
+            return False
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
 
@@ -299,19 +298,21 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON)
 
         setattr(self, "wifi_rssi_with_no_atten",
-            self.android_devices[0].droid.wifiGetConnectionInfo()['rssi'])
+                self.android_devices[0].droid.wifiGetConnectionInfo()['rssi'])
         if self.wifi_rssi_with_no_atten == INVALID_WIFI_RSSI:
-            self.log.error("Initial WiFi RSSI calibration value is wrong: -127.")
+            self.log.error(
+                "Initial WiFi RSSI calibration value is wrong: -127.")
             return False
-        self.log.info("WiFi RSSI calibration info: atten=0, RSSI={}".
-            format(self.wifi_rssi_with_no_atten))
+        self.log.info("WiFi RSSI calibration info: atten=0, RSSI={}".format(
+            self.wifi_rssi_with_no_atten))
         ensure_phones_default_state(self.log, [self.android_devices[0]])
 
         # Do Cellular RSSI calibration.
-        setattr(self, "cell_rssi_with_no_atten",
-            self.android_devices[0].droid.phoneGetSignalStrengthInfo()['LteDbm'])
-        self.log.info("Cellular RSSI calibration info: atten=0, RSSI={}".
-            format(self.cell_rssi_with_no_atten))
+        setattr(self, "cell_rssi_with_no_atten", self.android_devices[
+            0].droid.phoneGetSignalStrengthInfo()['LteDbm'])
+        self.log.info(
+            "Cellular RSSI calibration info: atten=0, RSSI={}".format(
+                self.cell_rssi_with_no_atten))
         return True
 
     def teardown_class(self):
@@ -325,19 +326,17 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         super().teardown_test()
 
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
-                 0, MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
-                 0, MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
+                 MAX_RSSI_RESERVED_VALUE)
         return True
 
-    def _wfc_call_sequence(self, ads, mo_mt,
-                                 initial_wifi_cellular_setup_func,
-                                 wfc_phone_setup_func,
-                                 verify_wfc_initial_idle_func,
-                                 verify_wfc_in_call_state_func,
-                                 incall_wifi_cellular_setting_check_func,
-                                 expected_result):
+    def _wfc_call_sequence(self, ads, mo_mt, initial_wifi_cellular_setup_func,
+                           wfc_phone_setup_func, verify_wfc_initial_idle_func,
+                           verify_wfc_in_call_state_func,
+                           incall_wifi_cellular_setting_check_func,
+                           expected_result):
         """_wfc_call_sequence
 
         Args:
@@ -379,6 +378,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 Return True if expected exception happened. Otherwise False.
 
         """
+
         class _WfcCallSequenceException(Exception):
             pass
 
@@ -395,23 +395,28 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         caller_number = get_phone_number(self.log, ad_caller)
         callee_number = get_phone_number(self.log, ad_callee)
 
-        self.log.info("-->Begin wfc_call_sequence: {} to {}<--".
-                      format(caller_number, callee_number))
+        self.log.info("-->Begin wfc_call_sequence: {} to {}<--".format(
+            caller_number, callee_number))
 
         try:
             # initial setup wifi router and RF
-            if initial_wifi_cellular_setup_func and not initial_wifi_cellular_setup_func():
-                raise _WfcCallSequenceException("initial_wifi_cellular_setup_func fail.")
+            if initial_wifi_cellular_setup_func and not initial_wifi_cellular_setup_func(
+            ):
+                raise _WfcCallSequenceException(
+                    "initial_wifi_cellular_setup_func fail.")
 
             if wfc_phone_setup_func and not wfc_phone_setup_func():
                 raise _WfcCallSequenceException("wfc_phone_setup_func fail.")
             if not phone_setup_voice_general(self.log, ads[1]):
-                raise _WfcCallSequenceException("phone_setup_voice_general fail.")
+                raise _WfcCallSequenceException(
+                    "phone_setup_voice_general fail.")
             time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
             # Ensure idle status correct
-            if verify_wfc_initial_idle_func and not verify_wfc_initial_idle_func():
-                raise _WfcCallSequenceException("verify_wfc_initial_idle_func fail.")
+            if verify_wfc_initial_idle_func and not verify_wfc_initial_idle_func(
+            ):
+                raise _WfcCallSequenceException(
+                    "verify_wfc_initial_idle_func fail.")
 
             # Make MO/MT call.
             if not initiate_call(self.log, ad_caller, callee_number):
@@ -421,43 +426,54 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             time.sleep(1)
 
             # Check state, wait 30 seconds, check again.
-            if verify_wfc_in_call_state_func and not verify_wfc_in_call_state_func():
-                raise _WfcCallSequenceException("verify_wfc_in_call_state_func fail.")
+            if verify_wfc_in_call_state_func and not verify_wfc_in_call_state_func(
+            ):
+                raise _WfcCallSequenceException(
+                    "verify_wfc_in_call_state_func fail.")
             if is_phone_not_in_call(self.log, ads[1]):
                 raise _WfcCallSequenceException("PhoneB not in call.")
             time.sleep(WAIT_TIME_IN_CALL)
-            if verify_wfc_in_call_state_func and not verify_wfc_in_call_state_func():
-                raise _WfcCallSequenceException("verify_wfc_in_call_state_func fail after 30 seconds.")
+            if verify_wfc_in_call_state_func and not verify_wfc_in_call_state_func(
+            ):
+                raise _WfcCallSequenceException(
+                    "verify_wfc_in_call_state_func fail after 30 seconds.")
             if is_phone_not_in_call(self.log, ads[1]):
-                raise _WfcCallSequenceException("PhoneB not in call after 30 seconds.")
+                raise _WfcCallSequenceException(
+                    "PhoneB not in call after 30 seconds.")
 
             # in call change setting and check
-            if incall_wifi_cellular_setting_check_func and not incall_wifi_cellular_setting_check_func():
-                raise _WfcCallSequenceException("incall_wifi_cellular_setting_check_func fail.")
+            if incall_wifi_cellular_setting_check_func and not incall_wifi_cellular_setting_check_func(
+            ):
+                raise _WfcCallSequenceException(
+                    "incall_wifi_cellular_setting_check_func fail.")
 
             if is_phone_in_call(self.log, ads[0]):
                 # hangup call
                 if not hangup_call(self.log, ads[0]):
                     raise _WfcCallSequenceException("hangup_call fail.")
             else:
-                # Call drop is unexpected if 
+                # Call drop is unexpected if
                 # incall_wifi_cellular_setting_check_func is None
                 if incall_wifi_cellular_setting_check_func is None:
                     raise _WfcCallSequenceException("Unexpected call drop.")
 
         except _WfcCallSequenceException as e:
             if str(e) == expected_result:
-                self.log.info("Expected exception happened: <{}>, return True.".format(e))
+                self.log.info(
+                    "Expected exception happened: <{}>, return True.".format(
+                        e))
                 return True
             else:
-                self.log.info("Unexpected exception happened: <{}>, return False.".format(e))
+                self.log.info(
+                    "Unexpected exception happened: <{}>, return False.".format(
+                        e))
                 return False
         finally:
             ensure_phones_default_state(self.log, [ads[0], ads[1]])
 
-        self.log.info("wfc_call_sequence finished, return {}".format(expected_result is True))
+        self.log.info("wfc_call_sequence finished, return {}".format(
+            expected_result is True))
         return (expected_result is True)
-
 
     def _phone_idle_iwlan(self):
         return phone_idle_iwlan(self.log, self.android_devices[0])
@@ -467,18 +483,23 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _phone_idle_volte(self):
         return phone_idle_volte(self.log, self.android_devices[0])
+
     def _phone_idle_csfb(self):
         return phone_idle_csfb(self.log, self.android_devices[0])
+
     def _phone_idle_3g(self):
         return phone_idle_3g(self.log, self.android_devices[0])
+
     def _phone_wait_for_not_wfc(self):
         result = wait_for_wfc_disabled(self.log, self.android_devices[0],
                                        WAIT_TIME_NW_SELECTION)
-        self.log.info("_phone_wait_for_not_wfc: WFC_disabled is {}".format(result))
+        self.log.info("_phone_wait_for_not_wfc: WFC_disabled is {}".format(
+            result))
         if not result:
             return False
         # TODO: b/26338343 Need to check Data RAT. Data RAT should not be iwlan.
         return True
+
     def _phone_wait_for_wfc(self):
         result = wait_for_wfc_enabled(self.log, self.android_devices[0],
                                       WAIT_TIME_NW_SELECTION)
@@ -486,12 +507,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         if not result:
             return False
         nw_type = get_network_rat(self.log, self.android_devices[0],
-            NETWORK_SERVICE_DATA)
+                                  NETWORK_SERVICE_DATA)
         if nw_type != RAT_IWLAN:
-            self.log.error("_phone_wait_for_wfc Data Rat is {}, expecting {}".
-                           format(nw_type, RAT_IWLAN))
+            self.log.error(
+                "_phone_wait_for_wfc Data Rat is {}, expecting {}".format(
+                    nw_type, RAT_IWLAN))
             return False
         return True
+
     def _phone_wait_for_call_drop(self):
         if not wait_for_droid_not_in_call(self.log, self.android_devices[0],
                                           WAIT_TIME_CALL_DROP):
@@ -501,191 +524,243 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _is_phone_in_call_iwlan(self):
         return is_phone_in_call_iwlan(self.log, self.android_devices[0])
+
     def _is_phone_in_call_not_iwlan(self):
         return is_phone_in_call_not_iwlan(self.log, self.android_devices[0])
+
     def _is_phone_not_in_call(self):
         if is_phone_in_call(self.log, self.android_devices[0]):
-            self.log.info("{} in call.".
-                format(self.android_devices[0].serial))
+            self.log.info("{} in call.".format(self.android_devices[0].serial))
             return False
         self.log.info("{} not in call.".format(self.android_devices[0].serial))
         return True
+
     def _is_phone_in_call_volte(self):
         return is_phone_in_call_volte(self.log, self.android_devices[0])
+
     def _is_phone_in_call_3g(self):
         return is_phone_in_call_3g(self.log, self.android_devices[0])
+
     def _is_phone_in_call_csfb(self):
         return is_phone_in_call_csfb(self.log, self.android_devices[0])
-
 
     def _wfc_phone_setup(self, is_airplane_mode, wfc_mode, volte_mode=True):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
+                                  WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
-        toggle_airplane_mode(self.log, self.android_devices[0], is_airplane_mode)
+        toggle_airplane_mode(self.log, self.android_devices[0],
+                             is_airplane_mode)
 
         if not ensure_wifi_connected(self.log, self.android_devices[0],
-                                     self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI failed".
-                    format(self.android_devices[0].serial))
-                return False
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed".format(
+                self.android_devices[0].serial))
+            return False
         return True
 
     def _wfc_phone_setup_cellular_absent(self, wfc_mode):
         is_exception_happened = False
         try:
-            if not toggle_airplane_mode(self.log, self.android_devices[0], False):
+            if not toggle_airplane_mode(self.log, self.android_devices[0],
+                                        False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            if not ensure_network_rat(self.log, self.android_devices[0],
+                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
 
         if not is_exception_happened:
-            self.log.error("_wfc_phone_setup_cellular_absent error:"
-                           "Phone on LTE, expected Phone have no cellular signal")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent error:"
+                "Phone on LTE, expected Phone have no cellular signal")
             return False
         if not toggle_volte(self.log, self.android_devices[0], True):
-            self.log.error("_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
             raise False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
         if not ensure_wifi_connected(self.log, self.android_devices[0],
-                                     self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI failed".
-                    format(self.android_devices[0].serial))
-                return False
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed".format(
+                self.android_devices[0].serial))
+            return False
         return True
 
     def _wfc_phone_setup_apm_wifi_only(self):
         return self._wfc_phone_setup(True, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_apm_wifi_preferred(self):
         return self._wfc_phone_setup(True, WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_apm_cellular_preferred(self):
         return self._wfc_phone_setup(True, WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_apm_wfc_disabled(self):
         return self._wfc_phone_setup(True, WFC_MODE_DISABLED)
+
     def _wfc_phone_setup_wifi_only(self):
         return self._wfc_phone_setup(False, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_wifi_preferred(self):
         return self._wfc_phone_setup(False, WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_cellular_preferred(self):
         return self._wfc_phone_setup(False, WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_wfc_disabled(self):
         return self._wfc_phone_setup(False, WFC_MODE_DISABLED)
+
     def _wfc_phone_setup_cellular_absent_wifi_only(self):
         return self._wfc_phone_setup_cellular_absent(WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_cellular_absent_wifi_preferred(self):
         return self._wfc_phone_setup_cellular_absent(WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_cellular_absent_cellular_preferred(self):
-        return self._wfc_phone_setup_cellular_absent(WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_cellular_absent(
+            WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_cellular_absent_wfc_disabled(self):
         return self._wfc_phone_setup_cellular_absent(WFC_MODE_DISABLED)
 
     def _wfc_phone_setup_wifi_preferred_e4g_disabled(self):
         return self._wfc_phone_setup(False, WFC_MODE_WIFI_PREFERRED, False)
 
-    def _wfc_phone_setup_wifi_absent(self, is_airplane_mode, wfc_mode, volte_mode=True):
+    def _wfc_phone_setup_wifi_absent(self,
+                                     is_airplane_mode,
+                                     wfc_mode,
+                                     volte_mode=True):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
+                                  WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
-        toggle_airplane_mode(self.log, self.android_devices[0], is_airplane_mode)
+        toggle_airplane_mode(self.log, self.android_devices[0],
+                             is_airplane_mode)
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
-                                 self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI succeed, expected not succeed".
-                    format(self.android_devices[0].serial))
-                return False
+                                 self.live_network_ssid,
+                                 self.live_network_pwd):
+            self.log.error(
+                "{} connect WiFI succeed, expected not succeed".format(
+                    self.android_devices[0].serial))
+            return False
         return True
 
     def _wfc_phone_setup_cellular_absent_wifi_absent(self, wfc_mode):
         is_exception_happened = False
         try:
-            if not toggle_airplane_mode(self.log, self.android_devices[0], False):
+            if not toggle_airplane_mode(self.log, self.android_devices[0],
+                                        False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            if not ensure_network_rat(self.log, self.android_devices[0],
+                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
 
         if not is_exception_happened:
-            self.log.error("_wfc_phone_setup_cellular_absent_wifi_absent error:"
-                           "Phone on LTE, expected Phone have no cellular signal")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent_wifi_absent error:"
+                "Phone on LTE, expected Phone have no cellular signal")
             return False
         if not toggle_volte(self.log, self.android_devices[0], True):
-            self.log.error("_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
             raise False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
-                                 self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI succeed, expected not succeed".
-                    format(self.android_devices[0].serial))
-                return False
+                                 self.live_network_ssid,
+                                 self.live_network_pwd):
+            self.log.error(
+                "{} connect WiFI succeed, expected not succeed".format(
+                    self.android_devices[0].serial))
+            return False
         return True
 
     def _wfc_phone_setup_apm_wifi_absent_wifi_only(self):
         return self._wfc_phone_setup_wifi_absent(True, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_apm_wifi_absent_wifi_preferred(self):
         return self._wfc_phone_setup_wifi_absent(True, WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_apm_wifi_absent_cellular_preferred(self):
-        return self._wfc_phone_setup_wifi_absent(True, WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_wifi_absent(True,
+                                                 WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_wifi_absent_wifi_only(self):
         return self._wfc_phone_setup_wifi_absent(False, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_wifi_absent_wifi_preferred(self):
-        return self._wfc_phone_setup_wifi_absent(False, WFC_MODE_WIFI_PREFERRED)
+        return self._wfc_phone_setup_wifi_absent(False,
+                                                 WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_wifi_absent_cellular_preferred(self):
-        return self._wfc_phone_setup_wifi_absent(False, WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_wifi_absent(False,
+                                                 WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_cellular_absent_wifi_absent_wifi_only(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_absent(WFC_MODE_WIFI_ONLY)
+        return self._wfc_phone_setup_cellular_absent_wifi_absent(
+            WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_cellular_absent_wifi_absent_wifi_preferred(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_absent(WFC_MODE_WIFI_PREFERRED)
+        return self._wfc_phone_setup_cellular_absent_wifi_absent(
+            WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_cellular_absent_wifi_absent_cellular_preferred(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_absent(WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_cellular_absent_wifi_absent(
+            WFC_MODE_CELLULAR_PREFERRED)
 
     def _wfc_phone_setup_wifi_absent_wifi_preferred_e4g_disabled(self):
-        return self._wfc_phone_setup_wifi_absent(False, WFC_MODE_WIFI_PREFERRED, False)
-
+        return self._wfc_phone_setup_wifi_absent(
+            False, WFC_MODE_WIFI_PREFERRED, False)
 
     def _wfc_phone_setup_wifi_disabled(self, is_airplane_mode, wfc_mode):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
+                                  WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
-        toggle_airplane_mode(self.log, self.android_devices[0], is_airplane_mode)
+        toggle_airplane_mode(self.log, self.android_devices[0],
+                             is_airplane_mode)
 
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         return True
@@ -693,25 +768,29 @@ class TelWifiVoiceTest(TelephonyBaseTest):
     def _wfc_phone_setup_cellular_absent_wifi_disabled(self, wfc_mode):
         is_exception_happened = False
         try:
-            if not toggle_airplane_mode(self.log, self.android_devices[0], False):
+            if not toggle_airplane_mode(self.log, self.android_devices[0],
+                                        False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(
-                self.log, self.android_devices[0], RAT_LTE,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            if not ensure_network_rat(self.log, self.android_devices[0],
+                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
 
         if not is_exception_happened:
-            self.log.error("_wfc_phone_setup_cellular_absent_wifi_disabled error:"
-                           "Phone on LTE, expected Phone have no cellular signal")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent_wifi_disabled error:"
+                "Phone on LTE, expected Phone have no cellular signal")
             return False
         if not toggle_volte(self.log, self.android_devices[0], True):
-            self.log.error("_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
+            self.log.error(
+                "_wfc_phone_setup_cellular_absent: toggle VoLTE fail.")
             raise False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
@@ -719,24 +798,38 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_phone_setup_apm_wifi_disabled_wifi_only(self):
         return self._wfc_phone_setup_wifi_disabled(True, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_apm_wifi_disabled_wifi_preferred(self):
-        return self._wfc_phone_setup_wifi_disabled(True, WFC_MODE_WIFI_PREFERRED)
+        return self._wfc_phone_setup_wifi_disabled(True,
+                                                   WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_apm_wifi_disabled_cellular_preferred(self):
-        return self._wfc_phone_setup_wifi_disabled(True, WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_wifi_disabled(True,
+                                                   WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_wifi_disabled_wifi_only(self):
         return self._wfc_phone_setup_wifi_disabled(False, WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_wifi_disabled_wifi_preferred(self):
-        return self._wfc_phone_setup_wifi_disabled(False, WFC_MODE_WIFI_PREFERRED)
+        return self._wfc_phone_setup_wifi_disabled(False,
+                                                   WFC_MODE_WIFI_PREFERRED)
+
     def _wfc_phone_setup_wifi_disabled_cellular_preferred(self):
-        return self._wfc_phone_setup_wifi_disabled(False, WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_wifi_disabled(False,
+                                                   WFC_MODE_CELLULAR_PREFERRED)
+
     def _wfc_phone_setup_cellular_absent_wifi_disabled_wifi_only(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_disabled(WFC_MODE_WIFI_ONLY)
+        return self._wfc_phone_setup_cellular_absent_wifi_disabled(
+            WFC_MODE_WIFI_ONLY)
+
     def _wfc_phone_setup_cellular_absent_wifi_disabled_wifi_preferred(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_disabled(WFC_MODE_WIFI_PREFERRED)
-    def _wfc_phone_setup_cellular_absent_wifi_disabled_cellular_preferred(self):
-        return self._wfc_phone_setup_cellular_absent_wifi_disabled(WFC_MODE_CELLULAR_PREFERRED)
+        return self._wfc_phone_setup_cellular_absent_wifi_disabled(
+            WFC_MODE_WIFI_PREFERRED)
 
-
+    def _wfc_phone_setup_cellular_absent_wifi_disabled_cellular_preferred(
+            self):
+        return self._wfc_phone_setup_cellular_absent_wifi_disabled(
+            WFC_MODE_CELLULAR_PREFERRED)
 
     def _wfc_set_wifi_strong_cell_strong(self):
         self.log.info("--->Setting WiFi strong cell strong<---")
@@ -745,6 +838,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
                  self.cell_rssi_with_no_atten, MAX_RSSI_RESERVED_VALUE)
         return True
+
     def _wfc_set_wifi_strong_cell_weak(self):
         self.log.info("--->Setting WiFi strong cell weak<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
@@ -752,6 +846,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
                  self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
         return True
+
     def _wfc_set_wifi_strong_cell_absent(self):
         self.log.info("--->Setting WiFi strong cell absent<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
@@ -767,6 +862,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
                  self.cell_rssi_with_no_atten, MAX_RSSI_RESERVED_VALUE)
         return True
+
     def _wfc_set_wifi_weak_cell_weak(self):
         self.log.info("--->Setting WiFi weak cell weak<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
@@ -774,6 +870,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
         return True
+
     def _wfc_set_wifi_weak_cell_absent(self):
         self.log.info("--->Setting WiFi weak cell absent<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
@@ -789,6 +886,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
                  self.cell_rssi_with_no_atten, MAX_RSSI_RESERVED_VALUE)
         return True
+
     def _wfc_set_wifi_absent_cell_weak(self):
         self.log.info("--->Setting WiFi absent cell weak<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
@@ -796,6 +894,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
                  self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
         return True
+
     def _wfc_set_wifi_absent_cell_absent(self):
         self.log.info("--->Setting WiFi absent cell absent<---")
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
@@ -805,6 +904,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_call_epdg_wfc_wifi_only_wifi_strong_apm(self):
         """ Test WFC MO MT, WiFI only mode, WIFI Strong, Phone in APM
@@ -820,21 +920,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -854,21 +948,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -888,21 +976,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -922,21 +1004,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_apm_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_apm_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_apm_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_apm_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -956,21 +1032,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_apm_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_apm_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_apm_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_apm_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -990,21 +1060,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
 
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
             self._wfc_phone_setup_apm_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
             self._wfc_phone_setup_apm_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1023,20 +1087,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1056,20 +1116,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1089,20 +1145,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_apm_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1122,20 +1174,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1155,20 +1203,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1188,20 +1232,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_apm_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1222,21 +1262,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1255,27 +1289,22 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_strong(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_strong(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI strong, Cellular strong
 
         Set WiFi/Cellular network environment.
@@ -1288,20 +1317,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1322,21 +1347,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1355,21 +1374,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1388,20 +1401,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_strong,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_strong,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1421,20 +1430,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1454,27 +1459,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_strong(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_strong(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI absent, Cellular strong
 
         Set WiFi/Cellular network environment.
@@ -1487,20 +1489,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1520,20 +1518,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1553,27 +1547,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_strong(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_strong(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI disabled, Cellular strong
 
         Set WiFi/Cellular network environment.
@@ -1586,20 +1577,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1620,21 +1607,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1653,21 +1634,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1687,21 +1662,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1721,21 +1690,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_weak,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_weak,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1755,21 +1718,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_weak,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_weak,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -1789,20 +1746,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_weak,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_weak,
             self._wfc_phone_setup_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1823,20 +1776,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1856,20 +1805,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1889,20 +1834,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_weak,
             self._wfc_phone_setup_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1923,20 +1864,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -1956,27 +1893,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_weak(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_weak(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI disabled, Cellular weak
 
         Set WiFi/Cellular network environment.
@@ -1989,20 +1923,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
             self._wfc_phone_setup_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_not_iwlan, None,
             True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2023,21 +1953,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2057,27 +1981,22 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_absent(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_strong_cellular_absent(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI strong, Cellular absent
 
         Set WiFi/Cellular network environment.
@@ -2091,21 +2010,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2125,21 +2038,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_only,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2159,21 +2066,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2193,21 +2094,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_weak_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_weak_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_weak_cell_absent,
             self._wfc_phone_setup_cellular_absent_cellular_preferred,
-            self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan,
-            None,
-            True)
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2227,20 +2122,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2261,27 +2152,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_absent(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_absent_cellular_absent(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI absent, Cellular absent
 
         Set WiFi/Cellular network environment.
@@ -2295,20 +2183,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_absent_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_absent_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_absent_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_absent_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2329,20 +2213,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_wifi_only,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2363,27 +2243,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_wifi_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_absent(self):
+    def test_call_epdg_wfc_cellular_preferred_wifi_disabled_cellular_absent(
+            self):
         """ Test WFC MO MT, cellular preferred mode, WIFI strong, Cellular absent
 
         Set WiFi/Cellular network environment.
@@ -2397,20 +2274,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wifi_disabled_cellular_preferred,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2430,21 +2303,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2463,21 +2330,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_in_call_not_iwlan,
-            None,
-            True)
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_weak,
+            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_in_call_not_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2497,20 +2358,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         ###########
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_absent,
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_absent,
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
+            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2530,21 +2387,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        mo_result = self._wfc_call_sequence(ads, "mo",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
-            "initiate_call fail.")
+        mo_result = self._wfc_call_sequence(
+            ads, "mo", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_not_in_call, None, "initiate_call fail.")
 
-        mt_result = self._wfc_call_sequence(ads, "mt",
-            self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wfc_disabled,
-            self._phone_idle_not_iwlan,
-            self._is_phone_not_in_call,
-            None,
-            "wait_and_answer_call fail.")
+        mt_result = self._wfc_call_sequence(
+            ads, "mt", self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_apm_wfc_disabled, self._phone_idle_not_iwlan,
+            self._is_phone_not_in_call, None, "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2564,36 +2415,38 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # ensure cellular rat, wfc mode, wifi not associated
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], cellular_rat,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-            self.log.error("_rove_in_test: {} failed to be in rat: {}".
-                            format(self.android_devices[0].serial, cellular_rat))
+        if not ensure_network_rat(self.log, self.android_devices[0],
+                                  cellular_rat, WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
+            self.log.error("_rove_in_test: {} failed to be in rat: {}".format(
+                self.android_devices[0].serial, cellular_rat))
             return False
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
-                                 self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI succeed, expected not succeed".
-                    format(self.android_devices[0].serial))
-                return False
+                                 self.live_network_ssid,
+                                 self.live_network_pwd):
+            self.log.error(
+                "{} connect WiFI succeed, expected not succeed".format(
+                    self.android_devices[0].serial))
+            return False
 
         # set up wifi to WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_NOT_ROVE_IN in 10 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_NOT_ROVE_IN, 5, 1)
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
 
         if self._phone_idle_iwlan():
-            self.log.error("Phone should not report iwlan in WiFi {}Bm".
-                           format(WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_NOT_ROVE_IN))
+            self.log.error("Phone should not report iwlan in WiFi {}Bm".format(
+                WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_NOT_ROVE_IN))
             return False
 
         # set up wifi to WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN in 10 seconds
@@ -2601,17 +2454,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN, 1, 1)
         if not self._phone_idle_iwlan():
-            self.log.error("Phone should report iwlan in WiFi {}dBm".
-                           format(WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
+            self.log.error("Phone should report iwlan in WiFi {}dBm".format(
+                WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
             return False
 
         # make a wfc call.
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo", None, None,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        None,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo", None,
+            None, self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None,
+            True)
 
     def _rove_out_test(self, cellular_rat, wfc_mode):
         """Test utility for Rove-out Tests.
@@ -2634,84 +2485,77 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # ensure cellular rat, wfc mode, wifi associated
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(
-                self.log, self.android_devices[0], cellular_rat,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-            self.log.error("_rove_out_test: {} failed to be in rat: {}".
-                            format(self.android_devices[0].serial, cellular_rat))
+        if not ensure_network_rat(self.log, self.android_devices[0],
+                                  cellular_rat, WAIT_TIME_NW_SELECTION,
+                                  NETWORK_SERVICE_DATA):
+            self.log.error("_rove_out_test: {} failed to be in rat: {}".format(
+                self.android_devices[0].serial, cellular_rat))
             return False
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
-            self.log.error("{} set WFC mode failed.".format(self.android_devices[0].serial))
+            self.log.error("{} set WFC mode failed.".format(
+                self.android_devices[0].serial))
             return False
         if not ensure_wifi_connected(self.log, self.android_devices[0],
-                                 self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI failed, expected succeed".
-                    format(self.android_devices[0].serial))
-                return False
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed, expected succeed".format(
+                self.android_devices[0].serial))
+            return False
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         if not self._phone_idle_iwlan():
-            self.log.error("Phone failed to report iwlan in {}dBm.".
-                           format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_INITIAL_STATE))
+            self.log.error("Phone failed to report iwlan in {}dBm.".format(
+                WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_INITIAL_STATE))
             return False
 
         # set up wifi to WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_NOT_ROVE_OUT in 10 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_NOT_ROVE_OUT, 1, 1)
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         if self._phone_wait_for_not_wfc() or not self._phone_idle_iwlan():
-            self.log.error("Phone should not rove-out in {}dBm.".
-                           format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_NOT_ROVE_OUT))
+            self.log.error("Phone should not rove-out in {}dBm.".format(
+                WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_NOT_ROVE_OUT))
             return False
 
         # set up wifi to WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT in 10 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT, 2, 1)
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
 
         if not self._phone_wait_for_not_wfc() or self._phone_idle_iwlan():
-            self.log.error("Phone should rove-out in {}dBm.".
-                           format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
+            self.log.error("Phone should rove-out in {}dBm.".format(
+                WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
             return False
         # make a call.
         if wfc_mode == WFC_MODE_WIFI_ONLY:
-            return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                            "mo", None, None,
-                                            self._phone_idle_not_iwlan,
-                                            self._is_phone_not_in_call,
-                                            None,
-                                            "initiate_call fail.")
+            return self._wfc_call_sequence(
+                [self.android_devices[0], self.android_devices[1]], "mo", None,
+                None, self._phone_idle_not_iwlan, self._is_phone_not_in_call,
+                None, "initiate_call fail.")
         elif wfc_mode == WFC_MODE_WIFI_PREFERRED:
             if cellular_rat == RAT_LTE:
-                return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                                "mo", None, None,
-                                                self._phone_idle_volte,
-                                                self._is_phone_in_call_volte,
-                                                None,
-                                                True)
+                return self._wfc_call_sequence(
+                    [self.android_devices[0], self.android_devices[1]], "mo",
+                    None, None, self._phone_idle_volte,
+                    self._is_phone_in_call_volte, None, True)
             else:
-                return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                                "mo", None, None,
-                                                self._phone_idle_3g,
-                                                self._is_phone_in_call_3g,
-                                                None,
-                                                True)
+                return self._wfc_call_sequence(
+                    [self.android_devices[0], self.android_devices[1]], "mo",
+                    None, None, self._phone_idle_3g, self._is_phone_in_call_3g,
+                    None, True)
         else:
             return False
 
@@ -2738,37 +2582,37 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         if not self._wfc_phone_setup_wifi_preferred():
             self.log.error("Setup WFC failed.")
             return False
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         if not self._phone_idle_iwlan():
-            self.log.error("Phone failed to report iwlan in {}dBm.".
-                           format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_INITIAL_STATE))
+            self.log.error("Phone failed to report iwlan in {}dBm.".format(
+                WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_INITIAL_STATE))
             return False
         total_iteration = self.stress_test_number
-        self.log.info("Rove_out/Rove_in stress test. Total iteration = {}.".
-                      format(total_iteration))
+        self.log.info(
+            "Rove_out/Rove_in stress test. Total iteration = {}.".format(
+                total_iteration))
         current_iteration = 1
-        while(current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".
-                          format(current_iteration, total_iteration))
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = {}/{}----<".format(
+                current_iteration, total_iteration))
 
             # set up wifi to WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT in 10 seconds
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT, 2, 1)
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             if not self._phone_wait_for_not_wfc():
-                self.log.error("Phone should rove-out in {}dBm.".
-                               format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
+                self.log.error("Phone should rove-out in {}dBm.".format(
+                    WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
                 break
             self.log.info("Rove-out succeed.")
             # set up wifi to WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN in 10 seconds
@@ -2776,23 +2620,23 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      self.wifi_rssi_with_no_atten,
                      WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN, 2, 1)
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             if not self._phone_wait_for_wfc():
-                self.log.error("Phone should rove-in in {}dBm.".
-                               format(WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
+                self.log.error("Phone should rove-in in {}dBm.".format(
+                    WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
                 break
             self.log.info("Rove-in succeed.")
 
-            self.log.info(">----Iteration : {}/{} succeed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} succeed.----<".format(
+                current_iteration, total_iteration))
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} failed.----<".format(
+                current_iteration, total_iteration))
             return False
         else:
             return True
@@ -2822,26 +2666,27 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self.log.error("Failed to setup for rove_in_out_stress")
             return False
         total_iteration = self.stress_test_number
-        self.log.info("Rove_in/Rove_out stress test. Total iteration = {}.".
-                      format(total_iteration))
+        self.log.info(
+            "Rove_in/Rove_out stress test. Total iteration = {}.".format(
+                total_iteration))
         current_iteration = 1
-        while(current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".
-                          format(current_iteration, total_iteration))
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = {}/{}----<".format(
+                current_iteration, total_iteration))
 
             # set up wifi to WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN in 10 seconds
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN, 2, 1)
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             if not self._phone_wait_for_wfc():
-                self.log.error("Phone should rove-in in {}dBm.".
-                               format(WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
+                self.log.error("Phone should rove-in in {}dBm.".format(
+                    WIFI_RSSI_FOR_ROVE_IN_TEST_PHONE_ROVE_IN))
                 break
             self.log.info("Rove-in succeed.")
 
@@ -2850,23 +2695,23 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      self.wifi_rssi_with_no_atten,
                      WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT, 2, 1)
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             if not self._phone_wait_for_not_wfc():
-                self.log.error("Phone should rove-out in {}dBm.".
-                               format(WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
+                self.log.error("Phone should rove-out in {}dBm.".format(
+                    WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_ROVE_OUT))
                 break
             self.log.info("Rove-out succeed.")
 
-            self.log.info(">----Iteration : {}/{} succeed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} succeed.----<".format(
+                current_iteration, total_iteration))
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} failed.----<".format(
+                current_iteration, total_iteration))
             return False
         else:
             return True
@@ -3034,10 +2879,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_NOT_HAND_IN, 5, 1)
         # Make sure WiFI connected and data OK.
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         # Make sure phone not hand in to iwlan.
@@ -3071,14 +2915,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should hand-in to iwlan.
         PhoneA call should remain active.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_absent_cell_strong,
-                                        self._wfc_phone_setup_wifi_absent_wifi_preferred,
-                                        self._phone_idle_volte,
-                                        self._is_phone_in_call_volte,
-                                        self._increase_wifi_rssi_check_phone_hand_in,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_absent_cell_strong,
+            self._wfc_phone_setup_wifi_absent_wifi_preferred,
+            self._phone_idle_volte, self._is_phone_in_call_volte,
+            self._increase_wifi_rssi_check_phone_hand_in, True)
 
     def _increase_wifi_rssi_hand_in_and_decrease_wifi_rssi_hand_out(self):
         if not self._increase_wifi_rssi_check_phone_hand_in():
@@ -3108,14 +2950,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, in 10s.
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_absent_cell_strong,
-                                        self._wfc_phone_setup_wifi_absent_wifi_preferred,
-                                        self._phone_idle_volte,
-                                        self._is_phone_in_call_volte,
-                                        self._increase_wifi_rssi_hand_in_and_decrease_wifi_rssi_hand_out,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_absent_cell_strong,
+            self._wfc_phone_setup_wifi_absent_wifi_preferred,
+            self._phone_idle_volte, self._is_phone_in_call_volte,
+            self._increase_wifi_rssi_hand_in_and_decrease_wifi_rssi_hand_out,
+            True)
 
     def _decrease_lte_rssi_check_phone_not_hand_in(self):
         """Private Test utility for hand_in test.
@@ -3126,8 +2967,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         # Decrease LTE RSSI to CELL_WEAK_RSSI_VALUE in 30 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
-                 self.cell_rssi_with_no_atten,
-                 CELL_WEAK_RSSI_VALUE, 1, 1)
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE, 1, 1)
         # Make sure phone not hand in to iwlan.
         if self._phone_wait_for_wfc():
             self.log.error("Phone hand-in to wfc.")
@@ -3152,14 +2992,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should not hand-in to WFC.
         PhoneA should either drop or hands over to 3g/2g.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_cellular_preferred,
-                                        self._phone_idle_volte,
-                                        self._is_phone_in_call_volte,
-                                        self._decrease_lte_rssi_check_phone_not_hand_in,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_volte,
+            self._is_phone_in_call_volte,
+            self._decrease_lte_rssi_check_phone_not_hand_in, True)
 
     def _decrease_wifi_rssi_check_phone_hand_out(self):
         """Private Test utility for hand_out test.
@@ -3177,10 +3015,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT, 2, 1)
         # Make sure WiFi still connected and have data.
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         # Make sure phone not hand-out, not drop call
@@ -3197,10 +3034,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  self.wifi_rssi_with_no_atten,
                  WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, 2, 1)
         # Make sure WiFi still connected and have data.
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         # Make sure phone hand-out, not drop call
@@ -3227,14 +3063,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._decrease_wifi_rssi_check_phone_hand_out,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan,
+            self._decrease_wifi_rssi_check_phone_hand_out, True)
 
     def _decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in(self):
         if not self._decrease_wifi_rssi_check_phone_hand_out():
@@ -3265,26 +3099,26 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should hand-in to iwlan.
         PhoneA call should remain active.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan,
+            self._decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in,
+            True)
 
     def _hand_out_hand_in_stress(self):
         total_iteration = self.stress_test_number
-        self.log.info("Hand_out/Hand_in stress test. Total iteration = {}.".
-                      format(total_iteration))
+        self.log.info(
+            "Hand_out/Hand_in stress test. Total iteration = {}.".format(
+                total_iteration))
         current_iteration = 1
         if self._phone_wait_for_call_drop():
             self.log.error("Call Drop.")
             return False
-        while(current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".
-                          format(current_iteration, total_iteration))
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = {}/{}----<".format(
+                current_iteration, total_iteration))
 
             # Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT
             # in 10 seconds
@@ -3294,15 +3128,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, 2, 1)
             # Make sure WiFi still connected and have data.
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             # Make sure phone hand-out, not drop call
             if not self._phone_wait_for_not_wfc():
-                self.log.error("Phone failed to hand-out in RSSI {}.".
-                               format(WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT))
+                self.log.error("Phone failed to hand-out in RSSI {}.".format(
+                    WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT))
                 break
             if self._phone_wait_for_call_drop():
                 self.log.error("Call Drop.")
@@ -3314,9 +3148,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN, 2, 1)
             # Make sure WiFi still connected and have data.
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             # Make sure phone hand in to iwlan.
@@ -3327,12 +3161,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 self.log.error("Call Drop.")
                 break
 
-            self.log.info(">----Iteration : {}/{} succeed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} succeed.----<".format(
+                current_iteration, total_iteration))
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} failed.----<".format(
+                current_iteration, total_iteration))
             return False
         else:
             return True
@@ -3357,26 +3191,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         5. Phone should hand in.
         6. Stress test pass rate should be higher than pre-defined limit.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._hand_out_hand_in_stress,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, self._hand_out_hand_in_stress, True)
 
     def _hand_in_hand_out_stress(self):
         total_iteration = self.stress_test_number
-        self.log.info("Hand_in/Hand_out stress test. Total iteration = {}.".
-                      format(total_iteration))
+        self.log.info(
+            "Hand_in/Hand_out stress test. Total iteration = {}.".format(
+                total_iteration))
         current_iteration = 1
         if self._phone_wait_for_call_drop():
             self.log.error("Call Drop.")
             return False
-        while(current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".
-                          format(current_iteration, total_iteration))
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = {}/{}----<".format(
+                current_iteration, total_iteration))
 
             # Increase WiFi RSSI to WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN
             # in 10 seconds
@@ -3386,9 +3218,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN, 2, 1)
             # Make sure WiFi still connected and have data.
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             # Make sure phone hand in to iwlan.
@@ -3406,26 +3238,26 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, 2, 1)
             # Make sure WiFi still connected and have data.
             if (not wait_for_wifi_data_connection(
-                    self.log, self.android_devices[0], True) or not
-                    verify_http_connection(
-                        self.log, self.android_devices[0])):
+                    self.log, self.android_devices[0], True) or
+                    not verify_http_connection(self.log,
+                                               self.android_devices[0])):
                 self.log.error("No Data on Wifi")
                 break
             # Make sure phone hand-out, not drop call
             if not self._phone_wait_for_not_wfc():
-                self.log.error("Phone failed to hand-out in RSSI {}.".
-                               format(WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT))
+                self.log.error("Phone failed to hand-out in RSSI {}.".format(
+                    WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT))
                 break
             if self._phone_wait_for_call_drop():
                 self.log.error("Call Drop.")
                 break
 
-            self.log.info(">----Iteration : {}/{} succeed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} succeed.----<".format(
+                current_iteration, total_iteration))
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".
-                            format(current_iteration, total_iteration))
+            self.log.info(">----Iteration : {}/{} failed.----<".format(
+                current_iteration, total_iteration))
             return False
         else:
             return True
@@ -3450,14 +3282,11 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         5. Phone should hand out.
         6. Stress test pass rate should be higher than pre-defined limit.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_weak_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred,
-                                        self._phone_idle_volte,
-                                        self._is_phone_in_call_volte,
-                                        self._hand_in_hand_out_stress,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_weak_cell_strong,
+            self._wfc_phone_setup_wifi_preferred, self._phone_idle_volte,
+            self._is_phone_in_call_volte, self._hand_in_hand_out_stress, True)
 
     def _increase_cellular_rssi_check_phone_hand_out(self):
         """Private Test utility for hand_out test.
@@ -3468,8 +3297,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         # Increase Cellular RSSI to CELL_STRONG_RSSI_VALUE in 30 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL],
-                 self.cell_rssi_with_no_atten,
-                 CELL_STRONG_RSSI_VALUE, 1, 1)
+                 self.cell_rssi_with_no_atten, CELL_STRONG_RSSI_VALUE, 1, 1)
         # Make sure phone hand-out, not drop call
         if not self._phone_wait_for_not_wfc():
             self.log.error("Phone should hand out.")
@@ -3478,10 +3306,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self.log.error("Phone should be in volte call.")
             return False
         # Make sure WiFi still connected and have data.
-        if (not wait_for_wifi_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_wifi_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("No Data on Wifi")
             return False
         return True
@@ -3497,14 +3324,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_absent,
-                                        self._wfc_phone_setup_cellular_absent_cellular_preferred,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._increase_cellular_rssi_check_phone_hand_out,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_absent,
+            self._wfc_phone_setup_cellular_absent_cellular_preferred,
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan,
+            self._increase_cellular_rssi_check_phone_hand_out, True)
 
     def _decrease_wifi_rssi_check_phone_not_hand_out(self):
         """Private Test utility for hand_out test.
@@ -3517,10 +3342,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE)
         # Make sure PhoneA data is on LTE.
-        if (not wait_for_cell_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_cell_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("Data not on Cell.")
             return False
         # Make sure phone drop.
@@ -3546,14 +3370,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should drop call. PhoneA should not report LTE as voice RAT.
         PhoneA data should be on LTE.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_only,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._decrease_wifi_rssi_check_phone_not_hand_out,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan,
+            self._decrease_wifi_rssi_check_phone_not_hand_out, True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_epdg_wfc_wifi_preferred_e4g_disabled(self):
@@ -3563,31 +3385,27 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Cellular and WiFi signal strong.
         Call from PhoneA to PhoneB, PhoneA should be on iwlan.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred_e4g_disabled,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        None,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred_e4g_disabled,
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_wifi_preferred_e4g_disabled_wifi_not_connected(self):
+    def test_call_epdg_wfc_wifi_preferred_e4g_disabled_wifi_not_connected(
+            self):
         """WiFi Calling with E4G disabled.
 
         PhoneA on LTE, VoLTE disabled, WFC WiFi preferred, WiFi not associated.
         Cellular signal strong, WiFi absent.
         Call from PhoneA to PhoneB, PhoneA should be on CSFB.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_absent_cell_strong,
-                                        self._wfc_phone_setup_wifi_absent_wifi_preferred_e4g_disabled,
-                                        self._phone_idle_not_iwlan,
-                                        self._is_phone_in_call_csfb,
-                                        None,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_absent_cell_strong,
+            self._wfc_phone_setup_wifi_absent_wifi_preferred_e4g_disabled,
+            self._phone_idle_not_iwlan, self._is_phone_in_call_csfb, None,
+            True)
 
     def _decrease_wifi_rssi_check_phone_drop(self):
         """Private Test utility for e4g_disabled_wfc test.
@@ -3598,10 +3416,9 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE)
         # Make sure PhoneA data is on cellular.
-        if (not wait_for_cell_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_cell_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("Data not on Cell.")
             return False
         # Make sure phone drop.
@@ -3612,7 +3429,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_epdg_wfc_wifi_preferred_e4g_disabled_leave_wifi_coverage(self):
+    def test_call_epdg_wfc_wifi_preferred_e4g_disabled_leave_wifi_coverage(
+            self):
         """WiFi Calling with E4G disabled.
 
         PhoneA on LTE, VoLTE disabled, WFC WiFi preferred, WiFi associated.
@@ -3620,14 +3438,12 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Call from PhoneA to PhoneB, PhoneA should be on iwlan.
         Decrease WiFi RSSI to make sure WiFI not connected. Call should Drop.
         """
-        return self._wfc_call_sequence([self.android_devices[0], self.android_devices[1]],
-                                        "mo",
-                                        self._wfc_set_wifi_strong_cell_strong,
-                                        self._wfc_phone_setup_wifi_preferred_e4g_disabled,
-                                        self._phone_idle_iwlan,
-                                        self._is_phone_in_call_iwlan,
-                                        self._decrease_wifi_rssi_check_phone_drop,
-                                        True)
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]], "mo",
+            self._wfc_set_wifi_strong_cell_strong,
+            self._wfc_phone_setup_wifi_preferred_e4g_disabled,
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan,
+            self._decrease_wifi_rssi_check_phone_drop, True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rssi_monitoring(self):
@@ -3662,28 +3478,30 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                  self.wifi_rssi_with_no_atten, INITIAL_RSSI)
-        if not ensure_wifi_connected(self.log, ad,
-                                     self.live_network_ssid, self.live_network_pwd):
-                self.log.error("{} connect WiFI failed".format(ad.serial))
-                return False
+        if not ensure_wifi_connected(self.log, ad, self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed".format(ad.serial))
+            return False
         try:
             rssi_monitoring_id_higher = ad.droid.connectivitySetRssiThresholdMonitor(
                 HIGHER_RSSI_THRESHOLD)
             rssi_monitoring_id_lower = ad.droid.connectivitySetRssiThresholdMonitor(
                 LOWER_RSSI_THRESHOLD)
 
-            self.log.info("Initial RSSI: {},"
-                          "rssi_monitoring_id_lower should be available.".
-                          format(INITIAL_RSSI))
+            self.log.info(
+                "Initial RSSI: {},"
+                "rssi_monitoring_id_lower should be available.".format(
+                    INITIAL_RSSI))
             try:
-                event = ad.ed.wait_for_event(NetworkCallBack,
-                            is_network_call_back_event_match,
-                            sub_event=NetworkCallBackAvailable,
-                            network_callback_id=rssi_monitoring_id_lower)
+                event = ad.ed.wait_for_event(
+                    NetworkCallBack,
+                    is_network_call_back_event_match,
+                    sub_event=NetworkCallBackAvailable,
+                    network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
-                self.log.error("No {} event for id {}".
-                    format(NetworkCallBackAvailable, rssi_monitoring_id_lower))
+                self.log.error("No {} event for id {}".format(
+                    NetworkCallBackAvailable, rssi_monitoring_id_lower))
                 return False
 
             self.log.info("Set RSSI to HIGHER_RSSI_THRESHOLD+5,"
@@ -3691,16 +3509,18 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      HIGHER_RSSI_THRESHOLD + RSSI_THRESHOLD_MARGIN,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
-                event = ad.ed.wait_for_event(NetworkCallBack,
-                            is_network_call_back_event_match,
-                            sub_event=NetworkCallBackAvailable,
-                            network_callback_id=rssi_monitoring_id_higher)
+                event = ad.ed.wait_for_event(
+                    NetworkCallBack,
+                    is_network_call_back_event_match,
+                    sub_event=NetworkCallBackAvailable,
+                    network_callback_id=rssi_monitoring_id_higher)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
-                self.log.error("No {} event for id {}".
-                    format(NetworkCallBackAvailable, rssi_monitoring_id_higher))
+                self.log.error("No {} event for id {}".format(
+                    NetworkCallBackAvailable, rssi_monitoring_id_higher))
                 return False
 
             self.log.info("Set RSSI to HIGHER_RSSI_THRESHOLD-5,"
@@ -3708,16 +3528,18 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      HIGHER_RSSI_THRESHOLD - RSSI_THRESHOLD_MARGIN,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
-                event = ad.ed.wait_for_event(NetworkCallBack,
-                            is_network_call_back_event_match,
-                            sub_event=NetworkCallBackLost,
-                            network_callback_id=rssi_monitoring_id_higher)
+                event = ad.ed.wait_for_event(
+                    NetworkCallBack,
+                    is_network_call_back_event_match,
+                    sub_event=NetworkCallBackLost,
+                    network_callback_id=rssi_monitoring_id_higher)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
-                self.log.error("No {} event for id {}".
-                    format(NetworkCallBackLost, rssi_monitoring_id_higher))
+                self.log.error("No {} event for id {}".format(
+                    NetworkCallBackLost, rssi_monitoring_id_higher))
                 return False
 
             self.log.info("Set RSSI to LOWER_RSSI_THRESHOLD-5,"
@@ -3725,16 +3547,18 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      LOWER_RSSI_THRESHOLD - RSSI_THRESHOLD_MARGIN,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
-                event = ad.ed.wait_for_event(NetworkCallBack,
-                            is_network_call_back_event_match,
-                            sub_event=NetworkCallBackLost,
-                            network_callback_id=rssi_monitoring_id_lower)
+                event = ad.ed.wait_for_event(
+                    NetworkCallBack,
+                    is_network_call_back_event_match,
+                    sub_event=NetworkCallBackLost,
+                    network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
-                self.log.error("No {} event for id {}".
-                    format(NetworkCallBackLost, rssi_monitoring_id_lower))
+                self.log.error("No {} event for id {}".format(
+                    NetworkCallBackLost, rssi_monitoring_id_lower))
                 return False
 
             self.log.info("Set RSSI to LOWER_RSSI_THRESHOLD+5,"
@@ -3742,20 +3566,24 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI],
                      self.wifi_rssi_with_no_atten,
                      LOWER_RSSI_THRESHOLD + RSSI_THRESHOLD_MARGIN,
-                     WIFI_RSSI_CHANGE_STEP_SIZE, WIFI_RSSI_CHANGE_DELAY_PER_STEP)
+                     WIFI_RSSI_CHANGE_STEP_SIZE,
+                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
-                event = ad.ed.wait_for_event(NetworkCallBack,
-                            is_network_call_back_event_match,
-                            sub_event=NetworkCallBackAvailable,
-                            network_callback_id=rssi_monitoring_id_lower)
+                event = ad.ed.wait_for_event(
+                    NetworkCallBack,
+                    is_network_call_back_event_match,
+                    sub_event=NetworkCallBackAvailable,
+                    network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
-                self.log.error("No {} event for id {}".
-                    format(NetworkCallBackAvailable, rssi_monitoring_id_lower))
+                self.log.error("No {} event for id {}".format(
+                    NetworkCallBackAvailable, rssi_monitoring_id_lower))
                 return False
         finally:
-            ad.droid.connectivityStopRssiThresholdMonitor(rssi_monitoring_id_higher)
-            ad.droid.connectivityStopRssiThresholdMonitor(rssi_monitoring_id_lower)
+            ad.droid.connectivityStopRssiThresholdMonitor(
+                rssi_monitoring_id_higher)
+            ad.droid.connectivityStopRssiThresholdMonitor(
+                rssi_monitoring_id_lower)
         return True
 
 

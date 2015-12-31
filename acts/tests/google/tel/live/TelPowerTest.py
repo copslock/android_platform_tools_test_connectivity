@@ -70,10 +70,11 @@ IDLE_TEST_OFFSET_TIME = 360
 WAKEUP_PING_TEST_WAKEUP_FREQ = 60
 
 WAKEUP_PING_TEST_NUMBER_OF_ALARM = math.ceil(
-    (IDLE_TEST_SAMPLE_TIME * 60 + IDLE_TEST_OFFSET_TIME) / WAKEUP_PING_TEST_WAKEUP_FREQ)
+    (IDLE_TEST_SAMPLE_TIME * 60 + IDLE_TEST_OFFSET_TIME) /
+    WAKEUP_PING_TEST_WAKEUP_FREQ)
+
 
 class TelPowerTest(TelephonyBaseTest):
-
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
@@ -95,8 +96,7 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_idle_3g",
             "test_power_idle_lte_volte_enabled_wakeup_ping",
             "test_power_idle_lte_volte_disabled_wakeup_ping",
-            "test_power_idle_3g_wakeup_ping",
-            )
+            "test_power_idle_3g_wakeup_ping", )
 
     def setup_class(self):
         super().setup_class()
@@ -126,38 +126,48 @@ class TelPowerTest(TelephonyBaseTest):
         current_time = get_current_human_time()
         file_name = "{}_{}".format(test_name, current_time)
         if "monsoon_log_for_power_test" in self.user_params:
-            monsoon_result.save_to_text_file([monsoon_result],
+            monsoon_result.save_to_text_file(
+                [monsoon_result],
                 os.path.join(self.monsoon_log_path, file_name))
         if "bug_report_for_power_test" in self.user_params:
             self.take_bug_reports(test_name, current_time,
-                [self.android_devices[0]])
+                                  [self.android_devices[0]])
 
-    def _test_power_active_call(self, test_name, test_setup_func,
-        pass_criteria=DEFAULT_POWER_PASS_CRITERIA,
-        phone_check_func_after_power_test=None, *args, **kwargs):
+    def _test_power_active_call(self,
+                                test_name,
+                                test_setup_func,
+                                pass_criteria=DEFAULT_POWER_PASS_CRITERIA,
+                                phone_check_func_after_power_test=None,
+                                *args,
+                                **kwargs):
         average_current = 0
         try:
             ensure_phone_default_state(self.log, self.android_devices[0])
             ensure_phone_default_state(self.log, self.android_devices[1])
-            if not phone_setup_voice_general(self.log, self.android_devices[1]):
+            if not phone_setup_voice_general(self.log,
+                                             self.android_devices[1]):
                 self.log.error("PhoneB Failed to Set Up Properly.")
                 return False
             result = self.mon.execute_sequence_and_measure(
                 ACTIVE_CALL_TEST_SAMPLING_RATE,
-                ACTIVE_CALL_TEST_SAMPLE_TIME, [test_setup_func], self.ad,
-                offset_sec=ACTIVE_CALL_TEST_OFFSET_TIME, *args, **kwargs)[0]
+                ACTIVE_CALL_TEST_SAMPLE_TIME,
+                [test_setup_func],
+                self.ad,
+                offset_sec=ACTIVE_CALL_TEST_OFFSET_TIME,
+                *args,
+                **kwargs)[0]
             self._save_logs_for_power_test(test_name, result)
             average_current = result.average_current
-            if not verify_incall_state(self.log,
-                                       [self.android_devices[0],
-                                        self.android_devices[1]],
+            if not verify_incall_state(self.log, [self.android_devices[0],
+                                                  self.android_devices[1]],
                                        True):
                 self.log.error("Call drop during power test.")
                 return False
             if ((phone_check_func_after_power_test is not None) and
                 (not phone_check_func_after_power_test(
                     self.log, self.android_devices[0]))):
-                self.log.error("Phone is not in correct status after power test.")
+                self.log.error(
+                    "Phone is not in correct status after power test.")
                 return False
             return (average_current <= pass_criteria)
         except IndexError:
@@ -165,39 +175,47 @@ class TelPowerTest(TelephonyBaseTest):
             return False
         finally:
             self.android_devices[1].droid.telecomEndCall()
-            self.log.info("Result: {} mA, pass criteria: {} mA".
-                format(average_current, pass_criteria))
+            self.log.info("Result: {} mA, pass criteria: {} mA".format(
+                average_current, pass_criteria))
 
-    def _test_power_idle(self, test_name, test_setup_func,
-        pass_criteria=DEFAULT_POWER_PASS_CRITERIA,
-        phone_check_func_after_power_test=None, *args, **kwargs):
+    def _test_power_idle(self,
+                         test_name,
+                         test_setup_func,
+                         pass_criteria=DEFAULT_POWER_PASS_CRITERIA,
+                         phone_check_func_after_power_test=None,
+                         *args,
+                         **kwargs):
         average_current = 0
         try:
             ensure_phone_default_state(self.log, self.android_devices[0])
             result = self.mon.execute_sequence_and_measure(
                 IDLE_TEST_SAMPLING_RATE,
-                IDLE_TEST_SAMPLE_TIME, [test_setup_func], self.ad,
-                offset_sec=IDLE_TEST_OFFSET_TIME, *args, **kwargs)[0]
+                IDLE_TEST_SAMPLE_TIME,
+                [test_setup_func],
+                self.ad,
+                offset_sec=IDLE_TEST_OFFSET_TIME,
+                *args,
+                **kwargs)[0]
             self._save_logs_for_power_test(test_name, result)
             average_current = result.average_current
             if ((phone_check_func_after_power_test is not None) and
                 (not phone_check_func_after_power_test(
                     self.log, self.android_devices[0]))):
-                self.log.error("Phone is not in correct status after power test.")
+                self.log.error(
+                    "Phone is not in correct status after power test.")
                 return False
             return (average_current <= pass_criteria)
         except IndexError:
             self.log.error("Phone Setup Function failed.")
             return False
         finally:
-            self.log.info("Result: {} mA, pass criteria: {} mA".
-                format(average_current, pass_criteria))
+            self.log.info("Result: {} mA, pass criteria: {} mA".format(
+                average_current, pass_criteria))
 
     def _start_alarm(self):
         alarm_id = self.ad.droid.phoneStartRecurringAlarm(
             WAKEUP_PING_TEST_NUMBER_OF_ALARM,
-            1000*WAKEUP_PING_TEST_WAKEUP_FREQ,
-            "PING_GOOGLE", None)
+            1000 * WAKEUP_PING_TEST_WAKEUP_FREQ, "PING_GOOGLE", None)
         if alarm_id is None:
             self.log.error("Start alarm failed.")
             return False
@@ -214,7 +232,8 @@ class TelPowerTest(TelephonyBaseTest):
         return True
 
     def _setup_phone_active_call(self, ad, phone_setup_func,
-        phone_idle_check_func, phone_in_call_check_func):
+                                 phone_idle_check_func,
+                                 phone_in_call_check_func):
         if not phone_setup_func(self.log, ad):
             self.log.error("DUT Failed to Set Up Properly: {}".format(
                 phone_setup_func.__name__))
@@ -224,28 +243,40 @@ class TelPowerTest(TelephonyBaseTest):
             self.log.error("DUT not in correct idle state: {}".format(
                 phone_idle_check_func.__name__))
             return False
-        if not call_setup_teardown(self.log, ad, self.android_devices[1],
-            ad_hangup=None, verify_caller_func=phone_in_call_check_func):
+        if not call_setup_teardown(
+                self.log,
+                ad,
+                self.android_devices[1],
+                ad_hangup=None,
+                verify_caller_func=phone_in_call_check_func):
             self.log.error("Setup Call failed.")
             return False
         ad.droid.goToSleepNow()
         return True
 
-    def _setup_phone_active_call_wfc(self, ad, ssid, password, airplane_mode,
-        wfc_mode, setup_volte=False):
+    def _setup_phone_active_call_wfc(self,
+                                     ad,
+                                     ssid,
+                                     password,
+                                     airplane_mode,
+                                     wfc_mode,
+                                     setup_volte=False):
         if setup_volte and (not phone_setup_volte(self.log, ad)):
             self.log.error("Phone failed to setup VoLTE.")
             return False
-        if not phone_setup_iwlan(self.log, ad, airplane_mode, wfc_mode,
-            ssid, password):
+        if not phone_setup_iwlan(self.log, ad, airplane_mode, wfc_mode, ssid,
+                                 password):
             self.log.error("DUT Failed to Set Up WiFi Calling")
             return False
         ensure_phones_idle(self.log, [ad, self.android_devices[1]])
         if not phone_idle_iwlan(self.log, ad):
             self.log.error("DUT not in WFC enabled state.")
             return False
-        if not call_setup_teardown(self.log, ad, self.android_devices[1],
-            ad_hangup=None, verify_caller_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(self.log,
+                                   ad,
+                                   self.android_devices[1],
+                                   ad_hangup=None,
+                                   verify_caller_func=is_phone_in_call_iwlan):
             self.log.error("Setup Call failed.")
             return False
         ad.droid.goToSleepNow()
@@ -272,15 +303,18 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_3g"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params["pass_criteria_call_3g"][
+                "pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_3g",
-            self._setup_phone_active_call, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_3g",
+            self._setup_phone_active_call,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_3g,
-            phone_setup_func=phone_setup_3g, phone_idle_check_func=phone_idle_3g,
+            phone_setup_func=phone_setup_3g,
+            phone_idle_check_func=phone_idle_3g,
             phone_in_call_check_func=is_phone_in_call_3g)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -304,13 +338,15 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_volte"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params["pass_criteria_call_volte"][
+                "pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_volte",
-            self._setup_phone_active_call, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_volte",
+            self._setup_phone_active_call,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_volte,
             phone_setup_func=phone_setup_volte,
             phone_idle_check_func=phone_idle_volte,
@@ -338,16 +374,20 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_wfc_2g_apm"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_call_wfc_2g_apm"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_wfc_2g_apm",
-            self._setup_phone_active_call_wfc, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_wfc_2g_apm",
+            self._setup_phone_active_call_wfc,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_iwlan,
-            ssid=self.wifi_network_ssid_2g, password=self.wifi_network_pass_2g,
-            airplane_mode=True, wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            ssid=self.wifi_network_ssid_2g,
+            password=self.wifi_network_pass_2g,
+            airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
             setup_volte=False)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -372,16 +412,20 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_wfc_2g_lte_volte_on"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_call_wfc_2g_lte_volte_on"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_wfc_2g_lte_volte_on",
-            self._setup_phone_active_call_wfc, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_wfc_2g_lte_volte_on",
+            self._setup_phone_active_call_wfc,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_iwlan,
-            ssid=self.wifi_network_ssid_2g, password=self.wifi_network_pass_2g,
-            airplane_mode=False, wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            ssid=self.wifi_network_ssid_2g,
+            password=self.wifi_network_pass_2g,
+            airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
             setup_volte=True)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -406,16 +450,20 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_wfc_5g_apm"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_call_wfc_5g_apm"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_wfc_5g_apm",
-            self._setup_phone_active_call_wfc, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_wfc_5g_apm",
+            self._setup_phone_active_call_wfc,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_iwlan,
-            ssid=self.wifi_network_ssid_5g, password=self.wifi_network_pass_5g,
-            airplane_mode=True, wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            ssid=self.wifi_network_ssid_5g,
+            password=self.wifi_network_pass_5g,
+            airplane_mode=True,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
             setup_volte=False)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -441,16 +489,20 @@ class TelPowerTest(TelephonyBaseTest):
         """
 
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_call_wfc_5g_lte_volte_on"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_call_wfc_5g_lte_volte_on"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
-        return self._test_power_active_call("test_power_active_call_wfc_5g_lte_volte_on",
-            self._setup_phone_active_call_wfc, PASS_CRITERIA,
+        return self._test_power_active_call(
+            "test_power_active_call_wfc_5g_lte_volte_on",
+            self._setup_phone_active_call_wfc,
+            PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_iwlan,
-            ssid=self.wifi_network_ssid_5g, password=self.wifi_network_pass_5g,
-            airplane_mode=False, wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            ssid=self.wifi_network_ssid_5g,
+            password=self.wifi_network_pass_5g,
+            airplane_mode=False,
+            wfc_mode=WFC_MODE_WIFI_PREFERRED,
             setup_volte=True)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -472,8 +524,8 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_baseline"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_baseline"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
@@ -485,7 +537,7 @@ class TelPowerTest(TelephonyBaseTest):
             return True
 
         return self._test_power_idle("test_power_idle_baseline",
-            _idle_baseline, PASS_CRITERIA)
+                                     _idle_baseline, PASS_CRITERIA)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_wfc_2g_apm(self):
@@ -507,21 +559,23 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_wfc_2g_apm"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_wfc_2g_apm"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
         def _idle_wfc_2g_apm(ad):
-            if not phone_setup_iwlan(self.log, ad, True, WFC_MODE_WIFI_PREFERRED,
-                self.wifi_network_ssid_2g, self.wifi_network_pass_2g):
+            if not phone_setup_iwlan(
+                    self.log, ad, True, WFC_MODE_WIFI_PREFERRED,
+                    self.wifi_network_ssid_2g, self.wifi_network_pass_2g):
                 self.log.error("Phone failed to setup WFC.")
                 return False
             ad.droid.goToSleepNow()
             return True
 
         return self._test_power_idle("test_power_idle_wfc_2g_apm",
-            _idle_wfc_2g_apm, PASS_CRITERIA, is_wfc_enabled)
+                                     _idle_wfc_2g_apm, PASS_CRITERIA,
+                                     is_wfc_enabled)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_wfc_2g_lte(self):
@@ -543,8 +597,8 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_wfc_2g_lte"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_wfc_2g_lte"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
@@ -552,15 +606,17 @@ class TelPowerTest(TelephonyBaseTest):
             if not phone_setup_volte(self.log, ad):
                 self.log.error("Phone failed to setup VoLTE.")
                 return False
-            if not phone_setup_iwlan(self.log, ad, False, WFC_MODE_WIFI_PREFERRED,
-                self.wifi_network_ssid_2g, self.wifi_network_pass_2g):
+            if not phone_setup_iwlan(
+                    self.log, ad, False, WFC_MODE_WIFI_PREFERRED,
+                    self.wifi_network_ssid_2g, self.wifi_network_pass_2g):
                 self.log.error("Phone failed to setup WFC.")
                 return False
             ad.droid.goToSleepNow()
             return True
 
         return self._test_power_idle("test_power_idle_wfc_2g_lte",
-            _idle_wfc_2g_lte, PASS_CRITERIA, is_wfc_enabled)
+                                     _idle_wfc_2g_lte, PASS_CRITERIA,
+                                     is_wfc_enabled)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_lte_volte_enabled(self):
@@ -582,8 +638,8 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_lte_volte_enabled"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_lte_volte_enabled"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
@@ -595,7 +651,7 @@ class TelPowerTest(TelephonyBaseTest):
             return True
 
         return self._test_power_idle("test_power_idle_lte_volte_enabled",
-            _idle_lte_volte_enabled, PASS_CRITERIA)
+                                     _idle_lte_volte_enabled, PASS_CRITERIA)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_lte_volte_disabled(self):
@@ -617,8 +673,8 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_lte_volte_disabled"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_lte_volte_disabled"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
@@ -630,7 +686,7 @@ class TelPowerTest(TelephonyBaseTest):
             return True
 
         return self._test_power_idle("test_power_idle_lte_volte_disabled",
-            _idle_lte_volte_disabled, PASS_CRITERIA)
+                                     _idle_lte_volte_disabled, PASS_CRITERIA)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_3g(self):
@@ -651,8 +707,8 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_3g"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params["pass_criteria_idle_3g"][
+                "pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
@@ -663,8 +719,8 @@ class TelPowerTest(TelephonyBaseTest):
             ad.droid.goToSleepNow()
             return True
 
-        return self._test_power_idle("test_power_idle_3g",
-            _idle_3g, PASS_CRITERIA)
+        return self._test_power_idle("test_power_idle_3g", _idle_3g,
+                                     PASS_CRITERIA)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_lte_volte_enabled_wakeup_ping(self):
@@ -689,15 +745,17 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_lte_volte_enabled_wakeup_ping"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_lte_volte_enabled_wakeup_ping"][
+                    "pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
         # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
         result = self._test_power_idle(
             "test_power_idle_lte_volte_enabled_wakeup_ping",
-            self._setup_phone_idle_and_wakeup_ping, PASS_CRITERIA,
+            self._setup_phone_idle_and_wakeup_ping,
+            PASS_CRITERIA,
             phone_setup_func=phone_setup_volte)
         return result
 
@@ -724,15 +782,17 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_lte_volte_disabled_wakeup_ping"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_lte_volte_disabled_wakeup_ping"][
+                    "pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
         # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
         result = self._test_power_idle(
             "test_power_idle_lte_volte_disabled_wakeup_ping",
-            self._setup_phone_idle_and_wakeup_ping, PASS_CRITERIA,
+            self._setup_phone_idle_and_wakeup_ping,
+            PASS_CRITERIA,
             phone_setup_func=phone_setup_csfb)
         return result
 
@@ -757,14 +817,14 @@ class TelPowerTest(TelephonyBaseTest):
         Pass criteria info should be in test config file.
         """
         try:
-            PASS_CRITERIA = int(
-                self.user_params["pass_criteria_idle_3g_wakeup_ping"]["pass_criteria"])
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_3g_wakeup_ping"]["pass_criteria"])
         except KeyError:
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
         # TODO: b/26338146 need a SL4A API to clear all existing alarms.
 
-        result = self._test_power_idle(
-            "test_power_idle_3g_wakeup_ping",
-            self._setup_phone_idle_and_wakeup_ping, PASS_CRITERIA,
-            phone_setup_func=phone_setup_3g)
+        result = self._test_power_idle("test_power_idle_3g_wakeup_ping",
+                                       self._setup_phone_idle_and_wakeup_ping,
+                                       PASS_CRITERIA,
+                                       phone_setup_func=phone_setup_3g)
         return result

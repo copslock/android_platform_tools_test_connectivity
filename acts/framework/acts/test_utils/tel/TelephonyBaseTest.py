@@ -34,7 +34,6 @@ from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 
 
 class TelephonyBaseTest(BaseTestClass):
-
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
 
@@ -42,15 +41,13 @@ class TelephonyBaseTest(BaseTestClass):
     # faster log lookup and reduce ambiguity in logging.
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
-            test_id = "{}:{}:{}".format(
-                self.__class__.__name__,
-                fn.__name__,
-                time.time())
+            test_id = "{}:{}:{}".format(self.__class__.__name__, fn.__name__,
+                                        time.time())
             log_string = "[Test ID] {}".format(test_id)
             self.log.info(log_string)
             try:
                 for ad in self.android_devices:
-                    ad.droid.logI("Started "+log_string)
+                    ad.droid.logI("Started " + log_string)
                 # TODO: b/19002120 start QXDM Logging
                 return fn(self, *args, **kwargs)
             except TestSignal:
@@ -63,15 +60,16 @@ class TelephonyBaseTest(BaseTestClass):
                 for ad in self.android_devices:
                     try:
                         ad.adb.wait_for_device()
-                        ad.droid.logI("Finished "+log_string)
+                        ad.droid.logI("Finished " + log_string)
                     except Exception as e:
                         self.log.error(str(e))
+
         return _safe_wrap_test_case
 
     def setup_class(self):
         for ad in self.android_devices:
-            setup_droid_properties(
-                self.log, ad, self.user_params["sim_conf_file"])
+            setup_droid_properties(self.log, ad,
+                                   self.user_params["sim_conf_file"])
             if not set_phone_screen_on(self.log, ad):
                 self.info.error("Failed to set phone screen-on time.")
                 return False
@@ -90,8 +88,7 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
 
         setattr(self, 'sim_sub_ids',
-                get_sub_ids_for_sim_slots(self.log,
-                                          self.android_devices))
+                get_sub_ids_for_sim_slots(self.log, self.android_devices))
         return True
 
     def teardown_class(self):
@@ -105,7 +102,8 @@ class TelephonyBaseTest(BaseTestClass):
             ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                 PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
             if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_DISABLED)
+                ad.droid.wifiEnableVerboseLogging(
+                    WIFI_VERBOSE_LOGGING_DISABLED)
         return True
 
     def setup_test(self):
@@ -125,8 +123,8 @@ class TelephonyBaseTest(BaseTestClass):
             for ad in self.android_devices:
                 try:
                     ad.adb.wait_for_device()
-                    ad.take_bug_reports(
-                        test_name, begin_time, self.android_devices)
+                    ad.take_bug_reports(test_name, begin_time,
+                                        self.android_devices)
                     # TODO: b/25290103 rename tombstone files correctly
                     # and make support generic and move to
                     # base_test and utils respectively

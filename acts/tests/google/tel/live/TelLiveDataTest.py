@@ -76,12 +76,11 @@ from acts.utils import enable_doze
 from acts.utils import load_config
 from acts.utils import rand_ascii_str
 
-class TelLiveDataTest(TelephonyBaseTest):
 
+class TelLiveDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                      "test_airplane_mode",
+        self.tests = ("test_airplane_mode",
                       "test_4g",
                       "test_3g",
                       "test_2g",
@@ -91,7 +90,6 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_wifi_connect_disconnect",
                       "test_lte_multi_bearer",
                       "test_wcdma_multi_bearer",
-
                       "test_2g_wifi_not_associated",
                       "test_3g_wifi_not_associated",
                       "test_4g_wifi_not_associated",
@@ -113,16 +111,13 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_tethering_wifi_password_escaping_characters",
                       "test_tethering_wifi_ssid",
                       "test_tethering_wifi_password",
-
                       "test_tethering_wifi_volte_call",
                       "test_tethering_wifi_csfb_call",
                       "test_tethering_wifi_3g_call",
-
                       "test_tethering_wifi_reboot",
                       "test_connect_wifi_start_tethering_wifi_reboot",
                       "test_connect_wifi_reboot_start_tethering_wifi",
                       "test_tethering_wifi_screen_off_enable_doze_mode",
-
 
                       # stress tests
                       "test_4g_stress",
@@ -135,9 +130,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_3g_sim2",
                       "test_2g_sim2",
                       "test_wcdma_wifi_switching_sim2",
-                      "test_gsm_wifi_switching_sim2",
-
-                      )
+                      "test_gsm_wifi_switching_sim2", )
         self.stress_test_number = int(self.user_params["stress_test_number"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
@@ -175,8 +168,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if pass.
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
-                                   self.wifi_network_ssid, self.wifi_network_pass,
-                                   GEN_4G)
+                                   self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_4G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_wifi_switching(self):
@@ -193,8 +186,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if pass.
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
-                                   self.wifi_network_ssid, self.wifi_network_pass,
-                                   GEN_3G)
+                                   self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_gsm_wifi_switching(self):
@@ -211,8 +204,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if pass.
         """
         return wifi_cell_switching(self.log, self.android_devices[0],
-                                   self.wifi_network_ssid, self.wifi_network_pass,
-                                   GEN_2G)
+                                   self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_2G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_multi_bearer(self):
@@ -233,15 +226,17 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         toggle_volte(self.log, self.android_devices[0], True)
 
-        if not ensure_network_generation(
-                self.log, self.android_devices[0], GEN_4G):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G):
 
             self.log.error("Device {} failed to reselect in {}s.".format(
                 self.android_devices[0].serial, WAIT_TIME_NW_SELECTION))
             return False
 
-        if not wait_for_network_rat(self.log, self.android_devices[0],
-            RAT_FAMILY_LTE, voice_or_data=NETWORK_SERVICE_VOICE):
+        if not wait_for_network_rat(self.log,
+                                    self.android_devices[0],
+                                    RAT_FAMILY_LTE,
+                                    voice_or_data=NETWORK_SERVICE_VOICE):
             return False
 
         return self._test_data_connectivity_multi_bearer(GEN_4G)
@@ -280,10 +275,10 @@ class TelLiveDataTest(TelephonyBaseTest):
         success_count = 0
         fail_count = 0
 
-        for i in range(1, self.stress_test_number+1):
+        for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(self.log,
-                [self.android_devices[0], self.android_devices[1]])
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0], self.android_devices[1]])
 
             if self.test_wcdma_multi_bearer():
                 success_count += 1
@@ -291,14 +286,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             else:
                 fail_count += 1
                 result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".
-                          format(i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
 
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count,
-            fail_count,
-            str(100*success_count/(success_count+fail_count))))
-        if success_count / (success_count+fail_count) >= MINIMUM_SUCCESS_RATE:
+            success_count, fail_count, str(100 * success_count / (
+                success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -319,10 +314,10 @@ class TelLiveDataTest(TelephonyBaseTest):
         success_count = 0
         fail_count = 0
 
-        for i in range(1, self.stress_test_number+1):
+        for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(self.log,
-                [self.android_devices[0], self.android_devices[1]])
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0], self.android_devices[1]])
 
             if self.test_lte_multi_bearer():
                 success_count += 1
@@ -330,14 +325,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             else:
                 fail_count += 1
                 result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".
-                          format(i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
 
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count,
-            fail_count,
-            str(100*success_count/(success_count+fail_count))))
-        if success_count / (success_count+fail_count) >= MINIMUM_SUCCESS_RATE:
+            success_count, fail_count, str(100 * success_count / (
+                success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -356,44 +351,41 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+
         class _LocalException(Exception):
             pass
 
         ad_list = [self.android_devices[0], self.android_devices[1]]
         ensure_phones_idle(self.log, ad_list)
 
-        if not ensure_network_generation(
-                self.log, self.android_devices[0], nw_gen,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         nw_gen, WAIT_TIME_NW_SELECTION,
+                                         NETWORK_SERVICE_DATA):
 
             self.log.error("Device failed to reselect in {}s.".format(
                 WAIT_TIME_NW_SELECTION))
             return False
 
         if not wait_for_voice_attach_for_subscription(
-            self.log, self.android_devices[0],
-            self.android_devices[0].droid.subscriptionGetDefaultVoiceSubId(),
-            WAIT_TIME_NW_SELECTION):
+                self.log, self.android_devices[0], self.android_devices[
+                    0].droid.subscriptionGetDefaultVoiceSubId(),
+                WAIT_TIME_NW_SELECTION):
             return False
 
         self.log.info("Step1 WiFi is Off, Data is on Cell.")
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         self.android_devices[0].droid.telephonyToggleDataConnection(True)
-        if (not wait_for_cell_data_connection(
-                self.log, self.android_devices[0], True) or not
-                verify_http_connection(
-                    self.log, self.android_devices[0])):
+        if (not wait_for_cell_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
             self.log.error("Data not available on cell")
             return False
 
         try:
             self.log.info("Step2 Initiate call and accept.")
-            if not call_setup_teardown(self.log,
-                                       self.android_devices[0],
-                                       self.android_devices[1],
-                                       None,
-                                       None,
+            if not call_setup_teardown(self.log, self.android_devices[0],
+                                       self.android_devices[1], None, None,
                                        None):
                 self.log.error("Failed to Establish Voice Call")
                 return False
@@ -422,8 +414,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
             self.log.info("Step5 Verify phones still in call and Hang up.")
             if not verify_incall_state(
-                self.log, [self.android_devices[0], self.android_devices[1]],
-                True):
+                    self.log,
+                [self.android_devices[0], self.android_devices[1]], True):
                 return False
             if not hangup_call(self.log, self.android_devices[0]):
                 self.log.error("Failed to hang up call")
@@ -435,7 +427,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error(str(e))
             try:
                 hangup_call(self.log, self.android_devices[0])
-                self.android_devices[0].droid.telephonyToggleDataConnection(True)
+                self.android_devices[0].droid.telephonyToggleDataConnection(
+                    True)
             except Exception:
                 pass
             return False
@@ -459,8 +452,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_reset(self.log, self.android_devices[0])
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_2G)
+                                               self.android_devices[0], RAT_2G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_2g_wifi_not_associated(self):
@@ -480,8 +472,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], True)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_2G)
+                                               self.android_devices[0], RAT_2G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_3g(self):
@@ -500,8 +491,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_reset(self.log, self.android_devices[0])
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_3G)
+                                               self.android_devices[0], RAT_3G)
+
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_wifi_not_associated(self):
         """Test data connection in 3G.
@@ -520,8 +511,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], True)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_3G)
+                                               self.android_devices[0], RAT_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_4g(self):
@@ -540,8 +530,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_reset(self.log, self.android_devices[0])
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_4G)
+                                               self.android_devices[0], RAT_4G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_4g_wifi_not_associated(self):
@@ -561,8 +550,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], True)
         return data_connectivity_single_bearer(self.log,
-                                               self.android_devices[0],
-                                               RAT_4G)
+                                               self.android_devices[0], RAT_4G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_stress(self):
@@ -580,28 +568,29 @@ class TelLiveDataTest(TelephonyBaseTest):
         success_count = 0
         fail_count = 0
 
-        for i in range(1, self.stress_test_number+1):
+        for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(self.log,
-                [self.android_devices[0], self.android_devices[1]])
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0], self.android_devices[1]])
             WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
+            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
+                                        False)
 
-            if data_connectivity_single_bearer(self.log, self.android_devices[0],
-                                               RAT_3G):
+            if data_connectivity_single_bearer(
+                    self.log, self.android_devices[0], RAT_3G):
                 success_count += 1
                 result_str = "Succeeded"
             else:
                 fail_count += 1
                 result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".
-                          format(i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
 
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count,
-            fail_count,
-            str(100*success_count/(success_count+fail_count))))
-        if success_count / (success_count+fail_count) >= MINIMUM_SUCCESS_RATE:
+            success_count, fail_count, str(100 * success_count / (
+                success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -622,28 +611,29 @@ class TelLiveDataTest(TelephonyBaseTest):
         success_count = 0
         fail_count = 0
 
-        for i in range(1, self.stress_test_number+1):
+        for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(self.log,
-                [self.android_devices[0], self.android_devices[1]])
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0], self.android_devices[1]])
             WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
+            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
+                                        False)
 
-            if data_connectivity_single_bearer(self.log, self.android_devices[0],
-                                               RAT_4G):
+            if data_connectivity_single_bearer(
+                    self.log, self.android_devices[0], RAT_4G):
                 success_count += 1
                 result_str = "Succeeded"
             else:
                 fail_count += 1
                 result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".
-                          format(i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
 
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count,
-            fail_count,
-            str(100*success_count/(success_count+fail_count))))
-        if success_count / (success_count+fail_count) >= MINIMUM_SUCCESS_RATE:
+            success_count, fail_count, str(100 * success_count / (
+                success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -673,8 +663,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
         self.android_devices[0].droid.telephonyToggleDataConnection(True)
-        if not wait_for_cell_data_connection(
-                self.log, self.android_devices[0], True):
+        if not wait_for_cell_data_connection(self.log, self.android_devices[0],
+                                             True):
             self.log.error("Failed to enable data connection.")
             return False
 
@@ -707,10 +697,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_5gwifi(self):
@@ -730,10 +723,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_3g_to_2gwifi(self):
@@ -753,10 +749,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 3G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_3g_to_5gwifi(self):
@@ -776,10 +775,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 3G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_2gwifi_2clients(self):
@@ -799,10 +801,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1], ads[2]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1], ads[2]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_2g_to_2gwifi(self):
@@ -822,10 +827,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 2G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_2g_to_5gwifi(self):
@@ -845,10 +853,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 2G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_5G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_disable_wifi_tethering_resume_connected_wifi(self):
@@ -871,22 +882,22 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
-        if not ensure_wifi_connected(self.log,
-                                     ads[0],
-                                     self.wifi_network_ssid,
+        if not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                                      self.wifi_network_pass):
             self.log.error("WiFi connect fail.")
             return False
 
-        if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
+        if not wifi_tethering_setup_teardown(self.log,
+                                             ads[0],
+                                             [ads[1]],
                                              check_interval=10,
                                              check_iteration=2):
             self.log.error("WiFi Tethering failed.")
             return False
 
         WifiUtils.wifi_toggle_state(self.log, ads[0], True)
-        if (not wait_for_wifi_data_connection(self.log, ads[0], True) or not
-                verify_http_connection(self.log, ads[0])):
+        if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
+                not verify_http_connection(self.log, ads[0])):
             self.log.error("Provider data did not return to Wifi")
             return False
         return True
@@ -912,12 +923,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         try:
             ssid = rand_ascii_str(10)
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False,
-                                                 ssid=ssid):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False,
+                    ssid=ssid):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -925,7 +939,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            self.log.info("Disable Data on Provider, verify no data on Client.")
+            self.log.info(
+                "Disable Data on Provider, verify no data on Client.")
             ads[0].droid.telephonyToggleDataConnection(False)
             time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if verify_http_connection(self.log, ads[0]):
@@ -943,7 +958,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Client should not have Internet connection.")
                 return False
 
-            self.log.info("Enable Data on Provider, verify data available on Client.")
+            self.log.info(
+                "Enable Data on Provider, verify data available on Client.")
             ads[0].droid.telephonyToggleDataConnection(True)
             time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if not verify_http_connection(self.log, ads[0]):
@@ -988,11 +1004,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
         try:
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1001,9 +1020,12 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
 
             self.log.info("Provider change RAT from LTE to 3G.")
-            if not ensure_network_generation(self.log, ads[0], RAT_3G,
-                voice_or_data=NETWORK_SERVICE_DATA,
-                toggle_apm_after_setting=False):
+            if not ensure_network_generation(
+                    self.log,
+                    ads[0],
+                    RAT_3G,
+                    voice_or_data=NETWORK_SERVICE_DATA,
+                    toggle_apm_after_setting=False):
                 self.log.error("Provider failed to reselect to 3G.")
                 return False
             time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
@@ -1044,11 +1066,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 3G Internet access failed.")
             return False
         try:
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1057,9 +1082,12 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
 
             self.log.info("Provider change RAT from 3G to 4G.")
-            if not ensure_network_generation(self.log, ads[0], RAT_4G,
-                voice_or_data=NETWORK_SERVICE_DATA,
-                toggle_apm_after_setting=False):
+            if not ensure_network_generation(
+                    self.log,
+                    ads[0],
+                    RAT_4G,
+                    voice_or_data=NETWORK_SERVICE_DATA,
+                    toggle_apm_after_setting=False):
                 self.log.error("Provider failed to reselect to 4G.")
                 return False
             time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
@@ -1098,12 +1126,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         try:
             ssid = rand_ascii_str(10)
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False,
-                                                 ssid=ssid):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False,
+                    ssid=ssid):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1111,7 +1142,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            self.log.info("Provider turn on APM, verify no wifi/data on Client.")
+            self.log.info(
+                "Provider turn on APM, verify no wifi/data on Client.")
             if not toggle_airplane_mode(self.log, ads[0], True):
                 self.log.error("Provider turn on APM failed.")
                 return False
@@ -1126,8 +1158,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("WiFi Info: {}".format(wifi_info))
 
             if wifi_info[WifiEnums.SSID_KEY] == ssid:
-                self.log.error("WiFi error. WiFi should not be connected.".
-                               format(wifi_info))
+                self.log.error(
+                    "WiFi error. WiFi should not be connected.".format(
+                        wifi_info))
                 return False
 
             self.log.info("Provider turn off APM.")
@@ -1157,10 +1190,10 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
 
-        result = ad.droid.carrierConfigIsTetheringModeAllowed(TETHERING_MODE_WIFI,
-            TETHERING_ENTITLEMENT_CHECK_TIMEOUT)
-        self.log.info("{} tethering entitlement check result: {}.".
-                format(ad.serial, result))
+        result = ad.droid.carrierConfigIsTetheringModeAllowed(
+            TETHERING_MODE_WIFI, TETHERING_ENTITLEMENT_CHECK_TIMEOUT)
+        self.log.info("{} tethering entitlement check result: {}.".format(
+            ad.serial, result))
         return result
 
     @TelephonyBaseTest.tel_test_wrap
@@ -1178,10 +1211,10 @@ class TelLiveDataTest(TelephonyBaseTest):
         success_count = 0
         fail_count = 0
 
-        for i in range(1, self.stress_test_number+1):
+        for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(self.log,
-                [self.android_devices[0], self.android_devices[1]])
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0], self.android_devices[1]])
 
             if self.test_tethering_4g_to_2gwifi():
                 success_count += 1
@@ -1189,14 +1222,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             else:
                 fail_count += 1
                 result_str = "Failed"
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".
-                          format(i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
 
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count,
-            fail_count,
-            str(100*success_count/(success_count+fail_count))))
-        if success_count / (success_count+fail_count) >= MINIMUM_SUCCESS_RATE:
+            success_count, fail_count, str(100 * success_count / (
+                success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1207,8 +1240,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                                     self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, False, True)
-        ensure_network_generation_for_subscription(self.log, ads[0],
-                 self.sim_sub_ids[0][0], GEN_3G)
+        ensure_network_generation_for_subscription(
+            self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_sim2(self):
@@ -1230,15 +1263,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             set_call_state_listen_level(self.log, ads[0], True,
                                         self.sim_sub_ids[0][1])
 
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1],
-                True, False, True):
+            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
+                             False, True):
                 self.log.error("Failed to Switch data SIM")
                 return False
             WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
-            return data_connectivity_single_bearer(self.log,
-                                                   self.android_devices[0],
-                                                   RAT_3G)
+            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
+                                        False)
+            return data_connectivity_single_bearer(
+                self.log, self.android_devices[0], RAT_3G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -1262,15 +1295,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             set_call_state_listen_level(self.log, ads[0], True,
                                         self.sim_sub_ids[0][1])
 
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1],
-               True, False, True):
+            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
+                             False, True):
                 self.log.error("Failed to Switch data SIM")
                 return False
             WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0], False)
-            return data_connectivity_single_bearer(self.log,
-                                                   self.android_devices[0],
-                                                   RAT_2G)
+            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
+                                        False)
+            return data_connectivity_single_bearer(
+                self.log, self.android_devices[0], RAT_2G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -1294,13 +1327,13 @@ class TelLiveDataTest(TelephonyBaseTest):
             set_call_state_listen_level(self.log, ads[0], True,
                                         self.sim_sub_ids[0][1])
 
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1],
-                True, False, True):
+            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
+                             False, True):
                 self.log.error("Failed to Switch data SIM")
                 return False
             return wifi_cell_switching(self.log, self.android_devices[0],
-                                       self.wifi_network_ssid, self.wifi_network_pass,
-                                       GEN_3G)
+                                       self.wifi_network_ssid,
+                                       self.wifi_network_pass, GEN_3G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -1324,16 +1357,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             set_call_state_listen_level(self.log, ads[0], True,
                                         self.sim_sub_ids[0][1])
 
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1],
-                True, False, True):
+            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
+                             False, True):
                 self.log.error("Failed to Switch data SIM")
                 return False
             return wifi_cell_switching(self.log, self.android_devices[0],
-                                       self.wifi_network_ssid, self.wifi_network_pass,
-                                       GEN_2G)
+                                       self.wifi_network_ssid,
+                                       self.wifi_network_pass, GEN_2G)
         finally:
             self._reset_subscriptions_to_sim1(ads)
-
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_ssid_quotes(self):
@@ -1351,14 +1383,17 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
         ssid = "\"" + rand_ascii_str(10) + "\""
-        self.log.info("Starting WiFi Tethering test with ssid: {}".
-            format(ssid))
+        self.log.info("Starting WiFi Tethering test with ssid: {}".format(
+            ssid))
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10,
-                                             ssid=ssid)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10,
+            ssid=ssid)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_password_escaping_characters(self):
@@ -1378,14 +1413,17 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         password = '"DQ=/{Yqq;M=(^_3HzRvhOiL8S%`]w&l<Qp8qH)bs<4E9v_q=HLr^)}w$blA0Kg'
-        self.log.info("Starting WiFi Tethering test with password: {}".
-            format(password))
+        self.log.info("Starting WiFi Tethering test with password: {}".format(
+            password))
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10,
-                                             password=password)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10,
+            password=password)
 
     def _test_start_wifi_tethering_connect_teardown(self, ad_host, ad_client,
                                                     ssid, password):
@@ -1410,7 +1448,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             WifiUtils.stop_wifi_tethering(self.log, ad_host)
 
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        if not WifiUtils.start_wifi_tethering(self.log, ad_host, ssid, password,
+        if not WifiUtils.start_wifi_tethering(self.log, ad_host, ssid,
+                                              password,
                                               WifiUtils.WIFI_CONFIG_APBAND_2G):
             self.log.error("Provider start WiFi tethering failed.")
             result = False
@@ -1419,7 +1458,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Client connect to WiFi failed.")
             result = False
         if not WifiUtils.wifi_reset(self.log, ad_client):
-            self.log.error("Reset client WiFi failed. {}".format(ad_client.serial))
+            self.log.error("Reset client WiFi failed. {}".format(
+                ad_client.serial))
             result = False
         if not WifiUtils.stop_wifi_tethering(self.log, ad_host):
             self.log.error("Provider strop WiFi tethering failed.")
@@ -1443,36 +1483,20 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         ssid_list = [" !\"#$%&'()*+,-./0123456789:;<=>?",
                      "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
-                     "`abcdefghijklmnopqrstuvwxyz{|}~",
-                     " a ",
-                     "!b!",
-                     "#c#",
-                     "$d$",
-                     "%e%",
-                     "&f&",
-                     "'g'",
-                     "(h(",
-                     ")i)",
-                     "*j*",
-                     "+k+",
-                     "-l-",
-                     ".m.",
-                     "/n/",
-                     "_",
+                     "`abcdefghijklmnopqrstuvwxyz{|}~", " a ", "!b!", "#c#",
+                     "$d$", "%e%", "&f&", "'g'", "(h(", ")i)", "*j*", "+k+",
+                     "-l-", ".m.", "/n/", "_",
                      " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}",
-                     "\u0644\u062c\u0648\u062c",
-                     "\u8c37\u6b4c",
-                     "\uad6c\uae00"
+                     "\u0644\u062c\u0648\u062c", "\u8c37\u6b4c", "\uad6c\uae00"
                      "\u30b0\u30fc\u30eb",
-                     "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0443\u0439"
-                     ]
+                     "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0443\u0439"]
         fail_list = {}
 
         for ssid in ssid_list:
             password = rand_ascii_str(8)
             self.log.info("SSID: <{}>, Password: <{}>".format(ssid, password))
             if not self._test_start_wifi_tethering_connect_teardown(
-                ads[0], ads[1], ssid, password):
+                    ads[0], ads[1], ssid, password):
                 fail_list[ssid] = password
 
         if (len(fail_list) > 0):
@@ -1496,27 +1520,16 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not self._test_setup_tethering(ads, RAT_4G):
             self.log.error("Setup Failed.")
             return False
-        password_list = [" !\"#$%&'()*+,-./0123456789:;<=>?",
-                         "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
-                         "`abcdefghijklmnopqrstuvwxyz{|}~",
-                         " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}",
-                         "abcdefgh",
-                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!",
-                         " a12345 ",
-                         "!b12345!",
-                         "#c12345#",
-                         "$d12345$",
-                         "%e12345%",
-                         "&f12345&",
-                         "'g12345'",
-                         "(h12345(",
-                         ")i12345)",
-                         "*j12345*",
-                         "+k12345+",
-                         "-l12345-",
-                         ".m12345.",
-                         "/n12345/"
-                        ]
+        password_list = [
+            " !\"#$%&'()*+,-./0123456789:;<=>?",
+            "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
+            "`abcdefghijklmnopqrstuvwxyz{|}~",
+            " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}", "abcdefgh",
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!",
+            " a12345 ", "!b12345!", "#c12345#", "$d12345$", "%e12345%",
+            "&f12345&", "'g12345'", "(h12345(", ")i12345)", "*j12345*",
+            "+k12345+", "-l12345-", ".m12345.", "/n12345/"
+        ]
         fail_list = {}
 
         for password in password_list:
@@ -1524,7 +1537,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             ssid = rand_ascii_str(8)
             self.log.info("SSID: <{}>, Password: <{}>".format(ssid, password))
             if not self._test_start_wifi_tethering_connect_teardown(
-                ads[0], ads[1], ssid, password):
+                    ads[0], ads[1], ssid, password):
                 fail_list[ssid] = password
 
         if (len(fail_list) > 0):
@@ -1533,10 +1546,11 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return True
 
-    def _test_tethering_wifi_and_voice_call(self, provider, client,
-        provider_data_rat, provider_setup_func, provider_in_call_check_func):
-        if not self._test_setup_tethering([provider, client],
-                                          provider_data_rat):
+    def _test_tethering_wifi_and_voice_call(
+            self, provider, client, provider_data_rat, provider_setup_func,
+            provider_in_call_check_func):
+        if not self._test_setup_tethering(
+            [provider, client], provider_data_rat):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
@@ -1548,15 +1562,23 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         try:
             self.log.info("1. Setup WiFi Tethering.")
-            if not wifi_tethering_setup_teardown(self.log, provider, [client],
-                ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                check_interval=10, check_iteration=2, do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    provider,
+                [client],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
             self.log.info("2. Make outgoing call.")
-            if not call_setup_teardown(self.log, provider, client,
-                                   ad_hangup=None,
-                                   verify_caller_func=provider_in_call_check_func):
+            if not call_setup_teardown(
+                    self.log,
+                    provider,
+                    client,
+                    ad_hangup=None,
+                    verify_caller_func=provider_in_call_check_func):
                 self.log.error("Setup Call Failed.")
                 return False
             self.log.info("3. Verify data.")
@@ -1569,9 +1591,12 @@ class TelLiveDataTest(TelephonyBaseTest):
             time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
             self.log.info("4. Make incoming call.")
-            if not call_setup_teardown(self.log, client, provider,
-                                   ad_hangup=None,
-                                   verify_callee_func=provider_in_call_check_func):
+            if not call_setup_teardown(
+                    self.log,
+                    client,
+                    provider,
+                    ad_hangup=None,
+                    verify_callee_func=provider_in_call_check_func):
                 self.log.error("Setup Call Failed.")
                 return False
             self.log.info("5. Verify data.")
@@ -1600,9 +1625,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self._test_tethering_wifi_and_voice_call(self.android_devices[0],
-            self.android_devices[1], RAT_4G, phone_setup_volte,
-            is_phone_in_call_volte)
+        return self._test_tethering_wifi_and_voice_call(
+            self.android_devices[0], self.android_devices[1], RAT_4G,
+            phone_setup_volte, is_phone_in_call_volte)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_csfb_call(self):
@@ -1618,9 +1643,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self._test_tethering_wifi_and_voice_call(self.android_devices[0],
-            self.android_devices[1], RAT_4G, phone_setup_csfb,
-            is_phone_in_call_csfb)
+        return self._test_tethering_wifi_and_voice_call(
+            self.android_devices[0], self.android_devices[1], RAT_4G,
+            phone_setup_csfb, is_phone_in_call_csfb)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_3g_call(self):
@@ -1636,9 +1661,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self._test_tethering_wifi_and_voice_call(self.android_devices[0],
-            self.android_devices[1], RAT_3G, phone_setup_3g,
-            is_phone_in_call_3g)
+        return self._test_tethering_wifi_and_voice_call(
+            self.android_devices[0], self.android_devices[1], RAT_3G,
+            phone_setup_3g, is_phone_in_call_3g)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_no_password(self):
@@ -1658,11 +1683,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10,
-                                             password="")
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10,
+            password="")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_reboot(self):
@@ -1684,11 +1712,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify 4G Internet access failed.")
             return False
         try:
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1699,7 +1730,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("Reboot DUT:{}".format(ads[0].serial))
             ads[0].reboot()
             time.sleep(WAIT_TIME_AFTER_REBOOT +
-                WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
+                       WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
 
             self.log.info("After reboot check if tethering stopped.")
             if ads[0].droid.wifiIsApEnabled():
@@ -1735,18 +1766,22 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                                     self.wifi_network_pass)) or
+        if ((not ensure_wifi_connected(self.log, ads[0],
+                                       self.wifi_network_ssid,
+                                       self.wifi_network_pass)) or
             (not verify_http_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")
             return False
 
         try:
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1764,10 +1799,11 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering did NOT stopped.")
                 return False
 
-            self.log.info("Turn on WiFi, make sure WiFi can connect automatically.")
+            self.log.info(
+                "Turn on WiFi, make sure WiFi can connect automatically.")
             WifiUtils.wifi_toggle_state(self.log, ads[0], True)
-            if (not wait_for_wifi_data_connection(self.log, ads[0], True) or not
-                    verify_http_connection(self.log, ads[0])):
+            if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
+                    not verify_http_connection(self.log, ads[0])):
                 self.log.error("Data did not return to WiFi")
                 return False
 
@@ -1801,8 +1837,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
-        if ((not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                                     self.wifi_network_pass)) or
+        if ((not ensure_wifi_connected(self.log, ads[0],
+                                       self.wifi_network_ssid,
+                                       self.wifi_network_pass)) or
             (not verify_http_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")
             return False
@@ -1812,10 +1849,13 @@ class TelLiveDataTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_AFTER_REBOOT)
         time.sleep(WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
 
-        return wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                             ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                             check_interval=10,
-                                             check_iteration=10)
+        return wifi_tethering_setup_teardown(
+            self.log,
+            ads[0],
+            [ads[1]],
+            ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_screen_off_enable_doze_mode(self):
@@ -1839,11 +1879,14 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Verify LTE Internet access failed.")
             return False
         try:
-            if not wifi_tethering_setup_teardown(self.log, ads[0], [ads[1]],
-                                                 ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                                 check_interval=10,
-                                                 check_iteration=2,
-                                                 do_cleanup=False):
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
@@ -1851,16 +1894,16 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            self.log.info("Turn off screen on provider: <{}>.".
-                          format(ads[0].serial))
+            self.log.info("Turn off screen on provider: <{}>.".format(ads[
+                0].serial))
             ads[0].droid.goToSleepNow()
             time.sleep(60)
             if not verify_http_connection(self.log, ads[1]):
                 self.log.error("Client have no Internet access.")
                 return False
 
-            self.log.info("Enable doze mode on provider: <{}>.".
-                          format(ads[0].serial))
+            self.log.info("Enable doze mode on provider: <{}>.".format(ads[
+                0].serial))
             if not enable_doze(ads[0]):
                 self.log.error("Failed to enable doze mode.")
                 return False
@@ -1897,11 +1940,9 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
 
-        wifi_toggles = [True, False,
-                        True, False, False,
-                        True, False, False, False, False,
-                        True, False, False, False, False,
-                            False, False, False, False]
+        wifi_toggles = [True, False, True, False, False, True, False, False,
+                        False, False, True, False, False, False, False, False,
+                        False, False, False]
 
         if not ensure_network_generation(self.log, ad, GEN_4G):
             self.log.error("Device {} failed to reselect in {}s.".format(
@@ -1912,29 +1953,29 @@ class TelLiveDataTest(TelephonyBaseTest):
 
             WifiUtils.wifi_reset(self.log, ad, toggle)
 
-            if not wait_for_cell_data_connection(
-                    self.log, ad, True, WAIT_TIME_WIFI_CONNECTION):
+            if not wait_for_cell_data_connection(self.log, ad, True,
+                                                 WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_http_connection(
-                self.log, ad, 'http://www.google.com', 100, .1):
+            if not verify_http_connection(self.log, ad,
+                                          'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
 
             if toggle:
                 WifiUtils.wifi_toggle_state(self.log, ad, True)
 
-            WifiUtils.wifi_connect(
-                self.log, ad, self.wifi_network_ssid, self.wifi_network_pass)
+            WifiUtils.wifi_connect(self.log, ad, self.wifi_network_ssid,
+                                   self.wifi_network_pass)
 
-            if not wait_for_wifi_data_connection(
-                    self.log, ad, True, WAIT_TIME_WIFI_CONNECTION):
+            if not wait_for_wifi_data_connection(self.log, ad, True,
+                                                 WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_http_connection(
-                self.log, ad, 'http://www.google.com', 100, .1):
+            if not verify_http_connection(self.log, ad,
+                                          'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
         """ Tests End """

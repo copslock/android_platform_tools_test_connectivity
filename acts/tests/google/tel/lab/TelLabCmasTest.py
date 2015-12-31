@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for voice tests in telephony
 """
@@ -58,14 +57,14 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
+
 class TelLabCmasTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
     CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                      "test_cmas_presidential_alert_lte",
+        self.tests = ("test_cmas_presidential_alert_lte",
                       "test_cmas_extreme_immediate_likely_lte",
                       "test_cmas_child_abduction_emergency_lte",
                       "test_cmas_presidential_alert_wcdma",
@@ -76,10 +75,10 @@ class TelLabCmasTest(TelephonyBaseTest):
                       "test_cmas_child_abduction_emergency_1x",
                       "test_cmas_presidential_alert_gsm",
                       "test_cmas_extreme_immediate_likely_gsm",
-                      "test_cmas_child_abduction_emergency_gsm",
-                    )
+                      "test_cmas_child_abduction_emergency_gsm", )
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
 
     def setup_class(self):
         try:
@@ -104,8 +103,12 @@ class TelLabCmasTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def _send_receive_cmas_message(self, set_simulation_func, rat,
-            message_id, warning_message,
+    def _send_receive_cmas_message(
+            self,
+            set_simulation_func,
+            rat,
+            message_id,
+            warning_message,
             c2k_response_type=CMAS_C2K_RESPONSETYPE_SHELTER,
             c2k_severity=CMAS_C2K_SEVERITY_EXTREME,
             c2k_urgency=CMAS_C2K_URGENCY_IMMEDIATE,
@@ -136,38 +139,37 @@ class TelLabCmasTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for CMAS test.")
                 return False
 
-            if not ensure_network_rat(self.log, self.ad,
-                preferred_network_setting, rat_family,
-                toggle_apm_after_setting=True):
-                self.log.error("Failed to set rat family {}, preferred network:{}".
-                    format(rat_family, preferred_network_setting))
+            if not ensure_network_rat(self.log,
+                                      self.ad,
+                                      preferred_network_setting,
+                                      rat_family,
+                                      toggle_apm_after_setting=True):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
                 return False
 
             self.anritsu.wait_for_registration_state()
             if rat != RAT_1XRTT:
-                if not cmas_receive_verify_message_lte_wcdma(self.log, self.ad,
-                                                        self.anritsu,
-                                                        next(TelLabCmasTest.SERIAL_NO),
-                                                        message_id,
-                                                        warning_message):
+                if not cmas_receive_verify_message_lte_wcdma(
+                        self.log, self.ad, self.anritsu,
+                        next(TelLabCmasTest.SERIAL_NO), message_id,
+                        warning_message):
                     self.log.error("Phone {} Failed to receive CMAS message"
-                              .format(self.ad.serial))
+                                   .format(self.ad.serial))
                     return False
             else:
-                if not cmas_receive_verify_message_cdma1x(self.log, self.ad,
-                                                        self.anritsu,
-                                                        next(TelLabCmasTest.SERIAL_NO),
-                                                        message_id,
-                                                        warning_message,
-                                                        c2k_response_type,
-                                                        c2k_severity,
-                                                        c2k_urgency,
-                                                        c2k_certainty):
+                if not cmas_receive_verify_message_cdma1x(
+                        self.log, self.ad, self.anritsu,
+                        next(TelLabCmasTest.SERIAL_NO), message_id,
+                        warning_message, c2k_response_type, c2k_severity,
+                        c2k_urgency, c2k_certainty):
                     self.log.error("Phone {} Failed to receive CMAS message"
-                              .format(self.ad.serial))
+                                   .format(self.ad.serial))
                     return False
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
             return False
         except Exception as e:
             self.log.error("Exception during CMAS send/receive: " + str(e))
@@ -175,6 +177,7 @@ class TelLabCmasTest(TelephonyBaseTest):
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_lte(self):
         """CMAS Presidential alert message reception on LTE
@@ -212,9 +215,10 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_lte, RAT_LTE,
-                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
-                                               "LTE CMAS Extreme Immediate Likely")
+        return self._send_receive_cmas_message(
+            set_system_model_lte, RAT_LTE,
+            CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+            "LTE CMAS Extreme Immediate Likely")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_lte(self):
@@ -232,9 +236,10 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_lte, RAT_LTE,
-                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
-                                               "LTE CMAS Child abduction Alert")
+        return self._send_receive_cmas_message(
+            set_system_model_lte, RAT_LTE,
+            CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+            "LTE CMAS Child abduction Alert")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_wcdma(self):
@@ -253,9 +258,9 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
-                                               CMAS_MESSAGE_PRESIDENTIAL_ALERT,
-                                               "WCDMA CMAS Presidential Alert")
+        return self._send_receive_cmas_message(
+            set_system_model_wcdma, RAT_WCDMA, CMAS_MESSAGE_PRESIDENTIAL_ALERT,
+            "WCDMA CMAS Presidential Alert")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_wcdma(self):
@@ -273,9 +278,10 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
-                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
-                                               "WCDMA CMAS Extreme Immediate Likely")
+        return self._send_receive_cmas_message(
+            set_system_model_wcdma, RAT_WCDMA,
+            CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+            "WCDMA CMAS Extreme Immediate Likely")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_wcdma(self):
@@ -293,9 +299,10 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_wcdma, RAT_WCDMA,
-                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
-                                               "WCDMA CMAS Child abduction Alert")
+        return self._send_receive_cmas_message(
+            set_system_model_wcdma, RAT_WCDMA,
+            CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+            "WCDMA CMAS Child abduction Alert")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_1x(self):
@@ -334,13 +341,11 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_1x, RAT_1XRTT,
-                                               CMAS_C2K_CATEGORY_EXTREME,
-                                               "1X CMAS Extreme Immediate Likely",
-                                               CMAS_C2K_RESPONSETYPE_EVACUATE,
-                                               CMAS_C2K_SEVERITY_EXTREME,
-                                               CMAS_C2K_URGENCY_IMMEDIATE,
-                                               CMAS_C2K_CERTIANTY_LIKELY)
+        return self._send_receive_cmas_message(
+            set_system_model_1x, RAT_1XRTT, CMAS_C2K_CATEGORY_EXTREME,
+            "1X CMAS Extreme Immediate Likely", CMAS_C2K_RESPONSETYPE_EVACUATE,
+            CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
+            CMAS_C2K_CERTIANTY_LIKELY)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_1x(self):
@@ -358,13 +363,11 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_1x, RAT_1XRTT,
-                                               CMAS_C2K_CATEGORY_AMBER,
-                                               "1X CMAS Child abduction Alert",
-                                               CMAS_C2K_RESPONSETYPE_MONITOR,
-                                               CMAS_C2K_SEVERITY_EXTREME,
-                                               CMAS_C2K_URGENCY_IMMEDIATE,
-                                               CMAS_C2K_CERTIANTY_OBSERVED)
+        return self._send_receive_cmas_message(
+            set_system_model_1x, RAT_1XRTT, CMAS_C2K_CATEGORY_AMBER,
+            "1X CMAS Child abduction Alert", CMAS_C2K_RESPONSETYPE_MONITOR,
+            CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
+            CMAS_C2K_CERTIANTY_OBSERVED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_gsm(self):
@@ -403,9 +406,10 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_gsm, RAT_GSM,
-                                               CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
-                                               "GSM CMAS Extreme Immediate Likely")
+        return self._send_receive_cmas_message(
+            set_system_model_gsm, RAT_GSM,
+            CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
+            "GSM CMAS Extreme Immediate Likely")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_gsm(self):
@@ -423,7 +427,9 @@ class TelLabCmasTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_cmas_message(set_system_model_gsm, RAT_GSM,
-                                               CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
-                                               "GSM CMAS Child abduction Alert")
+        return self._send_receive_cmas_message(
+            set_system_model_gsm, RAT_GSM,
+            CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
+            "GSM CMAS Child abduction Alert")
+
     """ Tests End """
