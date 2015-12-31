@@ -52,13 +52,11 @@ from acts.utils import rand_ascii_str
 
 SKIP = 'Skip'
 
-class TelLiveSmokeTest(TelephonyBaseTest):
 
+class TelLiveSmokeTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                      "test_wfc_capability_phone_smoke",
-                      )
+        self.tests = ("test_wfc_capability_phone_smoke", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
 
@@ -69,6 +67,7 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
     """ Tests Begin """
+
     def _test_smoke_volte(self):
         ads = self.android_devices
         sms_idle_result = False
@@ -79,8 +78,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("--------start test_smoke_volte--------")
         ensure_phones_default_state(self.log, ads)
-        tasks = [(phone_setup_volte, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up VoLTE.")
             return False
@@ -95,15 +94,18 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("2. Data in LTE idle.")
         if (wait_for_cell_data_connection(self.log, ads[0], True) and
-            verify_http_connection(self.log, ads[0])):
+                verify_http_connection(self.log, ads[0])):
             data_idle_result = True
 
         self.log.info("3. Setup VoLTE Call.")
-        if not call_setup_teardown(self.log, ads[0], ads[1],
-                               ad_hangup=None,
-                               verify_caller_func=is_phone_in_call_volte,
-                               verify_callee_func=is_phone_in_call_volte,
-                               wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=is_phone_in_call_volte,
+                wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS):
             self.log.error("Setup VoLTE Call Failed.")
             return False
 
@@ -113,19 +115,20 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("5. Verify Data in call.")
         if (wait_for_cell_data_connection(self.log, ads[0], True) and
-            verify_http_connection(self.log, ads[0])):
+                verify_http_connection(self.log, ads[0])):
             data_incall_result = True
 
         self.log.info("6. Verify Call not drop and hangup.")
         if (is_phone_in_call_volte(self.log, ads[0]) and
-            is_phone_in_call_volte(self.log, ads[1]) and
-            hangup_call(self.log, ads[0])):
+                is_phone_in_call_volte(self.log, ads[1]) and
+                hangup_call(self.log, ads[0])):
             call_result = True
 
-        self.log.info("Summary-VoLTE Smoke Test: SMS idle: {}, Data idle: {}, "
-                      "VoLTE Call: {}, SMS in call: {}, Data in call: {}".
-            format(sms_idle_result, data_idle_result,
-                   call_result, sms_incall_result, data_incall_result))
+        self.log.info(
+            "Summary-VoLTE Smoke Test: SMS idle: {}, Data idle: {}, "
+            "VoLTE Call: {}, SMS in call: {}, Data in call: {}".format(
+                sms_idle_result, data_idle_result, call_result,
+                sms_incall_result, data_incall_result))
 
         return (sms_idle_result and data_idle_result and call_result and
                 sms_incall_result and data_incall_result)
@@ -140,8 +143,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("--------start test_smoke_csfb_3g--------")
         ensure_phones_default_state(self.log, ads)
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_csfb, (self.log, ads[1]))]
+        tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
+                                                          (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up CSFB_3G.")
             return False
@@ -156,14 +159,16 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("2. Data in LTE idle (no IMS).")
         if (wait_for_cell_data_connection(self.log, ads[0], True) and
-            verify_http_connection(self.log, ads[0])):
+                verify_http_connection(self.log, ads[0])):
             data_idle_result = True
 
         self.log.info("3. Setup CSFB_3G Call.")
-        if not call_setup_teardown(self.log, ads[0], ads[1],
-                               ad_hangup=None,
-                               verify_caller_func=is_phone_in_call_csfb,
-                               verify_callee_func=is_phone_in_call_csfb):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   ad_hangup=None,
+                                   verify_caller_func=is_phone_in_call_csfb,
+                                   verify_callee_func=is_phone_in_call_csfb):
             self.log.error("Setup CSFB_3G Call Failed.")
             return False
 
@@ -173,9 +178,9 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("5. Verify Data in call.")
         if is_rat_svd_capable(get_network_rat(self.log, ads[0],
-            NETWORK_SERVICE_VOICE)):
+                                              NETWORK_SERVICE_VOICE)):
             if (wait_for_cell_data_connection(self.log, ads[0], True) and
-                verify_http_connection(self.log, ads[0])):
+                    verify_http_connection(self.log, ads[0])):
                 data_incall_result = True
         else:
             self.log.info("Data in call not supported on current RAT."
@@ -184,18 +189,19 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("6. Verify Call not drop and hangup.")
         if (is_phone_in_call_csfb(self.log, ads[0]) and
-            is_phone_in_call_csfb(self.log, ads[1]) and
-            hangup_call(self.log, ads[0])):
+                is_phone_in_call_csfb(self.log, ads[1]) and
+                hangup_call(self.log, ads[0])):
             call_result = True
 
-        self.log.info("Summary-CSFB 3G Smoke Test: SMS idle: {}, Data idle: {},"
-                      " CSFB_3G Call: {}, SMS in call: {}, Data in call: {}".
-            format(sms_idle_result, data_idle_result,
-                   call_result, sms_incall_result, data_incall_result))
+        self.log.info(
+            "Summary-CSFB 3G Smoke Test: SMS idle: {}, Data idle: {},"
+            " CSFB_3G Call: {}, SMS in call: {}, Data in call: {}".format(
+                sms_idle_result, data_idle_result, call_result,
+                sms_incall_result, data_incall_result))
 
         return (sms_idle_result and data_idle_result and call_result and
-                sms_incall_result and
-                ((data_incall_result is True) or (data_incall_result == SKIP)))
+                sms_incall_result and ((data_incall_result is True) or
+                                       (data_incall_result == SKIP)))
 
     def _test_smoke_3g(self):
         ads = self.android_devices
@@ -207,8 +213,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("--------start test_smoke_3g--------")
         ensure_phones_default_state(self.log, ads)
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_3g, (self.log, ads[1]))]
+        tasks = [(phone_setup_3g, (self.log, ads[0])), (phone_setup_3g,
+                                                        (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up 3G.")
             return False
@@ -218,14 +224,16 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("2. Data in LTE idle (no IMS).")
         if (wait_for_cell_data_connection(self.log, ads[0], True) and
-            verify_http_connection(self.log, ads[0])):
+                verify_http_connection(self.log, ads[0])):
             data_idle_result = True
 
         self.log.info("3. Setup 3G Call.")
-        if not call_setup_teardown(self.log, ads[0], ads[1],
-                               ad_hangup=None,
-                               verify_caller_func=is_phone_in_call_3g,
-                               verify_callee_func=is_phone_in_call_3g):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   ad_hangup=None,
+                                   verify_caller_func=is_phone_in_call_3g,
+                                   verify_callee_func=is_phone_in_call_3g):
             self.log.error("Setup 3G Call Failed.")
             return False
 
@@ -235,9 +243,9 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("5. Verify Data in call.")
         if is_rat_svd_capable(get_network_rat(self.log, ads[0],
-            NETWORK_SERVICE_VOICE)):
+                                              NETWORK_SERVICE_VOICE)):
             if (wait_for_cell_data_connection(self.log, ads[0], True) and
-                verify_http_connection(self.log, ads[0])):
+                    verify_http_connection(self.log, ads[0])):
                 data_incall_result = True
         else:
             self.log.info("Data in call not supported on current RAT."
@@ -246,18 +254,18 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("6. Verify Call not drop and hangup.")
         if (is_phone_in_call_3g(self.log, ads[0]) and
-            is_phone_in_call_3g(self.log, ads[1]) and
-            hangup_call(self.log, ads[0])):
+                is_phone_in_call_3g(self.log, ads[1]) and
+                hangup_call(self.log, ads[0])):
             call_result = True
 
         self.log.info("Summary-3G Smoke Test: SMS idle: {}, Data idle: {},"
-                      " 3G Call: {}, SMS in call: {}, Data in call: {}".
-            format(sms_idle_result, data_idle_result,
-                   call_result, sms_incall_result, data_incall_result))
+                      " 3G Call: {}, SMS in call: {}, Data in call: {}".format(
+                          sms_idle_result, data_idle_result, call_result,
+                          sms_incall_result, data_incall_result))
 
         return (sms_idle_result and data_idle_result and call_result and
-                sms_incall_result and
-                ((data_incall_result is True) or (data_incall_result == SKIP)))
+                sms_incall_result and ((data_incall_result is True) or
+                                       (data_incall_result == SKIP)))
 
     def _test_smoke_wfc(self):
         ads = self.android_devices
@@ -288,10 +296,12 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             sms_idle_result = True
 
         self.log.info("2. Setup WiFi Call.")
-        if not call_setup_teardown(self.log, ads[0], ads[1],
-                               ad_hangup=None,
-                               verify_caller_func=is_phone_in_call_iwlan,
-                               verify_callee_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   ad_hangup=None,
+                                   verify_caller_func=is_phone_in_call_iwlan,
+                                   verify_callee_func=is_phone_in_call_iwlan):
             self.log.error("Setup WiFi Call Failed.")
             self.log.info("sms_idle_result:{}".format(sms_idle_result))
             return False
@@ -303,13 +313,13 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
         self.log.info("4. Verify Call not drop and hangup.")
         if (is_phone_in_call_iwlan(self.log, ads[0]) and
-            is_phone_in_call_iwlan(self.log, ads[1]) and
-            hangup_call(self.log, ads[0])):
+                is_phone_in_call_iwlan(self.log, ads[1]) and
+                hangup_call(self.log, ads[0])):
             call_result = True
 
         self.log.info("Summary-WFC Smoke Test: SMS in idle:{}, WiFi Call:{},"
-                      " SMS in call:{}".
-                      format(sms_idle_result, call_result, sms_incall_result))
+                      " SMS in call:{}".format(sms_idle_result, call_result,
+                                               sms_incall_result))
 
         return (call_result and sms_idle_result and sms_incall_result)
 
@@ -326,16 +336,19 @@ class TelLiveSmokeTest(TelephonyBaseTest):
         self.log.info("2. Verify LTE-WiFi network switch.")
         nw_switch_result = wifi_cell_switching(self.log, ads[0],
                                                self.wifi_network_ssid,
-                                               self.wifi_network_pass,
-                                               GEN_4G)
-        if ads[0].droid.carrierConfigIsTetheringModeAllowed(TETHERING_MODE_WIFI,
-            TETHERING_ENTITLEMENT_CHECK_TIMEOUT):
+                                               self.wifi_network_pass, GEN_4G)
+        if ads[0].droid.carrierConfigIsTetheringModeAllowed(
+                TETHERING_MODE_WIFI, TETHERING_ENTITLEMENT_CHECK_TIMEOUT):
             self.log.info("3. Verify WiFi Tethering.")
             if ads[0].droid.wifiIsApEnabled():
                 WifiUtils.stop_wifi_tethering(self.log, ads[0])
-            tethering_result = wifi_tethering_setup_teardown(self.log,
-                ads[0], [ads[1]], ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                check_interval=10, check_iteration=4)
+            tethering_result = wifi_tethering_setup_teardown(
+                self.log,
+                ads[0],
+                [ads[1]],
+                ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                check_interval=10,
+                check_iteration=4)
             # check_interval=10, check_iteration=4: in this Smoke test,
             # check tethering connection for 4 times, each time delay 10s,
             # to provide a reasonable check_time (10*4=40s) and also reduce test
@@ -346,8 +359,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             tethering_result = SKIP
 
         self.log.info("Summary-Data Smoke Test: Airplane Mode:{}, "
-                      "Network Switch:{}, Tethering:{}".
-                      format(apm_result, nw_switch_result, tethering_result))
+                      "Network Switch:{}, Tethering:{}".format(
+                          apm_result, nw_switch_result, tethering_result))
 
         return (apm_result and nw_switch_result and
                 ((tethering_result is True) or (tethering_result == SKIP)))
@@ -390,16 +403,16 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             result_csfb_3g = self._test_smoke_csfb_3g()
             result_3g = self._test_smoke_3g()
 
-            self.log.info("Summary for test run. Testbed:<{}>. WFC:{}, "
+            self.log.info(
+                "Summary for test run. Testbed:<{}>. WFC:{}, "
                 "VoLTE+LTE Data/Message:{}, Data Basic:{}, "
-                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".
-                format(getattr(self, Config.ikey_testbed_name.value),
-                       result_wfc, result_volte, result_data, result_csfb_3g,
-                       result_3g))
+                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".format(
+                    getattr(self, Config.ikey_testbed_name.value), result_wfc,
+                    result_volte, result_data, result_csfb_3g, result_3g))
 
-            return (result_volte and result_data and result_csfb_3g
-                    and result_3g and ((result_wfc is True)
-                                       or (result_wfc == SKIP)))
+            return (result_volte and result_data and result_csfb_3g and
+                    result_3g and ((result_wfc is True) or
+                                   (result_wfc == SKIP)))
         except Exception as e:
             self.log.error("Summary Failed. Exception:{}".format(e))
             return False
@@ -436,14 +449,15 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             result_csfb_3g = self._test_smoke_csfb_3g()
             result_3g = self._test_smoke_3g()
 
-            self.log.info("Summary for test run. Testbed:<{}>. "
+            self.log.info(
+                "Summary for test run. Testbed:<{}>. "
                 "VoLTE+LTE Data/Message:{}, Data Basic:{}, "
-                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".
-                format(getattr(self, Config.ikey_testbed_name.value),
+                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".format(
+                    getattr(self, Config.ikey_testbed_name.value),
                     result_volte, result_data, result_csfb_3g, result_3g))
 
-            return (result_volte and result_data and result_csfb_3g
-                    and result_3g)
+            return (result_volte and result_data and result_csfb_3g and
+                    result_3g)
         except Exception as e:
             self.log.error("Summary Failed. Exception:{}".format(e))
             return False
@@ -473,13 +487,15 @@ class TelLiveSmokeTest(TelephonyBaseTest):
             result_csfb_3g = self._test_smoke_csfb_3g()
             result_3g = self._test_smoke_3g()
 
-            self.log.info("Summary for test run. Testbed:<{}>. Data Basic:{}, "
-                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".
-                format(getattr(self, Config.ikey_testbed_name.value),
-                    result_data, result_csfb_3g, result_3g))
+            self.log.info(
+                "Summary for test run. Testbed:<{}>. Data Basic:{}, "
+                "CSFB+LTE Data/Message:{}, 3G Voice/Data/Message:{}".format(
+                    getattr(self, Config.ikey_testbed_name.value), result_data,
+                    result_csfb_3g, result_3g))
 
             return (result_data and result_csfb_3g and result_3g)
         except Exception as e:
             self.log.error("Summary Failed. Exception:{}".format(e))
             return False
+
     """ Tests End """

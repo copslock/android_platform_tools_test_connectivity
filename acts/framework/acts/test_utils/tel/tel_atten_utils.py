@@ -21,6 +21,7 @@ from acts.test_utils.tel.tel_defines import ATTEN_MIN_VALUE
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 
+
 def get_atten(log, atten_obj):
     """Get attenuator current attenuation value.
 
@@ -31,6 +32,7 @@ def get_atten(log, atten_obj):
         Current attenuation value.
     """
     return atten_obj.get_atten()
+
 
 def set_atten(log, atten_obj, target_atten, step_size=0, time_per_step=0):
     """Set attenuator attenuation value.
@@ -55,17 +57,19 @@ def set_atten(log, atten_obj, target_atten, step_size=0, time_per_step=0):
 
     current_atten = get_atten(log, atten_obj)
     info = "set_atten {} from {} to {}".format(print_name, current_atten,
-            target_atten)
-    if step_size>0:
-        info +=", step size {}, time per step {}s.".format(step_size, time_per_step)
+                                               target_atten)
+    if step_size > 0:
+        info += ", step size {}, time per step {}s.".format(step_size,
+                                                            time_per_step)
     log.info(info)
     try:
         delta = target_atten - current_atten
-        if step_size>0:
-            number_of_steps = int(abs(delta)/step_size)
+        if step_size > 0:
+            number_of_steps = int(abs(delta) / step_size)
             while number_of_steps > 0:
-                number_of_steps -=1
-                current_atten += math.copysign(step_size, (target_atten - current_atten))
+                number_of_steps -= 1
+                current_atten += math.copysign(step_size,
+                                               (target_atten - current_atten))
                 atten_obj.set_atten(current_atten)
                 time.sleep(time_per_step)
         atten_obj.set_atten(target_atten)
@@ -74,7 +78,12 @@ def set_atten(log, atten_obj, target_atten, step_size=0, time_per_step=0):
         return False
     return True
 
-def set_rssi(log, atten_obj, calibration_rssi, target_rssi, step_size=0,
+
+def set_rssi(log,
+             atten_obj,
+             calibration_rssi,
+             target_rssi,
+             step_size=0,
              time_per_step=0):
     """Set RSSI value by changing attenuation.
 
@@ -102,14 +111,14 @@ def set_rssi(log, atten_obj, calibration_rssi, target_rssi, step_size=0,
     elif target_rssi == MIN_RSSI_RESERVED_VALUE:
         target_atten = ATTEN_MAX_VALUE
     else:
-        log.info("set_rssi {} to {}.".
-                 format(print_name, target_rssi))
+        log.info("set_rssi {} to {}.".format(print_name, target_rssi))
         target_atten = calibration_rssi - target_rssi
 
     if target_atten < 0:
         log.info("set_rssi: WARNING - you are setting an unreachable RSSI.")
-        log.info("max RSSI value on {} is {}. Setting attenuation to 0.".
-            format(wifi_or_cell, calibration_rssi))
+        log.info(
+            "max RSSI value on {} is {}. Setting attenuation to 0.".format(
+                wifi_or_cell, calibration_rssi))
         target_atten = 0
     if not set_atten(log, atten_obj, target_atten, step_size, time_per_step):
         log.error("set_rssi to {}failed".format(target_rssi))

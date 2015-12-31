@@ -16,72 +16,97 @@
 from acts.utils import NexusModelNames
 from acts.test_utils.tel import tel_defines
 
+
 def rat_family_from_rat(rat_type):
     return _TelTables.technology_tbl[rat_type]['rat_family']
+
 
 def rat_generation_from_rat(rat_type):
     return _TelTables.technology_tbl[rat_type]['generation']
 
+
 def network_preference_for_generaton(generation, operator):
-    return _TelTables.operator_network_tbl[operator][generation]['network_preference']
+    return _TelTables.operator_network_tbl[operator][generation][
+        'network_preference']
+
 
 def rat_families_for_network_preference(network_preference):
-    return _TelTables.network_preference_tbl[network_preference]['rat_family_list']
+    return _TelTables.network_preference_tbl[network_preference][
+        'rat_family_list']
+
 
 def rat_family_for_generation(generation, operator):
     return _TelTables.operator_network_tbl[operator][generation]['rat_family']
 
+
 def operator_name_from_plmn_id(plmn_id):
     return _TelTables.operator_id_to_name[plmn_id]
+
 
 def is_valid_rat(rat_type):
     return True if rat_type in _TelTables.technology_tbl else False
 
+
 def is_valid_generation(gen):
     return True if gen in _TelTables.technology_gen_tbl else False
 
+
 def is_rat_svd_capable(rat):
     return _TelTables.technology_tbl[rat]["simultaneous_voice_data"]
+
 
 def connection_type_from_type_string(input_string):
     if input_string in _ConnectionTables.connection_type_tbl:
         return _ConnectionTables.connection_type_tbl[input_string]
     return tel_defines.NETWORK_CONNECTION_TYPE_UNKNOWN
 
+
 def is_user_plane_data_type(connection_type):
     if connection_type in _ConnectionTables.user_plane_data_type:
-      return _ConnectionTables.user_plane_data_type[connection_type]
+        return _ConnectionTables.user_plane_data_type[connection_type]
     return False
 
+
 # For TMO, to check if voice mail count is correct after leaving a new voice message.
-def check_tmo_voice_mail_count(voice_mail_count_before, voice_mail_count_after):
+def check_tmo_voice_mail_count(voice_mail_count_before,
+                               voice_mail_count_after):
     return (voice_mail_count_after == -1)
 
+
 # For ATT, to check if voice mail count is correct after leaving a new voice message.
-def check_att_voice_mail_count(voice_mail_count_before, voice_mail_count_after):
+def check_att_voice_mail_count(voice_mail_count_before,
+                               voice_mail_count_after):
     return (voice_mail_count_after == (voice_mail_count_before + 1))
 
+
 # For SPT, to check if voice mail count is correct after leaving a new voice message.
-def check_spt_voice_mail_count(voice_mail_count_before, voice_mail_count_after):
+def check_spt_voice_mail_count(voice_mail_count_before,
+                               voice_mail_count_after):
     return (voice_mail_count_after == (voice_mail_count_before + 1))
+
 
 # For TMO, get the voice mail number
 def get_tmo_voice_mail_number():
     return "123"
 
+
 # For ATT, get the voice mail number
 def get_att_voice_mail_number():
     return None
+
 
 # For SPT, get the voice mail number
 def get_spt_voice_mail_number():
     return None
 
+
 def get_voice_mail_number_function(operator):
     return _TelTables.voice_mail_number_get_function_tbl[operator]
 
+
 def get_voice_mail_count_check_function(operator):
     return _TelTables.voice_mail_count_check_function_tbl[operator]
+
 
 class _ConnectionTables():
     connection_type_tbl = {
@@ -171,25 +196,24 @@ class _TelTables():
         '310560': tel_defines.CARRIER_ATT,
         '310670': tel_defines.CARRIER_ATT,
         '310680': tel_defines.CARRIER_ATT,
-        '310150': tel_defines.CARRIER_ATT,   #Cingular
-        '310170': tel_defines.CARRIER_ATT,   #Cingular
-        '310410': tel_defines.CARRIER_ATT,   #Cingular
-        '311180': tel_defines.CARRIER_ATT,   #Cingular Licensee Pacific Telesis Mobile Services, LLC
+        '310150': tel_defines.CARRIER_ATT,  #Cingular
+        '310170': tel_defines.CARRIER_ATT,  #Cingular
+        '310410': tel_defines.CARRIER_ATT,  #Cingular
+        '311180':
+        tel_defines.CARRIER_ATT,  #Cingular Licensee Pacific Telesis Mobile Services, LLC
 
         #Sprint (and Sprint-Nextel)
         '310120': tel_defines.CARRIER_SPT,
         '311490': tel_defines.CARRIER_SPT,
         '311870': tel_defines.CARRIER_SPT,
         '311880': tel_defines.CARRIER_SPT,
-        '312190': tel_defines.CARRIER_SPT,   #Sprint-Nextel Communications Inc
-        '316010': tel_defines.CARRIER_SPT,   #Sprint-Nextel Communications Inc
-
-        '23433': tel_defines.CARRIER_EEUK,   #Orange
-        '23434': tel_defines.CARRIER_EEUK,   #Orange
-        '23430': tel_defines.CARRIER_EEUK,   #T-Mobile UK
-        '23431': tel_defines.CARRIER_EEUK,   #Virgin Mobile (MVNO)
-        '23432': tel_defines.CARRIER_EEUK,   #Virgin Mobile (MVNO)
-
+        '312190': tel_defines.CARRIER_SPT,  #Sprint-Nextel Communications Inc
+        '316010': tel_defines.CARRIER_SPT,  #Sprint-Nextel Communications Inc
+        '23433': tel_defines.CARRIER_EEUK,  #Orange
+        '23434': tel_defines.CARRIER_EEUK,  #Orange
+        '23430': tel_defines.CARRIER_EEUK,  #T-Mobile UK
+        '23431': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
+        '23432': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
         '23415': tel_defines.CARRIER_VFUK
     }
 
@@ -351,64 +375,65 @@ class _TelTables():
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_UNKNOWN
         }
-
     }
 
     network_preference_tbl = {
         tel_defines.NETWORK_MODE_LTE_GSM_WCDMA: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-            tel_defines.RAT_FAMILY_UMTS, tel_defines.RAT_FAMILY_GSM]
+                                tel_defines.RAT_FAMILY_UMTS,
+                                tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_GSM_UMTS: {
             'rat_family_list': [tel_defines.RAT_FAMILY_UMTS,
-            tel_defines.RAT_FAMILY_GSM]
+                                tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_GSM_ONLY: {
             'rat_family_list': [tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-            tel_defines.RAT_FAMILY_CDMA2000]
+                                tel_defines.RAT_FAMILY_CDMA2000]
         },
         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-            tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
+                                tel_defines.RAT_FAMILY_CDMA2000,
+                                tel_defines.RAT_FAMILY_CDMA]
         },
         tel_defines.NETWORK_MODE_CDMA: {
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
-            tel_defines.RAT_FAMILY_CDMA]
+                                tel_defines.RAT_FAMILY_CDMA]
         },
         tel_defines.NETWORK_MODE_CDMA_NO_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
-            tel_defines.RAT_FAMILY_CDMA]
+                                tel_defines.RAT_FAMILY_CDMA]
         }
     }
     default_umts_operator_network_tbl = {
         tel_defines.GEN_4G: {
-            'rat_family' : tel_defines.RAT_FAMILY_LTE,
-            'network_preference' : tel_defines.NETWORK_MODE_LTE_GSM_WCDMA
+            'rat_family': tel_defines.RAT_FAMILY_LTE,
+            'network_preference': tel_defines.NETWORK_MODE_LTE_GSM_WCDMA
         },
         tel_defines.GEN_3G: {
-            'rat_family' : tel_defines.RAT_FAMILY_UMTS,
-            'network_preference' : tel_defines.NETWORK_MODE_GSM_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_UMTS,
+            'network_preference': tel_defines.NETWORK_MODE_GSM_UMTS
         },
         tel_defines.GEN_2G: {
-            'rat_family' : tel_defines.RAT_FAMILY_GSM,
-            'network_preference' : tel_defines.NETWORK_MODE_GSM_ONLY
+            'rat_family': tel_defines.RAT_FAMILY_GSM,
+            'network_preference': tel_defines.NETWORK_MODE_GSM_ONLY
         }
     }
     default_cdma_operator_network_tbl = {
         tel_defines.GEN_4G: {
-            'rat_family' : tel_defines.RAT_FAMILY_LTE,
-            'network_preference' : tel_defines.NETWORK_MODE_LTE_CDMA_EVDO
+            'rat_family': tel_defines.RAT_FAMILY_LTE,
+            'network_preference': tel_defines.NETWORK_MODE_LTE_CDMA_EVDO
         },
         tel_defines.GEN_3G: {
-            'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
-            'network_preference' : tel_defines.NETWORK_MODE_CDMA
+            'rat_family': tel_defines.RAT_FAMILY_CDMA2000,
+            'network_preference': tel_defines.NETWORK_MODE_CDMA
         },
         tel_defines.GEN_2G: {
-            'rat_family' : tel_defines.RAT_FAMILY_CDMA2000,
-            'network_preference' : tel_defines.NETWORK_MODE_CDMA_NO_EVDO
+            'rat_family': tel_defines.RAT_FAMILY_CDMA2000,
+            'network_preference': tel_defines.NETWORK_MODE_CDMA_NO_EVDO
         }
     }
     operator_network_tbl = {
@@ -430,34 +455,32 @@ class _TelTables():
         tel_defines.CARRIER_SPT: check_spt_voice_mail_count
     }
 
+
 device_capabilities = {
     NexusModelNames.ONE:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_MSIM],
-    NexusModelNames.N5:
-        [tel_defines.CAPABILITY_PHONE],
+    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_MSIM],
+    NexusModelNames.N5: [tel_defines.CAPABILITY_PHONE],
     NexusModelNames.N5v2:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
-    NexusModelNames.N6:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
-         tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
-         tel_defines.CAPABILITY_VT],
+    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
+    NexusModelNames.N6: [tel_defines.CAPABILITY_PHONE,
+                         tel_defines.CAPABILITY_OMADM,
+                         tel_defines.CAPABILITY_VOLTE,
+                         tel_defines.CAPABILITY_WFC,
+                         tel_defines.CAPABILITY_VT],
     NexusModelNames.N6v2:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
+    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
 }
 
 operator_capabilities = {
-    tel_defines.CARRIER_VZW:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
-         tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_VT],
-    tel_defines.CARRIER_ATT:
-        [tel_defines.CAPABILITY_PHONE],
-    tel_defines.CARRIER_TMO:
-        [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
-         tel_defines.CAPABILITY_WFC],
-    tel_defines.CARRIER_SPT:
-        [tel_defines.CAPABILITY_PHONE],
-    tel_defines.CARRIER_EEUK:
-        [tel_defines.CAPABILITY_PHONE],
-    tel_defines.CARRIER_VFUK:
-        [tel_defines.CAPABILITY_PHONE]
+    tel_defines.CARRIER_VZW: [tel_defines.CAPABILITY_PHONE,
+                              tel_defines.CAPABILITY_OMADM,
+                              tel_defines.CAPABILITY_VOLTE,
+                              tel_defines.CAPABILITY_VT],
+    tel_defines.CARRIER_ATT: [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_TMO: [tel_defines.CAPABILITY_PHONE,
+                              tel_defines.CAPABILITY_VOLTE,
+                              tel_defines.CAPABILITY_WFC],
+    tel_defines.CARRIER_SPT: [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_EEUK: [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE]
 }

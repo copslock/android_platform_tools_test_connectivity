@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for voice tests in telephony
 """
@@ -46,22 +45,22 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
+
 class TelLabEtwsTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
     CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                    "test_etws_earthquake_tsunami_lte",
-                    "test_etws_other_emergency_lte",
-                    "test_etws_earthquake_tsunami_wcdma",
-                    "test_etws_other_emergency_wcdma",
-                    "test_etws_earthquake_tsunami_gsm",
-                    "test_etws_other_emergency_gsm",
-                    )
+        self.tests = ("test_etws_earthquake_tsunami_lte",
+                      "test_etws_other_emergency_lte",
+                      "test_etws_earthquake_tsunami_wcdma",
+                      "test_etws_other_emergency_wcdma",
+                      "test_etws_earthquake_tsunami_gsm",
+                      "test_etws_other_emergency_gsm", )
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
 
     def setup_class(self):
         try:
@@ -85,8 +84,8 @@ class TelLabEtwsTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def _send_receive_etws_message(self, set_simulation_func, rat,
-            message_id, warning_message):
+    def _send_receive_etws_message(self, set_simulation_func, rat, message_id,
+                                   warning_message):
         try:
             self.anritsu.reset()
             self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
@@ -113,24 +112,27 @@ class TelLabEtwsTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for ETWS test.")
                 return False
 
-            if not ensure_network_rat(self.log, self.ad,
-                preferred_network_setting, rat_family,
-                toggle_apm_after_setting=True):
-                self.log.error("Failed to set rat family {}, preferred network:{}".
-                    format(rat_family, preferred_network_setting))
+            if not ensure_network_rat(self.log,
+                                      self.ad,
+                                      preferred_network_setting,
+                                      rat_family,
+                                      toggle_apm_after_setting=True):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
                 return False
 
             self.anritsu.wait_for_registration_state()
-            if not etws_receive_verify_message_lte_wcdma(self.log, self.ad,
-                                                        self.anritsu,
-                                                        next(TelLabEtwsTest.SERIAL_NO),
-                                                        message_id,
-                                                        warning_message):
+            if not etws_receive_verify_message_lte_wcdma(
+                    self.log, self.ad, self.anritsu,
+                    next(TelLabEtwsTest.SERIAL_NO), message_id,
+                    warning_message):
                 self.log.error("Phone {} Failed to receive ETWS message"
                                .format(self.ad.serial))
                 return False
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
             return False
         except Exception as e:
             self.log.error("Exception during ETWS send/receive: " + str(e))
@@ -138,6 +140,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_lte(self):
         """ETWS Earthquake and Tsunami warning message reception on LTE
@@ -200,9 +203,9 @@ class TelLabEtwsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_etws_message(set_system_model_wcdma, RAT_WCDMA,
-                                               ETWS_WARNING_EARTHQUAKETSUNAMI,
-                                               "WCDMA Earthquake and Tsunami")
+        return self._send_receive_etws_message(
+            set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_EARTHQUAKETSUNAMI,
+            "WCDMA Earthquake and Tsunami")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_wcdma(self):
@@ -222,9 +225,9 @@ class TelLabEtwsTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._send_receive_etws_message(set_system_model_wcdma, RAT_WCDMA,
-                                               ETWS_WARNING_OTHER_EMERGENCY,
-                                               "WCDMA ETWS Other Emergency")
+        return self._send_receive_etws_message(
+            set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_OTHER_EMERGENCY,
+            "WCDMA ETWS Other Emergency")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_gsm(self):
@@ -269,4 +272,5 @@ class TelLabEtwsTest(TelephonyBaseTest):
         return self._send_receive_etws_message(set_system_model_gsm, RAT_GSM,
                                                ETWS_WARNING_OTHER_EMERGENCY,
                                                "GSM ETWS Other Emergency")
+
     """ Tests End """

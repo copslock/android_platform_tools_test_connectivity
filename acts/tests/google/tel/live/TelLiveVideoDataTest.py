@@ -27,14 +27,13 @@ from acts.test_utils.tel.tel_video_utils import phone_setup_video
 from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
 from acts.utils import load_config
 
-class TelLiveVideoDataTest(TelephonyBaseTest):
 
+class TelLiveVideoDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
-                      # Data during VT call
-                      "test_internet_access_during_video_call",
-                      )
+            # Data during VT call
+            "test_internet_access_during_video_call", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
@@ -46,6 +45,7 @@ class TelLiveVideoDataTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_internet_access_during_video_call(self):
         """ Test Internet access during VT<->VT call.
@@ -61,15 +61,18 @@ class TelLiveVideoDataTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Make MO VT call.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -82,4 +85,6 @@ class TelLiveVideoDataTest(TelephonyBaseTest):
             return False
 
         return hangup_call(self.log, ads[0])
+
+
 """ Tests End """

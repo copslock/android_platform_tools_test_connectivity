@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Tests for reading UE Identity
 """
@@ -44,25 +43,21 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
+
 class TelLabUeIdentityTest(TelephonyBaseTest):
 
     CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                    "test_read_imsi_lte",
-                    "test_read_imei_lte",
-                    "test_read_imeisv_lte",
-                    "test_read_imsi_wcdma",
-                    "test_read_imei_wcdma",
-                    "test_read_imeisv_wcdma",
-                    "test_read_imsi_gsm",
-                    "test_read_imei_gsm",
-                    "test_read_imeisv_gsm"
-                    )
+        self.tests = ("test_read_imsi_lte", "test_read_imei_lte",
+                      "test_read_imeisv_lte", "test_read_imsi_wcdma",
+                      "test_read_imei_wcdma", "test_read_imeisv_wcdma",
+                      "test_read_imsi_gsm", "test_read_imei_gsm",
+                      "test_read_imeisv_gsm")
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
 
     def setup_class(self):
         try:
@@ -111,16 +106,18 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
                 return False
 
             self.ad.droid.telephonyToggleDataConnection(True)
-            if not ensure_network_rat(self.log, self.ad,
-                preferred_network_setting, rat_family,
-                toggle_apm_after_setting=True):
-                self.log.error("Failed to set rat family {}, preferred network:{}".
-                    format(rat_family, preferred_network_setting))
+            if not ensure_network_rat(self.log,
+                                      self.ad,
+                                      preferred_network_setting,
+                                      rat_family,
+                                      toggle_apm_after_setting=True):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
                 return False
             self.anritsu.wait_for_registration_state()
             time.sleep(WAIT_TIME_ANRITSU_REG_AND_OPER)
-            identity = read_ue_identity(self.log, self.ad,
-                                        self.anritsu,
+            identity = read_ue_identity(self.log, self.ad, self.anritsu,
                                         identity_type)
             if identity is None:
                 self.log.error("Phone {} Failed to get {}"
@@ -129,7 +126,8 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
             else:
                 self.log.info("{}".format(identity))
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " + str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
             return False
         except Exception as e:
             self.log.error("Exception during reading identity: " + str(e))
@@ -137,6 +135,7 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_read_imsi_lte(self):
         """Reading the IMSI of UE on LTE
@@ -316,4 +315,5 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
         """
         return self._read_identity(set_system_model_gsm, RAT_GSM,
                                    UEIdentityType.IMEISV)
+
     """ Tests End """
