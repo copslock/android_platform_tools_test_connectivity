@@ -66,6 +66,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_INITIATION
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CONNECTION_STATE_UPDATE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_DATA_SUB_CHANGE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_HANGUP_TO_IDLE_EVENT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
