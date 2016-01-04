@@ -80,7 +80,6 @@ WCDMA_BAND_4 = 4
 WCDMA_BAND_5 = 5
 WCDMA_BAND_8 = 8
 
-
 # GSM BAND constants
 GSM_BAND_GSM450 = "GSM450"
 GSM_BAND_GSM480 = "GSM480"
@@ -103,7 +102,6 @@ CDMA1X_SID_0 = 0
 
 # CDMA 1X NID constants
 CDMA1X_NID_65535 = 65535
-
 
 # BANDWIDTH constants
 CDMA1X_NID_65535 = 65535
@@ -159,7 +157,6 @@ CMAS_C2K_URGENCY_EXPECTED = "Expected"
 CMAS_C2K_CERTIANTY_OBSERVED = "Observed"
 CMAS_C2K_CERTIANTY_LIKELY = "Likely"
 
-
 #PDN Numbers
 PDN_NO_1 = 1
 
@@ -167,12 +164,14 @@ PDN_NO_1 = 1
 CELL_1 = 1
 CELL_2 = 2
 
+
 def cb_serial_number():
     """ CMAS/ETWS serial number generator """
     i = 0x3000
     while True:
         yield i
         i += 1
+
 
 def save_anritsu_log_files(anritsu_handle, test_name, user_params):
     """ saves the anritsu smart studio log files
@@ -187,7 +186,7 @@ def save_anritsu_log_files(anritsu_handle, test_name, user_params):
     Returns:
         None
     """
-    md8475a_log_folder =  user_params["anritsu_log_file_path"]
+    md8475a_log_folder = user_params["anritsu_log_file_path"]
     file_name = getfilenamewithtimestamp(test_name)
     seq_logfile = "{}\\{}_seq.csv".format(md8475a_log_folder, file_name)
     msg_logfile = "{}\\{}_msg.csv".format(md8475a_log_folder, file_name)
@@ -332,6 +331,7 @@ def _init_PDN(anritsu_handle, pdn, ip_address):
     pdn.secondary_dns_address_ipv4 = DNS_IPV4_ADDRESS
     pdn.cscf_address_ipv4 = CSCF_IPV4_ADDRESS
 
+
 def set_system_model_lte_lte(anritsu_handle, user_params):
     """ Configures Anritsu system for LTE and LTE simulation
 
@@ -342,8 +342,7 @@ def set_system_model_lte_lte(anritsu_handle, user_params):
     Returns:
         Lte and Wcdma BTS objects
     """
-    anritsu_handle.set_simulation_model(BtsTechnology.LTE,
-                                       BtsTechnology.LTE)
+    anritsu_handle.set_simulation_model(BtsTechnology.LTE, BtsTechnology.LTE)
     # setting BTS parameters
     lte1_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     lte2_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
@@ -353,6 +352,7 @@ def set_system_model_lte_lte(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [lte1_bts, lte2_bts]
+
 
 def set_system_model_wcdma_wcdma(anritsu_handle, user_params):
     """ Configures Anritsu system for WCDMA and WCDMA simulation
@@ -365,7 +365,7 @@ def set_system_model_wcdma_wcdma(anritsu_handle, user_params):
         Lte and Wcdma BTS objects
     """
     anritsu_handle.set_simulation_model(BtsTechnology.WCDMA,
-                                       BtsTechnology.WCDMA)
+                                        BtsTechnology.WCDMA)
     # setting BTS parameters
     wcdma1_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     wcdma2_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
@@ -375,6 +375,7 @@ def set_system_model_wcdma_wcdma(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [wcdma1_bts, wcdma2_bts]
+
 
 def set_system_model_lte_wcdma(anritsu_handle, user_params):
     """ Configures Anritsu system for LTE and WCDMA simulation
@@ -386,8 +387,7 @@ def set_system_model_lte_wcdma(anritsu_handle, user_params):
     Returns:
         Lte and Wcdma BTS objects
     """
-    anritsu_handle.set_simulation_model(BtsTechnology.LTE,
-                                       BtsTechnology.WCDMA)
+    anritsu_handle.set_simulation_model(BtsTechnology.LTE, BtsTechnology.WCDMA)
     # setting BTS parameters
     lte_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     wcdma_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
@@ -397,6 +397,7 @@ def set_system_model_lte_wcdma(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [lte_bts, wcdma_bts]
+
 
 def set_system_model_lte_gsm(anritsu_handle, user_params):
     """ Configures Anritsu system for LTE and GSM simulation
@@ -408,8 +409,7 @@ def set_system_model_lte_gsm(anritsu_handle, user_params):
     Returns:
         Lte and Wcdma BTS objects
     """
-    anritsu_handle.set_simulation_model(BtsTechnology.LTE,
-                                       BtsTechnology.GSM)
+    anritsu_handle.set_simulation_model(BtsTechnology.LTE, BtsTechnology.GSM)
     # setting BTS parameters
     lte_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     gsm_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
@@ -419,6 +419,7 @@ def set_system_model_lte_gsm(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [lte_bts, gsm_bts]
+
 
 def set_system_model_lte_1x(anritsu_handle, user_params):
     """ Configures Anritsu system for LTE and 1x simulation
@@ -431,7 +432,7 @@ def set_system_model_lte_1x(anritsu_handle, user_params):
         Lte and 1x BTS objects
     """
     anritsu_handle.set_simulation_model(BtsTechnology.LTE,
-                                       BtsTechnology.CDMA1X)
+                                        BtsTechnology.CDMA1X)
     # setting BTS parameters
     lte_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     cdma1x_bts = anritsu_handle.get_BTS(BtsNumber.BTS2)
@@ -441,6 +442,7 @@ def set_system_model_lte_1x(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [lte_bts, cdma1x_bts]
+
 
 def set_system_model_wcdma_gsm(anritsu_handle, user_params):
     """ Configures Anritsu system for WCDMA and GSM simulation
@@ -463,6 +465,7 @@ def set_system_model_wcdma_gsm(anritsu_handle, user_params):
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [wcdma_bts, gsm_bts]
 
+
 def set_system_model_gsm_gsm(anritsu_handle, user_params):
     """ Configures Anritsu system for GSM and GSM simulation
 
@@ -483,6 +486,7 @@ def set_system_model_gsm_gsm(anritsu_handle, user_params):
     # Initialize PDN IP address for internet connection sharing
     _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
     return [gsm1_bts, gsm2_bts]
+
 
 def set_system_model_lte(anritsu_handle, user_params):
     """ Configures Anritsu system for LTE simulation
@@ -609,8 +613,8 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
     elif state is "OUT":
         service_state = BtsServiceState.SERVICE_STATE_OUT
     else:
-       log.info("wrong state value")
-       return status
+        log.info("wrong state value")
+        return status
 
     if btsnumber.service_state is service_state:
         log.info("BTS state is already in {}".format(state))
@@ -631,9 +635,13 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
     return status
 
 
-def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
-        teardown_side=CALL_TEARDOWN_PHONE, is_emergency=False,
-        wait_time_in_call=WAIT_TIME_IN_CALL):
+def call_mo_setup_teardown(log,
+                           ad,
+                           virtual_phone_handle,
+                           callee_number,
+                           teardown_side=CALL_TEARDOWN_PHONE,
+                           is_emergency=False,
+                           wait_time_in_call=WAIT_TIME_IN_CALL):
     """ Makes a MO call and tear down the call
 
     Args:
@@ -647,6 +655,7 @@ def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
     Returns:
         True for success False for failure
     """
+
     class _CallSequenceException(Exception):
         pass
 
@@ -661,8 +670,9 @@ def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
             raise _CallSequenceException("Initiate call failed.")
 
         # check Virtual phone answered the call
-        if not wait_for_virtualphone_state(log, virtual_phone_handle,
-            VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
+        if not wait_for_virtualphone_state(
+                log, virtual_phone_handle,
+                VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
             raise _CallSequenceException("Virtual Phone not in call.")
 
         time.sleep(wait_time_in_call)
@@ -678,11 +688,13 @@ def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
         else:
             log.info("Disconnecting the call from DUT")
             if not hangup_call(log, ad):
-                raise _CallSequenceException("Error in Hanging-Up Call on DUT.")
+                raise _CallSequenceException(
+                    "Error in Hanging-Up Call on DUT.")
 
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
-            VirtualPhoneStatus.STATUS_IDLE):
-            raise _CallSequenceException("Virtual Phone not idle after hangup.")
+                                           VirtualPhoneStatus.STATUS_IDLE):
+            raise _CallSequenceException(
+                "Virtual Phone not idle after hangup.")
         return True
 
     except _CallSequenceException as e:
@@ -695,8 +707,13 @@ def call_mo_setup_teardown(log, ad, virtual_phone_handle, callee_number,
         except Exception as e:
             log.error(str(e))
 
-def call_mt_setup_teardown(log, ad, virtual_phone_handle, caller_number=None,
-        teardown_side=CALL_TEARDOWN_PHONE, rat=""):
+
+def call_mt_setup_teardown(log,
+                           ad,
+                           virtual_phone_handle,
+                           caller_number=None,
+                           teardown_side=CALL_TEARDOWN_PHONE,
+                           rat=""):
     """ Makes a call from Anritsu Virtual phone to device and tear down the call
 
     Args:
@@ -711,7 +728,7 @@ def call_mt_setup_teardown(log, ad, virtual_phone_handle, caller_number=None,
     log.info("Receive MT Call - Making a call to the phone from remote")
     try:
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
-                                             VirtualPhoneStatus.STATUS_IDLE):
+                                           VirtualPhoneStatus.STATUS_IDLE):
             raise Exception("Virtual Phone is not in a state to start call")
         if caller_number is not None:
             if rat == RAT_1XRTT:
@@ -726,8 +743,7 @@ def call_mt_setup_teardown(log, ad, virtual_phone_handle, caller_number=None,
         time.sleep(WAIT_TIME_IN_CALL)
 
         if not ad.droid.telecomIsInCall():
-            raise Exception(
-                "Call ended before delay_in_call.")
+            raise Exception("Call ended before delay_in_call.")
     except Exception:
         return False
 
@@ -745,6 +761,7 @@ def call_mt_setup_teardown(log, ad, virtual_phone_handle, caller_number=None,
 
     return True
 
+
 def wait_for_sms_deliver_success(log, ad, time_to_wait=60):
     sms_deliver_event = EventSmsDeliverSuccess
     sleep_interval = 2
@@ -757,6 +774,7 @@ def wait_for_sms_deliver_success(log, ad, time_to_wait=60):
     except Empty:
         log.info("Timeout: Expected event is not received.")
     return status
+
 
 def wait_for_sms_sent_success(log, ad, time_to_wait=60):
     sms_sent_event = EventSmsSentSuccess
@@ -772,6 +790,7 @@ def wait_for_sms_sent_success(log, ad, time_to_wait=60):
         log.info("Timeout: Expected event is not received.")
     return status
 
+
 def wait_for_incoming_sms(log, ad, time_to_wait=60):
     sms_received_event = EventSmsReceived
     sleep_interval = 2
@@ -785,6 +804,7 @@ def wait_for_incoming_sms(log, ad, time_to_wait=60):
     except Empty:
         log.info("Timeout: Expected event is not received.")
     return status, event
+
 
 def verify_anritsu_received_sms(log, vp_handle, receiver_number, message, rat):
     if rat == RAT_1XRTT:
@@ -811,6 +831,7 @@ def verify_anritsu_received_sms(log, vp_handle, receiver_number, message, rat):
         return False
     return True
 
+
 def sms_mo_send(log, ad, vp_handle, receiver_number, message, rat=""):
     try:
         if not wait_for_virtualphone_state(log, vp_handle,
@@ -822,12 +843,14 @@ def sms_mo_send(log, ad, vp_handle, receiver_number, message, rat=""):
         test_status = wait_for_sms_sent_success(log, ad)
         if not test_status:
             raise Exception("Failed to send SMS")
-        if not verify_anritsu_received_sms(log, vp_handle,receiver_number, message, rat):
+        if not verify_anritsu_received_sms(log, vp_handle, receiver_number,
+                                           message, rat):
             raise Exception("Anritsu didn't receive message")
     except Exception as e:
         log.error("Exception :" + str(e))
         return False
     return True
+
 
 def sms_mt_receive_verify(log, ad, vp_handle, sender_number, message, rat=""):
     ad.droid.smsStartTrackingIncomingMessage()
@@ -837,9 +860,9 @@ def sms_mt_receive_verify(log, ad, vp_handle, sender_number, message, rat=""):
             raise Exception("Virtual Phone is not in a state to receive SMS")
         log.info("Waiting for Incoming SMS from " + sender_number)
         if rat == RAT_1XRTT:
-            vp_handle.sendSms_c2k(sender_number,  message)
+            vp_handle.sendSms_c2k(sender_number, message)
         else:
-            vp_handle.sendSms(sender_number,  message)
+            vp_handle.sendSms(sender_number, message)
         test_status, event = wait_for_incoming_sms(log, ad)
         if not test_status:
             raise Exception("Failed to receive SMS")
@@ -856,8 +879,11 @@ def sms_mt_receive_verify(log, ad, vp_handle, sender_number, message, rat=""):
         ad.droid.smsStopTrackingIncomingMessage()
     return True
 
-def wait_for_virtualphone_state(log, vp_handle, state,
-    timeout=WAIT_TIME_FOR_VIRTUAL_PHONE_STATE):
+
+def wait_for_virtualphone_state(log,
+                                vp_handle,
+                                state,
+                                timeout=WAIT_TIME_FOR_VIRTUAL_PHONE_STATE):
     """ Waits for Anritsu Virtual phone to be in expected state
 
     Args:
@@ -883,12 +909,13 @@ def wait_for_virtualphone_state(log, vp_handle, state,
         log.info("Timeout: Expected state is not received.")
     return status
 
+
 # There is a difference between CMAS/ETWS message formation in LTE/WCDMA and CDMA 1X
 # LTE and CDMA : 3GPP
 # CDMA 1X: 3GPP2
 # hence different functions
-def cmas_receive_verify_message_lte_wcdma(log, ad, anritsu_handle, serial_number,
-        message_id, warning_message):
+def cmas_receive_verify_message_lte_wcdma(
+        log, ad, anritsu_handle, serial_number, message_id, warning_message):
     """ Makes Anritsu to send a CMAS message and phone and verifies phone
         receives the message on LTE/WCDMA
 
@@ -905,8 +932,8 @@ def cmas_receive_verify_message_lte_wcdma(log, ad, anritsu_handle, serial_number
     status = False
     event = None
     ad.droid.smsStartTrackingGsmEmergencyCBMessage()
-    anritsu_handle.send_cmas_lte_wcdma(hex(serial_number), message_id,
-                                       warning_message)
+    anritsu_handle.send_cmas_lte_wcdma(
+        hex(serial_number), message_id, warning_message)
     try:
         log.info("Waiting for CMAS Message")
         event = ad.ed.pop_event(EventCmasReceived, 60)
@@ -925,8 +952,13 @@ def cmas_receive_verify_message_lte_wcdma(log, ad, anritsu_handle, serial_number
     return status
 
 
-def cmas_receive_verify_message_cdma1x(log, ad, anritsu_handle,  message_id,
-        service_category, alert_text,
+def cmas_receive_verify_message_cdma1x(
+        log,
+        ad,
+        anritsu_handle,
+        message_id,
+        service_category,
+        alert_text,
         response_type=CMAS_C2K_RESPONSETYPE_SHELTER,
         severity=CMAS_C2K_SEVERITY_EXTREME,
         urgency=CMAS_C2K_URGENCY_IMMEDIATE,
@@ -947,8 +979,9 @@ def cmas_receive_verify_message_cdma1x(log, ad, anritsu_handle,  message_id,
     status = False
     event = None
     ad.droid.smsStartTrackingCdmaEmergencyCBMessage()
-    anritsu_handle.send_cmas_etws_cdma1x(message_id, service_category, alert_text,
-        response_type, severity, urgency, certainty)
+    anritsu_handle.send_cmas_etws_cdma1x(message_id, service_category,
+                                         alert_text, response_type, severity,
+                                         urgency, certainty)
     try:
         log.info("Waiting for CMAS Message")
         event = ad.ed.pop_event(EventCmasReceived, 60)
@@ -976,8 +1009,8 @@ def cmas_receive_verify_message_cdma1x(log, ad, anritsu_handle,  message_id,
     return status
 
 
-def etws_receive_verify_message_lte_wcdma(log, ad, anritsu_handle,  serial_number,
-        message_id, warning_message):
+def etws_receive_verify_message_lte_wcdma(
+        log, ad, anritsu_handle, serial_number, message_id, warning_message):
     """ Makes Anritsu to send a ETWS message and phone and verifies phone
         receives the message on LTE/WCDMA
 
@@ -1004,9 +1037,9 @@ def etws_receive_verify_message_lte_wcdma(log, ad, anritsu_handle,  serial_numbe
     elif message_id == ETWS_WARNING_OTHER_EMERGENCY:
         warning_type = "other"
     ad.droid.smsStartTrackingGsmEmergencyCBMessage()
-    anritsu_handle.send_etws_lte_wcdma(hex(serial_number), message_id,
-                                       warning_type,
-                                       warning_message, "ON", "ON")
+    anritsu_handle.send_etws_lte_wcdma(
+        hex(serial_number), message_id, warning_type, warning_message, "ON",
+        "ON")
     try:
         log.info("Waiting for ETWS Message")
         event = ad.ed.pop_event(EventEtwsReceived, 60)
@@ -1020,8 +1053,8 @@ def etws_receive_verify_message_lte_wcdma(log, ad, anritsu_handle,  serial_numbe
     return status
 
 
-def etws_receive_verify_message_cdma1x(log, ad, anritsu_handle,  serial_number,
-        message_id, warning_message):
+def etws_receive_verify_message_cdma1x(log, ad, anritsu_handle, serial_number,
+                                       message_id, warning_message):
     """ Makes Anritsu to send a ETWS message and phone and verifies phone
         receives the message on CDMA1X
 
@@ -1040,6 +1073,7 @@ def etws_receive_verify_message_cdma1x(log, ad, anritsu_handle,  serial_number,
     # TODO: b/26296388 need to add logic to check etws.
     return status
 
+
 def read_ue_identity(log, ad, anritsu_handle, identity_type):
     """ Get the UE identity IMSI, IMEI, IMEISV
 
@@ -1052,6 +1086,7 @@ def read_ue_identity(log, ad, anritsu_handle, identity_type):
         Requested Identity value
     """
     return anritsu_handle.get_ue_identity(identity_type)
+
 
 def get_lte_band(user_params, cell_no):
     """ Returns the LTE BAND to be used from the user specified parameters
@@ -1131,6 +1166,7 @@ def get_1x_band(user_params, cell_no):
     except KeyError:
         cdma_1x_band = CDMA_1X_BAND_0
     return cdma_1x_band
+
 
 def get_wcdma_rac(user_params, cell_no):
     """ Returns the WCDMA RAC to be used from the user specified parameters
@@ -1350,6 +1386,7 @@ def get_1x_mcc(user_params, cell_no):
     except KeyError:
         cdma_1x_mcc = DEFAULT_MCC
     return cdma_1x_mcc
+
 
 def get_1x_channel(user_params, cell_no):
     """ Returns the 1X Channel to be used from the user specified parameters

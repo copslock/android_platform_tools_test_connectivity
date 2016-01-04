@@ -73,6 +73,7 @@ from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 
+
 def two_phone_call_leave_voice_mail(
         log,
         caller,
@@ -80,8 +81,7 @@ def two_phone_call_leave_voice_mail(
         caller_in_call_check_func,
         callee,
         callee_idle_func,
-        wait_time_in_call=WAIT_TIME_TO_LEAVE_VOICE_MAIL
-):
+        wait_time_in_call=WAIT_TIME_TO_LEAVE_VOICE_MAIL):
     """Call from caller to callee, reject on callee, caller leave a voice mail.
 
     1. Caller call Callee.
@@ -118,26 +118,22 @@ def two_phone_call_leave_voice_mail(
     time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
     # Make call and leave a message.
-    if not call_reject_leave_message(log,
-                                     caller,
-                                     callee,
-                                     caller_in_call_check_func,
-                                     wait_time_in_call):
+    if not call_reject_leave_message(
+            log, caller, callee, caller_in_call_check_func, wait_time_in_call):
         log.error("make a call and leave a message failed.")
         return False
     return True
 
-def two_phone_call_short_seq(
-        log,
-        phone_a,
-        phone_a_idle_func,
-        phone_a_in_call_check_func,
-        phone_b,
-        phone_b_idle_func,
-        phone_b_in_call_check_func,
-        call_sequence_func=None,
-        wait_time_in_call=WAIT_TIME_IN_CALL
-):
+
+def two_phone_call_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_b_idle_func,
+                             phone_b_in_call_check_func,
+                             call_sequence_func=None,
+                             wait_time_in_call=WAIT_TIME_IN_CALL):
     """Call process short sequence.
     1. Ensure phone idle and in idle_func check return True.
     2. Call from PhoneA to PhoneB, accept on PhoneB.
@@ -163,13 +159,10 @@ def two_phone_call_short_seq(
     """
     ads = [phone_a, phone_b]
 
-    call_params = [(ads[0], ads[1], ads[0],
-                    phone_a_in_call_check_func,
+    call_params = [(ads[0], ads[1], ads[0], phone_a_in_call_check_func,
                     phone_b_in_call_check_func),
-                   (ads[0], ads[1], ads[1],
-                    phone_a_in_call_check_func,
-                    phone_b_in_call_check_func),
-                   ]
+                   (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+                    phone_b_in_call_check_func), ]
 
     for param in call_params:
         # Make sure phones are idle.
@@ -185,25 +178,26 @@ def two_phone_call_short_seq(
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
         # Make call.
-        log.info("---> Call test: {} to {} <---".format(param[0].serial, param[1].serial))
-        if not call_setup_teardown(log, *param, wait_time_in_call=wait_time_in_call):
+        log.info("---> Call test: {} to {} <---".format(param[0].serial, param[
+            1].serial))
+        if not call_setup_teardown(log,
+                                   *param,
+                                   wait_time_in_call=wait_time_in_call):
             log.error("Call Iteration Failed")
             return False
 
     return True
 
 
-def two_phone_call_long_seq(
-        log,
-        phone_a,
-        phone_a_idle_func,
-        phone_a_in_call_check_func,
-        phone_b,
-        phone_b_idle_func,
-        phone_b_in_call_check_func,
-        call_sequence_func=None,
-        wait_time_in_call=WAIT_TIME_IN_CALL
-):
+def two_phone_call_long_seq(log,
+                            phone_a,
+                            phone_a_idle_func,
+                            phone_a_in_call_check_func,
+                            phone_b,
+                            phone_b_idle_func,
+                            phone_b_in_call_check_func,
+                            call_sequence_func=None,
+                            wait_time_in_call=WAIT_TIME_IN_CALL):
     """Call process long sequence.
     1. Ensure phone idle and in idle_func check return True.
     2. Call from PhoneA to PhoneB, accept on PhoneB.
@@ -235,19 +229,14 @@ def two_phone_call_long_seq(
     """
     ads = [phone_a, phone_b]
 
-    call_params = [(ads[0], ads[1], ads[0],
-                    phone_a_in_call_check_func,
+    call_params = [(ads[0], ads[1], ads[0], phone_a_in_call_check_func,
                     phone_b_in_call_check_func),
-                   (ads[0], ads[1], ads[1],
-                    phone_a_in_call_check_func,
+                   (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
                     phone_b_in_call_check_func),
-                   (ads[1], ads[0], ads[0],
-                    phone_b_in_call_check_func,
+                   (ads[1], ads[0], ads[0], phone_b_in_call_check_func,
                     phone_a_in_call_check_func),
-                   (ads[1], ads[0], ads[1],
-                    phone_b_in_call_check_func,
-                    phone_a_in_call_check_func),
-                   ]
+                   (ads[1], ads[0], ads[1], phone_b_in_call_check_func,
+                    phone_a_in_call_check_func), ]
 
     for param in call_params:
         # Make sure phones are idle.
@@ -263,8 +252,11 @@ def two_phone_call_long_seq(
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
 
         # Make call.
-        log.info("---> Call test: {} to {} <---".format(param[0].serial, param[1].serial))
-        if not call_setup_teardown(log, *param, wait_time_in_call=wait_time_in_call):
+        log.info("---> Call test: {} to {} <---".format(param[0].serial, param[
+            1].serial))
+        if not call_setup_teardown(log,
+                                   *param,
+                                   wait_time_in_call=wait_time_in_call):
             log.error("Call Iteration Failed")
             return False
 
@@ -301,13 +293,22 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
     toggle_volte_for_subscription(log, ad, sub_id, True)
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_4G,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
         return False
     return phone_idle_volte_for_subscription(log, ad, sub_id)
 
-def phone_setup_iwlan(log, ad, is_airplane_mode, wfc_mode,
-                      wifi_ssid=None, wifi_pwd=None):
+
+def phone_setup_iwlan(log,
+                      ad,
+                      is_airplane_mode,
+                      wfc_mode,
+                      wifi_ssid=None,
+                      wifi_pwd=None):
     """Phone setup function for epdg call test.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -327,12 +328,18 @@ def phone_setup_iwlan(log, ad, is_airplane_mode, wfc_mode,
     Returns:
         True if success. False if fail.
     """
-    return phone_setup_iwlan_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultVoiceSubId(), is_airplane_mode, wfc_mode,
-        wifi_ssid, wifi_pwd)
+    return phone_setup_iwlan_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), is_airplane_mode,
+        wfc_mode, wifi_ssid, wifi_pwd)
 
-def phone_setup_iwlan_for_subscription(log, ad, sub_id, is_airplane_mode, wfc_mode,
-                                       wifi_ssid=None, wifi_pwd=None):
+
+def phone_setup_iwlan_for_subscription(log,
+                                       ad,
+                                       sub_id,
+                                       is_airplane_mode,
+                                       wfc_mode,
+                                       wifi_ssid=None,
+                                       wifi_pwd=None):
     """Phone setup function for epdg call test for subscription id.
     Set WFC mode according to wfc_mode.
     Set airplane mode according to is_airplane_mode.
@@ -357,7 +364,11 @@ def phone_setup_iwlan_for_subscription(log, ad, sub_id, is_airplane_mode, wfc_mo
     toggle_airplane_mode(log, ad, False)
     toggle_volte(log, ad, True)
     if not is_airplane_mode and not ensure_network_generation_for_subscription(
-        log, ad, sub_id, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     if not set_wfc_mode(log, ad, wfc_mode):
@@ -373,8 +384,11 @@ def phone_setup_iwlan_for_subscription(log, ad, sub_id, is_airplane_mode, wfc_mo
 
     return phone_idle_iwlan_for_subscription(log, ad, sub_id)
 
-def phone_setup_iwlan_cellular_preferred(log, ad, wifi_ssid=None,
-                                                 wifi_pwd=None):
+
+def phone_setup_iwlan_cellular_preferred(log,
+                                         ad,
+                                         wifi_ssid=None,
+                                         wifi_pwd=None):
     """Phone setup function for iwlan Non-APM CELLULAR_PREFERRED test.
     Set WFC mode according to CELLULAR_PREFERRED.
     Set airplane mode according to False.
@@ -394,8 +408,10 @@ def phone_setup_iwlan_cellular_preferred(log, ad, wifi_ssid=None,
     """
     toggle_airplane_mode(log, ad, False)
     toggle_volte(log, ad, True)
-    if not ensure_network_generation(
-        log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+    if not ensure_network_generation(log,
+                                     ad,
+                                     GEN_4G,
+                                     voice_or_data=NETWORK_SERVICE_DATA):
         return False
     if not set_wfc_mode(log, ad, WFC_MODE_CELLULAR_PREFERRED):
         log.error("{} set WFC mode failed.".format(ad.serial))
@@ -404,15 +420,18 @@ def phone_setup_iwlan_cellular_preferred(log, ad, wifi_ssid=None,
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
             log.error("{} connect to WiFi failed.".format(ad.serial))
             return False
-    if wait_for_network_rat(log, ad, RAT_FAMILY_WLAN,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if wait_for_network_rat(log,
+                            ad,
+                            RAT_FAMILY_WLAN,
+                            voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat in iwlan mode.".format(ad.serial))
         return False
     if wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
-        log.error("{} should not <report wfc enabled true> within {}s.".
-                       format(ad.serial, WAIT_TIME_WFC_ENABLED))
+        log.error("{} should not <report wfc enabled true> within {}s.".format(
+            ad.serial, WAIT_TIME_WFC_ENABLED))
         return False
     return True
+
 
 def phone_setup_csfb(log, ad):
     """Setup phone for CSFB call test.
@@ -451,12 +470,16 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         return False
     if ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         toggle_volte(log, ad, False)
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_4G,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_4G,
+            voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-        WAIT_TIME_NW_SELECTION):
+                                                  WAIT_TIME_NW_SELECTION):
         return False
 
     return phone_idle_csfb_for_subscription(log, ad, sub_id)
@@ -492,29 +515,40 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
 
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_3G,
+            voice_or_data=NETWORK_SERVICE_DATA):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-        WAIT_TIME_NW_SELECTION):
+                                                  WAIT_TIME_NW_SELECTION):
         return False
 
     return phone_idle_3g_for_subscription(log, ad, sub_id)
 
+
 def phone_setup_voice_3g(log, ad):
     return phone_setup_voice_3g_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+
 
 def phone_setup_voice_3g_for_subscription(log, ad, sub_id):
     toggle_airplane_mode(log, ad, False)
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
-        voice_or_data=NETWORK_SERVICE_VOICE):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_3G,
+            voice_or_data=NETWORK_SERVICE_VOICE):
         return False
     return phone_idle_3g_for_subscription(log, ad, sub_id)
+
 
 def phone_setup_2g(log, ad):
     """Setup phone for 2G call test.
@@ -545,10 +579,15 @@ def phone_setup_2g_for_subscription(log, ad, sub_id):
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_2G,
+            voice_or_data=NETWORK_SERVICE_DATA):
         return False
     return phone_idle_2g_for_subscription(log, ad, sub_id)
+
 
 def phone_setup_voice_2g(log, ad):
     return phone_setup_voice_2g_for_subscription(
@@ -561,10 +600,15 @@ def phone_setup_voice_2g_for_subscription(log, ad, sub_id):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
 
-    if not ensure_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
-        voice_or_data=NETWORK_SERVICE_VOICE):
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            GEN_2G,
+            voice_or_data=NETWORK_SERVICE_VOICE):
         return False
     return phone_idle_2g_for_subscription(log, ad, sub_id)
+
 
 def phone_setup_voice_general(log, ad):
     """Setup phone for voice general call test.
@@ -599,60 +643,72 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
     """
     toggle_airplane_mode(log, ad, False)
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                          WAIT_TIME_NW_SELECTION):
+                                                  WAIT_TIME_NW_SELECTION):
         # if phone can not attach voice, try phone_setup_3g
         return phone_setup_3g_for_subscription(log, ad, sub_id)
 
     return True
 
+
 def phone_setup_rat_for_subscription(log, ad, sub_id, network_preference,
-    rat_family):
+                                     rat_family):
     toggle_airplane_mode(log, ad, False)
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
     return ensure_network_rat_for_subscription(log, ad, sub_id,
-        network_preference, rat_family)
+                                               network_preference, rat_family)
+
 
 def phone_setup_lte_gsm_wcdma(log, ad):
-    return phone_setup_lte_gsm_wcdma_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultSubId())
+    return phone_setup_lte_gsm_wcdma_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId())
+
 
 def phone_setup_lte_gsm_wcdma_for_subscription(log, ad, sub_id):
-    return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE)
+    return phone_setup_rat_for_subscription(
+        log, ad, sub_id, NETWORK_MODE_LTE_GSM_WCDMA, RAT_FAMILY_LTE)
+
 
 def phone_setup_gsm_umts(log, ad):
-    return phone_setup_gsm_umts_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultSubId())
+    return phone_setup_gsm_umts_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId())
+
 
 def phone_setup_gsm_umts_for_subscription(log, ad, sub_id):
-    return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS)
+    return phone_setup_rat_for_subscription(
+        log, ad, sub_id, NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS)
+
 
 def phone_setup_gsm_only(log, ad):
-    return phone_setup_gsm_only_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultSubId())
+    return phone_setup_gsm_only_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId())
+
 
 def phone_setup_gsm_only_for_subscription(log, ad, sub_id):
-    return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM)
+    return phone_setup_rat_for_subscription(
+        log, ad, sub_id, NETWORK_MODE_GSM_ONLY, RAT_FAMILY_GSM)
+
 
 def phone_setup_lte_cdma_evdo(log, ad):
-    return phone_setup_lte_cdma_evdo_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultSubId())
+    return phone_setup_lte_cdma_evdo_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId())
+
 
 def phone_setup_lte_cdma_evdo_for_subscription(log, ad, sub_id):
-    return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NETWORK_MODE_LTE_CDMA_EVDO, RAT_FAMILY_LTE)
+    return phone_setup_rat_for_subscription(
+        log, ad, sub_id, NETWORK_MODE_LTE_CDMA_EVDO, RAT_FAMILY_LTE)
+
 
 def phone_setup_cdma(log, ad):
-    return phone_setup_cdma_for_subscription(log, ad,
-        ad.droid.subscriptionGetDefaultSubId())
+    return phone_setup_cdma_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId())
+
 
 def phone_setup_cdma_for_subscription(log, ad, sub_id):
-    return phone_setup_rat_for_subscription(log, ad, sub_id,
-        NETWORK_MODE_CDMA, RAT_FAMILY_CDMA2000)
+    return phone_setup_rat_for_subscription(log, ad, sub_id, NETWORK_MODE_CDMA,
+                                            RAT_FAMILY_CDMA2000)
+
 
 def phone_idle_volte(log, ad):
     """Return if phone is idle for VoLTE call test.
@@ -663,6 +719,7 @@ def phone_idle_volte(log, ad):
     return phone_idle_volte_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
 
+
 def phone_idle_volte_for_subscription(log, ad, sub_id):
     """Return if phone is idle for VoLTE call test for subscription id.
 
@@ -670,15 +727,21 @@ def phone_idle_volte_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_LTE,
-        voice_or_data=NETWORK_SERVICE_VOICE):
+    if not wait_for_network_rat_for_subscription(
+            log,
+            ad,
+            sub_id,
+            RAT_FAMILY_LTE,
+            voice_or_data=NETWORK_SERVICE_VOICE):
         log.error("{} voice rat not in LTE mode.".format(ad.serial))
         return False
     if not wait_for_volte_enabled(log, ad, WAIT_TIME_VOLTE_ENABLED):
-        log.error("{} failed to <report volte enabled true> within {}s.".
-                  format(ad.serial, WAIT_TIME_VOLTE_ENABLED))
+        log.error(
+            "{} failed to <report volte enabled true> within {}s.".format(
+                ad.serial, WAIT_TIME_VOLTE_ENABLED))
         return False
     return True
+
 
 def phone_idle_iwlan(log, ad):
     """Return if phone is idle for WiFi calling call test.
@@ -689,6 +752,7 @@ def phone_idle_iwlan(log, ad):
     return phone_idle_iwlan_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
 
+
 def phone_idle_iwlan_for_subscription(log, ad, sub_id):
     """Return if phone is idle for WiFi calling call test for subscription id.
 
@@ -696,15 +760,20 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_WLAN,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not wait_for_network_rat_for_subscription(
+            log,
+            ad,
+            sub_id,
+            RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in iwlan mode.".format(ad.serial))
         return False
     if not wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
-        log.error("{} failed to <report wfc enabled true> within {}s.".
-                  format(ad.serial, WAIT_TIME_WFC_ENABLED))
+        log.error("{} failed to <report wfc enabled true> within {}s.".format(
+            ad.serial, WAIT_TIME_WFC_ENABLED))
         return False
     return True
+
 
 def phone_idle_csfb(log, ad):
     """Return if phone is idle for CSFB call test.
@@ -723,8 +792,12 @@ def phone_idle_csfb_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_network_rat_for_subscription(log, ad, sub_id, RAT_FAMILY_LTE,
-        voice_or_data=NETWORK_SERVICE_DATA):
+    if not wait_for_network_rat_for_subscription(
+            log,
+            ad,
+            sub_id,
+            RAT_FAMILY_LTE,
+            voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in lte mode.".format(ad.serial))
         return False
     return True
@@ -747,8 +820,13 @@ def phone_idle_3g_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    return wait_for_network_generation_for_subscription(log, ad, sub_id, GEN_3G,
+    return wait_for_network_generation_for_subscription(
+        log,
+        ad,
+        sub_id,
+        GEN_3G,
         voice_or_data=NETWORK_SERVICE_VOICE)
+
 
 def phone_idle_2g(log, ad):
     """Return if phone is idle for 2G call test.
@@ -759,6 +837,7 @@ def phone_idle_2g(log, ad):
     return phone_idle_2g_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
 
+
 def phone_idle_2g_for_subscription(log, ad, sub_id):
     """Return if phone is idle for 2G call test for subscription id.
 
@@ -766,8 +845,13 @@ def phone_idle_2g_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    return wait_for_network_generation_for_subscription(log, ad, sub_id, GEN_2G,
+    return wait_for_network_generation_for_subscription(
+        log,
+        ad,
+        sub_id,
+        GEN_2G,
         voice_or_data=NETWORK_SERVICE_VOICE)
+
 
 def is_phone_in_call_volte(log, ad):
     """Return if phone is in VoLTE call.
@@ -777,6 +861,7 @@ def is_phone_in_call_volte(log, ad):
     """
     return is_phone_in_call_volte_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+
 
 def is_phone_in_call_volte_for_subscription(log, ad, sub_id):
     """Return if phone is in VoLTE call for subscription id.
@@ -791,9 +876,11 @@ def is_phone_in_call_volte_for_subscription(log, ad, sub_id):
     nw_type = get_network_rat_for_subscription(log, ad, sub_id,
                                                NETWORK_SERVICE_VOICE)
     if nw_type != RAT_LTE:
-        log.error("{} voice rat on: {}. Expected: LTE".format(ad.serial, nw_type))
+        log.error("{} voice rat on: {}. Expected: LTE".format(ad.serial,
+                                                              nw_type))
         return False
     return True
+
 
 def is_phone_in_call_csfb(log, ad):
     """Return if phone is in CSFB call.
@@ -818,7 +905,8 @@ def is_phone_in_call_csfb_for_subscription(log, ad, sub_id):
     nw_type = get_network_rat_for_subscription(log, ad, sub_id,
                                                NETWORK_SERVICE_VOICE)
     if nw_type == RAT_LTE:
-        log.error("{} voice rat on: {}. Expected: not LTE".format(ad.serial, nw_type))
+        log.error("{} voice rat on: {}. Expected: not LTE".format(ad.serial,
+                                                                  nw_type))
         return False
     return True
 
@@ -846,7 +934,8 @@ def is_phone_in_call_3g_for_subscription(log, ad, sub_id):
     nw_gen = get_network_gen_for_subscription(log, ad, sub_id,
                                               NETWORK_SERVICE_VOICE)
     if nw_gen != GEN_3G:
-        log.error("{} voice rat on: {}. Expected: 3g".format(ad.serial, nw_gen))
+        log.error("{} voice rat on: {}. Expected: 3g".format(ad.serial,
+                                                             nw_gen))
         return False
     return True
 
@@ -874,9 +963,11 @@ def is_phone_in_call_2g_for_subscription(log, ad, sub_id):
     nw_gen = get_network_gen_for_subscription(log, ad, sub_id,
                                               NETWORK_SERVICE_VOICE)
     if nw_gen != GEN_2G:
-        log.error("{} voice rat on: {}. Expected: 2g".format(ad.serial, nw_gen))
+        log.error("{} voice rat on: {}. Expected: 2g".format(ad.serial,
+                                                             nw_gen))
         return False
     return True
+
 
 def is_phone_in_call_1x(log, ad):
     """Return if phone is in 1x call.
@@ -901,9 +992,11 @@ def is_phone_in_call_1x_for_subscription(log, ad, sub_id):
     nw_type = get_network_rat_for_subscription(log, ad, sub_id,
                                                NETWORK_SERVICE_VOICE)
     if nw_type != RAT_1XRTT:
-        log.error("{} voice rat on: {}. Expected: 1xrtt".format(ad.serial, nw_type))
+        log.error("{} voice rat on: {}. Expected: 1xrtt".format(ad.serial,
+                                                                nw_type))
         return False
     return True
+
 
 def is_phone_in_call_wcdma(log, ad):
     """Return if phone is in WCDMA call.
@@ -930,9 +1023,11 @@ def is_phone_in_call_wcdma_for_subscription(log, ad, sub_id):
     nw_type = get_network_rat_for_subscription(log, ad, sub_id,
                                                NETWORK_SERVICE_VOICE)
     if nw_type != RAT_UMTS:
-        log.error("{} voice rat on: {}. Expected: umts".format(ad.serial, nw_type))
+        log.error("{} voice rat on: {}. Expected: umts".format(ad.serial,
+                                                               nw_type))
         return False
     return True
+
 
 def is_phone_in_call_iwlan(log, ad):
     """Return if phone is in WiFi call.
@@ -945,12 +1040,14 @@ def is_phone_in_call_iwlan(log, ad):
         return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type != RAT_IWLAN:
-        log.error("{} data rat on: {}. Expected: iwlan".format(ad.serial, nw_type))
+        log.error("{} data rat on: {}. Expected: iwlan".format(ad.serial,
+                                                               nw_type))
         return False
     if not is_wfc_enabled(log, ad):
         log.error("{} WiFi Calling feature bit is False.".format(ad.serial))
         return False
     return True
+
 
 def is_phone_in_call_not_iwlan(log, ad):
     """Return if phone is in WiFi call for subscription id.
@@ -964,14 +1061,20 @@ def is_phone_in_call_not_iwlan(log, ad):
         return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type == RAT_IWLAN:
-        log.error("{} data rat on: {}. Expected: not iwlan".format(ad.serial, nw_type))
+        log.error("{} data rat on: {}. Expected: not iwlan".format(ad.serial,
+                                                                   nw_type))
         return False
     if is_wfc_enabled(log, ad):
         log.error("{} WiFi Calling feature bit is True.".format(ad.serial))
         return False
     return True
 
-def swap_calls(log, ads, call_hold_id, call_active_id, num_swaps=1,
+
+def swap_calls(log,
+               ads,
+               call_hold_id,
+               call_active_id,
+               num_swaps=1,
                check_call_status=True):
     """PhoneA in call with B and C. Swap active/holding call on PhoneA.
 
@@ -997,36 +1100,42 @@ def swap_calls(log, ads, call_hold_id, call_active_id, num_swaps=1,
     """
     if check_call_status:
         # Check status before swap.
-        if ads[0].droid.telecomCallGetCallState(call_active_id) != CALL_STATE_ACTIVE:
-            log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                format(call_active_id,
-                       ads[0].droid.telecomCallGetCallState(call_active_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_active_id) != CALL_STATE_ACTIVE:
+            log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                call_active_id, ads[0].droid.telecomCallGetCallState(
+                    call_active_id)))
             return False
-        if ads[0].droid.telecomCallGetCallState(call_hold_id) != CALL_STATE_HOLDING:
-            log.error("Call_id:{}, state:{}, expected: STATE_HOLDING".
-                format(call_hold_id,
-                       ads[0].droid.telecomCallGetCallState(call_hold_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_hold_id) != CALL_STATE_HOLDING:
+            log.error("Call_id:{}, state:{}, expected: STATE_HOLDING".format(
+                call_hold_id, ads[0].droid.telecomCallGetCallState(
+                    call_hold_id)))
             return False
 
     i = 1
-    while(i <= num_swaps):
-        log.info("swap_test: {}. {} swap and check call status.".
-            format(i, ads[0].serial))
+    while (i <= num_swaps):
+        log.info("swap_test: {}. {} swap and check call status.".format(i, ads[
+            0].serial))
         ads[0].droid.telecomCallHold(call_active_id)
         time.sleep(WAIT_TIME_IN_CALL)
         # Swap object reference
         call_active_id, call_hold_id = call_hold_id, call_active_id
         if check_call_status:
             # Check status
-            if ads[0].droid.telecomCallGetCallState(call_active_id) != CALL_STATE_ACTIVE:
-                log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                    format(call_active_id,
-                            ads[0].droid.telecomCallGetCallState(call_active_id)))
+            if ads[0].droid.telecomCallGetCallState(
+                    call_active_id) != CALL_STATE_ACTIVE:
+                log.error(
+                    "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                        call_active_id, ads[0].droid.telecomCallGetCallState(
+                            call_active_id)))
                 return False
-            if ads[0].droid.telecomCallGetCallState(call_hold_id) != CALL_STATE_HOLDING:
-                log.error("Call_id:{}, state:{}, expected: STATE_HOLDING".
-                    format(call_hold_id,
-                           ads[0].droid.telecomCallGetCallState(call_hold_id)))
+            if ads[0].droid.telecomCallGetCallState(
+                    call_hold_id) != CALL_STATE_HOLDING:
+                log.error(
+                    "Call_id:{}, state:{}, expected: STATE_HOLDING".format(
+                        call_hold_id, ads[0].droid.telecomCallGetCallState(
+                            call_hold_id)))
                 return False
         # TODO: b/26296375 add voice check.
 
@@ -1070,6 +1179,7 @@ def set_audio_route(log, ad, route):
     ad.droid.telecomCallSetAudioRoute(route)
     return True
 
+
 def is_property_in_call_properties(log, ad, call_id, expected_property):
     """Return if the call_id has the expected property
 
@@ -1085,6 +1195,7 @@ def is_property_in_call_properties(log, ad, call_id, expected_property):
     properties = ad.droid.telecomCallGetProperties(call_id)
     return (expected_property in properties)
 
+
 def is_call_hd(log, ad, call_id):
     """Return if the call_id is HD call.
 
@@ -1098,6 +1209,7 @@ def is_call_hd(log, ad, call_id):
     """
     return is_property_in_call_properties(log, ad, call_id,
                                           CALL_PROPERTY_HIGH_DEF_AUDIO)
+
 
 def get_cep_conference_call_id(ad):
     """Get CEP conference call id if there is an ongoing CEP conference call.

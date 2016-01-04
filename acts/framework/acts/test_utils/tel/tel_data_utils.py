@@ -32,6 +32,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 
+
 def wifi_tethering_cleanup(log, provider, client_list):
     """Clean up steps for WiFi Tethering.
 
@@ -59,11 +60,16 @@ def wifi_tethering_cleanup(log, provider, client_list):
         return False
     return True
 
-def wifi_tethering_setup_teardown(log, provider, client_list,
+
+def wifi_tethering_setup_teardown(log,
+                                  provider,
+                                  client_list,
                                   ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
-                                  check_interval=30, check_iteration=4,
+                                  check_interval=30,
+                                  check_iteration=4,
                                   do_cleanup=True,
-                                  ssid=None, password=None):
+                                  ssid=None,
+                                  password=None):
     """Test WiFi Tethering.
 
     Turn off WiFi on provider and clients.
@@ -121,24 +127,28 @@ def wifi_tethering_setup_teardown(log, provider, client_list,
         log.info("WiFI Tethering: Verify client have no Internet access.")
         for client in client_list:
             if verify_http_connection(log, client):
-                log.error("Turn off Data on client fail. {}".format(client.serial))
+                log.error("Turn off Data on client fail. {}".format(
+                    client.serial))
                 return False
 
-        log.info("WiFI Tethering: Turn on WiFi tethering on {}. SSID: {}, password: {}".
-                 format(provider.serial, ssid, password))
+        log.info(
+            "WiFI Tethering: Turn on WiFi tethering on {}. SSID: {}, password: {}".format(
+                provider.serial, ssid, password))
 
-        if not WifiUtils.start_wifi_tethering(log, provider, ssid, password, ap_band):
+        if not WifiUtils.start_wifi_tethering(log, provider, ssid, password,
+                                              ap_band):
             log.error("Provider start WiFi tethering failed.")
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        log.info("Provider {} check Internet connection.".
-                 format(provider.serial))
+        log.info("Provider {} check Internet connection.".format(
+            provider.serial))
         if not verify_http_connection(log, provider):
             return False
         for client in client_list:
-            log.info("WiFI Tethering: {} connect to WiFi and verify AP band correct.".
-                     format(client.serial))
+            log.info(
+                "WiFI Tethering: {} connect to WiFi and verify AP band correct.".format(
+                    client.serial))
             if not ensure_wifi_connected(log, client, ssid, password):
                 log.error("Client connect to WiFi failed.")
                 return False
@@ -146,25 +156,24 @@ def wifi_tethering_setup_teardown(log, provider, client_list,
             wifi_info = client.droid.wifiGetConnectionInfo()
             if ap_band == WifiUtils.WIFI_CONFIG_APBAND_5G:
                 if wifi_info["is_24ghz"]:
-                    log.error("Expected 5g network. WiFi Info: {}".
-                              format(wifi_info))
+                    log.error("Expected 5g network. WiFi Info: {}".format(
+                        wifi_info))
                     return False
             else:
                 if wifi_info["is_5ghz"]:
-                    log.error("Expected 2g network. WiFi Info: {}".
-                              format(wifi_info))
+                    log.error("Expected 2g network. WiFi Info: {}".format(
+                        wifi_info))
                     return False
 
-            log.info("Client{} check Internet connection.".
-                     format(client.serial))
-            if (not wait_for_wifi_data_connection(log, client, True) or not
-                    verify_http_connection(log, client)):
+            log.info("Client{} check Internet connection.".format(
+                client.serial))
+            if (not wait_for_wifi_data_connection(log, client, True) or
+                    not verify_http_connection(log, client)):
                 log.error("No WiFi Data on client: {}.".format(client.serial))
                 return False
 
-        if not tethering_check_internet_connection(log, provider, client_list,
-                                                   check_interval,
-                                                   check_iteration):
+        if not tethering_check_internet_connection(
+                log, provider, client_list, check_interval, check_iteration):
             return False
 
     finally:
@@ -172,6 +181,7 @@ def wifi_tethering_setup_teardown(log, provider, client_list,
             (not wifi_tethering_cleanup(log, provider, client_list))):
             return False
     return True
+
 
 def tethering_check_internet_connection(log, provider, client_list,
                                         check_interval, check_iteration):
@@ -194,19 +204,21 @@ def tethering_check_internet_connection(log, provider, client_list,
     """
     for i in range(1, check_iteration):
         time.sleep(check_interval)
-        log.info("Provider {} check Internet connection after {} seconds.".
-                      format(provider.serial, check_interval*i))
+        log.info(
+            "Provider {} check Internet connection after {} seconds.".format(
+                provider.serial, check_interval * i))
         if not verify_http_connection(log, provider):
             return False
         for client in client_list:
-            log.info("Client {} check Internet connection after {} seconds.".
-                          format(client.serial, check_interval*i))
+            log.info(
+                "Client {} check Internet connection after {} seconds.".format(
+                    client.serial, check_interval * i))
             if not verify_http_connection(log, client):
                 return False
     return True
 
-def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
-                        nw_gen):
+
+def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
     """Test data connection network switching when phone on <nw_gen>.
 
     Ensure phone is on <nw_gen>
@@ -227,15 +239,15 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
         True if pass.
     """
     try:
-        if not ensure_network_generation(log, ad, nw_gen, WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(
+                log, ad, nw_gen, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
 
         # Ensure WiFi can connect to live network
         log.info("Make sure phone can connect to live network by WIFI")
-        if not ensure_wifi_connected(log, ad,
-                                     wifi_network_ssid, wifi_network_pass):
+        if not ensure_wifi_connected(log, ad, wifi_network_ssid,
+                                     wifi_network_pass):
             log.error("WiFi connect fail.")
             return False
         log.info("Phone connected to WIFI.")
@@ -244,35 +256,36 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass,
         toggle_airplane_mode(log, ad, False)
         WifiUtils.wifi_toggle_state(log, ad, True)
         ad.droid.telephonyToggleDataConnection(True)
-        if (not wait_for_wifi_data_connection(log, ad, True) or not
-                verify_http_connection(log, ad)):
+        if (not wait_for_wifi_data_connection(log, ad, True) or
+                not verify_http_connection(log, ad)):
             log.error("Data is not on WiFi")
             return False
 
         log.info("Step2 WiFi is Off, Data is on Cell.")
         WifiUtils.wifi_toggle_state(log, ad, False)
-        if (not wait_for_cell_data_connection(log, ad, True) or not
-                verify_http_connection(log, ad)):
+        if (not wait_for_cell_data_connection(log, ad, True) or
+                not verify_http_connection(log, ad)):
             log.error("Data did not return to cell")
             return False
 
         log.info("Step3 WiFi is On, Data is on WiFi.")
         WifiUtils.wifi_toggle_state(log, ad, True)
-        if (not wait_for_wifi_data_connection(log, ad, True) or not
-                verify_http_connection(log, ad)):
+        if (not wait_for_wifi_data_connection(log, ad, True) or
+                not verify_http_connection(log, ad)):
             log.error("Data did not return to WiFi")
             return False
 
         log.info("Step4 WiFi is Off, Data is on Cell.")
         WifiUtils.wifi_toggle_state(log, ad, False)
-        if (not wait_for_cell_data_connection(log, ad, True) or not
-                verify_http_connection(log, ad)):
+        if (not wait_for_cell_data_connection(log, ad, True) or
+                not verify_http_connection(log, ad)):
             log.error("Data did not return to cell")
             return False
         return True
 
     finally:
         WifiUtils.wifi_toggle_state(log, ad, False)
+
 
 def airplane_mode_test(log, ad):
     """ Test airplane mode basic on Phone and Live SIM.
@@ -332,6 +345,7 @@ def airplane_mode_test(log, ad):
     finally:
         toggle_airplane_mode(log, ad, False)
 
+
 def data_connectivity_single_bearer(log, ad, nw_gen):
     """Test data connection: single-bearer (no voice).
 
@@ -352,8 +366,8 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     """
     ensure_phones_idle(log, [ad])
 
-    if not ensure_network_generation(log, ad, nw_gen,
-            WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+    if not ensure_network_generation(log, ad, nw_gen, WAIT_TIME_NW_SELECTION,
+                                     NETWORK_SERVICE_DATA):
 
         log.error("Device failed to reselect in {}s.".format(
             WAIT_TIME_NW_SELECTION))
@@ -391,15 +405,14 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             log.error("Data not available on cell.")
             return False
 
-        if not is_droid_in_network_generation(
-                log, ad, nw_gen,
-                NETWORK_SERVICE_DATA):
+        if not is_droid_in_network_generation(log, ad, nw_gen,
+                                              NETWORK_SERVICE_DATA):
             log.error("Failed: droid is no longer on correct network")
-            log.info("Expected:{}, Current:{}".format(nw_gen,
-                rat_generation_from_rat(
-                    get_network_rat_for_subscription(log, ad,
-                    ad.droid.subscriptionGetDefaultSubId(),
-                    NETWORK_SERVICE_DATA))))
+            log.info("Expected:{}, Current:{}".format(
+                nw_gen, rat_generation_from_rat(
+                    get_network_rat_for_subscription(
+                        log, ad, ad.droid.subscriptionGetDefaultSubId(
+                        ), NETWORK_SERVICE_DATA))))
             return False
         return True
     finally:

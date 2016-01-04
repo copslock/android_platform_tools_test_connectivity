@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for connectivity tests in telephony
 """
@@ -27,19 +26,17 @@ from acts.controllers.tel.md8475a import MD8475A
 from acts.test_utils.tel import tel_test_utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
-class TelephonyDataSanityTest(TelephonyBaseTest):
 
+class TelephonyDataSanityTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                    "test_data_conn_state_when_access_enabled",
-                    "test_data_conn_state_when_access_disabled",
-                    )
+        self.tests = ("test_data_conn_state_when_access_enabled",
+                      "test_data_conn_state_when_access_disabled", )
         self.anritsu = MD8475A(tel_test_utils.MD8475A_IP_ADDRESS)
 
     def setup_test(self):
-        self.lte_bts, self.wcdma_bts = tel_test_utils.set_system_model(self.anritsu,
-                                                                  "LTE_WCDMA")
+        self.lte_bts, self.wcdma_bts = tel_test_utils.set_system_model(
+            self.anritsu, "LTE_WCDMA")
         tel_test_utils.init_phone(self.droid, self.ed)
         self.droid.telephonyStartTrackingServiceStateChange()
         self.droid.telephonyStartTrackingDataConnectionStateChange()
@@ -74,9 +71,10 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
                 waiting_time = waiting_time - sleep_interval
 
         if status == "failed":
-                self.log.info("Timeout: Expected state is not received.")
+            self.log.info("Timeout: Expected state is not received.")
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_data_conn_state_when_access_enabled(self):
         '''
@@ -91,17 +89,14 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                           self.log,
-                                                           "DATA_CONNECTED",
-                                                           120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_CONNECTED", 120)
 
         if test_status == "passed":
             self.log.info("Data connection state(access enabled) "
@@ -128,27 +123,22 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                 self.anritsu,
-                                                                 self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                               self.log,
-                                                               "DATA_CONNECTED",
-                                                               120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_CONNECTED", 120)
 
         if test_status == "passed":
             time.sleep(20)
             self.log.info("Disabling data access")
             self.droid.telephonyToggleDataConnection(False)
             self.log.info("Waiting for data state: DATA_DISCONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                            self.log,
-                                                            "DATA_DISCONNECTED",
-                                                            120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_DISCONNECTED", 120)
 
         if test_status == "passed":
             self.log.info("Data connection state(access disabled) "
@@ -158,4 +148,5 @@ class TelephonyDataSanityTest(TelephonyBaseTest):
             self.log.info("Data connection state(access disabled) "
                           "verification: Failed")
             return False
+
     """ Tests End """

@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Sanity tests for connectivity tests in telephony
 """
@@ -29,24 +28,22 @@ from acts.controllers.tel.md8475a import TriggerMessageReply
 from acts.test_utils.tel import tel_test_utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
-class TelephonyConnectivitySanityTest(TelephonyBaseTest):
 
+class TelephonyConnectivitySanityTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-                   "test_network_registration",
-                   "test_network_params_verification",
-                   "test_network_deregistration",
-                   "test_network_out_of_service",
-                   "test_network_return_inservice",
-                   "test_set_preferred_network",
-                   "test_network_emergency",
-                   )
+        self.tests = ("test_network_registration",
+                      "test_network_params_verification",
+                      "test_network_deregistration",
+                      "test_network_out_of_service",
+                      "test_network_return_inservice",
+                      "test_set_preferred_network",
+                      "test_network_emergency", )
         self.anritsu = MD8475A(tel_test_utils.MD8475A_IP_ADDRESS)
 
     def setup_test(self):
-        self.lte_bts, self.wcdma_bts = tel_test_utils.set_system_model(self.anritsu,
-                                                                  "LTE_WCDMA")
+        self.lte_bts, self.wcdma_bts = tel_test_utils.set_system_model(
+            self.anritsu, "LTE_WCDMA")
         tel_test_utils.init_phone(self.droid, self.ed)
         self.droid.telephonyStartTrackingServiceStateChange()
         self.droid.telephonyStartTrackingDataConnectionStateChange()
@@ -66,6 +63,7 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         self.anritsu.disconnect()
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_network_registration(self):
         '''
@@ -83,15 +81,16 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         if test_status == "passed":
-            self.log.info("TEL-CO-01:Network registration verification: Passed")
+            self.log.info(
+                "TEL-CO-01:Network registration verification: Passed")
             return True
         else:
-            self.log.info("TEL-CO-01:Network registration verification: Failed")
+            self.log.info(
+                "TEL-CO-01:Network registration verification: Failed")
             return False
 
     @TelephonyBaseTest.tel_test_wrap
@@ -111,9 +110,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         if test_status == "passed":
             self.log.info("Verifying the NW Service Parameters")
@@ -134,20 +132,18 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
                 mcc = tel_test_utils.NW_MCC
                 mnc = tel_test_utils.NW_MNC
 
-            self.log.info("VoiceNwState :{}".format(
-                          event['data']['VoiceRegState']))
-            self.log.info("VoiceNetworkType :{}".format(
-                          event['data']['VoiceNetworkType']))
-            self.log.info("DataRegState :{}".format(
-                          event['data']['DataRegState']))
-            self.log.info("DataNetworkType :{}".format(
-                          event['data']['DataNetworkType']))
-            self.log.info("OperatorName :{}".format(
-                          event['data']['OperatorName']))
-            self.log.info("OperatorId :{}".format(
-                          event['data']['OperatorId']))
-            self.log.info("Roaming :{}".format(
-                          event['data']['Roaming']))
+            self.log.info("VoiceNwState :{}".format(event['data'][
+                'VoiceRegState']))
+            self.log.info("VoiceNetworkType :{}".format(event['data'][
+                'VoiceNetworkType']))
+            self.log.info("DataRegState :{}".format(event['data'][
+                'DataRegState']))
+            self.log.info("DataNetworkType :{}".format(event['data'][
+                'DataNetworkType']))
+            self.log.info("OperatorName :{}".format(event['data'][
+                'OperatorName']))
+            self.log.info("OperatorId :{}".format(event['data']['OperatorId']))
+            self.log.info("Roaming :{}".format(event['data']['Roaming']))
 
             if event['data']['VoiceNetworkType'] != expected_voice_nwtype:
                 test_status = "failed"
@@ -162,10 +158,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # proceed with next step only if previous step is success
         if test_status == "passed":
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                               self.log,
-                                                               "DATA_CONNECTED",
-                                                               120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_CONNECTED", 120)
 
         if test_status == "passed":
             self.log.info("TEL-CO-02: Network registration parameters"
@@ -194,9 +188,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -205,10 +198,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             self.log.info("Making device to detach from network")
             self.droid.connectivityToggleAirplaneMode(True)
             self.log.info("Waiting for service state: POWER_OFF")
-            test_status, event = tel_test_utils.wait_for_network_state(self.ed,
-                                                                  self.log,
-                                                                  "POWER_OFF",
-                                                                  60)
+            test_status, event = tel_test_utils.wait_for_network_state(
+                self.ed, self.log, "POWER_OFF", 60)
 
         if test_status == "passed":
             self.log.info("TEL-CO-03: Network de-registration"
@@ -238,9 +229,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -258,10 +248,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             else:
                 self.wcdma_bts.service_state = BtsServiceState.SERVICE_STATE_OUT
             self.log.info("Waiting for service state: OUT_OF_SERVICE")
-            test_status, event = tel_test_utils.wait_for_network_state(self.ed,
-                                                              self.log,
-                                                              "OUT_OF_SERVICE",
-                                                              90)
+            test_status, event = tel_test_utils.wait_for_network_state(
+                self.ed, self.log, "OUT_OF_SERVICE", 90)
 
         if test_status == "passed":
             self.log.info("TEL-CO-04: Network out-of-service"
@@ -292,14 +280,11 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
         self.log.info("Waiting for data state: DATA_CONNECTED")
-        test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                           self.log,
-                                                           "DATA_CONNECTED",
-                                                           120)
+        test_status, event = tel_test_utils.wait_for_data_state(
+            self.ed, self.log, "DATA_CONNECTED", 120)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -318,24 +303,17 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
                 self.wcdma_bts.service_state = BtsServiceState.SERVICE_STATE_OUT
             self.log.info("Waiting for service state: OUT_OF_SERVICE")
             test_status, event = tel_test_utils.wait_for_network_state(
-                                                               self.ed,
-                                                               self.log,
-                                                               "OUT_OF_SERVICE",
-                                                               120)
+                self.ed, self.log, "OUT_OF_SERVICE", 120)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
             test_status = "failed"
             self.log.info("Waiting for Network registration")
             test_status, event = tel_test_utils.wait_for_network_registration(
-                                                                   self.ed,
-                                                                   self.anritsu,
-                                                                   self.log)
+                self.ed, self.anritsu, self.log)
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                               self.log,
-                                                               "DATA_CONNECTED",
-                                                               120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_CONNECTED", 120)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -353,10 +331,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             else:
                 self.wcdma_bts.service_state = BtsServiceState.SERVICE_STATE_OUT
             self.log.info("Waiting for service state: OUT_OF_SERVICE")
-            test_status, event = tel_test_utils.wait_for_network_state(self.ed,
-                                                               self.log,
-                                                               "OUT_OF_SERVICE",
-                                                               120)
+            test_status, event = tel_test_utils.wait_for_network_state(
+                self.ed, self.log, "OUT_OF_SERVICE", 120)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -371,14 +347,10 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             self.lte_bts.service_state = BtsServiceState.SERVICE_STATE_IN
             self.log.info("Waiting for Network registration")
             test_status, event = tel_test_utils.wait_for_network_registration(
-                                                                   self.ed,
-                                                                   self.anritsu,
-                                                                   self.log)
+                self.ed, self.anritsu, self.log)
             self.log.info("Waiting for data state: DATA_CONNECTED")
-            test_status, event = tel_test_utils.wait_for_data_state(self.ed,
-                                                               self.log,
-                                                               "DATA_CONNECTED",
-                                                               120)
+            test_status, event = tel_test_utils.wait_for_data_state(
+                self.ed, self.log, "DATA_CONNECTED", 120)
 
         if test_status == "passed":
             self.log.info("TEL-CO-06: Network returning to IN_SERVICE"
@@ -407,9 +379,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for Network registration")
-        test_status, event = tel_test_utils.wait_for_network_registration(self.ed,
-                                                                self.anritsu,
-                                                                self.log)
+        test_status, event = tel_test_utils.wait_for_network_registration(
+            self.ed, self.anritsu, self.log)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -427,13 +398,10 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
                 raise ValueError("Incorrect value of RAT returned by MD8475A")
             self.log.info("Setting preferred Network to " + expected_nwtype)
             self.droid.telephonySetPreferredNetwork(pref_nwtype)
-            self.log.info("Waiting for service state: IN_SERVICE in "
-                          + expected_nwtype)
+            self.log.info("Waiting for service state: IN_SERVICE in " +
+                          expected_nwtype)
             test_status, event = tel_test_utils.wait_for_network_registration(
-                                                                self.ed,
-                                                                self.anritsu,
-                                                                self.log,
-                                                                expected_nwtype)
+                self.ed, self.anritsu, self.log, expected_nwtype)
 
         # proceed with next step only if previous step is success
         if test_status == "passed":
@@ -451,15 +419,13 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
                 raise ValueError("Incorrect value of RAT returned by MD8475A")
             self.log.info("Setting preferred Network to " + expected_nwtype)
             self.droid.telephonySetPreferredNetwork(pref_nwtype)
-            self.log.info("Waiting for service state: IN_SERVICE in "
-                          + expected_nwtype)
+            self.log.info("Waiting for service state: IN_SERVICE in " +
+                          expected_nwtype)
             test_status, event = tel_test_utils.wait_for_network_registration(
-                                                                self.ed,
-                                                                self.anritsu,
-                                                                self.log,
-                                                                expected_nwtype)
+                self.ed, self.anritsu, self.log, expected_nwtype)
         # setting the preferred network type to default
-        self.droid.telephonySetPreferredNetwork(tel_test_utils.NETWORK_MODE_LTE_GSM_WCDMA)
+        self.droid.telephonySetPreferredNetwork(
+            tel_test_utils.NETWORK_MODE_LTE_GSM_WCDMA)
 
         if test_status == "passed":
             self.log.info("TEL-CO-07: Setting preferred Network"
@@ -505,10 +471,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
         # turn on modem to start registration
         tel_test_utils.turn_on_modem(self.droid)
         self.log.info("Waiting for service state: emergency")
-        test_status, event = tel_test_utils.wait_for_network_state(self.ed,
-                                                              self.log,
-                                                              "EMERGENCY_ONLY",
-                                                              300)
+        test_status, event = tel_test_utils.wait_for_network_state(
+            self.ed, self.log, "EMERGENCY_ONLY", 300)
 
         if test_status == "passed":
             self.droid.connectivityToggleAirplaneMode(True)
@@ -539,9 +503,8 @@ class TelephonyConnectivitySanityTest(TelephonyBaseTest):
             triggermessage.set_reply_type(TriggerMessageIDs.MM_LOC_UPDATE_REQ,
                                           TriggerMessageReply.ACCEPT)
             self.droid.connectivityToggleAirplaneMode(False)
-            tel_test_utils.wait_for_network_registration(self.ed,
-                                                    self.anritsu,
-                                                    self.log)
+            tel_test_utils.wait_for_network_registration(self.ed, self.anritsu,
+                                                         self.log)
 
         if test_status == "passed":
             self.log.info("TEL-CO-05: Network emergency state"

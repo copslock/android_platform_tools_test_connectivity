@@ -59,6 +59,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import swap_calls
 from acts.utils import load_config
 
+
 class TelLiveVoiceConfTest(TelephonyBaseTest):
 
     # Note: Currently Conference Call do not verify voice.
@@ -69,360 +70,322 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
-                      # GSM
-                      "test_gsm_mo_mo_add_merge_drop",
-                      "test_gsm_mt_mt_add_merge_drop"
+            # GSM
+            "test_gsm_mo_mo_add_merge_drop",
+            "test_gsm_mt_mt_add_merge_drop"
 
-                      # 1x conference
-                      "test_1x_mo_mo_add_merge_drop_from_participant",
-                      "test_1x_mo_mo_add_merge_drop_from_host",
-                      # 1x multi call
-                      "test_1x_mo_mt_add_drop_active",
-                      "test_1x_mo_mt_add_drop_held",
-                      "test_1x_mo_mt_add_drop_on_dut",
-                      "test_1x_mt_mt_add_drop_active",
-                      "test_1x_mt_mt_add_drop_held",
-                      "test_1x_mt_mt_add_drop_on_dut",
-                      "test_1x_mo_mt_add_swap_twice_drop_active",
-                      "test_1x_mo_mt_add_swap_twice_drop_held",
-                      "test_1x_mo_mt_add_swap_twice_drop_on_dut",
-                      "test_1x_mt_mt_add_swap_twice_drop_active",
-                      "test_1x_mt_mt_add_swap_twice_drop_held",
-                      "test_1x_mt_mt_add_swap_twice_drop_on_dut",
-                      "test_1x_mo_mt_add_swap_once_drop_active",
-                      "test_1x_mo_mt_add_swap_once_drop_held",
-                      "test_1x_mo_mt_add_swap_once_drop_on_dut",
-                      "test_1x_mt_mt_add_swap_once_drop_active",
-                      "test_1x_mt_mt_add_swap_once_drop_held",
-                      "test_1x_mt_mt_add_swap_once_drop_on_dut",
+            # 1x conference
+            "test_1x_mo_mo_add_merge_drop_from_participant",
+            "test_1x_mo_mo_add_merge_drop_from_host",
+            # 1x multi call
+            "test_1x_mo_mt_add_drop_active",
+            "test_1x_mo_mt_add_drop_held",
+            "test_1x_mo_mt_add_drop_on_dut",
+            "test_1x_mt_mt_add_drop_active",
+            "test_1x_mt_mt_add_drop_held",
+            "test_1x_mt_mt_add_drop_on_dut",
+            "test_1x_mo_mt_add_swap_twice_drop_active",
+            "test_1x_mo_mt_add_swap_twice_drop_held",
+            "test_1x_mo_mt_add_swap_twice_drop_on_dut",
+            "test_1x_mt_mt_add_swap_twice_drop_active",
+            "test_1x_mt_mt_add_swap_twice_drop_held",
+            "test_1x_mt_mt_add_swap_twice_drop_on_dut",
+            "test_1x_mo_mt_add_swap_once_drop_active",
+            "test_1x_mo_mt_add_swap_once_drop_held",
+            "test_1x_mo_mt_add_swap_once_drop_on_dut",
+            "test_1x_mt_mt_add_swap_once_drop_active",
+            "test_1x_mt_mt_add_swap_once_drop_held",
+            "test_1x_mt_mt_add_swap_once_drop_on_dut",
 
-                      # WCDMA
-                      "test_wcdma_mo_mo_add_merge_drop",
-                      "test_wcdma_mt_mt_add_merge_drop",
+            # WCDMA
+            "test_wcdma_mo_mo_add_merge_drop",
+            "test_wcdma_mt_mt_add_merge_drop",
+            "test_wcdma_mo_mo_add_swap_twice_drop_held",
+            "test_wcdma_mo_mo_add_swap_twice_drop_active",
+            "test_wcdma_mo_mt_add_swap_twice_drop_held",
+            "test_wcdma_mo_mt_add_swap_twice_drop_active",
+            "test_wcdma_mo_mo_add_swap_once_drop_held",
+            "test_wcdma_mo_mo_add_swap_once_drop_active",
+            "test_wcdma_mo_mt_add_swap_once_drop_held",
+            "test_wcdma_mo_mt_add_swap_once_drop_active",
+            "test_wcdma_mo_mo_add_swap_once_merge_drop",
+            "test_wcdma_mo_mo_add_swap_twice_merge_drop",
+            "test_wcdma_mo_mt_add_swap_once_merge_drop",
+            "test_wcdma_mo_mt_add_swap_twice_merge_drop",
+            "test_wcdma_mt_mt_add_swap_once_merge_drop",
+            "test_wcdma_mt_mt_add_swap_twice_merge_drop",
+            "test_wcdma_mt_mt_add_merge_unmerge_swap_drop",
 
-                      "test_wcdma_mo_mo_add_swap_twice_drop_held",
-                      "test_wcdma_mo_mo_add_swap_twice_drop_active",
-                      "test_wcdma_mo_mt_add_swap_twice_drop_held",
-                      "test_wcdma_mo_mt_add_swap_twice_drop_active",
-                      "test_wcdma_mo_mo_add_swap_once_drop_held",
-                      "test_wcdma_mo_mo_add_swap_once_drop_active",
-                      "test_wcdma_mo_mt_add_swap_once_drop_held",
-                      "test_wcdma_mo_mt_add_swap_once_drop_active",
+            # CSFB WCDMA
+            "test_csfb_wcdma_mo_mo_add_swap_twice_drop_held",
+            "test_csfb_wcdma_mo_mo_add_swap_twice_drop_active",
+            "test_csfb_wcdma_mo_mt_add_swap_twice_drop_held",
+            "test_csfb_wcdma_mo_mt_add_swap_twice_drop_active",
+            "test_csfb_wcdma_mo_mo_add_swap_once_drop_held",
+            "test_csfb_wcdma_mo_mo_add_swap_once_drop_active",
+            "test_csfb_wcdma_mo_mt_add_swap_once_drop_held",
+            "test_csfb_wcdma_mo_mt_add_swap_once_drop_active",
+            "test_csfb_wcdma_mo_mo_add_swap_once_merge_drop",
+            "test_csfb_wcdma_mo_mo_add_swap_twice_merge_drop",
+            "test_csfb_wcdma_mo_mt_add_swap_once_merge_drop",
+            "test_csfb_wcdma_mo_mt_add_swap_twice_merge_drop",
 
-                      "test_wcdma_mo_mo_add_swap_once_merge_drop",
-                      "test_wcdma_mo_mo_add_swap_twice_merge_drop",
-                      "test_wcdma_mo_mt_add_swap_once_merge_drop",
-                      "test_wcdma_mo_mt_add_swap_twice_merge_drop",
-                      "test_wcdma_mt_mt_add_swap_once_merge_drop",
-                      "test_wcdma_mt_mt_add_swap_twice_merge_drop",
-                      "test_wcdma_mt_mt_add_merge_unmerge_swap_drop",
+            # VoLTE
+            "test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_volte_swap_twice_drop_held",
+            "test_volte_mo_mo_add_volte_swap_twice_drop_active",
+            "test_volte_mo_mt_add_volte_swap_twice_drop_held",
+            "test_volte_mo_mt_add_volte_swap_twice_drop_active",
+            "test_volte_mo_mo_add_volte_swap_once_drop_held",
+            "test_volte_mo_mo_add_volte_swap_once_drop_active",
+            "test_volte_mo_mt_add_volte_swap_once_drop_held",
+            "test_volte_mo_mt_add_volte_swap_once_drop_active",
+            "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
+            "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
 
-                      # CSFB WCDMA
-                      "test_csfb_wcdma_mo_mo_add_swap_twice_drop_held",
-                      "test_csfb_wcdma_mo_mo_add_swap_twice_drop_active",
-                      "test_csfb_wcdma_mo_mt_add_swap_twice_drop_held",
-                      "test_csfb_wcdma_mo_mt_add_swap_twice_drop_active",
-                      "test_csfb_wcdma_mo_mo_add_swap_once_drop_held",
-                      "test_csfb_wcdma_mo_mo_add_swap_once_drop_active",
-                      "test_csfb_wcdma_mo_mt_add_swap_once_drop_held",
-                      "test_csfb_wcdma_mo_mt_add_swap_once_drop_active",
+            # VoLTE CEP
+            "test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_volte_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
+            "test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
+            "test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
 
-                      "test_csfb_wcdma_mo_mo_add_swap_once_merge_drop",
-                      "test_csfb_wcdma_mo_mo_add_swap_twice_merge_drop",
-                      "test_csfb_wcdma_mo_mt_add_swap_once_merge_drop",
-                      "test_csfb_wcdma_mo_mt_add_swap_twice_merge_drop",
+            # WiFi Calling Conference
+            # WiFi_Only mode is not supported for now.
+            # epdg, WFC, noAPM, WiFi Only, cell strong, wifi strong
+            "test_epdg_mo_mo_add_epdg_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_merge_drop_wfc_wifi_only",
+            "test_epdg_mt_mt_add_epdg_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_volte_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_volte_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_wcdma_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_wcdma_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_1x_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_1x_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_twice_drop_held_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_epdg_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_volte_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_volte_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_1x_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_1x_swap_twice_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mo_add_1x_swap_once_merge_drop_wfc_wifi_only",
+            "test_epdg_mo_mt_add_1x_swap_once_merge_drop_wfc_wifi_only",
 
-                      # VoLTE
-                      "test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_no_cep",
+            # epdg, WFC, noAPM, WiFi preferred, cell strong, wifi strong
+            "test_epdg_mo_mo_add_epdg_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mt_mt_add_epdg_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_volte_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_wcdma_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_wcdma_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_1x_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_1x_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_twice_drop_held_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_1x_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_1x_swap_twice_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mo_add_1x_swap_once_merge_drop_wfc_wifi_preferred",
+            "test_epdg_mo_mt_add_1x_swap_once_merge_drop_wfc_wifi_preferred",
 
-                      "test_volte_mo_mo_add_volte_swap_twice_drop_held",
-                      "test_volte_mo_mo_add_volte_swap_twice_drop_active",
-                      "test_volte_mo_mt_add_volte_swap_twice_drop_held",
-                      "test_volte_mo_mt_add_volte_swap_twice_drop_active",
-                      "test_volte_mo_mo_add_volte_swap_once_drop_held",
-                      "test_volte_mo_mo_add_volte_swap_once_drop_active",
-                      "test_volte_mo_mt_add_volte_swap_once_drop_held",
-                      "test_volte_mo_mt_add_volte_swap_once_drop_active",
+            # WiFi Calling Multi Call Swap Only
+            "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_apm_wifi_preferred",
+            "test_epdg_mo_mt_add_epdg_swap_once_drop_held_apm_wifi_preferred",
+            "test_epdg_mo_mo_add_epdg_swap_once_drop_active_apm_wfc_wifi_preferred",
 
-                      "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep",
-                      "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep",
+            # WiFi Calling Conference No_CEP
+            # Airplane Mode, WiFi Preferred
+            "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
+            "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
+            "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
 
-                      # VoLTE CEP
-                      "test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_volte_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_merge_drop_first_call_from_host_cep",
+            # WiFi Calling Multi Call Swap + Conference No_CEP
+            # Airplane Mode, WiFi Preferred
+            "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
 
-                      "test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_volte_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_merge_drop_first_call_from_host_cep",
+            # WiFi Calling Conference CEP
+            # Airplane Mode, WiFi Preferred
+            "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
 
-                      "test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_volte_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_merge_drop_first_call_from_host_cep",
+            # WiFi Calling Multi Call Swap + Conference CEP
+            # Airplane Mode, WiFi Preferred
+            "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
+            "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
 
-                      "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_1x_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_1x_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_1x_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep",
-
-                      "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep",
-                      "test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep",
-                      "test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep",
-
-                      # WiFi Calling Conference
-                      # WiFi_Only mode is not supported for now.
-                      # epdg, WFC, noAPM, WiFi Only, cell strong, wifi strong
-                      "test_epdg_mo_mo_add_epdg_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_wfc_wifi_only",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_volte_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_volte_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_wcdma_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_wcdma_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_1x_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_1x_merge_drop_wfc_wifi_only",
-
-                      "test_epdg_mo_mo_add_epdg_swap_twice_drop_held_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_only",
-
-                      "test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_epdg_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_volte_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_volte_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_1x_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_1x_swap_twice_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mo_add_1x_swap_once_merge_drop_wfc_wifi_only",
-                      "test_epdg_mo_mt_add_1x_swap_once_merge_drop_wfc_wifi_only",
-
-                      # epdg, WFC, noAPM, WiFi preferred, cell strong, wifi strong
-                      "test_epdg_mo_mo_add_epdg_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_volte_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_wcdma_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_wcdma_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_1x_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_1x_merge_drop_wfc_wifi_preferred",
-
-                      "test_epdg_mo_mo_add_epdg_swap_twice_drop_held_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_preferred",
-
-                      "test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_epdg_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_1x_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_1x_swap_twice_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mo_add_1x_swap_once_merge_drop_wfc_wifi_preferred",
-                      "test_epdg_mo_mt_add_1x_swap_once_merge_drop_wfc_wifi_preferred",
-
-                      # WiFi Calling Multi Call Swap Only
-                      "test_epdg_mo_mo_add_epdg_swap_twice_drop_active_apm_wifi_preferred",
-                      "test_epdg_mo_mt_add_epdg_swap_once_drop_held_apm_wifi_preferred",
-                      "test_epdg_mo_mo_add_epdg_swap_once_drop_active_apm_wfc_wifi_preferred",
-
-                      # WiFi Calling Conference No_CEP
-                      # Airplane Mode, WiFi Preferred
-                      "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
-
-                      # WiFi Calling Multi Call Swap + Conference No_CEP
-                      # Airplane Mode, WiFi Preferred
-                      "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep",
-
-                      # WiFi Calling Conference CEP
-                      # Airplane Mode, WiFi Preferred
-                      "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
-
-                      "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
-
-                      "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep",
-
-                      # WiFi Calling Multi Call Swap + Conference CEP
-                      # Airplane Mode, WiFi Preferred
-                      "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
-                      "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
-
-                      #SIM2 test cases
-                      "test_wcdma_mo_mo_add_merge_drop_sim2",
-                      "test_wcdma_mt_mt_add_merge_drop_sim2",
-                      "test_gsm_mo_mo_add_merge_drop_sim2",
-                      "test_gsm_mt_mt_add_merge_drop_sim2"
-                      )
+            #SIM2 test cases
+            "test_wcdma_mo_mo_add_merge_drop_sim2",
+            "test_wcdma_mt_mt_add_merge_drop_sim2",
+            "test_gsm_mo_mo_add_merge_drop_sim2",
+            "test_gsm_mt_mt_add_merge_drop_sim2")
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
@@ -433,6 +396,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
     """ Private Test Utils """
+
     def _three_phone_call_mo_add_mo(self, ads, phone_setups, verify_funcs):
         """Use 3 phones to make MO calls.
 
@@ -451,6 +415,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             If success, return 'call_AB' id in PhoneA.
             if fail, return None.
         """
+
         class _CallException(Exception):
             pass
 
@@ -471,7 +436,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                     raise _CallException("Clear call list failed.")
 
             self.log.info("Step1: Call From PhoneA to PhoneB.")
-            if not call_setup_teardown(self.log, ads[0], ads[1],
+            if not call_setup_teardown(self.log,
+                                       ads[0],
+                                       ads[1],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_a,
                                        verify_callee_func=verify_func_b):
@@ -484,12 +451,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id = calls[0]
 
             self.log.info("Step2: Call From PhoneA to PhoneC.")
-            if not call_setup_teardown(self.log, ads[0], ads[2],
+            if not call_setup_teardown(self.log,
+                                       ads[0],
+                                       ads[2],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_a,
                                        verify_callee_func=verify_func_c):
                 raise _CallException("PhoneA call PhoneC failed.")
-            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
+            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]],
+                                       True):
                 raise _CallException("Not All phones are in-call.")
 
         except _CallException:
@@ -515,6 +485,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             If success, return 'call_AB' id in PhoneA.
             if fail, return None.
         """
+
         class _CallException(Exception):
             pass
 
@@ -535,7 +506,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                     raise _CallException("Clear call list failed.")
 
             self.log.info("Step1: Call From PhoneA to PhoneB.")
-            if not call_setup_teardown(self.log, ads[0], ads[1],
+            if not call_setup_teardown(self.log,
+                                       ads[0],
+                                       ads[1],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_a,
                                        verify_callee_func=verify_func_b):
@@ -548,12 +521,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id = calls[0]
 
             self.log.info("Step2: Call From PhoneC to PhoneA.")
-            if not call_setup_teardown(self.log, ads[2], ads[0],
+            if not call_setup_teardown(self.log,
+                                       ads[2],
+                                       ads[0],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_c,
                                        verify_callee_func=verify_func_a):
                 raise _CallException("PhoneA call PhoneC failed.")
-            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
+            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]],
+                                       True):
                 raise _CallException("Not All phones are in-call.")
 
         except _CallException:
@@ -579,6 +555,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             If success, return 'call_AB' id in PhoneA.
             if fail, return None.
         """
+
         class _CallException(Exception):
             pass
 
@@ -599,7 +576,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                     raise _CallException("Clear call list failed.")
 
             self.log.info("Step1: Call From PhoneB to PhoneA.")
-            if not call_setup_teardown(self.log, ads[1], ads[0],
+            if not call_setup_teardown(self.log,
+                                       ads[1],
+                                       ads[0],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_b,
                                        verify_callee_func=verify_func_a):
@@ -612,12 +591,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id = calls[0]
 
             self.log.info("Step2: Call From PhoneC to PhoneA.")
-            if not call_setup_teardown(self.log, ads[2], ads[0],
+            if not call_setup_teardown(self.log,
+                                       ads[2],
+                                       ads[0],
                                        ad_hangup=None,
                                        verify_caller_func=verify_func_c,
                                        verify_callee_func=verify_func_a):
                 raise _CallException("PhoneA call PhoneC failed.")
-            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
+            if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]],
+                                       True):
                 raise _CallException("Not All phones are in-call.")
 
         except _CallException:
@@ -640,13 +622,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".
-                            format(ads[0].serial))
+            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
+                0].serial))
             return None, None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_1x, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
@@ -657,10 +640,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None, None
         for call_id in calls:
             if (CALL_CAPABILITY_MERGE_CONFERENCE in
-                ads[0].droid.telecomCallGetCapabilities(call_id)):
-                call_conf_id = call_id;
+                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+                call_conf_id = call_id
             elif call_id != call_ab_id:
-                call_ac_id = call_id;
+                call_ac_id = call_id
 
         return call_ab_id, call_ac_id, call_conf_id
 
@@ -680,33 +663,38 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".
-                            format(ads[0].serial))
+            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
+                0].serial))
             return None, None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_1x, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
 
-        call_conf_id  = None
+        call_conf_id = None
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 3:
             return None, None, None
         for call_id in calls:
             if (CALL_CAPABILITY_SWAP_CONFERENCE in
-                ads[0].droid.telecomCallGetCapabilities(call_id)):
-                call_conf_id = call_id;
+                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+                call_conf_id = call_id
             elif call_id != call_ab_id:
-                call_ac_id = call_id;
+                call_ac_id = call_id
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps,
-                check_call_status=False):
+            if not swap_calls(self.log,
+                              ads,
+                              call_ab_id,
+                              call_ac_id,
+                              num_swaps,
+                              check_call_status=False):
                 self.log.error("Swap test failed.")
                 return None, None, None
 
@@ -728,40 +716,45 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".
-                            format(ads[0].serial))
+            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
+                0].serial))
             return None, None, None
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_1x, None, None])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
 
-        call_conf_id  = None
+        call_conf_id = None
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 3:
             return None, None, None
         for call_id in calls:
             if (CALL_CAPABILITY_SWAP_CONFERENCE in
-                ads[0].droid.telecomCallGetCapabilities(call_id)):
-                call_conf_id = call_id;
+                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+                call_conf_id = call_id
             elif call_id != call_ab_id:
-                call_ac_id = call_id;
+                call_ac_id = call_id
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps,
-                check_call_status=False):
+            if not swap_calls(self.log,
+                              ads,
+                              call_ab_id,
+                              call_ac_id,
+                              num_swaps,
+                              check_call_status=False):
                 self.log.error("Swap test failed.")
                 return None, None, None
 
         return call_ab_id, call_ac_id, call_conf_id
 
-    def _test_1x_multi_call_drop_from_participant(self, host,
-        first_drop_ad, second_drop_ad):
+    def _test_1x_multi_call_drop_from_participant(self, host, first_drop_ad,
+                                                  second_drop_ad):
         """Test private function to drop call from participant in 1x multi call.
 
         Host(1x) is in multi call scenario with first_drop_ad and second_drop_ad.
@@ -794,14 +787,13 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         self.log.info("Drop 2nd call.")
         second_drop_ad.droid.telecomEndCall()
         time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log,
-                                   [host, second_drop_ad, first_drop_ad],
-                                   False):
+        if not verify_incall_state(
+                self.log, [host, second_drop_ad, first_drop_ad], False):
             return False
         return True
 
-    def _test_1x_multi_call_drop_from_host(self, host,
-        active_participant_ad, held_participant_ad):
+    def _test_1x_multi_call_drop_from_host(self, host, active_participant_ad,
+                                           held_participant_ad):
         """Test private function to drop call from host in 1x multi call.
 
         Host(1x) is in multi call scenario with first_drop_ad and second_drop_ad.
@@ -821,12 +813,13 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         self.log.info("Drop current call on DUT.")
         host.droid.telecomEndCall()
-        if not wait_and_answer_call(self.log, host,
-            get_phone_number(self.log, held_participant_ad)):
+        if not wait_and_answer_call(self.log, host, get_phone_number(
+                self.log, held_participant_ad)):
             self.log.error("Did not receive call back.")
             return False
         time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log, [host, held_participant_ad], True):
+        if not verify_incall_state(self.log, [host, held_participant_ad],
+                                   True):
             return False
         if not verify_incall_state(self.log, [active_participant_ad], False):
             return False
@@ -834,8 +827,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         self.log.info("Drop current call on DUT.")
         host.droid.telecomEndCall()
         time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log,
-            [host, held_participant_ad, active_participant_ad], False):
+        if not verify_incall_state(self.log, [host, held_participant_ad,
+                                              active_participant_ad], False):
             return False
         return True
 
@@ -889,7 +882,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, participant_list, True):
             return False
         if (CALL_CAPABILITY_MERGE_CONFERENCE in
-            host.droid.telecomCallGetCapabilities(call_conf_id)):
+                host.droid.telecomCallGetCapabilities(call_conf_id)):
             self.log.error("Merge conference failed.")
             return False
         return True
@@ -912,9 +905,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte, is_phone_in_call_volte])
+            [is_phone_in_call_volte, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -928,9 +923,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -954,9 +950,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte, is_phone_in_call_volte])
+            [is_phone_in_call_volte, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -970,9 +968,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -996,9 +995,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte, is_phone_in_call_volte])
+            [is_phone_in_call_volte, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1012,9 +1013,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1041,13 +1043,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+            [is_phone_in_call_volte, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1061,9 +1066,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1090,13 +1096,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+            [is_phone_in_call_volte, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1110,9 +1119,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1139,13 +1149,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+            [is_phone_in_call_volte, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1159,9 +1172,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1188,11 +1202,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
@@ -1208,9 +1223,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1237,11 +1253,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
@@ -1257,9 +1274,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1286,11 +1304,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
             [phone_setup_volte, phone_setup_3g, phone_setup_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
@@ -1306,9 +1325,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1334,13 +1354,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                           format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_3g, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1354,9 +1375,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1382,13 +1404,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                           format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_3g, None, None])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1402,9 +1425,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1430,13 +1454,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                            format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_wcdma, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_3g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1450,9 +1475,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1478,13 +1504,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                            format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [phone_setup_csfb, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_wcdma, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_csfb, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1500,7 +1527,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -1526,13 +1554,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                            format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_csfb, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_wcdma, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_csfb, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1548,13 +1577,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
         return call_ab_id, call_ac_id
 
-    def _test_ims_conference_merge_drop_second_call_no_cep(self, call_ab_id, call_ac_id):
+    def _test_ims_conference_merge_drop_second_call_no_cep(self, call_ab_id,
+                                                           call_ac_id):
         """Test conference merge and drop in VoLTE call.
 
         PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneB.
@@ -1579,8 +1610,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 1:
-            self.log.error("Total number of call ids in {} is not 1.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 1.".format(
+                ads[0].serial))
             if get_cep_conference_call_id(ads[0]) is not None:
                 self.log.error("CEP enabled.")
             else:
@@ -1597,9 +1628,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
@@ -1647,44 +1681,50 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_conf_id = get_cep_conference_call_id(ads[0])
         if call_conf_id is None:
-            self.log.error("No call with children. Probably CEP not enabled or merge failed.")
+            self.log.error(
+                "No call with children. Probably CEP not enabled or merge failed.")
             return None
         calls.remove(call_conf_id)
         if (set(ads[0].droid.telecomCallGetCallChildren(call_conf_id)) !=
-            set(calls)):
-            self.log.error("Children list<{}> for conference call is not correct.".
-                format(ads[0].droid.telecomCallGetCallChildren(call_conf_id)))
+                set(calls)):
+            self.log.error(
+                "Children list<{}> for conference call is not correct.".format(
+                    ads[0].droid.telecomCallGetCallChildren(call_conf_id)))
             return None
 
         if (CALL_PROPERTY_CONFERENCE not in
-            ads[0].droid.telecomCallGetProperties(call_conf_id)):
-            self.log.error("Conf call id properties wrong: {}".
-                format(ads[0].droid.telecomCallGetProperties(call_conf_id)))
+                ads[0].droid.telecomCallGetProperties(call_conf_id)):
+            self.log.error("Conf call id properties wrong: {}".format(ads[
+                0].droid.telecomCallGetProperties(call_conf_id)))
             return None
 
         if (CALL_CAPABILITY_MANAGE_CONFERENCE not in
-            ads[0].droid.telecomCallGetCapabilities(call_conf_id)):
-            self.log.error("Conf call id capabilities wrong: {}".
-                format(ads[0].droid.telecomCallGetCapabilities(call_conf_id)))
+                ads[0].droid.telecomCallGetCapabilities(call_conf_id)):
+            self.log.error("Conf call id capabilities wrong: {}".format(ads[
+                0].droid.telecomCallGetCapabilities(call_conf_id)))
             return None
 
         if (call_ab_id in calls) or (call_ac_id in calls):
-            self.log.error("Previous call ids should not in new call list after merge.")
+            self.log.error(
+                "Previous call ids should not in new call list after merge.")
             return None
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return None
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return None
 
         return call_conf_id
 
     def _test_ims_conference_merge_drop_second_call_from_participant_cep(
-      self, call_ab_id, call_ac_id):
+            self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
 
@@ -1704,8 +1744,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_conf_id = self._merge_cep_conference_call(
-            call_ab_id, call_ac_id)
+        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1727,7 +1766,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return True
 
     def _test_ims_conference_merge_drop_first_call_from_participant_cep(
-      self, call_ab_id, call_ac_id):
+            self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
 
@@ -1747,8 +1786,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_conf_id = self._merge_cep_conference_call(
-            call_ab_id, call_ac_id)
+        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1768,7 +1806,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return True
 
     def _test_ims_conference_merge_drop_second_call_from_host_cep(
-      self, call_ab_id, call_ac_id):
+            self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
 
@@ -1791,8 +1829,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_uri = get_call_uri(ads[0], call_ab_id)
         call_ac_uri = get_call_uri(ads[0], call_ac_id)
 
-        call_conf_id = self._merge_cep_conference_call(
-            call_ab_id, call_ac_id)
+        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1817,7 +1854,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[2]], False):
             return False
 
-        self.log.info("Step6: Disconnect call A-B and verify PhoneA PhoneB end.")
+        self.log.info(
+            "Step6: Disconnect call A-B and verify PhoneA PhoneB end.")
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ab_uri, get_call_uri(ads[0], call)):
@@ -1835,7 +1873,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return True
 
     def _test_ims_conference_merge_drop_first_call_from_host_cep(
-      self, call_ab_id, call_ac_id):
+            self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
 
@@ -1858,8 +1896,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_uri = get_call_uri(ads[0], call_ab_id)
         call_ac_uri = get_call_uri(ads[0], call_ac_id)
 
-        call_conf_id = self._merge_cep_conference_call(
-            call_ab_id, call_ac_id)
+        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1884,7 +1921,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[1]], False):
             return False
 
-        self.log.info("Step6: Disconnect call A-C and verify PhoneA PhoneC end.")
+        self.log.info(
+            "Step6: Disconnect call A-C and verify PhoneA PhoneC end.")
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ac_uri, get_call_uri(ads[0], call)):
@@ -1926,8 +1964,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 3:
-            self.log.error("Total number of call ids in {} is not 3.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 3.".format(
+                ads[0].serial))
             return False
         call_conf_id = None
         for call_id in calls:
@@ -1940,9 +1978,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
@@ -1964,9 +2005,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-    def _three_phone_hangup_call_verify_call_state(self, ad_hangup,
-                                                   ad_verify, call_id, call_state,
-                                                   ads_active):
+    def _three_phone_hangup_call_verify_call_state(
+            self, ad_hangup, ad_verify, call_id, call_state, ads_active):
         """Private Test utility for swap test.
 
         Hangup on 'ad_hangup'.
@@ -1987,15 +2027,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         """
 
-        self.log.info("Hangup at {}, verify call continues.".format(ad_hangup.serial))
+        self.log.info("Hangup at {}, verify call continues.".format(
+            ad_hangup.serial))
         ad_hangup.droid.telecomEndCall()
         time.sleep(WAIT_TIME_IN_CALL)
 
         if ad_verify.droid.telecomCallGetCallState(call_id) != call_state:
-            self.log.error("Call_id:{}, state:{}, expected: {}".
-                           format(call_id,
-                                  ad_verify.droid.telecomCallGetCallState(call_id),
-                                  call_state))
+            self.log.error("Call_id:{}, state:{}, expected: {}".format(
+                call_id, ad_verify.droid.telecomCallGetCallState(
+                    call_id), call_state))
             return False
         # TODO: b/26296375 add voice check.
 
@@ -2026,9 +2066,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_epdg_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan, is_phone_in_call_iwlan])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+             is_phone_in_call_iwlan])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2042,9 +2083,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2070,9 +2112,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_epdg_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan, is_phone_in_call_iwlan])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+             is_phone_in_call_iwlan])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2086,9 +2129,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2114,9 +2158,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mt_mt_add_epdg_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan, is_phone_in_call_iwlan])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+             is_phone_in_call_iwlan])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2130,9 +2175,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2158,9 +2204,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_volte_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte, is_phone_in_call_volte])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2174,9 +2221,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2202,9 +2250,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_volte_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte, is_phone_in_call_volte])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2218,9 +2267,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2246,9 +2296,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mt_mt_add_volte_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte, is_phone_in_call_volte])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_volte,
+             is_phone_in_call_volte])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2262,9 +2313,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2291,15 +2343,17 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_wcdma_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2313,9 +2367,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2342,15 +2397,17 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2364,9 +2421,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2393,15 +2451,17 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are GSM phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error("{} not GSM phone, abort wcdma swap test.".
-                               format(ad.serial))
+                self.log.error(
+                    "{} not GSM phone, abort wcdma swap test.".format(
+                        ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma, is_phone_in_call_wcdma])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
+            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+             is_phone_in_call_wcdma])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2415,9 +2475,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2444,14 +2505,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_1x_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [None, None, None],
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]], [None, None, None],
             [is_phone_in_call_iwlan, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -2466,9 +2527,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2495,14 +2557,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_1x_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mo_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
+        call_ab_id = self._three_phone_call_mo_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
             [is_phone_in_call_iwlan, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -2517,9 +2579,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2546,14 +2609,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".
-                               format(ad.serial))
+                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
+                    ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_1x_swap_x in test cases.
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [None, None, None],
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]], [None, None, None],
             [is_phone_in_call_iwlan, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -2568,9 +2631,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -2602,8 +2666,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 1:
-            self.log.error("Total number of call ids in {} is not 1.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 1.".format(
+                ads[0].serial))
             return False
         call_conf_id = None
         for call_id in calls:
@@ -2616,9 +2680,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
@@ -2639,6 +2706,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return True
 
     """ Tests Begin """
+
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_merge_drop(self):
         """ Test Conf Call among three phones.
@@ -2677,7 +2745,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
 
-
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mo_add_merge_drop_from_participant(self):
         """ Test 1x Conf Call among three phones.
@@ -2701,21 +2768,20 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mo_add()
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mo_add()
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
 
         self.log.info("Merge to Conf Call and verify Conf Call.")
         if not self._test_1x_merge_conference(ads[0], [ads[1], ads[2]],
-            call_conf_id):
+                                              call_conf_id):
             self.log.error("1x Conference merge failed.")
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mo_add_merge_drop_from_host(self):
@@ -2738,16 +2804,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mo_add()
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mo_add()
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
 
         self.log.info("Merge to Conf Call and verify Conf Call.")
         if not self._test_1x_merge_conference(ads[0], [ads[1], ads[2]],
-            call_conf_id):
+                                              call_conf_id):
             self.log.error("1x Conference merge failed.")
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
@@ -2773,9 +2838,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2786,8 +2851,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_twice_drop_active(self):
@@ -2813,9 +2878,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2826,8 +2891,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_once_drop_active(self):
@@ -2851,9 +2916,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2864,8 +2929,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_drop_held(self):
@@ -2887,9 +2952,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2900,8 +2965,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_twice_drop_held(self):
@@ -2927,9 +2992,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2940,8 +3005,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_once_drop_held(self):
@@ -2965,9 +3030,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -2978,8 +3043,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_drop_on_dut(self):
@@ -3001,9 +3066,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3014,8 +3079,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[2], ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_twice_drop_on_dut(self):
@@ -3041,9 +3105,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3054,8 +3118,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[2], ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mo_mt_add_swap_once_drop_on_dut(self):
@@ -3079,9 +3142,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mo_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3092,8 +3155,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[1], ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_drop_active(self):
@@ -3115,9 +3177,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3128,8 +3190,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_twice_drop_active(self):
@@ -3155,9 +3217,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3168,8 +3230,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_once_drop_active(self):
@@ -3193,9 +3255,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3206,8 +3268,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_drop_held(self):
@@ -3229,9 +3291,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3242,8 +3304,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_twice_drop_held(self):
@@ -3269,9 +3331,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3282,8 +3344,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneB, and end call on PhoneC.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[1],
+                                                              ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_once_drop_held(self):
@@ -3307,9 +3369,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3320,8 +3382,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on PhoneC, and end call on PhoneB.")
-        return self._test_1x_multi_call_drop_from_participant(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_participant(ads[0], ads[2],
+                                                              ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_drop_on_dut(self):
@@ -3343,9 +3405,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(0)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            0)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3356,8 +3418,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[2], ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_twice_drop_on_dut(self):
@@ -3383,9 +3444,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(2)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            2)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3396,8 +3457,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[2], ads[1])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[2], ads[1])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_1x_mt_mt_add_swap_once_drop_on_dut(self):
@@ -3421,9 +3481,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_ab_id,  call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(1)
-        if ((call_ab_id is None) or
-            (call_ac_id is None) or
+        call_ab_id, call_ac_id, call_conf_id = self._test_1x_mt_mt_add_swap_x(
+            1)
+        if ((call_ab_id is None) or (call_ac_id is None) or
             (call_conf_id is None)):
             self.log.error("Failed to setup 3 way call.")
             return False
@@ -3434,11 +3494,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("End call on DUT, DUT should receive callback.")
-        return self._test_1x_multi_call_drop_from_host(
-            ads[0], ads[1], ads[2])
+        return self._test_1x_multi_call_drop_from_host(ads[0], ads[1], ads[2])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3454,10 +3514,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3497,7 +3559,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3537,7 +3600,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3553,10 +3617,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3596,7 +3662,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (VoLTE), accept on PhoneB.
@@ -3636,7 +3703,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneB (VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -3652,10 +3720,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -3695,7 +3765,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (VoLTE) to PhoneA (VoLTE), accept on PhoneA.
@@ -3735,7 +3806,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3751,10 +3823,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3794,7 +3868,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3834,7 +3909,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3850,10 +3926,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3893,7 +3971,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (WCDMA), accept on PhoneB.
@@ -3933,7 +4012,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneB (WCDMA) to PhoneA (VoLTE), accept on PhoneA.
@@ -3949,10 +4029,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (WCDMA) to PhoneA (VoLTE), accept on PhoneA.
@@ -3992,7 +4074,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (WCDMA) to PhoneA (VoLTE), accept on PhoneA.
@@ -4032,7 +4115,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4048,10 +4132,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4091,7 +4177,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4131,7 +4218,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4147,10 +4235,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4190,7 +4280,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneA (VoLTE) to PhoneB (1x), accept on PhoneB.
@@ -4230,7 +4321,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         Call from PhoneB (1x) to PhoneA (VoLTE), accept on PhoneA.
@@ -4246,10 +4338,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (1x) to PhoneA (VoLTE), accept on PhoneA.
@@ -4289,7 +4383,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. CEP enabled.
 
         1. Call from PhoneB (1x) to PhoneA (VoLTE), accept on PhoneA.
@@ -4345,9 +4440,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mo_add_volte_swap_twice_drop_active(self):
@@ -4366,9 +4464,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mt_add_volte_swap_twice_drop_held(self):
@@ -4387,9 +4488,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mt_add_volte_swap_twice_drop_active(self):
@@ -4408,9 +4512,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mo_add_volte_swap_once_drop_held(self):
@@ -4428,9 +4535,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mo_add_volte_swap_once_drop_active(self):
@@ -4449,9 +4559,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mt_add_volte_swap_once_drop_held(self):
@@ -4468,10 +4581,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id, call_ac_id = self._test_volte_mo_mt_add_volte_swap_x(1)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
-
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_mo_mt_add_volte_swap_once_drop_active(self):
@@ -4489,9 +4604,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_swap_twice_drop_held(self):
@@ -4510,9 +4628,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_swap_twice_drop_active(self):
@@ -4531,9 +4652,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mt_add_swap_twice_drop_held(self):
@@ -4552,9 +4676,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mt_add_swap_twice_drop_active(self):
@@ -4573,9 +4700,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_swap_once_drop_held(self):
@@ -4593,9 +4723,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_swap_once_drop_active(self):
@@ -4613,9 +4746,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mt_add_swap_once_drop_held(self):
@@ -4633,9 +4769,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mt_add_swap_once_drop_active(self):
@@ -4653,9 +4792,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mo_add_swap_twice_drop_held(self):
@@ -4674,9 +4816,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mo_add_swap_twice_drop_active(self):
@@ -4695,9 +4840,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mt_add_swap_twice_drop_held(self):
@@ -4716,9 +4864,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mt_add_swap_twice_drop_active(self):
@@ -4737,9 +4888,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mo_add_swap_once_drop_held(self):
@@ -4757,9 +4911,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mo_add_swap_once_drop_active(self):
@@ -4777,9 +4934,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mt_add_swap_once_drop_held(self):
@@ -4797,9 +4957,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wcdma_mo_mt_add_swap_once_drop_active(self):
@@ -4817,12 +4980,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4839,10 +5006,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4863,7 +5032,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_volte_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4884,7 +5054,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4905,7 +5076,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_volte_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4926,7 +5098,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4944,10 +5117,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4969,7 +5144,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -4991,7 +5167,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5013,7 +5190,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_volte_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5035,7 +5213,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5052,10 +5231,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5076,7 +5257,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5097,7 +5279,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5118,7 +5301,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5139,7 +5323,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5157,10 +5342,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5182,7 +5369,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5204,7 +5392,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5226,7 +5415,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (VoLTE), accept on PhoneB.
@@ -5248,7 +5438,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5265,10 +5456,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5289,7 +5482,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_volte_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5310,7 +5504,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5331,7 +5526,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_volte_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5352,7 +5548,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5370,10 +5567,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5395,7 +5594,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5417,7 +5617,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5439,7 +5640,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_volte_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (VoLTE) call PhoneA (VoLTE), accept on PhoneA.
@@ -5461,7 +5663,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5478,10 +5681,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5502,7 +5707,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5523,7 +5729,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5544,7 +5751,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5565,7 +5773,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5583,10 +5792,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5608,7 +5819,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5630,7 +5842,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5652,7 +5865,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5674,7 +5888,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5691,10 +5906,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5715,7 +5932,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5736,7 +5954,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5757,7 +5976,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5778,7 +5998,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5796,10 +6017,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5821,7 +6044,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5843,7 +6067,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5865,7 +6090,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (WCDMA), accept on PhoneB.
@@ -5887,7 +6113,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -5904,10 +6131,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -5928,7 +6157,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -5949,7 +6179,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -5970,7 +6201,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -5991,7 +6223,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test VoLTE Conference Call among three phones. No CEP.
 
         PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -6009,10 +6242,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -6034,7 +6269,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -6056,7 +6292,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -6078,7 +6315,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_wcdma_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (WCDMA) call PhoneA (VoLTE), accept on PhoneA.
@@ -6100,7 +6338,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6117,10 +6356,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6141,7 +6382,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_1x_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6162,7 +6404,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6183,7 +6426,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_1x_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6204,7 +6448,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6222,10 +6467,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6247,7 +6494,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6269,7 +6517,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6291,7 +6540,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mo_add_1x_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6313,7 +6563,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6330,10 +6581,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6354,7 +6607,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6375,7 +6629,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6396,7 +6651,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6417,7 +6673,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6435,10 +6692,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6460,7 +6719,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6482,7 +6742,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6504,7 +6765,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mo_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneA (VoLTE) call PhoneB (1x), accept on PhoneB.
@@ -6526,7 +6788,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6543,10 +6806,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6567,7 +6832,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_1x_swap_once_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6588,7 +6854,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6609,7 +6876,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_1x_swap_once_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6630,7 +6898,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(self):
+    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_no_cep(
+            self):
         """ Test swap and merge features in VoLTE call. No CEP.
 
         PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6648,10 +6917,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_no_cep(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6673,7 +6944,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep(self):
+    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_second_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6695,7 +6967,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(self):
+    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_participant_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6717,7 +6990,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep(self):
+    def test_volte_mt_mt_add_1x_swap_twice_merge_drop_first_call_from_host_cep(
+            self):
         """ Test swap and merge features in VoLTE call. CEP enabled.
 
         1. PhoneB (1x) call PhoneA (VoLTE), accept on PhoneA.
@@ -6950,8 +7224,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 3:
-            self.log.error("Total number of call ids in {} is not 3.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 3.".format(
+                ads[0].serial))
             return False
         call_conf_id = None
         for call_id in calls:
@@ -6964,11 +7238,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                           format(call_conf_id,
-                                  ads[0].droid.telecomCallGetCallState(
-                                      call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
         # Unmerge
@@ -6980,8 +7255,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # Are there 2 calls?
         if num_active_calls(self.log, ads[0]) != 2:
-            self.log.error("Total number of call ids in {} is not 2".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 2".format(
+                ads[0].serial))
             return False
 
         # Unmerged calls not dropped?
@@ -6990,11 +7265,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Unmerged call in call state ACTIVE?
-        if ads[0].droid.telecomCallGetCallState(call_ab_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                           format(call_ab_id,
-                                  ads[0].droid.telecomCallGetCallState(
-                                      call_ab_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_ab_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_ab_id, ads[0].droid.telecomCallGetCallState(
+                        call_ab_id)))
             return False
 
         # Swap call
@@ -7005,18 +7281,21 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Other call in call state ACTIVE?
-        if ads[0].droid.telecomCallGetCallState(call_ac_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                           format(call_ac_id,
-                                  ads[0].droid.telecomCallGetCallState(
-                                      call_ac_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_ac_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_ac_id, ads[0].droid.telecomCallGetCallState(
+                        call_ac_id)))
             return False
 
         # All calls still CONNECTED?
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id,
-                    call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_merge_drop_wfc_wifi_only(self):
@@ -7033,12 +7312,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7064,12 +7346,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7095,12 +7380,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7126,12 +7414,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7157,12 +7448,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7188,12 +7482,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7219,10 +7516,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7248,10 +7546,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7277,10 +7576,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7306,10 +7606,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7335,10 +7636,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7364,10 +7666,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7393,10 +7696,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7422,10 +7726,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7451,10 +7756,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7480,10 +7786,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7509,10 +7816,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7538,10 +7846,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7566,12 +7875,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7596,12 +7908,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7627,12 +7942,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7644,7 +7962,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -7658,12 +7977,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7688,12 +8010,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7718,12 +8043,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7749,12 +8077,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7766,7 +8097,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_epdg_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -7780,12 +8112,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7810,10 +8145,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7825,7 +8161,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_volte_swap_once_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_volte_swap_once_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (VoLTE), accept on PhoneB.
@@ -7838,10 +8175,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7867,10 +8205,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7882,7 +8221,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_volte_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_volte_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (VoLTE), accept on PhoneB.
@@ -7896,10 +8236,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7924,10 +8265,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7939,7 +8281,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_volte_swap_once_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (VoLTE), accept on PhoneB.
@@ -7952,10 +8295,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7981,10 +8325,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7996,7 +8341,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_volte_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (VoLTE), accept on PhoneB.
@@ -8010,10 +8356,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8038,10 +8385,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8053,7 +8401,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (WCDMA), accept on PhoneB.
@@ -8066,10 +8415,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8095,10 +8445,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8110,7 +8461,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (WCDMA), accept on PhoneB.
@@ -8124,10 +8476,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8152,10 +8505,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8167,7 +8521,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_wcdma_swap_once_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (WCDMA), accept on PhoneB.
@@ -8180,10 +8535,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8209,10 +8565,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8224,7 +8581,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_wcdma_swap_twice_merge_drop_wfc_wifi_preferred(
+            self):
         """Test swap and merge feature in epdg call.
 
         PhoneA (epdg) call PhoneB (WCDMA), accept on PhoneB.
@@ -8238,10 +8596,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8266,10 +8625,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8294,10 +8654,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8323,10 +8684,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8352,10 +8714,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8380,10 +8743,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8408,10 +8772,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8437,10 +8802,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8466,10 +8832,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])),
-                 (phone_setup_3g, (self.log, ads[2]))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                                                        (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8493,12 +8860,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8507,9 +8877,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_swap_twice_drop_held_wfc_wifi_preferred(self):
@@ -8524,12 +8897,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8538,9 +8914,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_only(self):
@@ -8555,12 +8934,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8569,12 +8951,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_epdg_swap_twice_drop_active_wfc_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -8586,12 +8972,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8600,12 +8989,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_swap_twice_drop_active_apm_wifi_preferred(self):
+    def test_epdg_mo_mo_add_epdg_swap_twice_drop_active_apm_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -8617,12 +9010,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8631,9 +9027,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_only(self):
@@ -8648,12 +9047,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8662,9 +9064,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_twice_drop_held_wfc_wifi_preferred(self):
@@ -8679,12 +9084,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8693,9 +9101,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_only(self):
@@ -8710,12 +9121,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8724,12 +9138,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_epdg_swap_twice_drop_active_wfc_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -8741,12 +9159,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8755,9 +9176,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_only(self):
@@ -8771,12 +9195,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8785,9 +9212,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_swap_once_drop_held_wfc_wifi_preferred(self):
@@ -8801,12 +9231,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8815,9 +9248,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_only(self):
@@ -8831,12 +9267,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8845,12 +9284,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_epdg_swap_once_drop_active_wfc_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -8861,12 +9304,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8875,12 +9321,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_swap_once_drop_active_apm_wfc_wifi_preferred(self):
+    def test_epdg_mo_mo_add_epdg_swap_once_drop_active_apm_wfc_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -8891,12 +9341,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8905,9 +9358,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_only(self):
@@ -8921,12 +9377,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8934,9 +9393,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id, call_ac_id = self._test_epdg_mo_mt_add_epdg_swap_x(1)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_once_drop_held_wfc_wifi_preferred(self):
@@ -8950,12 +9412,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8963,9 +9428,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id, call_ac_id = self._test_epdg_mo_mt_add_epdg_swap_x(1)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_once_drop_held_apm_wifi_preferred(self):
@@ -8979,12 +9447,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -8992,9 +9463,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id, call_ac_id = self._test_epdg_mo_mt_add_epdg_swap_x(1)
         if call_ab_id is None or call_ac_id is None:
             return False
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[2],
-                    ad_verify=ads[0], call_id=call_ab_id, call_state=CALL_STATE_ACTIVE,
-                    ads_active=[ads[0], ads[1]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_only(self):
@@ -9008,12 +9482,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_ONLY,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9022,12 +9499,16 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_preferred(self):
+    def test_epdg_mo_mt_add_epdg_swap_once_drop_active_wfc_wifi_preferred(
+            self):
         """Test swap feature in epdg call.
 
         PhoneA (epdg) call PhoneB (epdg), accept on PhoneB.
@@ -9038,12 +9519,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9052,9 +9536,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._three_phone_hangup_call_verify_call_state(ad_hangup=ads[1],
-                    ad_verify=ads[0], call_id=call_ac_id, call_state=CALL_STATE_HOLDING,
-                    ads_active=[ads[0], ads[2]])
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[1],
+            ad_verify=ads[0],
+            call_id=call_ac_id,
+            call_state=CALL_STATE_HOLDING,
+            ads_active=[ads[0], ads[2]])
 
     def _test_gsm_mo_mo_add_swap_x(self, num_swaps):
         """Test swap feature in GSM call.
@@ -9076,13 +9563,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                           format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mo_add_mo([ads[0], ads[1], ads[2]],
-            [phone_setup_voice_2g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_2g, None, None])
+        call_ab_id = self._three_phone_call_mo_add_mo(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_voice_2g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_2g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -9096,9 +9584,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -9124,13 +9613,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("{} not GSM phone, abort wcdma swap test.".
-                           format(ads[0].serial))
+            self.log.error("{} not GSM phone, abort wcdma swap test.".format(
+                ads[0].serial))
             return None, None
 
-        call_ab_id = self._three_phone_call_mt_add_mt([ads[0], ads[1], ads[2]],
-            [phone_setup_voice_2g, phone_setup_voice_general, phone_setup_voice_general],
-            [is_phone_in_call_2g, None, None])
+        call_ab_id = self._three_phone_call_mt_add_mt(
+            [ads[0], ads[1], ads[2]],
+            [phone_setup_voice_2g, phone_setup_voice_general,
+             phone_setup_voice_general], [is_phone_in_call_2g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -9144,9 +9634,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         else:
             call_ac_id = calls[0]
 
-        if num_swaps > 0 :
+        if num_swaps > 0:
             self.log.info("Step3: Begin Swap x{} test.".format(num_swaps))
-            if not swap_calls(self.log, ads, call_ab_id, call_ac_id, num_swaps):
+            if not swap_calls(self.log, ads, call_ab_id, call_ac_id,
+                              num_swaps):
                 self.log.error("Swap test failed.")
                 return None, None
 
@@ -9177,8 +9668,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 3:
-            self.log.error("Total number of call ids in {} is not 3.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 3.".format(
+                ads[0].serial))
             return False
         call_conf_id = None
         for call_id in calls:
@@ -9191,9 +9682,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
@@ -9256,11 +9750,11 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     #SIM2 tests
     def _reset_subscriptions_to_sim1(self, ads):
         set_call_state_listen_level(self.log, ads[0], False,
-            self.sim_sub_ids[0][1])
+                                    self.sim_sub_ids[0][1])
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True)
-        ensure_network_generation_for_subscription(self.log, ads[0],
-                self.sim_sub_ids[0][0], GEN_3G)
+        ensure_network_generation_for_subscription(
+            self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_mo_mo_add_merge_drop_sim2(self):
@@ -9287,7 +9781,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             if call_ab_id is None or call_ac_id is None:
                 return False
 
-            return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+            return self._test_wcdma_conference_merge_drop(call_ab_id,
+                                                          call_ac_id)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -9316,7 +9811,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             if call_ab_id is None or call_ac_id is None:
                 return False
 
-            return self._test_wcdma_conference_merge_drop(call_ab_id, call_ac_id)
+            return self._test_wcdma_conference_merge_drop(call_ab_id,
+                                                          call_ac_id)
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
@@ -9379,7 +9875,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             self._reset_subscriptions_to_sim1(ads)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(self):
+    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
+            self):
         """ Test WFC Conference Call among three phones. No CEP.
 
         Steps:
@@ -9402,12 +9899,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9420,7 +9920,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps
@@ -9443,12 +9944,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9461,7 +9965,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9484,12 +9989,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9502,7 +10010,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9525,12 +10034,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9543,7 +10055,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mo_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9566,12 +10079,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9584,7 +10100,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(self):
+    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
+            self):
         """ Test WFC Conference Call among three phones. No CEP.
 
         Steps:
@@ -9607,12 +10124,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9625,7 +10145,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps
@@ -9648,12 +10169,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9666,7 +10190,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9689,12 +10214,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9707,7 +10235,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9730,12 +10259,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9748,7 +10280,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9771,12 +10304,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9789,7 +10325,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(self):
+    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
+            self):
         """ Test WFC Conference Call among three phones. No CEP.
 
         Steps:
@@ -9812,12 +10349,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9830,7 +10370,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps
@@ -9853,12 +10394,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9871,7 +10415,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mt_mt_add_epdg_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9894,12 +10439,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9912,7 +10460,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9935,12 +10484,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9953,7 +10505,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mt_mt_add_epdg_merge_drop_first_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test WFC Conference Call among three phones. CEP enabled.
 
         Steps:
@@ -9976,12 +10529,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -9994,7 +10550,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(self):
+    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
+            self):
         """ Test swap and merge features in WFC call. No CEP.
 
         Steps:
@@ -10019,12 +10576,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -10037,7 +10597,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test swap and merge features in WFC call. CEP enabled.
 
         Steps:
@@ -10062,12 +10623,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -10080,7 +10644,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(self):
+    def test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep(
+            self):
         """ Test swap and merge features in WFC call. CEP enabled.
 
         Steps:
@@ -10105,12 +10670,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_iwlan, (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass))]
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_iwlan,
+                  (self.log, ads[2], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False

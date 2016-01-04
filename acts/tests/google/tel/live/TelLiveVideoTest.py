@@ -62,8 +62,8 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import set_audio_route
 from acts.utils import load_config
 
-class TelLiveVideoTest(TelephonyBaseTest):
 
+class TelLiveVideoTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.tests = (
@@ -103,8 +103,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             "test_call_volte_add_mt_video_downgrade_merge_drop",
 
             # Disable Data, VT not available
-            "test_disable_data_vt_unavailable",
-            )
+            "test_disable_data_vt_unavailable", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
@@ -130,14 +129,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0],
+                self.log,
+                ads[0],
+                ads[1],
+                ads[0],
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -159,14 +161,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0],
+                self.log,
+                ads[0],
+                ads[1],
+                ads[0],
                 video_state=VT_STATE_AUDIO_ONLY,
                 verify_caller_func=is_phone_in_call_voice_hd,
                 verify_callee_func=is_phone_in_call_voice_hd):
@@ -190,14 +195,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -206,10 +214,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Disable video on PhoneA:{}".format(ads[0].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL),
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], get_call_id_in_video_state(
+                    self.log, ads[0], VT_STATE_BIDIRECTIONAL), ads[1],
+                get_call_id_in_video_state(self.log, ads[1],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         return hangup_call(self.log, ads[0])
@@ -230,14 +238,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -246,10 +257,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Disable video on PhoneB:{}".format(ads[1].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL),
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[1], get_call_id_in_video_state(
+                    self.log, ads[1], VT_STATE_BIDIRECTIONAL), ads[0],
+                get_call_id_in_video_state(self.log, ads[0],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneB.")
             return False
         return hangup_call(self.log, ads[0])
@@ -272,14 +283,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -288,19 +302,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Disable video on PhoneA:{}".format(ads[0].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL),
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], get_call_id_in_video_state(
+                    self.log, ads[0], VT_STATE_BIDIRECTIONAL), ads[1],
+                get_call_id_in_video_state(self.log, ads[1],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
 
         self.log.info("Disable video on PhoneB:{}".format(ads[1].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_TX_ENABLED),
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_RX_ENABLED)
-            ):
+                self.log, ads[1], get_call_id_in_video_state(
+                    self.log, ads[1], VT_STATE_TX_ENABLED), ads[0],
+                get_call_id_in_video_state(self.log, ads[0],
+                                           VT_STATE_RX_ENABLED)):
             self.log.error("Failed to disable video on PhoneB.")
             return False
         return hangup_call(self.log, ads[0])
@@ -323,14 +337,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -339,19 +356,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Disable video on PhoneB:{}".format(ads[1].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL),
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[1], get_call_id_in_video_state(
+                    self.log, ads[1], VT_STATE_BIDIRECTIONAL), ads[0],
+                get_call_id_in_video_state(self.log, ads[0],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneB.")
             return False
 
         self.log.info("Disable video on PhoneA:{}".format(ads[0].serial))
         if not video_call_downgrade(
-            self.log,
-            ads[0], get_call_id_in_video_state(self.log, ads[0], VT_STATE_TX_ENABLED),
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_RX_ENABLED)
-            ):
+                self.log, ads[0], get_call_id_in_video_state(
+                    self.log, ads[0], VT_STATE_TX_ENABLED), ads[1],
+                get_call_id_in_video_state(self.log, ads[1],
+                                           VT_STATE_RX_ENABLED)):
             self.log.error("Failed to disable video on PhoneB.")
             return False
         return hangup_call(self.log, ads[0])
@@ -362,16 +379,16 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        call_id_requester = get_call_id_in_video_state(
-            self.log, ads[0], VT_STATE_AUDIO_ONLY)
+        call_id_requester = get_call_id_in_video_state(self.log, ads[0],
+                                                       VT_STATE_AUDIO_ONLY)
 
-        call_id_responder = get_call_id_in_video_state(
-            self.log, ads[1], VT_STATE_AUDIO_ONLY)
+        call_id_responder = get_call_id_in_video_state(self.log, ads[1],
+                                                       VT_STATE_AUDIO_ONLY)
 
         if not call_id_requester or not call_id_responder:
             self.log.error("Couldn't find a candidate call id {}:{}, {}:{}"
-                           .format(ads[0].serial, call_id_requester,
-                                   ads[1].serial, call_id_responder))
+                           .format(ads[0].serial, call_id_requester, ads[
+                               1].serial, call_id_responder))
             return False
 
         if not video_call_modify_video(self.log, ads[0], call_id_requester,
@@ -387,20 +404,21 @@ class TelLiveVideoTest(TelephonyBaseTest):
             self.log.error("_mo_upgrade_bidirectional: Call Drop!")
             return False
 
-        if (get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL) !=
+        if (get_call_id_in_video_state(self.log, ads[0],
+                                       VT_STATE_BIDIRECTIONAL) !=
                 call_id_requester):
-            self.log.error(
-                "Caller not in correct state: {}".format(VT_STATE_BIDIRECTIONAL))
+            self.log.error("Caller not in correct state: {}".format(
+                VT_STATE_BIDIRECTIONAL))
             return False
 
-        if (get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL) !=
+        if (get_call_id_in_video_state(self.log, ads[1],
+                                       VT_STATE_BIDIRECTIONAL) !=
                 call_id_responder):
-            self.log.error(
-                "Callee not in correct state: {}".format(VT_STATE_BIDIRECTIONAL))
+            self.log.error("Callee not in correct state: {}".format(
+                VT_STATE_BIDIRECTIONAL))
             return False
 
         return hangup_call(self.log, ads[0])
-
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_accept_as_voice_mo_upgrade_bidirectional(self):
@@ -416,13 +434,16 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_AUDIO_ONLY,
                 verify_caller_func=is_phone_in_call_volte,
                 verify_callee_func=is_phone_in_call_volte):
@@ -445,8 +466,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -464,22 +485,22 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        call_id_requester = get_call_id_in_video_state(
-            self.log, ads[0], VT_STATE_AUDIO_ONLY)
+        call_id_requester = get_call_id_in_video_state(self.log, ads[0],
+                                                       VT_STATE_AUDIO_ONLY)
 
-        call_id_responder = get_call_id_in_video_state(
-            self.log, ads[1], VT_STATE_AUDIO_ONLY)
+        call_id_responder = get_call_id_in_video_state(self.log, ads[1],
+                                                       VT_STATE_AUDIO_ONLY)
 
         if not call_id_requester or not call_id_responder:
             self.log.error("Couldn't find a candidate call id {}:{}, {}:{}"
-                           .format(ads[0].serial, call_id_requester,
-                                   ads[1].serial, call_id_responder))
+                           .format(ads[0].serial, call_id_requester, ads[
+                               1].serial, call_id_responder))
             return False
 
-        if not video_call_modify_video(self.log, ads[0], call_id_requester,
-                                       ads[1], call_id_responder,
-                                       VT_STATE_BIDIRECTIONAL, VT_VIDEO_QUALITY_DEFAULT,
-                                       VT_STATE_AUDIO_ONLY, VT_VIDEO_QUALITY_DEFAULT):
+        if not video_call_modify_video(
+                self.log, ads[0], call_id_requester, ads[1], call_id_responder,
+                VT_STATE_BIDIRECTIONAL, VT_VIDEO_QUALITY_DEFAULT,
+                VT_STATE_AUDIO_ONLY, VT_VIDEO_QUALITY_DEFAULT):
             self.log.error("Failed to upgrade video call!")
             return False
 
@@ -510,8 +531,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -539,13 +560,16 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_AUDIO_ONLY,
                 verify_caller_func=is_phone_in_call_volte,
                 verify_callee_func=is_phone_in_call_volte):
@@ -554,17 +578,18 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         return self._mo_upgrade_reject(ads)
 
-    def _test_put_call_to_backgroundpause_and_foregroundresume(self,
-        ad_requester, ad_responder):
-        call_id_requester = get_call_id_in_video_state(
-            self.log, ad_requester, VT_STATE_BIDIRECTIONAL)
-        call_id_responder = get_call_id_in_video_state(
-            self.log, ad_responder, VT_STATE_BIDIRECTIONAL)
+    def _test_put_call_to_backgroundpause_and_foregroundresume(
+            self, ad_requester, ad_responder):
+        call_id_requester = get_call_id_in_video_state(self.log, ad_requester,
+                                                       VT_STATE_BIDIRECTIONAL)
+        call_id_responder = get_call_id_in_video_state(self.log, ad_responder,
+                                                       VT_STATE_BIDIRECTIONAL)
         ad_requester.droid.telecomCallVideoStartListeningForEvent(
             call_id_requester, EventSessionEvent)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
             call_id_responder, EventSessionEvent)
-        self.log.info("Put In-Call UI on {} to background.".format(ad_requester.serial))
+        self.log.info("Put In-Call UI on {} to background.".format(
+            ad_requester.serial))
         ad_requester.droid.showHomeScreen()
         try:
             event_on_responder = ad_responder.ed.pop_event(
@@ -574,12 +599,14 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 EventTelecomVideoCallSessionEvent,
                 WAIT_TIME_VIDEO_SESSION_EVENT)
             if event_on_responder['data']['Event'] != SessionEventRxPause:
-                self.log.error("Event not correct. event_on_responder: {}. Expected :{}".
-                    format(event_on_responder, SessionEventRxPause))
+                self.log.error(
+                    "Event not correct. event_on_responder: {}. Expected :{}".format(
+                        event_on_responder, SessionEventRxPause))
                 return False
             if event_on_requester['data']['Event'] != SessionEventRxPause:
-                self.log.error("Event not correct. event_on_requester: {}. Expected :{}".
-                    format(event_on_requester, SessionEventRxPause))
+                self.log.error(
+                    "Event not correct. event_on_requester: {}. Expected :{}".format(
+                        event_on_requester, SessionEventRxPause))
                 return False
         except Empty:
             self.log.error("Expected event not received.")
@@ -591,18 +618,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 call_id_responder, EventSessionEvent)
         time.sleep(WAIT_TIME_IN_CALL)
 
-        if not verify_video_call_in_expected_state(self.log, ad_requester,
-                                                   call_id_requester,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ad_requester, call_id_requester,
+                VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ad_responder,
-                                                   call_id_responder,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ad_responder, call_id_responder,
+                VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_ACTIVE):
             return False
 
-        self.log.info("Put In-Call UI on {} to foreground.".format(ad_requester.serial))
+        self.log.info("Put In-Call UI on {} to foreground.".format(
+            ad_requester.serial))
         ad_requester.droid.telecomCallVideoStartListeningForEvent(
             call_id_requester, EventSessionEvent)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
@@ -616,12 +642,14 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 EventTelecomVideoCallSessionEvent,
                 WAIT_TIME_VIDEO_SESSION_EVENT)
             if event_on_responder['data']['Event'] != SessionEventRxResume:
-                self.log.error("Event not correct. event_on_responder: {}. Expected :{}".
-                    format(event_on_responder, SessionEventRxResume))
+                self.log.error(
+                    "Event not correct. event_on_responder: {}. Expected :{}".format(
+                        event_on_responder, SessionEventRxResume))
                 return False
             if event_on_requester['data']['Event'] != SessionEventRxResume:
-                self.log.error("Event not correct. event_on_requester: {}. Expected :{}".
-                    format(event_on_requester, SessionEventRxResume))
+                self.log.error(
+                    "Event not correct. event_on_requester: {}. Expected :{}".format(
+                        event_on_requester, SessionEventRxResume))
                 return False
         except Empty:
             self.log.error("Expected event not received.")
@@ -633,15 +661,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 call_id_responder, EventSessionEvent)
         time.sleep(WAIT_TIME_IN_CALL)
         self.log.info("Verify both calls are in bi-directional/active state.")
-        if not verify_video_call_in_expected_state(self.log, ad_requester,
-                                                   call_id_requester,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ad_requester, call_id_requester,
+                VT_STATE_BIDIRECTIONAL, CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ad_responder,
-                                                   call_id_responder,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ad_responder, call_id_responder,
+                VT_STATE_BIDIRECTIONAL, CALL_STATE_ACTIVE):
             return False
 
         return True
@@ -649,14 +675,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_to_video_mo_to_backgroundpause_foregroundresume(self):
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -671,14 +700,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_to_video_mt_to_backgroundpause_foregroundresume(self):
         ads = self.android_devices
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -722,34 +754,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneA->PhoneC.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[2], None,
-                verify_caller_func=None,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[2],
+                                   None,
+                                   verify_caller_func=None,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -761,15 +800,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -785,34 +822,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneC->PhoneA.")
-        if not call_setup_teardown(
-                self.log, ads[2], ads[0], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
+        if not call_setup_teardown(self.log,
+                                   ads[2],
+                                   ads[0],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=None):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -824,16 +868,14 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL_PAUSED,
+                CALL_STATE_HOLDING):
             return False
 
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -850,17 +892,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate VoLTE Call PhoneA->PhoneB.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[1], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
         calls = ads[0].droid.telecomCallGetCallIds()
@@ -872,18 +916,23 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Step2: Initiate Video Call PhoneA->PhoneC.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[2], None,
+                self.log,
+                ads[0],
+                ads[2],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -892,15 +941,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -918,17 +965,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Test will fail. After established 2nd call ~15s, Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate VoLTE Call PhoneA->PhoneB.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[1], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
         calls = ads[0].droid.telecomCallGetCallIds()
@@ -940,19 +989,24 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Step2: Initiate Video Call PhoneC->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[2], ads[0], None,
+                self.log,
+                ads[2],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
 
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -961,15 +1015,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -988,34 +1040,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneC->PhoneA.")
-        if not call_setup_teardown(
-                self.log, ads[2], ads[0], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
+        if not call_setup_teardown(self.log,
+                                   ads[2],
+                                   ads[0],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=None):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -1025,22 +1084,21 @@ class TelLiveVideoTest(TelephonyBaseTest):
             if call != call_id_video:
                 call_id_voice = call
 
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL_PAUSED,
+                CALL_STATE_HOLDING):
             return False
 
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
         self.log.info("Step4: Verify all phones remain in-call.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
 
-        self.log.info("Step5: Swap calls on PhoneA and verify call state correct.")
+        self.log.info(
+            "Step5: Swap calls on PhoneA and verify call state correct.")
         ads[0].droid.telecomCallHold(call_id_voice)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
@@ -1053,15 +1111,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         self.log.info("Step6: Drop Video Call on PhoneA.")
@@ -1076,7 +1132,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_video_add_mt_voice_swap_twice_remote_drop_voice_unhold_video(self):
+    def test_call_video_add_mt_voice_swap_twice_remote_drop_voice_unhold_video(
+            self):
         """
         From Phone_A, Initiate a Bi-Directional Video Call to Phone_B
         Accept the call on Phone_B as Bi-Directional Video
@@ -1092,34 +1149,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video = get_call_id_in_video_state(self.log, ads[0],
+                                                   VT_STATE_BIDIRECTIONAL)
         if call_id_video is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneC->PhoneA.")
-        if not call_setup_teardown(
-                self.log, ads[2], ads[0], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
+        if not call_setup_teardown(self.log,
+                                   ads[2],
+                                   ads[0],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=None):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -1129,22 +1193,21 @@ class TelLiveVideoTest(TelephonyBaseTest):
             if call != call_id_video:
                 call_id_voice = call
 
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL_PAUSED,
+                CALL_STATE_HOLDING):
             return False
 
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
         self.log.info("Step4: Verify all phones remain in-call.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
 
-        self.log.info("Step5: Swap calls on PhoneA and verify call state correct.")
+        self.log.info(
+            "Step5: Swap calls on PhoneA and verify call state correct.")
         ads[0].droid.telecomCallHold(call_id_voice)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
@@ -1156,38 +1219,36 @@ class TelLiveVideoTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
-        self.log.info("Step6: Swap calls on PhoneA and verify call state correct.")
+        self.log.info(
+            "Step6: Swap calls on PhoneA and verify call state correct.")
         ads[0].droid.telecomCallHold(call_id_video)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         # Audio will goto earpiece in here
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
-                self.log.error("{} Audio is not on EARPIECE.".format(ad.serial))
+                self.log.error("{} Audio is not on EARPIECE.".format(
+                    ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
         self.log.info("Step7: Drop Voice Call on PhoneC.")
@@ -1196,20 +1257,21 @@ class TelLiveVideoTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[0], ads[1]], True):
             return False
 
-        self.log.info("Step8: Unhold Video call on PhoneA and verify call state.")
+        self.log.info(
+            "Step8: Unhold Video call on PhoneA and verify call state.")
         ads[0].droid.telecomCallUnhold(call_id_video)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         # Audio will goto earpiece in here
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
-                self.log.error("{} Audio is not on EARPIECE.".format(ad.serial))
+                self.log.error("{} Audio is not on EARPIECE.".format(
+                    ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
 
         self.log.info("Step9: Drop Video Call on PhoneA.")
@@ -1231,28 +1293,35 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Video Call PhoneA->PhoneC.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[2], None,
+                self.log,
+                ads[0],
+                ads[2],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -1271,15 +1340,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -1299,28 +1366,35 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Video Call PhoneC->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[2], ads[0], None,
+                self.log,
+                ads[2],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -1339,15 +1413,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab,
+                VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
 
         self.log.info("Step4: Hangup on PhoneC.")
@@ -1379,28 +1451,35 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneB->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[1], ads[0], None,
+                self.log,
+                ads[1],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Video Call PhoneC->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[2], ads[0], None,
+                self.log,
+                ads[2],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -1419,15 +1498,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab,
+                VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
 
         self.log.info("Step4: Hangup on PhoneC.")
@@ -1456,28 +1533,35 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneB->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[1], ads[0], None,
+                self.log,
+                ads[1],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Video Call PhoneA->PhoneC.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[2], None,
+                self.log,
+                ads[0],
+                ads[2],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
@@ -1496,15 +1580,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._vt_test_multi_call_hangup(ads)
@@ -1527,14 +1609,15 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if succeed;
             False if failed.
         """
-        self.log.info("Merge - Step1: Merge to Conf Call and verify Conf Call.")
+        self.log.info(
+            "Merge - Step1: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 1:
-            self.log.error("Total number of call ids in {} is not 1.".
-                           format(ads[0].serial))
+            self.log.error("Total number of call ids in {} is not 1.".format(
+                ads[0].serial))
             return False
         call_conf_id = None
         for call_id in calls:
@@ -1547,12 +1630,16 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                            format(call_conf_id, ads[0].droid.telecomCallGetCallState(call_conf_id)))
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
             return False
 
-        self.log.info("Merge - Step2: End call on PhoneB and verify call continues.")
+        self.log.info(
+            "Merge - Step2: End call on PhoneB and verify call continues.")
         ads[1].droid.telecomEndCall()
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
@@ -1583,8 +1670,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -1601,9 +1688,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
         call_ab_id = calls[0]
 
-        self.log.info("Step2: Initiate Video Call PhoneA->PhoneC and accept as voice.")
+        self.log.info(
+            "Step2: Initiate Video Call PhoneA->PhoneC and accept as voice.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[2], None,
+                self.log,
+                ads[0],
+                ads[2],
+                None,
                 video_state=VT_STATE_AUDIO_ONLY,
                 verify_caller_func=is_phone_in_call_voice_hd,
                 verify_callee_func=is_phone_in_call_voice_hd):
@@ -1621,15 +1712,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.log.info("Step3: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_ab_id,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_ab_id, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_ac_id,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_ac_id, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._test_vt_conference_merge_drop(ads, call_ab_id, call_ac_id)
@@ -1650,8 +1739,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -1668,9 +1757,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
         call_ab_id = calls[0]
 
-        self.log.info("Step2: Initiate Video Call PhoneC->PhoneA and accept as voice.")
+        self.log.info(
+            "Step2: Initiate Video Call PhoneC->PhoneA and accept as voice.")
         if not video_call_setup_teardown(
-                self.log, ads[2], ads[0], None,
+                self.log,
+                ads[2],
+                ads[0],
+                None,
                 video_state=VT_STATE_AUDIO_ONLY,
                 verify_caller_func=is_phone_in_call_voice_hd,
                 verify_callee_func=is_phone_in_call_voice_hd):
@@ -1688,15 +1781,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.log.info("Step3: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_ab_id,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_ab_id, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_ac_id,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_ac_id, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
         return self._test_vt_conference_merge_drop(ads, call_ab_id, call_ac_id)
@@ -1720,34 +1811,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneA->PhoneC.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[2], None,
-                verify_caller_func=None,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[2],
+                                   None,
+                                   verify_caller_func=None,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -1759,71 +1857,64 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
-        self.log.info("Step4: Swap calls on PhoneA and verify call state correct.")
+        self.log.info(
+            "Step4: Swap calls on PhoneA and verify call state correct.")
         ads[0].droid.telecomCallHold(call_id_voice_ac)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
-            self.log.info("{} audio: {}".
-                format(ad.serial, get_audio_route(self.log, ad)))
+            self.log.info("{} audio: {}".format(ad.serial, get_audio_route(
+                self.log, ad)))
             set_audio_route(self.log, ad, AUDIO_ROUTE_EARPIECE)
 
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
         if not video_call_downgrade(
-            self.log,
-            ads[0], call_id_video_ab,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], call_id_video_ab, ads[1],
+                get_call_id_in_video_state(self.log, ads[1],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
-            self.log,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_TX_ENABLED),
-            ads[0], call_id_video_ab
-            ):
+                self.log, ads[1], get_call_id_in_video_state(
+                    self.log, ads[1], VT_STATE_TX_ENABLED), ads[0],
+                call_id_video_ab):
             self.log.error("Failed to disable video on PhoneB.")
             return False
 
         self.log.info("Step6: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(
-            ads, call_id_video_ab, call_id_voice_ac)
+        return self._test_vt_conference_merge_drop(ads, call_id_video_ab,
+                                                   call_id_voice_ac)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_add_mt_voice_swap_downgrade_merge_drop(self):
@@ -1843,34 +1934,41 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1])),
-                 (phone_setup_volte, (self.log, ads[2]))]
+                 (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate Video Call PhoneA->PhoneB.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[1], None,
+                self.log,
+                ads[0],
+                ads[1],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ab = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ab is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
         self.log.info("Step2: Initiate Voice Call PhoneC->PhoneA.")
-        if not call_setup_teardown(
-                self.log, ads[2], ads[0], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=None):
+        if not call_setup_teardown(self.log,
+                                   ads[2],
+                                   ads[0],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=None):
             self.log.error("Failed to setup a call")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -1882,18 +1980,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL_PAUSED,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab,
+                VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_HOLDING):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
 
-        self.log.info("Step4: Swap calls on PhoneA and verify call state correct.")
+        self.log.info(
+            "Step4: Swap calls on PhoneA and verify call state correct.")
         ads[0].droid.telecomCallHold(call_id_voice_ac)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
@@ -1905,49 +2002,43 @@ class TelLiveVideoTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
         if not video_call_downgrade(
-            self.log,
-            ads[0], call_id_video_ab,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], call_id_video_ab, ads[1],
+                get_call_id_in_video_state(self.log, ads[1],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
-            self.log,
-            ads[1], get_call_id_in_video_state(self.log, ads[1], VT_STATE_TX_ENABLED),
-            ads[0], call_id_video_ab
-            ):
+                self.log, ads[1], get_call_id_in_video_state(
+                    self.log, ads[1], VT_STATE_TX_ENABLED), ads[0],
+                call_id_video_ab):
             self.log.error("Failed to disable video on PhoneB.")
             return False
 
         self.log.info("Step6: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(
-            ads, call_id_video_ab, call_id_voice_ac)
+        return self._test_vt_conference_merge_drop(ads, call_id_video_ab,
+                                                   call_id_voice_ac)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mo_video_downgrade_merge_drop(self):
@@ -1967,17 +2058,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate VoLTE Call PhoneA->PhoneB.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[1], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
         calls = ads[0].droid.telecomCallGetCallIds()
@@ -1989,18 +2082,23 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Step2: Initiate Video Call PhoneA->PhoneC.")
         if not video_call_setup_teardown(
-                self.log, ads[0], ads[2], None,
+                self.log,
+                ads[0],
+                ads[2],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ac = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ac = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ac is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -2009,49 +2107,43 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
         if not video_call_downgrade(
-            self.log,
-            ads[0], call_id_video_ac,
-            ads[2], get_call_id_in_video_state(self.log, ads[2], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], call_id_video_ac, ads[2],
+                get_call_id_in_video_state(self.log, ads[2],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
-            self.log,
-            ads[2], get_call_id_in_video_state(self.log, ads[2], VT_STATE_TX_ENABLED),
-            ads[0], call_id_video_ac
-            ):
+                self.log, ads[2], get_call_id_in_video_state(
+                    self.log, ads[2], VT_STATE_TX_ENABLED), ads[0],
+                call_id_video_ac):
             self.log.error("Failed to disable video on PhoneB.")
             return False
 
         self.log.info("Step6: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(
-            ads, call_id_video_ac, call_id_voice_ab)
+        return self._test_vt_conference_merge_drop(ads, call_id_video_ac,
+                                                   call_id_voice_ab)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mt_video_downgrade_merge_drop(self):
@@ -2072,17 +2164,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Phone C will drop call.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1])),
-                 (phone_setup_video, (self.log, ads[2]))]
+                 (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
+                                                           (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
         self.log.info("Step1: Initiate VoLTE Call PhoneA->PhoneB.")
-        if not call_setup_teardown(
-                self.log, ads[0], ads[1], None,
-                verify_caller_func=is_phone_in_call_volte,
-                verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(self.log,
+                                   ads[0],
+                                   ads[1],
+                                   None,
+                                   verify_caller_func=is_phone_in_call_volte,
+                                   verify_callee_func=is_phone_in_call_volte):
             self.log.error("Failed to setup a call")
             return False
         calls = ads[0].droid.telecomCallGetCallIds()
@@ -2094,18 +2188,23 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info("Step2: Initiate Video Call PhoneC->PhoneA.")
         if not video_call_setup_teardown(
-                self.log, ads[2], ads[0], None,
+                self.log,
+                ads[2],
+                ads[0],
+                None,
                 video_state=VT_STATE_BIDIRECTIONAL,
                 verify_caller_func=is_phone_in_call_video_bidirectional,
                 verify_callee_func=is_phone_in_call_video_bidirectional):
             self.log.error("Failed to setup a call")
             return False
-        call_id_video_ac = get_call_id_in_video_state(self.log, ads[0], VT_STATE_BIDIRECTIONAL)
+        call_id_video_ac = get_call_id_in_video_state(self.log, ads[0],
+                                                      VT_STATE_BIDIRECTIONAL)
         if call_id_video_ac is None:
             self.log.error("No active video call in PhoneA.")
             return False
 
-        self.log.info("Step3: Verify PhoneA's video/voice call in correct state.")
+        self.log.info(
+            "Step3: Verify PhoneA's video/voice call in correct state.")
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
         if num_active_calls(self.log, ads[0]) != 2:
@@ -2114,49 +2213,43 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_BIDIRECTIONAL,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_BIDIRECTIONAL,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
         if not video_call_downgrade(
-            self.log,
-            ads[0], call_id_video_ac,
-            ads[2], get_call_id_in_video_state(self.log, ads[2], VT_STATE_BIDIRECTIONAL)
-            ):
+                self.log, ads[0], call_id_video_ac, ads[2],
+                get_call_id_in_video_state(self.log, ads[2],
+                                           VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
-            self.log,
-            ads[2], get_call_id_in_video_state(self.log, ads[2], VT_STATE_TX_ENABLED),
-            ads[0], call_id_video_ac
-            ):
+                self.log, ads[2], get_call_id_in_video_state(
+                    self.log, ads[2], VT_STATE_TX_ENABLED), ads[0],
+                call_id_video_ac):
             self.log.error("Failed to disable video on PhoneB.")
             return False
 
         self.log.info("Step6: Verify calls in correct state.")
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_video_ac,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_ACTIVE):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_video_ac, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_ACTIVE):
             return False
-        if not verify_video_call_in_expected_state(self.log, ads[0],
-                                                   call_id_voice_ab,
-                                                   VT_STATE_AUDIO_ONLY,
-                                                   CALL_STATE_HOLDING):
+        if not verify_video_call_in_expected_state(
+                self.log, ads[0], call_id_voice_ab, VT_STATE_AUDIO_ONLY,
+                CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(
-            ads, call_id_video_ac, call_id_voice_ab)
+        return self._test_vt_conference_merge_drop(ads, call_id_video_ac,
+                                                   call_id_voice_ab)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_disable_data_vt_unavailable(self):
@@ -2172,8 +2265,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.log.info("Step1 Make sure Phones are able make VT call")
         ads = self.android_devices
         ads[0], ads[1] = ads[1], ads[0]
-        tasks = [(phone_setup_video, (self.log, ads[0])),
-                 (phone_setup_video, (self.log, ads[1]))]
+        tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
+                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2186,15 +2279,19 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 return False
 
             self.log.info("Step3 Verify vt_enabled return false.")
-            if wait_for_video_enabled(
-                    self.log, ads[0], WAIT_TIME_VOLTE_ENABLED):
-                self.log.error("{} failed to <report vt enabled false> for {}s."
-                               .format(ads[0].serial, WAIT_TIME_VOLTE_ENABLED))
+            if wait_for_video_enabled(self.log, ads[0],
+                                      WAIT_TIME_VOLTE_ENABLED):
+                self.log.error(
+                    "{} failed to <report vt enabled false> for {}s."
+                    .format(ads[0].serial, WAIT_TIME_VOLTE_ENABLED))
                 return False
             self.log.info(
                 "Step4 Attempt to make VT call, verify call is AUDIO_ONLY.")
             if not video_call_setup_teardown(
-                    self.log, ads[0], ads[1], ads[0],
+                    self.log,
+                    ads[0],
+                    ads[1],
+                    ads[0],
                     video_state=VT_STATE_BIDIRECTIONAL,
                     verify_caller_func=is_phone_in_call_voice_hd,
                     verify_callee_func=is_phone_in_call_voice_hd):
@@ -2205,4 +2302,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
             ads[0].droid.telephonyToggleDataConnection(True)
 
         return True
+
+
 """ Tests End """
