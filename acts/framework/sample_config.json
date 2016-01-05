@@ -18,6 +18,6 @@
         }
     ],
     "logpath": "/tmp/logs",
-    "testpaths": ["./test_cases"],
+    "testpaths": ["../tests"],
     "custom_param1": {"favorite_food": "Icecream!"}
 }
