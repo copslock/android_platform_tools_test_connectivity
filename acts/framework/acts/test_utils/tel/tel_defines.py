@@ -234,8 +234,8 @@ CAPABILITY_MSIM = 'msim'
 CAPABILITY_OMADM = 'omadm'
 
 # Constant for operation direction
-MOBILE_ORIGINATED = "MO"
-MOBILE_TERMINATED = "MT"
+DIRECTION_MOBILE_ORIGINATED = "MO"
+DIRECTION_MOBILE_TERMINATED = "MT"
 
 # Constant for call teardown side
 CALL_TEARDOWN_PHONE = "PHONE"
