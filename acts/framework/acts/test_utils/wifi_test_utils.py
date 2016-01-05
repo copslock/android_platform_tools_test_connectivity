@@ -529,7 +529,7 @@ def wifi_test_device_init(ad):
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     # We don't verify the following settings since they are not critical.
     sync_device_time(ad)
-    ad.droid.toggleDataConnection(False)
+    ad.droid.telephonyToggleDataConnection(False)
     # TODO(angli): need to verify the country code was actually set. No generic
     # way to check right now.
     ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
