@@ -22,6 +22,7 @@ from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
@@ -38,6 +39,8 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family

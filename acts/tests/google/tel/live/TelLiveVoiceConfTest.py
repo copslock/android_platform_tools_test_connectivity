@@ -26,6 +26,7 @@ from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts.test_utils.tel.tel_defines import CARRIER_VZW
+from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
@@ -34,6 +35,8 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_call_uri
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import is_uri_equivalent
