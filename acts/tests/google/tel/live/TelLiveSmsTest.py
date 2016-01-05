@@ -20,6 +20,7 @@
 import time
 from queue import Empty
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
@@ -27,6 +28,8 @@ from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
