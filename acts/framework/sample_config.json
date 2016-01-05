@@ -2,22 +2,22 @@
     "testbed":
     [
         {
-            "_description": "A testbed with two android devices.",
+            "_description": "Sample testbed with two android devices",
             "name": "Enterprise-D",
             "AndroidDevice": ["<serial>", "<serial>"]
         },
         {
-            "_description": "A testbed with two android devices.",
+            "_description": "Sample testbed with two android devices",
             "name": "Enterprise-E",
             "AndroidDevice": [{"serial": "<serial>", "label": "caller"},
                               {"serial": "<serial>", "label": "callee", "whatever": "anything"}]
         },
         {
-            "_description": "Another testbed with one android device.",
+            "_description": "Sample testbed with no devices",
             "name": "SampleTestBed"
         }
     ],
     "logpath": "/tmp/logs",
-    "testpaths": ["../tests"],
+    "testpaths": ["../tests/sample"],
     "custom_param1": {"favorite_food": "Icecream!"}
 }

@@ -12,4 +12,4 @@ Setup:
     2. Run "python3.4 setup.py install" with elevated permissions
 
 To verify ACTS is ready to go, at the location for README, run
-    act.py -c sample_config.txt -tb SampleTestBed -tc SampleTest
+    act.py -c sample_config.json -tb SampleTestBed -tc SampleTest
