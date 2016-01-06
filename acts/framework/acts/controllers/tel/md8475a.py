@@ -30,6 +30,7 @@ TERMINATOR = "\0"
 SMARTSTUDIO_LAUNCH_WAIT_TIME = 90
 SMARTSTUDIO_SIMULATION_START_WAIT_TIME = 120
 REGISTRATION_STATE_WAIT_TIME = 240
+LOAD_SIMULATION_PARAM_FILE_WAIT_TIME = 30
 COMMUNICATION_STATE_WAIT_TIME = 240
 ANRITSU_SOCKET_BUFFER_SIZE = 8192
 COMMAND_COMPLETE_WAIT_TIME = 90
@@ -248,6 +249,27 @@ _PROCESS_STATES = {
     "NWRELEASE": ProcessingStatus.PROCESS_STATUS_NWRELEASE,
 }
 
+class ImsCscfStatus(Enum):
+    """ MD8475A ims cscf status for UE
+    """
+    OFF = "OFF"
+    SIPIDLE = "SIPIDLE"
+    CONNECTED = "CONNECTED"
+    CALLING = "CALLING"
+    RINGING = "RINGING"
+    UNKNOWN = "UNKNOWN"
+
+class ImsCscfCall(Enum):
+    """ MD8475A ims cscf call action
+    """
+    MAKE = "MAKE"
+    END = "END"
+    MAKEVIDEO = "MAKEVIDEO"
+    MAKE2ND = "MAKE2ND"
+    END2ND = "END2ND"
+    ANSWER = "ANSWER"
+    HOLD = "HOLD"
+    RESUME = "RESUME"
 
 class VirtualPhoneStatus(IntEnum):
     ''' MD8475A virtual phone status for UE voice and UE video
@@ -394,6 +416,31 @@ class MD8475A():
             Anritsu Trigger Message Module Object
         """
         return _TriggerMessage(self)
+
+    def get_ims_cscf_status(self, virtual_network_id):
+        """ Get the IMS CSCF Status of virtual network
+
+        Args:
+            virtual_network_id: virtual network id
+
+        Returns:
+            IMS CSCF status
+        """
+        cmd = "IMSCSCFSTAT? {}".format(virtual_network_id)
+        return self.send_query(cmd)
+
+    def ims_cscf_call_action(self, virtual_network_id, action):
+        """ IMS CSCF Call action
+
+        Args:
+            virtual_network_id: virtual network id
+            action: action to make
+
+        Returns:
+            None
+        """
+        cmd = "IMSCSCFCALL {},{}".format(virtual_network_id, action)
+        self.send_command(cmd)
 
     def send_query(self, query, sock_timeout=10):
         """ Sends a Query message to Anritsu and return response
@@ -594,7 +641,7 @@ class MD8475A():
         """
         self.stop_simulation()
         cmd = "LOADSIMPARAM \"" + filepath + '\";ERROR?'
-        self.send_query(cmd)
+        self.send_query(cmd, LOAD_SIMULATION_PARAM_FILE_WAIT_TIME)
 
     def load_cell_paramfile(self, filepath):
         """ loads cell model parameter file

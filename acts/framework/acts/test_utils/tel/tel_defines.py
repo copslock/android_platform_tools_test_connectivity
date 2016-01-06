@@ -86,7 +86,7 @@ WAIT_TIME_BETWEEN_REG_AND_CALL = 5
 WAIT_TIME_IMS_REGISTRATION = 120
 
 # Max time to wait after initiating a call for telecom to report in-call
-WAIT_TIME_CALL_INITIATION = 15
+WAIT_TIME_CALL_INITIATION = 25
 
 # Time to wait for 1xrtt voice attach check
 # After DUT voice network type report 1xrtt (from unknown), it need to wait for
@@ -173,6 +173,10 @@ WAIT_TIME_ANRITSU_REG_AND_OPER = 10
 
 # Time to wait for Anritsu's virtual phone state change
 WAIT_TIME_FOR_VIRTUAL_PHONE_STATE = 45
+
+# Time to wait for Anritsu's IMS CSCF state change
+WAIT_TIME_FOR_IMS_CSCF_STATE = 30
+
 
 # SIM1 slot index
 SIM1_SLOT_INDEX = 0

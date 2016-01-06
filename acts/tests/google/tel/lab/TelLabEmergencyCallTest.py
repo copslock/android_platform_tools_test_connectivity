@@ -25,6 +25,7 @@ from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import VirtualPhoneAutoAnswer
 from acts.controllers.tel.md8475a import VirtualPhoneStatus
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
@@ -34,7 +35,10 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_test_anritsu_utils import call_mo_setup_teardown
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_1x
 from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_gsm
@@ -44,11 +48,17 @@ from acts.test_utils.tel.tel_test_anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 
 
 class TelLabEmergencyCallTest(TelephonyBaseTest):
 
     CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\2cell_param.wnscp'
+    CELL_PARAM_FILE_FOR_VOLTE = \
+        'C:\\MX847570\\CellParam\\ACTS\\LTE_VOLTE_CELL_PARAMETER.wnscp'
+    SIM_PARAM_FILE_FOR_VOLTE = \
+        'C:\\MX847570\\SimParam\\ACTS\\LTE_VOLTE_SIM_PARAMETER.wnssp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
@@ -57,7 +67,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                       "test_emergency_call_lte_1x_csfb",
                       "test_emergency_call_wcdma", "test_emergency_call_gsm",
                       "test_emergency_call_1x", "test_emergency_call_1x_apm",
-                      "test_emergency_call_wcdma_apm")
+                      "test_emergency_call_wcdma_apm",
+                      "test_emergency_call_volte")
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
@@ -88,14 +99,25 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def _setup_emergency_call(self,
+                              cell_param_file,
                               set_simulation_func,
+                              simulation_param_file,
                               phone_setup_func,
+                              phone_idle_func_after_registration=None,
+                              is_ims_call=False,
                               is_wait_for_registration=True,
-                              csfb_type=None):
+                              csfb_type=None,
+                              emergency_number="911",
+                              teardown_side=CALL_TEARDOWN_PHONE,
+                              wait_time_in_call=WAIT_TIME_IN_CALL):
         try:
             self.anritsu.reset()
-            self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
-            set_simulation_func(self.anritsu, self.user_params)
+            if cell_param_file:
+                self.anritsu.load_cell_paramfile(cell_param_file)
+            if set_simulation_func:
+                set_simulation_func(self.anritsu, self.user_params)
+            if simulation_param_file:
+                self.anritsu.load_simulation_paramfile(simulation_param_file)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
             self.anritsu.start_simulation()
@@ -111,15 +133,21 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             if is_wait_for_registration:
                 self.anritsu.wait_for_registration_state()
 
+            if phone_idle_func_after_registration:
+                if not phone_idle_func_after_registration(self.log, self.ad):
+                    return False
+
             time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
             if not call_mo_setup_teardown(self.log,
                                           self.ad,
-                                          self.virtualPhoneHandle,
-                                          "911",
-                                          teardown_side="phone",
-                                          is_emergency=True):
-                self.log.error("Phone {} Failed to make emergency call to 911"
-                               .format(self.ad.serial))
+                                          self.anritsu,
+                                          emergency_number,
+                                          CALL_TEARDOWN_PHONE,
+                                          True,
+                                          WAIT_TIME_IN_CALL,
+                                          is_ims_call):
+                self.log.error("Phone {} Failed to make emergency call to {}"
+                               .format(self.ad.serial, emergency_number))
                 return False
         except AnritsuError as e:
             self.log.error("Error in connection with Anritsu Simulator: " +
@@ -132,48 +160,51 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def _phone_setup_lte_wcdma(self, ad):
-        ensure_network_rat(self.log,
-                           ad,
-                           NETWORK_MODE_LTE_GSM_WCDMA,
-                           RAT_FAMILY_LTE,
-                           toggle_apm_after_setting=True)
-        return True
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_LTE_GSM_WCDMA,
+                                  RAT_FAMILY_LTE,
+                                  toggle_apm_after_setting=True)
 
     def _phone_setup_lte_1x(self, ad):
-        ensure_network_rat(self.log,
-                           ad,
-                           NETWORK_MODE_LTE_CDMA_EVDO,
-                           RAT_FAMILY_LTE,
-                           toggle_apm_after_setting=True)
-        return True
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_LTE_CDMA_EVDO,
+                                  RAT_FAMILY_LTE,
+                                  toggle_apm_after_setting=True)
 
     def _phone_setup_wcdma(self, ad):
-        ensure_network_rat(self.log,
-                           ad,
-                           NETWORK_MODE_GSM_UMTS,
-                           RAT_FAMILY_UMTS,
-                           toggle_apm_after_setting=True)
-        return True
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_GSM_UMTS,
+                                  RAT_FAMILY_UMTS,
+                                  toggle_apm_after_setting=True)
 
     def _phone_setup_gsm(self, ad):
-        ensure_network_rat(self.log,
-                           ad,
-                           NETWORK_MODE_GSM_ONLY,
-                           RAT_FAMILY_GSM,
-                           toggle_apm_after_setting=True)
-        return True
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_GSM_ONLY,
+                                  RAT_FAMILY_GSM,
+                                  toggle_apm_after_setting=True)
 
     def _phone_setup_1x(self, ad):
-        ensure_network_rat(self.log,
-                           ad,
-                           NETWORK_MODE_CDMA,
-                           RAT_FAMILY_CDMA2000,
-                           toggle_apm_after_setting=True)
-        return True
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_CDMA,
+                                  RAT_FAMILY_CDMA2000,
+                                  toggle_apm_after_setting=True)
 
     def _phone_setup_airplane_mode(self, ad):
-        toggle_airplane_mode(self.log, ad, True)
-        return True
+        return toggle_airplane_mode(self.log, ad, True)
+
+    def _phone_setup_volte(self, ad):
+        ad.droid.telephonyToggleDataConnection(True)
+        toggle_volte(self.log, ad, True)
+        return ensure_network_rat(self.log,
+                                  ad,
+                                  NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA,
+                                  RAT_FAMILY_LTE,
+                                  toggle_apm_after_setting=True)
 
     """ Tests Begin """
 
@@ -198,7 +229,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
             set_system_model_lte_wcdma,
+            None,
             self._phone_setup_lte_wcdma,
             csfb_type=CsfbType.CSFB_TYPE_REDIRECTION)
 
@@ -223,7 +256,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
             set_system_model_lte_wcdma,
+            None,
             self._phone_setup_lte_wcdma,
             csfb_type=CsfbType.CSFB_TYPE_HANDOVER)
 
@@ -246,7 +281,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_lte_1x,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_lte_1x,
+                                          None,
                                           self._phone_setup_lte_1x)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -268,7 +305,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_wcdma,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_wcdma,
+                                          None,
                                           self._phone_setup_wcdma)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -290,7 +329,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_gsm,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_gsm,
+                                          None,
                                           self._phone_setup_gsm)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -312,7 +353,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_1x,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_1x,
+                                          None,
                                           self._phone_setup_1x)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -334,7 +377,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_1x,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_1x, None,
                                           self._phone_setup_airplane_mode,
                                           is_wait_for_registration=False)
 
@@ -357,8 +401,18 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self._setup_emergency_call(set_system_model_wcdma,
+        return self._setup_emergency_call(self.CELL_PARAM_FILE,
+                                          set_system_model_wcdma, None,
                                           self._phone_setup_airplane_mode,
                                           is_wait_for_registration=False)
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_volte(self):
+        return self._setup_emergency_call(self.CELL_PARAM_FILE_FOR_VOLTE,
+                                          None,
+                                          self.SIM_PARAM_FILE_FOR_VOLTE,
+                                          self._phone_setup_volte,
+                                          phone_idle_volte,
+                                          is_ims_call=True,
+                                          wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
     """ Tests End """

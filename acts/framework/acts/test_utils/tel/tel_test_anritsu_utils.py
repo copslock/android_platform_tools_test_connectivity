@@ -25,6 +25,8 @@ from acts.controllers.tel.md8475a import BtsNwNameEnable
 from acts.controllers.tel.md8475a import BtsServiceState
 from acts.controllers.tel.md8475a import BtsTechnology
 from acts.controllers.tel.md8475a import CsfbType
+from acts.controllers.tel.md8475a import ImsCscfCall
+from acts.controllers.tel.md8475a import ImsCscfStatus
 from acts.controllers.tel.md8475a import MD8475A
 from acts.controllers.tel.md8475a import ReturnToEUTRAN
 from acts.controllers.tel.md8475a import VirtualPhoneStatus
@@ -32,6 +34,7 @@ from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_DROP
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_IMS_CSCF_STATE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_VIRTUAL_PHONE_STATE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import EventCmasReceived
@@ -164,6 +167,9 @@ PDN_NO_1 = 1
 #Cell Numbers
 CELL_1 = 1
 CELL_2 = 2
+
+# default ims virtual network id for Anritsu ims call test.
+DEFAULT_IMS_VIRTUAL_NETWORK_ID = 1
 
 
 def cb_serial_number():
@@ -638,20 +644,24 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
 
 def call_mo_setup_teardown(log,
                            ad,
-                           virtual_phone_handle,
+                           anritsu_handle,
                            callee_number,
                            teardown_side=CALL_TEARDOWN_PHONE,
                            is_emergency=False,
-                           wait_time_in_call=WAIT_TIME_IN_CALL):
+                           wait_time_in_call=WAIT_TIME_IN_CALL,
+                           is_ims_call=False,
+                           ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
     """ Makes a MO call and tear down the call
 
     Args:
         ad: Android device object.
-        virtual_phone_handle: Anritsu virtual phone handle.
+        anritsu_handle: Anritsu object.
         callee_number: Number to be called.
         teardown_side: the side to end the call (Phone or remote).
         is_emergency: is the call an emergency call.
         wait_time_in_call: Time to wait when phone in call.
+        is_ims_call: is the call expected to be ims call.
+        ims_virtual_network_id: ims virtual network id.
 
     Returns:
         True for success False for failure
@@ -661,20 +671,37 @@ def call_mo_setup_teardown(log,
         pass
 
     log.info("Making Call to " + callee_number)
+    virtual_phone_handle = anritsu_handle.get_VirtualPhone()
 
     try:
-        if not wait_for_virtualphone_state(log, virtual_phone_handle,
-                                           VirtualPhoneStatus.STATUS_IDLE):
-            raise _CallSequenceException("Virtual Phone not idle.")
+        if is_ims_call:
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.SIPIDLE.value):
+                raise _CallSequenceException("Phone IMS status is not idle.")
+        else:
+            if not wait_for_virtualphone_state(log, virtual_phone_handle,
+                                               VirtualPhoneStatus.STATUS_IDLE):
+                raise _CallSequenceException("Virtual Phone not idle.")
 
         if not initiate_call(log, ad, callee_number, is_emergency):
             raise _CallSequenceException("Initiate call failed.")
 
-        # check Virtual phone answered the call
-        if not wait_for_virtualphone_state(
-                log, virtual_phone_handle,
-                VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
-            raise _CallSequenceException("Virtual Phone not in call.")
+        if is_ims_call:
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.CALLING.value):
+                raise _CallSequenceException("Phone IMS status is not calling.")
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.CONNECTED.value):
+                raise _CallSequenceException("Phone IMS status is not connected.")
+        else:
+            # check Virtual phone answered the call
+            if not wait_for_virtualphone_state(
+                    log, virtual_phone_handle,
+                    VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
+                raise _CallSequenceException("Virtual Phone not in call.")
 
         time.sleep(wait_time_in_call)
 
@@ -683,7 +710,11 @@ def call_mo_setup_teardown(log,
 
         if teardown_side is CALL_TEARDOWN_REMOTE:
             log.info("Disconnecting the call from Remote")
-            virtual_phone_handle.set_voice_on_hook()
+            if is_ims_call:
+                anritsu_handle.ims_cscf_call_action(ims_virtual_network_id,
+                                                    ImsCscfCall.END.value)
+            else:
+                virtual_phone_handle.set_voice_on_hook()
             if not wait_for_droid_not_in_call(log, ad, WAIT_TIME_CALL_DROP):
                 raise _CallSequenceException("DUT call not drop.")
         else:
@@ -692,9 +723,15 @@ def call_mo_setup_teardown(log,
                 raise _CallSequenceException(
                     "Error in Hanging-Up Call on DUT.")
 
-        if not wait_for_virtualphone_state(log, virtual_phone_handle,
-                                           VirtualPhoneStatus.STATUS_IDLE):
-            raise _CallSequenceException(
+        if is_ims_call:
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.SIPIDLE.value):
+                raise _CallSequenceException("Phone IMS status is not idle.")
+        else:
+            if not wait_for_virtualphone_state(log, virtual_phone_handle,
+                                               VirtualPhoneStatus.STATUS_IDLE):
+                raise _CallSequenceException(
                 "Virtual Phone not idle after hangup.")
         return True
 
@@ -707,7 +744,6 @@ def call_mo_setup_teardown(log,
                 ad.droid.telecomEndCall()
         except Exception as e:
             log.error(str(e))
-
 
 def call_mt_setup_teardown(log,
                            ad,
@@ -880,6 +916,28 @@ def sms_mt_receive_verify(log, ad, vp_handle, sender_number, message, rat=""):
         ad.droid.smsStopTrackingIncomingMessage()
     return True
 
+def wait_for_ims_cscf_status(log,
+                             anritsu_handle,
+                             virtual_network_id,
+                             status,
+                             timeout=WAIT_TIME_FOR_IMS_CSCF_STATE):
+    """ Wait for IMS CSCF to be in expected state.
+
+    Args:
+        log: log object
+        anritsu_handle: anritsu object
+        virtual_network_id: virtual network id to be monitored
+        status: expected status
+        timeout: wait time
+    """
+    sleep_interval = 1
+    wait_time = timeout
+    while wait_time > 0:
+        if status == anritsu_handle.get_ims_cscf_status(virtual_network_id):
+            return True
+        time.sleep(sleep_interval)
+        wait_time = wait_time - sleep_interval
+    return False
 
 def wait_for_virtualphone_state(log,
                                 vp_handle,
