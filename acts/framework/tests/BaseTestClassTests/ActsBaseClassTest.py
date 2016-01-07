@@ -18,7 +18,6 @@ from acts.base_test import BaseTestClass
 from acts.signals import generated_test
 from acts.signals import TestSignal
 from acts.signals import TestSignalError
-from acts.utils import sync_device_time
 
 class Something:
     """Empty class used to test json serialization check."""
@@ -38,6 +37,10 @@ class ActsBaseClassTest(BaseTestClass):
         self.tests = (
             "test_none_existent",
             "invalid_test_name",
+            "test_current_test_case_name",
+            "test_setup_test_fail_by_exception",
+            "test_setup_test_fail_by_test_signal",
+            "test_setup_test_fail_by_return_False",
             "test_uncaught_exception",
             "test_return_True",
             "test_implicit_pass",
@@ -61,6 +64,14 @@ class ActsBaseClassTest(BaseTestClass):
     def setup_test(self):
         """Make sure empty setup_test does not block.
         """
+        if "setup_test_fail_by_exception" in self.current_test_name:
+            raise Exception("Expected failure because setup_test failed by "
+                            "uncaught exception.")
+        elif "setup_test_fail_by_test_signal" in self.current_test_name:
+            self.fail("Excepted failure because setup_test failed by test "
+                      "signal.")
+        elif "setup_test_fail_by_return_False" in self.current_test_name:
+            return False
 
     def on_pass(self, test_name, begin_time):
         self.log.info("In on_pass.")
@@ -83,7 +94,8 @@ class ActsBaseClassTest(BaseTestClass):
             "test_generated_explicit_pass",
             "test_invalid_signal_details",
             "test_invalid_signal_extras",
-            "test_generated_test_with_kwargs_case"
+            "test_generated_test_with_kwargs_case",
+            "test_current_test_case_name"
         )
         assert test_name in expected_success, msg
 
@@ -115,7 +127,9 @@ class ActsBaseClassTest(BaseTestClass):
         msg = "%s should not have thrown exception." % test_name
         expected_exception = (
             "test_uncaught_exception",
-            "test_generated_uncaught_exception"
+            "test_generated_uncaught_exception",
+            "test_setup_test_fail_by_exception",
+            "test_generated_setup_test_fail_by_exception"
         )
         assert test_name in expected_exception , msg
 
@@ -140,6 +154,22 @@ class ActsBaseClassTest(BaseTestClass):
 
     def invalid_test_name(self):
         assert False, "This should never be executed!"
+
+    def test_current_test_case_name(self):
+        my_name = "test_current_test_case_name"
+        self.assert_true(self.current_test_name == my_name,
+            "Expected current_test_name to be %s, got %s" % (
+                my_name, self.current_test_name))
+
+    def test_setup_test_fail_by_exception(self):
+        self.fail("This line should not have been executed!")
+
+    def test_setup_test_fail_by_test_signal(self):
+        self.fail("This line should not have been executed!")
+
+    def test_setup_test_fail_by_return_False(self):
+        self.fail("This line should not have been executed!")
+
 
     def test_uncaught_exception(self):
         raise Exception("This should fail because of uncaught exception.")
@@ -284,6 +314,9 @@ class ActsBaseClassTest(BaseTestClass):
     def test_generated_tests(self):
         params = [
             "return_False",
+            "setup_test_fail_by_exception",
+            "setup_test_fail_by_test_signal",
+            "setup_test_fail_by_return_False",
             "assert_true",
             "assert_true_with_extras",
             "implicit_pass",
@@ -302,8 +335,6 @@ class ActsBaseClassTest(BaseTestClass):
             self.generated_test_logic,
             params, self.EXTRA_ARG,
             name_func=self.name_gen)
-        expected_fails = params[1:]
-        self.assert_true(expected_fails == failed, "This should pass.")
 
     @generated_test
     def test_generated_test_with_kwargs(self):
