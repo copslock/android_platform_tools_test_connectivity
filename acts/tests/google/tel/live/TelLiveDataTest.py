@@ -30,16 +30,16 @@ from acts.test_utils.tel.tel_defines import RAT_2G
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_4G
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
-from acts.test_utils.tel.tel_defines import TETHERING_ENTITLEMENT_CHECK_TIMEOUT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import \
-    WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_TETHERING_AFTER_REBOOT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_CONNECTION
+    WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts.test_utils.tel.tel_data_utils import ensure_wifi_connected
@@ -234,7 +234,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                          GEN_4G):
 
             self.log.error("Device {} failed to reselect in {}s.".format(
-                self.android_devices[0].serial, WAIT_TIME_NW_SELECTION))
+                self.android_devices[0].serial, MAX_WAIT_TIME_NW_SELECTION))
             return False
 
         if not wait_for_network_rat(self.log,
@@ -363,17 +363,17 @@ class TelLiveDataTest(TelephonyBaseTest):
         ensure_phones_idle(self.log, ad_list)
 
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         nw_gen, WAIT_TIME_NW_SELECTION,
+                                         nw_gen, MAX_WAIT_TIME_NW_SELECTION,
                                          NETWORK_SERVICE_DATA):
 
             self.log.error("Device failed to reselect in {}s.".format(
-                WAIT_TIME_NW_SELECTION))
+                MAX_WAIT_TIME_NW_SELECTION))
             return False
 
         if not wait_for_voice_attach_for_subscription(
                 self.log, self.android_devices[0], self.android_devices[
                     0].droid.subscriptionGetDefaultVoiceSubId(),
-                WAIT_TIME_NW_SELECTION):
+                MAX_WAIT_TIME_NW_SELECTION):
             return False
 
         self.log.info("Step1 WiFi is Off, Data is on Cell.")
@@ -658,9 +658,9 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         if not ensure_network_generation(
                 self.log, self.android_devices[0], network_generation,
-                WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             self.log.error("Device failed to reselect in {}s.".format(
-                WAIT_TIME_NW_SELECTION))
+                MAX_WAIT_TIME_NW_SELECTION))
             return False
 
         self.log.info("Airplane Off, Wifi Off, Data On.")
@@ -946,7 +946,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info(
                 "Disable Data on Provider, verify no data on Client.")
             ads[0].droid.telephonyToggleDataConnection(False)
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if verify_http_connection(self.log, ads[0]):
                 self.log.error("Disable data on provider failed.")
                 return False
@@ -965,7 +965,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info(
                 "Enable Data on Provider, verify data available on Client.")
             ads[0].droid.telephonyToggleDataConnection(True)
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if not verify_http_connection(self.log, ads[0]):
                 self.log.error("Enable data on provider failed.")
                 return False
@@ -1032,7 +1032,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     toggle_apm_after_setting=False):
                 self.log.error("Provider failed to reselect to 3G.")
                 return False
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if not verify_http_connection(self.log, ads[0]):
                 self.log.error("Data not available on Provider.")
                 return False
@@ -1094,7 +1094,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     toggle_apm_after_setting=False):
                 self.log.error("Provider failed to reselect to 4G.")
                 return False
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if not verify_http_connection(self.log, ads[0]):
                 self.log.error("Data not available on Provider.")
                 return False
@@ -1151,7 +1151,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not toggle_airplane_mode(self.log, ads[0], True):
                 self.log.error("Provider turn on APM failed.")
                 return False
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if ads[0].droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering not stopped.")
                 return False
@@ -1171,7 +1171,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not toggle_airplane_mode(self.log, ads[0], False):
                 self.log.error("Provider turn on APM failed.")
                 return False
-            time.sleep(WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
+            time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
             if ads[0].droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering should not on.")
                 return False
@@ -1195,7 +1195,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
 
         result = ad.droid.carrierConfigIsTetheringModeAllowed(
-            TETHERING_MODE_WIFI, TETHERING_ENTITLEMENT_CHECK_TIMEOUT)
+            TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK)
         self.log.info("{} tethering entitlement check result: {}.".format(
             ad.serial, result))
         return result
@@ -1734,7 +1734,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("Reboot DUT:{}".format(ads[0].serial))
             ads[0].reboot()
             time.sleep(WAIT_TIME_AFTER_REBOOT +
-                       WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
+                       WAIT_TIME_TETHERING_AFTER_REBOOT)
 
             self.log.info("After reboot check if tethering stopped.")
             if ads[0].droid.wifiIsApEnabled():
@@ -1796,7 +1796,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("Reboot DUT:{}".format(ads[0].serial))
             ads[0].reboot()
             time.sleep(WAIT_TIME_AFTER_REBOOT)
-            time.sleep(WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
+            time.sleep(WAIT_TIME_TETHERING_AFTER_REBOOT)
 
             self.log.info("After reboot check if tethering stopped.")
             if ads[0].droid.wifiIsApEnabled():
@@ -1851,7 +1851,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Reboot DUT:{}".format(ads[0].serial))
         ads[0].reboot()
         time.sleep(WAIT_TIME_AFTER_REBOOT)
-        time.sleep(WAIT_TIME_FOR_TETHERING_AFTER_REBOOT)
+        time.sleep(WAIT_TIME_TETHERING_AFTER_REBOOT)
 
         return wifi_tethering_setup_teardown(
             self.log,
@@ -1950,7 +1950,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         if not ensure_network_generation(self.log, ad, GEN_4G):
             self.log.error("Device {} failed to reselect in {}s.".format(
-                ad.serial, WAIT_TIME_NW_SELECTION))
+                ad.serial, MAX_WAIT_TIME_NW_SELECTION))
             return False
 
         for toggle in wifi_toggles:
@@ -1958,7 +1958,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             WifiUtils.wifi_reset(self.log, ad, toggle)
 
             if not wait_for_cell_data_connection(self.log, ad, True,
-                                                 WAIT_TIME_WIFI_CONNECTION):
+                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
@@ -1974,7 +1974,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                    self.wifi_network_pass)
 
             if not wait_for_wifi_data_connection(self.log, ad, True,
-                                                 WAIT_TIME_WIFI_CONNECTION):
+                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 

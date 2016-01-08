@@ -27,11 +27,11 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_MSIM
 from acts.test_utils.tel.tel_defines import CAPABILITY_OMADM
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -65,7 +65,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
             toggle_airplane_mode(log, ad, False)
             sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
             if not wait_for_voice_attach_for_subscription(
-                    log, ad, sub_id, WAIT_TIME_NW_SELECTION):
+                    log, ad, sub_id, MAX_WAIT_TIME_NW_SELECTION):
                 log.error("{} didn't find a cell network".format(ad.serial))
                 return False
             return True

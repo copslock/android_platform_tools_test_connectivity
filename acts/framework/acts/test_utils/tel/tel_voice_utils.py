@@ -21,6 +21,9 @@ from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
@@ -34,10 +37,7 @@ from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import RAT_UMTS
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_TO_LEAVE_VOICE_MAIL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WFC_ENABLED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
@@ -81,7 +81,7 @@ def two_phone_call_leave_voice_mail(
         caller_in_call_check_func,
         callee,
         callee_idle_func,
-        wait_time_in_call=WAIT_TIME_TO_LEAVE_VOICE_MAIL):
+        wait_time_in_call=WAIT_TIME_LEAVE_VOICE_MAIL):
     """Call from caller to callee, reject on callee, caller leave a voice mail.
 
     1. Caller call Callee.
@@ -96,7 +96,7 @@ def two_phone_call_leave_voice_mail(
         callee: callee android device object.
         callee_idle_func: function to check callee's idle state.
         wait_time_in_call: time to wait when leaving a voice mail.
-            This is optional, default is WAIT_TIME_TO_LEAVE_VOICE_MAIL
+            This is optional, default is WAIT_TIME_LEAVE_VOICE_MAIL
 
     Returns:
         True: if voice message is received on callee successfully.
@@ -426,9 +426,9 @@ def phone_setup_iwlan_cellular_preferred(log,
                             voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat in iwlan mode.".format(ad.serial))
         return False
-    if wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
+    if wait_for_wfc_enabled(log, ad, MAX_WAIT_TIME_WFC_ENABLED):
         log.error("{} should not <report wfc enabled true> within {}s.".format(
-            ad.serial, WAIT_TIME_WFC_ENABLED))
+            ad.serial, MAX_WAIT_TIME_WFC_ENABLED))
         return False
     return True
 
@@ -479,7 +479,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  WAIT_TIME_NW_SELECTION):
+                                                  MAX_WAIT_TIME_NW_SELECTION):
         return False
 
     return phone_idle_csfb_for_subscription(log, ad, sub_id)
@@ -524,7 +524,7 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
         return False
 
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  WAIT_TIME_NW_SELECTION):
+                                                  MAX_WAIT_TIME_NW_SELECTION):
         return False
 
     return phone_idle_3g_for_subscription(log, ad, sub_id)
@@ -643,7 +643,7 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
     """
     toggle_airplane_mode(log, ad, False)
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  WAIT_TIME_NW_SELECTION):
+                                                  MAX_WAIT_TIME_NW_SELECTION):
         # if phone can not attach voice, try phone_setup_3g
         return phone_setup_3g_for_subscription(log, ad, sub_id)
 
@@ -735,10 +735,10 @@ def phone_idle_volte_for_subscription(log, ad, sub_id):
             voice_or_data=NETWORK_SERVICE_VOICE):
         log.error("{} voice rat not in LTE mode.".format(ad.serial))
         return False
-    if not wait_for_volte_enabled(log, ad, WAIT_TIME_VOLTE_ENABLED):
+    if not wait_for_volte_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
         log.error(
             "{} failed to <report volte enabled true> within {}s.".format(
-                ad.serial, WAIT_TIME_VOLTE_ENABLED))
+                ad.serial, MAX_WAIT_TIME_VOLTE_ENABLED))
         return False
     return True
 
@@ -768,9 +768,9 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
             voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat not in iwlan mode.".format(ad.serial))
         return False
-    if not wait_for_wfc_enabled(log, ad, WAIT_TIME_WFC_ENABLED):
+    if not wait_for_wfc_enabled(log, ad, MAX_WAIT_TIME_WFC_ENABLED):
         log.error("{} failed to <report wfc enabled true> within {}s.".format(
-            ad.serial, WAIT_TIME_WFC_ENABLED))
+            ad.serial, MAX_WAIT_TIME_WFC_ENABLED))
         return False
     return True
 
