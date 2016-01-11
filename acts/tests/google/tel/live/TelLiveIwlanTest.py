@@ -33,12 +33,12 @@ from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import RAT_LTE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_IMS_REGISTRATION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_USER_PLANE_DATA
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WFC_ENABLED
-from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_CONNECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_IMS_REGISTRATION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_USER_PLANE_DATA
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 
@@ -96,7 +96,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         ad.droid.wakeUpNow()
 
         if not wait_for_wifi_data_connection(self.log, ad, True,
-                                             WAIT_TIME_WIFI_CONNECTION):
+                                             MAX_WAIT_TIME_WIFI_CONNECTION):
             self.log.error("Failed wifi connection, aborting!")
             return False
         time_values['wifi_connected'] = time.time()
@@ -128,14 +128,14 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             'iwlan_rat'] - time_values['wifi_data']))
 
         if not wait_for_ims_registered(self.log, ad,
-                                       WAIT_TIME_IMS_REGISTRATION):
+                                       MAX_WAIT_TIME_IMS_REGISTRATION):
             self.log.error("Never received IMS registered, aborting")
             return False
         time_values['ims_registered'] = time.time()
         self.log.info("Ims Registered After {}s".format(time_values[
             'ims_registered'] - time_values['iwlan_rat']))
 
-        if not wait_for_wfc_enabled(self.log, ad, WAIT_TIME_WFC_ENABLED):
+        if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
             self.log.error("Never received WFC feature, aborting")
             return False
 
@@ -190,7 +190,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         self.log.info("Setup Device in LTE with VoLTE Enabled, Wifi Disabled")
 
         if not ensure_network_rat(self.log, ad, RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             self.log.error("Device failed to select {}".format("lte"))
             return False
@@ -198,7 +198,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
         toggle_volte(self.log, ad, True)
-        if not wait_for_volte_enabled(self.log, ad, WAIT_TIME_VOLTE_ENABLED):
+        if not wait_for_volte_enabled(self.log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
             self.log.error("Device failed to acquire VoLTE service")
             return False
 
@@ -210,7 +210,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
         if not wait_for_wifi_data_connection(
                 self.log, ad, True,
-                WAIT_TIME_WIFI_CONNECTION + WAIT_TIME_USER_PLANE_DATA):
+                MAX_WAIT_TIME_WIFI_CONNECTION + MAX_WAIT_TIME_USER_PLANE_DATA):
             self.log.error("Data did not come up on wifi")
             return False
 
@@ -241,7 +241,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             self.log.info("Step {}-3: Wait for IMS Registration".format(i))
 
             if not wait_for_ims_registered(self.log, ad,
-                                           WAIT_TIME_IMS_REGISTRATION):
+                                           MAX_WAIT_TIME_IMS_REGISTRATION):
                 self.log.error("Never received IMS registered!")
                 return False
 
@@ -250,7 +250,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             # Once IMS is registered on IWLAN,
             # this should be almost instantaneous.
             # leaving 2 seconds to be generous
-            if not wait_for_wfc_enabled(self.log, ad, WAIT_TIME_WFC_ENABLED):
+            if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
                 self.log.error("Never received WFC Feature!")
                 return False
 
@@ -269,7 +269,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
                 i))
 
             if not wait_for_volte_enabled(self.log, ad,
-                                          WAIT_TIME_VOLTE_ENABLED):
+                                          MAX_WAIT_TIME_VOLTE_ENABLED):
                 self.log.error("Device failed to acquire VoLTE service")
                 return False
         return True
@@ -302,14 +302,14 @@ class TelLiveIwlanTest(TelephonyBaseTest):
         self.log.info("Setup Device in LTE with VoLTE Enabled, Wifi Disabled")
 
         if not ensure_network_rat(self.log, ad, RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             self.log.error("Device failed to select {}".format("lte"))
             return False
 
         toggle_volte(self.log, ad, True)
 
-        if not wait_for_volte_enabled(self.log, ad, WAIT_TIME_VOLTE_ENABLED):
+        if not wait_for_volte_enabled(self.log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
             self.log.error("Device failed to acquire VoLTE service")
             return False
 
@@ -326,7 +326,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
 
             if not wait_for_wifi_data_connection(
                     self.log, ad, True,
-                    WAIT_TIME_WIFI_CONNECTION + WAIT_TIME_USER_PLANE_DATA):
+                    MAX_WAIT_TIME_WIFI_CONNECTION + MAX_WAIT_TIME_USER_PLANE_DATA):
                 self.log.error("Data did not come up on wifi")
 
             self.log.info("Step {}-2: Wait for Wifi Data Connection".format(i))
@@ -351,7 +351,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             self.log.info("Step {}-4: Wait for IMS Registration".format(i))
 
             if not wait_for_ims_registered(self.log, ad,
-                                           WAIT_TIME_IMS_REGISTRATION):
+                                           MAX_WAIT_TIME_IMS_REGISTRATION):
                 self.log.error("Never received IMS registered!")
                 return False
 
@@ -360,7 +360,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
             # Once IMS is registered on IWLAN,
             # this should be almost instantaneous.
             # leaving 2 seconds to be generous
-            if not wait_for_wfc_enabled(self.log, ad, WAIT_TIME_WFC_ENABLED):
+            if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
                 self.log.error("Never received WFC Feature!")
                 return False
 
@@ -380,7 +380,7 @@ class TelLiveIwlanTest(TelephonyBaseTest):
                 i))
 
             if not wait_for_volte_enabled(self.log, ad,
-                                          WAIT_TIME_VOLTE_ENABLED):
+                                          MAX_WAIT_TIME_VOLTE_ENABLED):
                 self.log.error("Device failed to acquire VoLTE service")
                 return False
         return True

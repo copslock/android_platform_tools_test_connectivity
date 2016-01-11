@@ -20,6 +20,12 @@ from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
 from acts.test_utils.tel.tel_defines import CALL_STATE_RINGING
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
@@ -35,16 +41,10 @@ from acts.test_utils.tel.tel_defines import VT_STATE_TX_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_TX_PAUSED
 from acts.test_utils.tel.tel_defines import VT_STATE_STATE_INVALID
 from acts.test_utils.tel.tel_defines import VT_VIDEO_QUALITY_DEFAULT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_VIDEO_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_INITIATION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_VIDEO_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VIDEO_SESSION_EVENT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRequestReceived
@@ -96,10 +96,10 @@ def phone_setup_video_for_subscription(log, ad, sub_id):
         return False
     toggle_volte_for_subscription(log, ad, sub_id, True)
     if not ensure_network_rat_for_subscription(log, ad, sub_id, RAT_LTE,
-                                               WAIT_TIME_NW_SELECTION,
+                                               MAX_WAIT_TIME_NW_SELECTION,
                                                NETWORK_SERVICE_DATA):
         log.error("{} failed to select LTE (data) within {}s.".format(
-            ad.serial, WAIT_TIME_NW_SELECTION))
+            ad.serial, MAX_WAIT_TIME_NW_SELECTION))
         return False
     return phone_idle_video_for_subscription(log, ad, sub_id)
 
@@ -137,10 +137,10 @@ def phone_idle_video_for_subscription(log, ad, sub_id):
             voice_or_data=NETWORK_SERVICE_VOICE):
         log.error("{} voice not in LTE mode.".format(ad.serial))
         return False
-    if not wait_for_video_enabled(log, ad, WAIT_TIME_VOLTE_ENABLED):
+    if not wait_for_video_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
         log.error(
             "{} failed to <report volte enabled true> within {}s.".format(
-                ad.serial, WAIT_TIME_VOLTE_ENABLED))
+                ad.serial, MAX_WAIT_TIME_VOLTE_ENABLED))
         return False
     return True
 
@@ -352,7 +352,7 @@ def initiate_video_call(log, ad_caller, callee_number):
         result: if phone call is placed successfully.
     """
 
-    wait_time_for_incall_state = WAIT_TIME_CALL_INITIATION
+    wait_time_for_incall_state = MAX_WAIT_TIME_CALL_INITIATION
     ad_caller.droid.telecomCallNumber(callee_number, True)
     while wait_time_for_incall_state > 0:
         wait_time_for_incall_state -= 1
@@ -428,7 +428,7 @@ def wait_and_answer_video_call_for_subscription(
             TELEPHONY_STATE_RINGING):
         try:
             event_ringing = wait_for_ringing_event(log, ad,
-                                                   WAIT_TIME_CALLEE_RINGING)
+                                                   MAX_WAIT_TIME_CALLEE_RINGING)
             if event_ringing is None:
                 log.error("No Ringing Event.")
                 return False
@@ -468,7 +468,7 @@ def wait_and_answer_video_call_for_subscription(
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
                              is_sub_event_match,
-                             timeout=WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
+                             timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
                              sub_event=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         if not ad.droid.telecomIsInCall():
@@ -716,7 +716,7 @@ def video_call_modify_video(log,
     try:
         request_event = ad_responder.ed.pop_event(
             EventTelecomVideoCallSessionModifyRequestReceived,
-            WAIT_TIME_VIDEO_SESSION_EVENT)
+            MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
         log.info(request_event)
     except Empty:
         log.error("Failed to receive SessionModifyRequest!")
@@ -743,7 +743,7 @@ def video_call_modify_video(log,
     try:
         response_event = ad_requester.ed.pop_event(
             EventTelecomVideoCallSessionModifyResponseReceived,
-            WAIT_TIME_VIDEO_SESSION_EVENT)
+            MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
         log.info(response_event)
     except Empty:
         log.error("Failed to receive SessionModifyResponse!")
@@ -855,7 +855,7 @@ def video_call_downgrade(log,
     try:
         response_event = ad_requester.ed.pop_event(
             EventTelecomVideoCallSessionModifyResponseReceived,
-            WAIT_TIME_VIDEO_SESSION_EVENT)
+            MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
         log.info(response_event)
     except Empty:
         log.error("Failed to receive SessionModifyResponse!")
