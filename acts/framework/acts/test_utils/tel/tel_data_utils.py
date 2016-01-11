@@ -17,9 +17,9 @@
 import time
 
 from acts.utils import rand_ascii_str
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
@@ -240,7 +240,7 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
     """
     try:
         if not ensure_network_generation(
-                log, ad, nw_gen, WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                log, ad, nw_gen, MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
 
@@ -366,11 +366,11 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     """
     ensure_phones_idle(log, [ad])
 
-    if not ensure_network_generation(log, ad, nw_gen, WAIT_TIME_NW_SELECTION,
+    if not ensure_network_generation(log, ad, nw_gen, MAX_WAIT_TIME_NW_SELECTION,
                                      NETWORK_SERVICE_DATA):
 
         log.error("Device failed to reselect in {}s.".format(
-            WAIT_TIME_NW_SELECTION))
+            MAX_WAIT_TIME_NW_SELECTION))
         return False
 
     try:

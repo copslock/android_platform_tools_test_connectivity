@@ -31,7 +31,6 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY

@@ -26,6 +26,8 @@ from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -37,11 +39,9 @@ from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import RAT_IWLAN
 from acts.test_utils.tel.tel_defines import RAT_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_DROP
-from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON
-from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
+from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
@@ -275,7 +275,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
                  MAX_RSSI_RESERVED_VALUE)
         if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             self.log.error("Setup_class: phone failed to select to LTE.")
             return False
@@ -291,13 +291,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self.log.error("No Data on Wifi")
             return False
 
-        # Delay WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED after WiFi
+        # Delay WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED after WiFi
         # Connected to make sure WiFi RSSI reported value is correct.
-        time.sleep(WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED)
-        # Turn On Screen and delay WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON
+        time.sleep(WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED)
+        # Turn On Screen and delay WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
         # then get WiFi RSSI to avoid WiFi RSSI report -127(invalid value).
         self.android_devices[0].droid.wakeUpNow()
-        time.sleep(WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON)
+        time.sleep(WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON)
 
         setattr(self, "wifi_rssi_with_no_atten",
                 self.android_devices[0].droid.wifiGetConnectionInfo()['rssi'])
@@ -496,7 +496,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _phone_wait_for_not_wfc(self):
         result = wait_for_wfc_disabled(self.log, self.android_devices[0],
-                                       WAIT_TIME_NW_SELECTION)
+                                       MAX_WAIT_TIME_NW_SELECTION)
         self.log.info("_phone_wait_for_not_wfc: WFC_disabled is {}".format(
             result))
         if not result:
@@ -506,7 +506,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _phone_wait_for_wfc(self):
         result = wait_for_wfc_enabled(self.log, self.android_devices[0],
-                                      WAIT_TIME_NW_SELECTION)
+                                      MAX_WAIT_TIME_NW_SELECTION)
         self.log.info("_phone_wait_for_wfc: WFC_enabled is {}".format(result))
         if not result:
             return False
@@ -521,7 +521,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _phone_wait_for_call_drop(self):
         if not wait_for_droid_not_in_call(self.log, self.android_devices[0],
-                                          WAIT_TIME_CALL_DROP):
+                                          MAX_WAIT_TIME_CALL_DROP):
             self.log.info("_phone_wait_for_call_drop: Call not drop.")
             return False
         return True
@@ -552,7 +552,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
         if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             return False
 
@@ -579,7 +579,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
                                       NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
@@ -655,7 +655,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
         if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             return False
 
@@ -683,7 +683,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
                                       NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
@@ -754,7 +754,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  WAIT_TIME_NW_SELECTION,
+                                  MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             return False
 
@@ -776,7 +776,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, WAIT_TIME_NW_SELECTION,
+                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
                                       NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
@@ -2524,7 +2524,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_rat(self.log, self.android_devices[0],
-                                  cellular_rat, WAIT_TIME_NW_SELECTION,
+                                  cellular_rat, MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             self.log.error("_rove_in_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
@@ -2595,7 +2595,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_rat(self.log, self.android_devices[0],
-                                  cellular_rat, WAIT_TIME_NW_SELECTION,
+                                  cellular_rat, MAX_WAIT_TIME_NW_SELECTION,
                                   NETWORK_SERVICE_DATA):
             self.log.error("_rove_out_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
