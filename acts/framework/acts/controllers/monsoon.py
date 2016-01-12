@@ -471,6 +471,10 @@ class MonsoonData:
             file_path: The full path of the file to save to, including the file
                 name.
         """
+        if not monsoon_data:
+            raise MonsoonError("Attempting to write empty Monsoon data to "
+                               "file, abort")
+        utils.create_dir(os.path.dirname(file_path))
         with open(file_path, 'w') as f:
             for md in monsoon_data:
                 f.write(str(md))
@@ -657,7 +661,7 @@ class Monsoon:
         """
         sys.stdout.flush()
         voltage = self.mon.GetVoltage()
-        self.log.info("Taking samples at %dhz for %ds, voltage %fv." % (
+        self.log.info("Taking samples at %dhz for %ds, voltage %.2fv." % (
             sample_hz, sample_num/sample_hz, voltage))
         sample_num += sample_offset
         # Make sure state is normal
@@ -879,7 +883,6 @@ class Monsoon:
             time.sleep(1)
             self.dut.terminate_all_sessions()
             time.sleep(1)
-            self.log.info("Taking samples for %ds, at %dhz." % (duration, hz))
             data = self.take_samples(hz, num, sample_offset=oset)
             if not data:
                 raise MonsoonError(("No data was collected in measurement %s."
@@ -888,6 +891,7 @@ class Monsoon:
             data.tag = tag
         finally:
             self.mon.StopDataCollection()
+            self.log.info("Finished taking samples, reconnecting to dut.")
             self.usb("on")
             self._wait_for_device(self.dut)
             # Wait for device to come back online.
@@ -896,4 +900,5 @@ class Monsoon:
             ed.start()
             # Release wake lock to put device into sleep.
             droid.goToSleepNow()
+            self.log.info("Dut reconncted.")
             return data
