@@ -49,6 +49,16 @@ IMEISV_READ_USERDATA_GSM = "081503"
 IDENTITY_REQ_DATA_LEN = 24
 SEQ_LOG_MESSAGE_START_INDEX = 60
 
+def create(configs, logger):
+    objs = []
+    for c in configs:
+        ip_address = c["ip_address"]
+        objs.append(MD8475A(ip_address, logger))
+    return objs
+
+def destroy(objs):
+    return
+
 class ProcessingStatus(Enum):
     ''' MD8475A processing status for UE,Packet,Voice,Video,SMS,
         PPP, PWS '''
