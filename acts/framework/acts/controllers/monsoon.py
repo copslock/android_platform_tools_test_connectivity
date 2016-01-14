@@ -441,7 +441,7 @@ class MonsoonData:
                       "Average Current:" not in lines[1],
                       "Voltage: " not in lines[2],
                       "Total Power: " not in lines[3],
-                      "Taken at " not in lines[4],
+                      "samples taken at " not in lines[4],
                       lines[5] != "Time" + ' ' * 7 + "Amp"]
         if any(conditions):
             raise MonsoonError(err_msg)
@@ -560,8 +560,10 @@ class MonsoonData:
         strs.append("Average Current: {}mA.".format(self.average_current))
         strs.append("Voltage: {}V.".format(self.voltage))
         strs.append("Total Power: {}mW.".format(self.total_power))
-        strs.append("Taken at {}Hz with an offset of {} samples.".format(
-            self.hz, self.offset))
+        strs.append(("{} samples taken at {}Hz, with an offset of {} samples."
+                    ).format(len(self._data_points),
+                             self.hz,
+                             self.offset))
         return "\n".join(strs)
 
     def __len__(self):
@@ -887,8 +889,8 @@ class Monsoon:
             if not data:
                 raise MonsoonError(("No data was collected in measurement %s."
                     ) % tag)
-            self.log.info("Measurement summary: %s" % repr(data))
             data.tag = tag
+            self.log.info("Measurement summary: %s" % repr(data))
         finally:
             self.mon.StopDataCollection()
             self.log.info("Finished taking samples, reconnecting to dut.")
