@@ -1,0 +1,12 @@
+{
+    "testbed":
+    [
+        {
+            "_description": "ACTS sanity test bed, no device needed.",
+            "name": "Sanity",
+            "AndroidDevice": []
+        }
+    ],
+    "logpath": "/tmp/logs",
+    "testpaths": ["./"]
+}
