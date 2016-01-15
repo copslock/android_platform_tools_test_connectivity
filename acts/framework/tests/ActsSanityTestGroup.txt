@@ -1,0 +1,4 @@
+ActsBaseClassTest
+ActsBaseClassSetupClassTest
+ActsRecordsTest
+ActsAndroidDeviceTest
