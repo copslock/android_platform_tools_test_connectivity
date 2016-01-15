@@ -104,8 +104,8 @@ class TestRunner(object):
             test_paths: A list of directory paths where the test files reside.
 
         Returns:
-            A dictionary where keys are test class name strings, values are actual
-            test classes that can be instantiated.
+            A dictionary where keys are test class name strings, values are
+            actual test classes that can be instantiated.
         """
         def is_testfile_name(name, ext):
             if ext == ".py":
@@ -118,13 +118,17 @@ class TestRunner(object):
             sys.path.append(path)
             try:
                 module = importlib.import_module(name)
-            except ImportError:
+            except Exception as e:
                 for test_cls_name, _ in self.run_list:
-                    # Only block if a test class on the run list causes an import
-                    # error.
-                    if name == test_cls_name:
-                        raise USERError(("Encountered error importing test class "
-                            "%s, abort.") % test_cls_name)
+                    alt_name = name.replace('_', '').lower()
+                    alt_cls_name = test_cls_name.lower()
+                    # Only block if a test class on the run list causes an
+                    # import error. We need to check against both naming
+                    # conventions: AaaBbb and aaa_bbb.
+                    if name == test_cls_name or alt_name == alt_cls_name:
+                        msg = ("Encountered error importing test class %s, "
+                               "abort.") % test_cls_name
+                        raise USERError(msg) from e
                 continue
             for member_name in dir(module):
                 if not member_name.startswith("__"):
