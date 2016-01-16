@@ -405,6 +405,35 @@ def trim_model_name(model):
             return manufacture_name_to_model[t]
     return None
 
+def force_airplane_mode(ad, new_state, timeout_value=60):
+    """Force the device to set airplane mode on or off by adb shell command.
+
+    Args:
+        ad: android device object.
+        new_state: Turn on airplane mode if True.
+            Turn off airplane mode if False.
+        timeout_value: max wait time for 'adb wait-for-device'
+
+    Returns:
+        True if success.
+        False if timeout.
+    """
+    # Using timeout decorator.
+    # Wait for device with timeout. If after <timeout_value> seconds, adb
+    # is still waiting for device, throw TimeoutError exception.
+    @timeout(timeout_value)
+    def wait_for_device_with_timeout(ad):
+        ad.adb.wait_for_device()
+
+    try:
+        wait_for_device_with_timeout(ad)
+        ad.adb.shell("settings put global airplane_mode_on {}".
+            format(1 if new_state else 0))
+    except TimeoutError:
+        # adb wait for device timeout
+        return False
+    return True
+
 def enable_doze(ad):
     """Force the device into doze mode.
 
