@@ -43,6 +43,8 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_DISABLED
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
@@ -1851,13 +1853,14 @@ def is_wfc_enabled(log, ad):
     return ad.droid.telephonyIsWifiCallingAvailable()
 
 
-def wait_for_wfc_enabled(log, ad, max_time):
+def wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     """Wait for android device to report WiFi Calling enabled bit true.
 
     Args:
         log: log object.
         ad:  android device.
         max_time: maximal wait time.
+            Default value is MAX_WAIT_TIME_WFC_ENABLED.
 
     Returns:
         Return True if device report WiFi Calling enabled bit true within max_time.
@@ -1866,13 +1869,14 @@ def wait_for_wfc_enabled(log, ad, max_time):
     return _wait_for_droid_in_state(log, ad, max_time, is_wfc_enabled)
 
 
-def wait_for_wfc_disabled(log, ad, max_time):
+def wait_for_wfc_disabled(log, ad, max_time=MAX_WAIT_TIME_WFC_DISABLED):
     """Wait for android device to report WiFi Calling enabled bit false.
 
     Args:
         log: log object.
         ad:  android device.
         max_time: maximal wait time.
+            Default value is MAX_WAIT_TIME_WFC_DISABLED.
 
     Returns:
         Return True if device report WiFi Calling enabled bit false within max_time.
