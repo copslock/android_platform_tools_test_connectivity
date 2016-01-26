@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
                       description=("Script to generate, augment and prune"
                                    " SIM list"))
-    parser.add_argument("-f","--file",
+    parser.add_argument("--f","-file",
                        default='./simcard_list.json',
                        help="json file path", type=str)
     group = parser.add_mutually_exclusive_group()
