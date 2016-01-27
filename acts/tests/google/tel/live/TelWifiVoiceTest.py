@@ -47,9 +47,9 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import NetworkCallBack
-from acts.test_utils.tel.tel_defines import NetworkCallBackAvailable
-from acts.test_utils.tel.tel_defines import NetworkCallBackLost
+from acts.test_utils.tel.tel_defines import EventNetworkCallback
+from acts.test_utils.tel.tel_defines import NetworkCallbackAvailable
+from acts.test_utils.tel.tel_defines import NetworkCallbackLost
 from acts.test_utils.tel.tel_defines import SignalStrengthContainer
 from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
@@ -3616,14 +3616,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                     INITIAL_RSSI))
             try:
                 event = ad.ed.wait_for_event(
-                    NetworkCallBack,
+                    EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallBackAvailable,
+                    sub_event=NetworkCallbackAvailable,
                     network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
-                    NetworkCallBackAvailable, rssi_monitoring_id_lower))
+                    NetworkCallbackAvailable, rssi_monitoring_id_lower))
                 return False
 
             self.log.info("Set RSSI to HIGHER_RSSI_THRESHOLD+5,"
@@ -3635,14 +3635,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
                 event = ad.ed.wait_for_event(
-                    NetworkCallBack,
+                    EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallBackAvailable,
+                    sub_event=NetworkCallbackAvailable,
                     network_callback_id=rssi_monitoring_id_higher)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
-                    NetworkCallBackAvailable, rssi_monitoring_id_higher))
+                    NetworkCallbackAvailable, rssi_monitoring_id_higher))
                 return False
 
             self.log.info("Set RSSI to HIGHER_RSSI_THRESHOLD-5,"
@@ -3654,14 +3654,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
                 event = ad.ed.wait_for_event(
-                    NetworkCallBack,
+                    EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallBackLost,
+                    sub_event=NetworkCallbackLost,
                     network_callback_id=rssi_monitoring_id_higher)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
-                    NetworkCallBackLost, rssi_monitoring_id_higher))
+                    NetworkCallbackLost, rssi_monitoring_id_higher))
                 return False
 
             self.log.info("Set RSSI to LOWER_RSSI_THRESHOLD-5,"
@@ -3673,14 +3673,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
                 event = ad.ed.wait_for_event(
-                    NetworkCallBack,
+                    EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallBackLost,
+                    sub_event=NetworkCallbackLost,
                     network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
-                    NetworkCallBackLost, rssi_monitoring_id_lower))
+                    NetworkCallbackLost, rssi_monitoring_id_lower))
                 return False
 
             self.log.info("Set RSSI to LOWER_RSSI_THRESHOLD+5,"
@@ -3692,14 +3692,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                      WIFI_RSSI_CHANGE_DELAY_PER_STEP)
             try:
                 event = ad.ed.wait_for_event(
-                    NetworkCallBack,
+                    EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallBackAvailable,
+                    sub_event=NetworkCallbackAvailable,
                     network_callback_id=rssi_monitoring_id_lower)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
-                    NetworkCallBackAvailable, rssi_monitoring_id_lower))
+                    NetworkCallbackAvailable, rssi_monitoring_id_lower))
                 return False
         finally:
             ad.droid.connectivityStopRssiThresholdMonitor(

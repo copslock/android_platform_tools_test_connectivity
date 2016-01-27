@@ -34,10 +34,10 @@ from acts.test_utils.tel.tel_defines import VT_STATE_RX_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_TX_ENABLED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import EventSessionEvent
+from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionEvent
-from acts.test_utils.tel.tel_defines import SessionEventRxPause
-from acts.test_utils.tel.tel_defines import SessionEventRxResume
+from acts.test_utils.tel.tel_defines import SESSION_EVENT_RX_PAUSE
+from acts.test_utils.tel.tel_defines import SESSION_EVENT_RX_RESUME
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import disconnect_call_by_id
 from acts.test_utils.tel.tel_test_utils import hangup_call
@@ -585,9 +585,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
         call_id_responder = get_call_id_in_video_state(self.log, ad_responder,
                                                        VT_STATE_BIDIRECTIONAL)
         ad_requester.droid.telecomCallVideoStartListeningForEvent(
-            call_id_requester, EventSessionEvent)
+            call_id_requester, EVENT_VIDEO_SESSION_EVENT)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
-            call_id_responder, EventSessionEvent)
+            call_id_responder, EVENT_VIDEO_SESSION_EVENT)
         self.log.info("Put In-Call UI on {} to background.".format(
             ad_requester.serial))
         ad_requester.droid.showHomeScreen()
@@ -598,24 +598,24 @@ class TelLiveVideoTest(TelephonyBaseTest):
             event_on_requester = ad_requester.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
                 MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
-            if event_on_responder['data']['Event'] != SessionEventRxPause:
+            if event_on_responder['data']['Event'] != SESSION_EVENT_RX_PAUSE:
                 self.log.error(
                     "Event not correct. event_on_responder: {}. Expected :{}".format(
-                        event_on_responder, SessionEventRxPause))
+                        event_on_responder, SESSION_EVENT_RX_PAUSE))
                 return False
-            if event_on_requester['data']['Event'] != SessionEventRxPause:
+            if event_on_requester['data']['Event'] != SESSION_EVENT_RX_PAUSE:
                 self.log.error(
                     "Event not correct. event_on_requester: {}. Expected :{}".format(
-                        event_on_requester, SessionEventRxPause))
+                        event_on_requester, SESSION_EVENT_RX_PAUSE))
                 return False
         except Empty:
             self.log.error("Expected event not received.")
             return False
         finally:
             ad_requester.droid.telecomCallVideoStopListeningForEvent(
-                call_id_requester, EventSessionEvent)
+                call_id_requester, EVENT_VIDEO_SESSION_EVENT)
             ad_responder.droid.telecomCallVideoStopListeningForEvent(
-                call_id_responder, EventSessionEvent)
+                call_id_responder, EVENT_VIDEO_SESSION_EVENT)
         time.sleep(WAIT_TIME_IN_CALL)
 
         if not verify_video_call_in_expected_state(
@@ -630,9 +630,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.log.info("Put In-Call UI on {} to foreground.".format(
             ad_requester.serial))
         ad_requester.droid.telecomCallVideoStartListeningForEvent(
-            call_id_requester, EventSessionEvent)
+            call_id_requester, EVENT_VIDEO_SESSION_EVENT)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
-            call_id_responder, EventSessionEvent)
+            call_id_responder, EVENT_VIDEO_SESSION_EVENT)
         ad_requester.droid.telecomShowInCallScreen()
         try:
             event_on_responder = ad_responder.ed.pop_event(
@@ -641,24 +641,24 @@ class TelLiveVideoTest(TelephonyBaseTest):
             event_on_requester = ad_requester.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
                 MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
-            if event_on_responder['data']['Event'] != SessionEventRxResume:
+            if event_on_responder['data']['Event'] != SESSION_EVENT_RX_RESUME:
                 self.log.error(
                     "Event not correct. event_on_responder: {}. Expected :{}".format(
-                        event_on_responder, SessionEventRxResume))
+                        event_on_responder, SESSION_EVENT_RX_RESUME))
                 return False
-            if event_on_requester['data']['Event'] != SessionEventRxResume:
+            if event_on_requester['data']['Event'] != SESSION_EVENT_RX_RESUME:
                 self.log.error(
                     "Event not correct. event_on_requester: {}. Expected :{}".format(
-                        event_on_requester, SessionEventRxResume))
+                        event_on_requester, SESSION_EVENT_RX_RESUME))
                 return False
         except Empty:
             self.log.error("Expected event not received.")
             return False
         finally:
             ad_requester.droid.telecomCallVideoStopListeningForEvent(
-                call_id_requester, EventSessionEvent)
+                call_id_requester, EVENT_VIDEO_SESSION_EVENT)
             ad_responder.droid.telecomCallVideoStopListeningForEvent(
-                call_id_responder, EventSessionEvent)
+                call_id_responder, EVENT_VIDEO_SESSION_EVENT)
         time.sleep(WAIT_TIME_IN_CALL)
         self.log.info("Verify both calls are in bi-directional/active state.")
         if not verify_video_call_in_expected_state(
