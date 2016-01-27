@@ -18,6 +18,7 @@
 """
 
 import time
+import traceback
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 
@@ -54,6 +55,7 @@ class TelephonyBaseTest(BaseTestClass):
             except TestSignal:
                 raise
             except Exception as e:
+                self.log.error(traceback.format_exc())
                 self.log.error(str(e))
                 return False
             finally:
