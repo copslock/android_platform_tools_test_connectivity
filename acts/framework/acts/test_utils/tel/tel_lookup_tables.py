@@ -460,15 +460,21 @@ device_capabilities = {
     NexusModelNames.ONE:
     [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_MSIM],
     NexusModelNames.N5: [tel_defines.CAPABILITY_PHONE],
-    NexusModelNames.N5v2:
-    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
+    NexusModelNames.N5v2: [tel_defines.CAPABILITY_PHONE,
+                           tel_defines.CAPABILITY_OMADM,
+                           tel_defines.CAPABILITY_VOLTE,
+                           tel_defines.CAPABILITY_WFC,
+                           tel_defines.CAPABILITY_VT],
     NexusModelNames.N6: [tel_defines.CAPABILITY_PHONE,
                          tel_defines.CAPABILITY_OMADM,
                          tel_defines.CAPABILITY_VOLTE,
                          tel_defines.CAPABILITY_WFC,
                          tel_defines.CAPABILITY_VT],
-    NexusModelNames.N6v2:
-    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
+    NexusModelNames.N6v2: [tel_defines.CAPABILITY_PHONE,
+                           tel_defines.CAPABILITY_OMADM,
+                           tel_defines.CAPABILITY_VOLTE,
+                           tel_defines.CAPABILITY_WFC,
+                           tel_defines.CAPABILITY_VT]
 }
 
 operator_capabilities = {
