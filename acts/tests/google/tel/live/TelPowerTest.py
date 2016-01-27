@@ -21,6 +21,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -32,6 +33,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -43,6 +45,7 @@ from acts.utils import set_adaptive_brightness
 from acts.utils import set_ambient_display
 from acts.utils import set_auto_rotate
 from acts.utils import set_location_service
+from acts.utils import set_mobile_data_always_on
 
 # Monsoon output Voltage in V
 MONSOON_OUTPUT_VOLTAGE = 4.2
@@ -96,7 +99,18 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_idle_3g",
             "test_power_idle_lte_volte_enabled_wakeup_ping",
             "test_power_idle_lte_volte_disabled_wakeup_ping",
-            "test_power_idle_3g_wakeup_ping", )
+            "test_power_idle_3g_wakeup_ping",
+
+            # Mobile Data Always On
+            "test_power_mobile_data_always_on_lte",
+            "test_power_mobile_data_always_on_wcdma",
+            "test_power_mobile_data_always_on_gsm",
+            "test_power_mobile_data_always_on_1x",
+            "test_power_mobile_data_always_on_lte_wifi_on",
+            "test_power_mobile_data_always_on_wcdma_wifi_on",
+            "test_power_mobile_data_always_on_gsm_wifi_on",
+            "test_power_mobile_data_always_on_1x_wifi_on"
+            )
 
     def setup_class(self):
         super().setup_class()
@@ -222,6 +236,27 @@ class TelPowerTest(TelephonyBaseTest):
             self.log.error("Phone failed to setup {}.".format(
                 phone_setup_func.__name__))
             return False
+        if not self._start_alarm():
+            return False
+        ad.droid.goToSleepNow()
+        return True
+
+    def _setup_phone_mobile_data_always_on(self, ad, phone_setup_func,
+                                           connect_wifi,
+                                           wifi_ssid=None,
+                                           wifi_password=None,
+                                           mobile_data_always_on=True):
+        set_mobile_data_always_on(ad, mobile_data_always_on)
+        if not phone_setup_func(self.log, ad):
+            self.log.error("Phone failed to setup {}.".format(
+                phone_setup_func.__name__))
+            return False
+        if (connect_wifi and
+            not ensure_wifi_connected(self.log, ad, wifi_ssid, wifi_password)):
+            self.log.error("WiFi connect failed")
+            return False
+        # simulate normal user behavior -- wake up every 1 minutes and do ping
+        # (transmit data)
         if not self._start_alarm():
             return False
         ad.droid.goToSleepNow()
@@ -718,6 +753,7 @@ class TelPowerTest(TelephonyBaseTest):
         return self._test_power_idle("test_power_idle_3g", _idle_3g,
                                      PASS_CRITERIA)
 
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_lte_volte_enabled_wakeup_ping(self):
         """Power measurement test for phone LTE VoLTE enabled Wakeup Ping every
@@ -755,6 +791,7 @@ class TelPowerTest(TelephonyBaseTest):
             phone_setup_func=phone_setup_volte)
         return result
 
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_lte_volte_disabled_wakeup_ping(self):
         """Power measurement test for phone LTE VoLTE disabled Wakeup Ping every
@@ -792,6 +829,7 @@ class TelPowerTest(TelephonyBaseTest):
             phone_setup_func=phone_setup_csfb)
         return result
 
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_3g_wakeup_ping(self):
         """Power measurement test for phone 3G Wakeup Ping every 1 minute.
@@ -823,4 +861,148 @@ class TelPowerTest(TelephonyBaseTest):
                                        self._setup_phone_idle_and_wakeup_ping,
                                        PASS_CRITERIA,
                                        phone_setup_func=phone_setup_3g)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_lte(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_lte"]["pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle("test_power_mobile_data_always_on_lte",
+                                       self._setup_phone_mobile_data_always_on,
+                                       PASS_CRITERIA,
+                                       phone_setup_func=phone_setup_csfb,
+                                       connect_wifi=False)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_wcdma(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_wcdma"]["pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle("test_power_mobile_data_always_on_wcdma",
+                                       self._setup_phone_mobile_data_always_on,
+                                       PASS_CRITERIA,
+                                       phone_setup_func=phone_setup_3g,
+                                       connect_wifi=False)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_1xevdo(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_1xevdo"]["pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle("test_power_mobile_data_always_on_1xevdo",
+                                       self._setup_phone_mobile_data_always_on,
+                                       PASS_CRITERIA,
+                                       phone_setup_func=phone_setup_3g,
+                                       connect_wifi=False)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_gsm(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_gsm"]["pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle("test_power_mobile_data_always_on_gsm",
+                                       self._setup_phone_mobile_data_always_on,
+                                       PASS_CRITERIA,
+                                       phone_setup_func=phone_setup_2g,
+                                       connect_wifi=False)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_lte_wifi_on(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_lte_wifi_on"][
+                "pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle(
+            "test_power_mobile_data_always_on_lte_wifi_on",
+            self._setup_phone_mobile_data_always_on,
+            PASS_CRITERIA,
+            phone_setup_func=phone_setup_csfb,
+            connect_wifi=True,
+            wifi_ssid=self.wifi_network_ssid_2g,
+            wifi_password=self.wifi_network_pass_2g)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_wcdma_wifi_on(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_wcdma_wifi_on"][
+                "pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle(
+            "test_power_mobile_data_always_on_wcdma_wifi_on",
+            self._setup_phone_mobile_data_always_on,
+            PASS_CRITERIA,
+            phone_setup_func=phone_setup_3g,
+            connect_wifi=True,
+            wifi_ssid=self.wifi_network_ssid_2g,
+            wifi_password=self.wifi_network_pass_2g)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_1xevdo_wifi_on(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_1xevdo_wifi_on"][
+                "pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle(
+            "test_power_mobile_data_always_on_1xevdo_wifi_on",
+            self._setup_phone_mobile_data_always_on,
+            PASS_CRITERIA,
+            phone_setup_func=phone_setup_3g,
+            connect_wifi=True,
+            wifi_ssid=self.wifi_network_ssid_2g,
+            wifi_password=self.wifi_network_pass_2g)
+        set_mobile_data_always_on(self.ad, False)
+        return result
+
+    # TODO: This one is not working right now. Requires SL4A API to start alarm.
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_mobile_data_always_on_gsm_wifi_on(self):
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_mobile_data_always_on_gsm_wifi_on"][
+                "pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+        result = self._test_power_idle(
+            "test_power_mobile_data_always_on_gsm_wifi_on",
+            self._setup_phone_mobile_data_always_on,
+            PASS_CRITERIA,
+            phone_setup_func=phone_setup_2g,
+            connect_wifi=True,
+            wifi_ssid=self.wifi_network_ssid_2g,
+            wifi_password=self.wifi_network_pass_2g)
+        set_mobile_data_always_on(self.ad, False)
         return result
