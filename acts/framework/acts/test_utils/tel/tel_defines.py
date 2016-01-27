@@ -84,6 +84,9 @@ MAX_WAIT_TIME_VOICE_MAIL_COUNT = 30
 # Max time to wait for data SIM change
 MAX_WAIT_TIME_DATA_SUB_CHANGE = 150
 
+# Max time to wait for telecom Ringing status after receive ringing event
+MAX_WAIT_TIME_TELECOM_RINGING = 5
+
 # Time to wait after call setup before declaring
 # that the call is actually successful
 WAIT_TIME_IN_CALL = 15
@@ -93,14 +96,8 @@ WAIT_TIME_IN_CALL = 15
 # that the call is actually successful
 WAIT_TIME_IN_CALL_FOR_IMS = 30
 
-# Time to wait after phone receive incoming call before phone answer this call.
-WAIT_TIME_ANSWER_CALL = 2
-
 # Time to wait after phone receive incoming call before phone reject this call.
-WAIT_TIME_REJECT_CALL = WAIT_TIME_ANSWER_CALL
-
-# Time to wait after phone receive incoming video call before phone answer this call.
-WAIT_TIME_ANSWER_VIDEO_CALL = WAIT_TIME_ANSWER_CALL
+WAIT_TIME_REJECT_CALL = 2
 
 # Time to leave a voice message after callee reject the incoming call
 WAIT_TIME_LEAVE_VOICE_MAIL = 30
