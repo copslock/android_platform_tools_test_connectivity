@@ -488,6 +488,7 @@ EventPreciseStateChanged = "PreciseStateChanged"
 EventDataConnectionRealTimeInfoChanged = "DataConnectionRealTimeInfoChanged"
 EventDataConnectionStateChanged = "DataConnectionStateChanged"
 EventServiceStateChanged = "ServiceStateChanged"
+EventSignalStrengthChanged = "SignalStrengthChanged"
 EventVolteServiceStateChanged = "VolteServiceStateChanged"
 EventMessageWaitingIndicatorChanged = "MessageWaitingIndicatorChanged"
 EventConnectivityChanged = "ConnectivityChanged"
@@ -535,6 +536,27 @@ NETWORK_MODE_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA = "NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
+
+class SignalStrengthContainer:
+    SIGNAL_STRENGTH_GSM = "gsmSignalStrength";
+    SIGNAL_STRENGTH_GSM_DBM = "gsmDbm";
+    SIGNAL_STRENGTH_GSM_LEVEL = "gsmLevel";
+    SIGNAL_STRENGTH_GSM_ASU_LEVEL = "gsmAsuLevel";
+    SIGNAL_STRENGTH_GSM_BIT_ERROR_RATE = "gsmBitErrorRate";
+    SIGNAL_STRENGTH_CDMA_DBM = "cdmaDbm";
+    SIGNAL_STRENGTH_CDMA_LEVEL = "cdmaLevel";
+    SIGNAL_STRENGTH_CDMA_ASU_LEVEL = "cdmaAsuLevel";
+    SIGNAL_STRENGTH_CDMA_ECIO = "cdmaEcio";
+    SIGNAL_STRENGTH_EVDO_DBM = "evdoDbm";
+    SIGNAL_STRENGTH_EVDO_ECIO = "evdoEcio";
+    SIGNAL_STRENGTH_LTE = "lteSignalStrength";
+    SIGNAL_STRENGTH_LTE_DBM = "lteDbm";
+    SIGNAL_STRENGTH_LTE_LEVEL = "lteLevel";
+    SIGNAL_STRENGTH_LTE_ASU_LEVEL = "lteAsuLevel";
+    SIGNAL_STRENGTH_DBM = "dbm";
+    SIGNAL_STRENGTH_LEVEL = "level";
+    SIGNAL_STRENGTH_ASU_LEVEL = "asuLevel";
+
 """
 End shared constant define for both Python and Java
 """
