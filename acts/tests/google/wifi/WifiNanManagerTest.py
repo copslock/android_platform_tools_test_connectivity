@@ -27,6 +27,7 @@ ON_MESSAGE_TX_FAIL = "WifiNanSessionOnMessageSendFail"
 ON_MESSAGE_TX_OK = "WifiNanSessionOnMessageSendSuccess"
 
 class WifiNanManagerTest(base_test.BaseTestClass):
+    msg_id = 10
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
@@ -47,13 +48,10 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         )
         msg = "Failed to unpack user params."
         self.assert_true(self.unpack_userparams(required_params), msg)
-        return True
-
 
     def setup_test(self):
         assert wutils.wifi_toggle_state(self.publisher, True)
         assert wutils.wifi_toggle_state(self.subscriber, True)
-        return True
 
     def teardown_class(self):
         assert wutils.wifi_toggle_state(self.publisher, False)
@@ -63,25 +61,25 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         num_tries = 0
         max_num_tries = 10
         events_regex = '%s|%s' % (ON_MESSAGE_TX_FAIL, ON_MESSAGE_TX_OK)
+        self.msg_id = self.msg_id + 1
 
         while True:
             try:
                 num_tries += 1
-                device.droid.wifiNanSendMessage(peer, msg)
+                device.droid.wifiNanSendMessage(peer, msg, self.msg_id)
                 events = device.ed.pop_events(events_regex, 30)
                 for event in events:
                     self.log.info('%s: %s' % (event['name'], event['data']))
+                    if event['data']['messageId'] != self.msg_id:
+                        continue
                     if event['name'] == ON_MESSAGE_TX_OK:
                         return True
                     if num_tries == max_num_tries:
                         self.log.info("Max number of retries reached")
                         return False
-                    continue
             except queue.Empty:
                 self.log.info('Timed out while waiting for %s' % events_regex)
                 return False
-
-        return False
 
     def test_nan_base_test(self):
         """Perform NAN configuration, discovery, and message exchange.
