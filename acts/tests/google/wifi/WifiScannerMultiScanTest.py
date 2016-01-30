@@ -18,7 +18,7 @@
 import queue
 
 import acts.base_test
-import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 
 WifiChannelUS = wutils.WifiChannelUS
 WifiEnums = wutils.WifiEnums

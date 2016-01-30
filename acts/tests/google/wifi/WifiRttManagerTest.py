@@ -18,7 +18,7 @@ import pprint
 import queue
 
 import acts.base_test
-import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 from acts.controllers.android import SL4AAPIError
 

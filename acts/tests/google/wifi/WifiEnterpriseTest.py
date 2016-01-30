@@ -20,7 +20,7 @@ import time
 
 import acts.base_test
 import acts.signals
-import acts.test_utils.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
 
