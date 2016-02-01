@@ -42,6 +42,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TELECOM_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
@@ -69,7 +70,6 @@ from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
@@ -366,7 +366,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
 def wait_and_answer_call(log,
                          ad,
                          incoming_number=None,
-                         delay_answer=WAIT_TIME_ANSWER_CALL,
                          incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
     """Wait for an incoming call on default voice subscription and
        accepts the call.
@@ -375,8 +374,6 @@ def wait_and_answer_call(log,
         ad: android device object.
         incoming_number: Expected incoming number.
             Optional. Default is None
-        delay_answer: time to wait before answering the call
-            Optional. Default is 1
         incall_ui_display: after answer the call, bring in-call UI to foreground or
             background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
@@ -389,7 +386,7 @@ def wait_and_answer_call(log,
         """
     return wait_and_answer_call_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), incoming_number,
-        delay_answer, incall_ui_display)
+        incall_ui_display)
 
 
 def wait_for_ringing_event(log, ad, wait_time):
@@ -438,7 +435,6 @@ def wait_and_answer_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
-        delay_answer=WAIT_TIME_ANSWER_CALL,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
     """Wait for an incoming call on specified subscription and
        accepts the call.
@@ -448,8 +444,6 @@ def wait_and_answer_call_for_subscription(
         sub_id: subscription ID
         incoming_number: Expected incoming number.
             Optional. Default is None
-        delay_answer: time to wait before answering the call
-            Optional. Default is 1
         incall_ui_display: after answer the call, bring in-call UI to foreground or
             background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
@@ -491,9 +485,9 @@ def wait_and_answer_call_for_subscription(
 
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    # Delay between ringing and answer.
-    time.sleep(delay_answer)
-
+    if not wait_for_telecom_ringing(log, ad, MAX_WAIT_TIME_TELECOM_RINGING):
+        log.error("Telecom is not ringing.")
+        return False
     log.info("Accept on callee.")
     ad.droid.telecomAcceptRingingCall()
     try:
@@ -956,8 +950,7 @@ def call_setup_teardown(log,
     accept from callee, and hang up. The call is on default voice subscription
 
     In call process, call from <droid_caller> to <droid_callee>,
-    after ringing, wait <delay_answer> to accept the call,
-    (optional)then hang up from <droid_hangup>.
+    accept the call, (optional)then hang up from <droid_hangup>.
 
     Args:
         ad_caller: Caller Android Device Object.
@@ -1002,8 +995,7 @@ def call_setup_teardown_for_subscription(
     accept from callee, and hang up. The call is on specified subscription
 
     In call process, call from <droid_caller> to <droid_callee>,
-    after ringing, wait <delay_answer> to accept the call,
-    (optional)then hang up from <droid_hangup>.
+    accept the call, (optional)then hang up from <droid_hangup>.
 
     Args:
         ad_caller: Caller Android Device Object.
@@ -1681,6 +1673,22 @@ def wait_for_droid_in_call(log, ad, max_time):
         Return False if timeout.
     """
     return _wait_for_droid_in_state(log, ad, max_time, is_phone_in_call)
+
+def wait_for_telecom_ringing(log, ad, max_time=MAX_WAIT_TIME_TELECOM_RINGING):
+    """Wait for android to be in telecom ringing state.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        max_time: maximal wait time. This is optional.
+            Default Value is MAX_WAIT_TIME_TELECOM_RINGING.
+
+    Returns:
+        If phone become in telecom ringing state within max_time, return True.
+        Return False if timeout.
+    """
+    return _wait_for_droid_in_state(log, ad, max_time,
+        lambda log, ad: ad.droid.telecomIsRinging())
 
 
 def wait_for_droid_not_in_call(log, ad, max_time):

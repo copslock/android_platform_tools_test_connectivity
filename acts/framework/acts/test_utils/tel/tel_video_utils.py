@@ -24,6 +24,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TELECOM_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -43,7 +44,6 @@ from acts.test_utils.tel.tel_defines import VT_STATE_STATE_INVALID
 from acts.test_utils.tel.tel_defines import VT_VIDEO_QUALITY_DEFAULT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_VIDEO_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
@@ -61,6 +61,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_event
+from acts.test_utils.tel.tel_test_utils import wait_for_telecom_ringing
 from acts.test_utils.tel.tel_test_utils import wait_for_video_enabled
 from acts.test_utils.tel.tel_voice_utils import is_call_hd
 
@@ -366,7 +367,6 @@ def initiate_video_call(log, ad_caller, callee_number):
 def wait_and_answer_video_call(log,
                                ad,
                                incoming_number=None,
-                               delay_answer=WAIT_TIME_ANSWER_VIDEO_CALL,
                                video_state=VT_STATE_BIDIRECTIONAL,
                                incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
     """Wait for an incoming call on default voice subscription and
@@ -376,8 +376,6 @@ def wait_and_answer_video_call(log,
         ad: android device object.
         incoming_number: Expected incoming number.
             Optional. Default is None
-        delay_answer: time to wait before answering the call
-            Optional. Default is 1
         incall_ui_display: after answer the call, bring in-call UI to foreground or
             background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
@@ -390,7 +388,7 @@ def wait_and_answer_video_call(log,
     """
     return wait_and_answer_video_call_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), incoming_number,
-        delay_answer, video_state, incall_ui_display)
+        video_state, incall_ui_display)
 
 
 def wait_and_answer_video_call_for_subscription(
@@ -398,7 +396,6 @@ def wait_and_answer_video_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
-        delay_answer=WAIT_TIME_ANSWER_VIDEO_CALL,
         video_state=VT_STATE_BIDIRECTIONAL,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
     """Wait for an incoming call on specified subscription and
@@ -409,8 +406,6 @@ def wait_and_answer_video_call_for_subscription(
         sub_id: subscription ID
         incoming_number: Expected incoming number.
             Optional. Default is None
-        delay_answer: time to wait befor answering the call
-            Optional. Default is 1
         incall_ui_display: after answer the call, bring in-call UI to foreground or
             background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
@@ -452,14 +447,8 @@ def wait_and_answer_video_call_for_subscription(
 
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
 
-    #FIXME b/26349361 I believe this delay exists so that the call provider
-    # presents an incoming call to telecom. We should replace this with
-    # a programmatic check for ringing in telecom and deprecate the delay.
-    # Delay between ringing and answer.
-    time.sleep(delay_answer)
-
-    if not ad.droid.telecomIsRinging():
-        log.error("Call not ringing at Telecom")
+    if not wait_for_telecom_ringing(log, ad, MAX_WAIT_TIME_TELECOM_RINGING):
+        log.error("Telecom is not ringing.")
         return False
 
     log.info("Accept on callee.")
@@ -496,8 +485,7 @@ def video_call_setup_teardown(log,
     accept from callee, and hang up. The call is on default subscription
 
     In call process, call from <droid_caller> to <droid_callee>,
-    after ringing, wait <delay_answer> to accept the call,
-    (optional)then hang up from <droid_hangup>.
+    accept the call, (optional)then hang up from <droid_hangup>.
 
     Args:
         ad_caller: Caller Android Device Object.
@@ -549,8 +537,7 @@ def video_call_setup_teardown_for_subscription(
     accept from callee, and hang up. The call is on specified subscription
 
     In call process, call from <droid_caller> to <droid_callee>,
-    after ringing, wait <delay_answer> to accept the call,
-    (optional)then hang up from <droid_hangup>.
+    accept the call, (optional)then hang up from <droid_hangup>.
 
     Args:
         ad_caller: Caller Android Device Object.
