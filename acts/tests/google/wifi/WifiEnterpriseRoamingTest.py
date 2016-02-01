@@ -55,7 +55,7 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
             "eap_password",
             "device_password"
         )
-        assert self.unpack_userparams(req_params)
+        self.unpack_userparams(req_params)
         self.config_peap = {
             Ent.EAP: EAP.PEAP,
             Ent.CA_CERT: self.ca_cert,
@@ -89,7 +89,6 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
         # Set screen lock password so ConfigStore is unlocked.
         self.droid.setDevicePassword(self.device_password)
         self.set_attns("default")
-        return True
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)

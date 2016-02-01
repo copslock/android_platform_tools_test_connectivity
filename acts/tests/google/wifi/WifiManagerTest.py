@@ -51,21 +51,18 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             "tdls_models",
             "energy_info_models"
             )
-        self.assert_true(self.unpack_userparams(req_params),
-            "Failed to unpack user params")
+        self.unpack_userparams(req_params)
         self.assert_true(len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
         self.assert_true(wutils.wifi_toggle_state(self.dut, True),
             "Failed to turn on wifi before tests.")
         self.iot_networks = self.iot_networks + [self.open_network]
         self.iperf_server = self.iperf_servers[0]
-        return True
 
     def setup_test(self):
         self.droid.wakeLockAcquireBright()
         self.droid.wakeUpNow()
         self.iperf_server.start()
-        return True
 
     def teardown_test(self):
         self.droid.wakeLockRelease()

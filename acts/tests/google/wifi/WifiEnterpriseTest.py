@@ -70,7 +70,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             "roaming_consortium_ids",
             "plmn"
         )
-        assert self.unpack_userparams(required_userparam_names,
+        self.unpack_userparams(required_userparam_names,
                     opt_param_names = optional_userparam_names)
         # Default configs for EAP networks.
         self.config_peap = {
@@ -125,7 +125,6 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         del self.config_passpoint_ttls[WifiEnums.SSID_KEY]
         # Set screen lock password so ConfigStore is unlocked.
         self.droid.setDevicePassword(self.device_password)
-        return True
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
@@ -138,7 +137,6 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         self.droid.wakeUpNow()
         wutils.reset_wifi(self.dut)
         self.ed.clear_all_events()
-        return True
 
     def teardown_test(self):
         self.droid.wakeLockRelease()
