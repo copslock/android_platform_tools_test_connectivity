@@ -160,8 +160,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
         """
         req_params = ("bssid_2g", "bssid_5g", "bssid_dfs", "max_bugreports")
         self.wifi_chs = WifiChannelUS(self.dut.model)
-        userparam_status = self.unpack_userparams(req_params)
-        return userparam_status
+        self.unpack_userparams(req_params)
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:

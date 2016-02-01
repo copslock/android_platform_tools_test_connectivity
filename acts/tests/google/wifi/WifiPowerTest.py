@@ -70,8 +70,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             "network_2g",
             "network_5g"
         )
-        self.assert_true(self.unpack_userparams(required_userparam_names),
-                         "Failed to unpack user params.")
+        self.unpack_userparams(required_userparam_names)
         wutils.wifi_test_device_init(self.dut)
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)

@@ -64,8 +64,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "vht80_5g",
             "actual_distance"
         )
-        msg = "Failed to unpack user params."
-        self.assert_true(self.unpack_userparams(required_params), msg)
+        self.unpack_userparams(required_params)
         self.assert_true(self.actual_distance >= 5,
             "Actual distance should be no shorter than 5 meters.")
         self.visible_networks = (

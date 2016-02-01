@@ -46,8 +46,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             "subscribe_data",
             "subscribe_settings"
         )
-        msg = "Failed to unpack user params."
-        self.assert_true(self.unpack_userparams(required_params), msg)
+        self.unpack_userparams(required_params)
 
     def setup_test(self):
         assert wutils.wifi_toggle_state(self.publisher, True)

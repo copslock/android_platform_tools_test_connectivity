@@ -115,17 +115,16 @@ class BaseTestClass(object):
     def __exit__(self, *args):
         self._exec_func(self.clean_up)
 
-    def unpack_userparams(self, req_param_names=[], opt_param_names=[], **kwargs):
+    def unpack_userparams(self, req_param_names=[], opt_param_names=[],
+                          **kwargs):
         """Unpacks user defined parameters in test config into individual
         variables.
 
         Instead of accessing the user param with self.user_params["xxx"], the
         variable can be directly accessed with self.xxx.
 
-        All missing required params will be logged in error. If an optional
-        param is missing, log a note and continue. You can assert on the return
-        value of this function in setup_class to ensure the required user
-        params are found in test config and set.
+        A missing required param will raise an exception. If an optional param
+        is missing, an INFO line will be logged.
 
         Args:
             req_param_names: A list of names of the required user params.
@@ -135,18 +134,16 @@ class BaseTestClass(object):
                      self.arg_a will be "hello" unless it is specified again in
                      required_list or opt_list.
 
-        Returns:
-            True if all required user params were set. False otherwise.
+        Raises:
+            BaseTestError is raised if a required user params is missing from test
+            config.
         """
-        missing = False
         for k, v in kwargs.items():
             setattr(self, k, v)
         for name in req_param_names:
             if name not in self.user_params:
-                missing = True
-                self.log.error(("Missing required user param '%s' in "
-                    "configuration!") % name)
-                continue
+                raise BaseTestError(("Missing required user param '%s' in test"
+                    " configuration.") % name)
             setattr(self, name, self.user_params[name])
         for name in opt_param_names:
             if name not in self.user_params:
@@ -154,7 +151,6 @@ class BaseTestClass(object):
                     "configuration, continue.") % name)
             else:
                 setattr(self, name, self.user_params[name])
-        return not missing
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
