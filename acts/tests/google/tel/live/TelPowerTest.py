@@ -92,6 +92,7 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_active_call_wfc_5g_apm",
             "test_power_active_call_wfc_5g_lte_volte_on",
             "test_power_idle_baseline",
+            "test_power_idle_baseline_wifi_connected",
             "test_power_idle_wfc_2g_apm",
             "test_power_idle_wfc_2g_lte",
             "test_power_idle_lte_volte_enabled",
@@ -569,6 +570,46 @@ class TelPowerTest(TelephonyBaseTest):
 
         return self._test_power_idle("test_power_idle_baseline",
                                      _idle_baseline, PASS_CRITERIA)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_power_idle_baseline_wifi_connected(self):
+        """Power measurement test for phone idle baseline (WiFi connected).
+
+        Steps:
+        1. DUT idle, in Airplane mode. WiFi connected to 2.4G WiFi,
+            WiFi Calling disabled.
+        2. Turn off screen and wait for 6 minutes. Then measure power
+            consumption for 40 minutes and get average.
+
+        Expected Results:
+        Average power consumption should be within pre-defined limit.
+
+        Returns:
+        True if Pass, False if Fail.
+
+        Note: Please calibrate your test environment and baseline pass criteria.
+        Pass criteria info should be in test config file.
+        """
+        try:
+            PASS_CRITERIA = int(self.user_params[
+                "pass_criteria_idle_baseline_wifi_connected"]["pass_criteria"])
+        except KeyError:
+            PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
+
+        def _idle_baseline_wifi_connected(ad):
+            if not toggle_airplane_mode(self.log, ad, True):
+                self.log.error("Phone failed to turn on airplane mode.")
+                return False
+            if not ensure_wifi_connected(self.log, ad,
+                self.wifi_network_ssid_2g, self.wifi_network_pass_2g):
+                self.log.error("WiFi connect failed")
+                return False
+            ad.droid.goToSleepNow()
+            return True
+
+        return self._test_power_idle("test_power_idle_baseline_wifi_connected",
+                                     _idle_baseline_wifi_connected,
+                                     PASS_CRITERIA)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_power_idle_wfc_2g_apm(self):
