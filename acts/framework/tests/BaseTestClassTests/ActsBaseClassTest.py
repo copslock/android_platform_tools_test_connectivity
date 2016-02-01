@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts.base_test import BaseTestClass
+from acts.base_test import BaseTestError
 from acts.signals import generated_test
 from acts.signals import TestSignal
 from acts.signals import TestSignalError
@@ -254,16 +255,18 @@ class ActsBaseClassTest(BaseTestClass):
     def test_unpack_userparams_required(self):
         required_param = "something"
         required = [required_param]
-        self.assert_true(not self.unpack_userparams(required), ("Required "
-                         "param '%s' missing, unpack funtion should have "
-                         "returned False.") % required_param)
+        try:
+            self.unpack_userparams(required)
+        except BaseTestError:
+            self.explicit_pass("Got expected exception caused by missing "
+                               "required param.")
+        self.fail(("Required param '%s' missing, unpack funtion should have "
+                  "raised exception.") % required_param)
 
     def test_unpack_userparams_optional(self):
         optional_param = "something"
         opt = [optional_param]
-        self.assert_true(self.unpack_userparams(opt_param_names=opt),
-                        ("Optional param '%s' missing, unpack function should"
-                         "have returned True.") % optional_param)
+        self.unpack_userparams(opt_param_names=opt)
 
     def test_unpack_userparams_default(self):
         arg = "haha"

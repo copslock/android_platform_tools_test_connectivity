@@ -92,15 +92,13 @@ class WifiScannerScanTest(BaseTestClass):
         wifi_test_device_init(self.dut)
         req_params = ("connect_network", "run_extended_test", "ping_addr",
                       "max_bugreports")
-        userparam_status = self.unpack_userparams(req_params)
-        self.assert_true(userparam_status, "Required user parameter")
+        self.unpack_userparams(req_params)
         self.log.debug("Run extended test: {}".format(self.run_extended_test))
         self.wifi_chs = WifiChannelUS(self.dut.model)
         self.assert_true(self.dut.droid.wifiIsScannerSupported(),
             "Device %s doesn't support WifiScanner, abort." % self.dut.model)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
-        return True
 
     def teardown_test(self):
         BaseTestClass.teardown_test(self)
