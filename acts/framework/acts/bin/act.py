@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2014 - The Android Open Source Project
+#   Copyright 2016 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import sys
 import traceback
 
 from acts.base_test import validate_test_name
-from acts.controllers.android_device import list_adb_devices
 from acts.keys import Config
 from acts.signals import TestAbortAll
 from acts.test_runner import TestRunner
@@ -65,18 +64,13 @@ def _validate_testbed_name(name):
 def _validate_testbed_configs(testbed_configs):
     """Validates the testbed configurations.
 
-    Assign android device serials if necessary.
-    Checks for resource conflicts.
-
     Args:
         testbed_configs: A list of testbed configuration json objects.
 
     Raises:
         If any part of the configuration is invalid, USERError is raised.
     """
-    connected_androids = list_adb_devices()
-    seen_androids = {}
-    seen_names = {}
+    seen_names = set()
     # Cross checks testbed configs for resource conflicts.
     for config in testbed_configs:
         # Check for conflicts between multiple concurrent testbed configs.
@@ -86,29 +80,7 @@ def _validate_testbed_configs(testbed_configs):
         # Test bed names should be unique.
         if name in seen_names:
             raise USERError("Duplicate testbed name {} found.".format(name))
-        seen_names[name] = 0
-        # If no android device specified, pick up all.
-        if Config.key_android_device.value not in config:
-            if len(testbed_configs) > 1:
-                raise USERError(("Test bed %s is picking up all Android device"
-                    "s, so it can't be selected with other test beds.") % name)
-            config[Config.key_android_device.value] = connected_androids
-        for c in config[Config.key_android_device.value]:
-            if isinstance(c, str):
-                serial = c
-            elif "serial" in c:
-                serial = c["serial"]
-            else:
-                raise USERError(('Required value "serial" is missing in '
-                    'AndroidDevice config %s.') % c)
-            if serial not in connected_androids:
-                raise USERError(("Could not find android device {} "
-                 "specified in test config {}.").format(serial, name))
-            # One android device should not be in more than one configs.
-            if serial in seen_androids:
-                raise USERError(("Android device {} is referred in both {} and"
-                    " {}.").format(serial, name, seen_androids[serial]))
-            seen_androids[serial] = name
+        seen_names.add(name)
 
 def _parse_one_test_specifier(item):
     tokens = item.split(':')
