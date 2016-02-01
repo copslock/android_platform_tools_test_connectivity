@@ -29,7 +29,7 @@ from acts.signals import ControllerError
 from acts.utils import exe_cmd
 
 def create(configs, logger):
-    if configs is None:
+    if configs == []:
         ads = get_all_instances()
     elif not configs:
         return []
@@ -39,7 +39,11 @@ def create(configs, logger):
     else:
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs, logger)
+    connected_ads = list_adb_devices()
     for ad in ads:
+        if ad.serial not in connected_ads:
+            raise DoesNotExistError(("Android device %s is specified in config"
+                                     " but is not attached.") % serial)
         try:
             ad.get_droid()
             ad.ed.start()
