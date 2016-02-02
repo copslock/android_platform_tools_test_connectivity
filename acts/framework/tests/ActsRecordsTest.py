@@ -14,62 +14,69 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.base_test import BaseTestClass
-from acts.records import TestResult
-from acts.records import TestResultEnums
-from acts.records import TestResultRecord
-from acts.signals import TestFailure
-from acts.signals import TestPass
-from acts.signals import TestSkip
+import acts.base_test
+
+from acts import records
+from acts import signals
 
 
-class ActsRecordsTest(BaseTestClass):
+class ActsRecordsTest(acts.base_test.BaseTestClass):
     """This test class tests the implementation of classes in acts.records.
     """
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        acts.base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_result_record_pass_none",
-            "test_result_record_pass_with_info",
             "test_result_record_fail_none",
-            "test_result_record_fail_with_info",
             "test_result_record_skip_none",
-            "test_result_record_skip_with_info"
+            "test_result_record_pass_with_float_extra",
+            "test_result_record_fail_with_float_extra",
+            "test_result_record_skip_with_float_extra",
+            "test_result_record_pass_with_json_extra",
+            "test_result_record_fail_with_json_extra",
+            "test_result_record_skip_with_json_extra",
         )
         self.tn = "test_name"
         self.details = "Some details about the test execution."
-        self.code = 12345.56789
+        self.float_extra = 12345.56789
+        self.json_extra = {"ha": "whatever"}
 
-    def name_gen(self, param, extra_arg):
-        return "test_generated_%s" % param
-
-    def verify_record(self, record, result, details, code):
+    def verify_record(self, record, result, details, extras):
         # Verify each field.
         self.assert_true(record.test_name == self.tn, ("Expected test name %s,"
             " got %s") % (self.tn, record.test_name))
         self.assert_true(record.result == result, ("Expected test result %s, "
             "got %s") % (result, record.result))
         self.assert_true(record.details == details, ("Expected test details %s"
-            ", got %s") % (details, record.details))
-        self.assert_true(record.cause_code == code, ("Expected test cause code"
-            " %s, got %s") % (code, record.cause_code))
+            ":%s, got %s:%s") % (type(details), details, type(record.details),
+                                 record.details))
+        self.assert_true(record.extras == extras, ("Expected test record extras"
+            " %s, got %s") % (extras, record.extras))
         self.assert_true(record.begin_time, "begin time should not be empty.")
         self.assert_true(record.end_time, "end time should not be empty.")
         self.assert_true(record.uid == None, ("UID is not used at the moment, "
             "should always be None."))
         # Verify to_dict.
         d = {}
-        d[TestResultEnums.RECORD_NAME] = self.tn
-        d[TestResultEnums.RECORD_RESULT] = result
-        d[TestResultEnums.RECORD_DETAILS] = details
-        d[TestResultEnums.RECORD_CAUSE_CODE] = code
-        d[TestResultEnums.RECORD_BEGIN_TIME] = record.begin_time
-        d[TestResultEnums.RECORD_END_TIME] = record.end_time
-        d[TestResultEnums.RECORD_UID] = None
+        d[records.TestResultEnums.RECORD_NAME] = self.tn
+        d[records.TestResultEnums.RECORD_RESULT] = result
+        d[records.TestResultEnums.RECORD_DETAILS] = details
+        d[records.TestResultEnums.RECORD_EXTRAS] = extras
+        d[records.TestResultEnums.RECORD_BEGIN_TIME] = record.begin_time
+        d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
+        d[records.TestResultEnums.RECORD_UID] = None
+        d[records.TestResultEnums.RECORD_CLASS] = None
         actual_d = record.to_dict()
-        self.assert_true(set(actual_d.items()) == set(d.items()), ("Expected "
-            "%s, got %s.") % (d, actual_d))
+        self.assert_true(len(actual_d) == len(d), ("Expected dict length %d, "
+                         "got %d.") % (len(d), len(actual_d)))
+        for k, v in d.items():
+            self.assert_true(k in actual_d,
+                             "to_dict output missing expected key %s" % k)
+            self.assert_true(actual_d[k] == v, "Expected the value of %s to be"
+                             " %s in to_dict output, got %s." % (k,
+                                                                 v,
+                                                                 actual_d[k]))
         # Verify that these code paths do not cause crashes and yield non-empty
         # results.
         self.assert_true(str(record), "str of the record should not be empty.")
@@ -79,54 +86,71 @@ class ActsRecordsTest(BaseTestClass):
 
     """ Begin of Tests """
     def test_result_record_pass_none(self):
-        record = TestResultRecord(self.tn)
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_pass()
-        self.verify_record(record, TestResultEnums.TEST_RESULT_PASS, str(None),
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_PASS, None,
                            None)
-        return True
 
-    def test_result_record_pass_with_info(self):
-        record = TestResultRecord(self.tn)
+    def test_result_record_pass_with_float_extra(self):
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
-        s = TestPass(self.details, self.code)
+        s = signals.TestPass(self.details, self.float_extra)
         record.test_pass(s)
-        self.verify_record(record, TestResultEnums.TEST_RESULT_PASS,
-                           self.details, self.code)
-        return True
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_PASS,
+                           self.details, self.float_extra)
+
+    def test_result_record_pass_with_json_extra(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        s = signals.TestPass(self.details, self.json_extra)
+        record.test_pass(s)
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_PASS,
+                           self.details, self.json_extra)
 
     def test_result_record_fail_none(self):
-        record = TestResultRecord(self.tn)
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_fail()
-        self.verify_record(record, TestResultEnums.TEST_RESULT_FAIL, str(None),
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_FAIL, None,
                            None)
-        return True
 
-    def test_result_record_fail_with_info(self):
-        record = TestResultRecord(self.tn)
+    def test_result_record_fail_with_float_extra(self):
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
-        s = TestFailure(self.details, self.code)
+        s = signals.TestFailure(self.details, self.float_extra)
         record.test_fail(s)
-        self.verify_record(record, TestResultEnums.TEST_RESULT_FAIL,
-                           self.details, self.code)
-        return True
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_FAIL,
+                           self.details, self.float_extra)
+
+    def test_result_record_fail_with_json_extra(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        s = signals.TestFailure(self.details, self.json_extra)
+        record.test_fail(s)
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_FAIL,
+                           self.details, self.json_extra)
 
     def test_result_record_skip_none(self):
-        record = TestResultRecord(self.tn)
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_skip()
-        self.verify_record(record, TestResultEnums.TEST_RESULT_SKIP, str(None),
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_SKIP, None,
                            None)
-        return True
 
-    def test_result_record_skip_with_info(self):
-        record = TestResultRecord(self.tn)
+    def test_result_record_skip_with_float_extra(self):
+        record = records.TestResultRecord(self.tn)
         record.test_begin()
-        s = TestSkip(self.details, self.code)
+        s = signals.TestSkip(self.details, self.float_extra)
         record.test_skip(s)
-        self.verify_record(record, TestResultEnums.TEST_RESULT_SKIP,
-                           self.details, self.code)
-        return True
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_SKIP,
+                           self.details, self.float_extra)
 
+    def test_result_record_skip_with_json_extra(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        s = signals.TestSkip(self.details, self.json_extra)
+        record.test_skip(s)
+        self.verify_record(record, records.TestResultEnums.TEST_RESULT_SKIP,
+                           self.details, self.json_extra)
     """ End of Tests """
