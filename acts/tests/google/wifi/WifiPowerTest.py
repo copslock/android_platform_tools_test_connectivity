@@ -68,12 +68,14 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
             "network_2g",
-            "network_5g"
+            "network_5g",
+            "threshold"
         )
         self.unpack_userparams(required_userparam_names)
         wutils.wifi_test_device_init(self.dut)
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)
+        self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
@@ -92,9 +94,15 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.log.info(repr(result))
         data_path = os.path.join(self.mon_data_path, "%s.txt" % tag)
         monsoon.MonsoonData.save_to_text_file([result], data_path)
-        actual_current = "%.2fmA" % result.average_current
+        actual_current = result.average_current
+        actual_current_str = "%.2fmA" % actual_current
+        acceptable_threshold = self.threshold[self.dut.model][tag]
+        self.assert_true(actual_current < acceptable_threshold,
+                         ("Measured average current for %s - %s - is higher "
+                          "than acceptable threshold %.2f.") % (
+                          tag, actual_current_str, acceptable_threshold))
         self.explicit_pass("Measurement finished for %s." % tag,
-                           extras={"Average Current": actual_current})
+                           extras={"Average Current": actual_current_str})
 
     def test_power_wifi_off(self):
         self.assert_true(wutils.wifi_toggle_state(self.dut, False),
