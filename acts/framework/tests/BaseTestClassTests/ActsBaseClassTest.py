@@ -55,6 +55,9 @@ class ActsBaseClassTest(BaseTestClass):
             "test_skip",
             "test_skip_with_extras",
             "test_skip_if",
+            "test_generated_test_with_kwargs",
+             # WARNING: the last test in test_generated_tests is abort_class.
+             # Any test after this line will never be run!
             "test_generated_tests",
             "test_never"
         )
@@ -98,7 +101,7 @@ class ActsBaseClassTest(BaseTestClass):
             "test_generated_test_with_kwargs_case",
             "test_current_test_case_name"
         )
-        assert test_name in expected_success, msg
+        self.assert_true(test_name in expected_success, msg)
 
     def on_fail(self, test_name, begin_time):
         self.log.info("In on_fail.")
@@ -121,7 +124,7 @@ class ActsBaseClassTest(BaseTestClass):
             "test_unsolicited_test_args",
             "test_explicit_test_args_skip"
         )
-        assert test_name in expected_skip, msg
+        self.assert_true(test_name in expected_skip, msg)
 
     def on_exception(self, test_name, begin_time):
         self.log.info("In on_exception")
@@ -132,7 +135,7 @@ class ActsBaseClassTest(BaseTestClass):
             "test_setup_test_fail_by_exception",
             "test_generated_setup_test_fail_by_exception"
         )
-        assert test_name in expected_exception , msg
+        self.assert_true(test_name in expected_exception, msg)
 
     def generated_test_logic(self, param, extra_arg):
         """Execute all the test_ functions in the generated test case.
@@ -142,7 +145,8 @@ class ActsBaseClassTest(BaseTestClass):
             extra_arg: An extra arg added to make sure passing extra args work.
         """
         self.log.info("This is a generated test case with param %s" % param)
-        assert extra_arg == self.EXTRA_ARG, "Wrong extra arg %s" % extra_arg
+        self.assert_true(extra_arg == self.EXTRA_ARG,
+                         "Wrong extra arg %s" % extra_arg)
         # In case we want to add more fields to param, using a local var here.
         t = param
         test_func = getattr(self, "test_%s" % t)
@@ -154,7 +158,7 @@ class ActsBaseClassTest(BaseTestClass):
     """ Begin of Tests """
 
     def invalid_test_name(self):
-        assert False, "This should never be executed!"
+        raise Exception("This should never be executed!")
 
     def test_current_test_case_name(self):
         my_name = "test_current_test_case_name"
@@ -336,7 +340,7 @@ class ActsBaseClassTest(BaseTestClass):
         ]
         failed = self.run_generated_testcases(
             self.generated_test_logic,
-            params, self.EXTRA_ARG,
+            params, args=(self.EXTRA_ARG,),
             name_func=self.name_gen)
 
     @generated_test
@@ -371,9 +375,9 @@ class ActsBaseClassTest(BaseTestClass):
         self.run_generated_testcases(
             func,
             [param],
-            kwarg_2=kwarg2_val,
-            name_func=name_func,
-            extra=self.EXTRA_ARG,
-            kwarg_1=kwarg1_val)
+            kwargs={"kwarg_2": kwarg2_val,
+                    "extra": self.EXTRA_ARG,
+                    "kwarg_1": kwarg1_val},
+            name_func=name_func)
 
     """ End of Tests """

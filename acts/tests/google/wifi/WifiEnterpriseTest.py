@@ -337,7 +337,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         failed = self.run_generated_testcases(
             wutils.eap_connect,
             eap_configs,
-            self.dut,
+            args=(self.dut,),
             name_func=self.gen_eap_test_name)
         msg = ("The following configs failed EAP connect test: %s" %
                pprint.pformat(failed))
@@ -364,7 +364,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         failed = self.run_generated_testcases(
             self.eap_negative_connect_logic,
             neg_eap_configs,
-            self.dut,
+            args=(self.dut,),
             name_func=name_gen)
         msg = ("The following configs failed negative EAP connect test: %s" %
                pprint.pformat(failed))
@@ -396,7 +396,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         failed = self.run_generated_testcases(
             wutils.eap_connect,
             passpoint_configs,
-            self.dut,
+            args=(self.dut,),
             name_func=self.gen_passpoint_test_name)
         msg = ("The following configs failed passpoint connect test: %s" %
                pprint.pformat(failed))
@@ -425,7 +425,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         failed = self.run_generated_testcases(
             self.eap_negative_connect_logic,
             neg_passpoint_configs,
-            self.dut,
+            args=(self.dut,),
             name_func=name_gen)
         msg = ("The following configs failed negative passpoint connect test: "
                "%s") % pprint.pformat(failed)

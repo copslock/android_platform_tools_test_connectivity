@@ -620,8 +620,9 @@ class BaseTestClass(object):
                 self.results.add_record(tr_record)
                 self.reporter.write(repr(tr_record) + '\n')
 
-    def run_generated_testcases(self, test_func, settings, *args, tag="",
-                                name_func=None, **kwargs):
+    def run_generated_testcases(self, test_func, settings,
+                                args=None, kwargs=None,
+                                tag="", name_func=None):
         """Runs generated test cases.
 
         Generated test cases are not written down as functions, but as a list
@@ -634,9 +635,10 @@ class BaseTestClass(object):
                 is a parameter set.
             settings: A list of strings representing parameter sets. These are
                 usually json strings that get loaded in the test_func.
-            args: Additional args to be passed to the test_func.
+            args: Iterable of additional position args to be passed to test_func
+            kwargs: Dict of additional keyword args to be passed to test_func
             tag: Name of this group of generated test cases. Ignored if
-                name_func is provided and operate properly
+                name_func is provided and operates properly.
             name_func: A function that takes a test setting and generates a
                 proper test name. The test name should be shorter than
                 MAX_FILENAME_LEN. Names over the limit will be truncated.
@@ -644,6 +646,8 @@ class BaseTestClass(object):
         Returns:
             A list of settings that did not pass.
         """
+        args = args or ()
+        kwargs = kwargs or {}
         failed_settings = []
         for s in settings:
             test_name = "{} {}".format(tag, s)

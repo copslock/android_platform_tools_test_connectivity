@@ -179,7 +179,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1], att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[0]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap1_2g failed {}".
                          format(len(failed)))
@@ -200,7 +201,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[0]["5g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[0]["5g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap1_2gto5g failed {}".
                          format(len(failed)))
@@ -222,7 +224,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[0]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_in_AP1_5gto2g failed {}".
                          format(len(failed)))
@@ -244,7 +247,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[1]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_swtich_AP1toAp2 failed {}".
                          format(len(failed)))
@@ -265,7 +269,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1], att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[1]["5g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[1]["5g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap2_2gto5g failed {}".
                          format(len(failed)))
@@ -285,7 +290,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1], att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[1]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap2_5gto2g failed {}".
                          format(len(failed)))
@@ -334,7 +340,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[1]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap2_2g failed {}".
                          format(len(failed)))
@@ -356,7 +363,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[1]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_in_Ap2_5gto2g failed {}".
                          format(len(failed)))
@@ -378,7 +386,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[0]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_swtich_AP2toAp1 failed {}".
                          format(len(failed)))
@@ -399,7 +408,8 @@ class WifiAutoJoinTest(BaseTestClass):
                      "_{}_AP3_{}").format(att_value[0], att_value[1],att_value[2])
         failed = self.run_generated_testcases(
                         self.set_attn_and_validate_connection,
-                        attenuations, self.reference_networks[0]["2g"]['bssid'],
+                        attenuations,
+                        args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
         self.assert_true(not failed, "Number of test_autojoin_Ap1_5gto2g failed {}".
                          format(len(failed)))
