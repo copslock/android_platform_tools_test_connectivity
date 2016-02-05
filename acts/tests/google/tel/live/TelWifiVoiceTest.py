@@ -52,7 +52,7 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackAvailable
 from acts.test_utils.tel.tel_defines import NetworkCallbackLost
 from acts.test_utils.tel.tel_defines import SignalStrengthContainer
 from acts.test_utils.tel.tel_test_utils import WifiUtils
-from acts.test_utils.tel.tel_test_utils import ensure_network_rat
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_network_rat
@@ -268,16 +268,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         self.log.info("WFC phone: <{}> <{}>".format(self.android_devices[
             0].serial, get_phone_number(self.log, self.android_devices[0])))
-        self.android_devices[0].droid.telephonyStartTrackingSignalStrengthChange()
+        self.android_devices[
+            0].droid.telephonyStartTrackingSignalStrengthChange()
 
         # Do WiFi RSSI calibration.
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
                  MAX_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
                  MAX_RSSI_RESERVED_VALUE)
-        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             self.log.error("Setup_class: phone failed to select to LTE.")
             return False
         if not ensure_wifi_connected(self.log, self.android_devices[0],
@@ -313,7 +313,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # Do Cellular RSSI calibration.
         setattr(self, "cell_rssi_with_no_atten", self.android_devices[
             0].droid.telephonyGetSignalStrength()[
-            SignalStrengthContainer.SIGNAL_STRENGTH_LTE_DBM])
+                SignalStrengthContainer.SIGNAL_STRENGTH_LTE_DBM])
         self.log.info(
             "Cellular RSSI calibration info: atten=0, RSSI={}".format(
                 self.cell_rssi_with_no_atten))
@@ -323,7 +323,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         super().teardown_class()
 
-        self.android_devices[0].droid.telephonyStopTrackingSignalStrengthChange()
+        self.android_devices[
+            0].droid.telephonyStopTrackingSignalStrengthChange()
         return True
 
     def teardown_test(self):
@@ -388,7 +389,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             pass
 
         if (len(ads) != 2) or (mo_mt not in [
-            DIRECTION_MOBILE_ORIGINATED, DIRECTION_MOBILE_TERMINATED]):
+                DIRECTION_MOBILE_ORIGINATED, DIRECTION_MOBILE_TERMINATED
+        ]):
             self.log.error("Invalid parameters.")
             return False
 
@@ -553,9 +555,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
     def _wfc_phone_setup(self, is_airplane_mode, wfc_mode, volte_mode=True):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -580,9 +581,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
-                                      NETWORK_SERVICE_DATA):
+            if not ensure_network_generation(self.log, self.android_devices[0],
+                                             GEN_4G, NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -656,9 +656,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                      volte_mode=True):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
-        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -684,9 +683,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
-                                      NETWORK_SERVICE_DATA):
+            if not ensure_network_generation(self.log, self.android_devices[0],
+                                             GEN_4G, NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -755,9 +753,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
     def _wfc_phone_setup_wifi_disabled(self, is_airplane_mode, wfc_mode):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -777,9 +774,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
                 raise Exception("Toggle APM failed.")
-            if not ensure_network_rat(self.log, self.android_devices[0],
-                                      RAT_LTE, MAX_WAIT_TIME_NW_SELECTION,
-                                      NETWORK_SERVICE_DATA):
+            if not ensure_network_generation(self.log, self.android_devices[0],
+                                             GEN_4G, NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -1752,15 +1748,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan, None, True)
+            self._wfc_set_wifi_weak_cell_weak, self._wfc_phone_setup_wifi_only,
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         mt_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED,
-            self._wfc_set_wifi_weak_cell_weak,
-            self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
-            self._is_phone_in_call_iwlan, None, True)
+            self._wfc_set_wifi_weak_cell_weak, self._wfc_phone_setup_wifi_only,
+            self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
@@ -2510,7 +2504,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
         return ((mo_result is True) and (mt_result is True))
 
-    def _rove_in_test(self, cellular_rat, wfc_mode):
+    def _rove_in_test(self, cellular_gen, wfc_mode):
         """Test utility for Rove-in Tests.
 
         Cellular strong, WiFi RSSI < -100 dBm.
@@ -2525,9 +2519,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # ensure cellular rat, wfc mode, wifi not associated
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(self.log, self.android_devices[0],
-                                  cellular_rat, MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         cellular_gen, NETWORK_SERVICE_DATA):
             self.log.error("_rove_in_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
             return False
@@ -2571,11 +2564,10 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # make a wfc call.
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED, None,
-            None, self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None,
-            True)
+            DIRECTION_MOBILE_ORIGINATED, None, None, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan, None, True)
 
-    def _rove_out_test(self, cellular_rat, wfc_mode):
+    def _rove_out_test(self, cellular_gen, wfc_mode):
         """Test utility for Rove-out Tests.
 
         Cellular strong, WiFi RSSI WIFI_RSSI_FOR_ROVE_OUT_TEST_PHONE_INITIAL_STATE.
@@ -2596,9 +2588,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         # ensure cellular rat, wfc mode, wifi associated
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
-        if not ensure_network_rat(self.log, self.android_devices[0],
-                                  cellular_rat, MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             self.log.error("_rove_out_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
             return False
@@ -2654,22 +2645,21 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         if wfc_mode == WFC_MODE_WIFI_ONLY:
             return self._wfc_call_sequence(
                 [self.android_devices[0], self.android_devices[1]],
-                DIRECTION_MOBILE_ORIGINATED, None,
-                None, self._phone_idle_not_iwlan, self._is_phone_not_in_call,
-                None, "initiate_call fail.")
+                DIRECTION_MOBILE_ORIGINATED, None, None,
+                self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
+                "initiate_call fail.")
         elif wfc_mode == WFC_MODE_WIFI_PREFERRED:
-            if cellular_rat == RAT_LTE:
+            if cellular_gen == GEN_4G:
                 return self._wfc_call_sequence(
                     [self.android_devices[0], self.android_devices[1]],
-                    DIRECTION_MOBILE_ORIGINATED,
-                    None, None, self._phone_idle_volte,
-                    self._is_phone_in_call_volte, None, True)
+                    DIRECTION_MOBILE_ORIGINATED, None, None,
+                    self._phone_idle_volte, self._is_phone_in_call_volte, None,
+                    True)
             else:
                 return self._wfc_call_sequence(
                     [self.android_devices[0], self.android_devices[1]],
-                    DIRECTION_MOBILE_ORIGINATED,
-                    None, None, self._phone_idle_3g, self._is_phone_in_call_3g,
-                    None, True)
+                    DIRECTION_MOBILE_ORIGINATED, None, None,
+                    self._phone_idle_3g, self._is_phone_in_call_3g, None, True)
         else:
             return False
 
@@ -2846,7 +2836,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._rove_in_test(RAT_LTE, WFC_MODE_WIFI_PREFERRED)
+        return self._rove_in_test(GEN_4G, WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_in_lte_wifi_only(self):
@@ -2865,7 +2855,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ###########
-        return self._rove_in_test(RAT_LTE, WFC_MODE_WIFI_ONLY)
+        return self._rove_in_test(GEN_4G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_in_wcdma_wifi_preferred(self):
@@ -2883,7 +2873,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._rove_in_test(RAT_WCDMA, WFC_MODE_WIFI_PREFERRED)
+        return self._rove_in_test(GEN_3G, WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_in_wcdma_wifi_only(self):
@@ -2902,7 +2892,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ###########
-        return self._rove_in_test(RAT_WCDMA, WFC_MODE_WIFI_ONLY)
+        return self._rove_in_test(GEN_3G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_out_lte_wifi_preferred(self):
@@ -2920,7 +2910,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._rove_out_test(RAT_LTE, WFC_MODE_WIFI_PREFERRED)
+        return self._rove_out_test(GEN_4G, WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_out_lte_wifi_only(self):
@@ -2939,7 +2929,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ###########
-        return self._rove_out_test(RAT_LTE, WFC_MODE_WIFI_ONLY)
+        return self._rove_out_test(GEN_4G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_out_wcdma_wifi_preferred(self):
@@ -2957,7 +2947,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._rove_out_test(RAT_WCDMA, WFC_MODE_WIFI_PREFERRED)
+        return self._rove_out_test(GEN_3G, WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_rove_out_wcdma_wifi_only(self):
@@ -2976,7 +2966,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ###########
-        return self._rove_out_test(RAT_WCDMA, WFC_MODE_WIFI_ONLY)
+        return self._rove_out_test(GEN_3G, WFC_MODE_WIFI_ONLY)
 
     def _increase_wifi_rssi_check_phone_hand_in(self):
         """Private Test utility for hand_in test.
@@ -3031,8 +3021,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_absent_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
             self._phone_idle_volte, self._is_phone_in_call_volte,
             self._increase_wifi_rssi_check_phone_hand_in, True)
@@ -3067,8 +3056,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_absent_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_preferred,
             self._phone_idle_volte, self._is_phone_in_call_volte,
             self._increase_wifi_rssi_hand_in_and_decrease_wifi_rssi_hand_out,
@@ -3109,8 +3097,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should either drop or hands over to 3g/2g.
         """
         return self._wfc_call_sequence(
-            [self.android_devices[0], self.android_devices[1]], DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_cellular_preferred, self._phone_idle_volte,
             self._is_phone_in_call_volte,
             self._decrease_lte_rssi_check_phone_not_hand_in, True)
@@ -3181,8 +3169,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan,
             self._decrease_wifi_rssi_check_phone_hand_out, True)
@@ -3217,8 +3204,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA call should remain active.
         """
         return self._wfc_call_sequence(
-            [self.android_devices[0], self.android_devices[1]], DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan,
             self._decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in,
@@ -3310,8 +3297,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan, self._hand_out_hand_in_stress, True)
 
@@ -3402,8 +3388,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_weak_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_weak_cell_strong,
             self._wfc_phone_setup_wifi_preferred, self._phone_idle_volte,
             self._is_phone_in_call_volte, self._hand_in_hand_out_stress, True)
 
@@ -3445,8 +3430,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_absent,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_absent,
             self._wfc_phone_setup_cellular_absent_cellular_preferred,
             self._phone_idle_iwlan, self._is_phone_in_call_iwlan,
             self._increase_cellular_rssi_check_phone_hand_out, True)
@@ -3473,6 +3457,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self.log.error("Phone should drop call.")
             return False
         # Make sure Voice RAT is not LTE.
+        # FIXME: I think there's something wrong with this check
         if RAT_LTE == get_network_rat(self.log, self.android_devices[0],
                                       NETWORK_SERVICE_VOICE):
             self.log.error("Phone should not report lte as voice rat.")
@@ -3491,8 +3476,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA data should be on LTE.
         """
         return self._wfc_call_sequence(
-            [self.android_devices[0], self.android_devices[1]], DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_only, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan,
             self._decrease_wifi_rssi_check_phone_not_hand_out, True)
@@ -3507,8 +3492,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_preferred_e4g_disabled,
             self._phone_idle_iwlan, self._is_phone_in_call_iwlan, None, True)
 
@@ -3522,8 +3506,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Call from PhoneA to PhoneB, PhoneA should be on CSFB.
         """
         return self._wfc_call_sequence(
-            [self.android_devices[0], self.android_devices[1]], DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_absent_cell_strong,
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_absent_cell_strong,
             self._wfc_phone_setup_wifi_absent_wifi_preferred_e4g_disabled,
             self._phone_idle_not_iwlan, self._is_phone_in_call_csfb, None,
             True)
@@ -3561,8 +3545,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
-            DIRECTION_MOBILE_ORIGINATED,
-            self._wfc_set_wifi_strong_cell_strong,
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_strong,
             self._wfc_phone_setup_wifi_preferred_e4g_disabled,
             self._phone_idle_iwlan, self._is_phone_in_call_iwlan,
             self._decrease_wifi_rssi_check_phone_drop, True)
