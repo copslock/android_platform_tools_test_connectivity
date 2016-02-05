@@ -29,8 +29,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
-from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
@@ -52,12 +51,12 @@ from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRe
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED
 from acts.test_utils.tel.tel_test_utils import check_phone_number_match
-from acts.test_utils.tel.tel_test_utils import ensure_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import is_sub_event_match
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
+from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_event
@@ -91,17 +90,23 @@ def phone_setup_video_for_subscription(log, ad, sub_id):
     Returns:
         True if ad (sub_id) is setup correctly and idle for video call.
     """
+
+    # FIXME: temporarily disable selinux due to b/26953532
+    ad.adb.shell("setenforce", "0")
+
     toggle_airplane_mode(log, ad, False)
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
         return False
-    toggle_volte_for_subscription(log, ad, sub_id, True)
-    if not ensure_network_rat_for_subscription(log, ad, sub_id, RAT_LTE,
-                                               MAX_WAIT_TIME_NW_SELECTION,
-                                               NETWORK_SERVICE_DATA):
-        log.error("{} failed to select LTE (data) within {}s.".format(
-            ad.serial, MAX_WAIT_TIME_NW_SELECTION))
+    toggle_volte(log, ad, True)
+
+    if not ensure_network_generation(log,
+                                     ad,
+                                     GEN_4G,
+                                     voice_or_data=NETWORK_SERVICE_DATA):
+        log.error("{} voice not in LTE mode.".format(ad.serial))
         return False
+
     return phone_idle_video_for_subscription(log, ad, sub_id)
 
 
@@ -130,14 +135,11 @@ def phone_idle_video_for_subscription(log, ad, sub_id):
     Returns:
         True if ad (sub_id) is idle for video call.
     """
-    if not wait_for_network_rat_for_subscription(
-            log,
-            ad,
-            sub_id,
-            RAT_FAMILY_LTE,
-            voice_or_data=NETWORK_SERVICE_VOICE):
+
+    if not wait_for_network_generation(log, ad, GEN_4G):
         log.error("{} voice not in LTE mode.".format(ad.serial))
         return False
+
     if not wait_for_video_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
         log.error(
             "{} failed to <report volte enabled true> within {}s.".format(
@@ -422,8 +424,8 @@ def wait_and_answer_video_call_for_subscription(
             ad.droid.telephonyGetCallStateForSubscription(sub_id) !=
             TELEPHONY_STATE_RINGING):
         try:
-            event_ringing = wait_for_ringing_event(log, ad,
-                                                   MAX_WAIT_TIME_CALLEE_RINGING)
+            event_ringing = wait_for_ringing_event(
+                log, ad, MAX_WAIT_TIME_CALLEE_RINGING)
             if event_ringing is None:
                 log.error("No Ringing Event.")
                 return False
@@ -455,10 +457,11 @@ def wait_and_answer_video_call_for_subscription(
     ad.droid.telecomAcceptRingingCall(video_state)
 
     try:
-        ad.ed.wait_for_event(EventCallStateChanged,
-                             is_sub_event_match,
-                             timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
-                             sub_event=TELEPHONY_STATE_OFFHOOK)
+        ad.ed.wait_for_event(
+            EventCallStateChanged,
+            is_sub_event_match,
+            timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
+            sub_event=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         if not ad.droid.telecomIsInCall():
             log.error("Accept call failed.")
