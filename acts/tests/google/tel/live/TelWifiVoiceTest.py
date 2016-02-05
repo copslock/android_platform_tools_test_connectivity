@@ -3601,8 +3601,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallbackAvailable,
-                    network_callback_id=rssi_monitoring_id_lower)
+                    network_callback_id=rssi_monitoring_id_lower,
+                    network_callback_event=NetworkCallbackAvailable)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
@@ -3620,8 +3620,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallbackAvailable,
-                    network_callback_id=rssi_monitoring_id_higher)
+                    network_callback_id=rssi_monitoring_id_higher
+                    network_callback_event=NetworkCallbackAvailable)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
@@ -3639,8 +3639,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallbackLost,
-                    network_callback_id=rssi_monitoring_id_higher)
+                    network_callback_id=rssi_monitoring_id_higher,
+                    network_callback_event=NetworkCallbackLost)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
@@ -3658,8 +3658,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallbackLost,
-                    network_callback_id=rssi_monitoring_id_lower)
+                    network_callback_id=rssi_monitoring_id_lower,
+                    network_callback_event=NetworkCallbackLost)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
@@ -3677,8 +3677,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    sub_event=NetworkCallbackAvailable,
-                    network_callback_id=rssi_monitoring_id_lower)
+                    network_callback_id=rssi_monitoring_id_lower,
+                    network_callback_event=NetworkCallbackAvailable)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
                 self.log.error("No {} event for id {}".format(
