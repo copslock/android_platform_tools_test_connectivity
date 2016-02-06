@@ -14,7 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from unittest import mock
+try:
+  from unittest import mock  # PY3
+except ImportError:
+  import mock  # PY2
 
 from acts import base_test
 from acts import logger
