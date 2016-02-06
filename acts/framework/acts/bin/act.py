@@ -231,7 +231,7 @@ def _parse_test_file(fpath):
         print("Error loading test file.")
         raise
 
-if __name__ == "__main__":
+def main(argv):
     parser = argparse.ArgumentParser(description=("Specify tests to run. If "
                  "nothing specified, run all test cases found."))
     parser.add_argument('-c', '--config', nargs=1, type=str, required=True,
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         help=("Path to a file containing a comma delimited list of test "
               "classes to run."))
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     test_list = None
     repeat = 1
     if args.testfile:
@@ -300,3 +300,7 @@ if __name__ == "__main__":
     if exec_result is False:
         sys.exit(1)
     sys.exit(0)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
