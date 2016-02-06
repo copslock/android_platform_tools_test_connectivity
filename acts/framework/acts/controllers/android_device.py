@@ -29,11 +29,24 @@ from acts.logger import LoggerProxy
 from acts.signals import ControllerError
 from acts.utils import exe_cmd
 
+ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
+ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
+ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
+
+class AndroidDeviceError(ControllerError):
+    pass
+
+class DoesNotExistError(AndroidDeviceError):
+    """Raised when something that does not exist is referenced.
+    """
+
 def create(configs, logger):
-    if configs == []:
+    if not configs:
+        raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
+    elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
         ads = get_all_instances()
-    elif not configs:
-        return []
+    elif not isinstance(configs, list):
+        raise AndroidDeviceError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
         ads = get_instances(configs, logger)
@@ -54,7 +67,7 @@ def create(configs, logger):
             # only printed under py3.
             msg = "Failed to start sl4a on %s" % ad.serial
             logger.exception(msg)
-            raise ControllerError(msg)
+            raise AndroidDeviceError(msg)
     return ads
 
 def destroy(ads):
@@ -63,13 +76,6 @@ def destroy(ads):
             ad.terminate_all_sessions()
         except:
             pass
-
-class AndroidDeviceError(Exception):
-    pass
-
-class DoesNotExistError(AndroidDeviceError):
-    """Raised when something that does not exist is referenced.
-    """
 
 def _parse_device_list(device_list_str, key):
     """Parses a byte string representing a list of devices. The string is
@@ -143,7 +149,7 @@ def get_instances_with_configs(configs, logger=None):
         try:
             serial = c.pop("serial")
         except KeyError:
-            raise ControllerError(('Requried value "serial" is missing in '
+            raise AndroidDeviceError(('Required value "serial" is missing in '
                 'AndroidDevice config %s.') % c)
         ad = AndroidDevice(serial, logger=logger)
         ad.load_config(c)
@@ -347,13 +353,13 @@ class AndroidDevice:
             config: A dictionary representing the configs.
 
         Raises:
-            ControllerError is raised if the config is trying to overwrite an
-            existing attribute.
+            AndroidDeviceError is raised if the config is trying to overwrite
+            an existing attribute.
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise ControllerError(("Attempting to set existing attribute "
-                    "%s on %s") % (k, self.serial))
+                raise AndroidDeviceError(("Attempting to set existing "
+                    "attribute %s on %s") % (k, self.serial))
             setattr(self, k, v)
 
     def root_adb(self):

@@ -19,9 +19,32 @@ try:
 except ImportError:
   import mock  # PY2
 
+import logging
+
 from acts import base_test
 from acts import logger
 from acts.controllers import android_device
+
+def get_mock_ads(num):
+    """Generates a list of mock AndroidDevice objects.
+
+    The serial number of each device will be integer 0 through num - 1.
+
+    Args:
+        num: An integer that is the number of mock AndroidDevice objects to
+            create.
+    """
+    ads = []
+    for i in range(num):
+        ad = mock.MagicMock(name="AndroidDevice", serial=i, h_port=None)
+        ads.append(ad)
+    return ads
+
+def mock_get_all_instances():
+    return get_mock_ads(5)
+
+def mock_list_adb_devices():
+    return [ad.serial for ad in get_mock_ads(5)]
 
 class ActsAndroidDeviceTest(base_test.BaseTestClass):
     """This test class has unit tests for the implementation of everything
@@ -31,30 +54,50 @@ class ActsAndroidDeviceTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         super(ActsAndroidDeviceTest, self).__init__(controllers)
         self.tests = (
+            "test_create_with_pickup_all",
+            "test_create_with_empty_config",
+            "test_create_with_not_list_config",
             "test_get_device_success_with_serial",
             "test_get_device_success_with_serial_and_extra_field",
             "test_get_device_no_match",
             "test_get_device_too_many_matches"
         )
 
-    def get_mock_ads(self, num):
-        """Generates a list of mock AndroidDevice objects.
-
-        The serial number of each device will be integer 0 through num - 1.
-
-        Args:
-            num: An integer that is the number of mock AndroidDevice objects to
-                create.
-        """
-        ads = []
-        for i in range(num):
-            ad = mock.MagicMock(name="AndroidDevice", serial=i, h_port=None)
-            ads.append(ad)
-        return ads
-
     """ Begin of Tests """
+    @mock.patch.object(android_device, "get_all_instances",
+                       new=mock_get_all_instances)
+    @mock.patch.object(android_device, "list_adb_devices",
+                       new=mock_list_adb_devices)
+    def test_create_with_pickup_all(self):
+        pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
+        actual_ads = android_device.create(pick_all_token, logging)
+        for actual, expected in zip(actual_ads, get_mock_ads(5)):
+            self.assert_true(actual.serial == expected.serial,
+                             "Expected serial %s, got %s." % (expected.serial,
+                                                              actual.serial))
+
+    def test_create_with_empty_config(self):
+        expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
+        try:
+            android_device.create([], logging)
+            self.fail("Did not get expected AndroidDeviceError.")
+        except android_device.AndroidDeviceError as e:
+            self.assert_true(expected_msg == str(e),
+                             "Expected error msg %s, got %s." % (expected_msg,
+                                                                 str(e)))
+
+    def test_create_with_not_list_config(self):
+        expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
+        try:
+            android_device.create("HAHA", logging)
+            self.fail("Did not get expected AndroidDeviceError.")
+        except android_device.AndroidDeviceError as e:
+            self.assert_true(expected_msg == str(e),
+                             "Expected error msg %s, got %s." % (expected_msg,
+                                                                 str(e)))
+
     def test_get_device_success_with_serial(self):
-        ads = self.get_mock_ads(5)
+        ads = get_mock_ads(5)
         expected_serial = 0
         ad = android_device.get_device(ads, serial=expected_serial)
         self.assert_true(ad.serial == expected_serial,
@@ -62,7 +105,7 @@ class ActsAndroidDeviceTest(base_test.BaseTestClass):
                          ) % (expected_serial, ad.serial))
 
     def test_get_device_success_with_serial_and_extra_field(self):
-        ads = self.get_mock_ads(5)
+        ads = get_mock_ads(5)
         expected_serial = 1
         expected_h_port = 5555
         ads[1].h_port = expected_h_port
@@ -77,7 +120,7 @@ class ActsAndroidDeviceTest(base_test.BaseTestClass):
                          ) % (expected_h_port, ad.h_port))
 
     def test_get_device_no_match(self):
-        ads = self.get_mock_ads(5)
+        ads = get_mock_ads(5)
         try:
             ad = android_device.get_device(ads, serial=len(ads))
         except android_device.AndroidDeviceError as e:
@@ -89,7 +132,7 @@ class ActsAndroidDeviceTest(base_test.BaseTestClass):
                   "matching device found.")
 
     def test_get_device_too_many_matches(self):
-        ads = self.get_mock_ads(5)
+        ads = get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
         try:
             ad = android_device.get_device(ads, serial=target_serial)
