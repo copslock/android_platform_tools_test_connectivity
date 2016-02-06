@@ -17,6 +17,8 @@
 JSON RPC interface to android scripting engine.
 """
 
+from builtins import str
+
 import json
 import os
 import socket

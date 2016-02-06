@@ -11,6 +11,8 @@ setup(
     packages = find_packages(),
     include_package_data = False,
     install_requires = [
+        'contextlib2',
+        'future',
         'pyserial',
     ],
     scripts = ['acts/bin/act.py','acts/bin/monsoon.py'],
