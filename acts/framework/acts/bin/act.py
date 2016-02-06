@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from builtins import str
+
 import argparse
 import multiprocessing
 import signal
@@ -55,7 +57,7 @@ def _validate_testbed_name(name):
     """
     if not name:
         raise USERError("Test bed names can't be empty.")
-    if type(name) is not str:
+    if not isinstance(name, str):
         raise USERError("Test bed names have to be string.")
     for l in name:
         if l not in valid_filename_chars:
