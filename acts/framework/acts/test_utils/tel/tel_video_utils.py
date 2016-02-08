@@ -50,9 +50,10 @@ from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRe
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyResponseReceived
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED
+from acts.test_utils.tel.tel_defines import CallStateContainer
 from acts.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
-from acts.test_utils.tel.tel_test_utils import is_sub_event_match
+from acts.test_utils.tel.tel_test_utils import is_event_match
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -459,9 +460,10 @@ def wait_and_answer_video_call_for_subscription(
     try:
         ad.ed.wait_for_event(
             EventCallStateChanged,
-            is_sub_event_match,
+            is_event_match,
             timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
-            sub_event=TELEPHONY_STATE_OFFHOOK)
+            field=CallStateContainer.CALL_STATE,
+            value=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         if not ad.droid.telecomIsInCall():
             log.error("Accept call failed.")
