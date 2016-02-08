@@ -563,7 +563,51 @@ class MessageWaitingIndicatorContainer:
 class CallStateContainer:
     INCOMING_NUMBER = "incomingNumber"
     SUBSCRIPTION_ID = "subscriptionId"
-    SUB_EVENT = "subEvent"
+    CALL_STATE = "callState"
+
+class PreciseCallStateContainer:
+    TYPE = "type"
+    CAUSE = "cause"
+    SUBSCRIPTION_ID = "subscriptionId"
+    PRECISE_CALL_STATE = "preciseCallState"
+
+class DataConnectionRealTimeInfoContainer:
+    TYPE = "type"
+    TIME = "time"
+    SUBSCRIPTION_ID = "subscriptionId"
+    DATA_CONNECTION_POWER_STATE = "dataConnectionPowerState"
+
+class DataConnectionStateContainer:
+    TYPE = "type"
+    DATA_NETWORK_TYPE = "dataNetworkType"
+    STATE_CODE = "stateCode"
+    SUBSCRIPTION_ID = "subscriptionId"
+    DATA_CONNECTION_STATE = "dataConnectionState"
+
+class ServiceStateContainer:
+    VOICE_REG_STATE = "voiceRegState"
+    VOICE_NETWORK_TYPE = "voiceNetworkType"
+    DATA_REG_STATE = "dataRegState"
+    DATA_NETWORK_TYPE = "dataNetworkType"
+    OPERATOR_NAME = "operatorName"
+    OPERATOR_ID = "operatorId"
+    IS_MANUAL_NW_SELECTION = "isManualNwSelection"
+    ROAMING = "roaming"
+    IS_EMERGENCY_ONLY = "isEmergencyOnly"
+    NETWORK_ID = "networkId"
+    SYSTEM_ID = "systemId"
+    SUBSCRIPTION_ID = "subscriptionId"
+    SERVICE_STATE = "serviceState"
+
+class PacketKeepaliveContainer:
+    ID = "id"
+    PACKET_KEEPALIVE_EVENT = "packetKeepaliveEvent"
+
+class NetworkCallbackContainer:
+    ID = "id"
+    NETWORK_CALLBACK_EVENT = "networkCallbackEvent"
+    MAX_MS_TO_LIVE = "maxMsToLive"
+    RSSI = "rssi"
 
 """
 End shared constant define for both Python and Java
