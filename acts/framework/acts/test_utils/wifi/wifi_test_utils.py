@@ -426,7 +426,11 @@ def match_networks(target_params, networks):
     """
     results = []
     for n in networks:
-        if set(target_params.items()) <= set(n.items()):
+        for k, v in target_params.items():
+            if k not in n:
+                continue
+            if n[k] != v:
+                continue
             results.append(n)
     return results
 
@@ -772,6 +776,9 @@ def verify_wifi_connection_info(ad, expected_con):
     current_con = ad.droid.wifiGetConnectionInfo()
     log.debug("Current connection: %s" % current_con)
     for k, expected_v in expected_con.items():
+        # Do not verify authentication related fields.
+        if k == "password":
+            continue
         msg = "Field %s does not exist in wifi connection info %s." % (k,
             current_con)
         assert k in current_con, msg
