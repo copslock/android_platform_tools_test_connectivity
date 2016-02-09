@@ -20,6 +20,7 @@ import pprint
 from enum import IntEnum
 from queue import Empty
 
+from acts import signals
 from acts.logger import LoggerProxy
 from acts.utils import exe_cmd
 from acts.utils import require_sl4a
@@ -770,16 +771,21 @@ def verify_wifi_connection_info(ad, expected_con):
             connection. e.g. {"SSID": "test_wifi"}
     """
     current_con = ad.droid.wifiGetConnectionInfo()
+    case_insensitive = ["BSSID", "supplicant_state"]
     log.debug("Current connection: %s" % current_con)
     for k, expected_v in expected_con.items():
         msg = "Field %s does not exist in wifi connection info %s." % (k,
             current_con)
-        assert k in current_con, msg
-        actual_v = current_con[k].lower()
+        if k not in current_con:
+            raise signals.TestFailure(msg)
+        actual_v = current_con[k]
+        if k in case_insensitive:
+            actual_v = actual_v.lower()
+            expected_v = expected_v.lower()
         msg = "Expected %s to be %s, actual %s is %s." % (k, expected_v, k,
             actual_v)
-        expected_v = expected_v.lower()
-        assert actual_v == expected_v, msg
+        if actual_v != expected_v:
+            raise signals.TestFailure(msg)
 
 def eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
     """Connects to an enterprise network and verify connection.
