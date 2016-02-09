@@ -51,7 +51,20 @@ class TelephonyBaseTest(BaseTestClass):
                 for ad in self.android_devices:
                     ad.droid.logI("Started " + log_string)
                 # TODO: b/19002120 start QXDM Logging
-                return fn(self, *args, **kwargs)
+                result = fn(self, *args, **kwargs)
+                if result is not True and "telephony_auto_rerun" in self.user_params:
+                    # re-run only once, if re-run pass, mark as pass
+                    log_string = "[Rerun Test ID] {}. 1st run failed.".format(
+                        test_id)
+                    self.log.info(log_string)
+                    for ad in self.android_devices:
+                        ad.droid.logI("Rerun Started "+log_string)
+                    result = fn(self, *args, **kwargs)
+                    if result:
+                        self.log.info("Rerun passed.")
+                    else:
+                        self.log.info("Rerun failed.")
+                return result
             except TestSignal:
                 raise
             except Exception as e:
