@@ -40,22 +40,6 @@ DEFAULT_ADB_LOG_OFFSET = 5
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
-def validate_test_name(name):
-    """Checks if a test name is valid.
-
-    To be valid, a test name needs to follow the naming convention: starts
-    with "test_". Also, the test class needs to actually have a function
-    named after the test.
-
-    Args:
-        name: name of a test case.
-
-    Raises:
-        BaseTestError is raised if the name is invalid.
-    """
-    if len(name) < 5 or name[:5] != "test_":
-        raise BaseTestError("Invalid test case name found: {}.".format(name))
-
 class BaseTestError(Exception):
     """Raised for exceptions that occured in BaseTestClass."""
 
@@ -702,8 +686,6 @@ class BaseTestClass(object):
         test_funcs = []
         for test_name in test_names:
             try:
-                # Validate test_name's format.
-                validate_test_name(test_name)
                 test_funcs.append((test_name, getattr(self, test_name)))
             except AttributeError:
                 self.log.warning("%s does not have test case %s." % (
