@@ -23,6 +23,7 @@ import unittest
 
 from acts import base_test
 from acts import signals
+from acts import test_runner
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -57,6 +58,81 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
+
+    def test_self_tests_list(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.tests = ("test_something",)
+            def test_something(self):
+                pass
+            def test_never(self):
+                # This should not execute it's not on default test list.
+                never_call()
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, "test_something")
+
+    def test_self_tests_list_fail_by_convention(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.tests = ("not_a_test_something",)
+            def not_a_test_something(self):
+                pass
+            def test_never(self):
+                # This should not execute it's not on default test list.
+                never_call()
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        expected_msg = ("Test case name not_a_test_something does not follow "
+                        "naming convention test_*, abort.")
+        with self.assertRaises(test_runner.USERError, msg=expected_msg):
+            bt_cls.run()
+
+    def test_cli_test_selection_override_self_tests_list(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.tests = ("test_never",)
+            def test_something(self):
+                pass
+            def test_never(self):
+                # This should not execute it's not selected by cmd line input.
+                never_call()
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_something"])
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, "test_something")
+
+    def test_cli_test_selection_fail_by_convention(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.tests = ("not_a_test_something",)
+            def not_a_test_something(self):
+                pass
+            def test_never(self):
+                # This should not execute it's not selected by cmd line input.
+                never_call()
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        expected_msg = ("Test case name not_a_test_something does not follow "
+                        "naming convention test_*, abort.")
+        with self.assertRaises(test_runner.USERError, msg=expected_msg):
+            bt_cls.run(test_names=["not_a_test_something"])
+
+    def test_default_execution_of_all_tests(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_something(self):
+                pass
+            def not_a_test(self):
+                # This should not execute its name doesn't follow test case
+                # naming convention.
+                never_call()
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_something"])
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, "test_something")
 
     def test_setup_class_fail_by_exception(self):
         class MockBaseTest(base_test.BaseTestClass):

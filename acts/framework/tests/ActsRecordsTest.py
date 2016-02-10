@@ -26,17 +26,6 @@ class ActsRecordsTest(acts.base_test.BaseTestClass):
 
     def __init__(self, controllers):
         acts.base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_result_record_pass_none",
-            "test_result_record_fail_none",
-            "test_result_record_skip_none",
-            "test_result_record_pass_with_float_extra",
-            "test_result_record_fail_with_float_extra",
-            "test_result_record_skip_with_float_extra",
-            "test_result_record_pass_with_json_extra",
-            "test_result_record_fail_with_json_extra",
-            "test_result_record_skip_with_json_extra",
-        )
         self.tn = "test_name"
         self.details = "Some details about the test execution."
         self.float_extra = 12345.56789
