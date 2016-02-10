@@ -22,7 +22,6 @@ import signal
 import sys
 import traceback
 
-from acts.base_test import validate_test_name
 from acts.keys import Config
 from acts.signals import TestAbortAll
 from acts.test_runner import TestRunner
@@ -84,23 +83,49 @@ def _validate_testbed_configs(testbed_configs):
             raise USERError("Duplicate testbed name {} found.".format(name))
         seen_names.add(name)
 
+def _verify_test_class_name(test_cls_name):
+    if not test_cls_name.endswith("Test"):
+        raise USERError(("Requested test class '%s' does not follow the test "
+                         "class naming convention *Test.") % test_cls_name)
+
 def _parse_one_test_specifier(item):
+    """Parse one test specifier from command line input.
+
+    This also verifies that the test class name and test case names follow
+    ACTS's naming conventions. A test class name has to end with "Test"; a test
+    case name has to start with "test".
+
+    Args:
+        item: A string that specifies a test class or test cases in one test
+            class to run.
+
+    Returns:
+        A tuple of a string and a list of strings. The string is the test class
+        name, the list of strings is a list of test case names. The list can be
+        None.
+    """
     tokens = item.split(':')
     if len(tokens) > 2:
-        raise USERError("Syntax error in test specifier {}".format(item))
+        raise USERError("Syntax error in test specifier %s" % item)
     if len(tokens) == 1:
         # This should be considered a test class name
         test_cls_name = tokens[0]
+        _verify_test_class_name(test_cls_name)
         return (test_cls_name, None)
     elif len(tokens) == 2:
         # This should be considered a test class name followed by
         # a list of test case names.
         test_cls_name, test_case_names = tokens
         clean_names = []
+        _verify_test_class_name(test_cls_name)
         for elem in test_case_names.split(','):
-            test_case = elem.strip()
-            validate_test_name(test_case)
-            clean_names.append(test_case)
+            test_case_name = elem.strip()
+            if not test_case_name.startswith("test_"):
+                    raise USERError(("Requested test case '%s' in test class "
+                                    "'%s' does not follow the test case "
+                                    "naming convention test_*.") % (
+                                    test_case_name, test_cls_name))
+            clean_names.append(test_case_name)
         return (test_cls_name, clean_names)
 
 def parse_test_list(test_list):
