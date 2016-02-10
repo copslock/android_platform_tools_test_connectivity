@@ -1,4 +1,5 @@
-# python3.4
+#/usr/bin/env python3.4
+#
 # Copyright (C) 2009 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
