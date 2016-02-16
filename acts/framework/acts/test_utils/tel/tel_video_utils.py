@@ -59,6 +59,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_event
 from acts.test_utils.tel.tel_test_utils import wait_for_telecom_ringing
