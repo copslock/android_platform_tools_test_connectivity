@@ -1808,7 +1808,17 @@ def wait_for_data_attach_for_subscription(log, ad, sub_id, max_time):
         NETWORK_SERVICE_DATA)
 
 
-def _is_ims_registered(log, ad):
+def is_ims_registered(log, ad):
+    """Return True if IMS registered.
+
+    Args:
+        log: log object.
+        ad: android device.
+
+    Returns:
+        Return True if IMS registered.
+        Return False if IMS not registered.
+    """
     return ad.droid.telephonyIsImsRegistered()
 
 
@@ -1824,15 +1834,45 @@ def wait_for_ims_registered(log, ad, max_time):
         Return True if device register ims successfully within max_time.
         Return False if timeout.
     """
-    return _wait_for_droid_in_state(log, ad, max_time, _is_ims_registered)
+    return _wait_for_droid_in_state(log, ad, max_time, is_ims_registered)
 
 
-def _is_volte_enabled(log, ad):
-    return ad.droid.telephonyIsVolteAvailable()
+def is_volte_enabled(log, ad):
+    """Return True if VoLTE feature bit is True.
+
+    Args:
+        log: log object.
+        ad: android device.
+
+    Returns:
+        Return True if VoLTE feature bit is True and IMS registered.
+        Return False if VoLTE feature bit is False or IMS not registered.
+    """
+    is_volte_available = ad.droid.telephonyIsVolteAvailable()
+    is_ims_registered = is_ims_registered(log, ad)
+    if is_volte_available is True and is_ims_registered is False:
+        log.error("Error! VoLTE is Available, but IMS is not registered.")
+        return False
+    return is_volte_available
 
 
-def _is_video_enabled(log, ad):
-    return ad.droid.telephonyIsVideoCallingAvailable()
+def is_video_enabled(log, ad):
+    """Return True if Video Calling feature bit is True.
+
+    Args:
+        log: log object.
+        ad: android device.
+
+    Returns:
+        Return True if Video Calling feature bit is True and IMS registered.
+        Return False if Video Calling feature bit is False or IMS not registered.
+    """
+    is_video_available = ad.droid.telephonyIsVideoCallingAvailable()
+    is_ims_registered = is_ims_registered(log, ad)
+    if is_video_available is True and is_ims_registered is False:
+        log.error("Error! Video Call is Available, but IMS is not registered.")
+        return False
+    return is_video_available
 
 
 def wait_for_volte_enabled(log, ad, max_time):
@@ -1847,7 +1887,7 @@ def wait_for_volte_enabled(log, ad, max_time):
         Return True if device report VoLTE enabled bit true within max_time.
         Return False if timeout.
     """
-    return _wait_for_droid_in_state(log, ad, max_time, _is_volte_enabled)
+    return _wait_for_droid_in_state(log, ad, max_time, is_volte_enabled)
 
 
 def wait_for_video_enabled(log, ad, max_time):
@@ -1862,7 +1902,7 @@ def wait_for_video_enabled(log, ad, max_time):
         Return True if device report Video Telephony enabled bit true within max_time.
         Return False if timeout.
     """
-    return _wait_for_droid_in_state(log, ad, max_time, _is_video_enabled)
+    return _wait_for_droid_in_state(log, ad, max_time, is_video_enabled)
 
 
 def is_wfc_enabled(log, ad):
@@ -1873,10 +1913,15 @@ def is_wfc_enabled(log, ad):
         ad: android device.
 
     Returns:
-        Return True if WiFi Calling feature bit is True.
-        Return False if WiFi Calling feature bit is False.
+        Return True if WiFi Calling feature bit is True and IMS registered.
+        Return False if WiFi Calling feature bit is False or IMS not registered.
     """
-    return ad.droid.telephonyIsWifiCallingAvailable()
+    is_wfc_available = ad.droid.telephonyIsWifiCallingAvailable()
+    is_ims_registered = is_ims_registered(log, ad)
+    if is_wfc_available is True and is_ims_registered is False:
+        log.error("Error! WiFi Calling is Available, but IMS is not registered.")
+        return False
+    return is_wfc_available
 
 
 def wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
