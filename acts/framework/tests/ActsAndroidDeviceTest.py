@@ -53,15 +53,6 @@ class ActsAndroidDeviceTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         super(ActsAndroidDeviceTest, self).__init__(controllers)
-        self.tests = (
-            "test_create_with_pickup_all",
-            "test_create_with_empty_config",
-            "test_create_with_not_list_config",
-            "test_get_device_success_with_serial",
-            "test_get_device_success_with_serial_and_extra_field",
-            "test_get_device_no_match",
-            "test_get_device_too_many_matches"
-        )
 
     """ Begin of Tests """
     @mock.patch.object(android_device, "get_all_instances",
