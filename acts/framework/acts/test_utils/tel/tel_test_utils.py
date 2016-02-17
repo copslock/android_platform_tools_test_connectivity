@@ -2734,17 +2734,6 @@ def ensure_phone_default_state(log, ad):
         ad.droid.telecomEndCall()
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
-    # TODO: b/26348141 We should remove this code or make it generic.
-    # The purpose of this code is to recover DUT if b/23906084 happens.
-    if is_droid_in_rat_family(log, ad, RAT_FAMILY_GSM, NETWORK_SERVICE_VOICE):
-        log.error("Device is stuck in GSM... Attempting to Un-stick")
-        ad.droid.telephonySetPreferredNetworkTypes(NETWORK_MODE_LTE_ONLY)
-        if not wait_for_network_rat(log, ad, RAT_FAMILY_LTE):
-            if not wait_for_network_rat(log, ad, RAT_FAMILY_UMTS):
-                log.error("Device failed to un-stick from GSM."
-                          "Game over man, game over.")
-                result = False
-
     if not wait_for_not_network_rat(log,
                                     ad,
                                     RAT_FAMILY_WLAN,
