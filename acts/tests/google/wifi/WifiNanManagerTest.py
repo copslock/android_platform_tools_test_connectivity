@@ -41,10 +41,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         required_params = (
             "config_request1",
             "config_request2",
-            "publish_data",
-            "publish_settings",
-            "subscribe_data",
-            "subscribe_settings"
+            "publish_config",
+            "subscribe_config"
         )
         self.unpack_userparams(required_params)
 
@@ -119,10 +117,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                       ON_IDENTITY_CHANGED)
         self.log.debug(event)
 
-        self.publisher.droid.wifiNanPublish(self.publish_data,
-                                            self.publish_settings, 0)
-        self.subscriber.droid.wifiNanSubscribe(self.subscribe_data,
-                                               self.subscribe_settings, 0)
+        self.publisher.droid.wifiNanPublish(self.publish_config, 0)
+        self.subscriber.droid.wifiNanSubscribe(self.subscribe_config, 0)
 
         try:
             event = self.subscriber.ed.pop_event(ON_MATCH, 30)
