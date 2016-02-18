@@ -47,16 +47,16 @@ class TelLiveStressCallTest(BaseTestClass):
 
     def setup_test(self):
         # try removing lock
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.android_devices[0].droid.wakeLockAcquireBright()
+        self.android_devices[0].droid.wakeUpNow()
         self.assert_true(
             ensure_phone_default_state(self.log, self.ad_caller),
             "Make sure phone is in default state")
         return True
 
     def teardown_test(self):
-        self.droid.wakeLockRelease()
-        self.droid.goToSleepNow()
+        self.android_devices[0].droid.wakeLockRelease()
+        self.android_devices[0].droid.goToSleepNow()
         self.assert_true(
             ensure_phone_default_state(self.log, self.ad_caller),
             "Make sure phone returns to default state")
