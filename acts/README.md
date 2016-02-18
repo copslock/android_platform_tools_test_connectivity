@@ -42,8 +42,10 @@ In developer mode:
 displayed. Check the "Always" box and click "Yes".
 
 ## ACTS Setup
-1. ACTS requires three python dependencies:
+1. ACTS requires 5 python dependencies:
 - Python3.4
+- The contextlib2 package
+- The future package
 - The setuptools package
 - The pyserial package
 2. From the ACTS directory, run setup
