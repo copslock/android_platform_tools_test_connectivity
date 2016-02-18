@@ -32,7 +32,8 @@ class BtPreFlightTest(BaseTestClass):
         )
 
     def setup_class(self):
-        for d in self.droids:
+        for a in self.android_devices:
+            d = a.droid
             serial = d.getBuildSerial()
             self.log.debug("****START: {} DEVICE INFO****".format(serial))
             self.log.debug(

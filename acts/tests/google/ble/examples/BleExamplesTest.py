@@ -38,9 +38,11 @@ class BleExamplesTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_droid, self.scn_ed = (self.android_devices[0].droid,
+                                       self.android_devices[0].ed)
+        self.adv_droid, self.adv_ed = (self.android_devices[1].droid,
+                                       self.android_devices[1].ed)
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
@@ -50,8 +52,8 @@ class BleExamplesTest(BluetoothBaseTest):
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(
-            self.scn_droid, self.scn_ed, self.active_adv_callback_list,
-            self.adv_droid, self.adv_ed, self.active_adv_callback_list)
+            self.android_devices[0], self.active_adv_callback_list,
+            self.android_devices[1], self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
@@ -70,7 +72,7 @@ class BleExamplesTest(BluetoothBaseTest):
         Test that simply toggle bluetooth
         :return:
         """
-        return reset_bluetooth([self.droid], [self.ed])
+        return reset_bluetooth([self.android_devices[0]])
 
     '''
     Start: Examples of BLE Scanning

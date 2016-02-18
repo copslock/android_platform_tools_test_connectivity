@@ -31,18 +31,18 @@ class BtReconnectTest(BluetoothBaseTest):
         )
 
     def setup_class(self):
-        return setup_multiple_devices_for_bt_test(self.droids, self.eds)
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
-        return reset_bluetooth(self.droids, self.eds)
+        return reset_bluetooth(self.android_devices)
 
     def setup_test(self):
-        setup_result = reset_bluetooth(self.droids, self.eds)
-        self.log.debug(log_energy_info(self.droids, "Start"))
+        setup_result = reset_bluetooth(self.android_devices)
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
         return setup_result
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     @BluetoothBaseTest.bt_test_wrap
