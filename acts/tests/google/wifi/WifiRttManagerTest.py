@@ -117,12 +117,11 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "bullhead": rtt_cap_bullhead,
             "angler": rtt_cap_angler
         }
-        return True
 
     """Helper Functions"""
     def invalid_params_logic(self, rtt_params):
         try:
-            self.droid.wifiRttStartRanging([rtt_params])
+            self.dut.droid.wifiRttStartRanging([rtt_params])
         except SL4AAPIError as e:
             e_str = str(e)
             self.assert_true("IllegalArgumentException" in e_str,
@@ -140,10 +139,10 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             Rtt ranging results.
         """
         self.log.debug("Start ranging with:\n%s" % pprint.pformat(rtt_params))
-        idx = self.droid.wifiRttStartRanging(rtt_params)
+        idx = self.dut.droid.wifiRttStartRanging(rtt_params)
         event = None
         try:
-            event = self.ed.pop_events("WifiRttRanging%d" % idx, 30)
+            event = self.dut.ed.pop_events("WifiRttRanging%d" % idx, 30)
             if event[0]["name"].endswith("onSuccess"):
                 results = event[0]["data"]["Results"]
                 result_len = len(results)
@@ -201,7 +200,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             A list of networks that have RTTResponders.
         """
         wutils.start_wifi_connection_scan(self.dut)
-        networks = self.droid.wifiGetScanResults()
+        networks = self.dut.droid.wifiGetScanResults()
         rtt_networks = []
         for nw in networks:
             if self.network_selector(nw):
@@ -231,11 +230,11 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         rtt_networks = []
         try:
             for i in range(len(self.visible_networks)):
-                event = self.ed.wait_for_event(event_name, condition, 30)
+                event = self.dut.ed.wait_for_event(event_name, condition, 30)
                 rtt_networks.append(event["data"]["Results"][0])
             self.log.info("Waiting for gscan to finish.")
             event_name = "WifiScannerScan%donResults" % idx
-            event = self.ed.pop_event(event_name, 300)
+            event = self.dut.ed.pop_event(event_name, 300)
             total_network_cnt = len(event["data"]["Results"][0]["ScanResults"])
             self.log.info("Found %d networks in total." % total_network_cnt)
             self.log.debug(rtt_networks)
@@ -433,14 +432,14 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         devices support device-to-ap RTT.
         """
         model = acts.utils.trim_model_name(self.dut.model)
-        self.assert_true(not self.droid.wifiIsDeviceToDeviceRttSupported(),
+        self.assert_true(not self.dut.droid.wifiIsDeviceToDeviceRttSupported(),
             "Device to device is not supposed to be supported.")
         if any([model in m for m in self.support_models]):
-            self.assert_true(self.droid.wifiIsDeviceToApRttSupported(),
+            self.assert_true(self.dut.droid.wifiIsDeviceToApRttSupported(),
                 "%s should support device-to-ap RTT." % model)
             self.log.info("%s supports device-to-ap RTT as expected." % model)
         else:
-            self.assert_true(not self.droid.wifiIsDeviceToApRttSupported(),
+            self.assert_true(not self.dut.droid.wifiIsDeviceToApRttSupported(),
                 "%s should not support device-to-ap RTT." % model)
             self.log.info(("%s does not support device-to-ap RTT as expected."
                 ) % model)
@@ -450,7 +449,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
     def test_capability_check(self):
         """Checks the capabilities params are reported as expected.
         """
-        caps = self.droid.wifiRttGetCapabilities()
+        caps = self.dut.droid.wifiRttGetCapabilities()
         self.assert_true(caps, "Unable to get rtt capabilities.")
         self.log.debug("Got rtt capabilities %s" % caps)
         model = acts.utils.trim_model_name(self.dut.model)
@@ -476,7 +475,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "is80211McRTTResponder" is False.
         """
         wutils.start_wifi_connection_scan(self.dut)
-        scan_results = self.droid.wifiGetScanResults()
+        scan_results = self.dut.droid.wifiGetScanResults()
         self.log.debug(scan_results)
         for n in visible_networks:
             self.assert_true(wutils.match_networks(n, scan_results),
