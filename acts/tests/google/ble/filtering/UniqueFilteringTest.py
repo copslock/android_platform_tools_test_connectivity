@@ -40,9 +40,9 @@ class UniqueFilteringTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
@@ -74,8 +74,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
         self.log.debug(pprint.pformat(event))
         callbacktype = event['data']['CallbackType']
         if callbacktype != expected_callbacktype:
-            self.log.debug("Expected callback type: {}, Found callback type: {}".format(
-                expected_callbacktype, callbacktype))
+            self.log.debug("Expected callback type: {}, Found callback type: {}"
+                .format(expected_callbacktype, callbacktype))
             test_result = False
         return test_result
 
@@ -125,19 +125,19 @@ class UniqueFilteringTest(BluetoothBaseTest):
         Priority: 1
         """
         test_result = True
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
+            self.scn_ad.droid)
         expected_event_name = scan_result.format(scan_callback)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        self.scn_droid.bleFlushPendingScanResults(scan_callback)
-        worker = self.scn_ed.handle_event(
+        self.scn_ad.droid.bleFlushPendingScanResults(scan_callback)
+        worker = self.scn_ad.ed.handle_event(
             self.blescan_verify_onscanresult_event_handler,
             expected_event_name, ([1]), self.default_timeout)
         try:
@@ -148,8 +148,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
         except concurrent.futures._base.TimeoutError as error:
             test_result = False
             self.log.debug("Test failed with TimeoutError: {}".format(error))
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -178,21 +178,21 @@ class UniqueFilteringTest(BluetoothBaseTest):
         Priority: 2
         """
         test_result = True
-        self.scn_droid.bleSetScanSettingsReportDelayMillis(5000)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(5000)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
+            self.scn_ad.droid)
         expected_event_name = batch_scan_result.format(scan_callback)
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.adv_droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        system_time_nanos = self.scn_droid.getSystemElapsedRealtimeNanos()
+        system_time_nanos = self.scn_ad.droid.getSystemElapsedRealtimeNanos()
         self.log.debug("Current system time: {}".format(system_time_nanos))
-        worker = self.scn_ed.handle_event(
+        worker = self.scn_ad.ed.handle_event(
             self.blescan_verify_onbatchscanresult_event_handler,
             expected_event_name, ([system_time_nanos, 5000000000]),
             self.default_timeout)
@@ -204,8 +204,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
         except concurrent.futures._base.TimeoutError as error:
             test_result = False
             self.log.debug("Test failed with: {}".format(error))
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -232,29 +232,29 @@ class UniqueFilteringTest(BluetoothBaseTest):
         """
         test_result = True
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
+            self.scn_ad.droid)
         expected_event_name = batch_scan_result.format(scan_callback)
         advertise_callback, advertise_data, advertise_settings =(
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        worker = self.scn_ed.handle_event(
+        worker = self.scn_ad.ed.handle_event(
             self.blescan_verify_onbatchscanresult_event_handler,
             expected_event_name, ([]), self.default_timeout)
-        self.scn_droid.bleFlushPendingScanResults(scan_callback)
+        self.scn_ad.droid.bleFlushPendingScanResults(scan_callback)
         try:
-            event_info = self.scn_ed.pop_event(expected_event_name,
-                                               10)
+            event_info = self.scn_ad.ed.pop_event(expected_event_name,
+                                                  10)
             self.log.debug(
                 "Unexpectedly found an advertiser: {}".format(event_info))
             test_result = False
         except Empty:
             self.log.debug("No {} events were found as expected.".format(
                 batch_scan_result))
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -281,31 +281,31 @@ class UniqueFilteringTest(BluetoothBaseTest):
         """
         test_result = True
         filter_name = "{}_probably_wont_find".format(
-            self.adv_droid.bluetoothGetLocalName())
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.scn_droid.bleSetScanFilterDeviceName(filter_name)
+            self.adv_ad.droid.bluetoothGetLocalName())
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.scn_ad.droid.bleSetScanFilterDeviceName(filter_name)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
-        self.scn_droid.bleBuildScanFilter(filter_list)
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         expected_event_name = scan_result.format(scan_callback)
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.adv_droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         try:
-            event_info = self.scn_ed.pop_event(
+            event_info = self.scn_ad.ed.pop_event(
                 expected_event_name, self.default_timeout)
             self.log.error(
                 "Unexpectedly found an advertiser: {}".format(event_info))
             test_result = False
         except Empty:
             self.log.debug("No events were found as expected.")
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -335,35 +335,36 @@ class UniqueFilteringTest(BluetoothBaseTest):
         test_result = True
         service_uuid = "00000000-0000-1000-8000-00805F9B34FB"
         service_mask = "00000000-0000-1000-8000-00805F9B34FA"
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.scn_droid.bleSetScanFilterServiceUuid(service_uuid, service_mask)
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.scn_ad.droid.bleSetScanFilterServiceUuid(service_uuid,
+            service_mask)
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
-        self.scn_droid.bleBuildScanFilter(filter_list)
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         expected_event_name = scan_result.format(scan_callback)
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.adv_droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        worker = self.scn_ed.handle_event(
+        worker = self.scn_ad.ed.handle_event(
             self.blescan_verify_onscanresult_event_handler,
             expected_event_name, ([1]), self.default_timeout)
         try:
-            event_info = self.scn_ed.pop_event(expected_event_name,
+            event_info = self.scn_ad.ed.pop_event(expected_event_name,
                                                self.default_timeout)
             self.log.error(
                 "Unexpectedly found an advertiser:".format(event_info))
             test_result = False
         except Empty as error:
             self.log.debug("No events were found as expected.")
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -395,32 +396,32 @@ class UniqueFilteringTest(BluetoothBaseTest):
         # TODO: (tturney) waiting on input from team on how we handle this
         # situation.
         test_result = True
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-        self.adv_droid.bleAddAdvertiseDataManufacturerId(117, "1,2,3")
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(117, "1,2,3")
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-        self.adv_droid.bleAddAdvertiseDataManufacturerId(
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(
             117, "1,2,3,4,5,6,7,8")
         advertise_callback1, advertise_data1, advertise_settings1 = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.adv_droid.bleStartBleAdvertising(
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback1, advertise_data1,
             advertise_settings1)
 
-        filter_list = self.scn_droid.bleGenFilterList()
-        self.scn_droid.bleSetScanSettingsScanMode(
+        filter_list = self.scn_ad.droid.bleGenFilterList()
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        scan_settings = self.scn_droid.bleBuildScanSetting()
-        scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleSetScanFilterManufacturerData(
+        scan_settings = self.scn_ad.droid.bleBuildScanSetting()
+        scan_callback = self.scn_ad.droid.bleGenScanCallback()
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(
             117, "1,2,3", "127,127,127")
-        self.scn_droid.bleBuildScanFilter(filter_list)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         return test_result
 
@@ -452,40 +453,40 @@ class UniqueFilteringTest(BluetoothBaseTest):
         Priority: 1
         """
         test_result = True
-        self.scn_droid.bleSetScanSettingsScanMode(
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
+            self.scn_ad.droid)
         expected_event_name = scan_result.format(scan_callback)
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
-        self.adv_droid.bleStartBleAdvertising(
+            generate_ble_advertise_objects(self.adv_ad.droid))
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        event_info = self.scn_ed.pop_event(
+        event_info = self.scn_ad.ed.pop_event(
             expected_event_name, self.default_timeout)
         mac_address = event_info['data']['Result']['deviceInfo']['address']
         self.log.info(
             "Filter advertisement with address {}".format(mac_address))
-        self.scn_droid.bleStopBleScan(scan_callback)
-        self.scn_droid.bleSetScanSettingsScanMode(
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_droid.bleSetScanFilterDeviceAddress(mac_address)
+        self.scn_ad.droid.bleSetScanFilterDeviceAddress(mac_address)
         filter_list2, scan_settings2, scan_callback2 = (
-            generate_ble_scan_objects(self.scn_droid))
+            generate_ble_scan_objects(self.scn_ad.droid))
 
-        self.scn_droid.bleBuildScanFilter(filter_list2)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleBuildScanFilter(filter_list2)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list2, scan_settings2, scan_callback2)
         expected_event_name = scan_result.format(scan_callback2)
-        found_event = self.scn_ed.pop_event(
+        found_event = self.scn_ad.ed.pop_event(
             expected_event_name, self.default_timeout)
         if (found_event['data']['Result']['deviceInfo']['address'] !=
                 mac_address):
             test_result = False
-        self.scn_droid.bleStopBleScan(scan_callback2)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback2)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         return test_result

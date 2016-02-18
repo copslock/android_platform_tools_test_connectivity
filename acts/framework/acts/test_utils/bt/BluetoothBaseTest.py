@@ -43,23 +43,23 @@ class BluetoothBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
-        return setup_multiple_devices_for_bt_test(self.droids, self.eds)
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
-        self.log.debug(log_energy_info(self.droids, "Start"))
-        for e in self.eds:
-            e.clear_all_events()
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs".
                        format(test_name))
-        take_btsnoop_logs(self.droids, self, test_name)
-        reset_bluetooth(self.droids, self.eds)
+        take_btsnoop_logs(self.android_devices, self, test_name)
+        reset_bluetooth(self.android_devices)
 
         if "no_bug_report_on_fail" not in self.user_params:
             try:

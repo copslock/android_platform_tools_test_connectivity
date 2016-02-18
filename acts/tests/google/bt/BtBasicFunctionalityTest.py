@@ -39,6 +39,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
+        self.droid_ad = self.android_devices[0]
+        self.droid1_ad = self.android_devices[1]
         self.tests = (
             "test_bluetooth_reset",
             "test_make_device_discoverable",
@@ -55,21 +57,21 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         )
 
     def setup_class(self):
-        return setup_multiple_devices_for_bt_test(self.droids, self.eds)
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
-        self.log.debug(log_energy_info(self.droids, "Start"))
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
         for e in self.eds:
             e.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.droids, self, test_name)
-        reset_bluetooth(self.droids, self.eds)
+        take_btsnoop_logs(self.android_devices, self, test_name)
+        reset_bluetooth(self.android_devices)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_bluetooth_reset(self):
@@ -91,7 +93,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        return reset_bluetooth(self.droids, self.eds)
+        return reset_bluetooth([self.droid_ad])
 
     @BluetoothBaseTest.bt_test_wrap
     def test_make_device_discoverable(self):
@@ -117,10 +119,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1 = self.droids[0]
-        droid2 = self.droids[1]
-        droid1.bluetoothMakeDiscoverable()
-        scan_mode = droid1.bluetoothGetScanMode()
+        self.droid_ad.droid.bluetoothMakeDiscoverable()
+        scan_mode = self.droid_ad.droid.bluetoothGetScanMode()
         if (scan_mode ==
                 BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
             self.log.debug("Android device1 scan mode is "
@@ -129,18 +129,18 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             self.log.debug("Android device1 scan mode is not "
                            "SCAN_MODE_CONNECTABLE_DISCOVERABLE")
             return False
-        if droid2.bluetoothStartDiscovery():
+        if self.droid1_ad.droid.bluetoothStartDiscovery():
             self.log.debug("Android device2 start discovery process success")
             # Give Bluetooth time to discover advertising devices
             time.sleep(self.scan_discovery_time)
-            droid1_name = droid1.bluetoothGetLocalName()
-            get_all_discovered_devices = droid2.bluetoothGetDiscoveredDevices()
+            droid_name = self.droid_ad.droid.bluetoothGetLocalName()
+            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices()
             find_flag = False
             if get_all_discovered_devices:
                 self.log.debug("Android device2 get all the discovered devices "
                                "list {}".format(get_all_discovered_devices))
                 for i in get_all_discovered_devices:
-                    if 'name' in i and i['name'] == droid1_name:
+                    if 'name' in i and i['name'] == droid_name:
                         self.log.debug("Android device1 is in the discovery "
                                        "list of device2")
                         find_flag = True
@@ -180,27 +180,27 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1 = self.droids[0]
-        droid2 = self.droids[1]
-        droid1.bluetoothMakeUndiscoverable()
-        scan_mode = droid1.bluetoothGetScanMode()
+        self.droid_ad.droid.bluetoothMakeUndiscoverable()
+        set_bt_scan_mode(self.droid1_ad,
+            BluetoothScanModeType.SCAN_MODE_NONE.value)
+        scan_mode = self.droid1_ad.droid.bluetoothGetScanMode()
         if scan_mode == BluetoothScanModeType.SCAN_MODE_NONE.value:
             self.log.debug("Android device1 scan mode is SCAN_MODE_NONE")
         else:
             self.log.debug("Android device1 scan mode is not SCAN_MODE_NONE")
             return False
-        if droid2.bluetoothStartDiscovery():
+        if self.droid1_ad.droid.bluetoothStartDiscovery():
             self.log.debug("Android device2 start discovery process success")
             # Give Bluetooth time to discover advertising devices
             time.sleep(self.scan_discovery_time)
-            droid1_name = droid1.bluetoothGetLocalName()
-            get_all_discovered_devices = droid2.bluetoothGetDiscoveredDevices()
+            droid_name = self.droid_ad.droid.bluetoothGetLocalName()
+            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices()
             find_flag = False
             if get_all_discovered_devices:
                 self.log.debug("Android device2 get all the discovered devices "
                                "list {}".format(get_all_discovered_devices))
                 for i in get_all_discovered_devices:
-                    if 'name' in i and i['name'] == droid1_name:
+                    if 'name' in i and i['name'] == droid_name:
                         self.log.debug(
                             "Android device1 is in the discovery list of "
                             "device2")
@@ -237,9 +237,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1 = self.droids[0]
         name = "SetDeviceName"
-        return set_device_name(droid1, name)
+        return set_device_name(self.droid_ad.droid, name)
 
     def test_scan_mode_off(self):
         """Test disabling bluetooth scanning.
@@ -261,9 +260,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1, event_dispatcher1 = self.droids[0], self.eds[0]
         self.log.debug("Test scan mode STATE_OFF.")
-        return set_bt_scan_mode(droid1, event_dispatcher1,
+        return set_bt_scan_mode(self.droid_ad,
                                 BluetoothScanModeType.STATE_OFF.value)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -287,9 +285,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1, event_dispatcher1 = self.droids[0], self.eds[0]
         self.log.debug("Test scan mode SCAN_MODE_NONE.")
-        return set_bt_scan_mode(droid1, event_dispatcher1,
+        return set_bt_scan_mode(self.droid_ad,
                                 BluetoothScanModeType.SCAN_MODE_NONE.value)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -313,10 +310,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 2
         """
-        droid1, event_dispatcher1 = self.droids[0], self.eds[0]
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE.")
-        return set_bt_scan_mode(
-            droid1, event_dispatcher1,
+        return set_bt_scan_mode(self.droid_ad,
             BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -340,10 +335,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 2
         """
-        droid1, event_dispatcher1 = self.droids[0], self.eds[0]
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
-        return set_bt_scan_mode(
-            droid1, event_dispatcher1,
+        return set_bt_scan_mode(self.droid_ad,
             BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -364,8 +357,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        droid1 = self.droids[0]
-        profiles = check_device_supported_profiles(droid1)
+        profiles = check_device_supported_profiles(self.droid_ad.droid)
         if not profiles['hid']:
             self.log.debug("Android device do not support HID profile.")
             return False
@@ -380,8 +372,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'hsp'
         :return: test_result: bool
         """
-        droid1 = self.droids[0]
-        profiles = check_device_supported_profiles(droid1)
+        profiles = check_device_supported_profiles(self.droid_ad.droid)
         if not profiles['hsp']:
             self.log.debug("Android device do not support HSP profile.")
             return False
@@ -396,8 +387,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'a2dp'
         :return: test_result: bool
         """
-        droid1 = self.droids[0]
-        profiles = check_device_supported_profiles(droid1)
+        profiles = check_device_supported_profiles(self.droid_ad.droid)
         if not profiles['a2dp']:
             self.log.debug("Android device do not support A2DP profile.")
             return False
@@ -412,8 +402,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'avrcp'
         :return: test_result: bool
         """
-        droid1 = self.droids[0]
-        profiles = check_device_supported_profiles(droid1)
+        profiles = check_device_supported_profiles(self.droid_ad.droid)
         if not profiles['avrcp']:
             self.log.debug("Android device do not support AVRCP profile.")
             return False

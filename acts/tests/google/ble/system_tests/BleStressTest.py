@@ -36,9 +36,9 @@ class BleStressTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         self.tests = (
             "test_loop_scanning_1000",
             "test_restart_scan_callback_after_bt_toggle",
@@ -84,9 +84,9 @@ class BleStressTest(BluetoothBaseTest):
         for _ in range(1000):
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
                 scan_droid)
-            self.scn_droid.bleStartBleScan(
+            self.scn_ad.droid.bleStartBleScan(
                 filter_list, scan_settings, scan_callback)
-            self.scn_droid.bleStopBleScan(scan_callback)
+            self.scn_ad.droid.bleStopBleScan(scan_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -115,17 +115,17 @@ class BleStressTest(BluetoothBaseTest):
         """
         for _ in range(self.droid_list[1]['max_advertisements']):
             adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
-                self.adv_droid)
-            self.adv_droid.bleStartBleAdvertising(
+                self.adv_ad.droid)
+            self.adv_ad.droid.bleStartBleAdvertising(
                 adv_callback, adv_data, adv_settings)
         for _ in range(100):
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-                self.scn_droid)
-            self.scn_droid.bleStartBleScan(
+                self.scn_ad.droid)
+            self.scn_ad.droid.bleStartBleScan(
                 filter_list, scan_settings, scan_callback)
-            self.log.info(self.scn_ed.pop_event(
+            self.log.info(self.scn_ad.ed.pop_event(
                 scan_result.format(scan_callback)))
-            self.scn_droid.bleStopBleScan(scan_callback)
+            self.scn_ad.droid.bleStopBleScan(scan_callback)
             time.sleep(1)
         return True
 
@@ -225,7 +225,7 @@ class BleStressTest(BluetoothBaseTest):
             self.log.debug(
                 " ".join(["Test failed, filtering callback onSuccess never occurred:",
                           str(error)]))
-        test_result = reset_bluetooth([self.droids[0]], [self.eds[0]])
+        test_result = reset_bluetooth([self.scn_ad])
         if not test_result:
             return test_result
         time.sleep(5)
@@ -271,13 +271,12 @@ class BleStressTest(BluetoothBaseTest):
         Priority: 1
         """
         test_result = True
-        scan_droid, scan_event_dispatcher = self.droid, self.ed
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             scan_droid)
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        reset_bluetooth([scan_droid], [scan_event_dispatcher])
-        self.scn_droid.bleStartBleScan(
+        reset_bluetooth([self.scan_ad])
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
 
         return test_result

@@ -36,5 +36,5 @@ class EnergyTest(BluetoothBaseTest):
         while (True):
             with suppress(Exception):
                 self.log.info(
-                    self.droids[0].bluetoothGetControllerActivityEnergyInfo(1))
+                    self.android_devices[0].droid.bluetoothGetControllerActivityEnergyInfo(1))
         return True

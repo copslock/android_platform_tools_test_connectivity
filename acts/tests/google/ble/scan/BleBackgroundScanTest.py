@@ -44,9 +44,9 @@ class BleBackgroundScanTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
@@ -56,33 +56,33 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         )
 
     def setup_test(self):
-        self.log.debug(log_energy_info(self.droids, "Start"))
-        if (self.scn_droid.bluetoothGetLeState() ==
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
+        if (self.scn_ad.droid.bluetoothGetLeState() ==
                 BluetoothAdapterState.STATE_OFF.value):
-            self.scn_droid.bluetoothEnableBLE()
-            self.scn_ed.pop_event("BleStateChangedOn")
+            self.scn_ad.droid.bluetoothEnableBLE()
+            self.scn_ad.ed.pop_event("BleStateChangedOn")
         for e in self.eds:
             e.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         cleanup_scanners_and_advertisers(
-            self.scn_droid, self.scn_ed, self.active_adv_callback_list,
-            self.adv_droid, self.adv_ed, self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list,
+            self.adv_ad, self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
-            self.adv_droid)
-        self.adv_droid.bleStartBleAdvertising(
+            self.adv_ad.droid)
+        self.adv_ad.droid.bleStartBleAdvertising(
             adv_callback, adv_data, adv_settings)
         self.active_adv_callback_list.append(adv_callback)
 
     def _verify_no_events_found(self, event_name):
         try:
-            self.scn_ed.pop_event(event_name, self.default_timeout)
+            self.scn_ad.ed.pop_event(event_name, self.default_timeout)
             self.log.error("Found an event when none was expected.")
             return False
         except Empty:
@@ -119,18 +119,18 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         """
         import time
         self._setup_generic_advertisement()
-        self.scn_droid.bluetoothToggleState(False)
-        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
-        self.scn_droid.bluetoothDisableBLE()
-        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
-        self.scn_droid.bluetoothEnableBLE()
+        self.scn_ad.droid.bluetoothToggleState(False)
+        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        self.scn_ad.droid.bluetoothDisableBLE()
+        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        self.scn_ad.droid.bluetoothEnableBLE()
         self._delete_me()
-        self.scn_ed.pop_event(bluetooth_on, self.default_timeout * 2)
+        self.scn_ad.ed.pop_event(bluetooth_on, self.default_timeout * 2)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
-        self.scn_droid.bleStartBleScan(
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
-        self.scn_ed.pop_event(
+        self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout)
         return True
 
@@ -159,16 +159,16 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         Priority: 0
         """
         self._setup_generic_advertisement()
-        self.scn_droid.bluetoothEnableBLE()
-        self.scn_droid.bluetoothToggleState(False)
-        self.scn_ed.pop_event(bluetooth_off, self.default_timeout)
+        self.scn_ad.droid.bluetoothEnableBLE()
+        self.scn_ad.droid.bluetoothToggleState(False)
+        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
         self._delete_me()
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
+            self.scn_ad.droid)
         try:
-            self.scn_droid.bleStartBleScan(
+            self.scn_ad.droid.bleStartBleScan(
                 filter_list, scan_settings, scan_callback)
-            self.scn_ed.pop_event(scan_result.format(scan_callback))
+            self.scn_ad.ed.pop_event(scan_result.format(scan_callback))
             self.log.info("Was able to start background scan even though ble "
                           "was disabled.")
             return False
