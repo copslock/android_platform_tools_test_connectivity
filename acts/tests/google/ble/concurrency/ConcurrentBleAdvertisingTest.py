@@ -48,7 +48,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         self.droid_list = get_advanced_droid_list(self.droids, self.eds)
         self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
         self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
-        self.max_advertisements = self.droid_list[0]['max_advertisements']
+        self.max_advertisements = self.droid_list[1]['max_advertisements']
         if self.max_advertisements == 0:
             self.tests = ()
             return
@@ -89,7 +89,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         advertise_data = self.adv_droid.bleBuildAdvertiseData()
         advertise_settings = self.adv_droid.bleBuildAdvertiseSettings()
         advertise_callback_list = []
-        for _ in range(num_advertisements):
+        for i in range(num_advertisements):
             advertise_callback = self.adv_droid.bleGenBleAdvertiseCallback()
             advertise_callback_list.append(advertise_callback)
             self.adv_droid.bleStartBleAdvertising(
@@ -98,7 +98,9 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             try:
                 self.adv_ed.pop_event(
                     adv_succ.format(advertise_callback), self.default_timeout)
+                self.log.info("Advertisement {} started.".format(i+1))
             except Empty as error:
+                self.log.info("Advertisement {} failed to start.".format(i+1))
                 self.log.debug(
                     "Test failed with Empty error: {}".format(error))
                 return False
