@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
 import unittest
 
 import acts_android_device_test
@@ -41,3 +42,4 @@ if __name__ == "__main__":
     # This is the entry point for running all ACTS unit tests.
     runner = unittest.TextTestRunner()
     results = runner.run(compile_suite())
+    sys.exit(not results.wasSuccessful())
