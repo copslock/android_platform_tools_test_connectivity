@@ -1,8 +1,0 @@
-#! /usr/bin/env python3.4
-
-import subprocess
-
-cmd = "act.py -c acts_sanity_test_config.json -tf ActsSanityTestGroup.txt"
-subprocess.check_call([cmd], shell=True)
-cmd = "python3 acts_base_class_test.py"
-subprocess.check_call([cmd], shell=True)
