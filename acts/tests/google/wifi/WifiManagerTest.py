@@ -60,13 +60,13 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.iperf_server = self.iperf_servers[0]
 
     def setup_test(self):
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         self.iperf_server.start()
 
     def teardown_test(self):
-        self.droid.wakeLockRelease()
-        self.droid.goToSleepNow()
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
         self.iperf_server.stop()
 
@@ -145,8 +145,8 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """Test toggling wifi with screen on/off"""
         wait_time = 5
         self.log.debug("Screen from off to on.")
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         time.sleep(wait_time)
         self.log.debug("Going from on to off.")
         try:
@@ -157,16 +157,16 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.assert_true(wutils.wifi_toggle_state(self.dut, True),
                              "Failed to turn wifi on.")
         finally:
-            self.droid.wakeLockRelease()
+            self.dut.droid.wakeLockRelease()
             time.sleep(wait_time)
-            self.droid.goToSleepNow()
+            self.dut.droid.goToSleepNow()
 
     def test_scan(self):
         """Test wifi connection scan can start and find expected networks."""
         wutils.wifi_toggle_state(self.dut, True)
         self.log.debug("Start regular wifi scan.")
         wutils.start_wifi_connection_scan(self.dut)
-        wifi_results = self.droid.wifiGetScanResults()
+        wifi_results = self.dut.droid.wifiGetScanResults()
         self.log.debug("Scan results: %s" % wifi_results)
         ssid = self.open_network[WifiEnums.SSID_KEY]
         condition = {WifiEnums.SSID_KEY: ssid}
@@ -176,9 +176,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
     def test_add_network(self):
         """Test wifi connection scan."""
         ssid = self.open_network[WifiEnums.SSID_KEY]
-        nId = self.droid.wifiAddNetwork(self.open_network)
+        nId = self.dut.droid.wifiAddNetwork(self.open_network)
         self.assert_true(nId > -1, "Failed to add network.")
-        configured_networks = self.droid.wifiGetConfiguredNetworks()
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug(("Configured networks after adding: %s" %
                         configured_networks))
         condition = {WifiEnums.SSID_KEY: ssid}
@@ -190,7 +190,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.test_add_network()
         ssid = self.open_network[WifiEnums.SSID_KEY]
         wutils.wifi_forget_network(self.dut, ssid)
-        configured_networks = self.droid.wifiGetConfiguredNetworks()
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         for nw in configured_networks:
             self.assert_true(nw[WifiEnums.BSSID_KEY] != ssid,
                 "Found forgotten network %s in configured networks." % ssid)
@@ -209,11 +209,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         model = acts.utils.trim_model_name(self.dut.model)
         self.log.debug("Model is %s" % model)
         if model in self.tdls_models:
-            self.assert_true(self.droid.wifiIsTdlsSupported(),
+            self.assert_true(self.dut.droid.wifiIsTdlsSupported(),
                              ("TDLS should be supported on %s, but device is "
                               "reporting not supported.") % model)
         else:
-            self.assert_true(not self.droid.wifiIsTdlsSupported(),
+            self.assert_true(not self.dut.droid.wifiIsTdlsSupported(),
                              ("TDLS should not be supported on %s, but device "
                               "is reporting supported.") % model)
 
@@ -246,7 +246,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         energy = 0
         idle_time = 0
         for i in range(10):
-            info = self.droid.wifiGetControllerActivityEnergyInfo()
+            info = self.dut.droid.wifiGetControllerActivityEnergyInfo()
             self.log.debug("Iteration %d, got energy info: %s" % (i, info))
             new_energy = info["ControllerEnergyUsed"]
             new_idle_time = info["ControllerIdleTimeMillis"]
