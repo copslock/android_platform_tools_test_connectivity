@@ -79,20 +79,6 @@ class BaseTestClass(object):
         # Set all the controller objects and params.
         for name, value in configs.items():
             setattr(self, name, value)
-        # Set convenience references for android_device objects.
-        # TODO(angli): remove these and force tests to use the droids in ad
-        # objs directly.
-        if Config.ikey_android_device.value in configs:
-            self.droids = []
-            self.eds = []
-            for ad in self.android_devices:
-                self.droids.append(ad.droid)
-                self.eds.append(ad.ed)
-            if self.android_devices:
-                self.droid = self.droids[0]
-                self.ed = self.eds[0]
-        else:
-            self.log.warning("No attached android device found.")
         self.results = TestResult()
         self.current_test_name = None
 
