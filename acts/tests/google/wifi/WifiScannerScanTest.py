@@ -103,7 +103,7 @@ class WifiScannerScanTest(BaseTestClass):
     def teardown_test(self):
         BaseTestClass.teardown_test(self)
         self.log.debug("Shut down all wifi scanner activities.")
-        self.droid.wifiScannerShutdown()
+        self.dut.droid.wifiScannerShutdown()
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
@@ -226,7 +226,7 @@ class WifiScannerScanTest(BaseTestClass):
         """
         results = []
         try:
-            events = self.ed.pop_all(event_name)
+            events = self.dut.ed.pop_all(event_name)
             for event in events:
                 results.append(event["data"]["Results"])
         except Empty as error:
@@ -264,7 +264,7 @@ class WifiScannerScanTest(BaseTestClass):
                 event_name = "{}{}onResults".format(EVENT_TAG, idx)
                 self.log.debug("Waiting for event: {} for time {}".
                                format(event_name, wait_time))
-                event = self.ed.pop_event(event_name, wait_time)
+                event = self.dut.ed.pop_event(event_name, wait_time)
                 self.log.debug("Event received: {}".format(event ))
                 results = event["data"]["Results"]
                 result_received += 1
@@ -284,7 +284,7 @@ class WifiScannerScanTest(BaseTestClass):
                              "Event did not triggered for single shot {}".
                              format(error))
         finally:
-            self.droid.wifiScannerStopScan(idx)
+            self.dut.droid.wifiScannerStopScan(idx)
             #For single shot number of result received and length of result should be one
             self.assert_true(result_received == 1,
                              "Test fail because received result {}".
@@ -302,7 +302,7 @@ class WifiScannerScanTest(BaseTestClass):
         Args:
             scan_setting: The parameters for the single scan.
         """
-        self.ed.clear_all_events()
+        self.dut.ed.clear_all_events()
         data = start_wifi_single_scan(self.dut, scan_setting)
         idx = data["Index"]
         scan_rt = data["ScanElapsedRealtime"]
@@ -318,7 +318,7 @@ class WifiScannerScanTest(BaseTestClass):
             event_name = "{}{}onResults".format(EVENT_TAG, idx)
             self.log.debug("Waiting for event: {} for time {}".
                            format(event_name, wait_time))
-            event = self.ed.pop_event(event_name, wait_time)
+            event = self.dut.ed.pop_event(event_name, wait_time)
             self.log.info("Event received: {}".format(event))
             bssids, validity = (self.proces_and_valid_batch_scan_result(
                                                 event["data"]["Results"], scan_rt,
@@ -335,7 +335,7 @@ class WifiScannerScanTest(BaseTestClass):
             raise AssertionError("Event did not triggered for single shot {}".
                                  format(error))
         finally:
-            self.droid.wifiScannerStopScan(idx)
+            self.dut.droid.wifiScannerStopScan(idx)
 
     def wifi_scanner_batch_scan_full(self, scan_setting):
         """Common logic for batch scan test case for full scan result.
@@ -349,7 +349,7 @@ class WifiScannerScanTest(BaseTestClass):
         Args:
             scan_setting: The params for the batch scan.
         """
-        self.ed.clear_all_events()
+        self.dut.ed.clear_all_events()
         data = start_wifi_background_scan(self.dut, scan_setting)
         idx = data["Index"]
         scan_rt = data["ScanElapsedRealtime"]
@@ -368,7 +368,7 @@ class WifiScannerScanTest(BaseTestClass):
                 event_name = "{}{}onResults".format(EVENT_TAG, idx)
                 self.log.debug("Waiting for event: {} for time {}".
                                format(event_name, wait_time))
-                event = self.ed.pop_event(event_name, wait_time)
+                event = self.dut.ed.pop_event(event_name, wait_time)
                 self.log.debug("Event received: {}".format(event))
                 bssids, validity = self.proces_and_valid_batch_scan_result(
                                                       event["data"]["Results"],
@@ -386,8 +386,8 @@ class WifiScannerScanTest(BaseTestClass):
              raise AssertionError("Event did not triggered for batch scan {}".
                                   format(error))
         finally:
-            self.droid.wifiScannerStopBackgroundScan(idx)
-            self.ed.clear_all_events()
+            self.dut.droid.wifiScannerStopBackgroundScan(idx)
+            self.dut.ed.clear_all_events()
 
     def wifi_scanner_batch_scan(self, scan_setting):
         """Common logic for an enumerated wifi scanner batch scan test case.
@@ -433,7 +433,7 @@ class WifiScannerScanTest(BaseTestClass):
                 event_name = "{}{}onResults".format(EVENT_TAG, idx)
                 self.log.info("Waiting for event: {} for time {}".
                               format(event_name,wait_time))
-                event = self.ed.pop_event(event_name, wait_time)
+                event = self.dut.ed.pop_event(event_name, wait_time)
                 self.log.debug("Event received: {}".format(event ))
                 results = event["data"]["Results"]
                 bssids, validity = (self.proces_and_valid_batch_scan_result(
@@ -450,8 +450,8 @@ class WifiScannerScanTest(BaseTestClass):
                 if snumber%2 == 1 and check_get_result :
                     self.log.info("Get Scan result using GetScanResult API")
                     time.sleep(wait_time/number_bucket)
-                    if self.droid.wifiScannerGetScanResults():
-                        event = self.ed.pop_event(event_name, 1)
+                    if self.dut.droid.wifiScannerGetScanResults():
+                        event = self.dut.ed.pop_event(event_name, 1)
                         self.log.debug("Event onResults: {}".format(event))
                         results = event["data"]["Results"]
                         bssids, validity = (self.proces_and_valid_batch_scan_result(
@@ -468,8 +468,8 @@ class WifiScannerScanTest(BaseTestClass):
             raise AssertionError("Event did not triggered for batch scan {}".
                                  format(error))
         finally:
-            self.droid.wifiScannerStopBackgroundScan(idx)
-            self.ed.clear_all_events()
+            self.dut.droid.wifiScannerStopBackgroundScan(idx)
+            self.dut.ed.clear_all_events()
 
     def start_wifi_scanner_single_scan_expect_failure(self, scan_setting):
         """Common logic to test wif scanner single scan with invalid settings
@@ -482,8 +482,8 @@ class WifiScannerScanTest(BaseTestClass):
             scan_setting: The params for the single scan.
         """
         try:
-            idx = self.droid.wifiScannerStartScan(scan_setting)
-            event = self.ed.pop_event("{}{}onFailure".format(EVENT_TAG, idx),
+            idx = self.dut.droid.wifiScannerStartScan(scan_setting)
+            event = self.dut.ed.pop_event("{}{}onFailure".format(EVENT_TAG, idx),
                                       SHORT_TIMEOUT)
         except Empty as error:
             raise AssertionError("Did not get expected onFailure {}".format(error))
@@ -499,8 +499,8 @@ class WifiScannerScanTest(BaseTestClass):
           scan_setting: The params for the single scan.
         """
         try:
-          idx = self.droid.wifiScannerStartBackgroundScan(scan_setting)
-          event = self.ed.pop_event("{}{}onFailure".format(EVENT_TAG, idx),
+          idx = self.dut.droid.wifiScannerStartBackgroundScan(scan_setting)
+          event = self.dut.ed.pop_event("{}{}onFailure".format(EVENT_TAG, idx),
                                     SHORT_TIMEOUT)
         except Empty as error:
           raise AssertionError("Did not get expected onFailure {}".format(error))
@@ -514,7 +514,7 @@ class WifiScannerScanTest(BaseTestClass):
          Args:
             band: wifi band."""
 
-        r = self.droid.wifiScannerGetAvailableChannels(band)
+        r = self.dut.droid.wifiScannerGetAvailableChannels(band)
         self.log.debug(band)
         self.log.debug(r)
         expected = self.wifi_chs.band_to_freq(band)
@@ -524,11 +524,11 @@ class WifiScannerScanTest(BaseTestClass):
 
     def connect_to_reference_network(self):
         """Connect to reference network and make sure that connection happen"""
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         try:
-            self.droid.wifiPriorityConnect(self.connect_network)
-            connect_result = self.ed.pop_event("WifiManagerPriorityConnectOnSuccess",
+            self.dut.droid.wifiPriorityConnect(self.connect_network)
+            connect_result = self.dut.ed.pop_event("WifiManagerPriorityConnectOnSuccess",
                                                SHORT_TIMEOUT)
             self.log.info(connect_result)
             return track_connection(self.dut, self.connect_network["ssid"], 1)
@@ -537,8 +537,8 @@ class WifiScannerScanTest(BaseTestClass):
             self.log.error("Connection to network fail because {}".format(error))
             return False
         finally:
-            self.droid.wifiLockRelease()
-            self.droid.goToSleepNow()
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     """ Helper Functions End """
 
@@ -839,7 +839,7 @@ class WifiScannerScanTest(BaseTestClass):
             event_name = "{}{}onResults".format(EVENT_TAG, idx)
             self.log.debug("Waiting for event: {} for time {}".
                            format(event_name, wait_time))
-            event = self.ed.pop_event(event_name, wait_time)
+            event = self.dut.ed.pop_event(event_name, wait_time)
             self.log.debug("Event received: {}".format(event ))
             results = event["data"]["Results"]
             bssids, validity = self.proces_and_valid_batch_scan_result(
@@ -864,7 +864,7 @@ class WifiScannerScanTest(BaseTestClass):
          6. Verify connection occurred through PNO.
         """
         self.log.info("Check connection through PNO for reference network")
-        current_network = self.droid.wifiGetConnectionInfo()
+        current_network = self.dut.droid.wifiGetConnectionInfo()
         self.log.info("Current network: {}".format(current_network))
         self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
         self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
@@ -876,7 +876,7 @@ class WifiScannerScanTest(BaseTestClass):
         self.attenuators[self.connect_network["attenuator"]].set_atten(0)
         self.log.info("Check connection through PNO for reference network")
         time.sleep(30) #wait for connection through PNO
-        current_network = self.droid.wifiGetConnectionInfo()
+        current_network = self.dut.droid.wifiGetConnectionInfo()
         self.log.info("Current network: {}".format(current_network))
         self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
         self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
@@ -924,7 +924,7 @@ class WifiScannerScanTest(BaseTestClass):
           for snumber in range(1,7):
             event_name = "{}{}onResults".format(EVENT_TAG, idx)
             self.log.info("Waiting for event: {}".format(event_name ))
-            event = self.ed.pop_event(event_name, wait_time)
+            event = self.dut.ed.pop_event(event_name, wait_time)
             self.log.debug("Event onResults: {}".format(event ))
             results = event["data"]["Results"]
             bssids, validity = self.proces_and_valid_batch_scan_result(
@@ -946,7 +946,7 @@ class WifiScannerScanTest(BaseTestClass):
                 self.attenuators[self.connect_network["attenuator"]].set_atten(90)
             elif snumber == 4:
                 self.log.info("Bring back device for PNO connection")
-                current_network = self.droid.wifiGetConnectionInfo()
+                current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
                 self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
                 self.assert_true(current_network['network_id'] == -1,
@@ -956,7 +956,7 @@ class WifiScannerScanTest(BaseTestClass):
                 time.sleep(10) #wait for connection to take place before waiting for scan result
             elif snumber == 6:
                 self.log.info("Check connection through PNO for reference network")
-                current_network = self.droid.wifiGetConnectionInfo()
+                current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
                 self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
                 self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
@@ -968,8 +968,8 @@ class WifiScannerScanTest(BaseTestClass):
             raise AssertionError("Event did not triggered for batch scan {}".
                                  format(error))
         finally:
-            self.droid.wifiScannerStopBackgroundScan(idx)
-            self.ed.clear_all_events()
+            self.dut.droid.wifiScannerStopBackgroundScan(idx)
+            self.dut.ed.clear_all_events()
 
     def test_wifi_scanner_single_scan_channel_sanity(self):
         """Test WiFi scanner single scan for mix channel with default setting
@@ -1031,7 +1031,7 @@ class WifiScannerScanTest(BaseTestClass):
             event_name = "{}{}onResults".format(EVENT_TAG, idx)
             self.log.debug("Waiting for event: {} for time {}".format(event_name,
                                                                       wait_time))
-            event = self.ed.pop_event(event_name, wait_time)
+            event = self.dut.ed.pop_event(event_name, wait_time)
             self.log.debug("Event received: {}".format(event))
             results = event["data"]["Results"]
             bssids, validity = (self.proces_and_valid_batch_scan_result(
@@ -1046,7 +1046,7 @@ class WifiScannerScanTest(BaseTestClass):
             raise AssertionError("Event did not triggered for in isolated environment {}".
                    format(error))
         finally:
-            self.ed.clear_all_events()
+            self.dut.ed.clear_all_events()
             self.attenuators[0].set_atten(0)
             self.attenuators[1].set_atten(0)
 

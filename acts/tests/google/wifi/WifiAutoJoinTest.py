@@ -66,7 +66,7 @@ class WifiAutoJoinTest(BaseTestClass):
                       "ping_addr", "max_bugreports" )
         self.unpack_userparams(req_params)
         self.log.debug("Connect networks :: {}".format(self.other_network))
-        configured_networks = self.droid.wifiGetConfiguredNetworks()
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug("Configured networks :: {}".format(configured_networks))
         count_confnet = 0
         result = False
@@ -88,33 +88,33 @@ class WifiAutoJoinTest(BaseTestClass):
             self.attenuators[1].set_atten(90)
             self.attenuators[2].set_atten(90)
             wait_time = 15
-            self.droid.wakeLockAcquireBright()
-            self.droid.wakeUpNow()
+            self.dut.droid.wakeLockAcquireBright()
+            self.dut.droid.wakeUpNow()
             try:
-                self.droid.wifiPriorityConnect(self.reference_networks[0]['2g'])
-                connect_result = self.ed.pop_event("WifiManagerPriorityConnectOnSuccess", 1)
+                self.dut.droid.wifiPriorityConnect(self.reference_networks[0]['2g'])
+                connect_result = self.dut.ed.pop_event("WifiManagerPriorityConnectOnSuccess", 1)
                 self.log.info(connect_result)
                 time.sleep(wait_time)
                 if self.ref_ssid_count == 2: #add 5g network as well
-                    self.droid.wifiPriorityConnect(self.reference_networks[0]['5g'])
-                    connect_result = self.ed.pop_event("WifiManagerPriorityConnectOnSuccess", 1)
+                    self.dut.droid.wifiPriorityConnect(self.reference_networks[0]['5g'])
+                    connect_result = self.dut.ed.pop_event("WifiManagerPriorityConnectOnSuccess", 1)
                     self.log.info(connect_result)
                     time.sleep(wait_time)
-                self.droid.wifiPriorityConnect(self.other_network)
-                connect_result = self.ed.pop_event("WifiManagerPriorityConnectOnSuccess")
+                self.dut.droid.wifiPriorityConnect(self.other_network)
+                connect_result = self.dut.ed.pop_event("WifiManagerPriorityConnectOnSuccess")
                 self.log.info(connect_result)
                 track_connection(self.dut, self.other_network["ssid"], 1)
                 wifi_forget_network(self.dut, self.other_network["ssid"])
                 time.sleep(wait_time)
-                current_network = self.droid.wifiGetConnectionInfo()
+                current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
                 self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
                 self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
-                self.ip_address = self.droid.wifiGetConfigFile();
+                self.ip_address = self.dut.droid.wifiGetConfigFile();
                 self.log.info("IP info: {}".format(self.ip_address))
             finally:
-                self.droid.wifiLockRelease()
-                self.droid.goToSleepNow()
+                self.dut.droid.wifiLockRelease()
+                self.dut.droid.goToSleepNow()
 
     def check_connection(self, network_bssid):
         """Check current wifi connection networks.
@@ -125,7 +125,7 @@ class WifiAutoJoinTest(BaseTestClass):
         """
         time.sleep(40) #time for connection state to be updated
         self.log.info("Check network for {}".format(network_bssid))
-        current_network = self.droid.wifiGetConnectionInfo()
+        current_network = self.dut.droid.wifiGetConnectionInfo()
         self.log.debug("Current network:  {}".format(current_network))
         if WifiEnums.BSSID_KEY in current_network:
             return current_network[WifiEnums.BSSID_KEY] == network_bssid
@@ -144,8 +144,8 @@ class WifiAutoJoinTest(BaseTestClass):
         self.attenuators[0].set_atten(attn_value[0])
         self.attenuators[1].set_atten(attn_value[1])
         self.attenuators[2].set_atten(attn_value[2])
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         try:
             self.assert_true(self.check_connection(bssid),
                     "Device is not connected to required bssid {}".format(bssid))
@@ -154,8 +154,8 @@ class WifiAutoJoinTest(BaseTestClass):
                              "Error, No Internet connection for current bssid {}".
                              format(bssid))
         finally:
-            self.droid.wifiLockRelease()
-            self.droid.goToSleepNow()
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
@@ -307,21 +307,21 @@ class WifiAutoJoinTest(BaseTestClass):
         self.attenuators[0].set_atten(90)
         self.attenuators[1].set_atten(90)
         self.attenuators[2].set_atten(90)
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         try:
             start_wifi_connection_scan(self.dut)
-            wifi_results = self.droid.wifiGetScanResults()
+            wifi_results = self.dut.droid.wifiGetScanResults()
             self.log.debug("Scan result {}".format(wifi_results))
             time.sleep(20)
-            current_network = self.droid.wifiGetConnectionInfo()
+            current_network = self.dut.droid.wifiGetConnectionInfo()
             self.log.info("Current network: {}".format(current_network))
             self.assert_true(('network_id' in current_network and
                               current_network['network_id'] == -1),
                              "Device is connected to network {}".format(current_network))
         finally:
-            self.droid.wifiLockRelease()
-            self.droid.goToSleepNow()
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     def test_autojoin_Ap2_2g(self):
         """Test wifi auto join functionality move in low range of AP2.
@@ -436,22 +436,22 @@ class WifiAutoJoinTest(BaseTestClass):
         self.attenuators[0].set_atten(attn0)
         self.attenuators[1].set_atten(attn1)
         self.attenuators[2].set_atten(attn2)
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         try:
             start_wifi_connection_scan(self.dut)
-            wifi_results = self.droid.wifiGetScanResults()
+            wifi_results = self.dut.droid.wifiGetScanResults()
             self.log.debug("Scan result {}".format(wifi_results))
             time.sleep(20)
-            current_network = self.droid.wifiGetConnectionInfo()
+            current_network = self.dut.droid.wifiGetConnectionInfo()
             self.log.info("Current network: {}".format(current_network))
             self.assert_true(('network_id' in current_network and
                               current_network['network_id'] == -1),
                              "Device is still connected to blacklisted network {}".
                              format(current_network))
         finally:
-            self.droid.wifiLockRelease()
-            self.droid.goToSleepNow()
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     def test_autojoin_back_from_blacklist_AP(self):
         """Test wifi auto join functionality in medium range of blacklist BSSID.
