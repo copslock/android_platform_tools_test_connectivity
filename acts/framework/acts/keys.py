@@ -51,7 +51,6 @@ class Config(enum.Enum):
     ikey_logger = "log"
     ikey_logpath = "log_path"
     ikey_monsoon = "monsoons"
-    ikey_reporter = "reporter"
     ikey_adb_log_path = "adb_logcat_path"
     ikey_adb_log_files = "adb_logcat_files"
     ikey_iperf_server = "iperf_servers"
