@@ -112,7 +112,7 @@ def get_log_file_timestamp(delta=None):
     """
     return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
 
-def get_test_logger(log_path, TAG, prefix=None, filename=None):
+def _get_test_logger(log_path, TAG, prefix=None, filename=None):
     """Returns a logger object used for tests.
 
     The logger object has a stream handler and a file handler. The stream
@@ -167,27 +167,6 @@ def kill_test_logger(logger):
         if isinstance(h, logging.FileHandler):
             h.close()
 
-def get_test_reporter(log_path):
-    """Returns a file object used for reports.
-
-    Args:
-        log_path: Location of the report file.
-
-    Returns:
-        A file object.
-    """
-    create_dir(log_path)
-    f = open(os.path.join(log_path, 'test_run_summary.txt'), 'w')
-    return f
-
-def kill_test_reporter(reporter):
-    """Cleans up a test reporter object created by get_test_reporter.
-
-    Args:
-        reporter: The reporter file object to clean up.
-    """
-    reporter.close()
-
 def create_latest_log_alias(actual_path):
     """Creates a symlink to the latest test run logs.
 
@@ -199,8 +178,8 @@ def create_latest_log_alias(actual_path):
         os.remove(link_path)
     os.symlink(actual_path, link_path)
 
-def get_test_logger_and_reporter(log_path, TAG, prefix=None, filename=None):
-    """Returns a logger and a reporter of the same name.
+def get_test_logger(log_path, TAG, prefix=None, filename=None):
+    """Returns a logger customized for a test run.
 
     Args:
         log_path: Location of the report file.
@@ -210,15 +189,14 @@ def get_test_logger_and_reporter(log_path, TAG, prefix=None, filename=None):
             are requested.
 
     Returns:
-        A log object and a reporter object.
+        A logger object.
     """
     if filename is None:
         filename = get_log_file_timestamp()
     create_dir(log_path)
-    logger = get_test_logger(log_path, TAG, prefix, filename)
-    reporter = get_test_reporter(log_path)
+    logger = _get_test_logger(log_path, TAG, prefix, filename)
     create_latest_log_alias(log_path)
-    return logger, reporter, filename
+    return logger, filename
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
