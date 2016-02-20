@@ -45,13 +45,14 @@ class ToolsTest(BluetoothBaseTest):
         3. Repeat steps 1 and 2 one-hundred times.
         :return: boolean test_result
         """
-        droid, ed = self.droid, self.ed
+        droid, ed = (self.android_devices[0].droid,
+                     self.android_devices[0].ed)
         n = 0
         test_result = True
         test_result_list = []
         while n < 100:
             self.log.info("Toggling bluetooth iteration {}.".format(n))
-            test_result = reset_bluetooth([droid], [ed])
+            test_result = reset_bluetooth([self.android_devices[0]])
             start_time = time.time()
             connected_devices = droid.bluetoothGetConnectedDevices()
             print (pprint.pformat(connected_devices))
@@ -78,7 +79,8 @@ class ToolsTest(BluetoothBaseTest):
         3. Repeat steps 1 and 2 one-hundred times.
         :return: boolean test_result
         """
-        droid, ed = self.droid, self.ed
+        droid, ed = (self.android_devices[0].droid,
+                     self.android_devices[0].ed)
         n = 0
         test_result = True
         test_result_list = []
@@ -108,7 +110,7 @@ class ToolsTest(BluetoothBaseTest):
         phone_number = input("Enter a phone number: ")
         message_size = input("Enter message size: ")
         for _ in range(10):
-            self.droid.smsSendTextMessage(
+            self.android_devices[0].droid.smsSendTextMessage(
                 phone_number, generate_id_by_size(int(message_size)), False)
             time.sleep(3)
         return True
@@ -118,6 +120,7 @@ class ToolsTest(BluetoothBaseTest):
         interval = input("Enter time interval to collect stats: ")
         while True:
             self.log.info(
-                log_energy_info([self.droids[0]], "Log_time: {}".format(time.time())))
+                log_energy_info([self.android_devices[0]], "Log_time: {}"
+                    .format(time.time())))
             time.sleep(int(interval))
         return True

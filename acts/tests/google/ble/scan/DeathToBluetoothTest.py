@@ -36,8 +36,8 @@ class DeathToBluetoothTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
         self.tests = (
             "test_death",
         )
@@ -47,10 +47,10 @@ class DeathToBluetoothTest(BluetoothBaseTest):
         self.active_scan_callback_list = []
 
     def on_exception(self, test_name, begin_time):
-        reset_bluetooth(self.droids, self.eds)
+        reset_bluetooth(self.android_devices)
 
     def on_fail(self, test_name, begin_time):
-        reset_bluetooth(self.droids, self.eds)
+        reset_bluetooth(self.android_devices)
 
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
@@ -61,7 +61,7 @@ class DeathToBluetoothTest(BluetoothBaseTest):
 
     def _verify_no_events_found(self, event_name):
         try:
-            self.scn_ed.pop_event(event_name, self.default_timeout)
+            self.scn_ad.ed.pop_event(event_name, self.default_timeout)
             self.log.error("Found an event when none was expected.")
             return False
         except Empty:
@@ -76,17 +76,17 @@ class DeathToBluetoothTest(BluetoothBaseTest):
         1: ...
         :return: boolean
         """
-        filter_list = self.scn_droid.bleGenFilterList()
-        self.scn_droid.bleSetScanSettingsScanMode(
+        filter_list = self.scn_ad.droid.bleGenFilterList()
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_droid.bleSetScanSettingsCallbackType(6)
-        # self.scn_droid.bleSetScanSettingsMatchMode(2) #sticky
-        self.scn_droid.bleSetScanSettingsMatchMode(1)  # aggresive
-        self.scn_droid.bleSetScanSettingsNumOfMatches(1)
-        scan_settings = self.scn_droid.bleBuildScanSetting()
-        scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleStartBleScan(
+        self.scn_ad.droid.bleSetScanSettingsCallbackType(6)
+        # self.scn_ad.droid.bleSetScanSettingsMatchMode(2) #sticky
+        self.scn_ad.droid.bleSetScanSettingsMatchMode(1)  # aggresive
+        self.scn_ad.droid.bleSetScanSettingsNumOfMatches(1)
+        scan_settings = self.scn_ad.droid.bleBuildScanSetting()
+        scan_callback = self.scn_ad.droid.bleGenScanCallback()
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         for _ in range(10000):
-            self.scn_ed.pop_event(scan_result.format(scan_callback))
+            self.scn_ad.ed.pop_event(scan_result.format(scan_callback))
         return True
