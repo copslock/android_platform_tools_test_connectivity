@@ -103,7 +103,7 @@ class WifiScannerBssidTest(BaseTestClass):
             waittime = int((time_cache + scan_time )/1000) + self.leeway
         event_name = "{}{}onResults".format(SCAN_EVENT_TAG, scan_idx)
         self.log.info("Waiting for the scan result event {}".format(event_name))
-        event = self.ed.pop_event(event_name, waittime)
+        event = self.dut.ed.pop_event(event_name, waittime)
         results = event["data"]["Results"]
         if len(results) > 0 and "ScanResults" in results[0]:
             return results[0]["ScanResults"]
@@ -135,7 +135,7 @@ class WifiScannerBssidTest(BaseTestClass):
                                    format(result[WifiEnums.BSSID_KEY]))
                         return False
         except Empty as error:
-            self.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+            self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
             raise AssertionError("OnResult event did not triggered for scanner\n{}".
                                  format(error))
         return True
@@ -184,7 +184,7 @@ class WifiScannerBssidTest(BaseTestClass):
             self.attenuators[self.attenuator_id].set_atten(0)
             event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
             self.log.info("Waiting for the BSSID event {}".format(event_name))
-            event = self.ed.pop_event(event_name, BSSID_EVENT_WAIT)
+            event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT)
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
@@ -200,8 +200,8 @@ class WifiScannerBssidTest(BaseTestClass):
                                  format(event_name, track_setting["bssidInfos"],
                                         error))
         finally:
-            self.droid.wifiScannerStopBackgroundScan(self.scan_idx)
-            self.droid.wifiScannerStopTrackingBssids(idx)
+            self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+            self.dut.droid.wifiScannerStopTrackingBssids(idx)
 
     def track_bssid_with_vaild_scan_for_lost(self, track_setting):
         """Common logic for tracking a bssid for Lost event.
@@ -236,7 +236,7 @@ class WifiScannerBssidTest(BaseTestClass):
             #onFound event should be occurre before tracking for onLost event
             event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
             self.log.info("Waiting for the BSSID event {}".format(event_name))
-            event = self.ed.pop_event(event_name, BSSID_EVENT_WAIT)
+            event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT)
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
@@ -251,15 +251,15 @@ class WifiScannerBssidTest(BaseTestClass):
                     self.log.debug("scan result {} {}".format(i, results))
                 event_name = "{}{}onLost".format(BSSID_EVENT_TAG, idx)
                 self.log.info("Waiting for the BSSID event {}".format(event_name))
-                event = self.ed.pop_event(event_name, BSSID_EVENT_WAIT)
+                event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT)
                 self.log.debug(event)
         except Empty as error:
             raise AssertionError("Event {} did not triggered for {}\n{}".
                                  format(event_name, track_setting["bssidInfos"], error))
         finally:
-            self.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+            self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
             if idx:
-                self.droid.wifiScannerStopTrackingBssids(idx)
+                self.dut.droid.wifiScannerStopTrackingBssids(idx)
 
     def wifi_generate_track_bssid_settings(self, isLost):
         """Generates all the combinations of different track setting parameters.
@@ -380,7 +380,7 @@ class WifiScannerBssidTest(BaseTestClass):
           event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
           self.log.info("Waiting for the BSSID event {}".format(event_name))
           #waiting for 2x time to make sure
-          event = self.ed.pop_event(event_name, BSSID_EVENT_WAIT * 2)
+          event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT * 2)
           self.log.debug(event)
           found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                     event["data"]["Results"])
@@ -389,9 +389,9 @@ class WifiScannerBssidTest(BaseTestClass):
       except Empty as error:
           self.log.info("As excepted event didn't occurred with different scan setting")
       finally:
-          self.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+          self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
           if idx:
-              self.droid.wifiScannerStopTrackingBssids(idx)
+              self.dut.droid.wifiScannerStopTrackingBssids(idx)
 
     def test_wifi_track_bssid_for_5g_while_scanning_2g_channels(self):
         """Test bssid track for 5g bssids while scanning 2g channels.
@@ -420,7 +420,7 @@ class WifiScannerBssidTest(BaseTestClass):
             event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
             self.log.info("Waiting for the BSSID event {}".format(event_name))
             #waiting for 2x time to make sure
-            event = self.ed.pop_event(event_name, BSSID_EVENT_WAIT * 2)
+            event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT * 2)
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
@@ -429,8 +429,8 @@ class WifiScannerBssidTest(BaseTestClass):
         except Empty as error:
             self.log.info("As excepted event didn't occurred with different scan setting")
         finally:
-            self.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+            self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
             if idx:
-                self.droid.wifiScannerStopTrackingBssids(idx)
+                self.dut.droid.wifiScannerStopTrackingBssids(idx)
 
     """ Tests End """

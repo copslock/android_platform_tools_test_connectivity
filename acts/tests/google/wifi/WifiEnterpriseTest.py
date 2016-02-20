@@ -124,24 +124,24 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         self.config_passpoint_ttls.update(self.config_passpoint)
         del self.config_passpoint_ttls[WifiEnums.SSID_KEY]
         # Set screen lock password so ConfigStore is unlocked.
-        self.droid.setDevicePassword(self.device_password)
+        self.dut.droid.setDevicePassword(self.device_password)
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        self.droid.disableDevicePassword()
-        self.ed.clear_all_events()
+        self.dut.droid.disableDevicePassword()
+        self.dut.ed.clear_all_events()
 
     def setup_test(self):
-        self.droid.wifiStartTrackingStateChange()
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wifiStartTrackingStateChange()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         wutils.reset_wifi(self.dut)
-        self.ed.clear_all_events()
+        self.dut.ed.clear_all_events()
 
     def teardown_test(self):
-        self.droid.wakeLockRelease()
-        self.droid.goToSleepNow()
-        self.droid.wifiStopTrackingStateChange()
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
+        self.dut.droid.wifiStopTrackingStateChange()
 
     """Helper Functions"""
 
