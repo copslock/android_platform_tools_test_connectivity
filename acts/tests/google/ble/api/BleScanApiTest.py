@@ -55,6 +55,7 @@ class BleScanApiTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
+        self.droid = self.android_devices[0].droid
         self.tests = (
             "test_start_ble_scan_with_default_settings",
             "test_stop_ble_scan_default_settings",

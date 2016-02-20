@@ -44,35 +44,35 @@ class SppTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.server_droid, self.server_ed = self.droids[0], self.eds[0]
-        self.client_droid, self.client_ed = self.droids[1], self.eds[1]
+        self.server_ad = self.android_devices[0]
+        self.client_ad = self.android_devices[1]
         self.tests = (
             "test_spp_connection",
         )
 
     def _clear_bonded_devices(self):
-        for d in self.droids:
-            bonded_device_list = d.bluetoothGetBondedDevices()
+        for a in self.android_devices:
+            bonded_device_list = a.droid.bluetoothGetBondedDevices()
             for device in bonded_device_list:
-                d.bluetoothUnbond(device['address'])
+                a.droid.bluetoothUnbond(device['address'])
 
     def setup_class(self):
-        return setup_multiple_devices_for_bt_test(self.droids, self.eds)
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
         self._clear_bonded_devices()
-        self.log.debug(log_energy_info(self.droids, "Start"))
-        for e in self.eds:
-            e.clear_all_events()
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.droids, self, test_name)
-        reset_bluetooth(self.droids, self.eds)
+        take_btsnoop_logs(self.android_devices, self, test_name)
+        reset_bluetooth(self.android_devices)
 
     def teardown_test(self):
         for thread in self.thread_list:
@@ -80,11 +80,11 @@ class SppTest(BluetoothBaseTest):
 
     def orchestrate_rfcomm_connect(self, server_mac):
         accept_thread = threading.Thread(
-            target=rfcomm_accept, args=(self.server_droid,))
+            target=rfcomm_accept, args=(self.server_ad.droid,))
         self.thread_list.append(accept_thread)
         accept_thread.start()
         connect_thread = threading.Thread(
-            target=rfcomm_connect, args=(self.client_droid, server_mac))
+            target=rfcomm_connect, args=(self.client_ad.droid, server_mac))
         self.thread_list.append(connect_thread)
         connect_thread.start()
 
@@ -111,23 +111,24 @@ class SppTest(BluetoothBaseTest):
         TAGS: Classic, SPP, RFCOMM
         Priority: 1
         """
-        server_mac = get_bt_mac_address(self.client_droid, self.server_droid)
+        server_mac = get_bt_mac_address(self.client_ad.droid,
+            self.server_ad.droid)
         # temporary workaround. Need to find out why I can't connect after I do
         # a device discovery from get_bt_mac_address
-        reset_bluetooth([self.server_droid], [self.server_ed])
+        reset_bluetooth([self.server_ad])
         self.orchestrate_rfcomm_connect(server_mac)
         self.log.info("Write message.")
-        self.client_droid.bluetoothRfcommWrite(self.message)
+        self.client_ad.droid.bluetoothRfcommWrite(self.message)
         self.log.info("Read message.")
-        read_msg = self.server_droid.bluetoothRfcommRead()
+        read_msg = self.server_ad.droid.bluetoothRfcommRead()
         self.log.info("Verify message.")
         assert self.message == read_msg, "Mismatch! Read {}".format(read_msg)
-        if len(self.server_droid.bluetoothRfcommActiveConnections()) == 0:
+        if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
             self.log.info("No rfcomm connections found on server.")
             return False
-        if len(self.client_droid.bluetoothRfcommActiveConnections()) == 0:
+        if len(self.client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
             self.log.info("no rfcomm connections found on client.")
             return False
-        self.client_droid.bluetoothRfcommStop()
-        self.server_droid.bluetoothRfcommStop()
+        self.client_ad.droid.bluetoothRfcommStop()
+        self.server_ad.droid.bluetoothRfcommStop()
         return True

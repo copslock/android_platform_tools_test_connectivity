@@ -151,40 +151,42 @@ def build_advertise_settings(droid, mode, txpower, type):
     settings = droid.bleBuildAdvertiseSettings()
     return settings
 
-def setup_multiple_devices_for_bt_test(droids, eds):
+def setup_multiple_devices_for_bt_test(android_devices):
     log.info("Setting up Android Devices")
     threads = []
-    for i in range(len(droids)):
-        thread = threading.Thread(target=reset_bluetooth,
-                                      args=([droids[i]],[eds[i]]))
-        threads.append(thread)
-        thread.start()
-    for t in threads:
-        t.join()
+    try:
+        for a in android_devices:
+            thread = threading.Thread(target=reset_bluetooth, args=([[a]]))
+            threads.append(thread)
+            thread.start()
+        for t in threads:
+            t.join()
 
-    for d in droids:
-        setup_result = d.bluetoothSetLocalName(generate_id_by_size(4))
-        if not setup_result:
-            return setup_result
-        d.bluetoothDisableBLE()
-        bonded_devices = d.bluetoothGetBondedDevices()
-        for b in bonded_devices:
-            d.bluetoothUnbond(b['address'])
-    for x in range(len(droids)):
-        droid, ed = droids[x], eds[x]
-        setup_result = droid.bluetoothConfigHciSnoopLog(True)
-        if not setup_result:
-            return setup_result
+        for a in android_devices:
+            d = a.droid
+            setup_result = d.bluetoothSetLocalName(generate_id_by_size(4))
+            if not setup_result:
+                return setup_result
+            d.bluetoothDisableBLE()
+            bonded_devices = d.bluetoothGetBondedDevices()
+            for b in bonded_devices:
+                d.bluetoothUnbond(b['address'])
+        for a in android_devices:
+            setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
+            if not setup_result:
+                return setup_result
+    except Exception:
+        return False
     return setup_result
 
 
-def reset_bluetooth(droids, eds):
+def reset_bluetooth(android_devices):
     """Resets bluetooth on the list of android devices passed into the function.
     :param android_devices: list of android devices
     :return: bool
     """
-    for x in range(len(droids)):
-        droid, ed = droids[x], eds[x]
+    for a in android_devices:
+        droid, ed = a.droid, a.ed
         log.info(
             "Reset state of bluetooth on device: {}".format(
                 droid.getBuildSerial()))
@@ -209,11 +211,10 @@ def reset_bluetooth(droids, eds):
     return True
 
 
-def get_advanced_droid_list(droids, eds):
+def get_advanced_droid_list(android_devices):
     droid_list = []
-    for i in range(len(droids)):
-        d = droids[i]
-        e = eds[i]
+    for a in android_devices:
+        d, e = a.droid, a.ed
         model = d.getBuildModel()
         max_advertisements = 0
         batch_scan_supported = True
@@ -237,21 +238,23 @@ def generate_id_by_size(size,
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def cleanup_scanners_and_advertisers(scan_droid, scan_ed, scan_callback_list,
-                                     adv_droid, adv_ed, adv_callback_list):
+def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
+                                     adv_android_device, adv_callback_list):
     """
     Try to gracefully stop all scanning and advertising instances.
     """
+    scan_droid, scan_ed = scn_android_device.droid, scn_android_device.ed
+    adv_droid = adv_android_device.droid
     try:
         for scan_callback in scan_callback_list:
             scan_droid.bleStopBleScan(scan_callback)
     except Exception:
-        reset_bluetooth([scan_droid], [scan_ed])
+        reset_bluetooth([scn_android_device])
     try:
         for adv_callback in adv_callback_list:
             adv_droid.bleStopBleAdvertising(adv_callback)
     except Exception:
-        reset_bluetooth([adv_droid], [adv_ed])
+        reset_bluetooth([adv_android_device])
 
 
 def setup_gatt_characteristics(droid, input):
@@ -277,41 +280,41 @@ def setup_gatt_descriptors(droid, input):
     return descriptor_list
 
 
-def get_mac_address_of_generic_advertisement(scan_droid, scan_ed, adv_droid,
-                                             adv_ed):
-    adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-    adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
+    adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+    adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
         AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-    adv_droid.bleSetAdvertiseSettingsIsConnectable(True)
-    adv_droid.bleSetAdvertiseSettingsTxPowerLevel(
+    adv_ad.droid.bleSetAdvertiseSettingsIsConnectable(True)
+    adv_ad.droid.bleSetAdvertiseSettingsTxPowerLevel(
         AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value)
     advertise_callback, advertise_data, advertise_settings = (
-        generate_ble_advertise_objects(adv_droid))
-    adv_droid.bleStartBleAdvertising(
+        generate_ble_advertise_objects(adv_ad.droid))
+    adv_ad.droid.bleStartBleAdvertising(
         advertise_callback, advertise_data, advertise_settings)
-    adv_ed.pop_event("BleAdvertise{}onSuccess".format(
+    adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(
         advertise_callback), default_timeout)
-    filter_list = scan_droid.bleGenFilterList()
-    scan_settings = scan_droid.bleBuildScanSetting()
-    scan_callback = scan_droid.bleGenScanCallback()
-    scan_droid.bleSetScanFilterDeviceName(adv_droid.bluetoothGetLocalName())
-    scan_droid.bleBuildScanFilter(filter_list)
-    scan_droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
-    event = scan_ed.pop_event(
+    filter_list = scan_ad.droid.bleGenFilterList()
+    scan_settings = scan_ad.droid.bleBuildScanSetting()
+    scan_callback = scan_ad.droid.bleGenScanCallback()
+    scan_ad.droid.bleSetScanFilterDeviceName(adv_ad.droid
+        .bluetoothGetLocalName())
+    scan_ad.droid.bleBuildScanFilter(filter_list)
+    scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
+    event = scan_ad.ed.pop_event(
         "BleScan{}onScanResults".format(scan_callback), default_timeout)
     mac_address = event['data']['Result']['deviceInfo']['address']
-    scan_droid.bleStopBleScan(scan_callback)
+    scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
 
 
-def setup_gatt_connection(cen_droid, cen_ed, mac_address, autoconnect):
+def setup_gatt_connection(cen_ad, mac_address, autoconnect):
     test_result = True
-    gatt_callback = cen_droid.gattCreateGattCallback()
+    gatt_callback = cen_ad.droid.gattCreateGattCallback()
     log.info("Gatt Connect to mac address {}.".format(mac_address))
-    bluetooth_gatt = cen_droid.gattClientConnectGatt(
+    bluetooth_gatt = cen_ad.droid.gattClientConnectGatt(
         gatt_callback, mac_address,
         autoconnect)
-    event = cen_ed.pop_event(
+    event = cen_ad.ed.pop_event(
         "GattConnect{}onConnectionStateChange".format(gatt_callback),
         default_timeout)
     if event['data']['State'] != GattConnectionState.STATE_CONNECTED.value:
@@ -323,9 +326,9 @@ def setup_gatt_connection(cen_droid, cen_ed, mac_address, autoconnect):
     return test_result, bluetooth_gatt, gatt_callback
 
 
-def disconnect_gatt_connection(cen_droid, cen_ed, bluetooth_gatt, gatt_callback):
-    cen_droid.gattClientDisconnect(bluetooth_gatt)
-    event = cen_ed.pop_event(
+def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
+    cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
+    event = cen_ad.ed.pop_event(
         "GattConnect{}onConnectionStateChange".format(gatt_callback),
         default_timeout)
     if event['data']['State'] != GattConnectionState.STATE_DISCONNECTED.value:
@@ -333,20 +336,18 @@ def disconnect_gatt_connection(cen_droid, cen_ed, bluetooth_gatt, gatt_callback)
     return True
 
 
-def orchestrate_gatt_connection(cen_droid, cen_ed, per_droid, per_ed, le=True,
-                                mac_address=None):
+def orchestrate_gatt_connection(cen_ad, per_ad, le=True, mac_address=None):
     adv_callback = None
     if mac_address is None:
         if le:
             mac_address, adv_callback = (
-                get_mac_address_of_generic_advertisement(cen_droid, cen_ed,
-                                                         per_droid, per_ed))
+                get_mac_address_of_generic_advertisement(cen_ad, per_ad))
         else:
-            mac_address = get_bt_mac_address(cen_droid, per_droid, le)
+            mac_address = get_bt_mac_address(cen_ad.droid, per_ad.droid, le)
             adv_callback = None
     autoconnect = False
     test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
-        cen_droid, cen_ed, mac_address, autoconnect)
+        cen_ad, mac_address, autoconnect)
     if not test_result:
         log.info("Could not connect to peripheral.")
         return False
@@ -443,7 +444,8 @@ def setup_characteristics_and_descriptors(droid):
     return characteristic_list, descriptor_list
 
 
-def setup_multiple_services(per_droid, per_ed):
+def setup_multiple_services(per_ad):
+    per_droid, per_ed = per_ad.droid, per_ad.ed
     gatt_server_callback = per_droid.gattServerCreateGattServerCallback()
     gatt_server = per_droid.gattServerOpenGattServer(gatt_server_callback)
     characteristic_list, descriptor_list = (
@@ -544,11 +546,12 @@ def disable_bluetooth(droid, ed):
     return True
 
 
-def set_bt_scan_mode(droid, ed, scan_mode_value):
+def set_bt_scan_mode(ad, scan_mode_value):
+    droid, ed = ad.droid, ad.ed
     if scan_mode_value == BluetoothScanModeType.STATE_OFF.value:
         disable_bluetooth(droid, ed)
         scan_mode = droid.bluetoothGetScanMode()
-        reset_bluetooth([droid], [ed])
+        reset_bluetooth([ad])
         if scan_mode != scan_mode_value:
             return False
     elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_NONE.value:
@@ -650,9 +653,9 @@ def get_client_server_bt_mac_address(droid, droid1):
     return get_bt_mac_address(droid, droid1), get_bt_mac_address(droid1, droid)
 
 
-def take_btsnoop_logs(droids, testcase, testname):
-    for d in droids:
-        take_btsnoop_log(d, testcase, testname)
+def take_btsnoop_logs(android_devices, testcase, testname):
+    for a in android_devices:
+        take_btsnoop_log(a.droid, testcase, testname)
 
 
 def take_btsnoop_log(droid, testcase, test_name):
