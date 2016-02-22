@@ -531,3 +531,15 @@ def set_location_service(ad, new_state):
     else:
         ad.adb.shell("settings put secure location_providers_allowed -gps")
         ad.adb.shell("settings put secure location_providers_allowed -network")
+
+def set_mobile_data_always_on(ad, new_state):
+    """Set Mobile_Data_Always_On feature bit
+
+    Args:
+        ad: android device object.
+        new_state: new state for "mobile_data_always_on"
+            if new_state is False, set mobile_data_always_on disabled.
+            if new_state if True, set mobile_data_always_on enabled.
+    """
+    ad.adb.shell("settings put global mobile_data_always_on {}".
+        format(1 if new_state else 0))
