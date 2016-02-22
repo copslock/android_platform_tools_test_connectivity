@@ -27,6 +27,16 @@ from . _anritsu_utils import *
 
 TERMINATOR = "\n"
 
+def create(configs, logger):
+    objs = []
+    for c in configs:
+        ip_address = c["ip_address"]
+        objs.append(MG3710A(ip_address, logger))
+    return objs
+
+def destroy(objs):
+    return
+
 class MG3710A():
     """Class to communicate with Anritsu Signal Generator MG3710A.
        This uses GPIB command to interface with Anritsu MG3710A """
