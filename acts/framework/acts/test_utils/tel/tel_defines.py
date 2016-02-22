@@ -65,6 +65,9 @@ MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 20
 # Max time to wait for WFC enabled flag to be True
 MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 50
 
+# Max time to wait for WFC enabled flag to be False
+MAX_WAIT_TIME_WFC_DISABLED = 60
+
 # Max time to wait for WiFi Manager to Connect to an AP
 MAX_WAIT_TIME_WIFI_CONNECTION = 30
 
