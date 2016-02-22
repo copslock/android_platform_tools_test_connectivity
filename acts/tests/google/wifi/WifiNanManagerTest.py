@@ -30,10 +30,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.publisher = android_device.get_device(self.android_devices,
-                                                   label="publisher")
-        self.subscriber = android_device.get_device(self.android_devices,
-                                                    label="subscriber")
+        self.publisher = self.android_devices[0]
+        self.subscriber = self.android_devices[1]
         self.tests = (
             "test_nan_base_test",
             )
