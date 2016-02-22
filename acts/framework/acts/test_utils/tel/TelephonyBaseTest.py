@@ -31,6 +31,7 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RING
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
+from acts.utils import force_airplane_mode
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -92,18 +93,29 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        ensure_phones_default_state(self.log, self.android_devices)
+        try:
+            ensure_phones_default_state(self.log, self.android_devices)
 
-        for ad in self.android_devices:
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
-            if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(
-                    WIFI_VERBOSE_LOGGING_DISABLED)
+            for ad in self.android_devices:
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
+                if "enable_wifi_verbose_logging" in self.user_params:
+                    ad.droid.wifiEnableVerboseLogging(
+                        WIFI_VERBOSE_LOGGING_DISABLED)
+        finally:
+            for ad in self.android_devices:
+                try:
+                    ad.droid.connectivityToggleAirplaneMode(True)
+                except BrokenPipeError:
+                # Broken Pipe, can not call SL4A API to turn on Airplane Mode.
+                # Use adb command to turn on Airplane Mode.
+                    if not force_airplane_mode(ad, True):
+                        self.log.error("Can not turn on airplane mode on:{}".
+                            format(ad.serial))
         return True
 
     def setup_test(self):
