@@ -43,82 +43,123 @@ class WifiScanResultEvents():
     def add_event(self, event):
         self.events.append(event)
 
-    def check_interval(self, scan_setting, scan_result, scan_result_next):
-        # Check if the time gap between two consecutive results is
-        # within the range. Right now it is hard coded to be 10% of
-        # the interval specified by scan setting. This threshold can
-        # be imported from the configuration file in the future if it
-        # turns out to be necessary.
-        # Timestamp of scan result is in microseconds.
-        assert abs((scan_result_next["timestamp"] - scan_result["timestamp"]) - \
-                   (self.scan_setting['periodInMs'] * 1000)) < \
-               (self.scan_setting['periodInMs'] * 100), \
-               "The time interval between {} and {} is out of expected range {}ms". \
-               format(scan_result, scan_result_next, self.scan_setting['periodInMs'])
+    def check_interval(self, scan_result, scan_result_next):
+        """Verifies that the time gap between two consecutive results is within
+        expected range.
+
+        Right now it is hard coded to be 10 percent of the interval specified
+        by scan settings. This threshold can be imported from the configuration
+        file in the future if necessary later.
+
+        Note the scan result timestamps are in microseconds, but "periodInMs"
+        in scan settings is in milliseconds.
+
+        Args:
+            scan_result: A dictionary representing a scan result for a BSSID.
+            scan_result_next: A dictionary representing a scan result for a
+                BSSID, whose scan happened after scan_result.
+        """
+        actual_interval = scan_result_next["timestamp"] - scan_result["timestamp"]
+        expected_interval = self.scan_setting['periodInMs'] * 1000
+        delta = abs(actual_interval - expected_interval)
+        margin = expected_interval * 0.1 # 10% of the expected_interval
+        assert delta < margin, ("The difference in time between scan %s and "
+                "%s is %dms, which is out of the expected range %sms" % (
+                    scan_result,
+                    scan_result_next,
+                    delta / 1000,
+                    self.scan_setting['periodInMs']
+                )
+
+    def verify_one_scan_result(self, scan_result):
+        """Verifies the scan result of a single BSSID.
+
+        1. Verifies the frequency of the network is within the range requested
+        in the scan.
+
+        Args:
+            scan_result: A dictionary representing the scan result of a single
+                BSSID.
+        """
+        freq = scan_result["frequency"]
+        assert freq in self.scan_channels, ("Frequency %d of "
+            "result entry %s is out of the expected range %s.") % (
+                freq, scan_result, self.scan_channels)
+        # TODO(angli): add RSSI check.
+
+    def verify_one_scan_result_group(self, batch):
+        """Verifies a group of scan results obtained during one scan.
+
+        1. Verifies the number of BSSIDs in the batch is less than the
+        threshold set by scan settings.
+        2. Verifies each scan result for individual BSSID.
+
+        Args:
+            batch: A list of dictionaries, each dictionary represents a scan
+                result.
+        """
+        scan_results = batch["ScanResults"]
+        actual_num_of_results = len(scan_results)
+        expected_num_of_results = self.scan_setting['numBssidsPerScan']
+        assert actual_num_of_results <= expected_num, (
+            "Expected no more than %d BSSIDs, got %d.") % (
+                expected_num_of_results,
+                actual_num_of_results
+            )
+        for scan_result in scan_results:
+            self.verify_one_scan_result(scan_result)
 
     def check_scan_results(self):
         """Validate the reported scan results against the scan settings.
-           Assert if any error detected in the results.
+        Assert if any error detected in the results.
 
-           1. For each scan setting there should be no less than 2 events received.
-           2. For batch scan, the number of buffered results in each event should
-              be exactly what the scan setting specified.
-           3. Each scan result should contain no more BBSIDs than what scan setting
-              specified.
-           4. The frequency reported by each scan result should comply with its
-              scan setting.
-           5. The time gap between two consecutive scan results should be
-              approximately equal to the scan interval specified by the scan
-              setting.
+        1. For each scan setting there should be no less than 2 events received.
+        2. For batch scan, the number of buffered results in each event should
+           be exactly what the scan setting specified.
+        3. Each scan result should contain no more BBSIDs than what scan
+           setting specified.
+        4. The frequency reported by each scan result should comply with its
+           scan setting.
+        5. The time gap between two consecutive scan results should be
+           approximately equal to the scan interval specified by the scan
+           setting.
         """
-        num_events = len(self.events)
-
-        assert num_events >=2, \
-               "Not enough number of scan results events: {}".format(num_events)
-
-        for snumber in range(0, num_events):
-            # For batch scan mode, check if the number of buffered results matches the
-            # scan setting.
-            if self.scan_setting['reportEvents'] == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
-                assert len(self.events[snumber]["data"]["Results"]) == \
-                       self.scan_setting['maxScansToCache'], \
-                       "batch scan, {} Results, expect {}". \
-                       format(len(self.events[snumber]["data"]["Results"]), \
-                              self.scan_setting['maxScansToCache'])
-
-            # Check if the number of BSSIDs and frequencies are within the range specified
-            # by the scan setting
-            for result in self.events[snumber]["data"]["Results"]:
-                assert len(result["ScanResults"]) <= self.scan_setting['numBssidsPerScan'], \
-                       "{} BSSIDs, expected no more than {}". \
-                       format(len(result["ScanResults"]), self.scan_setting['numBssidsPerScan'])
-
-                for scan_result in result["ScanResults"]:
-                    assert scan_result["frequency"] in self.scan_channels, \
-                           "The frequency of result event {} not in scan channels {}". \
-                           format(self.events[snumber], self.scan_channels)
-
-            # Check if the time gap between two consecutive results is
-            # within the range.
-
-            # Check the results within each event of batch scan
-            if self.scan_setting['reportEvents'] == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
-                for rnumber in range(1, len(self.events[snumber]["data"]["Results"])):
-                    self.check_interval(self.scan_setting,
-                        self.events[snumber]["data"]["Results"][rnumber-1]["ScanResults"][0],
-                        self.events[snumber]["data"]["Results"][rnumber]["ScanResults"][0])
-
+        num_of_events = len(self.events)
+        assert num_of_events >=2, (
+                "Expected more than one scan result events, got %d."
+            ) % num_of_events
+        for event_idx in range(num_of_events):
+            batches = self.events[event_idx]["data"]["Results"]
+            actual_num_of_batches = len(batches)
+            # For batch scan results.
+            report_type = self.scan_setting['reportEvents']
+            if report_type == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
+                # Verifies that the number of buffered results matches the
+                # number defined in scan settings.
+                expected_num_of_batches = self.scan_setting['maxScansToCache']
+                assert actual_num_of_batches == expected_num_of_batches, (
+                    "Expected to get %d batches in event No.%d, got %d.") % (
+                        expected_num_of_batches,
+                        event_idx,
+                        actual_num_of_batches
+                    )
+                # Check the results within each event of batch scan
+                for batch_idx in range(1, actual_num_of_batches):
+                    self.check_interval(
+                        batches[batch_idx-1]["ScanResults"][0],
+                        batches[batch_idx]["ScanResults"][0]
+                    )
+            for batch in batches:
+                self.verify_one_scan_result_group(batch)
             # Check the time gap between the first result of an event and
             # the last result of its previous event
-
             # Skip the very first event.
-            if snumber >= 1:
-                self.check_interval(self.scan_setting,
-                    self.events[snumber-1]["data"]["Results"][-1]["ScanResults"][0],
-                    self.events[snumber]["data"]["Results"][0]["ScanResults"][0])
-
-            # Add more validations here in the future.
-
+            if event_idx >= 1:
+                previous_batches = self.events[event_idx-1]["data"]["Results"]
+                self.check_interval(
+                    previous_batches[-1]["ScanResults"][0],
+                    batches[0]["ScanResults"][0]
+                )
 
 class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
     """This class is the WiFi Scanner Multi-Scan Test suite.
@@ -171,25 +212,27 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
         data = wutils.start_wifi_background_scan(self.dut, scan_setting)
         idx = data["Index"]
         # Calculate event wait time from scan setting plus leeway
-        scan_time, scan_channels = wutils.get_scan_time_and_channels(self.wifi_chs,
-                                                              scan_setting,
-                                                              self.stime_channel)
-        if scan_setting['reportEvents'] == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
-            scan_time += scan_setting['maxScansToCache'] * scan_setting['periodInMs']
+        scan_time, scan_channels = wutils.get_scan_time_and_channels(
+                                        self.wifi_chs,
+                                        scan_setting,
+                                        self.stime_channel
+                                    )
+        scan_period = scan_setting['periodInMs']
+        report_type = scan_setting['reportEvents']
+        max_scan = scan_setting['maxScansToCache']
+        if report_type == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
+            scan_time += max_scan * scan_period
         else:
-            scan_time += scan_setting['periodInMs']
-
-        wait_time = scan_time/1000 + self.leeway
+            scan_time += scan_period
+        wait_time = scan_time / 1000 + self.leeway
         return idx, wait_time, scan_channels
 
     def validate_scan_results(self, scan_results_dict):
         # Sanity check to make sure the dict is not empty
-        self.assert_true(scan_results_dict,
-                         "Scan result dict is empty.")
-
-        for key, scan_results in scan_results_dict.items():
+        self.assert_true(scan_results_dict, "Scan result dict is empty.")
+        for scan_result_obj in scan_results_dict.values():
             # Validate the results received for each scan setting
-            scan_results.check_scan_results()
+            scan_result_obj.check_scan_results()
 
     def scan_and_validate_results(self, scan_settings):
         """Perform WifiScanner scans and check the scan results
@@ -209,20 +252,29 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
         scan_results_dict = {}
 
         for scan_setting in scan_settings:
-            self.log.debug("Scan setting: band {}, interval {}, reportEvents {},"
-                           "numBssidsPerScan {}".format(scan_setting["band"],
-                                                        scan_setting["periodInMs"],
-                                                        scan_setting["reportEvents"],
-                                                        scan_setting["numBssidsPerScan"]))
+            self.log.debug("Scan setting: band {}, interval {}, reportEvents "
+                           "{}, numBssidsPerScan {}".format(
+                                scan_setting["band"],
+                                scan_setting["periodInMs"],
+                                scan_setting["reportEvents"],
+                                scan_setting["numBssidsPerScan"]
+                            ))
             idx, wait_time, scan_chan = self.start_scan(scan_setting)
-            self.log.debug("Scan started for band {}: idx {}, wait_time {} s, scan_channels {}".
-                           format(scan_setting["band"], idx, wait_time, scan_chan))
+            self.log.debug(("Scan started for band {}: idx {}, wait_time {} s,"
+                            " scan_channels {}").format(
+                            scan_setting["band"], idx, wait_time, scan_chan))
             idx_list.append(idx)
             wait_time_list.append(wait_time)
-            if scan_setting['reportEvents'] == WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL:
-                scan_results_dict_key = "{}{}onFullResults".format(SCAN_EVENT_TAG, idx)
-            else:
-                scan_results_dict_key = "{}{}onResults".format(SCAN_EVENT_TAG, idx)
+            event_name_suffix_lookup = {
+                WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL: "onFullResults",
+                WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN: "onResults",
+                WifiEnums.REPORT_EVENT_FULL_SCAN_RESULT: "onResults"
+            }
+            report_type = scan_setting['reportEvents']
+            event_name_suffix = event_name_suffix_lookup[report_type]
+            scan_results_dict_key = "%s%d%s" % (SCAN_EVENT_TAG,
+                                                idx,
+                                                event_name_suffix)
             scan_results_dict_val = WifiScanResultEvents(scan_setting,
                                                          scan_chan)
             scan_results_dict[scan_results_dict_key] = scan_results_dict_val
@@ -243,34 +295,29 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
         try:
             # Wait for scan results on all the caller specified bands
             event_name = SCAN_EVENT_TAG
-            for snumber in range(0, event_loop_count):
-                self.log.debug("Waiting for events: {} for up to {} seconds".
+            for snumber in range(event_loop_count):
+                self.log.debug("Waiting for events '{}' for up to {} seconds".
                                format(event_name, event_wait_time))
                 events = self.ed.pop_events(event_name, event_wait_time)
                 for event in events:
                     self.log.debug("Event received: {}".format(event))
                     # Event name is the key to the scan results dictionary
-                    scan_results_per_setting = scan_results_dict.get(event["name"])
-
-                    self.assert_true(scan_results_per_setting != None,
-                                     "Scan result event has invalid name, {}".format(event))
-
+                    actual_event_name = event["name"]
+                    self.assert_true(actual_event_name in scan_results_dict,
+                        ("Expected one of these event names: %s, got '%s'."
+                        ) % (scan_results_dict.keys(), actual_event_name))
                     # Append the event
-                    scan_results_per_setting.add_event(event)
-
+                    scan_results_dict[actual_event_name].add_event(e)
         except queue.Empty:
             self.fail("Event did not trigger for {} in {} seconds".
                       format(event_name, event_wait_time))
-
         finally:
             # Validate the scan results
             self.validate_scan_results(scan_results_dict)
-
             # Tear down and clean up
             for idx in idx_list:
                 self.droid.wifiScannerStopBackgroundScan(idx)
             self.ed.clear_all_events()
-
     """ Helper Functions End """
 
 
