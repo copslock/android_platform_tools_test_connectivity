@@ -52,6 +52,8 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
