@@ -3,8 +3,7 @@
     [
         {
             "_description": "ACTS sanity test bed, no device needed.",
-            "name": "Sanity",
-            "AndroidDevice": []
+            "name": "Sanity"
         }
     ],
     "logpath": "/tmp/logs",
