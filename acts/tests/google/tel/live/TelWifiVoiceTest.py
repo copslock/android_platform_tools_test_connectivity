@@ -50,6 +50,7 @@ from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import NetworkCallBack
 from acts.test_utils.tel.tel_defines import NetworkCallBackAvailable
 from acts.test_utils.tel.tel_defines import NetworkCallBackLost
+from acts.test_utils.tel.tel_defines import SignalStrengthContainer
 from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -267,7 +268,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         self.log.info("WFC phone: <{}> <{}>".format(self.android_devices[
             0].serial, get_phone_number(self.log, self.android_devices[0])))
-        self.android_devices[0].droid.startTrackingSignalStrengths()
+        self.android_devices[0].droid.telephonyStartTrackingSignalStrengthChange()
 
         # Do WiFi RSSI calibration.
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
@@ -311,7 +312,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         # Do Cellular RSSI calibration.
         setattr(self, "cell_rssi_with_no_atten", self.android_devices[
-            0].droid.phoneGetSignalStrengthInfo()['LteDbm'])
+            0].droid.telephonyGetSignalStrength()[
+            SignalStrengthContainer.SIGNAL_STRENGTH_LTE_DBM])
         self.log.info(
             "Cellular RSSI calibration info: atten=0, RSSI={}".format(
                 self.cell_rssi_with_no_atten))
@@ -321,7 +323,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         super().teardown_class()
 
-        self.android_devices[0].droid.stopTrackingSignalStrengths()
+        self.android_devices[0].droid.telephonyStopTrackingSignalStrengthChange()
         return True
 
     def teardown_test(self):
