@@ -24,7 +24,7 @@ from acts.test_utils.tel.tel_data_utils import airplane_mode_test
 from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import TETHERING_ENTITLEMENT_CHECK_TIMEOUT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
@@ -338,7 +338,7 @@ class TelLiveSmokeTest(TelephonyBaseTest):
                                                self.wifi_network_ssid,
                                                self.wifi_network_pass, GEN_4G)
         if ads[0].droid.carrierConfigIsTetheringModeAllowed(
-                TETHERING_MODE_WIFI, TETHERING_ENTITLEMENT_CHECK_TIMEOUT):
+                TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
             self.log.info("3. Verify WiFi Tethering.")
             if ads[0].droid.wifiIsApEnabled():
                 WifiUtils.stop_wifi_tethering(self.log, ads[0])

@@ -24,6 +24,8 @@ from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
 from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL_PAUSED
@@ -32,8 +34,6 @@ from acts.test_utils.tel.tel_defines import VT_STATE_RX_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_TX_ENABLED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VIDEO_SESSION_EVENT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import EventSessionEvent
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionEvent
 from acts.test_utils.tel.tel_defines import SessionEventRxPause
@@ -594,10 +594,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         try:
             event_on_responder = ad_responder.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
-                WAIT_TIME_VIDEO_SESSION_EVENT)
+                MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
             event_on_requester = ad_requester.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
-                WAIT_TIME_VIDEO_SESSION_EVENT)
+                MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
             if event_on_responder['data']['Event'] != SessionEventRxPause:
                 self.log.error(
                     "Event not correct. event_on_responder: {}. Expected :{}".format(
@@ -637,10 +637,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         try:
             event_on_responder = ad_responder.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
-                WAIT_TIME_VIDEO_SESSION_EVENT)
+                MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
             event_on_requester = ad_requester.ed.pop_event(
                 EventTelecomVideoCallSessionEvent,
-                WAIT_TIME_VIDEO_SESSION_EVENT)
+                MAX_WAIT_TIME_VIDEO_SESSION_EVENT)
             if event_on_responder['data']['Event'] != SessionEventRxResume:
                 self.log.error(
                     "Event not correct. event_on_responder: {}. Expected :{}".format(
@@ -2280,10 +2280,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
             self.log.info("Step3 Verify vt_enabled return false.")
             if wait_for_video_enabled(self.log, ads[0],
-                                      WAIT_TIME_VOLTE_ENABLED):
+                                      MAX_WAIT_TIME_VOLTE_ENABLED):
                 self.log.error(
                     "{} failed to <report vt enabled false> for {}s."
-                    .format(ads[0].serial, WAIT_TIME_VOLTE_ENABLED))
+                    .format(ads[0].serial, MAX_WAIT_TIME_VOLTE_ENABLED))
                 return False
             self.log.info(
                 "Step4 Attempt to make VT call, verify call is AUDIO_ONLY.")

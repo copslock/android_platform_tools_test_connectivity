@@ -31,7 +31,18 @@ from acts.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_VOICE_MAIL_COUNT
+from acts.test_utils.tel.tel_defines import \
+    MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
@@ -56,24 +67,13 @@ from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
-from acts.test_utils.tel.tel_defines import VOICE_MAIL_SERVER_RESPONSE_DELAY
-from acts.test_utils.tel.tel_defines import \
-    WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
-from acts.test_utils.tel.tel_defines import WAIT_TIME_AIRPLANEMODE_EVENT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANSWER_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CALL_INITIATION
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CALLEE_RINGING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CONNECTION_STATE_UPDATE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_DATA_SUB_CHANGE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_1XRTT_VOICE_ATTACH
-from acts.test_utils.tel.tel_defines import WAIT_TIME_HANGUP_TO_IDLE_EVENT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_NW_SELECTION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
-from acts.test_utils.tel.tel_defines import WAIT_TIME_SMS_RECEIVE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_SMS_SENT_SUCCESS
-from acts.test_utils.tel.tel_defines import WAIT_TIME_TO_LEAVE_VOICE_MAIL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
@@ -336,7 +336,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         try:
             event = ad.ed.wait_for_event(EventServiceStateChanged,
                                          is_sub_event_match_for_sub_event_list,
-                                         timeout=WAIT_TIME_AIRPLANEMODE_EVENT,
+                                         timeout=MAX_WAIT_TIME_AIRPLANEMODE_EVENT,
                                          sub_event_list=sub_event_name_list)
         except Empty:
             pass
@@ -465,7 +465,7 @@ def wait_and_answer_call_for_subscription(
             TELEPHONY_STATE_RINGING):
         try:
             event_ringing = wait_for_ringing_event(log, ad,
-                                                   WAIT_TIME_CALLEE_RINGING)
+                                                   MAX_WAIT_TIME_CALLEE_RINGING)
             if event_ringing is None:
                 log.error("No Ringing Event.")
                 return False
@@ -495,7 +495,7 @@ def wait_and_answer_call_for_subscription(
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
                              is_sub_event_match,
-                             timeout=WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
+                             timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
                              sub_event=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         if not ad.droid.telecomIsInCall():
@@ -560,7 +560,7 @@ def wait_and_reject_call_for_subscription(log,
             TELEPHONY_STATE_RINGING):
         try:
             event_ringing = wait_for_ringing_event(log, ad,
-                                                   WAIT_TIME_CALLEE_RINGING)
+                                                   MAX_WAIT_TIME_CALLEE_RINGING)
             if event_ringing is None:
                 log.error("No Ringing Event.")
                 return False
@@ -590,7 +590,7 @@ def wait_and_reject_call_for_subscription(log,
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
                              is_sub_event_match,
-                             timeout=WAIT_TIME_HANGUP_TO_IDLE_EVENT,
+                             timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
                              sub_event=TELEPHONY_STATE_IDLE)
     except Empty:
         log.error("No onCallStateChangedIdle event received.")
@@ -611,7 +611,7 @@ def hangup_call(log, ad):
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
                              is_sub_event_match,
-                             timeout=WAIT_TIME_HANGUP_TO_IDLE_EVENT,
+                             timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
                              sub_event=TELEPHONY_STATE_IDLE)
     except Empty:
         if ad.droid.telecomIsInCall():
@@ -681,7 +681,7 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
     sub_id = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
     ad_caller.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
 
-    wait_time_for_incall_state = WAIT_TIME_CALL_INITIATION
+    wait_time_for_incall_state = MAX_WAIT_TIME_CALL_INITIATION
 
     try:
         # Make a Call
@@ -725,7 +725,7 @@ def call_reject_leave_message(log,
                               ad_caller,
                               ad_callee,
                               verify_caller_func=None,
-                              wait_time_in_call=WAIT_TIME_TO_LEAVE_VOICE_MAIL):
+                              wait_time_in_call=WAIT_TIME_LEAVE_VOICE_MAIL):
     """On default voice subscription, Call from caller to callee,
     reject on callee, caller leave a voice mail.
 
@@ -740,7 +740,7 @@ def call_reject_leave_message(log,
         verify_caller_func: function to verify caller is in correct state while in-call.
             This is optional, default is None.
         wait_time_in_call: time to wait when leaving a voice mail.
-            This is optional, default is WAIT_TIME_TO_LEAVE_VOICE_MAIL
+            This is optional, default is WAIT_TIME_LEAVE_VOICE_MAIL
 
     Returns:
         True: if voice message is received on callee successfully.
@@ -760,7 +760,7 @@ def call_reject_leave_message_for_subscription(
         subid_caller,
         subid_callee,
         verify_caller_func=None,
-        wait_time_in_call=WAIT_TIME_TO_LEAVE_VOICE_MAIL):
+        wait_time_in_call=WAIT_TIME_LEAVE_VOICE_MAIL):
     """On specific voice subscription, Call from caller to callee,
     reject on callee, caller leave a voice mail.
 
@@ -777,7 +777,7 @@ def call_reject_leave_message_for_subscription(
         verify_caller_func: function to verify caller is in correct state while in-call.
             This is optional, default is None.
         wait_time_in_call: time to wait when leaving a voice mail.
-            This is optional, default is WAIT_TIME_TO_LEAVE_VOICE_MAIL
+            This is optional, default is WAIT_TIME_LEAVE_VOICE_MAIL
 
     Returns:
         True: if voice message is received on callee successfully.
@@ -909,19 +909,19 @@ def call_voicemail_erase_all_pending_voicemail(log, ad):
     if not initiate_call(log, ad, voice_mail_number):
         log.error("Initiate call failed.")
         return False
-    time.sleep(VOICE_MAIL_SERVER_RESPONSE_DELAY)
+    time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
     callId = ad.droid.telecomCallGetCallIds()[0]
-    time.sleep(VOICE_MAIL_SERVER_RESPONSE_DELAY)
+    time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
     count = MAX_SAVED_VOICE_MAIL
     while (is_phone_in_call(log, ad) and (count > 0)):
         log.info("Press 7 to delete voice mail.")
         ad.droid.telecomCallPlayDtmfTone(callId, VOICEMAIL_DELETE_DIGIT)
         ad.droid.telecomCallStopDtmfTone(callId)
-        time.sleep(VOICE_MAIL_SERVER_RESPONSE_DELAY)
+        time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
         count -= 1
     log.info("Voice mail server dropped this call.")
     # wait for telephonyGetVoiceMailCount to update correct result
-    remaining_time = MAX_WAIT_TIME_FOR_VOICE_MAIL_COUNT
+    remaining_time = MAX_WAIT_TIME_VOICE_MAIL_COUNT
     while ((remaining_time > 0) and
            (ad.droid.telephonyGetVoiceMailCount() != 0)):
         time.sleep(1)
@@ -1300,7 +1300,7 @@ def wait_for_cell_data_connection_for_subscription(
                 "No expected event EventDataConnectionStateChanged {}.".format(
                     tel_sub_event_name))
 
-        # TODO: Wait for <WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
+        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
         # data connection state.
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
@@ -1310,7 +1310,7 @@ def wait_for_cell_data_connection_for_subscription(
         # The bug is tracked here: b/22612607
         # So we use _is_network_connected_state_match.
 
-        if _wait_for_droid_in_state(log, ad, WAIT_TIME_CONNECTION_STATE_UPDATE,
+        if _wait_for_droid_in_state(log, ad, MAX_WAIT_TIME_CONNECTION_STATE_UPDATE,
                                     _is_network_connected_state_match, state):
             return _wait_for_nw_data_connection(
                 log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
@@ -1435,11 +1435,11 @@ def _wait_for_nw_data_connection(
 
         log.info(
             "_wait_for_nw_data_connection: check connection after wait event.")
-        # TODO: Wait for <WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
+        # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
         # data connection state.
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
-        if _wait_for_droid_in_state(log, ad, WAIT_TIME_CONNECTION_STATE_UPDATE,
+        if _wait_for_droid_in_state(log, ad, MAX_WAIT_TIME_CONNECTION_STATE_UPDATE,
                                     _is_network_connected_state_match,
                                     is_connected):
             current_type = get_internet_connection_type(log, ad)
@@ -1742,7 +1742,7 @@ def wait_for_voice_attach_for_subscription(log, ad, sub_id, max_time):
     # TODO: b/26295983 if pone attach to 1xrtt from unknown, phone may not
     # receive incoming call immediately.
     if ad.droid.telephonyGetCurrentVoiceNetworkType() == RAT_1XRTT:
-        time.sleep(WAIT_TIME_FOR_1XRTT_VOICE_ATTACH)
+        time.sleep(WAIT_TIME_1XRTT_VOICE_ATTACH)
     return True
 
 
@@ -2047,7 +2047,7 @@ def wait_for_matching_sms(log,
     if not allow_multi_part_long_sms:
         try:
             ad_rx.ed.wait_for_event(EventSmsReceived, is_sms_match,
-                                    WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
+                                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
                                     text)
             return True
         except Empty:
@@ -2059,7 +2059,7 @@ def wait_for_matching_sms(log,
             while (text != ''):
                 event = ad_rx.ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match,
-                    WAIT_TIME_SMS_RECEIVE, phonenumber_tx, text)
+                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx, text)
                 text = text[len(event['data']['Text']):]
                 received_sms += event['data']['Text']
             return True
@@ -2101,7 +2101,7 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
 
             try:
                 ad_tx.ed.pop_event(EventSmsSentSuccess,
-                                   WAIT_TIME_SMS_SENT_SUCCESS)
+                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 log.error("No sent_success event.")
                 return False
@@ -2169,10 +2169,10 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
             ad_tx.droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
 
-            ad_tx.ed.pop_event(EventMmsSentSuccess, WAIT_TIME_SMS_SENT_SUCCESS)
+            ad_tx.ed.pop_event(EventMmsSentSuccess, MAX_WAIT_TIME_SMS_SENT_SUCCESS)
 
             start_time = time.time()
-            remaining_time = WAIT_TIME_SMS_RECEIVE
+            remaining_time = MAX_WAIT_TIME_SMS_RECEIVE
             while remaining_time > 0:
                 event = ad_rx.ed.pop_event(EventSmsReceived, remaining_time)
                 if check_phone_number_match(event['data']['Sender'],
@@ -2204,7 +2204,7 @@ def ensure_network_rat(log,
                        network_preference,
                        rat_family,
                        voice_or_data=None,
-                       max_wait_time=WAIT_TIME_NW_SELECTION,
+                       max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                        toggle_apm_after_setting=False):
     """Ensure ad's current network is in expected rat_family.
     """
@@ -2219,7 +2219,7 @@ def ensure_network_rat_for_subscription(log,
                                         network_preference,
                                         rat_family,
                                         voice_or_data=None,
-                                        max_wait_time=WAIT_TIME_NW_SELECTION,
+                                        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                                         toggle_apm_after_setting=False):
     """Ensure ad's current network is in expected rat_family.
     """
@@ -2260,7 +2260,7 @@ def ensure_network_preference(log,
                               ad,
                               network_preference,
                               voice_or_data=None,
-                              max_wait_time=WAIT_TIME_NW_SELECTION,
+                              max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                               toggle_apm_after_setting=False):
     """Ensure that current rat is within the device's preferred network rats.
     """
@@ -2275,7 +2275,7 @@ def ensure_network_preference_for_subscription(
         sub_id,
         network_preference,
         voice_or_data=None,
-        max_wait_time=WAIT_TIME_NW_SELECTION,
+        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         toggle_apm_after_setting=False):
     """Ensure ad's network preference is <network_preference> for sub_id.
     """
@@ -2316,7 +2316,7 @@ def ensure_network_preference_for_subscription(
 def ensure_network_generation(log,
                               ad,
                               generation,
-                              max_wait_time=WAIT_TIME_NW_SELECTION,
+                              max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                               voice_or_data=None,
                               toggle_apm_after_setting=False):
     """Ensure ad's network is <network generation> for default subscription ID.
@@ -2335,7 +2335,7 @@ def ensure_network_generation_for_subscription(
         ad,
         sub_id,
         generation,
-        max_wait_time=WAIT_TIME_NW_SELECTION,
+        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None,
         toggle_apm_after_setting=False):
     """Ensure ad's network is <network generation> for specified subscription ID.
@@ -2394,7 +2394,7 @@ def ensure_network_generation_for_subscription(
 def wait_for_network_rat(log,
                          ad,
                          rat_family,
-                         max_wait_time=WAIT_TIME_NW_SELECTION,
+                         max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                          voice_or_data=None):
     return wait_for_network_rat_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), rat_family,
@@ -2405,7 +2405,7 @@ def wait_for_network_rat_for_subscription(log,
                                           ad,
                                           sub_id,
                                           rat_family,
-                                          max_wait_time=WAIT_TIME_NW_SELECTION,
+                                          max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                                           voice_or_data=None):
     return _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_wait_time,
@@ -2415,7 +2415,7 @@ def wait_for_network_rat_for_subscription(log,
 def wait_for_not_network_rat(log,
                              ad,
                              rat_family,
-                             max_wait_time=WAIT_TIME_NW_SELECTION,
+                             max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                              voice_or_data=None):
     return wait_for_not_network_rat_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), rat_family,
@@ -2427,7 +2427,7 @@ def wait_for_not_network_rat_for_subscription(
         ad,
         sub_id,
         rat_family,
-        max_wait_time=WAIT_TIME_NW_SELECTION,
+        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None):
     return _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_wait_time,
@@ -2439,7 +2439,7 @@ def wait_for_not_network_rat_for_subscription(
 def wait_for_preferred_network(log,
                                ad,
                                network_preference,
-                               max_wait_time=WAIT_TIME_NW_SELECTION,
+                               max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                                voice_or_data=None):
     return wait_for_preferred_network_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), network_preference,
@@ -2451,7 +2451,7 @@ def wait_for_preferred_network_for_subscription(
         ad,
         sub_id,
         network_preference,
-        max_wait_time=WAIT_TIME_NW_SELECTION,
+        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None):
     rat_family_list = rat_families_for_network_preference(network_preference)
     return _wait_for_droid_in_state_for_subscription(
@@ -2463,7 +2463,7 @@ def wait_for_preferred_network_for_subscription(
 def wait_for_network_generation(log,
                                 ad,
                                 generation,
-                                max_wait_time=WAIT_TIME_NW_SELECTION,
+                                max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
                                 voice_or_data=None):
     return wait_for_network_generation_for_subscription(
         log, ad, ad.droid.subscriptionGetDefaultSubId(), generation,
@@ -2475,7 +2475,7 @@ def wait_for_network_generation_for_subscription(
         ad,
         sub_id,
         generation,
-        max_wait_time=WAIT_TIME_NW_SELECTION,
+        max_wait_time=MAX_WAIT_TIME_NW_SELECTION,
         voice_or_data=None):
     return _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_wait_time,
@@ -2880,7 +2880,7 @@ def set_preferred_subid_for_data(log, ad, sub_id):
     # Wait to make sure settings take effect
     # Data SIM change takes around 1 min
     # Check whether data has changed to selected sim
-    if not wait_for_data_connection(log, ad, True, WAIT_TIME_DATA_SUB_CHANGE):
+    if not wait_for_data_connection(log, ad, True, MAX_WAIT_TIME_DATA_SUB_CHANGE):
         log.error("Data Connection failed - Not able to switch Data SIM")
         return False
     return True

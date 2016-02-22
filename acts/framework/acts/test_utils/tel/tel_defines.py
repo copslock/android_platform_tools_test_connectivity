@@ -18,17 +18,80 @@
 # TIMERS
 ###############################################
 # Max time to wait for phone data/network connection state update
-WAIT_TIME_CONNECTION_STATE_UPDATE = 20
+MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 20
 
 # Max time to wait for network reselection
-WAIT_TIME_NW_SELECTION = 120
+MAX_WAIT_TIME_NW_SELECTION = 120
 
-# Wait time for call drop
-WAIT_TIME_CALL_DROP = 60
+# Max time to wait for call drop
+MAX_WAIT_TIME_CALL_DROP = 60
+
+# Max time to wait after caller make a call and before
+# callee start ringing
+MAX_WAIT_TIME_CALLEE_RINGING = 30
+
+# Max time to wait after caller make a call and before
+# callee start ringing
+MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
+
+# Max time to wait after ad end a call and before get
+# "onCallStatehangedIdle" event
+MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT = 30
+
+# Max time to wait after initiating a call for telecom to report in-call
+MAX_WAIT_TIME_CALL_INITIATION = 25
+
+# Max time to wait after toggle airplane mode and before
+# get expected event
+MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
+
+# Max time to wait after device sent an SMS and before
+# get "onSmsSentSuccess" event
+MAX_WAIT_TIME_SMS_SENT_SUCCESS = 60
+
+# Max time to wait after MT SMS was sent and before device
+# actually receive this MT SMS.
+MAX_WAIT_TIME_SMS_RECEIVE = 120
+
+# Max time to wait for IMS registration
+MAX_WAIT_TIME_IMS_REGISTRATION = 120
+
+# TODO: b/26338156 MAX_WAIT_TIME_VOLTE_ENABLED and MAX_WAIT_TIME_WFC_ENABLED should only
+# be used for wait after IMS registration.
+
+# Max time to wait for VoLTE enabled flag to be True
+MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 20
+
+# Max time to wait for WFC enabled flag to be True
+MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 50
+
+# Max time to wait for WiFi Manager to Connect to an AP
+MAX_WAIT_TIME_WIFI_CONNECTION = 30
+
+# Max time to wait for Video Session Modify Messaging
+MAX_WAIT_TIME_VIDEO_SESSION_EVENT = 10
+
+# Max time to wait after a network connection for ConnectivityManager to
+# report a working user plane data connection
+MAX_WAIT_TIME_USER_PLANE_DATA = 20
+
+# Max time to wait for tethering entitlement check
+MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 15
+
+# Max time to wait for voice mail count report correct result.
+MAX_WAIT_TIME_VOICE_MAIL_COUNT = 30
+
+# Max time to wait for data SIM change
+MAX_WAIT_TIME_DATA_SUB_CHANGE = 150
 
 # Time to wait after call setup before declaring
 # that the call is actually successful
 WAIT_TIME_IN_CALL = 15
+
+# (For IMS, e.g. VoLTE-VoLTE, WFC-WFC, VoLTE-WFC test only)
+# Time to wait after call setup before declaring
+# that the call is actually successful
+WAIT_TIME_IN_CALL_FOR_IMS = 30
 
 # Time to wait after phone receive incoming call before phone answer this call.
 WAIT_TIME_ANSWER_CALL = 2
@@ -39,40 +102,11 @@ WAIT_TIME_REJECT_CALL = WAIT_TIME_ANSWER_CALL
 # Time to wait after phone receive incoming video call before phone answer this call.
 WAIT_TIME_ANSWER_VIDEO_CALL = WAIT_TIME_ANSWER_CALL
 
-# Time to wait after caller make a call and before
-# callee start ringing
-WAIT_TIME_CALLEE_RINGING = 30
-
 # Time to leave a voice message after callee reject the incoming call
-WAIT_TIME_TO_LEAVE_VOICE_MAIL = 30
-
-# Time to wait after caller make a call and before
-# callee start ringing
-WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
+WAIT_TIME_LEAVE_VOICE_MAIL = 30
 
 # Time to wait after accept video call and before checking state
 WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE = 2
-
-# Time to wait after ad end a call and before get
-# "onCallStatehangedIdle" event
-WAIT_TIME_HANGUP_TO_IDLE_EVENT = 30
-
-# Time to wait after toggle airplane mode and before
-# get expected event
-WAIT_TIME_AIRPLANEMODE_EVENT = 90
-
-# Time to wait after device sent an SMS and before
-# get "onSmsSentSuccess" event
-WAIT_TIME_SMS_SENT_SUCCESS = 60
-
-# Time to wait after MT SMS was sent and before device
-# actually receive this MT SMS.
-WAIT_TIME_SMS_RECEIVE = 120
-
-# (For IMS, e.g. VoLTE-VoLTE, WFC-WFC, VoLTE-WFC test only)
-# Time to wait after call setup before declaring
-# that the call is actually successful
-WAIT_TIME_IN_CALL_FOR_IMS = 30
 
 # Time delay to ensure user actions are performed in
 # 'human' time rather than at the speed of the script
@@ -82,41 +116,52 @@ WAIT_TIME_ANDROID_STATE_SETTLING = 1
 # has sufficient time to reconfigure based on new network
 WAIT_TIME_BETWEEN_REG_AND_CALL = 5
 
-# Time to wait for IMS registration
-WAIT_TIME_IMS_REGISTRATION = 120
-
-# Max time to wait after initiating a call for telecom to report in-call
-WAIT_TIME_CALL_INITIATION = 25
-
 # Time to wait for 1xrtt voice attach check
 # After DUT voice network type report 1xrtt (from unknown), it need to wait for
 # several seconds before the DUT can receive incoming call.
-WAIT_TIME_FOR_1XRTT_VOICE_ATTACH = 30
+WAIT_TIME_1XRTT_VOICE_ATTACH = 30
 
-# TODO: b/26338156 WAIT_TIME_VOLTE_ENABLED and WAIT_TIME_WFC_ENABLED should only
-# be used for wait after IMS registration.
+# Time to wait for data status change during wifi tethering,.
+WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING = 30
 
-# Max time to wait for VoLTE enabled flag to be True
-WAIT_TIME_VOLTE_ENABLED = WAIT_TIME_IMS_REGISTRATION + 20
+# Time to wait for rssi calibration.
+# This is the delay between <WiFi Connected> and <Turn on Screen to get RSSI>.
+WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED = 10
+# This is the delay between <Turn on Screen> and <Call API to get WiFi RSSI>.
+WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON = 2
 
-# Max time to wait for WFC enabled flag to be True
-WAIT_TIME_WFC_ENABLED = WAIT_TIME_IMS_REGISTRATION + 50
+# Time to wait for each operation on voice mail box.
+WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE = 10
 
-# Maximum Wait for WiFi Manager to Connect to an AP
-WAIT_TIME_WIFI_CONNECTION = 30
+# Time to wait for radio to up and running after reboot
+WAIT_TIME_AFTER_REBOOT = 10
 
-# During wifi tethering, wait time for data status change.
-WAIT_TIME_FOR_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING = 30
+# Time to wait for tethering test after reboot
+WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 
-# Maximum Wait time for Video Session Modify Messaging
-WAIT_TIME_VIDEO_SESSION_EVENT = 10
+# These are used in phone_number_formatter
+PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
+PHONE_NUMBER_STRING_FORMAT_10_DIGIT = 10
+PHONE_NUMBER_STRING_FORMAT_11_DIGIT = 11
+PHONE_NUMBER_STRING_FORMAT_12_DIGIT = 12
 
-# Max time to wait after a network connection for ConnectivityManager to
-# report a working user plane data connection
-WAIT_TIME_USER_PLANE_DATA = 20
+# MAX screen-on time during test (in unit of second)
+MAX_SCREEN_ON_TIME = 1800
 
-# Timeout value (second) for tethering entitlement check
-TETHERING_ENTITLEMENT_CHECK_TIMEOUT = 15
+# In Voice Mail box, press this digit to delete one message.
+VOICEMAIL_DELETE_DIGIT = '7'
+
+# MAX number of saved voice mail in voice mail box.
+MAX_SAVED_VOICE_MAIL = 25
+
+# SIM1 slot index
+SIM1_SLOT_INDEX = 0
+
+# SIM2 slot index
+SIM2_SLOT_INDEX = 1
+
+# invalid Subscription ID
+INVALID_SUB_ID = -1
 
 # invalid SIM slot index
 INVALID_SIM_SLOT_INDEX = -1
@@ -138,63 +183,8 @@ CELL_STRONG_RSSI_VALUE = -70
 # WiFi weak RSSI value
 WIFI_WEAK_RSSI_VALUE = -80
 
-# Wait time for rssi calibration.
-# This is the delay between <WiFi Connected> and <Turn on Screen to get RSSI>.
-WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED = 10
-# This is the delay between <Turn on Screen> and <Call API to get WiFi RSSI>.
-WAIT_TIME_FOR_WIFI_RSSI_CALIBRATION_SCREEN_ON = 2
-
-# These are used in phone_number_formatter
-PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
-PHONE_NUMBER_STRING_FORMAT_10_DIGIT = 10
-PHONE_NUMBER_STRING_FORMAT_11_DIGIT = 11
-PHONE_NUMBER_STRING_FORMAT_12_DIGIT = 12
-
-# MAX screen-on time during test (in unit of second)
-MAX_SCREEN_ON_TIME = 1800
-
-# In Voice Mail box, press this digit to delete one message.
-VOICEMAIL_DELETE_DIGIT = '7'
-# MAX number of saved voice mail in voice mail box.
-MAX_SAVED_VOICE_MAIL = 25
-# Time to wait for each operation on voice mail box.
-VOICE_MAIL_SERVER_RESPONSE_DELAY = 10
-# Time to wait for voice mail count report correct result.
-MAX_WAIT_TIME_FOR_VOICE_MAIL_COUNT = 30
-
-# Time to wait after registration to ensure the phone
-# has sufficient time to reconfigure based on new network in Anritsu
-WAIT_TIME_ANRITSU_REG_AND_CALL = 10
-
-# Time to wait after registration before sending a command to Anritsu
-# to ensure the phone has sufficient time to reconfigure based on new
-# network in Anritsu
-WAIT_TIME_ANRITSU_REG_AND_OPER = 10
-
-# Time to wait for Anritsu's virtual phone state change
-WAIT_TIME_FOR_VIRTUAL_PHONE_STATE = 45
-
-# Time to wait for Anritsu's IMS CSCF state change
-WAIT_TIME_FOR_IMS_CSCF_STATE = 30
-
-
-# SIM1 slot index
-SIM1_SLOT_INDEX = 0
-
-# SIM2 slot index
-SIM2_SLOT_INDEX = 1
-
-# Data SIM change time
-WAIT_TIME_DATA_SUB_CHANGE = 150
-
-# Wait time for radio to up and running after reboot
-WAIT_TIME_AFTER_REBOOT = 10
-
-# Wait time for tethering test after reboot
-WAIT_TIME_FOR_TETHERING_AFTER_REBOOT = 10
-
-# invalid Subscription ID
-INVALID_SUB_ID = -1
+# Emergency call number
+EMERGENCY_CALL_NUMBER = "911"
 
 AOSP_PREFIX = "aosp_"
 
