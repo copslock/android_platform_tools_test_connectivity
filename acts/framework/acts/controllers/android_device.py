@@ -202,12 +202,13 @@ def get_device(ads, **kwargs):
         return True
     filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
-        raise AndroidDeviceError("No device matched")
+        raise AndroidDeviceError(("Could not find a target device that matches"
+                                  " condition: %s.") % kwargs)
     elif len(filtered) == 1:
         return filtered[0]
     else:
         serials = [ad.serial for ad in filtered]
-        raise AndroidDeviceError("More than one device matched: " % serials)
+        raise AndroidDeviceError("More than one device matched: %s" % serials)
 
 class AndroidDevice:
     """Class representing an android device.
