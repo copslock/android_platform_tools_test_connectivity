@@ -20,6 +20,7 @@ import os
 
 import acts.logger as logger
 
+from acts import test_runner
 from acts.keys import Config
 from acts.records import TestResult
 from acts.records import TestResultRecord
@@ -677,14 +678,40 @@ class BaseTestClass(object):
             self.log.exception(msg)
             return False
 
-    def _get_test_funcs(self, test_case_names):
-        # All tests are selected if test_cases list is None.
-        test_names = self.tests
-        if test_case_names:
-            test_names = test_case_names
-        # Load functions based on test names. Also find the longest test name.
+    def _get_all_test_names(self):
+        """Finds all the function names that match the test case naming
+        convention in this class.
+
+        Returns:
+            A list of strings, each is a test case name.
+        """
+        test_names = []
+        for name in dir(self):
+            if name.startswith("test_"):
+                test_names.append(name)
+        return test_names
+
+    def _get_test_funcs(self, test_names):
+        """Obtain the actual functions of test cases based on test names.
+
+        Args:
+            test_names: A list of strings, each string is a test case name.
+
+        Returns:
+            A list of tuples of (string, function). String is the test case
+            name, function is the actual test case function.
+
+        Raises:
+            test_runner.USERError is raised if the test name does not follow
+            naming convention "test_*". This can only be caused by user input
+            here.
+        """
         test_funcs = []
         for test_name in test_names:
+            if not test_name.startswith("test_"):
+                msg = ("Test case name %s does not follow naming convention "
+                       "test_*, abort.") % test_name
+                raise test_runner.USERError(msg)
             try:
                 test_funcs.append((test_name, getattr(self, test_name)))
             except AttributeError:
@@ -695,29 +722,36 @@ class BaseTestClass(object):
         return test_funcs
 
     def run(self, test_names=None):
-        """Runs test cases within a test class by the order they
-        appear in the test list.
+        """Runs test cases within a test class by the order they appear in the
+        execution list.
 
-        Being in the test_names list makes the test case "requested". If its
-        name passes validation, then it'll be executed, otherwise the name will
-        be skipped.
+        One of these test cases lists will be executed, shown here in priority
+        order:
+        1. The test_names list, which is passed from cmd line. Invalid names
+           are guarded by cmd line arg parsing.
+        2. The self.tests list defined in test class. Invalid names are
+           ignored.
+        3. All function that matches test case naming convention in the test
+           class.
 
         Args:
-            test_names: A list of names of the requested test cases. If None,
-                all test cases in the class are considered requested.
+            test_names: A list of string that are test case names requested in
+                cmd line.
 
         Returns:
-            A tuple of: The number of requested test cases, the number of test
-            cases executed, and the number of test cases passed.
+            The test results object of this class.
         """
-        # Total number of test cases requested by user.
-        if test_names:
-            self.results.requested = list(test_names)
-        elif self.tests:
-            self.results.requested = list(self.tests)
-        else:
-            # No test case specified and no default list, abort.
-            return self.results
+        self.log.info("==========> %s <==========" % self.TAG)
+        # Devise the actual test cases to run in the test class.
+        if not test_names:
+            if self.tests:
+                # Specified by run list in class.
+                test_names = list(self.tests)
+            else:
+                # No test case specified by user, execute all in the test class.
+                test_names = self._get_all_test_names()
+        self.results.requested = test_names
+        tests = self._get_test_funcs(test_names)
         # Setup for the class.
         try:
             if self._setup_class() is False:
@@ -727,10 +761,6 @@ class BaseTestClass(object):
             self.results.fail_class(self.TAG, e)
             self._exec_func(self.teardown_class)
             return self.results
-
-        self.log.info("==========> %s <==========" % self.TAG)
-        tests = self._get_test_funcs(test_names)
-
         # Run tests in order.
         try:
             for test_name, test_func in tests:
