@@ -187,7 +187,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                           "networks.") % ssid)
 
     def test_forget_network(self):
-        self.assert_true(self.test_add_network(), "Failed to add network.")
+        self.test_add_network()
         ssid = self.open_network[WifiEnums.SSID_KEY]
         wutils.wifi_forget_network(self.dut, ssid)
         configured_networks = self.droid.wifiGetConfiguredNetworks()
