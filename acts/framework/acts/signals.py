@@ -42,6 +42,7 @@ class TestSignal(Exception):
     def __init__(self, details, extras=None):
         if not isinstance(details, str):
             raise TestSignalError("Message has to be a string.")
+        super(TestSignal, self).__init__(details)
         self.details = details
         try:
             json.dumps(extras)
