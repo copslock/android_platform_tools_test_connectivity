@@ -3,4 +3,4 @@
 import subprocess
 
 cmd = "act.py -c acts_sanity_test_config.json -tf ActsSanityTestGroup.txt"
-subprocess.Popen([cmd], shell=True)
+subprocess.check_call([cmd], shell=True)
