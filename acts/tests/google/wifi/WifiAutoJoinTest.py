@@ -64,7 +64,7 @@ class WifiAutoJoinTest(BaseTestClass):
         wifi_test_device_init(self.dut)
         req_params = ("reference_networks", "other_network", "atten_val",
                       "ping_addr", "max_bugreports" )
-        assert self.unpack_userparams(req_params)
+        self.unpack_userparams(req_params)
         self.log.debug("Connect networks :: {}".format(self.other_network))
         configured_networks = self.droid.wifiGetConfiguredNetworks()
         self.log.debug("Configured networks :: {}".format(configured_networks))
@@ -115,7 +115,6 @@ class WifiAutoJoinTest(BaseTestClass):
             finally:
                 self.droid.wifiLockRelease()
                 self.droid.goToSleepNow()
-        return True
 
     def check_connection(self, network_bssid):
         """Check current wifi connection networks.
