@@ -14,11 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from builtins import str
+
 import time
 import traceback
 
-import acts.controllers.android as android
-
+from acts.controllers import android
 from acts.controllers.adb import AdbProxy
 from acts.controllers.adb import is_port_available
 from acts.controllers.adb import get_available_host_port
@@ -43,12 +44,17 @@ def create(configs, logger):
     for ad in ads:
         if ad.serial not in connected_ads:
             raise DoesNotExistError(("Android device %s is specified in config"
-                                     " but is not attached.") % serial)
+                                     " but is not attached.") % ad.serial)
         try:
             ad.get_droid()
             ad.ed.start()
         except:
-            raise ControllerError("Failed to start sl4a on %s" % ad.serial)
+            # This exception is logged here to help with debugging under py2,
+            # because "exception raised while processing another exception" is
+            # only printed under py3.
+            msg = "Failed to start sl4a on %s" % ad.serial
+            logger.exception(msg)
+            raise ControllerError(msg)
     return ads
 
 def destroy(ads):

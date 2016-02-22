@@ -14,6 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from future import standard_library
+standard_library.install_aliases()
+
 import argparse
 import functools
 import importlib
@@ -23,8 +26,7 @@ import pkgutil
 import sys
 from urllib.error import URLError
 
-import acts.logger as logger
-
+from acts import logger
 from acts.keys import Config
 from acts.keys import get_internal_value
 from acts.keys import get_module_name
@@ -125,7 +127,7 @@ class TestRunner(object):
             sys.path.append(path)
             try:
                 module = importlib.import_module(name)
-            except Exception as e:
+            except:
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
                     alt_cls_name = test_cls_name.lower()
@@ -135,7 +137,11 @@ class TestRunner(object):
                     if name == test_cls_name or alt_name == alt_cls_name:
                         msg = ("Encountered error importing test class %s, "
                                "abort.") % test_cls_name
-                        raise USERError(msg) from e
+                        # This exception is logged here to help with debugging
+                        # under py2, because "raise X from Y" syntax is only
+                        # supported under py3.
+                        self.log.exception(msg)
+                        raise USERError(msg)
                 continue
             for member_name in dir(module):
                 if not member_name.startswith("__"):

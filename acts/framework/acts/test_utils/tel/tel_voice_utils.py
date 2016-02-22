@@ -1091,7 +1091,7 @@ def swap_calls(log,
         call_active_id: id for the active call in ads[0].
             call_active_id should be 'STATE_ACTIVE' when calling this function.
         num_swaps: how many swap/check operations will be done before return.
-        check_call_status： THis is optional. Default value is True.
+        check_call_status: This is optional. Default value is True.
             If this value is True, then call status (active/hold) will be
             be checked after each swap operation.
 

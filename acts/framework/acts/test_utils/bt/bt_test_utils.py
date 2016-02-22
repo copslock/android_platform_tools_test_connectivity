@@ -21,7 +21,7 @@ import queue
 import threading
 import time
 
-from contextlib import suppress
+from contextlib2 import suppress
 
 from acts.logger import LoggerProxy
 from acts.test_utils.bt.BleEnum import *
@@ -362,7 +362,6 @@ def run_continuous_write_descriptor(
     offset = 1
     test_value = "1,2,3,4,5,6,7"
     test_value_return = "1,2,3"
-    from contextlib import suppress
     with suppress(Exception):
         for x in range(100000):
             for i in range(services_count):
