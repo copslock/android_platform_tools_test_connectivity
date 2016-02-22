@@ -29,7 +29,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_IWLAN
@@ -677,7 +677,7 @@ def phone_setup_gsm_umts(log, ad):
 
 def phone_setup_gsm_umts_for_subscription(log, ad, sub_id):
     return phone_setup_rat_for_subscription(
-        log, ad, sub_id, NETWORK_MODE_GSM_UMTS, RAT_FAMILY_UMTS)
+        log, ad, sub_id, NETWORK_MODE_GSM_UMTS, RAT_FAMILY_WCDMA)
 
 
 def phone_setup_gsm_only(log, ad):
