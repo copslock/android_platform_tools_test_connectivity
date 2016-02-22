@@ -87,7 +87,10 @@ from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventSmsReceived
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts.test_utils.tel.tel_defines import CallStateContainer
+from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
+from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
+from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_lookup_tables import \
     connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
@@ -315,18 +318,18 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     if new_state is None:
         new_state = not cur_state
 
-    sub_event_name_list = []
+    service_state_list = []
     if new_state:
-        sub_event_name_list.append(SERVICE_STATE_POWER_OFF)
+        service_state_list.append(SERVICE_STATE_POWER_OFF)
         log.info("Turn on airplane mode: " + serial_number)
 
     else:
         # If either one of these 3 events show up, it should be OK.
         # Normal SIM, phone in service
-        sub_event_name_list.append(SERVICE_STATE_IN_SERVICE)
+        service_state_list.append(SERVICE_STATE_IN_SERVICE)
         # NO SIM, or Dead SIM, or no Roaming coverage.
-        sub_event_name_list.append(SERVICE_STATE_OUT_OF_SERVICE)
-        sub_event_name_list.append(SERVICE_STATE_EMERGENCY_ONLY)
+        service_state_list.append(SERVICE_STATE_OUT_OF_SERVICE)
+        service_state_list.append(SERVICE_STATE_EMERGENCY_ONLY)
         log.info("Turn off airplane mode: " + serial_number)
 
     for sub_id in sub_id_list:
@@ -339,14 +342,15 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     try:
         try:
             event = ad.ed.wait_for_event(EventServiceStateChanged,
-                                         is_sub_event_match_for_sub_event_list,
+                                         is_event_match_for_list,
                                          timeout=MAX_WAIT_TIME_AIRPLANEMODE_EVENT,
-                                         sub_event_list=sub_event_name_list)
+                                         field=ServiceStateContainer.SERVICE_STATE,
+                                         value_list=service_state_list)
         except Empty:
             pass
         if event is None:
-            log.error("Did not get expected sub_event {}".format(
-                sub_event_name_list))
+            log.error("Did not get expected service state {}".format(
+                service_state_list))
         log.info("Received event: {}".format(event))
     finally:
         for sub_id in sub_id_list:
@@ -413,9 +417,10 @@ def wait_for_ringing_event(log, ad, wait_time):
         try:
             event_ringing = ad.ed.wait_for_event(
                 EventCallStateChanged,
-                is_sub_event_match,
+                is_event_match,
                 timeout=event_iter_timeout,
-                sub_event=TELEPHONY_STATE_RINGING)
+                field=CallStateContainer.CALL_STATE,
+                value=TELEPHONY_STATE_RINGING)
         except Empty:
             if ad.droid.telecomIsRinging():
                 log.error("No Ringing event. But Callee in Ringing state.")
@@ -494,9 +499,10 @@ def wait_and_answer_call_for_subscription(
     ad.droid.telecomAcceptRingingCall()
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
-                             is_sub_event_match,
+                             is_event_match,
                              timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
-                             sub_event=TELEPHONY_STATE_OFFHOOK)
+                             field=CallStateContainer.CALL_STATE,
+                             value=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         if not ad.droid.telecomIsInCall():
             log.error("Accept call failed.")
@@ -591,9 +597,10 @@ def wait_and_reject_call_for_subscription(log,
     ad.droid.telecomEndCall()
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
-                             is_sub_event_match,
+                             is_event_match,
                              timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
-                             sub_event=TELEPHONY_STATE_IDLE)
+                             field=CallStateContainer.CALL_STATE,
+                             value=TELEPHONY_STATE_IDLE)
     except Empty:
         log.error("No onCallStateChangedIdle event received.")
         return False
@@ -612,9 +619,10 @@ def hangup_call(log, ad):
 
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
-                             is_sub_event_match,
+                             is_event_match,
                              timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
-                             sub_event=TELEPHONY_STATE_IDLE)
+                             field=CallStateContainer.CALL_STATE,
+                             value=TELEPHONY_STATE_IDLE)
     except Empty:
         if ad.droid.telecomIsInCall():
             log.error("Hangup call failed.")
@@ -696,9 +704,10 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
         if ad_caller.droid.telephonyGetCallState() != TELEPHONY_STATE_OFFHOOK:
             event_offhook = ad_caller.ed.wait_for_event(
                 EventCallStateChanged,
-                is_sub_event_match,
+                is_event_match,
                 timeout=wait_time_for_incall_state,
-                sub_event=TELEPHONY_STATE_OFFHOOK)
+                field=CallStateContainer.CALL_STATE,
+                value=TELEPHONY_STATE_OFFHOOK)
     except Empty:
         log.error("initiate_call did not receive Telephony OFFHOOK event.")
         return False
@@ -1273,9 +1282,9 @@ def wait_for_cell_data_connection_for_subscription(
         True if success.
         False if failed.
     """
-    state_str, tel_sub_event_name = {
-        True: (DATA_STATE_CONNECTED, DATA_STATE_CONNECTED),
-        False: (DATA_STATE_DISCONNECTED, DATA_STATE_DISCONNECTED)
+    state_str = {
+        True: DATA_STATE_CONNECTED,
+        False: DATA_STATE_DISCONNECTED
     }[state]
 
     ad.ed.clear_all_events()
@@ -1292,13 +1301,13 @@ def wait_for_cell_data_connection_for_subscription(
 
         try:
             event = ad.ed.wait_for_event(EventDataConnectionStateChanged,
-                                         is_sub_event_match,
-                                         timeout=timeout_value,
-                                         sub_event=tel_sub_event_name)
+                is_event_match, timeout=timeout_value,
+                field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
+                value=state_str)
         except Empty:
             log.debug(
                 "No expected event EventDataConnectionStateChanged {}.".format(
-                    tel_sub_event_name))
+                    state_str))
 
         # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
         # data connection state.
@@ -2997,46 +3006,51 @@ def get_sub_ids_for_sim_slots(log, ads):
     return sim_sub_ids
 
 
-def is_sub_event_match(event, sub_event):
-    """Return if subEvent field in "event" match "sub_event" or not.
+def is_event_match(event, field, value):
+    """Return if <field> in "event" match <value> or not.
 
     Args:
-        event: event to test. This event need to have 'subEvent' field.
-        sub_event: sub_event to match.
+        event: event to test. This event need to have <field>.
+        field: field to match.
+        value: value to match.
 
     Returns:
-        True if subEvent field in "event" match "sub_event".
+        True if <field> in "event" match <value>.
         False otherwise.
     """
-    return is_sub_event_match_for_sub_event_list(event, [sub_event])
+    return is_event_match_for_list(event, field, [value])
 
 
-def is_sub_event_match_for_sub_event_list(event, sub_event_list):
-    """Return if subEvent field in "event" match any one of the sub_event
-        in "sub_event_list" or not.
+def is_event_match_for_list(event, field, value_list):
+    """Return if <field> in "event" match any one of the value
+        in "value_list" or not.
 
     Args:
-        event: event to test. This event need to have 'subEvent' field.
-        sub_event_list: a list of sub_event to match.
+        event: event to test. This event need to have <field>.
+        field: field to match.
+        value_list: a list of value to match.
 
     Returns:
-        True if subEvent field in "event" match one of the sub_event in "sub_event_list".
+        True if <field> in "event" match one of the value in "value_list".
         False otherwise.
     """
     try:
-        sub = event['data']['subEvent']
+        value_in_event = event['data'][field]
     except KeyError:
         return False
-    for sub_event in sub_event_list:
-        if sub == sub_event:
+    for value in value_list:
+        if value_in_event == value:
             return True
     return False
 
 
-def is_network_call_back_event_match(event, network_callback_id, sub_event):
+def is_network_call_back_event_match(event, network_callback_id,
+                                     network_callback_event):
     try:
-        return ((network_callback_id == event['data']['id']) and
-                (sub_event == event['data']['subEvent']))
+        return ((network_callback_id == event[
+            'data'][NetworkCallbackContainer.ID]) and
+            (network_callback_event == event['data'][
+                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
