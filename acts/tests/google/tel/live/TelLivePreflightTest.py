@@ -105,7 +105,6 @@ class TelLivePreflightTest(TelephonyBaseTest):
             else:
                 log.info("{} VT Enabled by platform".format(ad.serial))
             return True
-
         try:
             for ad in self.android_devices:
                 model = ad.model
@@ -154,8 +153,9 @@ class TelLivePreflightTest(TelephonyBaseTest):
                                 CAPABILITY_VT: droid_has_vt
                         }[capability](self.log, ad):
                             self.abort_all(
-                                "Pre-flight check FAILED for <{}>, <{}:{}>".format(
-                                    operator, model, ad.serial))
+                                "Pre-flight check FAILED for <{}>, <{}:{}>."
+                                " Failed Check: <{}>".format(
+                                    operator, model, ad.serial, capability))
         except Exception as e:
             self.abort_all("Pre-flight check exception: {}".format(e))
         return True
