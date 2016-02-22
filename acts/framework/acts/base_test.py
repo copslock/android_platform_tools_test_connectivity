@@ -76,6 +76,8 @@ class BaseTestClass(object):
         log: A logger object used for logging.
         results: A TestResult object for aggregating test results from the
             execution of test cases.
+        current_test_name: A string that's the name of the test case currently
+            being executed. If no test is executing, this should be None.
     """
 
     TAG = None
@@ -105,6 +107,7 @@ class BaseTestClass(object):
         else:
             self.log.warning("No attached android device found.")
         self.results = TestResult()
+        self.current_test_name = None
 
     def __enter__(self):
         return self
@@ -181,6 +184,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_test is
         called.
         """
+        self.current_test_name = test_name
         try:
             # Write test start token to adb log if android device is attached.
             for ad in self.android_devices:
@@ -210,7 +214,10 @@ class BaseTestClass(object):
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
         except:
             pass
-        return self.teardown_test()
+        try:
+            self.teardown_test()
+        finally:
+            self.current_test_name = None
 
     def teardown_test(self):
         """Teardown function that will be called every time a test case has
@@ -553,13 +560,14 @@ class BaseTestClass(object):
             kwargs: Extra kwargs.
         """
         is_generate_trigger = False
-        tr_record = TestResultRecord(test_name)
+        tr_record = TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         self.log.info("[Test Case] %s" % test_name)
         verdict = None
         try:
-            self.skip_if(self._exec_func(self._setup_test, test_name) is False,
-                "Setup for %s failed, skip." % test_name)
+            ret = self._setup_test(test_name)
+            self.assert_true(ret is not False,
+                             "Setup for %s failed." % test_name)
             try:
                 if args or kwargs:
                     verdict = test_func(*args, **kwargs)
@@ -727,12 +735,15 @@ class BaseTestClass(object):
             # No test case specified and no default list, abort.
             return self.results
         # Setup for the class.
-        if self._exec_func(self._setup_class) is False:
-            self.log.error("Failed to setup {}, skipping.".format(self.TAG))
-            skip_signal = TestSkip("Test class %s failed to setup." % self.TAG)
-            self.results.skip_all(skip_signal)
+        try:
+            if self._setup_class() is False:
+                raise TestFailure("Failed to setup %s." % self.TAG)
+        except Exception as e:
+            self.log.exception("Failed to setup %s." % self.TAG)
+            self.results.fail_class(self.TAG, e)
             self._exec_func(self.teardown_class)
             return self.results
+
         self.log.info("==========> %s <==========" % self.TAG)
         tests = self._get_test_funcs(test_names)
 

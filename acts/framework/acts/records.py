@@ -33,6 +33,7 @@ class TestResultEnums(object):
     """
 
     RECORD_NAME = "Test Name"
+    RECORD_CLASS = "Test Class"
     RECORD_BEGIN_TIME = "Begin Time"
     RECORD_END_TIME = "End Time"
     RECORD_RESULT = "Result"
@@ -57,8 +58,9 @@ class TestResultRecord(object):
         self.details: A string explaining the details of the test case.
     """
 
-    def __init__(self, t_name):
+    def __init__(self, t_name, t_class=None):
         self.test_name = t_name
+        self.test_class = t_class
         self.begin_time = None
         self.end_time = None
         self.uid = None
@@ -145,6 +147,7 @@ class TestResultRecord(object):
         """
         d = {}
         d[TestResultEnums.RECORD_NAME] = self.test_name
+        d[TestResultEnums.RECORD_CLASS] = self.test_class
         d[TestResultEnums.RECORD_BEGIN_TIME] = self.begin_time
         d[TestResultEnums.RECORD_END_TIME] = self.end_time
         d[TestResultEnums.RECORD_RESULT] = self.result
@@ -230,18 +233,25 @@ class TestResult(object):
         else:
             self.unknown.append(record)
 
-    def skip_all(self, e=None):
-        """Marks every requested test in this result obj as skipped.
+    def fail_class(self, class_name, e):
+        """Add a record to indicate a test class setup has failed and no test
+        in the class was executed.
 
         Args:
-            e: An instance of acts.signals.TestSkip specifying the reason for
-                skipping.
+            class_name: A string that is the name of the failed test class.
+            e: An exception object.
         """
-        for t_name in self.requested:
-            tr = TestResultRecord(t_name)
-            tr.test_begin()
-            tr.test_skip(e)
-            self.add_record(tr)
+        record = TestResultRecord("", class_name)
+        record.test_begin()
+        if isinstance(e, TestSignal):
+            new_e = type(e)("setup_class failed for %s: %s" % (
+                            class_name, e.details), e.extras)
+        else:
+            new_e = type(e)("setup_class failed for %s: %s" % (
+                            class_name, str(e)))
+        record.test_fail(new_e)
+        self.executed.append(record)
+        self.failed.append(record)
 
     def json_str(self):
         """Converts this test result to a string in json format.
