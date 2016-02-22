@@ -453,7 +453,7 @@ def wifi_toggle_state(ad, new_state=None):
     except Empty:
       # Supplicant connection event is not always reliable. We double check here
       # and call it a success as long as the new state equals the expected state.
-        return new_state == droid.wifiCheckState()
+        return new_state == ad.droid.wifiCheckState()
     finally:
         ad.droid.wifiStopTrackingStateChange()
 
