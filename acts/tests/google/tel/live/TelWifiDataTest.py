@@ -20,8 +20,8 @@ from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts.test_utils.tel.tel_defines import RAT_LTE
-from acts.test_utils.tel.tel_test_utils import ensure_network_rat
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
@@ -80,9 +80,8 @@ class TelWifiDataTest(TelephonyBaseTest):
 
         # Make sure DUT get Cell Data coverage (LTE).
         toggle_airplane_mode(self.log, self.android_devices[0], False)
-        if not ensure_network_rat(self.log, self.android_devices[0], RAT_LTE,
-                                  MAX_WAIT_TIME_NW_SELECTION,
-                                  NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
             return False
 
         # Make sure DUT WiFi is connected.
