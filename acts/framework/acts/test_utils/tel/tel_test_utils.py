@@ -84,6 +84,8 @@ from acts.test_utils.tel.tel_defines import EventServiceStateChanged
 from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventSmsReceived
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
+from acts.test_utils.tel.tel_defines import CallStateContainer
+from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts.test_utils.tel.tel_lookup_tables import \
     connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
@@ -477,12 +479,14 @@ def wait_and_answer_call_for_subscription(
             result = True
         else:
             result = check_phone_number_match(
-                event_ringing['data']['incomingNumber'], incoming_number)
+                event_ringing['data'][CallStateContainer.INCOMING_NUMBER],
+                incoming_number)
 
         if not result:
             log.error("Incoming Number not match")
             log.error("Expected number:{}, actual number:{}".format(
-                incoming_number, event_ringing['data']['incomingNumber']))
+                incoming_number,
+                event_ringing['data'][CallStateContainer.INCOMING_NUMBER]))
             return False
 
     ad.ed.clear_all_events()
@@ -572,12 +576,14 @@ def wait_and_reject_call_for_subscription(log,
             result = True
         else:
             result = check_phone_number_match(
-                event_ringing['data']['incomingNumber'], incoming_number)
+                event_ringing['data'][CallStateContainer.INCOMING_NUMBER],
+                incoming_number)
 
         if not result:
             log.error("Incoming Number not match")
             log.error("Expected number:{}, actual number:{}".format(
-                incoming_number, event_ringing['data']['incomingNumber']))
+                incoming_number,
+                event_ringing['data'][CallStateContainer.INCOMING_NUMBER]))
             return False
 
     ad.ed.clear_all_events()
@@ -933,9 +939,9 @@ def call_voicemail_erase_all_pending_voicemail(log, ad):
 
 def _is_on_message_waiting_event_true(event):
     """Private function to return if the received EventMessageWaitingIndicatorChanged
-    event 'MessageWaitingIndicator' field is True.
+    event MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING field is True.
     """
-    return event['data']['MessageWaitingIndicator']
+    return event['data'][MessageWaitingIndicatorContainer.IS_MESSAGE_WAITING]
 
 
 def call_setup_teardown(log,
