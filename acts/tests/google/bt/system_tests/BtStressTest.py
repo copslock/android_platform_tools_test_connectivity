@@ -35,21 +35,20 @@ class BtStressTest(BaseTestClass):
         )
 
     def setup_class(self):
-        self.droid1, self.ed1 = self.droids[1], self.eds[1]
-        return setup_multiple_devices_for_bt_test(self.droids, self.eds)
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
-        return reset_bluetooth(self.droids, self.eds)
+        return reset_bluetooth(self.android_devices)
 
     def setup_test(self):
-        setup_result = reset_bluetooth(self.droids, self.eds)
-        self.log.debug(log_energy_info(self.droids, "Start"))
-        for e in self.eds:
-            e.clear_all_events()
+        setup_result = reset_bluetooth(self.android_devices)
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return setup_result
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def test_toggle_bluetooth(self):
@@ -73,13 +72,12 @@ class BtStressTest(BaseTestClass):
         TAGS: Classic, Stress
         Priority: 1
         """
-        droid, ed = self.droid, self.ed
         n = 0
         test_result = True
         test_result_list = []
         while n < 100:
             self.log.info("Toggling bluetooth iteration {}.".format(n))
-            test_result = reset_bluetooth([droid], [ed])
+            test_result = reset_bluetooth([self.android_devices[0]])
             test_result_list.append(test_result)
             n += 1
         if False in test_result_list:

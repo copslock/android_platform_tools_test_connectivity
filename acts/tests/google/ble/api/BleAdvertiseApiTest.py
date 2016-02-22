@@ -39,9 +39,10 @@ class BleAdvertiseVerificationError(Exception):
 class BleAdvertiseApiTest(BluetoothBaseTest):
     tests = None
 
-    def __init__(self, android_devices):
-        BluetoothBaseTest.__init__(self, android_devices)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.droid = self.android_devices[0].droid
         self.tests = (
             "test_adv_settings_defaults",
             "test_adv_data_defaults",

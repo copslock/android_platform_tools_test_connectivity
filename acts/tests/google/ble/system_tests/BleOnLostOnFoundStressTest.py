@@ -48,9 +48,9 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
@@ -61,24 +61,24 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(
-            self.scn_droid, self.scn_ed, self.active_adv_callback_list,
-            self.adv_droid, self.adv_ed, self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list,
+            self.scn_ad, self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
     def on_exception(self, test_name, begin_time):
-        reset_bluetooth(self.droids, self.eds)
+        reset_bluetooth(self.android_devices)
 
     def _start_generic_advertisement_include_device_name(self):
-        self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-        self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-        advertise_data = self.adv_droid.bleBuildAdvertiseData()
-        advertise_settings = self.adv_droid.bleBuildAdvertiseSettings()
-        advertise_callback = self.adv_droid.bleGenBleAdvertiseCallback()
-        self.adv_droid.bleStartBleAdvertising(
+        advertise_data = self.adv_ad.droid.bleBuildAdvertiseData()
+        advertise_settings = self.adv_ad.droid.bleBuildAdvertiseSettings()
+        advertise_callback = self.adv_ad.droid.bleGenBleAdvertiseCallback()
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        self.adv_ed.pop_event(
+        self.adv_ad.ed.pop_event(
             "BleAdvertise{}onSuccess".format(advertise_callback),
             self.default_timeout)
         self.active_adv_callback_list.append(advertise_callback)
@@ -86,7 +86,7 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
 
     def _verify_no_events_found(self, event_name):
         try:
-            self.scn_ed.pop_event(event_name, self.default_timeout)
+            self.scn_ad.ed.pop_event(event_name, self.default_timeout)
             self.log.error("Found an event when none was expected.")
             return False
         except Empty:
@@ -97,7 +97,7 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         import random
         while True:
             self.log.debug(
-                self.scn_droid.bluetoothGetControllerActivityEnergyInfo(1))
+                self.scn_ad.droid.bluetoothGetControllerActivityEnergyInfo(1))
             time.sleep(2)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -111,40 +111,40 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         thread = threading.Thread(target=self._poll_energy)
         thread.start()
 
-        filter_list = self.scn_droid.bleGenFilterList()
-        self.scn_droid.bleSetScanFilterDeviceName(
-            self.adv_droid.bluetoothGetLocalName())
-        self.scn_droid.bleSetScanSettingsScanMode(
+        filter_list = self.scn_ad.droid.bleGenFilterList()
+        self.scn_ad.droid.bleSetScanFilterDeviceName(
+            self.adv_ad.droid.bluetoothGetLocalName())
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_droid.bleSetScanSettingsCallbackType(
+        self.scn_ad.droid.bleSetScanSettingsCallbackType(
             ScanSettingsCallbackType.CALLBACK_TYPE_FOUND_AND_LOST.value)
-        self.scn_droid.bleSetScanSettingsMatchMode(
+        self.scn_ad.droid.bleSetScanSettingsMatchMode(
             ScanSettingsMatchMode.AGGRESIVE.value)
-        self.scn_droid.bleSetScanSettingsNumOfMatches(
+        self.scn_ad.droid.bleSetScanSettingsNumOfMatches(
             ScanSettingsMatchNum.MATCH_NUM_ONE_ADVERTISEMENT.value)
-        scan_settings = self.scn_droid.bleBuildScanSetting()
-        scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleBuildScanFilter(filter_list)
-        self.scn_droid.bleStartBleScan(
+        scan_settings = self.scn_ad.droid.bleBuildScanSetting()
+        scan_callback = self.scn_ad.droid.bleGenScanCallback()
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         on_found_count = 0
         on_lost_count = 0
         from contextlib import suppress
-        for x in range(100000):
+        for x in range(1000):
             adv_callback = (
                 self._start_generic_advertisement_include_device_name())
             with suppress(Exception):
-                event = self.scn_ed.pop_event(
+                event = self.scn_ad.ed.pop_event(
                     self.scan_result.format(scan_callback),
                     self.default_timeout * 3)
                 if event['data']['CallbackType'] == 2:
                     on_found_count += 1
                 elif event['data']['CallbackType'] == 4:
                     on_lost_count += 1
-            self.adv_droid.bleStopBleAdvertising(adv_callback)
+            self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
             with suppress(Exception):
-                event2 = self.scn_ed.pop_event(
+                event2 = self.scn_ad.ed.pop_event(
                     self.scan_result.format(scan_callback),
                     self.default_timeout * 4)
                 if event2['data']['CallbackType'] == 2:
@@ -157,65 +157,65 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
     @BluetoothBaseTest.bt_test_wrap
     def test_more_stress_test(self):
         gatt_server_callback, gatt_server = setup_multiple_services(
-            self.adv_droid, self.adv_ed)
+            self.adv_ad)
         bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.scn_droid, self.scn_ed,
-                                        self.adv_droid, self.adv_ed))
+            orchestrate_gatt_connection(self.scn_ad.droid, self.scn_ad.ed,
+                                        self.adv_ad.droid, self.adv_ad.ed))
         self.active_scan_callback_list.append(adv_callback)
-        if self.scn_droid.gattClientDiscoverServices(bluetooth_gatt):
-            event = self.scn_ed.pop_event(
+        if self.scn_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
+            event = self.scn_ad.ed.pop_event(
                 "GattConnect{}onServicesDiscovered".format(bluetooth_gatt),
                 self.default_timeout)
             discovered_services_index = event['data']['ServicesIndex']
         else:
             self.log.info("Failed to discover services.")
             return False
-        services_count = self.scn_droid.gattClientGetDiscoveredServicesCount(
+        services_count = self.scn_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         thread = threading.Thread(
             target=run_continuous_write_descriptor, args=(
-                self.scn_droid, self.scn_ed, self.adv_droid, self.adv_ed,
+                self.scn_ad.droid, self.scn_ad.ed, self.adv_ad.droid, self.adv_ad.ed,
                 gatt_server, gatt_server_callback, bluetooth_gatt,
                 services_count, discovered_services_index))
         thread.start()
         thread2 = threading.Thread(target=self._poll_energy)
         thread2.start()
 
-        filter_list = self.scn_droid.bleGenFilterList()
-        self.scn_droid.bleSetScanFilterDeviceName(
-            self.adv_droid.bluetoothGetLocalName())
-        self.scn_droid.bleSetScanSettingsScanMode(
+        filter_list = self.scn_ad.droid.bleGenFilterList()
+        self.scn_ad.droid.bleSetScanFilterDeviceName(
+            self.adv_ad.droid.bluetoothGetLocalName())
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_droid.bleSetScanSettingsCallbackType(
+        self.scn_ad.droid.bleSetScanSettingsCallbackType(
             ScanSettingsCallbackType.CALLBACK_TYPE_FOUND_AND_LOST.value)
-        self.scn_droid.bleSetScanSettingsMatchMode(
+        self.scn_ad.droid.bleSetScanSettingsMatchMode(
             ScanSettingsMatchMode.AGGRESIVE.value)
-        self.scn_droid.bleSetScanSettingsNumOfMatches(
+        self.scn_ad.droid.bleSetScanSettingsNumOfMatches(
             ScanSettingsMatchNum.MATCH_NUM_ONE_ADVERTISEMENT.value)
-        scan_settings = self.scn_droid.bleBuildScanSetting()
-        scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleBuildScanFilter(filter_list)
-        self.scn_droid.bleStartBleScan(
+        scan_settings = self.scn_ad.droid.bleBuildScanSetting()
+        scan_callback = self.scn_ad.droid.bleGenScanCallback()
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         on_found_count = 0
         on_lost_count = 0
         time.sleep(60)
         from contextlib import suppress
-        for x in range(100000):
+        for x in range(1000):
             adv_callback = self._start_generic_advertisement_include_device_name(
             )
             with suppress(Exception):
-                event = self.scn_ed.pop_event(
+                event = self.scn_ad.ed.pop_event(
                     self.scan_result.format(scan_callback),
                     self.default_timeout * 3)
                 if event['data']['CallbackType'] == 2:
                     on_found_count += 1
                 elif event['data']['CallbackType'] == 4:
                     on_lost_count += 1
-            self.adv_droid.bleStopBleAdvertising(adv_callback)
+            self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
             with suppress(Exception):
-                event2 = self.scn_ed.pop_event(
+                event2 = self.scn_ad.ed.pop_event(
                     self.scan_result.format(scan_callback),
                     self.default_timeout * 4)
                 if event2['data']['CallbackType'] == 2:

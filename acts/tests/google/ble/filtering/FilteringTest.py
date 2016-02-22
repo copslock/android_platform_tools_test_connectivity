@@ -161,17 +161,18 @@ class FilteringTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.droids, self.eds)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
-        self.adv_droid, self.adv_ed = self.droids[1], self.eds[1]
+        self.droid_list = get_advanced_droid_list(self.android_devices)
+        self.scn_ad = self.android_devices[0]
+        self.adv_ad = self.android_devices[1]
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
         self.log.info(
-            "Scanner device model: {}".format(self.scn_droid.getBuildModel()))
+            "Scanner device model: {}".format(
+                self.scn_ad.droid.getBuildModel()))
         self.log.info(
             "Advertiser device model: {}".format(
-                self.adv_droid.getBuildModel()))
+                self.adv_ad.droid.getBuildModel()))
         self.tests = (
             "test_valid_filters",
             "test_valid_filters_opportunistic_scan",
@@ -282,93 +283,94 @@ class FilteringTest(BluetoothBaseTest):
         if 'is_connectable' in settings_in_effect.keys():
             self.log.debug("Setting advertisement is_connectable to {}".format(
                            settings_in_effect['is_connectable']))
-            self.adv_droid.bleSetAdvertiseSettingsIsConnectable(
+            self.adv_ad.droid.bleSetAdvertiseSettingsIsConnectable(
                 settings_in_effect['is_connectable'])
         if 'mode' in settings_in_effect.keys():
             self.log.debug(
                 "Setting advertisement mode to {}"
                 .format(settings_in_effect['mode']))
-            self.adv_droid.bleSetAdvertiseSettingsAdvertiseMode(
+            self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
                 settings_in_effect['mode'])
         if 'tx_power_level' in settings_in_effect.keys():
             self.log.debug("Setting advertisement tx_power_level to {}".format(
                            settings_in_effect['tx_power_level']))
-            self.adv_droid.bleSetAdvertiseSettingsTxPowerLevel(
+            self.adv_ad.droid.bleSetAdvertiseSettingsTxPowerLevel(
                 settings_in_effect['tx_power_level'])
-        filter_list = self.scn_droid.bleGenFilterList()
+        filter_list = self.scn_ad.droid.bleGenFilterList()
         if ('include_device_name' in filters.keys()
             and filters['include_device_name'] is not False):
 
             self.log.debug("Setting advertisement include_device_name to {}"
                            .format(filters['include_device_name']))
-            self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(True)
-            filters[
-                'include_device_name'] = self.adv_droid.bluetoothGetLocalName()
+            self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+            filters['include_device_name'] = (
+                self.adv_ad.droid.bluetoothGetLocalName())
             self.log.debug("Setting scanner include_device_name to {}".format(
                            filters['include_device_name']))
-            self.scn_droid.bleSetScanFilterDeviceName(
+            self.scn_ad.droid.bleSetScanFilterDeviceName(
                 filters['include_device_name'])
         else:
             self.log.debug(
                 "Setting advertisement include_device_name to False")
-            self.adv_droid.bleSetAdvertiseDataIncludeDeviceName(False)
+            self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(False)
         if ('include_tx_power_level' in filters.keys() and filters[
                 'include_tx_power_level'] is not False):
             self.log.debug(
                 "Setting advertisement include_tx_power_level to True")
-            self.adv_droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
+            self.adv_ad.droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
         if 'manufacturer_specific_data_id' in filters.keys():
             if 'manufacturer_specific_data_mask' in filters.keys():
-                self.adv_droid.bleAddAdvertiseDataManufacturerId(
+                self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(
                     filters['manufacturer_specific_data_id'],
                     filters['manufacturer_specific_data'])
-                self.scn_droid.bleSetScanFilterManufacturerData(
+                self.scn_ad.droid.bleSetScanFilterManufacturerData(
                     filters['manufacturer_specific_data_id'],
                     filters['manufacturer_specific_data'],
                     filters['manufacturer_specific_data_mask'])
             else:
-                self.adv_droid.bleAddAdvertiseDataManufacturerId(
+                self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(
                     filters['manufacturer_specific_data_id'],
                     filters['manufacturer_specific_data'])
-                self.scn_droid.bleSetScanFilterManufacturerData(
+                self.scn_ad.droid.bleSetScanFilterManufacturerData(
                     filters['manufacturer_specific_data_id'],
                     filters['manufacturer_specific_data'])
         if 'service_data' in filters.keys():
-            self.adv_droid.bleAddAdvertiseDataServiceData(
+            self.adv_ad.droid.bleAddAdvertiseDataServiceData(
                 filters['service_data_uuid'],
                 filters['service_data'])
-            self.scn_droid.bleSetScanFilterServiceData(
+            self.scn_ad.droid.bleSetScanFilterServiceData(
                 filters['service_data_uuid'],
                 filters['service_data'])
         if 'manufacturer_specific_data_list' in filters.keys():
             for pair in filters['manufacturer_specific_data_list']:
                 (manu_id, manu_data) = pair
-                self.adv_droid.bleAddAdvertiseDataManufacturerId(
+                self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(
                     manu_id, manu_data)
         if 'service_mask' in filters.keys():
-            self.scn_droid.bleSetScanFilterServiceUuid(
+            self.scn_ad.droid.bleSetScanFilterServiceUuid(
                 filters['service_uuid'].upper(),
                 filters['service_mask'])
-            self.adv_droid.bleSetAdvertiseDataSetServiceUuids(
+            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids(
                 [filters['service_uuid'].upper()])
         elif 'service_uuid' in filters.keys():
-            self.scn_droid.bleSetScanFilterServiceUuid(filters['service_uuid'])
-            self.adv_droid.bleSetAdvertiseDataSetServiceUuids(
+            self.scn_ad.droid.bleSetScanFilterServiceUuid(
+                filters['service_uuid'])
+            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids(
                 [filters['service_uuid']])
-        self.scn_droid.bleBuildScanFilter(filter_list)
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         advertise_callback, advertise_data, advertise_settings = (
-            generate_ble_advertise_objects(self.adv_droid))
+            generate_ble_advertise_objects(self.adv_ad.droid))
         if ('scan_mode' in settings_in_effect
             and settings_in_effect['scan_mode']
            != ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
-            self.scn_droid.bleSetScanSettingsScanMode(
+            self.scn_ad.droid.bleSetScanSettingsScanMode(
                 settings_in_effect['scan_mode'])
         else:
-            self.scn_droid.bleSetScanSettingsScanMode(
+            self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        scan_settings = self.scn_droid.bleBuildScanSetting()
-        scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleStartBleScan(
+        scan_settings = self.scn_ad.droid.bleBuildScanSetting()
+        scan_callback = self.scn_ad.droid.bleGenScanCallback()
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         opportunistic = False
         scan_settings2, scan_callback2 = None, None
@@ -376,17 +378,17 @@ class FilteringTest(BluetoothBaseTest):
                 settings_in_effect['scan_mode'] ==
                     ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
             opportunistic = True
-            scan_settings2 = self.scn_droid.bleBuildScanSetting()
-            scan_callback2 = self.scn_droid.bleGenScanCallback()
-            self.scn_droid.bleStartBleScan(
+            scan_settings2 = self.scn_ad.droid.bleBuildScanSetting()
+            scan_callback2 = self.scn_ad.droid.bleGenScanCallback()
+            self.scn_ad.droid.bleStartBleScan(
                 filter_list, scan_settings2, scan_callback2)
-            self.scn_droid.bleSetScanSettingsScanMode(
+            self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
-        self.adv_droid.bleStartBleAdvertising(
+        self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
         expected_advertise_event_name = adv_succ.format(advertise_callback)
         self.log.debug(expected_advertise_event_name)
-        advertise_worker = self.adv_ed.handle_event(
+        advertise_worker = self.adv_ad.ed.handle_event(
             self.bleadvertise_verify_onsuccess_handler,
             expected_advertise_event_name, ([settings_in_effect]),
             self.default_timeout)
@@ -396,7 +398,7 @@ class FilteringTest(BluetoothBaseTest):
             self.log.error("Test failed with Empty error: {}".format(error))
             return False
         expected_scan_event_name = scan_result.format(scan_callback)
-        worker = self.scn_ed.handle_event(
+        worker = self.scn_ad.ed.handle_event(
             self.blescan_verify_onscanresult_event_handler,
             expected_scan_event_name, ([filters]), self.default_timeout)
         try:
@@ -413,16 +415,16 @@ class FilteringTest(BluetoothBaseTest):
             self.log.error("No scan result found: {}".format(error))
         if opportunistic:
             expected_scan_event_name = scan_result.format(scan_callback2)
-            worker = self.scn_ed.handle_event(
+            worker = self.scn_ad.ed.handle_event(
                 self.blescan_verify_onscanresult_event_handler,
                 expected_scan_event_name, ([filters]), self.default_timeout)
             try:
                 worker.result(self.default_timeout)
             except Empty:
                 self.log.error("Failure to find event on opportunistic scan.")
-            self.scn_droid.bleStopBleScan(scan_callback2)
-        self.adv_droid.bleStopBleAdvertising(advertise_callback)
-        self.scn_droid.bleStopBleScan(scan_callback)
+            self.scn_ad.droid.bleStopBleScan(scan_callback2)
+        self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -539,7 +541,7 @@ class FilteringTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning, Opportunistic Scan
         Priority: 1
         """
-        reset_bluetooth(self.droids, self.eds)
+        reset_bluetooth(self.android_devices)
         valid_filter_suit = self._get_combinations(self.valid_filter_variants)
         settings = [
             {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value,
@@ -572,7 +574,7 @@ class FilteringTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning
         Priority: 1
         """
-        reset_bluetooth(self.droids, self.eds)
+        reset_bluetooth(self.android_devices)
         settings = [
             {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
         params = list(it.product(self.valid_filter_suite, settings))

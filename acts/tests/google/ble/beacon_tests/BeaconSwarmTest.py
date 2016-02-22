@@ -46,7 +46,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.scn_droid, self.scn_ed = self.droids[0], self.eds[0]
+        self.scn_ad = self.android_devices[0]
         self.tests = (
             "test_swarm_1000_on_scan_result",
             "test_swarm_10000_on_batch_scan_result",
@@ -55,33 +55,34 @@ class BeaconSwarmTest(BluetoothBaseTest):
         )
 
     def setup_test(self):
-        self.log.debug(log_energy_info(self.droids, "Start"))
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
         self.discovered_mac_address_list = []
-        for e in self.eds:
-            e.clear_all_events()
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.droids, "End"))
-        reset_bluetooth([self.scn_droid], [self.scn_ed])
+        self.log.debug(log_energy_info(self.android_devices, "End"))
+        reset_bluetooth([self.android_devices[0]])
         return True
 
     def setup_class(self):
-        if not setup_multiple_devices_for_bt_test(self.droids, self.eds):
+        if not setup_multiple_devices_for_bt_test(self.android_devices):
             return False
         return self._start_special_advertisements()
 
     def cleanup_class(self):
-        return reset_bluetooth(self.droids, self.eds)
+        return reset_bluetooth(self.android_devices)
 
     def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.droids, self, test_name)
-        reset_bluetooth([self.scn_droid], [self.scn_ed])
+        take_btsnoop_logs(self.android_devices, self, test_name)
+        reset_bluetooth([self.scn_ad])
 
-    def _start_advertisements_thread(self, d, e, beacon_count, restart=False):
+    def _start_advertisements_thread(self, ad, beacon_count, restart=False):
+        d, e = ad.droid, ad.ed
         if restart:
             try:
-                reset_bluetooth([d], [e])
+                reset_bluetooth([ad])
             except Exception:
                 self.log.debug("Failed resetting Bluetooth, continuing...")
                 return
@@ -124,8 +125,8 @@ class BeaconSwarmTest(BluetoothBaseTest):
                 "No controllable devices connected to create beacons with."
                 " Continuing...")
         threads = []
-        for x in range(len(self.droids)):
-            d, e = self.droids[x], self.eds[x]
+        for a in self.android_devices:
+            d, e = a.droid, a.ed
             serial_no = d.getBuildSerial()
             if serial_no not in beacon_serials:
                 continue
@@ -154,8 +155,8 @@ class BeaconSwarmTest(BluetoothBaseTest):
         threads = []
         while True:
             self.log.info("Restarting advertisements.")
-            for x in range(len(self.droids)):
-                d, e = self.droids[x], self.eds[x]
+            for a in self.android_devices:
+                d, e = a.droid, a.ed
                 serial_no = d.getBuildSerial()
                 if serial_no not in beacon_serials:
                     continue
@@ -190,14 +191,14 @@ class BeaconSwarmTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Beacon
         Priority: 1
         """
-        self.scn_droid.bleSetScanSettingsScanMode(
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
-        self.scn_droid.bleStartBleScan(
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         for _ in range(1000000):
-            event_info = self.scn_ed.pop_event(
+            event_info = self.scn_ad.ed.pop_event(
                 scan_result.format(scan_callback),
                 self.default_timeout)
             mac_address = event_info['data']['Result']['deviceInfo']['address']
@@ -207,7 +208,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
                     len(self.discovered_mac_address_list)))
         self.log.debug("Discovered {} different devices.".format(
             len(self.discovered_mac_address_list)))
-        self.scn_droid.bleStopBleScan(scan_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
         return True
 
     def test_swarm_10000_on_batch_scan_result(self):
@@ -233,15 +234,15 @@ class BeaconSwarmTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Beacon
         Priority: 1
         """
-        self.scn_droid.bleSetScanSettingsScanMode(
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_droid.bleSetScanSettingsReportDelayMillis(1000)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(1000)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_droid)
-        self.scn_droid.bleStartBleScan(
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleStartBleScan(
             filter_list, scan_settings, scan_callback)
         for _ in range(10000):
-            event_info = self.scn_ed.pop_event(
+            event_info = self.scn_ad.ed.pop_event(
                 batch_scan_result.format(scan_callback),
                 self.default_timeout)
             for result in event_info['data']['Results']:
@@ -250,7 +251,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
                     self.discovered_mac_address_list.append(mac_address)
         self.log.info("Discovered {} different devices.".format(
             len(self.discovered_mac_address_list)))
-        self.scn_droid.bleStopBleScan(scan_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
         return True
 
     def test_swarm_scan_result_filter_each_device_name(self):
@@ -281,22 +282,22 @@ class BeaconSwarmTest(BluetoothBaseTest):
         Priority: 1
         """
         for filter_name in self.advertising_device_name_list:
-            self.scn_droid.bleSetScanSettingsScanMode(
+            self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
             filter_list, scan_settings, scan_callback = (
-                generate_ble_scan_objects(self.scn_droid))
+                generate_ble_scan_objects(self.scn_ad.droid))
             try:
-                self.scn_droid.bleSetScanFilterDeviceName(filter_name)
-                self.scn_droid.bleBuildScanFilter(filter_list)
-                self.scn_droid.bleStartBleScan(
+                self.scn_ad.droid.bleSetScanFilterDeviceName(filter_name)
+                self.scn_ad.droid.bleBuildScanFilter(filter_list)
+                self.scn_ad.droid.bleStartBleScan(
                     filter_list, scan_settings, scan_callback)
-                self.log.debug(self.scn_ed.pop_event(
+                self.log.debug(self.scn_ad.ed.pop_event(
                     scan_result.format(scan_callback), self.default_timeout))
             except Exception:
                 self.log.info(
                     "Couldn't find advertiser name {}.".format(filter_name))
                 return False
-            self.scn_droid.bleStopBleScan(scan_callback)
+            self.scn_ad.droid.bleStopBleScan(scan_callback)
         return True
 
     def test_swarm_rotate_addresses(self):
@@ -329,11 +330,11 @@ class BeaconSwarmTest(BluetoothBaseTest):
         """
         scan_callback_list = []
         for _ in range(28):
-            self.scn_droid.bleSetScanSettingsScanMode(
+            self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-                self.scn_droid)
-            self.scn_droid.bleStartBleScan(filter_list,scan_settings,scan_callback)
+                self.scn_ad.droid)
+            self.scn_ad.droid.bleStartBleScan(filter_list,scan_settings,scan_callback)
             scan_callback_list.append(scan_callback)
         thread = threading.Thread(
             target=self._restart_special_advertisements_thread, args=())
@@ -341,7 +342,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
         n = 0
         while n < 10000:
             for cb in scan_callback_list:
-                event_info = self.scn_ed.pop_event(scan_result.format(
+                event_info = self.scn_ad.ed.pop_event(scan_result.format(
                     cb), self.default_timeout)
                 mac_address = event_info['data']['Result']['deviceInfo']['address']
                 if mac_address not in self.discovered_mac_address_list:
@@ -349,5 +350,5 @@ class BeaconSwarmTest(BluetoothBaseTest):
                 self.log.info("Discovered {} different devices.".format(
                     len(self.discovered_mac_address_list)))
                 n += 1
-        self.scn_droid.bleStopBleScan(scan_callback)
+        self.scn_ad.droid.bleStopBleScan(scan_callback)
         return True
