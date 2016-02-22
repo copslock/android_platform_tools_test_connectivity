@@ -1,4 +1,2 @@
-ActsBaseClassTest
-ActsBaseClassSetupClassTest
 ActsRecordsTest
 ActsAndroidDeviceTest
