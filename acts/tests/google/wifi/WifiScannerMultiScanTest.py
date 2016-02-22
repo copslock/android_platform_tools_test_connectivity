@@ -243,7 +243,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
           * Check the results received for each scan
         """
         # Awlays get a clean start
-        self.ed.clear_all_events()
+        self.dut.ed.clear_all_events()
 
         # Start scanning with the caller specified settings and
         # compute parameters for receiving events
@@ -298,7 +298,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
             for snumber in range(event_loop_count):
                 self.log.debug("Waiting for events '{}' for up to {} seconds".
                                format(event_name, event_wait_time))
-                events = self.ed.pop_events(event_name, event_wait_time)
+                events = self.dut.ed.pop_events(event_name, event_wait_time)
                 for event in events:
                     self.log.debug("Event received: {}".format(event))
                     # Event name is the key to the scan results dictionary
@@ -316,8 +316,8 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
             self.validate_scan_results(scan_results_dict)
             # Tear down and clean up
             for idx in idx_list:
-                self.droid.wifiScannerStopBackgroundScan(idx)
-            self.ed.clear_all_events()
+                self.dut.droid.wifiScannerStopBackgroundScan(idx)
+            self.dut.ed.clear_all_events()
     """ Helper Functions End """
 
 

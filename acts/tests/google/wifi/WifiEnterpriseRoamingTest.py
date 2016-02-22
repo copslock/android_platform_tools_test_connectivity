@@ -87,27 +87,27 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]
         # Set screen lock password so ConfigStore is unlocked.
-        self.droid.setDevicePassword(self.device_password)
+        self.dut.droid.setDevicePassword(self.device_password)
         self.set_attns("default")
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        self.droid.disableDevicePassword()
-        self.ed.clear_all_events()
+        self.dut.droid.disableDevicePassword()
+        self.dut.ed.clear_all_events()
         self.set_attns("default")
 
     def setup_test(self):
-        self.droid.wifiStartTrackingStateChange()
-        self.droid.wakeLockAcquireBright()
-        self.droid.wakeUpNow()
+        self.dut.droid.wifiStartTrackingStateChange()
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
         wutils.reset_wifi(self.dut)
-        self.ed.clear_all_events()
+        self.dut.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.droid.wakeLockRelease()
-        self.droid.goToSleepNow()
-        self.droid.wifiStopTrackingStateChange()
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
+        self.dut.droid.wifiStopTrackingStateChange()
         self.set_attns("default")
 
     def set_attns(self, attn_val_name):
@@ -165,14 +165,14 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
         self.log.info("Wait %ss for roaming to finish." % self.roam_interval)
         time.sleep(self.roam_interval)
         try:
-            self.droid.wakeLockAcquireBright()
-            self.droid.wakeUpNow()
+            self.dut.droid.wakeLockAcquireBright()
+            self.dut.droid.wakeUpNow()
             wutils.verify_wifi_connection_info(self.dut, expected_con)
             expected_bssid = expected_con[WifiEnums.BSSID_KEY]
             self.log.info("Roamed to %s successfully" % expected_bssid)
         finally:
-            self.droid.wifiLockRelease()
-            self.droid.goToSleepNow()
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     def roaming_between_a_and_b_logic(self, config):
         """Test roaming between two enterprise APs.
