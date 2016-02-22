@@ -54,16 +54,16 @@ DEFAULT_POWER_PASS_CRITERIA = 999
 
 # Sampling rate in Hz
 ACTIVE_CALL_TEST_SAMPLING_RATE = 100
-# Sample duration in minute
-ACTIVE_CALL_TEST_SAMPLE_TIME = 5
-# Offset time in second
+# Sample duration in seconds
+ACTIVE_CALL_TEST_SAMPLE_TIME = 300
+# Offset time in seconds
 ACTIVE_CALL_TEST_OFFSET_TIME = 180
 
 # Sampling rate in Hz
 IDLE_TEST_SAMPLING_RATE = 100
-# Sample duration in minute
-IDLE_TEST_SAMPLE_TIME = 40
-# Offset time in second
+# Sample duration in seconds
+IDLE_TEST_SAMPLE_TIME = 2400
+# Offset time in seconds
 IDLE_TEST_OFFSET_TIME = 360
 
 # For wakeup ping test, the frequency to wakeup. In unit of second.
@@ -104,7 +104,7 @@ class TelPowerTest(TelephonyBaseTest):
         self.mon.set_voltage(MONSOON_OUTPUT_VOLTAGE)
         self.mon.set_max_current(MONSOON_MAX_CURRENT)
         # Monsoon phone
-        self.ad = self.android_devices[0]
+        self.mon.dut = self.ad = self.android_devices[0]
         set_adaptive_brightness(self.ad, False)
         set_ambient_display(self.ad, False)
         set_auto_rotate(self.ad, False)
@@ -148,14 +148,15 @@ class TelPowerTest(TelephonyBaseTest):
                                              self.android_devices[1]):
                 self.log.error("PhoneB Failed to Set Up Properly.")
                 return False
-            result = self.mon.execute_sequence_and_measure(
+            if not test_setup_func(self.android_devices[0], *args, **kwargs):
+                self.log.error("DUT Failed to Set Up Properly.")
+                return False
+            result = self.mon.measure_power(
                 ACTIVE_CALL_TEST_SAMPLING_RATE,
                 ACTIVE_CALL_TEST_SAMPLE_TIME,
-                [test_setup_func],
-                self.ad,
-                offset_sec=ACTIVE_CALL_TEST_OFFSET_TIME,
-                *args,
-                **kwargs)[0]
+                test_name,
+                ACTIVE_CALL_TEST_OFFSET_TIME
+                )
             self._save_logs_for_power_test(test_name, result)
             average_current = result.average_current
             if not verify_incall_state(self.log, [self.android_devices[0],
@@ -170,9 +171,6 @@ class TelPowerTest(TelephonyBaseTest):
                     "Phone is not in correct status after power test.")
                 return False
             return (average_current <= pass_criteria)
-        except IndexError:
-            self.log.error("Phone Setup Function failed.")
-            return False
         finally:
             self.android_devices[1].droid.telecomEndCall()
             self.log.info("Result: {} mA, pass criteria: {} mA".format(
@@ -188,14 +186,15 @@ class TelPowerTest(TelephonyBaseTest):
         average_current = 0
         try:
             ensure_phone_default_state(self.log, self.android_devices[0])
-            result = self.mon.execute_sequence_and_measure(
+            if not test_setup_func(self.android_devices[0], *args, **kwargs):
+                self.log.error("DUT Failed to Set Up Properly.")
+                return False
+            result = self.mon.measure_power(
                 IDLE_TEST_SAMPLING_RATE,
                 IDLE_TEST_SAMPLE_TIME,
-                [test_setup_func],
-                self.ad,
-                offset_sec=IDLE_TEST_OFFSET_TIME,
-                *args,
-                **kwargs)[0]
+                test_name,
+                IDLE_TEST_OFFSET_TIME
+                )
             self._save_logs_for_power_test(test_name, result)
             average_current = result.average_current
             if ((phone_check_func_after_power_test is not None) and
@@ -205,9 +204,6 @@ class TelPowerTest(TelephonyBaseTest):
                     "Phone is not in correct status after power test.")
                 return False
             return (average_current <= pass_criteria)
-        except IndexError:
-            self.log.error("Phone Setup Function failed.")
-            return False
         finally:
             self.log.info("Result: {} mA, pass criteria: {} mA".format(
                 average_current, pass_criteria))
