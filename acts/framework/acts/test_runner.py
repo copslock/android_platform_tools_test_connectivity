@@ -85,10 +85,17 @@ class TestRunner(object):
             self.testbed_name)
         self.controller_destructors = {}
         self.run_list = run_list
-        self.parse_config(test_configs)
-        t_configs = test_configs[Config.key_test_paths.value]
-        self.test_classes = self.import_test_modules(t_configs)
-        self.set_test_util_logs()
+        try:
+            # self.parse_config initializes controllers. If anything happens in
+            # __init__ after controllers are initialized, controllers should be
+            # cleaned up.
+            self.parse_config(test_configs)
+            t_configs = test_configs[Config.key_test_paths.value]
+            self.test_classes = self.import_test_modules(t_configs)
+            self.set_test_util_logs()
+        except:
+            self.clean_up()
+            raise
         self.results = TestResult()
         self.running = False
 
@@ -169,7 +176,6 @@ class TestRunner(object):
                     msg = ("Failed to initialize objects for controller {}, "
                         "abort!").format(module_name)
                     self.log.error(msg)
-                    self.clean_up()
                     raise
         test_runner_keys = (Config.key_adb_logcat_param.value,)
         for key in test_runner_keys:
