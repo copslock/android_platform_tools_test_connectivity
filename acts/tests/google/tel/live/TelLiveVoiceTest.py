@@ -42,6 +42,7 @@ from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
@@ -81,6 +82,7 @@ from acts.test_utils.tel.tel_voice_utils import two_phone_call_leave_voice_mail
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
+DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60 # default value 1 hour
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -181,7 +183,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "test_call_2g_to_2g_long_sim2",
             "test_call_2g_to_3g_long_sim2",
             "test_call_gsm_mo_hold_unhold_sim2",
-            "test_call_gsm_mt_hold_unhold_sim2", )
+            "test_call_gsm_mt_hold_unhold_sim2",
+
+            # long duration voice call (to measure drop rate)
+            "test_call_long_duration_volte",
+            "test_call_long_duration_wfc",
+            "test_call_long_duration_3g"
+            )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
@@ -191,6 +199,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
         except KeyError:
             self.wifi_network_pass = None
+
+        if "long_duration_call_total_duration" in self.user_params:
+            self.long_duration_call_total_duration = self.user_params[
+                "long_duration_call_total_duration"]
+        else:
+            self.long_duration_call_total_duration = DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION
 
     """ Tests Begin """
 
@@ -3131,5 +3145,95 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         finally:
             self._reset_subscriptions_to_sim1(ads)
 
+    def _test_call_long_duration(self, dut_incall_check_func,
+                                 total_duration):
+        ads = self.android_devices
+        self.log.info("Long Duration Call Test. Total duration = {}".
+            format(total_duration))
+        return call_setup_teardown(self.log, ads[0], ads[1], ads[0],
+            verify_caller_func=dut_incall_check_func,
+            wait_time_in_call=total_duration)
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_long_duration_volte(self):
+        """ Test call drop rate for VoLTE long duration call.
+
+        Steps:
+        1. Setup VoLTE for DUT.
+        2. Make VoLTE call from DUT to PhoneB.
+        3. For <total_duration> time, check if DUT drop call or not.
+
+        Expected Results:
+        DUT should not drop call.
+
+        Returns:
+        False if DUT call dropped during test.
+        Otherwise True.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return self._test_call_long_duration(is_phone_in_call_volte,
+            self.long_duration_call_total_duration)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_long_duration_wfc(self):
+        """ Test call drop rate for WiFi Calling long duration call.
+
+        Steps:
+        1. Setup WFC for DUT.
+        2. Make WFC call from DUT to PhoneB.
+        3. For <total_duration> time, check if DUT drop call or not.
+
+        Expected Results:
+        DUT should not drop call.
+
+        Returns:
+        False if DUT call dropped during test.
+        Otherwise True.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return self._test_call_long_duration(is_phone_in_call_iwlan,
+            self.long_duration_call_total_duration)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_long_duration_3g(self):
+        """ Test call drop rate for 3G long duration call.
+
+        Steps:
+        1. Setup 3G for DUT.
+        2. Make CS call from DUT to PhoneB.
+        3. For <total_duration> time, check if DUT drop call or not.
+
+        Expected Results:
+        DUT should not drop call.
+
+        Returns:
+        False if DUT call dropped during test.
+        Otherwise True.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return self._test_call_long_duration(is_phone_in_call_3g,
+            self.long_duration_call_total_duration)
 """ Tests End """
