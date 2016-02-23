@@ -1848,12 +1848,12 @@ def is_volte_enabled(log, ad):
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
-    is_volte_available = ad.droid.telephonyIsVolteAvailable()
-    is_ims_registered = is_ims_registered(log, ad)
-    if is_volte_available is True and is_ims_registered is False:
+    volte_status = ad.droid.telephonyIsVolteAvailable()
+    ims_status = is_ims_registered(log, ad)
+    if volte_status is True and ims_status is False:
         log.error("Error! VoLTE is Available, but IMS is not registered.")
         return False
-    return is_volte_available
+    return volte_status
 
 
 def is_video_enabled(log, ad):
@@ -1867,12 +1867,12 @@ def is_video_enabled(log, ad):
         Return True if Video Calling feature bit is True and IMS registered.
         Return False if Video Calling feature bit is False or IMS not registered.
     """
-    is_video_available = ad.droid.telephonyIsVideoCallingAvailable()
-    is_ims_registered = is_ims_registered(log, ad)
-    if is_video_available is True and is_ims_registered is False:
+    video_status = ad.droid.telephonyIsVideoCallingAvailable()
+    ims_status = is_ims_registered(log, ad)
+    if video_status is True and ims_status is False:
         log.error("Error! Video Call is Available, but IMS is not registered.")
         return False
-    return is_video_available
+    return video_status
 
 
 def wait_for_volte_enabled(log, ad, max_time):
@@ -1916,12 +1916,12 @@ def is_wfc_enabled(log, ad):
         Return True if WiFi Calling feature bit is True and IMS registered.
         Return False if WiFi Calling feature bit is False or IMS not registered.
     """
-    is_wfc_available = ad.droid.telephonyIsWifiCallingAvailable()
-    is_ims_registered = is_ims_registered(log, ad)
-    if is_wfc_available is True and is_ims_registered is False:
+    wfc_status = ad.droid.telephonyIsWifiCallingAvailable()
+    ims_status = is_ims_registered(log, ad)
+    if wfc_status is True and ims_status is False:
         log.error("Error! WiFi Calling is Available, but IMS is not registered.")
         return False
-    return is_wfc_available
+    return wfc_status
 
 
 def wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
