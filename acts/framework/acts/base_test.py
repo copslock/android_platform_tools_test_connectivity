@@ -591,7 +591,6 @@ class BaseTestClass(object):
             self._exec_func(self._teardown_test, test_name)
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
-                self.reporter.write(repr(tr_record) + '\n')
 
     def run_generated_testcases(self, test_func, settings,
                                 args=None, kwargs=None,

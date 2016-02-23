@@ -57,7 +57,6 @@ class TestRunner(object):
         self.log_path: A string representing the path of the dir under which
             all logs from this test run should be written.
         self.log: The logger object used throughout this test run.
-        self.reporter: A file to write result summary to.
         self.controller_destructors: A dictionary that holds the controller
             distructors. Keys are controllers' names.
         self.test_classes: A dictionary where we can look up the test classes
@@ -79,12 +78,9 @@ class TestRunner(object):
         l_path = os.path.join(test_configs[Config.key_log_path.value],
             self.testbed_name, start_time)
         self.log_path = os.path.abspath(l_path)
-        (self.log,
-         self.reporter,
-         self.log_name) = logger.get_test_logger_and_reporter(
-            self.log_path,
-            self.id,
-            self.testbed_name)
+        self.log, self.log_name = logger.get_test_logger(self.log_path,
+                                                         self.id,
+                                                         self.testbed_name)
         self.controller_destructors = {}
         self.run_list = run_list
         tu_path_key = Config.key_test_utils_paths.value
@@ -214,7 +210,6 @@ class TestRunner(object):
         # Unpack other params.
         self.configs[Config.ikey_logpath.value] = self.log_path
         self.configs[Config.ikey_logger.value] = self.log
-        self.configs[Config.ikey_reporter.value] = self.reporter
         cli_args = test_configs[Config.ikey_cli_args.value]
         self.configs[Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
@@ -305,12 +300,10 @@ class TestRunner(object):
         if self.running:
             msg = "\nSummary for test run %s: %s\n" % (self.id,
                 self.results.summary_str())
-            self.reporter.write(msg)
             self._write_results_json_str()
             self.log.info(msg.strip())
             self.clean_up()
             logger.kill_test_logger(self.log)
-            logger.kill_test_reporter(self.reporter)
             self.stop_adb_logcat()
             self.running = False
 
