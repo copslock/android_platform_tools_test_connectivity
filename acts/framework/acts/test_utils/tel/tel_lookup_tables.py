@@ -254,28 +254,28 @@ class _TelTables():
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_WCDMA: {
             'is_voice_rat': True,
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_HSDPA: {
             'is_voice_rat': False,
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_HSUPA: {
             'is_voice_rat': False,
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': False,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_CDMA: {
             'is_voice_rat': True,
@@ -338,14 +338,14 @@ class _TelTables():
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_HSPAP: {
             'is_voice_rat': False,
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA
         },
         tel_defines.RAT_IWLAN: {
             'is_voice_rat': True,
@@ -359,7 +359,7 @@ class _TelTables():
             'is_data_rat': True,
             'generation': tel_defines.GEN_3G,
             'simultaneous_voice_data': True,
-            'rat_family': tel_defines.RAT_FAMILY_UMTS
+            'rat_family': tel_defines.RAT_FAMILY_TDSCDMA
         },
         tel_defines.RAT_UNKNOWN: {
             'is_voice_rat': False,
@@ -380,19 +380,15 @@ class _TelTables():
     network_preference_tbl = {
         tel_defines.NETWORK_MODE_LTE_GSM_WCDMA: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_UMTS,
+                                tel_defines.RAT_FAMILY_WCDMA,
                                 tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_GSM_UMTS: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_UMTS,
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
                                 tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_GSM_ONLY: {
             'rat_family_list': [tel_defines.RAT_FAMILY_GSM]
-        },
-        tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_CDMA2000]
         },
         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
@@ -406,6 +402,88 @@ class _TelTables():
         tel_defines.NETWORK_MODE_CDMA_NO_EVDO: {
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000,
                                 tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NETWORK_MODE_WCDMA_PREF: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NETWORK_MODE_WCDMA_ONLY: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA]
+        },
+        tel_defines.NETWORK_MODE_EVDO_NO_CDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000]
+        },
+        tel_defines.NETWORK_MODE_GLOBAL: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_GSM,
+                                tel_defines.RAT_FAMILY_CDMA2000,
+                                tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_GSM,
+                                tel_defines.RAT_FAMILY_CDMA2000,
+                                tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NETWORK_MODE_LTE_ONLY: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE]
+        },
+        tel_defines.NETWORK_MODE_LTE_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_WCDMA]
+        },
+        tel_defines.NETWORK_MODE_TDSCDMA_ONLY: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_TDSCDMA]
+        },
+        tel_defines.NETWORK_MODE_TDSCDMA_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_WCDMA]
+        },
+        tel_defines.NETWORK_MODE_LTE_TDSCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_TDSCDMA]
+        },
+        tel_defines.NETWORK_MODE_TDSCDMA_GSM: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NETWORK_MODE_LTE_TDSCDMA_GSM: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NETWORK_MODE_TDSCDMA_GSM_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NETWORK_MODE_LTE_TDSCDMA_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_LTE]
+        },
+        tel_defines.NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_GSM]
+        },
+        tel_defines.NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_CDMA2000,
+                                tel_defines.RAT_FAMILY_CDMA]
+        },
+        tel_defines.NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA: {
+            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
+                                tel_defines.RAT_FAMILY_TDSCDMA,
+                                tel_defines.RAT_FAMILY_LTE,
+                                tel_defines.RAT_FAMILY_GSM,
+                                tel_defines.RAT_FAMILY_CDMA2000,
+                                tel_defines.RAT_FAMILY_CDMA]
         }
     }
     default_umts_operator_network_tbl = {
@@ -414,7 +492,7 @@ class _TelTables():
             'network_preference': tel_defines.NETWORK_MODE_LTE_GSM_WCDMA
         },
         tel_defines.GEN_3G: {
-            'rat_family': tel_defines.RAT_FAMILY_UMTS,
+            'rat_family': tel_defines.RAT_FAMILY_WCDMA,
             'network_preference': tel_defines.NETWORK_MODE_GSM_UMTS
         },
         tel_defines.GEN_2G: {
