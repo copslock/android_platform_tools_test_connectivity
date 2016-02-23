@@ -41,14 +41,14 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.tests = (
             "test_power_wifi_off",
             "test_power_wifi_on_idle",
-            "test_power_wifi_on_idle",
             "test_power_disconnected_connectivity_scan",
+            "test_power_connected_2g_continuous_download",
             "test_power_connected_to_2g_idle",
-            "test_power_connected_2g_download_1MB",
+            "test_power_connected_to_continuous_download",
             "test_power_connected_to_5g_idle",
-            "test_power_connected_to_5g_download_1MB",
             "test_power_gscan_three_2g_channels",
-            "test_power_gscan_all_channels_no_dfs"
+            "test_power_connected_2g_gscan_all_channels_no_dfs",
+            "test_power_connected_5g_gscan_all_channels_no_dfs"
         )
 
     def setup_class(self):
@@ -68,23 +68,28 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
             "network_2g",
-            "network_5g",
-            "threshold"
+            "network_5g"
         )
-        self.unpack_userparams(required_userparam_names)
+        self.unpack_userparams(required_userparam_names, threshold=None)
         wutils.wifi_test_device_init(self.dut)
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)
         self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
 
     def teardown_class(self):
-        wutils.reset_wifi(self.dut)
+        self.mon.usb("on")
 
     def setup_test(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
     def measure_and_process_result(self):
+        """Measure the current drawn by the device for the period of
+        self.duration, at the frequency of self.hz.
+
+        If self.threshold exists, also verify that the average current of the
+        measurement is below the acceptable threshold.
+        """
         tag = self.current_test_name
         result = self.mon.measure_power(self.hz,
                                         self.duration,
@@ -96,13 +101,20 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         monsoon.MonsoonData.save_to_text_file([result], data_path)
         actual_current = result.average_current
         actual_current_str = "%.2fmA" % actual_current
-        acceptable_threshold = self.threshold[self.dut.model][tag]
-        self.assert_true(actual_current < acceptable_threshold,
-                         ("Measured average current for %s - %s - is higher "
-                          "than acceptable threshold %.2f.") % (
-                          tag, actual_current_str, acceptable_threshold))
+        result_extra = {"Average Current": actual_current_str}
+        if self.threshold:
+            model = utils.trim_model_name(self.dut.model)
+            self.assert_true(tag in self.threshold[model],
+                             "Acceptance threshold for %s is missing" % tag,
+                             extras=result_extra)
+            acceptable_threshold = self.threshold[model][tag]
+            self.assert_true(actual_current < acceptable_threshold,
+                             ("Measured average current for %s - %s - is "
+                              "higher than acceptable threshold %.2f.") % (
+                              tag, actual_current_str, acceptable_threshold),
+                              extras=result_extra)
         self.explicit_pass("Measurement finished for %s." % tag,
-                           extras={"Average Current": actual_current_str})
+                           extras=result_extra)
 
     def test_power_wifi_off(self):
         self.assert_true(wutils.wifi_toggle_state(self.dut, False),
@@ -127,10 +139,10 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, self.network_2g)
         self.measure_and_process_result()
 
-    def test_power_connected_2g_download_1MB(self):
+    def test_power_connected_2g_continuous_download(self):
         try:
             self.dut.adb.shell(pmc_start_1MB_download_cmd)
-            self.log.info("Start downloading 1MB file consecutively.")
+            self.log.info("Start downloading 1MB file continuously.")
             self.measure_and_process_result()
         finally:
             self.dut.adb.shell(pmc_stop_1MB_download_cmd)
@@ -142,10 +154,10 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, self.network_5g)
         self.measure_and_process_result()
 
-    def test_power_connected_to_5g_download_1MB(self):
+    def test_power_connected_to_5g_continuous_download(self):
         try:
             self.dut.adb.shell(pmc_start_1MB_download_cmd)
-            self.log.info("Started downloading 1MB file consecutively.")
+            self.log.info("Started downloading 1MB file continuously.")
             self.measure_and_process_result()
         finally:
             self.dut.adb.shell(pmc_stop_1MB_download_cmd)
@@ -162,6 +174,26 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def test_power_gscan_all_channels_no_dfs(self):
         try:
+            self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
+            self.log.info("Started gscan for all non-DFS channels.")
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_stop_gscan_cmd)
+            self.log.info("Stopped gscan.")
+
+    def test_power_connected_2g_gscan_all_channels_no_dfs(self):
+        try:
+            wutils.wifi_connect(self.dut, self.network_2g)
+            self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
+            self.log.info("Started gscan for all non-DFS channels.")
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_stop_gscan_cmd)
+            self.log.info("Stopped gscan.")
+
+    def test_power_connected_5g_gscan_all_channels_no_dfs(self):
+        try:
+            wutils.wifi_connect(self.dut, self.network_5g)
             self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
             self.log.info("Started gscan for all non-DFS channels.")
             self.measure_and_process_result()
