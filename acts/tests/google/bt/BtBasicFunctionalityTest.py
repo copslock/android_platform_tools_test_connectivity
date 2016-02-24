@@ -57,8 +57,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
 
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
-        for e in self.eds:
-            e.clear_all_events()
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
