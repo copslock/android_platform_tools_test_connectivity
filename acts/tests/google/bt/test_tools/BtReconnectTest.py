@@ -45,7 +45,7 @@ class BtReconnectTest(BluetoothBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
     def test_tool_reconnect(self):
-        droid, ed = self.droid, self.ed
+        droid, ed = self.android_devices[0].droid, self.android_devices[0].ed
         n = 0
         test_result = True
         test_result_list = []

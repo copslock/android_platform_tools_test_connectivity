@@ -996,7 +996,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         """
         test_result = True
         droid = self.droid
-        ed = self.ed
+        ed = self.android_devices[0].ed
         service_data = []
         for i in range(25):
             service_data.append(i)

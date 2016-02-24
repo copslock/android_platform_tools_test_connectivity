@@ -46,6 +46,10 @@ class RfcommStressTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.client_ad = self.android_devices[0]
         self.server_ad = self.android_devices[1]
+        self.tests = (
+            "test_rfcomm_connection_stress",
+            "test_rfcomm_read_write_stress",
+        )
 
     def on_fail(self, test_name, begin_time):
         take_btsnoop_logs(self.android_devices, self, test_name)
