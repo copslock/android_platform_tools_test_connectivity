@@ -53,10 +53,10 @@ class SppStressTest(BluetoothBaseTest):
         )
 
     def _clear_bonded_devices(self):
-        for d in self.droids:
-            bonded_device_list = d.bluetoothGetConnectedDevices()
+        for a in self.android_devices:
+            bonded_device_list = a.droid.bluetoothGetConnectedDevices()
             for device in bonded_device_list:
-                d.bluetoothUnbond(device)
+                a.droid.bluetoothUnbond(device)
 
 
     def on_fail(self, test_name, begin_time):
