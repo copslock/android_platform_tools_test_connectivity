@@ -72,7 +72,7 @@ def wifi_tethering_setup_teardown(log,
                                   password=None):
     """Test WiFi Tethering.
 
-    Turn off WiFi on provider and clients.
+    Turn off WiFi on clients.
     Turn off data and reset WiFi on clients.
     Verify no Internet access on clients.
     Turn on WiFi tethering on provider.
@@ -107,8 +107,6 @@ def wifi_tethering_setup_teardown(log,
     if not provider.droid.connectivityIsTetheringSupported():
         log.error("Provider does not support tethering. Stop tethering test.")
         return False
-
-    WifiUtils.wifi_toggle_state(log, provider, False)
 
     if ssid is None:
         ssid = rand_ascii_str(10)

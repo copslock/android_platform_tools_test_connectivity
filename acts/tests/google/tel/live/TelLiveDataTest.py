@@ -874,7 +874,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         2. DUT start 2.4G WiFi Tethering
         3. PhoneB disable data, connect to DUT's softAP
         4. Verify Internet access on DUT and PhoneB
-        5. Disable WiFi Tethering on DUT. Turn on DUT WiFi.
+        5. Disable WiFi Tethering on DUT.
         6. Verify DUT automatically connect to previous WiFI network
 
         Returns:
@@ -899,7 +899,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("WiFi Tethering failed.")
             return False
 
-        WifiUtils.wifi_toggle_state(self.log, ads[0], True)
         if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
                 not verify_http_connection(self.log, ads[0])):
             self.log.error("Provider data did not return to Wifi")
@@ -1804,8 +1803,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
 
             self.log.info(
-                "Turn on WiFi, make sure WiFi can connect automatically.")
-            WifiUtils.wifi_toggle_state(self.log, ads[0], True)
+                "Make sure WiFi can connect automatically.")
             if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
                     not verify_http_connection(self.log, ads[0])):
                 self.log.error("Data did not return to WiFi")
