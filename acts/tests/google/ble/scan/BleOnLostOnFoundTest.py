@@ -55,7 +55,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         )
 
     def teardown_test(self):
-        self.log.info(log_energy_info(self.droids, "End"))
+        self.log.info(log_energy_info(self.android_devices, "End"))
         cleanup_scanners_and_advertisers(
             self.scn_ad, self.active_adv_callback_list,
             self.adv_ad, self.active_adv_callback_list)

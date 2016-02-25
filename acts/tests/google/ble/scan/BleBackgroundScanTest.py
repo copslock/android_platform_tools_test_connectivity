@@ -61,8 +61,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
                 BluetoothAdapterState.STATE_OFF.value):
             self.scn_ad.droid.bluetoothEnableBLE()
             self.scn_ad.ed.pop_event("BleStateChangedOn")
-        for e in self.eds:
-            e.clear_all_events()
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):

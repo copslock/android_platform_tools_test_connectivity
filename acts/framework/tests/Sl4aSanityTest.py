@@ -49,7 +49,8 @@ class Sl4aSanityTest(BaseTestClass):
         return True
 
     def test_message_then_shutdown_stress(self):
+        ad = self.android_devices[0]
         for i in range(10):
-            assert wifi_toggle_state(self.droid, self.ed, False)
-            assert wifi_toggle_state(self.droid, self.ed, True)
+            assert wifi_toggle_state(ad.droid, ad.ed, False)
+            assert wifi_toggle_state(ad.droid, ad.ed, True)
         return True

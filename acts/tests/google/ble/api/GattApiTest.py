@@ -29,6 +29,7 @@ class GattApiTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
+        self.ad = self.android_devices[0]
         self.tests = (
             "test_open_gatt_server",
             "test_open_gatt_server_on_same_callback",
@@ -40,8 +41,8 @@ class GattApiTest(BluetoothBaseTest):
 
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
-        for e in self.eds:
-            e.clear_all_events()
+        for a in self.android_devices:
+            a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
@@ -68,9 +69,8 @@ class GattApiTest(BluetoothBaseTest):
         TAGS: LE, GATT
         Priority: 1
         """
-        droid, ed = self.droid, self.ed
-        gatt_server_callback = droid.gattServerCreateGattServerCallback()
-        droid.gattServerOpenGattServer(gatt_server_callback)
+        gatt_server_cb = self.ad.droid.gattServerCreateGattServerCallback()
+        self.ad.droid.gattServerOpenGattServer(gatt_server_cb)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -94,10 +94,9 @@ class GattApiTest(BluetoothBaseTest):
         TAGS: LE, GATT
         Priority: 2
         """
-        droid, ed = self.droid, self.ed
-        gatt_server_callback = droid.gattServerCreateGattServerCallback()
-        droid.gattServerOpenGattServer(gatt_server_callback)
-        droid.gattServerOpenGattServer(gatt_server_callback)
+        gatt_server_cb = self.ad.droid.gattServerCreateGattServerCallback()
+        self.ad.droid.gattServerOpenGattServer(gatt_server_cb)
+        self.ad.droid.gattServerOpenGattServer(gatt_server_cb)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -119,10 +118,9 @@ class GattApiTest(BluetoothBaseTest):
         TAGS: LE, GATT
         Priority: 2
         """
-        droid, ed = self.droid, self.ed
         invalid_callback_index = -1
         try:
-            droid.gattServerOpenGattServer(invalid_callback_index)
+            self.ad.droid.gattServerOpenGattServer(invalid_callback_index)
         except SL4AAPIError as e:
             self.log.info("Failed successfully with exception: {}.".format(e))
             return True
