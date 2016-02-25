@@ -558,7 +558,7 @@ class BaseTestClass(object):
             self._exec_func(self._on_skip, tr_record)
         except (TestAbortClass, TestAbortAll) as e:
             # Abort signals, pass along.
-            tr_record.test_skip(e)
+            tr_record.test_fail(e)
             raise e
         except TestPass as e:
             # Explicit test pass.
