@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
+from acts.test_utils.tel.tel_test_utils import update_phone_number_with_line1number
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
@@ -136,6 +137,8 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def setup_test(self):
+        for ad in self.android_devices:
+            update_phone_number_with_line1number(self.log, ad)
         return ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
