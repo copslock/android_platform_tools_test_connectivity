@@ -218,11 +218,11 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls.run(test_names=["test_1", "test_2", "test_3"])
         self.assertEqual(bt_cls.results.passed[0].test_name,
                          "test_1")
-        self.assertEqual(bt_cls.results.skipped[0].details,
+        self.assertEqual(bt_cls.results.failed[0].details,
                          MSG_EXPECTED_EXCEPTION)
         self.assertEqual(bt_cls.results.summary_str(),
-                         ("Executed 2, Failed 0, Passed 1, Requested 3, "
-                          "Skipped 1, Unknown 0"))
+                         ("Executed 2, Failed 1, Passed 1, Requested 3, "
+                          "Skipped 0, Unknown 0"))
 
     def test_uncaught_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
