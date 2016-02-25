@@ -16,23 +16,13 @@
 
 import os
 
-import acts.logger as logger
-
+from acts import asserts
+from acts import keys
+from acts import logger
+from acts import records
+from acts import signals
 from acts import test_runner
 from acts import utils
-
-from acts.keys import Config
-from acts.records import TestResult
-from acts.records import TestResultRecord
-from acts.signals import TestAbortClass
-from acts.signals import TestAbortAll
-from acts.signals import TestFailure
-from acts.signals import TestPass
-from acts.signals import TestSkip
-from acts.signals import TestSilent
-from acts.utils import concurrent_exec
-from acts.utils import create_dir
-from acts.utils import get_current_human_time
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -53,15 +43,13 @@ class BaseTestClass(object):
     Attributes:
         tests: A list of strings, each representing a test case name.
         TAG: A string used to refer to a test class. Default is the test class
-            name.
-        droids: A list of SL4A client objects for convenience. Do NOT use, to
-            be deprecated.
-        eds: A list of event_dispatcher objects. Do NOT use, to be deprecated.
+             name.
         log: A logger object used for logging.
-        results: A TestResult object for aggregating test results from the
-            execution of test cases.
+        results: A records.TestResult object for aggregating test results from
+                 the execution of test cases.
         current_test_name: A string that's the name of the test case currently
-            being executed. If no test is executing, this should be None.
+                           being executed. If no test is executing, this should
+                           be None.
     """
 
     TAG = None
@@ -73,7 +61,7 @@ class BaseTestClass(object):
         # Set all the controller objects and params.
         for name, value in configs.items():
             setattr(self, name, value)
-        self.results = TestResult()
+        self.results = records.TestResult()
         self.current_test_name = None
 
     def __enter__(self):
@@ -102,8 +90,8 @@ class BaseTestClass(object):
                      required_list or opt_list.
 
         Raises:
-            BaseTestError is raised if a required user params is missing from test
-            config.
+            BaseTestError is raised if a required user params is missing from
+            test config.
         """
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -115,7 +103,7 @@ class BaseTestClass(object):
         for name in opt_param_names:
             if name not in self.user_params:
                 self.log.info(("Missing optional user param '%s' in "
-                    "configuration, continue.") % name)
+                               "configuration, continue."), name)
             else:
                 setattr(self, name, self.user_params[name])
 
@@ -194,12 +182,13 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The TestResultRecord object for the failed test case.
+            record: The records.TestResultRecord object for the failed test
+                    case.
         """
         test_name = record.test_name
         self.log.error(record.details)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE % (test_name, record.result))
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
@@ -217,14 +206,15 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The TestResultRecord object for the passed test case.
+            record: The records.TestResultRecord object for the passed test
+                    case.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         msg = record.details
         if msg:
             self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE % (test_name, record.result))
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_pass(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
@@ -242,12 +232,13 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The TestResultRecord object for the skipped test case.
+            record: The records.TestResultRecord object for the skipped test
+                    case.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE % (test_name, record.result))
-        self.log.info("Reason to skip: %s" % record.details)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.log.info("Reason to skip: %s", record.details)
         self.on_skip(test_name, begin_time)
 
     def on_skip(self, test_name, begin_time):
@@ -271,150 +262,11 @@ class BaseTestClass(object):
             begin_time: Logline format timestamp taken when the test started.
         """
 
-    def fail(self, msg, extras=None):
-        """Explicitly fail a test case.
-
-        Args:
-            msg: A string explaining the details of the failure.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestFailure is raised to mark a test case as failed.
-        """
-        raise TestFailure(msg, extras)
-
-    def explicit_pass(self, msg, extras=None):
-        """Explicitly pass a test case.
-
-        A test with not uncaught exception will pass implicitly so the usage of
-        this is optional. It is intended for reporting extra information when a
-        test passes.
-
-        Args:
-            msg: A string explaining the details of the passed test.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestPass is raised to mark a test case as passed.
-        """
-        raise TestPass(msg, extras)
-
-    def assert_true(self, expr, msg, extras=None):
-        """Assert an expression evaluates to true, otherwise fail the test.
-
-        Args:
-            expr: The expression that is evaluated.
-            msg: A string explaining the datails in case of failure.
-            extras: An optional field for extra information to be included in
-                test result.
-        """
-        if not expr:
-            self.fail(msg, extras)
-
-    def skip(self, reason, extras=None):
-        """Skip a test case.
-
-        Args:
-            reason: The reason this test is skipped.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestSkip is raised to mark a test case as skipped.
-        """
-        raise TestSkip(reason, extras)
-
-    def skip_if(self, expr, reason, extras=None):
-        """Skip a test case if expression evaluates to True.
-
-        Args:
-            expr: The expression that is evaluated.
-            reason: The reason this test is skipped.
-            extras: An optional field for extra information to be included in
-                test result.
-        """
-        if expr:
-            self.skip(reason, extras)
-
-    def abort_class(self, reason, extras=None):
-        """Abort all subsequent test cases within the same test class in one
-        iteration.
-
-        If one test class is requested multiple times in a test run, this can
-        only abort one of the requested executions, NOT all.
-
-        Args:
-            reason: The reason to abort.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestAbortClass is raised to abort all subsequent tests in the test
-            class.
-        """
-        self.log.warning(("Abort %s, remaining test cases within the class"
-                " will not be executed. Reason: %s") % (self.TAG, str(reason)))
-        raise TestAbortClass(reason, extras)
-
-    def abort_class_if(self, expr, reason, extras=None):
-        """Abort all subsequent test cases within the same test class in one
-        iteration, if expression evaluates to True.
-
-        If one test class is requested multiple times in a test run, this can
-        only abort one of the requested executions, NOT all.
-
-        Args:
-            expr: The expression that is evaluated.
-            reason: The reason to abort.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestAbortClass is raised to abort all subsequent tests in the test
-            class.
-        """
-        if expr:
-            self.abort_class(reason, extras)
-
-    def abort_all(self, reason, extras=None):
-        """Abort all subsequent test cases, including the ones not in this test
-        class or iteration.
-
-        Args:
-            reason: The reason to abort.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestAbortAll is raised to abort all subsequent tests.
-        """
-        self.log.warning(("Abort test run, remaining test cases will not be "
-                "executed. Reason: %s") % (str(reason)))
-        raise TestAbortAll(reason, extras)
-
-    def abort_all_if(self, expr, reason, extras=None):
-        """Abort all subsequent test cases, if the expression evaluates to
-        True.
-
-        Args:
-            expr: The expression that is evaluated.
-            reason: The reason to abort.
-            extras: An optional field for extra information to be included in
-                test result.
-
-        Raises:
-            TestAbortAll is raised to abort all subsequent tests.
-        """
-        if expr:
-            self.abort_all(reason, extras)
-
     def exec_one_testcase(self, test_name, test_func, args, **kwargs):
         """Executes one test case and update test results.
 
-        Executes one test case, create a TestResultRecord object with the
-        execution information, and add the record to the test class's test
+        Executes one test case, create a records.TestResultRecord object with
+        the execution information, and add the record to the test class's test
         results.
 
         Args:
@@ -424,14 +276,14 @@ class BaseTestClass(object):
             kwargs: Extra kwargs.
         """
         is_generate_trigger = False
-        tr_record = TestResultRecord(test_name, self.TAG)
+        tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.log.info("[Test Case] %s" % test_name)
+        self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
             ret = self._setup_test(test_name)
-            self.assert_true(ret is not False,
-                             "Setup for %s failed." % test_name)
+            asserts.assert_true(ret is not False,
+                                "Setup for %s failed." % test_name)
             try:
                 if args or kwargs:
                     verdict = test_func(*args, **kwargs)
@@ -440,32 +292,33 @@ class BaseTestClass(object):
             except TypeError as e:
                 e_str = str(e)
                 if test_name in e_str:
-                    raise TestSkip("%s. Got args: %s, kwargs %s." % (e_str,
-                                                                    args,
-                                                                    kwargs))
+                    raise signals.TestSkip("%s. Got args: %s, kwargs %s." % (
+                                           e_str,
+                                           args,
+                                           kwargs))
                 raise e
-        except (TestFailure, AssertionError) as e:
+        except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
             self._exec_func(self._on_fail, tr_record)
-        except TestSkip as e:
+        except signals.TestSkip as e:
             # Test skipped.
             tr_record.test_skip(e)
             self._exec_func(self._on_skip, tr_record)
-        except (TestAbortClass, TestAbortAll) as e:
+        except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
             raise e
-        except TestPass as e:
+        except signals.TestPass as e:
             # Explicit test pass.
             tr_record.test_pass(e)
             self._exec_func(self._on_pass, tr_record)
-        except TestSilent as e:
+        except signals.TestSilent as e:
             # This is a trigger test for generated tests, suppress reporting.
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
             # Exception happened during test.
-            self.log.exception("Uncaught exception in " + test_name)
+            self.log.exception("Uncaught exception in %s", test_name)
             tr_record.test_unknown(e)
             bt = logger.epoch_to_log_line_timestamp(tr_record.begin_time)
             self._exec_func(self.on_exception, tr_record.test_name, bt)
@@ -498,17 +351,19 @@ class BaseTestClass(object):
 
         Args:
             test_func: The common logic shared by all these generated test
-                cases. This function should take at least one argument, which
-                is a parameter set.
+                       cases. This function should take at least one argument,
+                       which is a parameter set.
             settings: A list of strings representing parameter sets. These are
-                usually json strings that get loaded in the test_func.
-            args: Iterable of additional position args to be passed to test_func
+                      usually json strings that get loaded in the test_func.
+            args: Iterable of additional position args to be passed to
+                  test_func.
             kwargs: Dict of additional keyword args to be passed to test_func
             tag: Name of this group of generated test cases. Ignored if
-                name_func is provided and operates properly.
+                 name_func is provided and operates properly.
             name_func: A function that takes a test setting and generates a
-                proper test name. The test name should be shorter than
-                utils.MAX_FILENAME_LEN. Names over the limit will be truncated.
+                       proper test name. The test name should be shorter than
+                       utils.MAX_FILENAME_LEN. Names over the limit will be
+                       truncated.
 
         Returns:
             A list of settings that did not pass.
@@ -522,9 +377,9 @@ class BaseTestClass(object):
                 try:
                     test_name = name_func(s, *args, **kwargs)
                 except:
-                    msg = ("Failed to get test name from test_func. Fall back "
-                        "to default %s") % test_name
-                    self.log.exception(msg)
+                    self.log.exception(("Failed to get test name from "
+                                        "test_func. Fall back to default %s"),
+                                       test_name)
             self.results.requested.append(test_name)
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
@@ -537,8 +392,8 @@ class BaseTestClass(object):
     def _exec_func(self, func, *args):
         """Executes a function with exception safeguard.
 
-        This will let TestAbortAll through so abort_all works in all procedure
-        functions.
+        This will let signals.TestAbortAll through so abort_all works in all
+        procedure functions.
 
         Args:
             func: Function to be executed.
@@ -550,12 +405,11 @@ class BaseTestClass(object):
         """
         try:
             return func(*args)
-        except TestAbortAll:
+        except signals.TestAbortAll:
             raise
         except:
-            msg = "Exception happened when executing {} in {}.".format(
-                func.__name__, self.TAG)
-            self.log.exception(msg)
+            self.log.exception("Exception happened when executing %s in %s.",
+                               func.__name__, self.TAG)
             return False
 
     def _get_all_test_names(self):
@@ -595,8 +449,8 @@ class BaseTestClass(object):
             try:
                 test_funcs.append((test_name, getattr(self, test_name)))
             except AttributeError:
-                self.log.warning("%s does not have test case %s." % (
-                    self.TAG, test_name))
+                self.log.warning("%s does not have test case %s.", self.TAG,
+                                 test_name)
             except BaseTestError as e:
                 self.log.warning(str(e))
         return test_funcs
@@ -621,23 +475,23 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
-        self.log.info("==========> %s <==========" % self.TAG)
+        self.log.info("==========> %s <==========", self.TAG)
         # Devise the actual test cases to run in the test class.
         if not test_names:
             if self.tests:
                 # Specified by run list in class.
                 test_names = list(self.tests)
             else:
-                # No test case specified by user, execute all in the test class.
+                # No test case specified by user, execute all in the test class
                 test_names = self._get_all_test_names()
         self.results.requested = test_names
         tests = self._get_test_funcs(test_names)
         # Setup for the class.
         try:
             if self._setup_class() is False:
-                raise TestFailure("Failed to setup %s." % self.TAG)
+                raise signals.TestFailure("Failed to setup %s." % self.TAG)
         except Exception as e:
-            self.log.exception("Failed to setup %s." % self.TAG)
+            self.log.exception("Failed to setup %s.", self.TAG)
             self.results.fail_class(self.TAG, e)
             self._exec_func(self.teardown_class)
             return self.results
@@ -646,17 +500,17 @@ class BaseTestClass(object):
             for test_name, test_func in tests:
                 self.exec_one_testcase(test_name, test_func, self.cli_args)
             return self.results
-        except TestAbortClass:
+        except signals.TestAbortClass:
             return self.results
-        except TestAbortAll as e:
+        except signals.TestAbortAll as e:
             # Piggy-back test results on this exception object so we don't lose
             # results from this test class.
             setattr(e, "results", self.results)
             raise e
         finally:
             self._exec_func(self.teardown_class)
-            self.log.info("Summary for test class %s: %s" % (self.TAG,
-                self.results.summary_str()))
+            self.log.info("Summary for test class %s: %s", self.TAG,
+                          self.results.summary_str())
 
     def clean_up(self):
         """A function that is executed upon completion of all tests cases
