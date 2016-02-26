@@ -145,8 +145,7 @@ class TelPowerTest(TelephonyBaseTest):
                 [monsoon_result],
                 os.path.join(self.monsoon_log_path, file_name))
         if "bug_report_for_power_test" in self.user_params:
-            self.take_bug_reports(test_name, current_time,
-                                  [self.android_devices[0]])
+            self.android_devices[0].take_bug_report(test_name, current_time)
 
     def _test_power_active_call(self,
                                 test_name,

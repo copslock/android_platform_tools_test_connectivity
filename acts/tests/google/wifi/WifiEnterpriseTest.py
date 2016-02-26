@@ -143,6 +143,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiStopTrackingStateChange()
 
+    def on_fail(self, test_name, begin_time):
+        self.dut.cat_adb_log(test_name, begin_time)
+
     """Helper Functions"""
 
     def eap_negative_connect_logic(self, config, ad):
