@@ -309,11 +309,11 @@ def start_standing_subprocess(cmd):
     Returns:
         The subprocess that got started.
     """
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True,
-                preexec_fn=os.setpgrp)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         shell=True, preexec_fn=os.setpgrp)
     return p
 
-def stop_standing_subprocess(p):
+def stop_standing_subprocess(p, kill_signal=signal.SIGTERM):
     """Stops a subprocess started by start_standing_subprocess.
 
     Catches and ignores the PermissionError which only happens on Macs.
@@ -322,9 +322,31 @@ def stop_standing_subprocess(p):
         p: Subprocess to terminate.
     """
     try:
-        os.killpg(p.pid, signal.SIGTERM)
+        os.killpg(p.pid, kill_signal)
     except PermissionError:
         pass
+
+def wait_for_standing_subprocess(p, timeout=None):
+    """Waits for a subprocess started by start_standing_subprocess to finish
+    or times out.
+
+    Propagates the exception raised by the subprocess.wait(.) function.
+    The subprocess.TimeoutExpired exception is raised if the process timed-out
+    rather then terminating.
+
+    If no exception is raised: the subprocess terminated on its own. No need
+    to call stop_standing_subprocess() to kill it.
+
+    If an exception is raised: the subprocess is still alive - it did not
+    terminate. Either call stop_standing_subprocess() to kill it, or call
+    wait_for_standing_subprocess() to keep waiting for it to terminate on its
+    own.
+
+    Args:
+        p: Subprocess to wait for.
+        timeout: An integer number of seconds to wait before timing out.
+    """
+    p.wait(timeout)
 
 def sync_device_time(ad):
     """Sync the time of an android device with the current system time.
