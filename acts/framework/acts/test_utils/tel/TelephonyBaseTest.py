@@ -161,8 +161,7 @@ class TelephonyBaseTest(BaseTestClass):
             for ad in self.android_devices:
                 try:
                     ad.adb.wait_for_device()
-                    ad.take_bug_reports(test_name, begin_time,
-                                        self.android_devices)
+                    ad.take_bug_report(test_name, begin_time)
                     # TODO: b/25290103 rename tombstone files correctly
                     # and make support generic and move to
                     # base_test and utils respectively
