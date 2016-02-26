@@ -28,19 +28,6 @@ WifiEventNames = wutils.WifiEventNames
 
 class WifiManagerTest(acts.base_test.BaseTestClass):
 
-    def __init__(self, controllers):
-        acts.base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_toggle_state",
-            "test_toggle_with_screen",
-            "test_scan",
-            "test_add_network",
-            "test_forget_network",
-            "test_tdls_supported",
-            "test_energy_info",
-            "test_iot_with_password",
-            )
-
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
@@ -259,3 +246,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                     new_idle_time))
             idle_time = new_idle_time
             wutils.start_wifi_connection_scan(self.dut)
+
+    def test_energy_info_connected(self):
+        """Verify the WiFi energy info reporting feature when connected.
+
+        Connect to a wifi network, then the same as test_energy_info.
+        """
+        wutils.wifi_connect(self.dut, self.open_network)
+        self.test_energy_info()
