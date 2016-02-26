@@ -118,7 +118,7 @@ def set_rssi(log,
         log.info("set_rssi: WARNING - you are setting an unreachable RSSI.")
         log.info(
             "max RSSI value on {} is {}. Setting attenuation to 0.".format(
-                wifi_or_cell, calibration_rssi))
+                print_name, calibration_rssi))
         target_atten = 0
     if not set_atten(log, atten_obj, target_atten, step_size, time_per_step):
         log.error("set_rssi to {}failed".format(target_rssi))
