@@ -25,6 +25,8 @@ from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
@@ -277,7 +279,8 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
                  MAX_RSSI_RESERVED_VALUE)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+                                         GEN_4G, voice_or_data=NETWORK_SERVICE_DATA,
+                                         toggle_apm_after_setting=True):
             self.log.error("Setup_class: phone failed to select to LTE.")
             return False
         if not ensure_wifi_connected(self.log, self.android_devices[0],
@@ -556,7 +559,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+                                         GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -582,7 +585,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_generation(self.log, self.android_devices[0],
-                                             GEN_4G, NETWORK_SERVICE_DATA):
+                                             GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -657,7 +660,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], volte_mode)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+                                         GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -684,7 +687,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_generation(self.log, self.android_devices[0],
-                                             GEN_4G, NETWORK_SERVICE_DATA):
+                                             GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -754,7 +757,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+                                         GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
             return False
 
         if not set_wfc_mode(self.log, self.android_devices[0], wfc_mode):
@@ -775,7 +778,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                                         False):
                 raise Exception("Toggle APM failed.")
             if not ensure_network_generation(self.log, self.android_devices[0],
-                                             GEN_4G, NETWORK_SERVICE_DATA):
+                                             GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
                 raise Exception("Ensure LTE failed.")
         except Exception:
             is_exception_happened = True
@@ -2520,7 +2523,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         cellular_gen, NETWORK_SERVICE_DATA):
+                                         cellular_gen, voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("_rove_in_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
             return False
@@ -2589,7 +2592,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.android_devices[0], False)
         toggle_volte(self.log, self.android_devices[0], True)
         if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+                                         GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("_rove_out_test: {} failed to be in rat: {}".format(
                 self.android_devices[0].serial, cellular_rat))
             return False
@@ -3620,7 +3623,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 event = ad.ed.wait_for_event(
                     EventNetworkCallback,
                     is_network_call_back_event_match,
-                    network_callback_id=rssi_monitoring_id_higher
+                    network_callback_id=rssi_monitoring_id_higher,
                     network_callback_event=NetworkCallbackAvailable)
                 self.log.info("Received Event: {}".format(event))
             except Empty:
