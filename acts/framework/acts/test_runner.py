@@ -32,13 +32,8 @@ from acts.keys import get_internal_value
 from acts.keys import get_module_name
 from acts.records import TestResult
 from acts.signals import TestAbortAll
-from acts.utils import create_dir
 from acts.utils import find_files
 from acts.utils import load_config
-from acts.utils import start_standing_subprocess
-from acts.utils import stop_standing_subprocess
-
-adb_logcat_tag = "adb_logcat"
 
 class USERError(Exception):
     """Raised when a problem is caused by user mistake, e.g. wrong command,
@@ -51,8 +46,6 @@ class TestRunner(object):
         Attrubutes:
         self.configs: A dictionary containing the configurations for this test
             run. This is populated during instantiation.
-        self.procs: A dictionary keeping track of processes started by this
-            test run.
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
             all logs from this test run should be written.
@@ -69,7 +62,6 @@ class TestRunner(object):
     """
     def __init__(self, test_configs, run_list):
         self.configs = {}
-        self.procs = {}
         tb = test_configs[Config.key_testbed.value]
         self.testbed_name = tb[Config.key_testbed_name.value]
         start_time = logger.get_log_file_timestamp()
@@ -78,9 +70,9 @@ class TestRunner(object):
         l_path = os.path.join(test_configs[Config.key_log_path.value],
             self.testbed_name, start_time)
         self.log_path = os.path.abspath(l_path)
-        self.log, self.log_name = logger.get_test_logger(self.log_path,
-                                                         self.id,
-                                                         self.testbed_name)
+        self.log = logger.get_test_logger(self.log_path,
+                                          self.id,
+                                          self.testbed_name)
         self.controller_destructors = {}
         self.run_list = run_list
         try:
@@ -169,8 +161,8 @@ class TestRunner(object):
                     objects = create(data[ctrl_name], self.log)
                     controller_var_name = get_internal_value(ctrl_name)
                     self.configs[controller_var_name] = objects
-                    self.log.debug("Found %d objects for controller %s" %
-                        (len(objects), module_name))
+                    self.log.debug("Found %d objects for controller %s",
+                                   len(objects), module_name)
                     # Bind controller objects to their destructors.
                     destroy_func = getattr(module, "destroy")
                     self.controller_destructors[controller_var_name] = destroy_func
@@ -179,10 +171,6 @@ class TestRunner(object):
                         "abort!").format(module_name)
                     self.log.error(msg)
                     raise
-        test_runner_keys = (Config.key_adb_logcat_param.value,)
-        for key in test_runner_keys:
-            if key in test_configs:
-                setattr(self, key, test_configs[key])
         # Unpack other params.
         self.configs[Config.ikey_logpath.value] = self.log_path
         self.configs[Config.ikey_logger.value] = self.log
@@ -214,8 +202,8 @@ class TestRunner(object):
             if ispkg:
                 self.set_test_util_logs(module=m)
             else:
-                msg = "Setting logger to test util module %s" % module_name
-                self.log.debug(msg)
+                self.log.debug("Setting logger to test util module %s",
+                               module_name)
                 setattr(m, "log", self.log)
 
     def run_test_class(self, test_cls_name, test_cases=None):
@@ -249,24 +237,22 @@ class TestRunner(object):
 
     def run(self):
         if not self.running:
-            # Only do these if this is the first iteration.
-            self.start_adb_logcat()
             self.running = True
-        self.log.debug("Executing run list {}.".format(self.run_list))
+        self.log.debug("Executing run list %s.", self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
             if test_case_names:
-                self.log.debug(("Executing test cases {} in test class {}."
-                                ).format(test_case_names, test_cls_name))
+                self.log.debug("Executing test cases %s in test class %s.",
+                               test_case_names,
+                               test_cls_name)
             else:
-                self.log.debug("Executing test class {}".format(
-                    test_cls_name))
+                self.log.debug("Executing test class %s", test_cls_name)
             try:
                 self.run_test_class(test_cls_name, test_case_names)
             except TestAbortAll as e:
-                msg = "Abort all subsequent test classes. Reason: %s" % str(e)
-                self.log.warning(msg)
+                self.log.warning(("Abort all subsequent test classes. Reason: "
+                                  "%s"), e)
                 raise
 
     def stop(self):
@@ -280,49 +266,15 @@ class TestRunner(object):
             self.log.info(msg.strip())
             self.clean_up()
             logger.kill_test_logger(self.log)
-            self.stop_adb_logcat()
             self.running = False
 
     def clean_up(self):
         for name, destroy in self.controller_destructors.items():
             try:
-                self.log.debug("Destroying %s." % name)
+                self.log.debug("Destroying %s.", name)
                 destroy(self.configs[name])
             except:
-                self.log.exception("Exception occurred destroying %s." % name)
-
-    def start_adb_logcat(self):
-        """Starts adb logcat for each device in separate subprocesses and save
-        the logs in files.
-        """
-        if Config.ikey_android_device.value not in self.configs:
-            self.log.debug("No android device available, skipping adb logcat.")
-            return
-        devices = self.configs[Config.ikey_android_device.value]
-        file_list = []
-        for d in devices:
-            # Disable adb log spam filter.
-            d.adb.shell("logpersist.start")
-            serial = d.serial
-            extra_param = ""
-            f_name = "adblog,{},{}.txt".format(d.model, serial)
-            if hasattr(self, Config.key_adb_logcat_param.value):
-                extra_param = getattr(self, Config.key_adb_logcat_param.value)
-            cmd = "adb -s {} logcat -v threadtime {} > {}".format(
-                serial, extra_param, os.path.join(self.log_path, f_name))
-            p = start_standing_subprocess(cmd)
-            self.procs[serial + adb_logcat_tag] = p
-            file_list.append(f_name)
-        if file_list:
-            self.configs[Config.ikey_adb_log_path.value] = self.log_path
-            self.configs[Config.ikey_adb_log_files.value] = file_list
-
-    def stop_adb_logcat(self):
-        """Stops all adb logcat subprocesses.
-        """
-        for k, p in self.procs.items():
-            if k[-len(adb_logcat_tag):] == adb_logcat_tag:
-                stop_standing_subprocess(p)
+                self.log.exception("Exception occurred destroying %s.", name)
 
     def _write_results_json_str(self):
         """Writes out a json file with the test result info for easy parsing.
