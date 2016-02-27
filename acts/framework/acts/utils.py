@@ -28,6 +28,10 @@ import subprocess
 import time
 import traceback
 
+# File name length is limited to 255 chars on some OS, so we need to make sure
+# the file names we output fits within the limit.
+MAX_FILENAME_LEN = 255
+
 class NexusModelNames:
     # TODO(angli): This will be fixed later by angli.
     ONE = 'sprout'
