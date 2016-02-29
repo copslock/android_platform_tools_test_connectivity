@@ -75,6 +75,7 @@ from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
@@ -987,7 +988,7 @@ def call_setup_teardown(log,
 
     """
     subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
-    subid_callee = ad_callee.droid.subscriptionGetDefaultVoiceSubId()
+    subid_callee = ad_callee.incoming_voice_sub_id
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
@@ -2096,9 +2097,10 @@ def sms_send_receive_verify(log, ad_tx, ad_rx, array_message):
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
+    subid_tx = ad_tx.droid.subscriptionGetDefaultSmsSubId()
+    subid_rx = ad_rx.incoming_message_sub_id
     return sms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, ad_tx.droid.subscriptionGetDefaultSmsSubId(),
-        ad_rx.droid.subscriptionGetDefaultSmsSubId(), array_message)
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message)
 
 
 def wait_for_matching_sms(log,
@@ -3175,6 +3177,41 @@ def get_call_uri(ad, call_id):
     except:
         return None
 
+def set_subid_for_outgoing_call(ad, sub_id):
+    """Set subId for outgoing voice call
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
+
+def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
+    """Set subId for data
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultDataSubId(sub_id)
+
+def set_subid_for_message(ad, sub_id):
+    """Set subId for outgoing message
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
 
 # TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
 class WifiUtils():

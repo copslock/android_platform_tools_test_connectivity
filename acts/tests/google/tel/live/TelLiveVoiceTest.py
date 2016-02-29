@@ -29,6 +29,7 @@ from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -42,12 +43,16 @@ from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_phone_number
+from acts.test_utils.tel.tel_test_utils import set_subid_for_data
+from acts.test_utils.tel.tel_test_utils import set_subid_for_message
+from acts.test_utils.tel.tel_test_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -193,6 +198,52 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
     """ Tests Begin """
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_general(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA attached to voice network.
+        2. Make Sure PhoneA attached to voice network.
+        3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return two_phone_call_short_seq(
+            self.log, ads[0], None, None, ads[1], None, None)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_general(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA attached to voice network.
+        2. Make Sure PhoneA attached to voice network.
+        3. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
+        4. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return two_phone_call_short_seq(
+            self.log, ads[1], None, None, ads[0], None, None)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_to_volte(self):
