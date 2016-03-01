@@ -39,29 +39,29 @@ class BtNativeTest(BaseTestClass):
             )
 
     def test_binder_get_name(self):
-        result = self.droid.BluetoothBinderGetName()
+        result = self.droid.BtBinderGetName()
         self.log.info("Bluetooth device name: {}".format(result))
         return True
 
     def test_binder_get_name_invalid_parameter(self):
         try:
-            self.droid.BluetoothBinderGetName("unexpected_parameter")
+            self.droid.BtBinderGetName("unexpected_parameter")
             return False
         except Exception:
             return True
 
     def test_binder_set_name_get_name(self):
         test_name = generate_id_by_size(4)
-        result = self.droid.BluetoothBinderSetName(test_name)
+        result = self.droid.BtBinderSetName(test_name)
         if not result:
             return False
-        name = self.droid.BluetoothBinderGetName()
+        name = self.droid.BtBinderGetName()
         if test_name != name:
             return False
         return True
 
     def test_binder_get_address(self):
-        result = self.droid.BluetoothBinderGetAddress()
+        result = self.droid.BtBinderGetAddress()
         self.log.info("Found BT address: {}".format(result))
         if not result:
             return False
@@ -71,8 +71,9 @@ class BtNativeTest(BaseTestClass):
         test_name = generate_id_by_size(4)
         for n in self.native_android_devices:
             d = n.droid
-            d.BluetoothBinderSetName(test_name)
-            name = d.BluetoothBinderGetName()
+            d.BtBinderSetName(test_name)
+            name = d.BtBinderGetName()
             if name != test_name:
                 return False
         return True
+
