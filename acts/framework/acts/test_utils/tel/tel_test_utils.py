@@ -61,7 +61,7 @@ from acts.test_utils.tel.tel_defines import PHONE_NUMBER_STRING_FORMAT_12_DIGIT
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
