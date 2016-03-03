@@ -1056,6 +1056,7 @@ def call_setup_teardown_for_subscription(
         False if error happened.
 
     """
+    CHECK_INTERVAL = 3
 
     class _CallSequenceException(Exception):
         pass
@@ -1085,25 +1086,27 @@ def call_setup_teardown_for_subscription(
         if verify_callee_func and not verify_callee_func(log, ad_callee):
             raise _CallSequenceException("Callee not in correct state!")
 
-        time.sleep(wait_time_in_call)
-
-        if not verify_caller_func:
-            caller_state_result = ad_caller.droid.telecomIsInCall()
-        else:
-            caller_state_result = verify_caller_func(log, ad_caller)
-        if not caller_state_result:
-            raise _CallSequenceException(
-                "Caller not in correct state after {} seconds".format(
-                    wait_time_in_call))
-
-        if not verify_callee_func:
-            callee_state_result = ad_callee.droid.telecomIsInCall()
-        else:
-            callee_state_result = verify_callee_func(log, ad_callee)
-        if not callee_state_result:
-            raise _CallSequenceException(
-                "Callee not in correct state after {} seconds".format(
-                    wait_time_in_call))
+        elapsed_time = 0
+        while(elapsed_time < wait_time_in_call):
+            CHECK_INTERVAL = min(CHECK_INTERVAL, wait_time_in_call - elapsed_time)
+            time.sleep(CHECK_INTERVAL)
+            elapsed_time += CHECK_INTERVAL
+            if not verify_caller_func:
+                caller_state_result = ad_caller.droid.telecomIsInCall()
+            else:
+                caller_state_result = verify_caller_func(log, ad_caller)
+            if not caller_state_result:
+                raise _CallSequenceException(
+                    "Caller not in correct state at <{}>/<{}> second.".format(
+                        elapsed_time, wait_time_in_call))
+            if not verify_callee_func:
+                callee_state_result = ad_callee.droid.telecomIsInCall()
+            else:
+                callee_state_result = verify_callee_func(log, ad_callee)
+            if not callee_state_result:
+                raise _CallSequenceException(
+                    "Callee not in correct state at <{}>/<{}> second.".format(
+                        elapsed_time, wait_time_in_call))
 
         if not ad_hangup:
             return True
