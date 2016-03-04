@@ -20,6 +20,7 @@ This script shows simple examples of how to get started with bluetooth low energ
 
 import pprint
 
+from acts.controllers import android_devices
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import adv_succ
 from acts.test_utils.bt.bt_test_utils import scan_result
@@ -64,7 +65,9 @@ class BleExamplesTest(BluetoothBaseTest):
         self.log.debug(
             "Test {} failed. Gathering bugreport and btsnoop logs".
             format(test_name))
-        self.take_bug_reports(test_name, self.android_devices)
+        android_devices.take_bug_reports(self.android_devices,
+                                         test_name,
+                                         begin_time)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_bt_toggle(self):
