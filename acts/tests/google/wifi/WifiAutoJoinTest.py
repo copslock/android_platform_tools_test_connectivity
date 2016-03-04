@@ -159,8 +159,9 @@ class WifiAutoJoinTest(BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
-            self.take_bug_reports(test_name, begin_time, self.android_devices)
+            self.dut.take_bug_report(test_name, begin_time)
             self.max_bugreports -= 1
+        self.dut.cat_adb_log(test_name, begin_time)
 
     """ Tests Begin """
     def test_autojoin_Ap1_2g(self):
