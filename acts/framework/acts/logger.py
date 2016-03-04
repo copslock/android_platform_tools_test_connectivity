@@ -154,6 +154,7 @@ def _get_test_logger(log_path, TAG, prefix=None, filename=None):
     fh.setLevel(logging.DEBUG)
     log.addHandler(ch)
     log.addHandler(fh)
+    log.log_path = log_path
     return log
 
 def kill_test_logger(logger):
@@ -196,7 +197,7 @@ def get_test_logger(log_path, TAG, prefix=None, filename=None):
     create_dir(log_path)
     logger = _get_test_logger(log_path, TAG, prefix, filename)
     create_latest_log_alias(log_path)
-    return logger, filename
+    return logger
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
@@ -224,6 +225,12 @@ class LoggerProxy(object):
     """
     def __init__(self, logger=None):
         self.log = logger
+
+    @property
+    def log_path(self):
+        if self.log:
+            return self.log.log_path
+        return "/tmp/logs"
 
     def __getattr__(self, name):
         def log_call(*args):
