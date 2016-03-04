@@ -90,6 +90,9 @@ MAX_WAIT_TIME_DATA_SUB_CHANGE = 150
 # Max time to wait for telecom Ringing status after receive ringing event
 MAX_WAIT_TIME_TELECOM_RINGING = 5
 
+# Max time to wait for phone get provisioned.
+MAX_WAIT_TIME_PROVISIONING = 300
+
 # Time to wait after call setup before declaring
 # that the call is actually successful
 WAIT_TIME_IN_CALL = 15

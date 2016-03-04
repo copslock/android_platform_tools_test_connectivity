@@ -24,6 +24,7 @@ import time
 from queue import Empty
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
+from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
@@ -2067,6 +2068,22 @@ def get_operator_name(log, ad, subId=None):
     except KeyError:
         result = CARRIER_UNKNOWN
     return result
+
+
+def get_model_name(ad):
+    """Get android device model name
+
+    Args:
+        ad: Android device object
+
+    Returns:
+        model name string
+    """
+    # TODO: Create translate table.
+    model = ad.model
+    if(model.startswith(AOSP_PREFIX)):
+        model = model[len(AOSP_PREFIX):]
+    return model
 
 
 def is_sms_match(event, phonenumber_tx, text):
