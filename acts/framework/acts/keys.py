@@ -38,8 +38,6 @@ class Config(enum.Enum):
     key_address = "Address"
     key_iperf_server = "IPerfServer"
     key_monsoon = "Monsoon"
-    key_adb_log_time_offset = "adb_log_time_offset"
-    key_adb_logcat_param = "adb_logcat_param"
     # Internal keys, used internally, not exposed to user's config files.
     ikey_lock = "lock"
     ikey_user_param = "user_params"
@@ -51,8 +49,6 @@ class Config(enum.Enum):
     ikey_logger = "log"
     ikey_logpath = "log_path"
     ikey_monsoon = "monsoons"
-    ikey_adb_log_path = "adb_logcat_path"
-    ikey_adb_log_files = "adb_logcat_files"
     ikey_iperf_server = "iperf_servers"
     ikey_cli_args = "cli_args"
     # module name of controllers

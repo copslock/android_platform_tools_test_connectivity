@@ -21,6 +21,8 @@ import os
 import acts.logger as logger
 
 from acts import test_runner
+from acts import utils
+
 from acts.keys import Config
 from acts.records import TestResult
 from acts.records import TestResultRecord
@@ -33,9 +35,6 @@ from acts.signals import TestSilent
 from acts.utils import concurrent_exec
 from acts.utils import create_dir
 from acts.utils import get_current_human_time
-
-MAX_FILENAME_LEN = 255
-DEFAULT_ADB_LOG_OFFSET = 5
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -73,9 +72,6 @@ class BaseTestClass(object):
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
-        # Set default value for optional config params.
-        if Config.key_adb_log_time_offset.value not in configs:
-            configs[Config.key_adb_log_time_offset.value] = DEFAULT_ADB_LOG_OFFSET
         # Set all the controller objects and params.
         for name, value in configs.items():
             setattr(self, name, value)
@@ -203,23 +199,15 @@ class BaseTestClass(object):
             record: The TestResultRecord object for the failed test case.
         """
         test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        end_time = logger.get_log_line_timestamp(self.adb_log_time_offset)
         self.log.error(record.details)
+        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         self.log.info(RESULT_LINE_TEMPLATE % (test_name, record.result))
-        try:
-            self.cat_adb_log(test_name, begin_time, end_time)
-        except AttributeError:
-            pass
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         """A function that is executed upon a test case failure.
 
         User implementation is optional.
-
-        This should be the primary place to call take_bug_reports, e.g.
-        self.take_bug_reports(test_name, self.android_devices[0])
 
         Args:
             test_name: Name of the test that triggered this function.
@@ -424,97 +412,6 @@ class BaseTestClass(object):
         if expr:
             self.abort_all(reason, extras)
 
-    def _is_timestamp_in_range(self, target, begin_time, end_time):
-        low = logger.logline_timestamp_comparator(begin_time, target) <= 0
-        high = logger.logline_timestamp_comparator(end_time, target) >= 0
-        return low and high
-
-    def cat_adb_log(self, tag, begin_time, end_time):
-        """Takes logs from adb logcat log.
-
-        Goes through adb logcat log and excerpt the log lines recorded during a
-        certain time period. The lines are saved into a file in the test
-        class's log directory.
-
-        Args:
-            tag: An identifier of the time period, usualy the name of a test.
-            begin_time: Logline format timestamp of the beginning of the time
-                period.
-            end_time: Logline format timestamp of the end of the time period.
-        """
-        self.log.debug("Extracting adb log from logcat.")
-        adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
-        create_dir(adb_excerpt_path)
-        for f_name in self.adb_logcat_files:
-            out_name = f_name.replace("adblog,", "").replace(".txt", "")
-            out_name = ",{},{}.txt".format(begin_time, out_name)
-            tag_len = MAX_FILENAME_LEN - len(out_name)
-            tag = tag[:tag_len]
-            out_name = tag + out_name
-            full_adblog_path = os.path.join(adb_excerpt_path, out_name)
-            with open(full_adblog_path, 'w', encoding='utf-8') as out:
-                in_file = os.path.join(self.adb_logcat_path, f_name)
-                with open(in_file, 'r', encoding='utf-8', errors='replace') as f:
-                    in_range = False
-                    while True:
-                        line = None
-                        try:
-                            line = f.readline()
-                            if not line:
-                                break
-                        except:
-                            continue
-                        line_time = line[:logger.log_line_timestamp_len]
-                        if not logger.is_valid_logline_timestamp(line_time):
-                            continue
-                        if self._is_timestamp_in_range(line_time, begin_time,
-                            end_time):
-                            in_range = True
-                            out.write(line + '\n')
-                        else:
-                            if in_range:
-                                break
-
-    def take_bug_reports(self, test_name, begin_time, android_devices):
-        """Takes bug report on a list of devices and stores it in the log
-        directory of the test class.
-
-        If you want to take a bug report, call this function with a list of
-        android_device objects in on_fail. But reports will be taken on all the
-        devices in the list concurrently. Bug report takes a relative long
-        time to take, so use this cautiously.
-
-        Args:
-            test_name: Name of the test case that triggered this bug report.
-            begin_time: Logline format timestamp taken when the test started.
-            android_devices: android_device instances to take bugreport on.
-        """
-        br_path = os.path.join(self.log_path, "BugReports")
-        begin_time = logger.normalize_log_line_timestamp(begin_time)
-        create_dir(br_path)
-        args = [(test_name, begin_time, ad) for ad in android_devices]
-        concurrent_exec(self._take_bug_report, args)
-
-    def _take_bug_report(self, test_name, begin_time, ad):
-        """Takes a bug report on a device and stores it in the log directory of
-        the test class.
-
-        Args:
-            test_name: Name of the test case that triggered this bug report.
-            begin_time: Logline format timestamp taken when the test started.
-            ad: The AndroidDevice instance to take bugreport on.
-        """
-        serial = ad.serial
-        br_path = os.path.join(self.log_path, "BugReports")
-        base_name = ",{},{}.txt".format(begin_time, serial)
-        test_name_len = MAX_FILENAME_LEN - len(base_name)
-        out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
-        self.log.info("Taking bugreport for test case {} on {}".
-            format(test_name, serial))
-        ad.adb.bugreport(" > %s" % full_out_path)
-        self.log.info("Finished taking bugreport on {}".format(serial))
-
     def exec_one_testcase(self, test_name, test_func, args, **kwargs):
         """Executes one test case and update test results.
 
@@ -613,7 +510,7 @@ class BaseTestClass(object):
                 name_func is provided and operates properly.
             name_func: A function that takes a test setting and generates a
                 proper test name. The test name should be shorter than
-                MAX_FILENAME_LEN. Names over the limit will be truncated.
+                utils.MAX_FILENAME_LEN. Names over the limit will be truncated.
 
         Returns:
             A list of settings that did not pass.
@@ -631,8 +528,8 @@ class BaseTestClass(object):
                         "to default %s") % test_name
                     self.log.exception(msg)
             self.results.requested.append(test_name)
-            if len(test_name) > MAX_FILENAME_LEN:
-                test_name = test_name[:MAX_FILENAME_LEN]
+            if len(test_name) > utils.MAX_FILENAME_LEN:
+                test_name = test_name[:utils.MAX_FILENAME_LEN]
             previous_success_cnt = len(self.results.passed)
             self.exec_one_testcase(test_name, test_func, (s,) + args, **kwargs)
             if len(self.results.passed) - previous_success_cnt != 1:
