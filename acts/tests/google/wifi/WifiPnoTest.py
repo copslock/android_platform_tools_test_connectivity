@@ -60,7 +60,8 @@ class WifiPnoTest(acts.base_test.BaseTestClass):
         self.set_attns("default")
 
     def on_fail(self, test_name, begin_time):
-        self.take_bug_reports(test_name, begin_time, self.android_devices)
+        self.dut.take_bug_report(test_name, begin_time)
+        self.dut.cat_adb_log(test_name, begin_time)
 
     """Helper Functions"""
     def set_attns(self, attn_val_name):
