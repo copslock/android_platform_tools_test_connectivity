@@ -78,7 +78,7 @@ def destroy(ads):
             ad.terminate_all_sessions()
         except:
             pass
-        if self.adb_logcat_process:
+        if ad.adb_logcat_process:
             ad.stop_adb_logcat()
 
 def _parse_device_list(device_list_str, key):
