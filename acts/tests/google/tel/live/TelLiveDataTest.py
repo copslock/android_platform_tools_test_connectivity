@@ -683,7 +683,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return False
 
-    def _test_setup_tethering(self, ads, network_generation):
+    def _test_setup_tethering(self, ads, network_generation=None):
         """Pre setup steps for WiFi tethering test.
 
         Ensure all ads are idle.
@@ -697,14 +697,15 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ensure_phones_idle(self.log, ads)
 
-        if not ensure_network_generation_for_subscription(self.log,
-            self.android_devices[0],
-            self.android_devices[0].droid.subscriptionGetDefaultDataSubId(),
-            network_generation, MAX_WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
-            self.log.error("Device failed to reselect in {}s.".format(
-                MAX_WAIT_TIME_NW_SELECTION))
-            return False
+        if network_generation is not None:
+            if not ensure_network_generation_for_subscription(self.log,
+                self.android_devices[0],
+                self.android_devices[0].droid.subscriptionGetDefaultDataSubId(),
+                network_generation, MAX_WAIT_TIME_NW_SELECTION,
+                NETWORK_SERVICE_DATA):
+                self.log.error("Device failed to reselect in {}s.".format(
+                    MAX_WAIT_TIME_NW_SELECTION))
+                return False
 
         self.log.info("Airplane Off, Wifi Off, Data On.")
         toggle_airplane_mode(self.log, self.android_devices[0], False)
@@ -1425,8 +1426,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
         ssid = "\"" + rand_ascii_str(10) + "\""
         self.log.info("Starting WiFi Tethering test with ssid: {}".format(
@@ -1454,8 +1455,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
 
         password = '"DQ=/{Yqq;M=(^_3HzRvhOiL8S%`]w&l<Qp8qH)bs<4E9v_q=HLr^)}w$blA0Kg'
@@ -1715,7 +1716,7 @@ class TelLiveDataTest(TelephonyBaseTest):
     def test_tethering_wifi_no_password(self):
         """WiFi Tethering test: Start WiFi tethering with no password
 
-        1. DUT in 4G mode, idle.
+        1. DUT is idle.
         2. DUT start 2.4G WiFi Tethering, with no WiFi password.
         3. PhoneB disable data, connect to DUT's softAP
         4. Verify Internet access on DUT and PhoneB
@@ -1725,8 +1726,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
 
         return wifi_tethering_setup_teardown(
@@ -1742,7 +1743,7 @@ class TelLiveDataTest(TelephonyBaseTest):
     def test_tethering_wifi_reboot(self):
         """WiFi Tethering test: Start WiFi tethering then Reboot device
 
-        1. DUT in 4G mode, idle.
+        1. DUT is idle.
         2. DUT start 2.4G WiFi Tethering.
         3. PhoneB disable data, connect to DUT's softAP
         4. Verify Internet access on DUT and PhoneB
@@ -1754,8 +1755,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
         try:
             if not wifi_tethering_setup_teardown(
@@ -1807,8 +1808,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
@@ -1877,8 +1878,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
 
         self.log.info("Make sure DUT can connect to live network by WIFI")
@@ -1920,8 +1921,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ads = self.android_devices
-        if not self._test_setup_tethering(ads, RAT_4G):
-            self.log.error("Verify LTE Internet access failed.")
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
             return False
         try:
             if not wifi_tethering_setup_teardown(
