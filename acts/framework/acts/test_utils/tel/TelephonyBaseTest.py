@@ -24,6 +24,9 @@ from acts.signals import TestSignal
 
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
+from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
+from acts.test_utils.tel.tel_test_utils import \
+    reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
@@ -105,6 +108,9 @@ class TelephonyBaseTest(BaseTestClass):
 
             if "enable_wifi_verbose_logging" in self.user_params:
                 ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+
+            # Reset preferred network type.
+            reset_preferred_network_type_to_allowable_range(self.log, ad)
 
         setattr(self, 'sim_sub_ids',
                 get_sub_ids_for_sim_slots(self.log, self.android_devices))
