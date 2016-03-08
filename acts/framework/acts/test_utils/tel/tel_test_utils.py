@@ -172,28 +172,27 @@ def setup_droid_properties(log, ad, sim_filename):
 
     setattr(ad, 'cfg', device_props)
 
-def update_phone_number_with_line1number(log, ad, sub_id=None):
-    """ Update Android Device Phone Number record according to Line1Number for
-    subscription.
+def refresh_droid_config(log, ad):
+    """ Update Android Device cfg records for each sub_id.
+    1. Update Phone Number using Line1Number (if Line1Number is valid).
+    2. Update Operator name.
 
     Args:
         log: log object
         ad: android device object
-        sub_id: subscription id. This is optional, default value is None.
-            If sub_id is None, default sub id will be used.
 
     Returns:
-        If Line1Number is configured, update phone number record and return True.
-        Otherwise return False.
+        None
     """
-    if sub_id is None:
-        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
-    if not number or number == "":
-        return False
-    number = phone_number_formatter(number)
-    ad.cfg['subscription'][sub_id]['phone_num'] = number
-    return True
+    for sub_id in ad.cfg['subscription']:
+        # Update Phone number
+        number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
+        if number:
+            number = phone_number_formatter(number)
+            ad.cfg['subscription'][sub_id]['phone_num'] = number
+        # Update Operator Name
+        ad.cfg['subscription'][sub_id]['operator'] = get_operator_name(
+            log, ad, sub_id)
 
 def get_subid_from_slot_index(log, ad, sim_slot_index):
     """ Get the subscription ID for a SIM at a particular slot
