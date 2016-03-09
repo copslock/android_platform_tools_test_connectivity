@@ -32,6 +32,7 @@ class BluetoothBaseTest(BaseTestClass):
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
+    @staticmethod
     def bt_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
             test_id = "{}:{}:{}".format(

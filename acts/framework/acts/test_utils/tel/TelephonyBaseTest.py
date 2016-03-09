@@ -48,6 +48,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
+    @staticmethod
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
             test_id = "{}:{}:{}".format(self.__class__.__name__, fn.__name__,
