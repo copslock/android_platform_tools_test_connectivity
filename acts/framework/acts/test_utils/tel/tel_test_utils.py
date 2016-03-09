@@ -210,6 +210,13 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
             return info['subscriptionId']
     return INVALID_SUB_ID
 
+def get_slot_index_from_subid(log, ad, sub_id):
+    try:
+        info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
+        return info['simSlotIndex']
+    except KeyError
+        return INVALID_SIM_SLOT_INDEX
+
 
 def get_num_active_sims(log, ad):
     """ Get the number of active SIM cards by counting slots
@@ -3243,7 +3250,10 @@ def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     Returns:
         None
     """
-    ad.droid.subscriptionSetDefaultDataSubId(sub_id)
+    # TODO: Need to check onSubscriptionChanged event. b/27843365
+    if ad.droid.subscriptionGetDefaultDataSubId() != sub_id:
+        ad.droid.subscriptionSetDefaultDataSubId(sub_id)
+        time.sleep(time_to_sleep)
 
 def set_subid_for_message(ad, sub_id):
     """Set subId for outgoing message
