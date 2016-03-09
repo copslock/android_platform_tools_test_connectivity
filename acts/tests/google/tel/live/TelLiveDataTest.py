@@ -32,6 +32,8 @@ from acts.test_utils.tel.tel_defines import RAT_2G
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_4G
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_utils.tel.tel_defines import SIM1_SLOT_INDEX
+from acts.test_utils.tel.tel_defines import SIM2_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
@@ -43,6 +45,7 @@ from acts.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
 from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts.test_utils.tel.tel_data_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connection
@@ -56,6 +59,8 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
@@ -130,13 +135,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_3g_stress",
                       "test_lte_multi_bearer_stress",
                       "test_wcdma_multi_bearer_stress",
-                      "test_tethering_4g_to_2gwifi_stress",
-
-                      # SIM2 test cases
-                      "test_3g_sim2",
-                      "test_2g_sim2",
-                      "test_wcdma_wifi_switching_sim2",
-                      "test_gsm_wifi_switching_sim2", )
+                      "test_tethering_4g_to_2gwifi_stress",)
         self.stress_test_number = int(self.user_params["stress_test_number"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
@@ -1291,130 +1290,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_3g_sim2(self):
-        """Test data connection in 3G.
-
-        Set SIM2 as the data SIM
-        Turn off airplane mode, disable WiFi, enable Cellular Data.
-        Ensure phone data generation is 3G.
-        Verify Internet.
-        Disable Cellular Data, verify Internet is inaccessible.
-        Enable Cellular Data, verify Internet.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             False, True):
-                self.log.error("Failed to Switch data SIM")
-                return False
-            WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
-                                        False)
-            return data_connectivity_single_bearer(
-                self.log, self.android_devices[0], RAT_3G)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_2g_sim2(self):
-        """Test data connection in 2G.
-
-        Set SIM2 as the data SIM
-        Turn off airplane mode, disable WiFi, enable Cellular Data.
-        Ensure phone data generation is 2G.
-        Verify Internet.
-        Disable Cellular Data, verify Internet is inaccessible.
-        Enable Cellular Data, verify Internet.
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             False, True):
-                self.log.error("Failed to Switch data SIM")
-                return False
-            WifiUtils.wifi_reset(self.log, self.android_devices[0])
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
-                                        False)
-            return data_connectivity_single_bearer(
-                self.log, self.android_devices[0], RAT_2G)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_wcdma_wifi_switching_sim2(self):
-        """Test data connection network switching when SIM2 camped on WCDMA.
-
-        Set SIM2 as the data SIM
-        Ensure SIM2 is camped on WCDMA
-        Ensure WiFi can connect to live network,
-        Airplane mode is off, data connection is on, WiFi is on.
-        Turn off WiFi, verify data is on cell and browse to google.com is OK.
-        Turn on WiFi, verify data is on WiFi and browse to google.com is OK.
-        Turn off WiFi, verify data is on cell and browse to google.com is OK.
-
-        Returns:
-            True if pass.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             False, True):
-                self.log.error("Failed to Switch data SIM")
-                return False
-            return wifi_cell_switching(self.log, self.android_devices[0],
-                                       self.wifi_network_ssid,
-                                       self.wifi_network_pass, GEN_3G)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_gsm_wifi_switching_sim2(self):
-        """Test data connection network switching when SIM2 camped on GSM.
-
-        Set SIM2 as the data SIM
-        Ensure SIM2 is camped on GSM
-        Ensure WiFi can connect to live network,
-        Airplane mode is off, data connection is on, WiFi is on.
-        Turn off WiFi, verify data is on cell and browse to google.com is OK.
-        Turn on WiFi, verify data is on WiFi and browse to google.com is OK.
-        Turn off WiFi, verify data is on cell and browse to google.com is OK.
-
-        Returns:
-            True if pass.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             False, True):
-                self.log.error("Failed to Switch data SIM")
-                return False
-            return wifi_cell_switching(self.log, self.android_devices[0],
-                                       self.wifi_network_ssid,
-                                       self.wifi_network_pass, GEN_2G)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_ssid_quotes(self):
         """WiFi Tethering test: SSID name have quotes.
         1. Set SSID name have double quotes.
@@ -2024,4 +1899,58 @@ class TelLiveDataTest(TelephonyBaseTest):
                                           'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_switch_data_sim_2g(self):
+        """Switch Data SIM on 2G network.
+
+        Steps:
+        1. Data on default Data SIM.
+        2. Switch Data to another SIM. Make sure data is still available.
+        3. Switch Data back to previous SIM. Make sure data is still available.
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on Wifi
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad = self.android_devices[0]
+        current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+            current_data_sub_id)
+        if current_sim_slot_index == SIM1_SLOT_INDEX:
+            next_sim_slot_index = SIM2_SLOT_INDEX
+        else:
+            next_sim_slot_index = SIM1_SLOT_INDEX
+        next_data_sub_id = get_subid_from_slot_index(self.log, ad,
+            next_sim_slot_index)
+        self.log.info("Current Data is on subId: {}, SIM slot: {}".format(
+            current_data_sub_id, current_sim_slot_index))
+        if not ensure_network_generation_for_subscription(
+            self.log, ad, ad.droid.subscriptionGetDefaultDataSubId(), GEN_2G,
+            voice_or_data=NETWORK_SERVICE_DATA):
+            self.log.error("Device data does not attach to 2G.")
+            return False
+        if not verify_http_connection(self.log, ad):
+            self.log.error("No Internet access on default Data SIM.")
+            return False
+
+        self.log.info("Change Data to subId: {}, SIM slot: {}".format(
+            next_data_sub_id, next_sim_slot_index))
+        if not change_data_sim_and_verify_data(self.log, ad, next_sim_slot_index):
+            self.log.error("Failed to change data SIM.")
+            return False
+
+        next_data_sub_id = current_data_sub_id
+        next_sim_slot_index = current_sim_slot_index
+        self.log.info("Change Data back to subId: {}, SIM slot: {}".format(
+            next_data_sub_id, next_sim_slot_index))
+        if not change_data_sim_and_verify_data(self.log, ad, next_sim_slot_index):
+            self.log.error("Failed to change data SIM.")
+            return False
+
+        return True
         """ Tests End """

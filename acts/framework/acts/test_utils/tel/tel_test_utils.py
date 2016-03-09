@@ -211,6 +211,13 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
             return info['subscriptionId']
     return INVALID_SUB_ID
 
+def get_slot_index_from_subid(log, ad, sub_id):
+    try:
+        info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
+        return info['simSlotIndex']
+    except KeyError
+        return INVALID_SIM_SLOT_INDEX
+
 
 def get_num_active_sims(log, ad):
     """ Get the number of active SIM cards by counting slots
@@ -3240,6 +3247,44 @@ def get_call_uri(ad, call_id):
     except:
         return None
 
+def set_subid_for_outgoing_call(ad, sub_id):
+    """Set subId for outgoing voice call
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
+
+def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
+    """Set subId for data
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    # TODO: Need to check onSubscriptionChanged event. b/27843365
+    if ad.droid.subscriptionGetDefaultDataSubId() != sub_id:
+        ad.droid.subscriptionSetDefaultDataSubId(sub_id)
+        time.sleep(time_to_sleep)
+
+def set_subid_for_message(ad, sub_id):
+    """Set subId for outgoing message
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
 
 # TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
 class WifiUtils():
