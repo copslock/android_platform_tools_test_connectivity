@@ -21,6 +21,7 @@ import time
 from queue import Empty
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
@@ -30,6 +31,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
@@ -341,11 +343,13 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        # TODO: this is a temporary fix for this test case.
+        # A better fix will be introduced once pag/539845 is merged.
+        if not phone_setup_voice_general(self.log, ads[1]):
+            self.log.error("Failed to setup PhoneB.")
+            return False
+        if not ensure_network_generation(self.log, ads[0], GEN_4G):
+            self.log.error("DUT Failed to Set Up Properly.")
             return False
 
         return self._sms_test_mo(ads)
@@ -365,10 +369,13 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
+        # TODO: this is a temporary fix for this test case.
+        # A better fix will be introduced once pag/539845 is merged.
+        if not phone_setup_voice_general(self.log, ads[1]):
+            self.log.error("Failed to setup PhoneB.")
+            return False
+        if not ensure_network_generation(self.log, ads[0], GEN_4G):
+            self.log.error("DUT Failed to Set Up Properly.")
             return False
 
         return self._sms_test_mt(ads)
