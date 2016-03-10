@@ -174,17 +174,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "test_call_gsm_mo_hold_unhold",
             "test_call_gsm_mt_hold_unhold",
 
-            #SIM2 tests
-            "test_call_3g_to_3g_sim2",
-            "test_call_3g_to_3g_long_sim2",
-            "test_call_wcdma_mo_hold_unhold_sim2",
-            "test_call_wcdma_mt_hold_unhold_sim2",
-            "test_call_2g_to_2g_sim2",
-            "test_call_2g_to_2g_long_sim2",
-            "test_call_2g_to_3g_long_sim2",
-            "test_call_gsm_mo_hold_unhold_sim2",
-            "test_call_gsm_mt_hold_unhold_sim2",
-
             # long duration voice call (to measure drop rate)
             "test_call_long_duration_volte",
             "test_call_long_duration_wfc",
@@ -207,6 +196,52 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.long_duration_call_total_duration = DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION
 
     """ Tests Begin """
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_general(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA attached to voice network.
+        2. Make Sure PhoneB attached to voice network.
+        3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return two_phone_call_short_seq(
+            self.log, ads[0], None, None, ads[1], None, None)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_general(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA attached to voice network.
+        2. Make Sure PhoneB attached to voice network.
+        3. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
+        4. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return two_phone_call_short_seq(
+            self.log, ads[1], None, None, ads[0], None, None)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_to_volte(self):
@@ -1763,7 +1798,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -1849,7 +1884,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -1935,7 +1970,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -2021,7 +2056,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -2666,7 +2701,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -2710,7 +2745,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        ads[0].droid.telecomClearCallList()
+        ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
             self.log.error("Phone {} Call List is not empty."
                            .format(ads[0].serial))
@@ -2730,447 +2765,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         return True
-
-    #SIM2 tests
-    def _reset_subscriptions_to_sim1(self, ads):
-        set_call_state_listen_level(self.log, ads[0], False,
-                                    self.sim_sub_ids[0][1])
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, True)
-        ensure_network_generation_for_subscription(
-            self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
-        set_call_state_listen_level(self.log, ads[0], False,
-                                    self.sim_sub_ids[1][1])
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        setup_sim(self.log, ads[1], self.sim_sub_ids[1][0], True, True)
-        ensure_network_generation_for_subscription(
-            self.log, ads[1], self.sim_sub_ids[1][0], GEN_3G)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_3g_to_3g_sim2(self):
-        """ Test 3g<->3g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 3g mode.
-        Make Sure PhoneB is in 3g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_3g, (self.log, ads[0])),
-                     (phone_setup_3g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_short_seq(
-                self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
-                phone_idle_3g, is_phone_in_call_3g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_3g_to_3g_long_sim2(self):
-        """ Test 3g<->3g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 3g mode.
-        Make Sure PhoneB is in 3g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_3g, (self.log, ads[0])),
-                     (phone_setup_3g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_long_seq(
-                self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
-                phone_idle_3g, is_phone_in_call_3g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_wcdma_mo_hold_unhold_sim2(self):
-        """ Test VoLTE call hold/unhold functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 3g mode (WCDMA).
-        Make Sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, hold and unhold on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error(
-                    "Not GSM phone, abort this wcdma hold/unhold test.")
-                return False
-
-            tasks = [(phone_setup_3g, (self.log, ads[0])),
-                     (phone_setup_voice_general, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            ads[0].droid.telecomClearCallList()
-            if num_active_calls(self.log, ads[0]) != 0:
-                self.log.error("Phone {} Call List is not empty."
-                               .format(ads[0].serial))
-                return False
-
-            self.log.info("Begin MO Call Hold/Unhold Test.")
-            if not call_setup_teardown(self.log,
-                                       ads[0],
-                                       ads[1],
-                                       ad_hangup=None,
-                                       verify_caller_func=is_phone_in_call_3g,
-                                       verify_callee_func=None):
-                return False
-
-            if not self._hold_unhold_test(ads):
-                self.log.error("Hold/Unhold test fail.")
-                return False
-
-            return True
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_wcdma_mt_hold_unhold_sim2(self):
-        """ Test VoLTE call hold/unhold functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 3g mode (WCDMA).
-        Make Sure PhoneB is able to make/receive call.
-        Call from PhoneB to PhoneA, accept on PhoneA, hold and unhold on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error(
-                    "Not GSM phone, abort this wcdma hold/unhold test.")
-                return False
-
-            tasks = [(phone_setup_3g, (self.log, ads[0])),
-                     (phone_setup_voice_general, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            ads[0].droid.telecomClearCallList()
-            if num_active_calls(self.log, ads[0]) != 0:
-                self.log.error("Phone {} Call List is not empty."
-                               .format(ads[0].serial))
-                return False
-
-            self.log.info("Begin MO Call Hold/Unhold Test.")
-            if not call_setup_teardown(self.log,
-                                       ads[1],
-                                       ads[0],
-                                       ad_hangup=None,
-                                       verify_caller_func=None,
-                                       verify_callee_func=is_phone_in_call_3g):
-                return False
-
-            if not self._hold_unhold_test(ads):
-                self.log.error("Hold/Unhold test fail.")
-                return False
-
-            return True
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_3g_to_2g_long_sim2(self):
-        """ Test 3g<->2g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 3g mode.
-        Make Sure PhoneB is in 2g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
-                     (phone_setup_voice_2g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_long_seq(
-                self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
-                phone_idle_2g, is_phone_in_call_2g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_to_3g_long_sim2(self):
-        """ Test 2g<->3g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 2g mode.
-        Make Sure PhoneB is in 3g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                     (phone_setup_voice_3g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_long_seq(
-                self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
-                phone_idle_3g, is_phone_in_call_3g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_to_2g_sim2(self):
-        """ Test 2g<->2g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 2g mode.
-        Make Sure PhoneB is in 2g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                     (phone_setup_voice_2g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_short_seq(
-                self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
-                phone_idle_2g, is_phone_in_call_2g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_to_2g_long_sim2(self):
-        """ Test 2g<->2g call functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 2g mode.
-        Make Sure PhoneB is in 2g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                     (phone_setup_voice_2g, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            return two_phone_call_long_seq(
-                self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
-                phone_idle_2g, is_phone_in_call_2g, None)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_gsm_mo_hold_unhold_sim2(self):
-        """ Test GSM call hold/unhold functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 2g mode (GSM).
-        Make Sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, hold and unhold on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error(
-                    "Not GSM phone, abort this wcdma hold/unhold test.")
-                return False
-
-            tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                     (phone_setup_voice_general, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            ads[0].droid.telecomCallClearCallList()
-            if num_active_calls(self.log, ads[0]) != 0:
-                self.log.error("Phone {} Call List is not empty."
-                               .format(ads[0].serial))
-                return False
-
-            self.log.info("Begin MO Call Hold/Unhold Test.")
-            if not call_setup_teardown(self.log,
-                                       ads[0],
-                                       ads[1],
-                                       ad_hangup=None,
-                                       verify_caller_func=is_phone_in_call_2g,
-                                       verify_callee_func=None):
-                return False
-
-            if not self._hold_unhold_test(ads):
-                self.log.error("Hold/Unhold test fail.")
-                return False
-
-            return True
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_gsm_mt_hold_unhold_sim2(self):
-        """ Test GSM call hold/unhold functionality.
-
-        Set SIM2 as the default voice SIM
-        Make Sure PhoneA is in 2g mode (GSM).
-        Make Sure PhoneB is able to make/receive call.
-        Call from PhoneB to PhoneA, accept on PhoneA, hold and unhold on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True,
-                             True):
-                return False
-
-            # make sure PhoneA is GSM phone before proceed.
-            if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-                self.log.error(
-                    "Not GSM phone, abort this wcdma hold/unhold test.")
-                return False
-
-            tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                     (phone_setup_voice_general, (self.log, ads[1]))]
-            if not multithread_func(self.log, tasks):
-                self.log.error("Phone Failed to Set Up Properly.")
-                return False
-
-            ads[0].droid.telecomCallClearCallList()
-            if num_active_calls(self.log, ads[0]) != 0:
-                self.log.error("Phone {} Call List is not empty."
-                               .format(ads[0].serial))
-                return False
-
-            self.log.info("Begin MO Call Hold/Unhold Test.")
-            if not call_setup_teardown(self.log,
-                                       ads[1],
-                                       ads[0],
-                                       ad_hangup=None,
-                                       verify_caller_func=None,
-                                       verify_callee_func=is_phone_in_call_2g):
-                return False
-
-            if not self._hold_unhold_test(ads):
-                self.log.error("Hold/Unhold test fail.")
-                return False
-
-            return True
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
 
     def _test_call_long_duration(self, dut_incall_check_func,
                                  total_duration):
