@@ -20,6 +20,7 @@ import queue
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
+from acts import asserts
 from acts.controllers.android import SL4AAPIError
 
 WifiEnums = wutils.WifiEnums
@@ -65,7 +66,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             "actual_distance"
         )
         self.unpack_userparams(required_params)
-        self.assert_true(self.actual_distance >= 5,
+        asserts.assert_true(self.actual_distance >= 5,
             "Actual distance should be no shorter than 5 meters.")
         self.visible_networks = (
             self.vht80_5g,
@@ -124,7 +125,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             self.dut.droid.wifiRttStartRanging([rtt_params])
         except SL4AAPIError as e:
             e_str = str(e)
-            self.assert_true("IllegalArgumentException" in e_str,
+            asserts.assert_true("IllegalArgumentException" in e_str,
                 "Missing IllegalArgumentException in %s." % e_str)
             msg = "Got expected exception with invalid param %s." % rtt_params
             self.log.info(msg)
@@ -147,7 +148,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
                 results = event[0]["data"]["Results"]
                 result_len = len(results)
                 param_len = len(rtt_params)
-                self.assert_true(result_len == param_len,
+                asserts.assert_true(result_len == param_len,
                     "Expected %d results, got %d." % (param_len, result_len))
                 # Add acceptable margin of error to results, which will be used
                 # during result processing.
@@ -311,13 +312,13 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
             " the %d responses in successful callbacks, %s are invalid, %s has"
             " RTT values that are out of range.") % (
             len(events), aborted, failure, total, invalid, out_of_range))
-        self.assert_true(total > 0, "No RTT response received.")
+        asserts.assert_true(total > 0, "No RTT response received.")
         # Percentage of responses that are valid should be >= 90%.
         valid_total = float(total - invalid)
         valid_response_rate = valid_total / total
         self.log.info("%.2f%% of the responses are valid." % (
                       valid_response_rate * 100))
-        self.assert_true(valid_response_rate >= 0.9,
+        asserts.assert_true(valid_response_rate >= 0.9,
                          "Valid response rate is below 90%%.")
         # Among the valid responses, the percentage of having an in-range RTT
         # value should be >= 67%.
@@ -325,7 +326,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         self.log.info("%.2f%% of valid responses have in-range RTT value" % (
                       valid_value_rate * 100))
         msg = "In-range response rate is below 67%%."
-        self.assert_true(valid_value_rate >= 0.67, msg)
+        asserts.assert_true(valid_value_rate >= 0.67, msg)
 
     def scan_then_rtt_ranging_stress_logic(self, scan_func):
         """Test logic to scan then do rtt ranging based on the scan results.
@@ -432,32 +433,32 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         devices support device-to-ap RTT.
         """
         model = acts.utils.trim_model_name(self.dut.model)
-        self.assert_true(not self.dut.droid.wifiIsDeviceToDeviceRttSupported(),
+        asserts.assert_true(not self.dut.droid.wifiIsDeviceToDeviceRttSupported(),
             "Device to device is not supposed to be supported.")
         if any([model in m for m in self.support_models]):
-            self.assert_true(self.dut.droid.wifiIsDeviceToApRttSupported(),
+            asserts.assert_true(self.dut.droid.wifiIsDeviceToApRttSupported(),
                 "%s should support device-to-ap RTT." % model)
             self.log.info("%s supports device-to-ap RTT as expected." % model)
         else:
-            self.assert_true(not self.dut.droid.wifiIsDeviceToApRttSupported(),
+            asserts.assert_true(not self.dut.droid.wifiIsDeviceToApRttSupported(),
                 "%s should not support device-to-ap RTT." % model)
             self.log.info(("%s does not support device-to-ap RTT as expected."
                 ) % model)
-            self.abort_class("Device %s does not support RTT, abort." % model)
+            asserts.abort_class("Device %s does not support RTT, abort." % model)
         return True
 
     def test_capability_check(self):
         """Checks the capabilities params are reported as expected.
         """
         caps = self.dut.droid.wifiRttGetCapabilities()
-        self.assert_true(caps, "Unable to get rtt capabilities.")
+        asserts.assert_true(caps, "Unable to get rtt capabilities.")
         self.log.debug("Got rtt capabilities %s" % caps)
         model = acts.utils.trim_model_name(self.dut.model)
-        self.assert_true(model in self.rtt_cap_table, "Unknown model %s" % model)
+        asserts.assert_true(model in self.rtt_cap_table, "Unknown model %s" % model)
         expected_caps = self.rtt_cap_table[model]
         for k, v in expected_caps.items():
-            self.assert_true(k in caps, "%s missing in capabilities." % k)
-            self.assert_true(v == caps[k],
+            asserts.assert_true(k in caps, "%s missing in capabilities." % k)
+            asserts.assert_true(v == caps[k],
                 "Expected %s for %s, got %s." % (v, k, caps[k]))
         return True
 
@@ -478,7 +479,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         scan_results = self.dut.droid.wifiGetScanResults()
         self.log.debug(scan_results)
         for n in visible_networks:
-            self.assert_true(wutils.match_networks(n, scan_results),
+            asserts.assert_true(wutils.match_networks(n, scan_results),
                 "Network %s was not discovered properly." % n)
         return True
 
@@ -494,7 +495,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         p[RttParam.frequency] = self.vht80_5g[WifiEnums.frequency_key]
         p[RttParam.center_freq0] = self.vht80_5g[RttParam.center_freq0]
         results = self.get_rtt_results([p])
-        self.assert_true(results, "Did not get any result.")
+        asserts.assert_true(results, "Did not get any result.")
         self.log.info(pprint.pformat(results))
 
     def test_rtt_ranging_single_AP_stress(self):

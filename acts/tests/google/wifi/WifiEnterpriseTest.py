@@ -22,6 +22,8 @@ import acts.base_test
 import acts.signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 WifiEnums = wutils.WifiEnums
 
 # EAP Macros
@@ -159,7 +161,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             True if connection failed as expected, False otherwise.
         """
         verdict = wutils.eap_connect(config, ad)
-        self.assert_true(not verdict, "Connection should have failed.")
+        asserts.assert_true(not verdict, "Connection should have failed.")
         self.log.info("Connection failed as expected.")
         return True
 
@@ -344,7 +346,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=self.gen_eap_test_name)
         msg = ("The following configs failed EAP connect test: %s" %
                pprint.pformat(failed))
-        self.assert_true(len(failed) == 0, msg)
+        asserts.assert_true(len(failed) == 0, msg)
 
     @acts.signals.generated_test
     def test_eap_connect_negative(self):
@@ -371,7 +373,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=name_gen)
         msg = ("The following configs failed negative EAP connect test: %s" %
                pprint.pformat(failed))
-        self.assert_true(len(failed) == 0, msg)
+        asserts.assert_true(len(failed) == 0, msg)
 
     @acts.signals.generated_test
     def test_passpoint_connect(self):
@@ -391,7 +393,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             Successful connection and Internet access through the enterprise
             networks with passpoint support.
         """
-        self.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
+        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
             "Passpoint is not supported on device %s" % self.dut.model)
         passpoint_configs = self.gen_passpoint_configs()
         self.log.info("Testing %d different configs." % len(passpoint_configs))
@@ -403,7 +405,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=self.gen_passpoint_test_name)
         msg = ("The following configs failed passpoint connect test: %s" %
                pprint.pformat(failed))
-        self.assert_true(len(failed) == 0, msg)
+        asserts.assert_true(len(failed) == 0, msg)
 
     @acts.signals.generated_test
     def test_passpoint_connect_negative(self):
@@ -416,7 +418,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         Expect:
             Fail to establish connection.
         """
-        self.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
+        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
             "Passpoint is not supported on device %s" % self.dut.model)
         neg_passpoint_configs = self.gen_negative_passpoint_configs()
         self.log.info("Testing %d different configs." % len(neg_passpoint_configs))
@@ -432,4 +434,4 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=name_gen)
         msg = ("The following configs failed negative passpoint connect test: "
                "%s") % pprint.pformat(failed)
-        self.assert_true(len(failed) == 0, msg)
+        asserts.assert_true(len(failed) == 0, msg)
