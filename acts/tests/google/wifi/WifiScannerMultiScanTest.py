@@ -20,6 +20,8 @@ import time
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 WifiChannelUS = wutils.WifiChannelUS
 WifiEnums = wutils.WifiEnums
 
@@ -198,7 +200,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        self.assert_true(self.dut.droid.wifiIsScannerSupported(),
+        asserts.assert_true(self.dut.droid.wifiIsScannerSupported(),
             "Device %s doesn't support WifiScanner, abort." % self.dut.model)
 
         """ Setup the required dependencies and fetch the user params from
@@ -236,7 +238,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
 
     def validate_scan_results(self, scan_results_dict):
         # Sanity check to make sure the dict is not empty
-        self.assert_true(scan_results_dict, "Scan result dict is empty.")
+        asserts.assert_true(scan_results_dict, "Scan result dict is empty.")
         for scan_result_obj in scan_results_dict.values():
             # Validate the results received for each scan setting
             scan_result_obj.check_scan_results()
@@ -265,7 +267,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
                     self.log.debug("Event received: {}".format(event))
                     # Event name is the key to the scan results dictionary
                     actual_event_name = event["name"]
-                    self.assert_true(actual_event_name in scan_results_dict,
+                    asserts.assert_true(actual_event_name in scan_results_dict,
                         ("Expected one of these event names: %s, got '%s'."
                         ) % (scan_results_dict.keys(), actual_event_name))
 
@@ -286,7 +288,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
                 if have_enough_events:
                   break
         except queue.Empty:
-            self.fail("Event did not trigger for {} in {} seconds".
+            asserts.fail("Event did not trigger for {} in {} seconds".
                       format(event_name, event_wait_time))
 
 

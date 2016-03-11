@@ -18,6 +18,8 @@ import time
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 WifiEnums = wutils.WifiEnums
 WifiEventNames = wutils.WifiEventNames
 
@@ -121,7 +123,7 @@ class WifiPnoTest(acts.base_test.BaseTestClass):
             network = {}
             network[WifiEnums.SSID_KEY] = ssid_name_base + str(i)
             network[WifiEnums.PWD_KEY] = "pno_dummy";
-            self.assert_true(self.dut.droid.wifiAddNetwork(network) != -1,
+            asserts.assert_true(self.dut.droid.wifiAddNetwork(network) != -1,
                 "Add network %r failed" % network)
 
     """ Tests Begin """
@@ -141,10 +143,10 @@ class WifiPnoTest(acts.base_test.BaseTestClass):
            a few seconds to trigger PNO.
         9. Check the device connected to network a automatically.
         """
-        self.assert_true(
+        asserts.assert_true(
             self.dut.droid.wifiAddNetwork(self.pno_network_a) != -1,
             "Add network %r failed" % self.pno_network_a)
-        self.assert_true(
+        asserts.assert_true(
             self.dut.droid.wifiAddNetwork(self.pno_network_b) != -1,
             "Add network %r failed" % self.pno_network_b)
         self.set_attns("a_on_b_off")
