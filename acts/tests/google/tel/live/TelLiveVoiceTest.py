@@ -2457,6 +2457,33 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_3g)
 
     @TelephonyBaseTest.tel_test_wrap
+    def test_voicemail_indicator_2g(self):
+        """Test Voice Mail notification in 2G
+        This script currently only works for TMO/ATT/SPT now.
+
+        1. Make sure DUT (ads[0]) in 2G mode. Both PhoneB (ads[1]) and DUT idle.
+        2. Make call from PhoneB to DUT, reject on DUT.
+        3. On PhoneB, leave a voice mail to DUT.
+        4. Verify DUT receive voice mail notification.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_2g, (self.log, ads[0]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
+            self.log.error("Failed to clear voice mail.")
+            return False
+
+        return two_phone_call_leave_voice_mail(self.log, ads[1], None, None,
+                                               ads[0], phone_idle_2g)
+
+    @TelephonyBaseTest.tel_test_wrap
     def test_voicemail_indicator_iwlan(self):
         """Test Voice Mail notification in WiFI Calling
         This script currently only works for TMO now.
