@@ -21,6 +21,8 @@ except ImportError:
 
 import logging
 import os
+import shutil
+import tempfile
 import unittest
 
 from acts import base_test
@@ -107,6 +109,16 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     under acts.controllers.android_device.
     """
 
+    def setUp(self):
+        """Creates a temp dir to be used by tests in this test class.
+        """
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        """Removes the temp dir.
+        """
+        shutil.rmtree(self.tmp_dir)
+
     # Tests for android_device module functions.
     # These tests use mock AndroidDevice instances.
 
@@ -122,14 +134,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             android_device.create([], logging)
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             android_device.create("HAHA", logging)
 
     def test_get_device_success_with_serial(self):
@@ -153,16 +165,16 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads = get_mock_ads(5)
         expected_msg = ("Could not find a target device that matches condition"
                         ": {'serial': 5}.")
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             ad = android_device.get_device(ads, serial=len(ads))
 
     def test_get_device_too_many_matches(self):
         ads = get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
         expected_msg = "More than one device matched: \[0, 0\]"
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             ad = android_device.get_device(ads, serial=target_serial)
 
     # Tests for android_device.AndroidDevice class.
@@ -223,8 +235,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* does not have an ongoing adb logcat"
                         " collection.")
         # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
@@ -241,8 +253,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* already has an adb logcat thread "
                         "going on. Cannot start another one.")
         # Expect error if start is called back to back.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             ad.start_adb_logcat()
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
@@ -251,7 +263,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
-    @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
     @mock.patch('acts.logger.get_log_line_timestamp',
@@ -260,7 +271,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                        mock_timestamp_getter,
                                        stop_proc_mock,
                                        start_proc_mock,
-                                       creat_dir_mock,
                                        MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
@@ -272,31 +282,24 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         # Expect error if attempted to cat adb log before starting adb logcat.
         expected_msg = ("Attempting to cat adb log when none has been "
                         "collected on Android device .*")
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_regex=expected_msg):
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
             ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        # Start adb logcat.
         ad.start_adb_logcat()
-        # Mock file operations within cat_adb_log.
-        file_context = mock.mock_open(read_data=MOCK_ADB_LOGCAT)
-        with mock.patch("builtins.open", file_context):
-            ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        # Verify open was called with the correct params.
-        expected_outfile = os.path.join(ad.log_path, "AdbLogExcerpts",
-                                        "some_test,%s,%s,%s.txt" % (
-                                            MOCK_ADB_LOGCAT_BEGIN_TIME,
-                                            ad.model,
-                                            ad.serial))
-        expected_infile = os.path.join(ad.log_path,
-                                       "adblog,%s,%s.txt" % (ad.model,
-                                                             ad.serial))
-        file_context.assert_any_call(expected_outfile, 'w', encoding='utf-8')
-        file_context.assert_any_call(expected_infile, 'r', errors='replace',
-                                     encoding='utf-8')
-        # Verify the output of the cat is correct.
-        fm = file_context()
-        fm.write.assert_any_call(MOCK_ADB_LOGCAT_CAT_RESULT[0])
-        fm.write.assert_any_call(MOCK_ADB_LOGCAT_CAT_RESULT[1])
+        # Direct the log path of the ad to a temp dir to avoid racing.
+        ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
+        mock_adb_log_path = os.path.join(ad.log_path, "adblog,%s,%s.txt" %
+                                         (ad.model, ad.serial))
+        with open(mock_adb_log_path, 'w') as f:
+            f.write(MOCK_ADB_LOGCAT)
+        ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
+        cat_file_path = os.path.join(ad.log_path,
+                                     "AdbLogExcerpts",
+                                     ("some_test,02-29 14:02:20.123,%s,%s.txt"
+                                     ) % (ad.model, ad.serial))
+        with open(cat_file_path, 'r') as f:
+            actual_cat = f.read()
+        self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
 
