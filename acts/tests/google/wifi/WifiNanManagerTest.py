@@ -20,6 +20,8 @@ import acts.base_test as base_test
 import acts.controllers.android_device as android_device
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 ON_MATCH = "WifiNanSessionOnMatch"
 ON_MESSAGE_RX = "WifiNanSessionOnMessageReceived"
@@ -105,7 +107,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             event = self.publisher.ed.pop_event(ON_IDENTITY_CHANGED, 30)
             self.log.info('%s: %s' % (ON_IDENTITY_CHANGED, event['data']))
         except queue.Empty:
-            self.fail('Timed out while waiting for %s on Publisher' %
+            asserts.fail('Timed out while waiting for %s on Publisher' %
                       ON_IDENTITY_CHANGED)
         self.log.debug(event)
 
@@ -113,7 +115,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             event = self.subscriber.ed.pop_event(ON_IDENTITY_CHANGED, 30)
             self.log.info('%s: %s' % (ON_IDENTITY_CHANGED, event['data']))
         except queue.Empty:
-            self.fail('Timed out while waiting for %s on Subscriber' %
+            asserts.fail('Timed out while waiting for %s on Subscriber' %
                       ON_IDENTITY_CHANGED)
         self.log.debug(event)
 
@@ -124,10 +126,10 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             event = self.subscriber.ed.pop_event(ON_MATCH, 30)
             self.log.info('%s: %s' % (ON_MATCH, event['data']))
         except queue.Empty:
-            self.fail('Timed out while waiting for %s on Subscriber' % ON_MATCH)
+            asserts.fail('Timed out while waiting for %s on Subscriber' % ON_MATCH)
         self.log.debug(event)
 
-        self.assert_true(self.reliable_tx(self.subscriber,
+        asserts.assert_true(self.reliable_tx(self.subscriber,
                                           event['data']['peerId'],
                                           sub2pub_msg),
                          "Failed to transmit from subscriber")
@@ -135,13 +137,13 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         try:
             event = self.publisher.ed.pop_event(ON_MESSAGE_RX, 10)
             self.log.info('%s: %s' % (ON_MESSAGE_RX, event['data']))
-            self.assert_true(event['data']['messageAsString'] == sub2pub_msg,
+            asserts.assert_true(event['data']['messageAsString'] == sub2pub_msg,
                              "Subscriber -> publisher message corrupted")
         except queue.Empty:
-            self.fail('Timed out while waiting for %s on publisher' %
+            asserts.fail('Timed out while waiting for %s on publisher' %
                       ON_MESSAGE_RX)
 
-        self.assert_true(self.reliable_tx(self.publisher,
+        asserts.assert_true(self.reliable_tx(self.publisher,
                                           event['data']['peerId'],
                                           pub2sub_msg),
                          "Failed to transmit from publisher")
@@ -149,8 +151,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         try:
             event = self.subscriber.ed.pop_event(ON_MESSAGE_RX, 10)
             self.log.info('%s: %s' % (ON_MESSAGE_RX, event['data']))
-            self.assert_true(event['data']['messageAsString'] == pub2sub_msg,
+            asserts.assert_true(event['data']['messageAsString'] == pub2sub_msg,
                              "Publisher -> subscriber message corrupted")
         except queue.Empty:
-            self.fail('Timed out while waiting for %s on subscriber' %
+            asserts.fail('Timed out while waiting for %s on subscriber' %
                       ON_MESSAGE_RX)
