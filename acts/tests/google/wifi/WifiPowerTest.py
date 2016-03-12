@@ -17,6 +17,7 @@
 import os
 
 import acts.base_test
+from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -68,7 +69,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.mon.set_max_current(7.8)
         self.dut = self.android_devices[0]
         self.mon.attach_device(self.dut)
-        self.assert_true(self.mon.usb("auto"),
+        asserts.assert_true(self.mon.usb("auto"),
                          "Failed to turn USB mode to auto on monsoon.")
         required_userparam_names = (
             # These two params should follow the format of
@@ -101,7 +102,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
                                         self.duration,
                                         tag=tag,
                                         offset=self.offset)
-        self.assert_true(result, "Got empty measurement data set in %s." % tag)
+        asserts.assert_true(result, "Got empty measurement data set in %s." % tag)
         self.log.info(repr(result))
         data_path = os.path.join(self.mon_data_path, "%s.txt" % tag)
         monsoon.MonsoonData.save_to_text_file([result], data_path)
@@ -110,25 +111,25 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         result_extra = {"Average Current": actual_current_str}
         if self.threshold:
             model = utils.trim_model_name(self.dut.model)
-            self.assert_true(tag in self.threshold[model],
+            asserts.assert_true(tag in self.threshold[model],
                              "Acceptance threshold for %s is missing" % tag,
                              extras=result_extra)
             acceptable_threshold = self.threshold[model][tag]
-            self.assert_true(actual_current < acceptable_threshold,
+            asserts.assert_true(actual_current < acceptable_threshold,
                              ("Measured average current for %s - %s - is "
                               "higher than acceptable threshold %.2f.") % (
                               tag, actual_current_str, acceptable_threshold),
                               extras=result_extra)
-        self.explicit_pass("Measurement finished for %s." % tag,
+        asserts.explicit_pass("Measurement finished for %s." % tag,
                            extras=result_extra)
 
     def test_power_wifi_off(self):
-        self.assert_true(wutils.wifi_toggle_state(self.dut, False),
+        asserts.assert_true(wutils.wifi_toggle_state(self.dut, False),
                          "Failed to toggle wifi off.")
         self.measure_and_process_result()
 
     def test_power_wifi_on_idle(self):
-        self.assert_true(wutils.wifi_toggle_state(self.dut, True),
+        asserts.assert_true(wutils.wifi_toggle_state(self.dut, True),
                          "Failed to toggle wifi on.")
         self.measure_and_process_result()
 
