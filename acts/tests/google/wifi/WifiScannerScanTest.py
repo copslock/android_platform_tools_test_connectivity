@@ -18,6 +18,7 @@ import itertools
 from queue import Empty
 import threading, time, traceback
 
+from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.utils import load_config
 from acts.test_utils.wifi.wifi_test_utils import get_scan_time_and_channels
@@ -50,7 +51,7 @@ class WifiScannerScanTest(BaseTestClass):
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        self.failed_scan_settings = None
+        asserts.failed_scan_settings = None
         # A list of all test cases to be executed in this class.
         self.tests = (
             "test_available_channels_generated",
@@ -95,7 +96,7 @@ class WifiScannerScanTest(BaseTestClass):
         self.unpack_userparams(req_params)
         self.log.debug("Run extended test: {}".format(self.run_extended_test))
         self.wifi_chs = WifiChannelUS(self.dut.model)
-        self.assert_true(self.dut.droid.wifiIsScannerSupported(),
+        asserts.assert_true(self.dut.droid.wifiIsScannerSupported(),
             "Device %s doesn't support WifiScanner, abort." % self.dut.model)
         self.attenuators[0].set_atten(0)
         self.attenuators[1].set_atten(0)
@@ -273,21 +274,21 @@ class WifiScannerScanTest(BaseTestClass):
                                                           results, scan_rt,
                                                           event["data"][KEY_RET],
                                                           scan_setting)
-                self.assert_true(len(results) == 1,
+                asserts.assert_true(len(results) == 1,
                                  "Test fail because number of scan result {}"
                                  .format(len(results)))
-                self.assert_true(bssids > 0, EMPTY_RESULT)
-                self.assert_true(validity, INVALID_RESULT)
+                asserts.assert_true(bssids > 0, EMPTY_RESULT)
+                asserts.assert_true(validity, INVALID_RESULT)
                 self.log.info("Scan number Buckets: {}\nTotal BSSID: {}".
                               format(len(results), bssids))
         except Empty as error:
-            self.assert_true(result_received >= 1,
+            asserts.assert_true(result_received >= 1,
                              "Event did not triggered for single shot {}".
                              format(error))
         finally:
             self.dut.droid.wifiScannerStopScan(idx)
             #For single shot number of result received and length of result should be one
-            self.assert_true(result_received == 1,
+            asserts.assert_true(result_received == 1,
                              "Test fail because received result {}".
                              format(result_received))
 
@@ -325,11 +326,11 @@ class WifiScannerScanTest(BaseTestClass):
                                                 event["data"]["Results"], scan_rt,
                                                 event["data"][KEY_RET],
                                                 scan_setting))
-            self.assert_true(bssids > 0, EMPTY_RESULT)
-            self.assert_true(validity, INVALID_RESULT)
+            asserts.assert_true(bssids > 0, EMPTY_RESULT)
+            asserts.assert_true(validity, INVALID_RESULT)
             event_name = "{}{}onFullResult".format(EVENT_TAG, idx)
             results = self.pop_scan_result_events(event_name)
-            self.assert_true(len(results) >= bssids,
+            asserts.assert_true(len(results) >= bssids,
                              "Full single shot result don't match {}".
                              format(len(results)))
         except Empty as error:
@@ -378,11 +379,11 @@ class WifiScannerScanTest(BaseTestClass):
                                                       scan_setting)
                 event_name = "{}{}onFullResult".format(EVENT_TAG, idx)
                 results = self.pop_scan_result_events(event_name)
-                self.assert_true(len(results) >= bssids,
+                asserts.assert_true(len(results) >= bssids,
                                  "Full single shot result don't match {}".
                                  format(len(results)))
-                self.assert_true(bssids > 0, EMPTY_RESULT)
-                self.assert_true(validity, INVALID_RESULT)
+                asserts.assert_true(bssids > 0, EMPTY_RESULT)
+                asserts.assert_true(validity, INVALID_RESULT)
         except Empty as error:
              raise AssertionError("Event did not triggered for batch scan {}".
                                   format(error))
@@ -443,11 +444,11 @@ class WifiScannerScanTest(BaseTestClass):
                                                           scan_setting))
                 self.log.info("Scan number: {}\n Buckets: {}\n  BSSID: {}".
                               format(snumber, len(results), bssids))
-                self.assert_true(len(results) == number_bucket,
+                asserts.assert_true(len(results) == number_bucket,
                                      "Test fail because number_bucket {}".
                                      format(len(results)))
-                self.assert_true(bssids >= 1, EMPTY_RESULT)
-                self.assert_true(validity, INVALID_RESULT)
+                asserts.assert_true(bssids >= 1, EMPTY_RESULT)
+                asserts.assert_true(validity, INVALID_RESULT)
                 if snumber%2 == 1 and check_get_result :
                     self.log.info("Get Scan result using GetScanResult API")
                     time.sleep(wait_time/number_bucket)
@@ -461,8 +462,8 @@ class WifiScannerScanTest(BaseTestClass):
                                                           scan_setting))
                         self.log.info("Got Scan result number: {} BSSID: {}".
                                       format(snumber, bssids))
-                        self.assert_true(bssids >= 1, EMPTY_RESULT)
-                        self.assert_true(validity, INVALID_RESULT)
+                        asserts.assert_true(bssids >= 1, EMPTY_RESULT)
+                        asserts.assert_true(validity, INVALID_RESULT)
                     else:
                         self.log.error("Error while fetching the scan result")
         except Empty as error:
@@ -519,7 +520,7 @@ class WifiScannerScanTest(BaseTestClass):
         self.log.debug(band)
         self.log.debug(r)
         expected = self.wifi_chs.band_to_freq(band)
-        self.assert_true(set(r) == set(expected),
+        asserts.assert_true(set(r) == set(expected),
                          "Band {} failed. Expected {}, got {}".
                          format(band, expected, r))
 
@@ -555,7 +556,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(
                                 self.check_get_available_channels_with_one_band,
                                 bands, name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          "Number of test_get_channel_band failed {}".
                          format(len(failed)))
 
@@ -581,7 +582,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_single_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_single_scan_report_each_scan_for_channels"
                           " failed {}").format(len(failed)))
 
@@ -607,7 +608,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_single_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_single_scan_report_each_scan_for_band"
                           " failed {}").format(len(failed)))
 
@@ -634,7 +635,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_buffer_full_for_channels"
                           " failed {}").format(len(failed)))
 
@@ -661,7 +662,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_buffer_full_for_band"
                           " failed {}").format(len(failed)))
 
@@ -688,7 +689,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_each_scan_for_channels"
                           " failed {}").format(len(failed)))
 
@@ -715,7 +716,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_each_scan_for_band"
                           " failed {}").format(len(failed)))
 
@@ -738,7 +739,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_single_scan_full,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_single_scan_report_full_scan_for_channels"
                           " failed {}").format(len(failed)))
 
@@ -761,7 +762,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_single_scan_full,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_single_scan_report_full_scan_for_band"
                           " failed {}").format(len(failed)))
 
@@ -785,7 +786,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan_full,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_full_scan_for_channels"
                           " failed {}").format(len(failed)))
 
@@ -809,7 +810,7 @@ class WifiScannerScanTest(BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan_full,
                                               scan_settings,
                                               name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          ("Number of test_batch_scan_report_full_scan_for_band"
                           " failed {}").format(len(failed)))
 
@@ -826,9 +827,9 @@ class WifiScannerScanTest(BaseTestClass):
         idx = data["Index"]
         scan_rt = data["ScanElapsedRealtime"]
         self.log.info("Wifi single shot scan started with index: {}".format(idx))
-        self.assert_true(self.connect_to_reference_network(), NETWORK_ERROR)
+        asserts.assert_true(self.connect_to_reference_network(), NETWORK_ERROR)
         time.sleep(10) #wait for connection to be active
-        self.assert_true(check_internet_connection(self.dut, self.ping_addr),
+        asserts.assert_true(check_internet_connection(self.dut, self.ping_addr),
                          "Error, No internet connection for current network")
         #generating event wait time from scan setting plus leeway
         scan_time, scan_channels = get_scan_time_and_channels(self.wifi_chs,
@@ -849,7 +850,7 @@ class WifiScannerScanTest(BaseTestClass):
                                                       self.default_scan_setting)
             self.log.info("Scan number Buckets: {}\nTotal BSSID: {}".
                                                     format(len(results), bssids))
-            self.assert_true(len(results) == 1 and bssids >= 1, EMPTY_RESULT)
+            asserts.assert_true(len(results) == 1 and bssids >= 1, EMPTY_RESULT)
         except Empty as error:
             raise AssertionError("Event did not triggered for single scan {}".
                                  format(error))
@@ -867,8 +868,8 @@ class WifiScannerScanTest(BaseTestClass):
         self.log.info("Check connection through PNO for reference network")
         current_network = self.dut.droid.wifiGetConnectionInfo()
         self.log.info("Current network: {}".format(current_network))
-        self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
-        self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
+        asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
+        asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
         self.log.info("Kicking PNO for reference network")
         self.attenuators[self.connect_network["attenuator"]].set_atten(90)
         time.sleep(10) #wait for PNO to be kicked
@@ -879,10 +880,10 @@ class WifiScannerScanTest(BaseTestClass):
         time.sleep(30) #wait for connection through PNO
         current_network = self.dut.droid.wifiGetConnectionInfo()
         self.log.info("Current network: {}".format(current_network))
-        self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
-        self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
+        asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
+        asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
         time.sleep(10) #wait for IP to be assigned
-        self.assert_true(check_internet_connection(self.dut, self.ping_addr),
+        asserts.assert_true(check_internet_connection(self.dut, self.ping_addr),
                          "Error, No internet connection for current network")
         wifi_forget_network(self.dut, self.connect_network["ssid"])
 
@@ -934,13 +935,13 @@ class WifiScannerScanTest(BaseTestClass):
                                                self.default_batch_scan_setting)
             self.log.info("Scan number: {}\n Buckets: {}\n BSSID: {}".
                                          format(snumber, len(results), bssids))
-            self.assert_true(bssids >= 1, "Not able to fetch scan result")
+            asserts.assert_true(bssids >= 1, "Not able to fetch scan result")
             if snumber == 1:
                 self.log.info("Try to connect AP while waiting for event: {}".
                               format(event_name ))
-                self.assert_true(self.connect_to_reference_network(), NETWORK_ERROR)
+                asserts.assert_true(self.connect_to_reference_network(), NETWORK_ERROR)
                 time.sleep(10) #wait for connection to be active
-                self.assert_true(check_internet_connection(self.dut, self.ping_addr),
+                asserts.assert_true(check_internet_connection(self.dut, self.ping_addr),
                                  "Error, No internet connection for current network")
             elif snumber == 3:
                 self.log.info("Kicking PNO for reference network")
@@ -949,8 +950,8 @@ class WifiScannerScanTest(BaseTestClass):
                 self.log.info("Bring back device for PNO connection")
                 current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
-                self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
-                self.assert_true(current_network['network_id'] == -1,
+                asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
+                asserts.assert_true(current_network['network_id'] == -1,
                                  "Device is still connected to network  {}".
                                  format(current_network[WifiEnums.SSID_KEY]))
                 self.attenuators[self.connect_network["attenuator"]].set_atten(0)
@@ -959,10 +960,10 @@ class WifiScannerScanTest(BaseTestClass):
                 self.log.info("Check connection through PNO for reference network")
                 current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
-                self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
-                self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
+                asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
+                asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
                 time.sleep(10) #wait for connection to be active
-                self.assert_true(check_internet_connection(self.dut, self.ping_addr),
+                asserts.assert_true(check_internet_connection(self.dut, self.ping_addr),
                                  "Error, No internet connection for current network")
                 wifi_forget_network(self.dut, self.connect_network["ssid"])
         except Empty as error:
@@ -1041,7 +1042,7 @@ class WifiScannerScanTest(BaseTestClass):
                                                       self.default_scan_setting))
             self.log.info("Scan number Buckets: {}\nTotal BSSID: {}".
                           format(len(results), bssids))
-            self.assert_true(bssids == 0, ("Test fail because report scan "
+            asserts.assert_true(bssids == 0, ("Test fail because report scan "
                                               "results reported are not empty"))
         except Empty as error:
             raise AssertionError("Event did not triggered for in isolated environment {}".

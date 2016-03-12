@@ -21,6 +21,8 @@ import acts.base_test
 import acts.signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 WifiEnums = wutils.WifiEnums
 
 # EAP Macros
@@ -197,7 +199,7 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
         self.set_attns("a_on_b_off")
-        self.assert_true(
+        asserts.assert_true(
             wutils.eap_connect(config, self.dut, validate_con=False),
             "Failed to connect to %s" % config
             )
@@ -220,5 +222,5 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
             name_func=self.gen_eap_roaming_test_name)
         msg = ("The following configs failed enterprise roaming test: %s" %
                pprint.pformat(failed))
-        self.assert_true(len(failed) == 0, msg)
+        asserts.assert_true(len(failed) == 0, msg)
     """ Tests End """

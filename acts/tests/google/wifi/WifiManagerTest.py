@@ -23,6 +23,8 @@ import acts.base_test
 import acts.signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
+
 WifiEnums = wutils.WifiEnums
 WifiEventNames = wutils.WifiEventNames
 
@@ -39,9 +41,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             "energy_info_models"
             )
         self.unpack_userparams(req_params)
-        self.assert_true(len(self.iot_networks) > 0,
+        asserts.assert_true(len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
-        self.assert_true(wutils.wifi_toggle_state(self.dut, True),
+        asserts.assert_true(wutils.wifi_toggle_state(self.dut, True),
             "Failed to turn on wifi before tests.")
         self.iot_networks = self.iot_networks + [self.open_network]
         self.iperf_server = self.iperf_servers[0]
@@ -84,7 +86,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             ed.clear_all_events()
             wutils.start_wifi_connection_scan(ad)
             droid.wifiStartTrackingStateChange()
-            self.assert_true(droid.wifiConnect(network),
+            asserts.assert_true(droid.wifiConnect(network),
                 "wifi connect returned false.")
             connect_result = ed.pop_event(WifiEventNames.WIFI_CONNECTED)
             self.log.debug(connect_result)
@@ -125,10 +127,10 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
     def test_toggle_state(self):
         """Test toggling wifi"""
         self.log.debug("Going from on to off.")
-        self.assert_true(wutils.wifi_toggle_state(self.dut, False),
+        asserts.assert_true(wutils.wifi_toggle_state(self.dut, False),
                          "Failed to turn wifi off.")
         self.log.debug("Going from off to on.")
-        self.assert_true(wutils.wifi_toggle_state(self.dut, True),
+        asserts.assert_true(wutils.wifi_toggle_state(self.dut, True),
                          "Failed to turn wifi on.")
 
     def test_toggle_with_screen(self):
@@ -140,11 +142,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         time.sleep(wait_time)
         self.log.debug("Going from on to off.")
         try:
-            self.assert_true(wutils.wifi_toggle_state(self.dut, False),
+            asserts.assert_true(wutils.wifi_toggle_state(self.dut, False),
                              "Failed to turn wifi off.")
             time.sleep(wait_time)
             self.log.debug("Going from off to on.")
-            self.assert_true(wutils.wifi_toggle_state(self.dut, True),
+            asserts.assert_true(wutils.wifi_toggle_state(self.dut, True),
                              "Failed to turn wifi on.")
         finally:
             self.dut.droid.wakeLockRelease()
@@ -160,19 +162,19 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.log.debug("Scan results: %s" % wifi_results)
         ssid = self.open_network[WifiEnums.SSID_KEY]
         condition = {WifiEnums.SSID_KEY: ssid}
-        self.assert_true(wutils.match_networks(condition, wifi_results),
+        asserts.assert_true(wutils.match_networks(condition, wifi_results),
                          "Can not find expected network %s" % ssid)
 
     def test_add_network(self):
         """Test wifi connection scan."""
         ssid = self.open_network[WifiEnums.SSID_KEY]
         nId = self.dut.droid.wifiAddNetwork(self.open_network)
-        self.assert_true(nId > -1, "Failed to add network.")
+        asserts.assert_true(nId > -1, "Failed to add network.")
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug(("Configured networks after adding: %s" %
                         configured_networks))
         condition = {WifiEnums.SSID_KEY: ssid}
-        self.assert_true(wutils.match_networks(condition, configured_networks),
+        asserts.assert_true(wutils.match_networks(condition, configured_networks),
                          ("Could not find expected network %s in configured "
                           "networks.") % ssid)
 
@@ -182,7 +184,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         wutils.wifi_forget_network(self.dut, ssid)
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         for nw in configured_networks:
-            self.assert_true(nw[WifiEnums.BSSID_KEY] != ssid,
+            asserts.assert_true(nw[WifiEnums.BSSID_KEY] != ssid,
                 "Found forgotten network %s in configured networks." % ssid)
 
     @acts.signals.generated_test
@@ -193,17 +195,17 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.connect_to_wifi_network_with_password,
             params,
             name_func=name_gen)
-        self.assert_true(not failed, "Failed ones: {}".format(failed))
+        asserts.assert_true(not failed, "Failed ones: {}".format(failed))
 
     def test_tdls_supported(self):
         model = acts.utils.trim_model_name(self.dut.model)
         self.log.debug("Model is %s" % model)
         if model in self.tdls_models:
-            self.assert_true(self.dut.droid.wifiIsTdlsSupported(),
+            asserts.assert_true(self.dut.droid.wifiIsTdlsSupported(),
                              ("TDLS should be supported on %s, but device is "
                               "reporting not supported.") % model)
         else:
-            self.assert_true(not self.dut.droid.wifiIsTdlsSupported(),
+            asserts.assert_true(not self.dut.droid.wifiIsTdlsSupported(),
                              ("TDLS should not be supported on %s, but device "
                               "is reporting supported.") % model)
 
@@ -226,9 +228,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         expected_support = model in self.energy_info_models
         msg = "Expect energy info support to be %s on %s, got %s." % (
               expected_support, model, actual_support)
-        self.assert_true(actual_support == expected_support, msg)
+        asserts.assert_true(actual_support == expected_support, msg)
         if not actual_support:
-            self.skip(("Device %s does not support energy info reporting as "
+            asserts.skip(("Device %s does not support energy info reporting as "
                        "expected.") % model)
         # Verify reported values don't decrease.
         self.log.info(("Device %s supports energy info reporting, verify that "
@@ -240,11 +242,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.log.debug("Iteration %d, got energy info: %s" % (i, info))
             new_energy = info["ControllerEnergyUsed"]
             new_idle_time = info["ControllerIdleTimeMillis"]
-            self.assert_true(new_energy >= energy,
+            asserts.assert_true(new_energy >= energy,
                 "Energy value decreased: previous %d, now %d" % (energy,
                     new_energy))
             energy = new_energy
-            self.assert_true(new_idle_time >= idle_time,
+            asserts.assert_true(new_idle_time >= idle_time,
                 "Idle time decreased: previous %d, now %d" % (idle_time,
                     new_idle_time))
             idle_time = new_idle_time
