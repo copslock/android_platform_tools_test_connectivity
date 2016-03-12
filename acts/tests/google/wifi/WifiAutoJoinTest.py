@@ -16,6 +16,7 @@
 
 import time
 
+from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi.wifi_test_utils import wifi_forget_network
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
@@ -108,8 +109,8 @@ class WifiAutoJoinTest(BaseTestClass):
                 time.sleep(wait_time)
                 current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
-                self.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
-                self.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
+                asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
+                asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
                 self.ip_address = self.dut.droid.wifiGetConfigFile();
                 self.log.info("IP info: {}".format(self.ip_address))
             finally:
@@ -147,10 +148,10 @@ class WifiAutoJoinTest(BaseTestClass):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
-            self.assert_true(self.check_connection(bssid),
+            asserts.assert_true(self.check_connection(bssid),
                     "Device is not connected to required bssid {}".format(bssid))
             time.sleep(10) #wait for connection to be active
-            self.assert_true(check_internet_connection(self.dut, self.ping_addr),
+            asserts.assert_true(check_internet_connection(self.dut, self.ping_addr),
                              "Error, No Internet connection for current bssid {}".
                              format(bssid))
         finally:
@@ -183,7 +184,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap1_2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap1_2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_Ap1_2gto5g(self):
@@ -205,7 +206,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[0]["5g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap1_2gto5g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap1_2gto5g failed {}".
                          format(len(failed)))
 
 
@@ -228,7 +229,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_in_AP1_5gto2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_in_AP1_5gto2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_swtich_AP1toAp2(self):
@@ -251,7 +252,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_swtich_AP1toAp2 failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_swtich_AP1toAp2 failed {}".
                          format(len(failed)))
 
     def test_autojoin_Ap2_2gto5g(self):
@@ -273,7 +274,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[1]["5g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap2_2gto5g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap2_2gto5g failed {}".
                          format(len(failed)))
 
     def test_autojoin_Ap2_5gto2g(self):
@@ -294,7 +295,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap2_5gto2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap2_5gto2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_out_of_range(self):
@@ -317,7 +318,7 @@ class WifiAutoJoinTest(BaseTestClass):
             time.sleep(20)
             current_network = self.dut.droid.wifiGetConnectionInfo()
             self.log.info("Current network: {}".format(current_network))
-            self.assert_true(('network_id' in current_network and
+            asserts.assert_true(('network_id' in current_network and
                               current_network['network_id'] == -1),
                              "Device is connected to network {}".format(current_network))
         finally:
@@ -344,7 +345,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap2_2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap2_2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_in_Ap2_5gto2g(self):
@@ -367,7 +368,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[1]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_in_Ap2_5gto2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_in_Ap2_5gto2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_swtich_AP2toAp1(self):
@@ -390,7 +391,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_swtich_AP2toAp1 failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_swtich_AP2toAp1 failed {}".
                          format(len(failed)))
 
     def test_autojoin_Ap1_5gto2g(self):
@@ -412,7 +413,7 @@ class WifiAutoJoinTest(BaseTestClass):
                         attenuations,
                         args = (self.reference_networks[0]["2g"]['bssid'],),
                         name_func = name_func)
-        self.assert_true(not failed, "Number of test_autojoin_Ap1_5gto2g failed {}".
+        asserts.assert_true(not failed, "Number of test_autojoin_Ap1_5gto2g failed {}".
                          format(len(failed)))
 
     def test_autojoin_swtich_to_blacklist_AP(self):
@@ -446,7 +447,7 @@ class WifiAutoJoinTest(BaseTestClass):
             time.sleep(20)
             current_network = self.dut.droid.wifiGetConnectionInfo()
             self.log.info("Current network: {}".format(current_network))
-            self.assert_true(('network_id' in current_network and
+            asserts.assert_true(('network_id' in current_network and
                               current_network['network_id'] == -1),
                              "Device is still connected to blacklisted network {}".
                              format(current_network))
