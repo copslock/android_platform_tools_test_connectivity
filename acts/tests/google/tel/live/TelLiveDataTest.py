@@ -227,22 +227,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-
-        toggle_volte(self.log, self.android_devices[0], True)
-
-        if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G):
-
-            self.log.error("Device {} failed to reselect in {}s.".format(
-                self.android_devices[0].serial, MAX_WAIT_TIME_NW_SELECTION))
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.log.error("Failed to setup VoLTE")
             return False
-
-        if not wait_for_network_rat(self.log,
-                                    self.android_devices[0],
-                                    RAT_FAMILY_LTE,
-                                    voice_or_data=NETWORK_SERVICE_VOICE):
-            return False
-
         return self._test_data_connectivity_multi_bearer(GEN_4G)
 
     @TelephonyBaseTest.tel_test_wrap
