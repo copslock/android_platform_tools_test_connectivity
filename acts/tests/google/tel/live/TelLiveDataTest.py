@@ -21,6 +21,8 @@ import time
 from acts.base_test import BaseTestClass
 from queue import Empty
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
@@ -251,6 +253,40 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_data_connectivity_multi_bearer(GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
+    def test_gsm_multi_bearer_mo(self):
+        """Test gsm data connection before call and in call.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in GSM, verify Internet.
+        Initiate a MO voice call. Verify there is no Internet during call.
+        Hangup Voice Call, verify Internet.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        return self._test_data_connectivity_multi_bearer(GEN_2G,
+            False, DIRECTION_MOBILE_ORIGINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_gsm_multi_bearer_mt(self):
+        """Test gsm data connection before call and in call.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in GSM, verify Internet.
+        Initiate a MT voice call. Verify there is no Internet during call.
+        Hangup Voice Call, verify Internet.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        return self._test_data_connectivity_multi_bearer(GEN_2G,
+            False, DIRECTION_MOBILE_TERMINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_multi_bearer_stress(self):
         """Stress Test WCDMA data connection before call and in call.
 
@@ -328,14 +364,20 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return False
 
-    def _test_data_connectivity_multi_bearer(self, nw_gen):
+    def _test_data_connectivity_multi_bearer(self, nw_gen,
+        simultaneous_voice_data=True,
+        call_direction=DIRECTION_MOBILE_ORIGINATED):
         """Test data connection before call and in call.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
         Make sure phone in <nw_gen>, verify Internet.
-        Initiate a voice call. verify Internet.
-        Disable Cellular Data, verify Internet is inaccessible.
-        Enable Cellular Data, verify Internet.
+        Initiate a voice call.
+        if simultaneous_voice_data is True, then:
+            Verify Internet.
+            Disable Cellular Data, verify Internet is inaccessible.
+            Enable Cellular Data, verify Internet.
+        if simultaneous_voice_data is False, then:
+            Verify Internet is not available during voice call.
         Hangup Voice Call, verify Internet.
 
         Returns:
@@ -349,10 +391,11 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad_list = [self.android_devices[0], self.android_devices[1]]
         ensure_phones_idle(self.log, ad_list)
 
-        if not ensure_network_generation(self.log, self.android_devices[0],
-                                         nw_gen, MAX_WAIT_TIME_NW_SELECTION,
-                                         NETWORK_SERVICE_DATA):
-
+        if not ensure_network_generation_for_subscription(self.log,
+            self.android_devices[0],
+            self.android_devices[0].droid.subscriptionGetDefaultDataSubId(),
+            nw_gen, MAX_WAIT_TIME_NW_SELECTION,
+            NETWORK_SERVICE_DATA):
             self.log.error("Device failed to reselect in {}s.".format(
                 MAX_WAIT_TIME_NW_SELECTION))
             return False
@@ -375,35 +418,46 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         try:
             self.log.info("Step2 Initiate call and accept.")
-            if not call_setup_teardown(self.log, self.android_devices[0],
-                                       self.android_devices[1], None, None,
-                                       None):
-                self.log.error("Failed to Establish Voice Call")
+            if call_direction == DIRECTION_MOBILE_ORIGINATED:
+                ad_caller = self.android_devices[0]
+                ad_callee = self.android_devices[1]
+            else:
+                ad_caller = self.android_devices[1]
+                ad_callee = self.android_devices[0]
+            if not call_setup_teardown(self.log, ad_caller, ad_callee, None,
+                                       None, None):
+                self.log.error("Failed to Establish {} Voice Call".format(
+                    call_direction))
                 return False
+            if simultaneous_voice_data:
+                self.log.info("Step3 Verify internet.")
+                time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+                if not verify_http_connection(self.log, self.android_devices[0]):
+                    raise _LocalException("Internet Inaccessible when Enabled")
 
-            self.log.info("Step3 Verify internet.")
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            if not verify_http_connection(self.log, self.android_devices[0]):
-                raise _LocalException("Internet Inaccessible when Enabled")
+                self.log.info("Step4 Turn off data and verify not connected.")
+                self.android_devices[0].droid.telephonyToggleDataConnection(False)
+                if not wait_for_cell_data_connection(
+                        self.log, self.android_devices[0], False):
+                    raise _LocalException("Failed to Disable Cellular Data")
 
-            self.log.info("Step4 Turn off data and verify not connected.")
-            self.android_devices[0].droid.telephonyToggleDataConnection(False)
-            if not wait_for_cell_data_connection(
-                    self.log, self.android_devices[0], False):
-                raise _LocalException("Failed to Disable Cellular Data")
+                if verify_http_connection(self.log, self.android_devices[0]):
+                    raise _LocalException("Internet Accessible when Disabled")
 
-            if verify_http_connection(self.log, self.android_devices[0]):
-                raise _LocalException("Internet Accessible when Disabled")
+                self.log.info("Step5 Re-enable data.")
+                self.android_devices[0].droid.telephonyToggleDataConnection(True)
+                if not wait_for_cell_data_connection(
+                        self.log, self.android_devices[0], True):
+                    raise _LocalException("Failed to Re-Enable Cellular Data")
+                if not verify_http_connection(self.log, self.android_devices[0]):
+                    raise _LocalException("Internet Inaccessible when Enabled")
+            else:
+                self.log.info("Step3 Verify no Internet and skip step 4-5.")
+                if verify_http_connection(self.log, self.android_devices[0],
+                    retry=0):
+                    raise _LocalException("Internet Accessible.")
 
-            self.log.info("Step5 Re-enable data.")
-            self.android_devices[0].droid.telephonyToggleDataConnection(True)
-            if not wait_for_cell_data_connection(
-                    self.log, self.android_devices[0], True):
-                raise _LocalException("Failed to Re-Enable Cellular Data")
-            if not verify_http_connection(self.log, self.android_devices[0]):
-                raise _LocalException("Internet Inaccessible when Enabled")
-
-            self.log.info("Step5 Verify phones still in call and Hang up.")
+            self.log.info("Step6 Verify phones still in call and Hang up.")
             if not verify_incall_state(
                     self.log,
                 [self.android_devices[0], self.android_devices[1]], True):
@@ -643,9 +697,11 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ensure_phones_idle(self.log, ads)
 
-        if not ensure_network_generation(
-                self.log, self.android_devices[0], network_generation,
-                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+        if not ensure_network_generation_for_subscription(self.log,
+            self.android_devices[0],
+            self.android_devices[0].droid.subscriptionGetDefaultDataSubId(),
+            network_generation, MAX_WAIT_TIME_NW_SELECTION,
+            NETWORK_SERVICE_DATA):
             self.log.error("Device failed to reselect in {}s.".format(
                 MAX_WAIT_TIME_NW_SELECTION))
             return False
