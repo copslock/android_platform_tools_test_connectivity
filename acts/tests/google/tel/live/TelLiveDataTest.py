@@ -885,12 +885,12 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not self._test_setup_tethering(ads, RAT_4G):
             self.log.error("Verify 4G Internet access failed.")
             return False
-
+        self.log.info("Connect WiFi.")
         if not ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                                      self.wifi_network_pass):
             self.log.error("WiFi connect fail.")
             return False
-
+        self.log.info("Start WiFi Tethering.")
         if not wifi_tethering_setup_teardown(self.log,
                                              ads[0],
                                              [ads[1]],
