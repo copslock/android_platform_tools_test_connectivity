@@ -657,7 +657,6 @@ def take_btsnoop_logs(android_devices, testcase, testname):
     for a in android_devices:
         take_btsnoop_log(a.droid, testcase, testname)
 
-
 def take_btsnoop_log(droid, testcase, test_name):
     """Grabs the btsnoop_hci log on a device and stores it in the log directory
     of the test class.
