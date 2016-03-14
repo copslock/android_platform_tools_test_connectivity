@@ -383,12 +383,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             # Airplane Mode, WiFi Preferred
             "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_host_wfc_apm_wifi_preferred_cep",
             "test_epdg_mo_mt_add_epdg_swap_once_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_cep",
-
-            #SIM2 test cases
-            "test_wcdma_mo_mo_add_merge_drop_sim2",
-            "test_wcdma_mt_mt_add_merge_drop_sim2",
-            "test_gsm_mo_mo_add_merge_drop_sim2",
-            "test_gsm_mt_mt_add_merge_drop_sim2")
+            )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
@@ -9732,6 +9727,31 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         return self._test_gsm_conference_merge_drop(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
+    def test_gsm_mo_mo_add_swap_once_drop_held(self):
+        """ Test Conf Call among three phones.
+
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Call from PhoneA to PhoneC, accept on PhoneC.
+        On PhoneA, swap active call.
+        End call on PhoneB, verify call continues.
+        End call on PhoneC, verify call end on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        call_ab_id, call_ac_id = self._test_gsm_mo_mo_add_swap_x(1)
+        if call_ab_id is None or call_ac_id is None:
+            return False
+
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=CALL_STATE_ACTIVE,
+            ads_active=[ads[0], ads[1]])
+
+    @TelephonyBaseTest.tel_test_wrap
     def test_gsm_mt_mt_add_merge_drop(self):
         """ Test Conf Call among three phones.
 
@@ -9749,133 +9769,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         return self._test_gsm_conference_merge_drop(call_ab_id, call_ac_id)
-
-    #SIM2 tests
-    def _reset_subscriptions_to_sim1(self, ads):
-        set_call_state_listen_level(self.log, ads[0], False,
-                                    self.sim_sub_ids[0][1])
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True)
-        ensure_network_generation_for_subscription(
-            self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_wcdma_mo_mo_add_merge_drop_sim2(self):
-        """ Test Conf Call among three phones.
-
-        Set SIM2 as the default voice SIM
-        Call from PhoneA to PhoneB, accept on PhoneB.
-        Call from PhoneA to PhoneC, accept on PhoneC.
-        On PhoneA, merge to conference call.
-        End call on PhoneC, verify call continues.
-        End call on PhoneB, verify call end on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True):
-                return False
-
-            call_ab_id, call_ac_id = self._test_wcdma_mo_mo_add_swap_x(0)
-            if call_ab_id is None or call_ac_id is None:
-                return False
-
-            return self._test_wcdma_conference_merge_drop(call_ab_id,
-                                                          call_ac_id)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_wcdma_mt_mt_add_merge_drop_sim2(self):
-        """ Test Conf Call among three phones.
-
-        Set SIM2 as the default voice SIM
-        Call from PhoneB to PhoneA, accept on PhoneA.
-        Call from PhoneC to PhoneA, accept on PhoneA.
-        On PhoneA, merge to conference call.
-        End call on PhoneC, verify call continues.
-        End call on PhoneB, verify call end on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True):
-                return False
-
-            call_ab_id, call_ac_id = self._test_wcdma_mt_mt_add_swap_x(0)
-            if call_ab_id is None or call_ac_id is None:
-                return False
-
-            return self._test_wcdma_conference_merge_drop(call_ab_id,
-                                                          call_ac_id)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_gsm_mo_mo_add_merge_drop_sim2(self):
-        """ Test Conf Call among three phones.
-
-        Set SIM2 as the default voice SIM
-        Call from PhoneA to PhoneB, accept on PhoneB.
-        Call from PhoneA to PhoneC, accept on PhoneC.
-        On PhoneA, merge to conference call.
-        End call on PhoneC, verify call continues.
-        End call on PhoneB, verify call end on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True):
-                return False
-
-            call_ab_id, call_ac_id = self._test_gsm_mo_mo_add_swap_x(0)
-            if call_ab_id is None or call_ac_id is None:
-                return False
-
-            return self._test_gsm_conference_merge_drop(call_ab_id, call_ac_id)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_gsm_mt_mt_add_merge_drop_sim2(self):
-        """ Test Conf Call among three phones.
-
-        Set SIM2 as the default voice SIM
-        Call from PhoneB to PhoneA, accept on PhoneA.
-        Call from PhoneC to PhoneA, accept on PhoneA.
-        On PhoneA, merge to conference call.
-        End call on PhoneC, verify call continues.
-        End call on PhoneB, verify call end on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        try:
-            ads = self.android_devices
-            set_call_state_listen_level(self.log, ads[0], True,
-                                        self.sim_sub_ids[0][1])
-            if not setup_sim(self.log, ads[0], self.sim_sub_ids[0][1], True):
-                return False
-
-            call_ab_id, call_ac_id = self._test_gsm_mt_mt_add_swap_x(0)
-            if call_ab_id is None or call_ac_id is None:
-                return False
-
-            return self._test_gsm_conference_merge_drop(call_ab_id, call_ac_id)
-        finally:
-            self._reset_subscriptions_to_sim1(ads)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
