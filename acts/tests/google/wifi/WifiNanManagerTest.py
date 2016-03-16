@@ -16,11 +16,10 @@
 
 import queue
 
-import acts.base_test as base_test
-import acts.controllers.android_device as android_device
-import acts.test_utils.wifi.wifi_test_utils as wutils
-
 from acts import asserts
+from acts import base_test
+from acts.controllers import android_device
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 ON_MATCH = "WifiNanSessionOnMatch"
@@ -29,17 +28,9 @@ ON_MESSAGE_TX_FAIL = "WifiNanSessionOnMessageSendFail"
 ON_MESSAGE_TX_OK = "WifiNanSessionOnMessageSendSuccess"
 
 class WifiNanManagerTest(base_test.BaseTestClass):
-    msg_id = 10
-
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        self.tests = (
-            "test_nan_base_test",
-            )
-
-    def setup_class(self):
         required_params = (
             "config_request1",
             "config_request2",
@@ -47,16 +38,21 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             "subscribe_config"
         )
         self.unpack_userparams(required_params)
+        self.msg_id = 10
 
     def setup_test(self):
-        assert wutils.wifi_toggle_state(self.publisher, True)
-        assert wutils.wifi_toggle_state(self.subscriber, True)
+        asserts.assert_true(wutils.wifi_toggle_state(self.publisher, True),
+                            "Failed enabling Wi-Fi interface on publisher")
+        asserts.assert_true(wutils.wifi_toggle_state(self.subscriber, True),
+                            "Failed enabling Wi-Fi interface on subscriber")
 
-    def teardown_class(self):
-        assert wutils.wifi_toggle_state(self.publisher, False)
-        assert wutils.wifi_toggle_state(self.subscriber, False)
+    # def teardown_class(self): (b/27692829)
+       # asserts.assert_true(wutils.wifi_toggle_state(self.publisher, False),
+       #                     "Failed disabling Wi-Fi interface on publisher")
+       # asserts.assert_true(wutils.wifi_toggle_state(self.subscriber, False),
+       #                     "Failed disabling Wi-Fi interface on subscriber")
 
-    def reliable_tx(self, device, peer, msg):
+    def reliable_tx(self, device, session_id, peer, msg):
         num_tries = 0
         max_num_tries = 10
         events_regex = '%s|%s' % (ON_MESSAGE_TX_FAIL, ON_MESSAGE_TX_OK)
@@ -65,10 +61,11 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         while True:
             try:
                 num_tries += 1
-                device.droid.wifiNanSendMessage(peer, msg, self.msg_id)
+                device.droid.wifiNanSendMessage(session_id, peer, msg,
+                                                self.msg_id)
                 events = device.ed.pop_events(events_regex, 30)
                 for event in events:
-                    self.log.info('%s: %s' % (event['name'], event['data']))
+                    self.log.info('%s: %s', event['name'], event['data'])
                     if event['data']['messageId'] != self.msg_id:
                         continue
                     if event['name'] == ON_MESSAGE_TX_OK:
@@ -77,7 +74,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                         self.log.info("Max number of retries reached")
                         return False
             except queue.Empty:
-                self.log.info('Timed out while waiting for %s' % events_regex)
+                self.log.info('Timed out while waiting for %s', events_regex)
                 return False
 
     def test_nan_base_test(self):
@@ -119,17 +116,19 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                       ON_IDENTITY_CHANGED)
         self.log.debug(event)
 
-        self.publisher.droid.wifiNanPublish(self.publish_config, 0)
-        self.subscriber.droid.wifiNanSubscribe(self.subscribe_config, 0)
+        pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
+        sub_id = self.subscriber.droid.wifiNanSubscribe(0,
+                                                        self.subscribe_config)
 
         try:
             event = self.subscriber.ed.pop_event(ON_MATCH, 30)
             self.log.info('%s: %s' % (ON_MATCH, event['data']))
         except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on Subscriber' % ON_MATCH)
+            asserts.fail('Timed out while waiting for %s on Subscriber'
+                         % ON_MATCH)
         self.log.debug(event)
 
-        asserts.assert_true(self.reliable_tx(self.subscriber,
+        asserts.assert_true(self.reliable_tx(self.subscriber, sub_id,
                                           event['data']['peerId'],
                                           sub2pub_msg),
                          "Failed to transmit from subscriber")
@@ -143,7 +142,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             asserts.fail('Timed out while waiting for %s on publisher' %
                       ON_MESSAGE_RX)
 
-        asserts.assert_true(self.reliable_tx(self.publisher,
+        asserts.assert_true(self.reliable_tx(self.publisher, pub_id,
                                           event['data']['peerId'],
                                           pub2sub_msg),
                          "Failed to transmit from publisher")
@@ -156,3 +155,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on subscriber' %
                       ON_MESSAGE_RX)
+
+        self.publisher.droid.wifiNanTerminateSession(pub_id)
+        self.subscriber.droid.wifiNanTerminateSession(sub_id)
+
+        self.publisher.droid.wifiNanDisable()
+        self.subscriber.droid.wifiNanDisable()
