@@ -187,11 +187,11 @@ def update_phone_number_with_line1number(log, ad, sub_id=None):
         Otherwise return False.
     """
     if sub_id is None:
-        sub_id = ad.droid.subscriptionGetDefaultSubId()
+        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
     number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
     if not number or number == "":
         return False
-    number = phone_number_formatter(number, PHONE_NUMBER_STRING_FORMAT_11_DIGIT)
+    number = phone_number_formatter(number)
     ad.cfg['subscription'][sub_id]['phone_num'] = number
     return True
 
@@ -1011,6 +1011,7 @@ def call_setup_teardown(log,
     """
     subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
     subid_callee = ad_callee.droid.subscriptionGetDefaultVoiceSubId()
+    log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller, subid_callee))
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
@@ -1129,7 +1130,7 @@ def call_setup_teardown_for_subscription(
                     log.error(str(e))
 
 
-def phone_number_formatter(input_string, format):
+def phone_number_formatter(input_string, format=None):
     """Get expected format of input phone number string.
 
     Args:
@@ -1149,6 +1150,8 @@ def phone_number_formatter(input_string, format):
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(".",
                                                                           "")
+    if not format:
+        return input_string
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT and
             input_string[0] == "1"):
