@@ -60,6 +60,7 @@ def create(configs, logger):
         if ad.serial not in connected_ads:
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
+        ad.start_adb_logcat()
         try:
             ad.get_droid()
             ad.ed.start()
@@ -70,7 +71,6 @@ def create(configs, logger):
             msg = "Failed to start sl4a on %s" % ad.serial
             logger.exception(msg)
             raise AndroidDeviceError(msg)
-        ad.start_adb_logcat()
     return ads
 
 def destroy(ads):
