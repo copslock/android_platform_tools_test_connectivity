@@ -17,12 +17,14 @@
 import sys
 import unittest
 
+import acts_adb_test
 import acts_android_device_test
 import acts_base_class_test
 import acts_records_test
 
 def compile_suite():
     test_classes_to_run = [
+        acts_adb_test.ActsAdbTest,
         acts_base_class_test.ActsBaseClassTest,
         acts_android_device_test.ActsAndroidDeviceTest,
         acts_records_test.ActsRecordsTest
