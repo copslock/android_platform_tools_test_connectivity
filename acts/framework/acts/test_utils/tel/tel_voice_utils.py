@@ -362,7 +362,10 @@ def phone_setup_iwlan_for_subscription(log,
     """
 
     toggle_airplane_mode(log, ad, False)
-    toggle_volte(log, ad, True)
+
+    if ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
+        toggle_volte(log, ad, True)
+
     if not is_airplane_mode and not ensure_network_generation_for_subscription(
             log,
             ad,
