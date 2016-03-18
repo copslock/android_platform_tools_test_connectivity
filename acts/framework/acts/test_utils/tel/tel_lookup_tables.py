@@ -518,7 +518,9 @@ class _TelTables():
         tel_defines.CARRIER_TMO: default_umts_operator_network_tbl,
         tel_defines.CARRIER_ATT: default_umts_operator_network_tbl,
         tel_defines.CARRIER_VZW: default_cdma_operator_network_tbl,
-        tel_defines.CARRIER_SPT: default_cdma_operator_network_tbl
+        tel_defines.CARRIER_SPT: default_cdma_operator_network_tbl,
+        tel_defines.CARRIER_EEUK: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_VFUK: default_umts_operator_network_tbl
     }
 
     voice_mail_number_get_function_tbl = {
