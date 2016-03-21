@@ -1842,65 +1842,6 @@ class TelLiveDataTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_wifi_connect_disconnect(self):
-        """Perform multiple connects and disconnects from WiFi and verify that
-            data switches between WiFi and Cell.
-
-        Steps:
-        1. Reset Wifi on DUT
-        2. Connect DUT to a WiFi AP
-        3. Repeat steps 1-2, alternately disconnecting and disabling wifi
-
-        Expected Results:
-        1. Verify Data on Cell
-        2. Verify Data on Wifi
-
-        Returns:
-            True if success.
-            False if failed.
-        """
-        ad = self.android_devices[0]
-
-        wifi_toggles = [True, False, True, False, False, True, False, False,
-                        False, False, True, False, False, False, False, False,
-                        False, False, False]
-
-        if not ensure_network_generation(self.log, ad, GEN_4G):
-            self.log.error("Device {} failed to reselect in {}s.".format(
-                ad.serial, MAX_WAIT_TIME_NW_SELECTION))
-            return False
-
-        for toggle in wifi_toggles:
-
-            WifiUtils.wifi_reset(self.log, ad, toggle)
-
-            if not wait_for_cell_data_connection(self.log, ad, True,
-                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
-                self.log.error("Failed wifi connection, aborting!")
-                return False
-
-            if not verify_http_connection(self.log, ad,
-                                          'http://www.google.com', 100, .1):
-                self.log.error("Failed to get user-plane traffic, aborting!")
-                return False
-
-            if toggle:
-                WifiUtils.wifi_toggle_state(self.log, ad, True)
-
-            WifiUtils.wifi_connect(self.log, ad, self.wifi_network_ssid,
-                                   self.wifi_network_pass)
-
-            if not wait_for_wifi_data_connection(self.log, ad, True,
-                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
-                self.log.error("Failed wifi connection, aborting!")
-                return False
-
-            if not verify_http_connection(self.log, ad,
-                                          'http://www.google.com', 100, .1):
-                self.log.error("Failed to get user-plane traffic, aborting!")
-                return False
-
-    @TelephonyBaseTest.tel_test_wrap
     def test_msim_switch_data_sim_2g(self):
         """Switch Data SIM on 2G network.
 
@@ -1953,4 +1894,142 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         return True
+
+    def _test_wifi_connect_disconnect(self):
+        """Perform multiple connects and disconnects from WiFi and verify that
+            data switches between WiFi and Cell.
+
+        Steps:
+        1. Reset Wifi on DUT
+        2. Connect DUT to a WiFi AP
+        3. Repeat steps 1-2, alternately disconnecting and disabling wifi
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on Wifi
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad = self.android_devices[0]
+
+        wifi_toggles = [True, False, True, False, False, True, False, False,
+                        False, False, True, False, False, False, False, False,
+                        False, False, False]
+
+        for toggle in wifi_toggles:
+
+            WifiUtils.wifi_reset(self.log, ad, toggle)
+
+            if not wait_for_cell_data_connection(self.log, ad, True,
+                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
+                self.log.error("Failed wifi connection, aborting!")
+                return False
+
+            if not verify_http_connection(self.log, ad,
+                                          'http://www.google.com', 100, .1):
+                self.log.error("Failed to get user-plane traffic, aborting!")
+                return False
+
+            if toggle:
+                WifiUtils.wifi_toggle_state(self.log, ad, True)
+
+            WifiUtils.wifi_connect(self.log, ad, self.wifi_network_ssid,
+                                   self.wifi_network_pass)
+
+            if not wait_for_wifi_data_connection(self.log, ad, True,
+                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
+                self.log.error("Failed wifi connection, aborting!")
+                return False
+
+            if not verify_http_connection(self.log, ad,
+                                          'http://www.google.com', 100, .1):
+                self.log.error("Failed to get user-plane traffic, aborting!")
+                return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_connect_disconnect_4g(self):
+        """Perform multiple connects and disconnects from WiFi and verify that
+            data switches between WiFi and Cell.
+
+        Steps:
+        1. DUT Cellular Data is on 4G. Reset Wifi on DUT
+        2. Connect DUT to a WiFi AP
+        3. Repeat steps 1-2, alternately disconnecting and disabling wifi
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on Wifi
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ad = self.android_devices[0]
+        if not ensure_network_generation_for_subscription(self.log, ad,
+            ad.droid.subscriptionGetDefaultDataSubId(), GEN_4G,
+            MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            self.log.error("Device {} failed to reselect in {}s.".format(
+                ad.serial, MAX_WAIT_TIME_NW_SELECTION))
+            return False
+        return self._test_wifi_connect_disconnect()
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_connect_disconnect_3g(self):
+        """Perform multiple connects and disconnects from WiFi and verify that
+            data switches between WiFi and Cell.
+
+        Steps:
+        1. DUT Cellular Data is on 3G. Reset Wifi on DUT
+        2. Connect DUT to a WiFi AP
+        3. Repeat steps 1-2, alternately disconnecting and disabling wifi
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on Wifi
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ad = self.android_devices[0]
+        if not ensure_network_generation_for_subscription(self.log, ad,
+            ad.droid.subscriptionGetDefaultDataSubId(), GEN_3G,
+            MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            self.log.error("Device {} failed to reselect in {}s.".format(
+                ad.serial, MAX_WAIT_TIME_NW_SELECTION))
+            return False
+        return self._test_wifi_connect_disconnect()
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_connect_disconnect_2g(self):
+        """Perform multiple connects and disconnects from WiFi and verify that
+            data switches between WiFi and Cell.
+
+        Steps:
+        1. DUT Cellular Data is on 2G. Reset Wifi on DUT
+        2. Connect DUT to a WiFi AP
+        3. Repeat steps 1-2, alternately disconnecting and disabling wifi
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on Wifi
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad = self.android_devices[0]
+        if not ensure_network_generation_for_subscription(self.log, ad,
+            ad.droid.subscriptionGetDefaultDataSubId(), GEN_2G,
+            MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            self.log.error("Device {} failed to reselect in {}s.".format(
+                ad.serial, MAX_WAIT_TIME_NW_SELECTION))
+            return False
+        return self._test_wifi_connect_disconnect()
+
         """ Tests End """
