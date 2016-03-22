@@ -121,7 +121,7 @@ class AdbProxy():
         Args:
             port: Port number to use on the android device.
         """
-        self.shell(SL4A_LAUNCH_CMD.format(port))
+        print(self.shell(SL4A_LAUNCH_CMD.format(port)))
         # TODO(angli): Make is_sl4a_running reliable so we don't have to do a
         # dumb wait.
         time.sleep(3)
