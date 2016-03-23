@@ -29,6 +29,9 @@ from acts.controllers import android
 from acts.controllers import event_dispatcher
 from acts.controllers import fastboot
 
+ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
+ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
+
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
