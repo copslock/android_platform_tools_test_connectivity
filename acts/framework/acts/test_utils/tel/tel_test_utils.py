@@ -43,7 +43,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_IDLE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
@@ -553,7 +553,8 @@ def wait_and_answer_call_for_subscription(
 def wait_and_reject_call(log,
                          ad,
                          incoming_number=None,
-                         delay_reject=WAIT_TIME_REJECT_CALL):
+                         delay_reject=WAIT_TIME_REJECT_CALL,
+                         reject=True):
     """Wait for an incoming call on default voice subscription and
        reject the call.
 
@@ -569,14 +570,16 @@ def wait_and_reject_call(log,
         False: for errors
     """
     return wait_and_reject_call_for_subscription(
-        log, ad, get_incoming_voice_sub_id(ad), incoming_number, delay_reject)
+        log, ad, get_incoming_voice_sub_id(ad), incoming_number, delay_reject,
+        reject)
 
 
 def wait_and_reject_call_for_subscription(log,
                                           ad,
                                           sub_id,
                                           incoming_number=None,
-                                          delay_reject=WAIT_TIME_REJECT_CALL):
+                                          delay_reject=WAIT_TIME_REJECT_CALL,
+                                          reject=True):
     """Wait for an incoming call on specific subscription and
        reject the call.
 
@@ -623,17 +626,31 @@ def wait_and_reject_call_for_subscription(log,
 
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    # Delay between ringing and reject.
-    time.sleep(delay_reject)
-
-    log.info("Reject on callee.")
-    ad.droid.telecomEndCall()
+    if reject is True:
+        # Delay between ringing and reject.
+        time.sleep(delay_reject)
+        log.info("Reject on callee.")
+        is_find = False
+        # Loop the call list and find the matched one to disconnect.
+        for call in ad.droid.telecomCallGetCallIds():
+            if check_phone_number_match(
+                    get_number_from_tel_uri(get_call_uri(ad, call)),
+                    incoming_number):
+                ad.droid.telecomCallDisconnect(call)
+                is_find = True
+        if is_find is False:
+            log.error("Did not find matching call to reject.")
+            return False
+    else:
+        # don't reject on callee. Just ignore the incoming call.
+        log.info("Received incoming call. Ignore it.")
     try:
-        ad.ed.wait_for_event(EventCallStateChanged,
-                             is_event_match,
-                             timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
-                             field=CallStateContainer.CALL_STATE,
-                             value=TELEPHONY_STATE_IDLE)
+        ad.ed.wait_for_event(
+            EventCallStateChanged,
+            is_event_match_for_list,
+            timeout=MAX_WAIT_TIME_CALL_IDLE_EVENT,
+            field=CallStateContainer.CALL_STATE,
+            value_list=[TELEPHONY_STATE_IDLE, TELEPHONY_STATE_OFFHOOK])
     except Empty:
         log.error("No onCallStateChangedIdle event received.")
         return False
@@ -653,7 +670,7 @@ def hangup_call(log, ad):
     try:
         ad.ed.wait_for_event(EventCallStateChanged,
                              is_event_match,
-                             timeout=MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT,
+                             timeout=MAX_WAIT_TIME_CALL_IDLE_EVENT,
                              field=CallStateContainer.CALL_STATE,
                              value=TELEPHONY_STATE_IDLE)
     except Empty:
@@ -763,6 +780,55 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
               ), ad_caller.droid.telephonyGetCallState(
               ), ad_caller.droid.telecomGetCallState()))
     return False
+
+
+def call_reject(log, ad_caller, ad_callee, reject=True):
+    """Caller call Callee, then reject on callee.
+
+
+    """
+    subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
+    subid_callee = ad_callee.incoming_voice_sub_id
+    log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller,
+                                                         subid_callee))
+    return call_reject_for_subscription(log, ad_caller, ad_callee,
+                                        subid_caller, subid_callee, reject)
+
+
+def call_reject_for_subscription(log,
+                                 ad_caller,
+                                 ad_callee,
+                                 subid_caller,
+                                 subid_callee,
+                                 reject=True):
+    """
+    """
+
+    class _CallSequenceException(Exception):
+        pass
+
+    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
+    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+
+    log.info("Call from {} to {}".format(caller_number, callee_number))
+    try:
+        if not initiate_call(log, ad_caller, callee_number):
+            raise _CallSequenceException("Initiate call failed.")
+
+        if not wait_and_reject_call_for_subscription(
+                log, ad_callee, subid_callee, caller_number,
+                WAIT_TIME_REJECT_CALL, reject):
+            raise _CallSequenceException("Reject call fail.")
+        # Check if incoming call is cleared on callee or not.
+        if ad_callee.droid.telephonyGetCallStateForSubscription(
+                subid_callee) == TELEPHONY_STATE_RINGING:
+            raise _CallSequenceException("Incoming call is not cleared.")
+        # Hangup on caller
+        hangup_call(log, ad_caller)
+    except _CallSequenceException as e:
+        log.error(e)
+        return False
+    return True
 
 
 def call_reject_leave_message(log,
@@ -3211,12 +3277,8 @@ def is_uri_equivalent(uri1, uri2):
 
     try:
         if uri1.startswith('tel:') and uri2.startswith('tel:'):
-            uri1_number = ''.join(i
-                                  for i in urllib.parse.unquote(uri1)
-                                  if i.isdigit())
-            uri2_number = ''.join(i
-                                  for i in urllib.parse.unquote(uri2)
-                                  if i.isdigit())
+            uri1_number = get_number_from_tel_uri(uri1)
+            uri2_number = get_number_from_tel_uri(uri2)
             return check_phone_number_match(uri1_number, uri2_number)
         else:
             return uri1 == uri2
@@ -3240,6 +3302,24 @@ def get_call_uri(ad, call_id):
         call_detail = ad.droid.telecomCallGetDetails(call_id)
         return call_detail["Handle"]["Uri"]
     except:
+        return None
+
+
+def get_number_from_tel_uri(uri):
+    """Get Uri number from tel uri
+
+    Args:
+        uri: input uri
+
+    Returns:
+        If input uri is tel uri, return the number part.
+        else return None.
+    """
+    if uri.startswith('tel:'):
+        uri_number = ''.join(i for i in urllib.parse.unquote(uri)
+                             if i.isdigit())
+        return uri_number
+    else:
         return None
 
 
