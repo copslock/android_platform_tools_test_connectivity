@@ -29,7 +29,6 @@ class Config(enum.Enum):
     key_testbed = "testbed"
     key_testbed_name = "name"
     key_test_paths = "testpaths"
-    key_test_utils_paths = "testutils_paths"
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
     key_access_point = "AP"
