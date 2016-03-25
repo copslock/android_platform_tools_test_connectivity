@@ -21,16 +21,19 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_test_utils import WifiUtils
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
-from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
+from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
+from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
+from acts.test_utils.tel.tel_test_utils import set_subid_for_data
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscription
 
 
 def wifi_tethering_cleanup(log, provider, client_list):
@@ -237,8 +240,10 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
         True if pass.
     """
     try:
-        if not ensure_network_generation(
-                log, ad, nw_gen, MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+
+        if not ensure_network_generation_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+        MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
 
@@ -364,9 +369,9 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     """
     ensure_phones_idle(log, [ad])
 
-    if not ensure_network_generation(log, ad, nw_gen, MAX_WAIT_TIME_NW_SELECTION,
-                                     NETWORK_SERVICE_DATA):
-
+    if not ensure_network_generation_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+        MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
         log.error("Device failed to reselect in {}s.".format(
             MAX_WAIT_TIME_NW_SELECTION))
         return False
@@ -403,8 +408,9 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             log.error("Data not available on cell.")
             return False
 
-        if not is_droid_in_network_generation(log, ad, nw_gen,
-                                              NETWORK_SERVICE_DATA):
+        if not is_droid_in_network_generation_for_subscription(
+            log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+            NETWORK_SERVICE_DATA):
             log.error("Failed: droid is no longer on correct network")
             log.info("Expected:{}, Current:{}".format(
                 nw_gen, rat_generation_from_rat(
@@ -415,3 +421,26 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
         return True
     finally:
         ad.droid.telephonyToggleDataConnection(True)
+
+def change_data_sim_and_verify_data(log, ad, sim_slot):
+    """Change Data SIM and verify Data attach and Internet access
+
+    Args:
+        log: log object.
+        ad: android device object.
+        sim_slot: SIM slot index.
+
+    Returns:
+        Data SIM changed successfully, data attached and Internet access is OK.
+    """
+    sub_id = get_subid_from_slot_index(log, ad, sim_slot)
+    log.info("Change Data to subId: {}, SIM slot: {}".format(sub_id, sim_slot))
+    set_subid_for_data(ad, sub_id)
+    if not wait_for_data_attach_for_subscription(log, ad, sub_id,
+        MAX_WAIT_TIME_NW_SELECTION):
+        log.error("Failed to attach data on subId:{}".format(sub_id))
+        return False
+    if not verify_http_connection(log, ad):
+        log.error("No Internet access after changing Data SIM.")
+        return False
+    return True
