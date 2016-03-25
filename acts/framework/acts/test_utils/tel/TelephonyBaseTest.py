@@ -22,6 +22,8 @@ import traceback
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 
+from acts.test_utils.tel.tel_subscription_setup_utils import \
+    initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
 from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
@@ -120,45 +122,7 @@ class TelephonyBaseTest(BaseTestClass):
 
         # Sub ID setup
         for ad in self.android_devices:
-            if hasattr(ad, "default_voice_sim_slot_index"):
-                set_subid_for_outgoing_call(ad,
-                    get_subid_from_slot_index(self.log, ad,
-                        ad.default_voice_sim_slot_index))
-            if hasattr(ad, "default_message_sim_slot_index"):
-                set_subid_for_message(ad,
-                    get_subid_from_slot_index(self.log, ad,
-                        ad.default_message_sim_slot_index))
-            if hasattr(ad, "default_data_sim_slot_index"):
-                set_subid_for_data(ad,
-                    get_subid_from_slot_index(self.log, ad,
-                        ad.default_data_sim_slot_index), 0)
-            # This is for Incoming Voice Sub ID
-            # If "incoming_voice_sim_slot_index" is set in config file, then
-            # incoming voice call will call to the phone number of the SIM in
-            # "incoming_voice_sim_slot_index".
-            # If "incoming_voice_sim_slot_index" is NOT set in config file,
-            # then incoming voice call will call to the phone number of default
-            # subId.
-            if hasattr(ad, "incoming_voice_sim_slot_index"):
-                incoming_voice_sub_id = get_subid_from_slot_index(
-                    self.log, ad, ad.incoming_voice_sim_slot_index)
-            else:
-                incoming_voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-            setattr(ad, "incoming_voice_sub_id", incoming_voice_sub_id)
-
-            # This is for Incoming SMS Sub ID
-            # If "incoming_message_sim_slot_index" is set in config file, then
-            # incoming SMS be sent to the phone number of the SIM in
-            # "incoming_message_sim_slot_index".
-            # If "incoming_message_sim_slot_index" is NOT set in config file,
-            # then incoming SMS be sent to the phone number of default
-            # subId.
-            if hasattr(ad, "incoming_message_sim_slot_index"):
-                incoming_message_sub_id = get_subid_from_slot_index(
-                    self.log, ad, ad.incoming_message_sim_slot_index)
-            else:
-                incoming_message_sub_id = ad.droid.subscriptionGetDefaultSmsSubId()
-            setattr(ad, "incoming_message_sub_id", incoming_message_sub_id)
+            initial_set_up_for_subid_infomation(self.log, ad)
         return True
 
     def teardown_class(self):
