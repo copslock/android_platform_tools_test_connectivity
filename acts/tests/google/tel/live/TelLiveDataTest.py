@@ -2032,4 +2032,202 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         return self._test_wifi_connect_disconnect()
 
+    def _test_wifi_tethering_enabled_add_voice_call(self, network_generation,
+        voice_call_direction, is_data_available_during_call):
+        """Tethering enabled + voice call.
+
+        Steps:
+        1. DUT data is on <network_generation>. Start WiFi Tethering.
+        2. PhoneB connect to DUT's softAP
+        3. DUT make a MO/MT (<voice_call_direction>) phone call.
+        4. DUT end phone call.
+
+        Expected Results:
+        1. DUT is able to start WiFi tethering.
+        2. PhoneB connected to DUT's softAP and able to browse Internet.
+        3. DUT WiFi tethering is still on. Phone call works OK.
+            If is_data_available_during_call is True, then PhoneB still has
+            Internet access.
+            Else, then Data is suspend, PhoneB has no Internet access.
+        4. WiFi Tethering still on, voice call stopped, and PhoneB have Internet
+            access.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(ads, network_generation):
+            self.log.error("Verify Internet access failed.")
+            return False
+        try:
+            # Start WiFi Tethering
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                    [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
+                self.log.error("WiFi Tethering failed.")
+                return False
+
+            if not ads[0].droid.wifiIsApEnabled():
+                self.log.error("Provider WiFi tethering stopped.")
+                return False
+
+            # Make a voice call
+            if voice_call_direction == DIRECTION_MOBILE_ORIGINATED:
+                ad_caller = ads[0]
+                ad_callee = ads[1]
+            else:
+                ad_caller = ads[1]
+                ad_callee = ads[0]
+            if not call_setup_teardown(self.log, ad_caller, ad_callee, None,
+                                       None, None):
+                self.log.error("Failed to Establish {} Voice Call".format(
+                    voice_call_direction))
+                return False
+
+            # Tethering should still be on.
+            if not ads[0].droid.wifiIsApEnabled():
+                self.log.error("Provider WiFi tethering stopped.")
+                return False
+            if not is_data_available_during_call:
+                if verify_http_connection(self.log, ads[1], retry=0):
+                    self.log.error("Client should not have Internet Access.")
+                    return False
+            else:
+                if not verify_http_connection(self.log, ads[1]):
+                    self.log.error("Client should have Internet Access.")
+                    return False
+
+            # Hangup call. Client should have data.
+            if not hangup_call(self.log, ads[0]):
+                self.log.error("Failed to hang up call")
+                return False
+            if not ads[0].droid.wifiIsApEnabled():
+                self.log.error("Provider WiFi tethering stopped.")
+                return False
+            if not verify_http_connection(self.log, ads[1]):
+                self.log.error("Client should have Internet Access.")
+                return False
+        finally:
+            ads[1].droid.telephonyToggleDataConnection(True)
+            WifiUtils.wifi_reset(self.log, ads[1])
+            if ads[0].droid.wifiIsApEnabled():
+                WifiUtils.stop_wifi_tethering(self.log, ads[0])
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_tethering_enabled_add_mo_voice_call_2g_dsds(self):
+        """Tethering enabled + voice call
+
+        Steps:
+        1. DUT is DSDS device, Data on 2G. Start WiFi Tethering on <Data SIM>
+        2. PhoneB connect to DUT's softAP
+        3. DUT make a mo phone call on <Voice SIM>
+        4. DUT end phone call.
+
+        Expected Results:
+        1. DUT is able to start WiFi tethering.
+        2. PhoneB connected to DUT's softAP and able to browse Internet.
+        3. DUT WiFi tethering is still on. Phone call works OK. Data is suspend,
+            PhoneB still connected to DUT's softAP, but no data available.
+        4. DUT data resumes, and PhoneB have Internet access.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        return self._test_wifi_tethering_enabled_add_voice_call(GEN_2G,
+            DIRECTION_MOBILE_ORIGINATED, False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_tethering_enabled_add_mt_voice_call_2g_dsds(self):
+        """Tethering enabled + voice call
+
+        Steps:
+        1. DUT is DSDS device, Data on 2G. Start WiFi Tethering on <Data SIM>
+        2. PhoneB connect to DUT's softAP
+        3. DUT make a mt phone call on <Voice SIM>
+        4. DUT end phone call.
+
+        Expected Results:
+        1. DUT is able to start WiFi tethering.
+        2. PhoneB connected to DUT's softAP and able to browse Internet.
+        3. DUT WiFi tethering is still on. Phone call works OK. Data is suspend,
+            PhoneB still connected to DUT's softAP, but no data available.
+        4. DUT data resumes, and PhoneB have Internet access.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        return self._test_wifi_tethering_enabled_add_voice_call(GEN_2G,
+            DIRECTION_MOBILE_TERMINATED, False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_tethering_msim_switch_data_sim(self):
+        """Tethering enabled + switch data SIM.
+
+        Steps:
+        1. Start WiFi Tethering on <Default Data SIM>
+        2. PhoneB connect to DUT's softAP
+        3. DUT change Default Data SIM.
+
+        Expected Results:
+        1. DUT is able to start WiFi tethering.
+        2. PhoneB connected to DUT's softAP and able to browse Internet.
+        3. DUT Data changed to 2nd SIM, WiFi tethering should continues,
+            PhoneB should have Internet access.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        current_data_sub_id = ads[0].droid.subscriptionGetDefaultDataSubId()
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ads[0],
+            current_data_sub_id)
+        self.log.info("Current Data is on subId: {}, SIM slot: {}".format(
+            current_data_sub_id, current_sim_slot_index))
+        if not self._test_setup_tethering(ads):
+            self.log.error("Verify Internet access failed.")
+            return False
+        try:
+            # Start WiFi Tethering
+            if not wifi_tethering_setup_teardown(
+                    self.log,
+                    ads[0],
+                    [ads[1]],
+                    ap_band=WifiUtils.WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=2,
+                    do_cleanup=False):
+                self.log.error("WiFi Tethering failed.")
+                return False
+            for i in range(0, 2):
+                next_sim_slot_index = \
+                    {SIM1_SLOT_INDEX : SIM2_SLOT_INDEX,
+                     SIM2_SLOT_INDEX : SIM1_SLOT_INDEX}[current_sim_slot_index]
+                self.log.info("Change Data to SIM slot: {}".
+                    format(next_sim_slot_index))
+                if not change_data_sim_and_verify_data(self.log, ads[0],
+                    next_sim_slot_index):
+                    self.log.error("Failed to change data SIM.")
+                    return False
+                current_sim_slot_index = next_sim_slot_index
+                if not verify_http_connection(self.log, ads[1]):
+                    self.log.error("Client should have Internet Access.")
+                    return False
+        finally:
+            ads[1].droid.telephonyToggleDataConnection(True)
+            WifiUtils.wifi_reset(self.log, ads[1])
+            if ads[0].droid.wifiIsApEnabled():
+                WifiUtils.stop_wifi_tethering(self.log, ads[0])
+        return True
         """ Tests End """
