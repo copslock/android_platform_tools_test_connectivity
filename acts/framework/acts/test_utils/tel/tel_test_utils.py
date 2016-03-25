@@ -28,6 +28,7 @@ from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import GEN_UNKNOWN
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_FOREGROUND
@@ -99,6 +100,7 @@ from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_lookup_tables import \
     connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
+from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
 from acts.test_utils.tel.tel_lookup_tables import \
     get_voice_mail_count_check_function
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_number_function
@@ -2884,6 +2886,28 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=1):
             retry -= 1
     return False
 
+
+def reset_preferred_network_type_to_allowable_range(log, ad):
+    """If preferred network type is not in allowable range, reset to GEN_4G
+    preferred network type.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        None
+    """
+    sub_info_list = ad.droid.subscriptionGetAllSubInfoList()
+    for sub_info in sub_info_list:
+        sub_id = sub_info['subscriptionId']
+        operator = get_operator_name(log, ad, sub_id)
+        current_preference = \
+            ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
+        if current_preference not in get_allowable_network_preference(operator):
+            network_preference = network_preference_for_generaton(GEN_4G, operator)
+            ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+                network_preference, sub_id)
 
 def task_wrapper(task):
     """Task wrapper for multithread_func
