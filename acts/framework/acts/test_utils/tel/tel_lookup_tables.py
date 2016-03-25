@@ -107,6 +107,9 @@ def get_voice_mail_number_function(operator):
 def get_voice_mail_count_check_function(operator):
     return _TelTables.voice_mail_count_check_function_tbl[operator]
 
+def get_allowable_network_preference(operator):
+    return _TelTables.allowable_network_preference_tbl[operator]
+
 
 class _ConnectionTables():
     connection_type_tbl = {
@@ -521,6 +524,26 @@ class _TelTables():
         tel_defines.CARRIER_SPT: default_cdma_operator_network_tbl,
         tel_defines.CARRIER_EEUK: default_umts_operator_network_tbl,
         tel_defines.CARRIER_VFUK: default_umts_operator_network_tbl
+    }
+
+    umts_allowable_network_preference_tbl = \
+        [tel_defines.NETWORK_MODE_LTE_GSM_WCDMA,
+         tel_defines.NETWORK_MODE_WCDMA_PREF,
+         tel_defines.NETWORK_MODE_GSM_ONLY]
+
+    cdma_allowable_network_preference_tbl = \
+        [tel_defines.NETWORK_MODE_LTE_CDMA_EVDO,
+         tel_defines.NETWORK_MODE_CDMA,
+         tel_defines.NETWORK_MODE_CDMA_NO_EVDO,
+         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA]
+
+    allowable_network_preference_tbl = {
+        tel_defines.CARRIER_TMO: umts_allowable_network_preference_tbl,
+        tel_defines.CARRIER_ATT: umts_allowable_network_preference_tbl,
+        tel_defines.CARRIER_VZW: cdma_allowable_network_preference_tbl,
+        tel_defines.CARRIER_SPT: cdma_allowable_network_preference_tbl,
+        tel_defines.CARRIER_EEUK: umts_allowable_network_preference_tbl,
+        tel_defines.CARRIER_VFUK: umts_allowable_network_preference_tbl
     }
 
     voice_mail_number_get_function_tbl = {
