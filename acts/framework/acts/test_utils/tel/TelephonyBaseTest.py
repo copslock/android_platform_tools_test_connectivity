@@ -96,10 +96,10 @@ class TelephonyBaseTest(BaseTestClass):
             setup_droid_properties(self.log, ad,
                                    self.user_params["sim_conf_file"])
             if not set_phone_screen_on(self.log, ad):
-                self.info.error("Failed to set phone screen-on time.")
+                self.log.error("Failed to set phone screen-on time.")
                 return False
             if not set_phone_silent_mode(self.log, ad):
-                self.info.error("Failed to set phone silent mode.")
+                self.log.error("Failed to set phone silent mode.")
                 return False
 
             ad.droid.telephonyAdjustPreciseCallStateListenLevel(
