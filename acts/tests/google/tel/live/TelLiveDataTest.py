@@ -23,6 +23,7 @@ from queue import Empty
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
@@ -61,10 +62,12 @@ from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
+from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import setup_sim
+from acts.test_utils.tel.tel_test_utils import set_subid_for_data
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
@@ -73,6 +76,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
+from acts.test_utils.tel.tel_test_utils import \
+    wait_for_data_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -1721,8 +1726,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering did NOT stopped.")
                 return False
 
-            self.log.info(
-                "Make sure WiFi can connect automatically.")
+            self.log.info("Make sure WiFi can connect automatically.")
             if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
                     not verify_http_connection(self.log, ads[0])):
                 self.log.error("Data did not return to WiFi")
@@ -1922,8 +1926,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
             WifiUtils.wifi_reset(self.log, ad, toggle)
 
-            if not wait_for_cell_data_connection(self.log, ad, True,
-                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
+            if not wait_for_cell_data_connection(
+                    self.log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
@@ -1938,8 +1942,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             WifiUtils.wifi_connect(self.log, ad, self.wifi_network_ssid,
                                    self.wifi_network_pass)
 
-            if not wait_for_wifi_data_connection(self.log, ad, True,
-                                                 MAX_WAIT_TIME_WIFI_CONNECTION):
+            if not wait_for_wifi_data_connection(
+                    self.log, ad, True, MAX_WAIT_TIME_WIFI_CONNECTION):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
@@ -2229,5 +2233,139 @@ class TelLiveDataTest(TelephonyBaseTest):
             WifiUtils.wifi_reset(self.log, ads[1])
             if ads[0].droid.wifiIsApEnabled():
                 WifiUtils.stop_wifi_tethering(self.log, ads[0])
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_cell_data_switch_to_wifi_switch_data_sim_2g(self):
+        """Switch Data SIM on 2G network.
+
+        Steps:
+        1. Data on default Data SIM.
+        2. Turn on WiFi, then data should be on WiFi.
+        3. Switch Data to another SIM. Disable WiFi.
+
+        Expected Results:
+        1. Verify Data on Cell
+        2. Verify Data on WiFi
+        3. After WiFi disabled, Cell Data is available on 2nd SIM.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad = self.android_devices[0]
+        current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
+        if current_sim_slot_index == SIM1_SLOT_INDEX:
+            next_sim_slot_index = SIM2_SLOT_INDEX
+        else:
+            next_sim_slot_index = SIM1_SLOT_INDEX
+        next_data_sub_id = get_subid_from_slot_index(self.log, ad,
+                                                     next_sim_slot_index)
+        self.log.info("Current Data is on subId: {}, SIM slot: {}".format(
+            current_data_sub_id, current_sim_slot_index))
+        if not ensure_network_generation_for_subscription(
+                self.log,
+                ad,
+                ad.droid.subscriptionGetDefaultDataSubId(),
+                GEN_2G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            self.log.error("Device data does not attach to 2G.")
+            return False
+        if not verify_http_connection(self.log, ad):
+            self.log.error("No Internet access on default Data SIM.")
+            return False
+
+        self.log.info("Connect to WiFi and verify Internet access.")
+        if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            self.log.error("WiFi connect fail.")
+            return False
+        if (not wait_for_wifi_data_connection(self.log, ad, True) or
+                not verify_http_connection(self.log, ad)):
+            self.log.error("Data is not on WiFi")
+            return False
+
+        try:
+            self.log.info(
+                "Change Data SIM, Disable WiFi and verify Internet access.")
+            set_subid_for_data(ad, next_data_sub_id)
+            WifiUtils.wifi_toggle_state(self.log, ad, False)
+            if not wait_for_data_attach_for_subscription(
+                    self.log, ad, next_data_sub_id,
+                    MAX_WAIT_TIME_NW_SELECTION):
+                self.log.error("Failed to attach data on subId:{}".format(
+                    next_data_sub_id))
+                return False
+            if not verify_http_connection(self.log, ad):
+                self.log.error("No Internet access after changing Data SIM.")
+                return False
+
+        finally:
+            self.log.info("Change Data SIM back.")
+            set_subid_for_data(ad, current_data_sub_id)
+
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_disable_data_on_non_active_data_sim(self):
+        """Switch Data SIM on 2G network.
+
+        Steps:
+        1. Data on default Data SIM.
+        2. Disable data on non-active Data SIM.
+
+        Expected Results:
+        1. Verify Data Status on Default Data SIM and non-active Data SIM.
+        1. Verify Data Status on Default Data SIM and non-active Data SIM.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad = self.android_devices[0]
+        current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
+        if current_sim_slot_index == SIM1_SLOT_INDEX:
+            non_active_sim_slot_index = SIM2_SLOT_INDEX
+        else:
+            non_active_sim_slot_index = SIM1_SLOT_INDEX
+        non_active_sub_id = get_subid_from_slot_index(
+            self.log, ad, non_active_sim_slot_index)
+        self.log.info("Current Data is on subId: {}, SIM slot: {}".format(
+            current_data_sub_id, current_sim_slot_index))
+
+        if not ensure_network_generation_for_subscription(
+                self.log,
+                ad,
+                ad.droid.subscriptionGetDefaultDataSubId(),
+                GEN_2G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            self.log.error("Device data does not attach to 2G.")
+            return False
+        if not verify_http_connection(self.log, ad):
+            self.log.error("No Internet access on default Data SIM.")
+            return False
+
+        if ad.droid.telephonyGetDataConnectionState() != DATA_STATE_CONNECTED:
+            self.log.error("Data Connection State should be connected.")
+            return False
+        # TODO: Check Data state for non-active subId.
+
+        try:
+            self.log.info("Disable Data on Non-Active Sub ID")
+            ad.droid.telephonyToggleDataConnectionForSubscription(
+                non_active_sub_id, False)
+            # TODO: Check Data state for non-active subId.
+            if ad.droid.telephonyGetDataConnectionState(
+            ) != DATA_STATE_CONNECTED:
+                self.log.error("Data Connection State should be connected.")
+                return False
+        finally:
+            self.log.info("Enable Data on Non-Active Sub ID")
+            ad.droid.telephonyToggleDataConnectionForSubscription(
+                non_active_sub_id, True)
         return True
         """ Tests End """
