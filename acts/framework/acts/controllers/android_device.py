@@ -381,6 +381,14 @@ class AndroidDevice:
             results.append(self._event_dispatchers[k])
         return results
 
+    @property
+    def is_adb_logcat_on(self):
+        """Whether there is an ongoing adb logcat collection.
+        """
+        if self.adb_logcat_process:
+            return True
+        return False
+
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on json config.
 
@@ -524,7 +532,7 @@ class AndroidDevice:
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
         """
-        if self.adb_logcat_process:
+        if self.is_adb_logcat_on:
             raise AndroidDeviceError(("Android device {} already has an adb "
                                      "logcat thread going on. Cannot start "
                                      "another one.").format(self.serial))
@@ -537,7 +545,7 @@ class AndroidDevice:
             extra_params = self.adb_logcat_param
         except AttributeError:
             extra_params = ""
-        cmd = "adb -s {} logcat -v threadtime {} > {}".format(
+        cmd = "adb -s {} logcat -v threadtime {} >> {}".format(
             self.serial, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
@@ -545,7 +553,7 @@ class AndroidDevice:
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.
         """
-        if not self.adb_logcat_process:
+        if not self.is_adb_logcat_on:
             raise AndroidDeviceError(("Android device {} does not have an "
                                       "ongoing adb logcat collection."
                                       ).format(self.serial))
@@ -707,6 +715,9 @@ class AndroidDevice:
         if self.is_bootloader:
             self.fastboot.reboot()
             return
+        has_adb_log = self.is_adb_logcat_on
+        if has_adb_log:
+            self.stop_adb_logcat()
         self.terminate_all_sessions()
         self.adb.reboot()
         time.sleep(5)
@@ -715,4 +726,6 @@ class AndroidDevice:
         self.root_adb()
         droid, ed = self.get_droid()
         ed.start()
+        if has_adb_log:
+            self.start_adb_logcat()
         return droid, ed
