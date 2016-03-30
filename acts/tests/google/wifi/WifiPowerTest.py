@@ -26,6 +26,8 @@ pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
 start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
     "PMCMainActivity")
+pmc_interval_cmd = ("am broadcast -a com.android.pmc.action.SETINTERVAL --es "
+                    "Value %s ")
 pmc_start_connect_scan_cmd = "%sStartConnectivityScan" % pmc_base_cmd
 pmc_stop_connect_scan_cmd = "%sStopConnectivityScan" % pmc_base_cmd
 pmc_start_gscan_no_dfs_cmd = "%sStartGScanBand" % pmc_base_cmd
@@ -43,10 +45,11 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             "test_power_wifi_on_idle",
             "test_power_disconnected_connectivity_scan",
             "test_power_connected_2g_continuous_download",
-            "test_power_connected_to_2g_idle",
-            "test_power_connected_to_continuous_download",
-            "test_power_connected_to_5g_idle",
+            "test_power_connected_2g_idle",
+            "test_power_connected_5g_continuous_download",
+            "test_power_connected_5g_idle",
             "test_power_gscan_three_2g_channels",
+            "test_power_gscan_all_channels_no_dfs",
             "test_power_connected_2g_gscan_all_channels_no_dfs",
             "test_power_connected_5g_gscan_all_channels_no_dfs"
         )
@@ -55,6 +58,9 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.hz = 10
         self.offset = 5 * 60
         self.duration = 30 * 60 + self.offset
+        self.scan_interval = 15
+        # Continuosly download
+        self.download_interval = 0
         self.mon_data_path = os.path.join(self.log_path, "Monsoon")
 
         self.mon = self.monsoons[0]
@@ -128,6 +134,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def test_power_disconnected_connectivity_scan(self):
         try:
+            self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
             self.dut.adb.shell(pmc_start_connect_scan_cmd)
             self.log.info("Started connectivity scan.")
             self.measure_and_process_result()
@@ -135,12 +142,13 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_connect_scan_cmd)
             self.log.info("Stoped connectivity scan.")
 
-    def test_power_connected_to_2g_idle(self):
+    def test_power_connected_2g_idle(self):
         wutils.wifi_connect(self.dut, self.network_2g)
         self.measure_and_process_result()
 
     def test_power_connected_2g_continuous_download(self):
         try:
+            self.dut.adb.shell(pmc_interval_cmd % self.download_interval)
             self.dut.adb.shell(pmc_start_1MB_download_cmd)
             self.log.info("Start downloading 1MB file continuously.")
             self.measure_and_process_result()
@@ -148,14 +156,15 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_1MB_download_cmd)
             self.log.info("Stopped downloading 1MB file.")
 
-    def test_power_connected_to_5g_idle(self):
+    def test_power_connected_5g_idle(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
         wutils.wifi_connect(self.dut, self.network_5g)
         self.measure_and_process_result()
 
-    def test_power_connected_to_5g_continuous_download(self):
+    def test_power_connected_5g_continuous_download(self):
         try:
+            self.dut.adb.shell(pmc_interval_cmd % self.download_interval)
             self.dut.adb.shell(pmc_start_1MB_download_cmd)
             self.log.info("Started downloading 1MB file continuously.")
             self.measure_and_process_result()
@@ -165,6 +174,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def test_power_gscan_three_2g_channels(self):
         try:
+            self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
             self.dut.adb.shell(pmc_start_gscan_specific_channels_cmd)
             self.log.info("Started gscan for 2G channels 1, 6, and 11.")
             self.measure_and_process_result()
@@ -174,6 +184,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def test_power_gscan_all_channels_no_dfs(self):
         try:
+            self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
             self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
             self.log.info("Started gscan for all non-DFS channels.")
             self.measure_and_process_result()
@@ -184,6 +195,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
     def test_power_connected_2g_gscan_all_channels_no_dfs(self):
         try:
             wutils.wifi_connect(self.dut, self.network_2g)
+            self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
             self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
             self.log.info("Started gscan for all non-DFS channels.")
             self.measure_and_process_result()
@@ -194,6 +206,7 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
     def test_power_connected_5g_gscan_all_channels_no_dfs(self):
         try:
             wutils.wifi_connect(self.dut, self.network_5g)
+            self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
             self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
             self.log.info("Started gscan for all non-DFS channels.")
             self.measure_and_process_result()
