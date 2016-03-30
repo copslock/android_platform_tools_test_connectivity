@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+<<<<<<< HEAD
 import sys
+=======
+>>>>>>> 00ad85ebc1f345d402f625e2a94d36a2a70b5dd1
 import unittest
 
 import acts_hello_world_test
@@ -12,4 +15,7 @@ if __name__ == "__main__":
     suite.addTest(acts_hello_world_test.ActsHelloWorldTest("test_acts"))
     runner = unittest.TextTestRunner()
     results = runner.run(suite)
+<<<<<<< HEAD
     sys.exit(not results.wasSuccessful())
+=======
+>>>>>>> 00ad85ebc1f345d402f625e2a94d36a2a70b5dd1
