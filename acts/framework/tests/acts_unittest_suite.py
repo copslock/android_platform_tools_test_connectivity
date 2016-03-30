@@ -14,25 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-<<<<<<< HEAD
 import sys
 import unittest
 
-import acts_adb_test
-=======
-import unittest
-
->>>>>>> 1652d1e... Move all ACTS unit tests to pyunit format.
 import acts_android_device_test
 import acts_base_class_test
 import acts_records_test
 
 def compile_suite():
     test_classes_to_run = [
-<<<<<<< HEAD
-        acts_adb_test.ActsAdbTest,
-=======
->>>>>>> 1652d1e... Move all ACTS unit tests to pyunit format.
         acts_base_class_test.ActsBaseClassTest,
         acts_android_device_test.ActsAndroidDeviceTest,
         acts_records_test.ActsRecordsTest
@@ -52,7 +42,4 @@ if __name__ == "__main__":
     # This is the entry point for running all ACTS unit tests.
     runner = unittest.TextTestRunner()
     results = runner.run(compile_suite())
-<<<<<<< HEAD
     sys.exit(not results.wasSuccessful())
-=======
->>>>>>> 1652d1e... Move all ACTS unit tests to pyunit format.
