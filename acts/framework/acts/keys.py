@@ -37,6 +37,7 @@ class Config(enum.Enum):
     key_address = "Address"
     key_iperf_server = "IPerfServer"
     key_monsoon = "Monsoon"
+    key_sniffer = "Sniffer"
     # Internal keys, used internally, not exposed to user's config files.
     ikey_lock = "lock"
     ikey_user_param = "user_params"
@@ -50,6 +51,7 @@ class Config(enum.Enum):
     ikey_monsoon = "monsoons"
     ikey_iperf_server = "iperf_servers"
     ikey_cli_args = "cli_args"
+    ikey_sniffer = "sniffers"
     # module name of controllers
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
@@ -57,6 +59,7 @@ class Config(enum.Enum):
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
+    m_key_sniffer = "sniffer"
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
@@ -68,7 +71,8 @@ class Config(enum.Enum):
         key_access_point,
         key_attenuator,
         key_iperf_server,
-        key_monsoon
+        key_monsoon,
+        key_sniffer
     ]
     tb_config_reserved_keys = controller_names + [key_testbed_name]
 
