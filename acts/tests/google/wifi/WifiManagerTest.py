@@ -57,6 +57,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         wutils.reset_wifi(self.dut)
         self.iperf_server.stop()
 
+    def on_fail(self, test_name, begin_time):
+        self.dut.cat_adb_log(test_name, begin_time)
+
     """Helper Functions"""
     def connect_to_wifi_network_with_password(self, params):
         """Connection logic for open and psk wifi networks.

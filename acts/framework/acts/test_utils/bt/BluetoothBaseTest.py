@@ -19,6 +19,7 @@
 
 import time
 from acts.base_test import BaseTestClass
+from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import (log_energy_info,
                                               reset_bluetooth,
                                               setup_multiple_devices_for_bt_test,
@@ -63,8 +64,9 @@ class BluetoothBaseTest(BaseTestClass):
 
         if "no_bug_report_on_fail" not in self.user_params:
             try:
-                self.take_bug_reports(
-                    test_name, begin_time, self.android_devices)
+                android_device.take_bug_reports(test_name,
+                                                begin_time,
+                                                self.android_devices)
             except:
                 self.log.error("Failed to take a bug report for {}"
                                .format(test_name))

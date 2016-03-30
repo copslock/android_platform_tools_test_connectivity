@@ -110,6 +110,9 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
         self.dut.droid.wifiStopTrackingStateChange()
         self.set_attns("default")
 
+    def on_fail(self, test_name, begin_time):
+        self.dut.cat_adb_log(test_name, begin_time)
+
     def set_attns(self, attn_val_name):
         """Sets attenuation values on attenuators used in this test.
 
