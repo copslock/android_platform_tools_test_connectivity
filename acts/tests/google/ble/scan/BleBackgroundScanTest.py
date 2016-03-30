@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 This test script exercises background scan test scenarios.
 """
@@ -50,10 +49,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = (
-            "test_background_scan",
-            "test_background_scan_ble_disabled",
-        )
+        self.tests = ("test_background_scan",
+                      "test_background_scan_ble_disabled", )
 
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
@@ -68,16 +65,16 @@ class BleBackgroundScanTest(BluetoothBaseTest):
     def teardown_test(self):
         self.log.debug(log_energy_info(self.android_devices, "End"))
         cleanup_scanners_and_advertisers(
-            self.scn_ad, self.active_adv_callback_list,
-            self.adv_ad, self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list, self.adv_ad,
+            self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
             self.adv_ad.droid)
-        self.adv_ad.droid.bleStartBleAdvertising(
-            adv_callback, adv_data, adv_settings)
+        self.adv_ad.droid.bleStartBleAdvertising(adv_callback, adv_data,
+                                                 adv_settings)
         self.active_adv_callback_list.append(adv_callback)
 
     def _verify_no_events_found(self, event_name):
@@ -128,8 +125,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         self.scn_ad.ed.pop_event(bluetooth_on, self.default_timeout * 2)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout)
         return True
@@ -166,8 +163,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
         try:
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
             self.scn_ad.ed.pop_event(scan_result.format(scan_callback))
             self.log.info("Was able to start background scan even though ble "
                           "was disabled.")

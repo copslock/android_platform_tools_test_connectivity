@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to execute Bluetooth basic functionality test cases.
 This test was designed to be run in a shield box.
@@ -22,7 +21,6 @@ This test was designed to be run in a shield box.
 import threading
 import time
 from contextlib import suppress
-
 
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
@@ -38,26 +36,24 @@ class SppStressTest(BluetoothBaseTest):
     default_timeout = 10
     scan_discovery_time = 5
     thread_list = []
-    message = ("Space: the final frontier. These are the voyages of "
-               "the starship Enterprise. Its continuing mission: to explore "
-               "strange new worlds, to seek out new life and new civilizations,"
-               " to boldly go where no man has gone before.")
+    message = (
+        "Space: the final frontier. These are the voyages of "
+        "the starship Enterprise. Its continuing mission: to explore "
+        "strange new worlds, to seek out new life and new civilizations,"
+        " to boldly go where no man has gone before.")
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.server_ad = self.android_devices[0]
         self.client_ad = self.android_devices[1]
-        self.tests = (
-            "test_rfcomm_connection_stress",
-            "test_rfcomm_read_write_stress",
-        )
+        self.tests = ("test_rfcomm_connection_stress",
+                      "test_rfcomm_read_write_stress", )
 
     def _clear_bonded_devices(self):
         for a in self.android_devices:
             bonded_device_list = a.droid.bluetoothGetConnectedDevices()
             for device in bonded_device_list:
                 a.droid.bluetoothUnbond(device)
-
 
     def on_fail(self, test_name, begin_time):
         take_btsnoop_logs(self.android_devices, self, test_name)
@@ -69,12 +65,13 @@ class SppStressTest(BluetoothBaseTest):
                 thread.join()
 
     def orchestrate_rfcomm_connect(self, server_mac):
-        accept_thread = threading.Thread(
-            target=rfcomm_accept, args=(self.server_ad.droid,))
+        accept_thread = threading.Thread(target=rfcomm_accept,
+                                         args=(self.server_ad.droid, ))
         self.thread_list.append(accept_thread)
         accept_thread.start()
         connect_thread = threading.Thread(
-            target=rfcomm_connect, args=(self.client_ad.droid, server_mac))
+            target=rfcomm_connect,
+            args=(self.client_ad.droid, server_mac))
         self.thread_list.append(connect_thread)
         connect_thread.start()
 
@@ -103,7 +100,7 @@ class SppStressTest(BluetoothBaseTest):
         Priority: 1
         """
         server_mac = get_bt_mac_address(self.client_ad.droid,
-            self.server_ad.droid)
+                                        self.server_ad.droid)
         self._clear_bonded_devices()
         # temporary workaround. Need to find out why I can't connect after
         # I do a device discovery from get_bt_mac_address.
@@ -150,7 +147,7 @@ class SppStressTest(BluetoothBaseTest):
         Priority: 1
         """
         server_mac = get_bt_mac_address(self.client_ad.droid,
-            self.server_ad.droid)
+                                        self.server_ad.droid)
         self._clear_bonded_devices()
         # temporary workaround. Need to find out why I can't connect after
         # I do a device discovery from get_bt_mac_address.
