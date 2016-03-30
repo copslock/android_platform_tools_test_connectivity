@@ -214,3 +214,23 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         finally:
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
+
+    def test_power_connected_2g_gscan_all_channels_no_dfs(self):
+        try:
+            wutils.wifi_connect(self.dut, self.network_2g)
+            self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
+            self.log.info("Started gscan for all non-DFS channels.")
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_stop_gscan_cmd)
+            self.log.info("Stopped gscan.")
+
+    def test_power_connected_5g_gscan_all_channels_no_dfs(self):
+        try:
+            wutils.wifi_connect(self.dut, self.network_5g)
+            self.dut.adb.shell(pmc_start_gscan_no_dfs_cmd)
+            self.log.info("Started gscan for all non-DFS channels.")
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_stop_gscan_cmd)
+            self.log.info("Stopped gscan.")
