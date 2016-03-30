@@ -857,7 +857,11 @@ def expand_enterprise_config_by_phase2(config):
         A list of enterprise configs.
     """
     results = []
-    for phase2_type in WifiEnums.EapPhase2:
+    phase2_types = WifiEnums.EapPhase2
+    if config[WifiEnums.Enterprise.EAP] == WifiEnums.Eap.PEAP:
+        # Skip unsupported phase2 types for PEAP.
+        phase2_types = [WifiEnums.EapPhase2.GTC, WifiEnums.EapPhase2.MSCHAPV2]
+    for phase2_type in phase2_types:
         # Skip a special case for passpoint TTLS.
         if (WifiEnums.Enterprise.FQDN in config and
             phase2_type == WifiEnums.EapPhase2.GTC):
