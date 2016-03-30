@@ -60,7 +60,7 @@ def is_port_available(port):
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('localhost', port))
         return True
-    except OSError:
+    except socket.error:
         return False
     finally:
         if s:
