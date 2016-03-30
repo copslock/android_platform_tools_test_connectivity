@@ -21,8 +21,6 @@ from acts import base_test
 from acts.controllers import android_device
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-from acts import asserts
-
 ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 ON_MATCH = "WifiNanSessionOnMatch"
 ON_MESSAGE_RX = "WifiNanSessionOnMessageReceived"
@@ -146,7 +144,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             asserts.fail('Timed out while waiting for %s on publisher' %
                       ON_MESSAGE_RX)
 
-        asserts.assert_true(self.reliable_tx(self.publisher,
+        asserts.assert_true(self.reliable_tx(self.publisher, pub_id,
                                           event['data']['peerId'],
                                           pub2sub_msg),
                          "Failed to transmit from publisher")
