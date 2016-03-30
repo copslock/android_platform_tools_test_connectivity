@@ -58,6 +58,7 @@ def create(configs, logger):
         if ad.serial not in connected_ads:
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
+        ad.start_adb_logcat()
         try:
             ad.get_droid()
             ad.ed.start()
