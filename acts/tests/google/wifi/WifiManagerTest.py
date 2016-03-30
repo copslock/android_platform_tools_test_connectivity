@@ -259,3 +259,4 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         wutils.wifi_connect(self.dut, self.open_network)
         self.test_energy_info()
+
