@@ -87,10 +87,6 @@ class TestRunner(object):
             self.testbed_name)
         self.controller_destructors = {}
         self.run_list = run_list
-        tu_path_key = Config.key_test_utils_paths.value
-        if tu_path_key in test_configs:
-            test_utils_paths = test_configs[tu_path_key]
-            self.add_test_utils_paths(test_utils_paths)
         try:
             # self.parse_config initializes controllers. If anything happens in
             # __init__ after controllers are initialized, controllers should be
@@ -104,26 +100,6 @@ class TestRunner(object):
             raise
         self.results = TestResult()
         self.running = False
-
-    def add_test_utils_paths(self, paths):
-        """Add custom test util paths to python system path.
-
-        Verifies the custom test util paths follow the proper directory
-        structure before adding them.
-
-        Args:
-            paths: A list of strings, specifying locations of custom test util
-                packages and modules.
-        """
-        for p in paths:
-            p = os.path.abspath(p)
-            # Verify the path has the required 'acts/test_utils' sub dir.
-            sub_dir = os.path.join("acts", "test_utils")
-            sub_dir_p = os.path.join(p, sub_dir)
-            if not os.path.exists(sub_dir_p):
-                raise USERError(("Test util path %s missing required subdir "
-                                "'%s'.") % (p, sub_dir))
-            sys.path.append(p)
 
     def import_test_modules(self, test_paths):
         """Imports test classes from test scripts.
