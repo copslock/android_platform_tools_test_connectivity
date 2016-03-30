@@ -14,7 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+<<<<<<< HEAD
 from acts import asserts
+=======
+>>>>>>> 00ad85ebc1f345d402f625e2a94d36a2a70b5dd1
 from acts import base_test
 
 class HelloWorldTest(base_test.BaseTestClass):
@@ -22,4 +25,8 @@ class HelloWorldTest(base_test.BaseTestClass):
     def test_hello_world(self):
         self.log.info("This is a bare minimal test to make sure the basic ACTS"
                       "test flow works.")
+<<<<<<< HEAD
         asserts.explicit_pass("Hello World")
+=======
+        self.explicit_pass("Hello World")
+>>>>>>> 00ad85ebc1f345d402f625e2a94d36a2a70b5dd1
