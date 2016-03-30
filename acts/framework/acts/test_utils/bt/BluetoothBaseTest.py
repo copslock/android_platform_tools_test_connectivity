@@ -20,13 +20,12 @@
 import time
 from acts.base_test import BaseTestClass
 from acts.controllers import android_device
-from acts.test_utils.bt.bt_test_utils import (log_energy_info,
-                                              reset_bluetooth,
-                                              setup_multiple_devices_for_bt_test,
-                                              take_btsnoop_logs)
+from acts.test_utils.bt.bt_test_utils import (
+    log_energy_info, reset_bluetooth, setup_multiple_devices_for_bt_test,
+    take_btsnoop_logs)
+
 
 class BluetoothBaseTest(BaseTestClass):
-
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
 
@@ -34,13 +33,12 @@ class BluetoothBaseTest(BaseTestClass):
     # faster log lookup and reduce ambiguity in logging.
     def bt_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
-            test_id = "{}:{}:{}".format(
-                self.__class__.__name__,
-                fn.__name__,
-                time.time())
+            test_id = "{}:{}:{}".format(self.__class__.__name__, fn.__name__,
+                                        time.time())
             log_string = "[Test ID] {}".format(test_id)
             self.log.info(log_string)
             return fn(self, *args, **kwargs)
+
         return _safe_wrap_test_case
 
     def setup_class(self):
@@ -57,17 +55,16 @@ class BluetoothBaseTest(BaseTestClass):
         return True
 
     def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs".
-                       format(test_name))
+        self.log.debug(
+            "Test {} failed. Gathering bugreport and btsnoop logs".format(
+                test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
         reset_bluetooth(self.android_devices)
 
         if "no_bug_report_on_fail" not in self.user_params:
             try:
-                android_device.take_bug_reports(test_name,
-                                                begin_time,
+                android_device.take_bug_reports(test_name, begin_time,
                                                 self.android_devices)
             except:
                 self.log.error("Failed to take a bug report for {}"
                                .format(test_name))
-

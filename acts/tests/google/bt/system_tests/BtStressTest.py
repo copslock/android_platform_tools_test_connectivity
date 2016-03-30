@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Basic Bluetooth Classic stress tests.
 """
@@ -30,9 +29,7 @@ class BtStressTest(BaseTestClass):
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_toggle_bluetooth",
-        )
+        self.tests = ("test_toggle_bluetooth", )
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
