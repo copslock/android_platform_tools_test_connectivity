@@ -19,6 +19,7 @@ import os
 import itertools
 
 from queue import Empty
+from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.utils import load_config
 from acts.test_utils.wifi.wifi_test_utils import start_wifi_track_bssid
@@ -60,7 +61,7 @@ class WifiScannerBssidTest(BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wifi_test_device_init(self.dut)
-        self.assert_true(self.dut.droid.wifiIsScannerSupported(),
+        asserts.assert_true(self.dut.droid.wifiIsScannerSupported(),
             "Device %s doesn't support WifiScanner, abort." % self.dut.model)
         """It will setup the required dependencies and fetch the user params from
           config file"""
@@ -127,7 +128,7 @@ class WifiScannerBssidTest(BaseTestClass):
             self.scan_idx = data["Index"]
             results = self.fetch_scan_result(self.scan_idx, scan_setting)
             self.log.debug("scan result {}".format(results))
-            self.assert_true(results, "Device is not able to fetch the scan results")
+            asserts.assert_true(results, "Device is not able to fetch the scan results")
             for result in results:
                 for bssid_setting in bssid_settings:
                     if bssid_setting[WifiEnums.BSSID_KEY] == result[WifiEnums.BSSID_KEY]:
@@ -179,7 +180,7 @@ class WifiScannerBssidTest(BaseTestClass):
         valid_env = self.start_scan_and_validate_environment(
                            self.default_scan_setting, track_setting["bssidInfos"])
         try:
-            self.assert_true(valid_env,
+            asserts.assert_true(valid_env,
                              "Test environment is not valid, AP is in range")
             self.attenuators[self.attenuator_id].set_atten(0)
             event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
@@ -188,7 +189,7 @@ class WifiScannerBssidTest(BaseTestClass):
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
-            self.assert_true(found,
+            asserts.assert_true(found,
                              "Test fail because Bssid is not found in event results")
         except Empty as error:
             self.log.error("{}".format(error))
@@ -228,7 +229,7 @@ class WifiScannerBssidTest(BaseTestClass):
         idx = None
         found = False
         try:
-            self.assert_true(valid_env,
+            asserts.assert_true(valid_env,
                              "Test environment is not valid, AP is in range")
             data = start_wifi_track_bssid(self.dut, track_setting)
             idx = data["Index"]
@@ -240,7 +241,7 @@ class WifiScannerBssidTest(BaseTestClass):
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
-            self.assert_true(found,
+            asserts.assert_true(found,
                              "Test fail because Bssid is not found in event results")
             if found:
                 self.attenuators[self.attenuator_id].set_atten(90)
@@ -314,7 +315,7 @@ class WifiScannerBssidTest(BaseTestClass):
                             track_setting["apLostThreshold"]))
         failed = self.run_generated_testcases( self.track_bssid_with_vaild_scan_for_found,
                                                track_settings, name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          "Track bssid found failed with these bssids: {}".
                          format(failed))
 
@@ -337,7 +338,7 @@ class WifiScannerBssidTest(BaseTestClass):
                             track_setting["apLostThreshold"]))
         failed = self.run_generated_testcases( self.track_bssid_with_vaild_scan_for_lost,
                                                track_settings, name_func = name_func)
-        self.assert_true(not failed,
+        asserts.assert_true(not failed,
                          "Track bssid lost failed with these bssids: {}".format(failed))
 
     def test_wifi_track_bssid_sanity(self):
@@ -372,7 +373,7 @@ class WifiScannerBssidTest(BaseTestClass):
                                                      track_setting["bssidInfos"])
       idx = None
       try:
-          self.assert_true(valid_env,
+          asserts.assert_true(valid_env,
                                "Test environment is not valid, AP is in range")
           data = start_wifi_track_bssid(self.dut, track_setting)
           idx = data["Index"]
@@ -384,7 +385,7 @@ class WifiScannerBssidTest(BaseTestClass):
           self.log.debug(event)
           found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                     event["data"]["Results"])
-          self.assert_true(not found,
+          asserts.assert_true(not found,
                              "Test fail because Bssid onFound event is triggered")
       except Empty as error:
           self.log.info("As excepted event didn't occurred with different scan setting")
@@ -414,7 +415,7 @@ class WifiScannerBssidTest(BaseTestClass):
                                                        track_setting["bssidInfos"])
         idx = None
         try:
-            self.assert_true(valid_env,
+            asserts.assert_true(valid_env,
                                "Test environment is not valid, AP is in range")
             self.attenuators[self.attenuator_id].set_atten(0)
             event_name = "{}{}onFound".format(BSSID_EVENT_TAG, idx)
@@ -424,7 +425,7 @@ class WifiScannerBssidTest(BaseTestClass):
             self.log.debug(event)
             found = self.check_bssid_in_found_result(track_setting["bssidInfos"],
                                                       event["data"]["Results"])
-            self.assert_true(not found,
+            asserts.assert_true(not found,
                              "Test fail because Bssid onFound event is triggered")
         except Empty as error:
             self.log.info("As excepted event didn't occurred with different scan setting")
