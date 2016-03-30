@@ -16,24 +16,25 @@
 
 from builtins import str
 
+import os
 import time
 import traceback
 
+from acts import logger as acts_logger
+from acts import signals
+from acts import utils
+from acts.controllers import adb
 from acts.controllers import android
-from acts.controllers.adb import AdbProxy
-from acts.controllers.adb import is_port_available
-from acts.controllers.adb import get_available_host_port
-from acts.controllers.fastboot import FastbootProxy
-from acts.controllers.event_dispatcher import EventDispatcher
-from acts.logger import LoggerProxy
-from acts.signals import ControllerError
-from acts.utils import exe_cmd
+from acts.controllers import event_dispatcher
+from acts.controllers import fastboot
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
+# Key name for adb logcat extra params in config file.
+ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 
-class AndroidDeviceError(ControllerError):
+class AndroidDeviceError(signals.ControllerError):
     pass
 
 class DoesNotExistError(AndroidDeviceError):
@@ -44,7 +45,7 @@ def create(configs, logger):
     if not configs:
         raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
-        ads = get_all_instances()
+        ads = get_all_instances(logger=logger)
     elif not isinstance(configs, list):
         raise AndroidDeviceError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
@@ -69,6 +70,7 @@ def create(configs, logger):
             msg = "Failed to start sl4a on %s" % ad.serial
             logger.exception(msg)
             raise AndroidDeviceError(msg)
+        ad.start_adb_logcat()
     return ads
 
 def destroy(ads):
@@ -77,6 +79,8 @@ def destroy(ads):
             ad.terminate_all_sessions()
         except:
             pass
+        if self.adb_logcat_process:
+            ad.stop_adb_logcat()
 
 def _parse_device_list(device_list_str, key):
     """Parses a byte string representing a list of devices. The string is
@@ -104,7 +108,7 @@ def list_adb_devices():
     Returns:
         A list of android device serials. Empty if there's none.
     """
-    out = AdbProxy().devices()
+    out = adb.AdbProxy().devices()
     return _parse_device_list(out, "device")
 
 def list_fastboot_devices():
@@ -114,7 +118,7 @@ def list_fastboot_devices():
     Returns:
         A list of android device serials. Empty if there's none.
     """
-    out = FastbootProxy().devices()
+    out = fastboot.FastbootProxy().devices()
     return _parse_device_list(out, "fastboot")
 
 def get_instances(serials, logger=None):
@@ -227,6 +231,25 @@ def get_device(ads, **kwargs):
         serials = [ad.serial for ad in filtered]
         raise AndroidDeviceError("More than one device matched: %s" % serials)
 
+def take_bug_reports(ads, test_name, begin_time):
+    """Takes bug reports on a list of android devices.
+
+    If you want to take a bug report, call this function with a list of
+    android_device objects in on_fail. But reports will be taken on all the
+    devices in the list concurrently. Bug report takes a relative long
+    time to take, so use this cautiously.
+
+    Args:
+        ads: A list of AndroidDevice instances.
+        test_name: Name of the test case that triggered this bug report.
+        begin_time: Logline format timestamp taken when the test started.
+    """
+    begin_time = acts_logger.normalize_log_line_timestamp(begin_time)
+    def take_br(test_name, begin_time, ad):
+        ad.take_bug_report(test_name, begin_time)
+    args = [(test_name, begin_time, ad) for ad in ads]
+    utils.concurrent_exec(take_br, args)
+
 class AndroidDevice:
     """Class representing an android device.
 
@@ -238,13 +261,18 @@ class AndroidDevice:
     Attributes:
         serial: A string that's the serial number of the Androi device.
         h_port: An integer that's the port number for adb port forwarding used
-            on the computer the Android device is connected
+                on the computer the Android device is connected
         d_port: An integer  that's the port number used on the Android device
-            for adb port forwarding.
+                for adb port forwarding.
         log: A LoggerProxy object used for the class's internal logging.
+        log_path: A string that is the path where all logs collected on this
+                  android device should be stored.
+        adb_logcat_process: A process that collects the adb logcat.
+        adb_logcat_file_path: A string that's the full path to the adb logcat
+                              file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
-            via fastboot.
+                  via fastboot.
     """
 
     def __init__(self, serial="", host_port=None, device_port=8080,
@@ -252,17 +280,23 @@ class AndroidDevice:
         self.serial = serial
         self.h_port = host_port
         self.d_port = device_port
-        self.log = LoggerProxy(logger)
+        self.log = acts_logger.LoggerProxy(logger)
+        lp = self.log.log_path
+        self.log_path = os.path.join(lp, "AndroidDevice%s" % serial)
         self._droid_sessions = {}
         self._event_dispatchers = {}
-        self.adb = AdbProxy(serial)
-        self.fastboot = FastbootProxy(serial)
+        self.adb_logcat_process = None
+        self.adb_logcat_file_path = None
+        self.adb = adb.AdbProxy(serial)
+        self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader:
             self.root_adb()
 
     def __del__(self):
         if self.h_port:
             self.adb.forward("--remove tcp:%d" % self.h_port)
+        if self.adb_logcat_process:
+            self.stop_adb_logcat()
 
     @property
     def is_bootloader(self):
@@ -398,8 +432,8 @@ class AndroidDevice:
             >>> ad = AndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        if not self.h_port or not is_port_available(self.h_port):
-            self.h_port = get_available_host_port()
+        if not self.h_port or not adb.is_port_available(self.h_port):
+            self.h_port = adb.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
         try:
             droid = self.start_new_session()
@@ -424,13 +458,116 @@ class AndroidDevice:
         if ed_key in self._event_dispatchers:
             if self._event_dispatchers[ed_key] is None:
                 raise AndroidDeviceError("EventDispatcher Key Empty")
-            self.log.debug(("Returning existing key %s for event dispatcher!"
-                ) % ed_key)
+            self.log.debug("Returning existing key %s for event dispatcher!",
+                           ed_key)
             return self._event_dispatchers[ed_key]
         event_droid = self.add_new_connection_to_session(droid.uid)
-        ed = EventDispatcher(event_droid)
+        ed = event_dispatcher.EventDispatcher(event_droid)
         self._event_dispatchers[ed_key] = ed
         return ed
+
+    def _is_timestamp_in_range(self, target, begin_time, end_time):
+        low = acts_logger.logline_timestamp_comparator(begin_time, target) <= 0
+        high = acts_logger.logline_timestamp_comparator(end_time, target) >= 0
+        return low and high
+
+    def cat_adb_log(self, tag, begin_time):
+        """Takes an excerpt of the adb logcat log from a certain time point to
+        current time.
+
+        Args:
+            tag: An identifier of the time period, usualy the name of a test.
+            begin_time: Logline format timestamp of the beginning of the time
+                period.
+        """
+        if not self.adb_logcat_file_path:
+            raise AndroidDeviceError(("Attempting to cat adb log when none has"
+                                      " been collected on Android device %s."
+                                      ) % self.serial)
+        end_time = acts_logger.get_log_line_timestamp()
+        self.log.debug("Extracting adb log from logcat.")
+        adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
+        utils.create_dir(adb_excerpt_path)
+        f_name = os.path.basename(self.adb_logcat_file_path)
+        out_name = f_name.replace("adblog,", "").replace(".txt", "")
+        out_name = ",{},{}.txt".format(begin_time, out_name)
+        tag_len = utils.MAX_FILENAME_LEN - len(out_name)
+        tag = tag[:tag_len]
+        out_name = tag + out_name
+        full_adblog_path = os.path.join(adb_excerpt_path, out_name)
+        with open(full_adblog_path, 'w', encoding='utf-8') as out:
+            in_file = self.adb_logcat_file_path
+            with open(in_file, 'r', encoding='utf-8', errors='replace') as f:
+                in_range = False
+                while True:
+                    line = None
+                    try:
+                        line = f.readline()
+                        if not line:
+                            break
+                    except:
+                        continue
+                    line_time = line[:acts_logger.log_line_timestamp_len]
+                    if not acts_logger.is_valid_logline_timestamp(line_time):
+                        continue
+                    if self._is_timestamp_in_range(line_time, begin_time,
+                        end_time):
+                        in_range = True
+                        if not line.endswith('\n'):
+                            line += '\n'
+                        out.write(line)
+                    else:
+                        if in_range:
+                            break
+
+    def start_adb_logcat(self):
+        """Starts a standing adb logcat collection in separate subprocesses and
+        save the logcat in a file.
+        """
+        if self.adb_logcat_process:
+            raise AndroidDeviceError(("Android device {} already has an adb "
+                                     "logcat thread going on. Cannot start "
+                                     "another one.").format(self.serial))
+        # Disable adb log spam filter.
+        self.adb.shell("logpersist.start")
+        f_name = "adblog,{},{}.txt".format(self.model, self.serial)
+        utils.create_dir(self.log_path)
+        logcat_file_path = os.path.join(self.log_path, f_name)
+        try:
+            extra_params = self.adb_logcat_param
+        except AttributeError:
+            extra_params = ""
+        cmd = "adb -s {} logcat -v threadtime {} > {}".format(
+            self.serial, extra_params, logcat_file_path)
+        self.adb_logcat_process = utils.start_standing_subprocess(cmd)
+        self.adb_logcat_file_path = logcat_file_path
+
+    def stop_adb_logcat(self):
+        """Stops the adb logcat collection subprocess.
+        """
+        if not self.adb_logcat_process:
+            raise AndroidDeviceError(("Android device {} does not have an "
+                                      "ongoing adb logcat collection."
+                                      ).format(self.serial))
+        utils.stop_standing_subprocess(self.adb_logcat_process)
+        self.adb_logcat_process = None
+
+    def take_bug_report(self, test_name, begin_time):
+        """Takes a bug report on the device and stores it in a file.
+
+        Args:
+            test_name: Name of the test case that triggered this bug report.
+            begin_time: Logline format timestamp taken when the test started.
+        """
+        br_path = os.path.join(self.log_path, "BugReports")
+        utils.create_dir(br_path)
+        base_name = ",{},{}.txt".format(begin_time, self.serial)
+        test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
+        out_name = test_name[:test_name_len] + base_name
+        full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
+        self.log.info("Taking bugreport for %s on %s", test_name, self.serial)
+        self.adb.bugreport(" > {}".format(full_out_path))
+        self.log.info("Bugreport for %s taken at %s", test_name, full_out_path)
 
     def start_new_session(self):
         """Start a new session in sl4a.
