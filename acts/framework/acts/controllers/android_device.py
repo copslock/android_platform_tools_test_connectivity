@@ -71,7 +71,6 @@ def create(configs, logger):
             msg = "Failed to start sl4a on %s" % ad.serial
             logger.exception(msg)
             raise AndroidDeviceError(msg)
-        ad.start_adb_logcat()
     return ads
 
 def destroy(ads):
