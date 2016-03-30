@@ -341,7 +341,6 @@ def start_standing_subprocess(cmd):
                          preexec_fn=os.setpgrp)
     return p
 
-
 def stop_standing_subprocess(p, kill_signal=signal.SIGTERM):
     """Stops a subprocess started by start_standing_subprocess.
 
