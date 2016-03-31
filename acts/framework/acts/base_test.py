@@ -24,6 +24,7 @@ from acts import signals
 from acts import test_runner
 from acts import utils
 
+
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
