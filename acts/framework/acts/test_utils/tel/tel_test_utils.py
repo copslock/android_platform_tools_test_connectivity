@@ -215,7 +215,7 @@ def get_slot_index_from_subid(log, ad, sub_id):
     try:
         info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
         return info['simSlotIndex']
-    except KeyError
+    except KeyError:
         return INVALID_SIM_SLOT_INDEX
 
 
