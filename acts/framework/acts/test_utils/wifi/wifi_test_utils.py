@@ -20,6 +20,7 @@ import pprint
 from enum import IntEnum
 from queue import Empty
 
+from acts import asserts
 from acts import signals
 from acts.logger import LoggerProxy
 from acts.utils import exe_cmd
@@ -80,6 +81,8 @@ class WifiEnums():
         PWD  = 3
         SIM  = 4
         AKA  = 5
+        AKA_PRIME = 6
+        UNAUTH_TLS = 7
 
     # EAP Phase2 types
     class EapPhase2(IntEnum):
@@ -743,8 +746,6 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
         out_file: The full path to the converted key file, including
         filename.
     """
-    assert in_file.endswith(".pem")
-    assert out_file.endswith(".der")
     cmd = ("openssl pkcs8 -inform PEM -in {} -outform DER -out {} -nocrypt"
            " -topk8").format(in_file, out_file)
     exe_cmd(cmd)
@@ -823,28 +824,20 @@ def eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         log.info("Started connecting...")
         event = ed.pop_event(WifiEventNames.WIFI_CONNECTED, 60)
     except Empty:
-        log.info("Failed to connect.")
-        return False
+        asserts.fail("Failed to connect to %s" % config)
     log.debug(event)
     if expect_ssid:
         actual_ssid = event["data"][WifiEnums.SSID_KEY]
-        msg = "Expected SSID {}, got {}".format(expect_ssid, actual_ssid)
-        if expect_ssid != actual_ssid:
-            log.error(msg)
-            return False
-        log.info("Connected to %s." % expect_ssid)
+        asserts.assert_equal(expect_ssid, actual_ssid, "SSID mismatch.")
     else:
-        log.info("Connected successfully.")
+        log.info("Connected to %s." % expect_ssid)
     if validate_con:
         log.info("Checking Internet access.")
         # Wait for data connection to stabilize.
         time.sleep(4)
         ping = ad.droid.httpPing(ping_addr)
         log.info("Http ping result: {}".format(ping))
-        if not ping:
-            log.error("No Internet access.")
-            return False
-    return True
+        asserts.assert_true(ping, "No Internet access.")
 
 def expand_enterprise_config_by_phase2(config):
     """Take an enterprise config and generate a list of configs, each with
