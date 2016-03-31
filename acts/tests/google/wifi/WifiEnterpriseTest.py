@@ -18,25 +18,23 @@ import pprint
 import random
 import time
 
-import acts.base_test
-import acts.signals
-import acts.test_utils.wifi.wifi_test_utils as wutils
-
 from acts import asserts
+from acts import base_test
+from acts import signals
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
 
 # EAP Macros
 EAP = WifiEnums.Eap
 EapPhase2 = WifiEnums.EapPhase2
-
 # Enterprise Config Macros
 Ent = WifiEnums.Enterprise
 
-class WifiEnterpriseTest(acts.base_test.BaseTestClass):
+class WifiEnterpriseTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
-        acts.base_test.BaseTestClass.__init__(self, controllers)
+        base_test.BaseTestClass.__init__(self, controllers)
         self.tests = (
             "test_eap_connect",
             "test_eap_connect_negative",
@@ -60,29 +58,32 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             "fqdn",
             "provider_friendly_name",
             "realm",
-            "ssid_peap",
+            "ssid_peap0",
+            "ssid_peap1",
             "ssid_tls",
             "ssid_ttls",
+            "ssid_pwd",
             "ssid_sim",
+            "ssid_aka",
+            "ssid_aka_prime",
             "ssid_passpoint",
             "device_password",
             "ping_addr"
         )
-        optional_userparam_names = (
-            "roaming_consortium_ids",
-            "plmn"
-        )
         self.unpack_userparams(required_userparam_names,
-                    opt_param_names = optional_userparam_names)
+                               roaming_consortium_ids=None,
+                               plmn=None)
         # Default configs for EAP networks.
-        self.config_peap = {
+        self.config_peap0 = {
             Ent.EAP: EAP.PEAP,
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
             Ent.PHASE2: EapPhase2.MSCHAPV2,
-            WifiEnums.SSID_KEY: self.ssid_peap
+            WifiEnums.SSID_KEY: self.ssid_peap0
         }
+        self.config_peap1 = dict(self.config_peap0)
+        self.config_peap1[WifiEnums.SSID_KEY] = self.ssid_peap1
         self.config_tls = {
             Ent.EAP: EAP.TLS,
             Ent.CA_CERT: self.ca_cert,
@@ -99,9 +100,23 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             Ent.PHASE2: EapPhase2.MSCHAPV2,
             WifiEnums.SSID_KEY: self.ssid_ttls
         }
+        self.config_pwd = {
+            Ent.EAP: EAP.PWD,
+            Ent.IDENTITY: self.eap_identity,
+            Ent.PASSWORD: self.eap_password,
+            WifiEnums.SSID_KEY: self.ssid_pwd
+        }
         self.config_sim = {
             Ent.EAP: EAP.SIM,
             WifiEnums.SSID_KEY: self.ssid_sim,
+        }
+        self.config_aka = {
+            Ent.EAP: EAP.AKA,
+            WifiEnums.SSID_KEY: self.ssid_aka,
+        }
+        self.config_aka_prime = {
+            Ent.EAP: EAP.AKA_PRIME,
+            WifiEnums.SSID_KEY: self.ssid_aka_prime,
         }
 
         # Base config for passpoint networks.
@@ -111,9 +126,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             Ent.REALM: self.realm,
             Ent.CA_CERT: self.passpoint_ca_cert
         }
-        if hasattr(self, "plmn"):
+        if self.plmn:
             self.config_passpoint[Ent.PLMN] = self.plmn
-        if hasattr(self, "roaming_consortium_ids"):
+        if self.roaming_consortium_ids:
             self.config_passpoint[Ent.ROAMING_IDS] = self.roaming_consortium_ids
 
         # Default configs for passpoint networks.
@@ -160,10 +175,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         Returns:
             True if connection failed as expected, False otherwise.
         """
-        verdict = wutils.eap_connect(config, ad)
-        asserts.assert_true(not verdict, "Connection should have failed.")
-        self.log.info("Connection failed as expected.")
-        return True
+        with asserts.assert_raises(signals.TestFailure, extras=config):
+            verdict = wutils.eap_connect(config, ad)
+        asserts.explicit_pass("Connection failed as expected.")
 
     def expand_config_by_phase2(self, config):
         """Take an enterprise config and generate a list of configs, each with
@@ -191,10 +205,14 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         Returns:
             A list of dicts each representing an EAP configuration.
         """
-        configs = [self.config_tls]
-                   # self.config_sim
+        configs = [self.config_tls,
+                   self.config_pwd,
+                   self.config_sim,
+                   self.config_aka,
+                   self.config_aka_prime]
         configs += wutils.expand_enterprise_config_by_phase2(self.config_ttls)
-        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap0)
+        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap1)
         return configs
 
     def gen_passpoint_configs(self):
@@ -294,7 +312,12 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         Returns:
             A string representing the name of a generated EAP test case.
         """
-        name = "test_connect-%s" % config[Ent.EAP].name
+        eap_name = config[Ent.EAP].name
+        if "peap0" in config[WifiEnums.SSID_KEY].lower():
+            eap_name = "PEAP0"
+        if "peap1" in config[WifiEnums.SSID_KEY].lower():
+            eap_name = "PEAP1"
+        name = "test_connect-%s" % eap_name
         if Ent.PHASE2 in config:
             name += "-{}".format(config[Ent.PHASE2].name)
         return name
@@ -317,7 +340,7 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
         return name
 
     """Tests"""
-    @acts.signals.generated_test
+    @signals.generated_test
     def test_eap_connect(self):
         """Test connecting to enterprise networks of different authentication
         types.
@@ -346,9 +369,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=self.gen_eap_test_name)
         msg = ("The following configs failed EAP connect test: %s" %
                pprint.pformat(failed))
-        asserts.assert_true(len(failed) == 0, msg)
+        asserts.assert_equal(len(failed), 0, msg)
 
-    @acts.signals.generated_test
+    @signals.generated_test
     def test_eap_connect_negative(self):
         """Test connecting to enterprise networks.
 
@@ -373,9 +396,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=name_gen)
         msg = ("The following configs failed negative EAP connect test: %s" %
                pprint.pformat(failed))
-        asserts.assert_true(len(failed) == 0, msg)
+        asserts.assert_equal(len(failed), 0, msg)
 
-    @acts.signals.generated_test
+    @signals.generated_test
     def test_passpoint_connect(self):
         """Test connecting to enterprise networks of different authentication
         types with passpoint support.
@@ -405,9 +428,9 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=self.gen_passpoint_test_name)
         msg = ("The following configs failed passpoint connect test: %s" %
                pprint.pformat(failed))
-        asserts.assert_true(len(failed) == 0, msg)
+        asserts.assert_equal(len(failed), 0, msg)
 
-    @acts.signals.generated_test
+    @signals.generated_test
     def test_passpoint_connect_negative(self):
         """Test connecting to enterprise networks.
 
@@ -434,4 +457,4 @@ class WifiEnterpriseTest(acts.base_test.BaseTestClass):
             name_func=name_gen)
         msg = ("The following configs failed negative passpoint connect test: "
                "%s") % pprint.pformat(failed)
-        asserts.assert_true(len(failed) == 0, msg)
+        asserts.assert_equal(len(failed), 0, msg)
