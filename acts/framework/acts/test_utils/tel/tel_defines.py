@@ -142,6 +142,9 @@ WAIT_TIME_AFTER_REBOOT = 10
 # Time to wait for tethering test after reboot
 WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 
+# Time to wait after changing data sub id
+WAIT_TIME_CHANGE_DATA_SUB_ID = 30
+
 # These are used in phone_number_formatter
 PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
 PHONE_NUMBER_STRING_FORMAT_10_DIGIT = 10

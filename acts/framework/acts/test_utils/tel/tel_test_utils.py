@@ -77,6 +77,7 @@ from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
@@ -1018,7 +1019,7 @@ def call_setup_teardown(log,
 
     """
     subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
-    subid_callee = ad_callee.droid.subscriptionGetDefaultVoiceSubId()
+    subid_callee = ad_callee.incoming_voice_sub_id
     log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller, subid_callee))
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
@@ -2146,9 +2147,10 @@ def sms_send_receive_verify(log, ad_tx, ad_rx, array_message):
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
+    subid_tx = ad_tx.droid.subscriptionGetDefaultSmsSubId()
+    subid_rx = ad_rx.incoming_message_sub_id
     return sms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, ad_tx.droid.subscriptionGetDefaultSmsSubId(),
-        ad_rx.droid.subscriptionGetDefaultSmsSubId(), array_message)
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message)
 
 
 def wait_for_matching_sms(log,
