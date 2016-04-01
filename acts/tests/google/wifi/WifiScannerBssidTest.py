@@ -72,6 +72,11 @@ class WifiScannerBssidTest(BaseTestClass):
         self.wifi_chs = WifiChannelUS(self.dut.model)
         self.unpack_userparams(req_params)
 
+    def teardown_class(self):
+        BaseTestClass.teardown_test(self)
+        self.log.debug("Shut down all wifi scanner activities.")
+        self.dut.droid.wifiScannerShutdown()
+
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
             self.dut.take_bug_report(test_name, begin_time)
@@ -413,7 +418,6 @@ class WifiScannerBssidTest(BaseTestClass):
         idx = data["Index"]
         valid_env = self.start_scan_and_validate_environment(scan_setting,
                                                        track_setting["bssidInfos"])
-        idx = None
         try:
             asserts.assert_true(valid_env,
                                "Test environment is not valid, AP is in range")
