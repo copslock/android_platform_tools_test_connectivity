@@ -50,6 +50,7 @@ from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
@@ -1509,7 +1510,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
             [phone_setup_csfb, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
+             phone_setup_voice_general], [is_phone_in_call_csfb, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1559,7 +1560,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
             [phone_setup_csfb, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
+             phone_setup_voice_general], [is_phone_in_call_csfb, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
