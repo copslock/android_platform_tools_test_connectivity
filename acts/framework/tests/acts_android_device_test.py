@@ -242,7 +242,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                     "AndroidDevice%s" % ad.serial,
                                     "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -v threadtime  > %s'
+        adb_cmd = 'adb -s %s logcat -v threadtime  >> %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
