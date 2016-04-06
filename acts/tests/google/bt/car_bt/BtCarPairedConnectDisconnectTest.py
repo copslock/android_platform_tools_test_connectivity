@@ -55,14 +55,17 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
             a.ed.clear_all_events()
 
         # Pair the devices.
-        pair_pri_to_sec(self.droid_ad.droid, self.droid1_ad.droid)
-        # Pairing usually takes time (discovery + key exchange)
-        time.sleep(15)
+        # This call may block until some specified timeout in bt_test_utils.py.
+        result = pair_pri_to_sec(self.droid_ad.droid, self.droid1_ad.droid)
+
+        if result is False:
+            self.log.info("pair_pri_to_sec returned false.")
+            return False
 
         # Check for successful setup of test.
         devices = self.droid_ad.droid.bluetoothGetBondedDevices()
         if (len(devices) == 0):
-            self.log.info("No bonded devices.")
+            self.log.info("pair_pri_to_sec succeeded but no bonded devices.")
             return False
         return True
 
