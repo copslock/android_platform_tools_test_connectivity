@@ -187,6 +187,50 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_general(self):
+        """Test SMS basic function between two phone. Phones in any network.
+
+        Airplane mode is off.
+        Send SMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return self._sms_test_mo(ads)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_general(self):
+        """Test SMS basic function between two phone. Phones in any network.
+
+        Airplane mode is off.
+        Send SMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return self._sms_test_mt(ads)
+
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_2g(self):
         """Test SMS basic function between two phone. Phones in 3g network.
 
