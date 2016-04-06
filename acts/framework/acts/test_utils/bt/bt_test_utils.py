@@ -608,23 +608,27 @@ def log_energy_info(droids, state):
 
 
 def pair_pri_to_sec(pri_droid, sec_droid):
+    # Enable discovery on sec_droid so that pri_droid can find it.
+    # The timeout here is based on how much time it would take for two devices
+    # to pair with each other once pri_droid starts seeing devices.
     sec_droid.bluetoothMakeDiscoverable(default_timeout)
-    pri_droid.bluetoothStartDiscovery()
     target_name = sec_droid.bluetoothGetLocalName()
-    time.sleep(default_discovery_timeout)
-    discovered_devices = pri_droid.bluetoothGetDiscoveredDevices()
-    discovered = False
-    for device in discovered_devices:
-        log.info(device)
-        if 'name' in device and target_name == device['name']:
-            discovered = True
-            continue
-    if not discovered:
-        return False
     pri_droid.bluetoothStartPairingHelper()
     sec_droid.bluetoothStartPairingHelper()
     result = pri_droid.bluetoothDiscoverAndBond(target_name)
-    return result
+
+    # Loop until we have bonded successfully or timeout.
+    end_time = time.time() + default_timeout
+    while time.time() < end_time:
+        bonded_devices = pri_droid.bluetoothGetBondedDevices()
+        expected_address = sec_droid.bluetoothGetLocalAddress()
+        bonded = False
+        for d in bonded_devices:
+          if d['address'] == expected_address:
+              return True
+        time.sleep(1)
+    # Timed out trying to bond.
+    return False
 
 
 def get_bt_mac_address(droid, droid1, make_undisocverable=True):
