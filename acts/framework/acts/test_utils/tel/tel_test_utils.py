@@ -2914,10 +2914,13 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
         operator = get_operator_name(log, ad, sub_id)
         current_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
-        if current_preference not in get_allowable_network_preference(operator):
-            network_preference = network_preference_for_generaton(GEN_4G, operator)
-            ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-                network_preference, sub_id)
+        try:
+            if current_preference not in get_allowable_network_preference(operator):
+                network_preference = network_preference_for_generaton(GEN_4G, operator)
+                ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+                    network_preference, sub_id)
+        except KeyError:
+            pass
 
 def task_wrapper(task):
     """Task wrapper for multithread_func
