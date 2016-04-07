@@ -547,7 +547,7 @@ class AndroidDevice:
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
-            extra_params = ""
+            extra_params = "-b all"
         cmd = "adb -s {} logcat -v threadtime {} >> {}".format(
             self.serial, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
@@ -680,8 +680,7 @@ class AndroidDevice:
 
     @utils.timeout(15 * 60)
     def wait_for_boot_completion(self):
-        """Waits for the Android framework to boot back up and ready to launch
-        apps.
+        """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
         This function times out after 15 minutes.
         """
