@@ -16,6 +16,9 @@
 
 import importlib
 
+ACTS_CONTROLLER_CONFIG_NAME = "Sniffer"
+ACTS_CONTROLLER_REFERENCE_NAME = "sniffers"
+
 def create(configs, logger):
     """Initializes the sniffer structures based on the JSON configuration. The
     expected keys are:
