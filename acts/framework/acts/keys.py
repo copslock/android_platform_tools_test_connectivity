@@ -29,30 +29,23 @@ class Config(enum.Enum):
     key_testbed = "testbed"
     key_testbed_name = "name"
     key_test_paths = "testpaths"
+    key_port = "Port"
+    key_address = "Address"
+    # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
     key_access_point = "AP"
     key_attenuator = "Attenuator"
-    key_port = "Port"
-    key_address = "Address"
     key_iperf_server = "IPerfServer"
     key_monsoon = "Monsoon"
     key_sniffer = "Sniffer"
     # Internal keys, used internally, not exposed to user's config files.
-    ikey_lock = "lock"
     ikey_user_param = "user_params"
-    ikey_android_device = "android_devices"
-    ikey_native_android_device = "native_android_devices"
-    ikey_access_point = "access_points"
-    ikey_attenuator = "attenuators"
     ikey_testbed_name = "testbed_name"
     ikey_logger = "log"
     ikey_logpath = "log_path"
-    ikey_monsoon = "monsoons"
-    ikey_iperf_server = "iperf_servers"
     ikey_cli_args = "cli_args"
-    ikey_sniffer = "sniffers"
-    # module name of controllers
+    # module name of controllers packaged in ACTS.
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
     m_key_native_android_device = "native_android_device"
@@ -65,7 +58,8 @@ class Config(enum.Enum):
     # classes without unpacking first.
     reserved_keys = (key_testbed, key_log_path, key_test_paths)
 
-    controller_names = [
+    # Controller names packaged with ACTS.
+    builtin_controller_names = [
         key_android_device,
         key_native_android_device,
         key_access_point,
@@ -74,7 +68,6 @@ class Config(enum.Enum):
         key_monsoon,
         key_sniffer
     ]
-    tb_config_reserved_keys = controller_names + [key_testbed_name]
 
 def get_name_by_value(value):
     for name, member in Config.__members__.items():
