@@ -22,6 +22,9 @@ from acts.utils import create_dir
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 
+ACTS_CONTROLLER_CONFIG_NAME = "IPerfServer"
+ACTS_CONTROLLER_REFERENCE_NAME = "iperf_servers"
+
 def create(configs, logger):
     log_path = os.path.dirname(logger.handlers[1].baseFilename)
     results = []

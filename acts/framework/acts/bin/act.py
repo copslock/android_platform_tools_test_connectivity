@@ -192,9 +192,6 @@ def load_test_config_file(test_config_path, tb_filters=None):
             if k in j:
                 j[k] = b[k]
                 del b[k]
-            elif k not in Config.tb_config_reserved_keys.value:
-                j[k] = b[k]
-                del b[k]
         config_jsons.append(j)
     return config_jsons
 

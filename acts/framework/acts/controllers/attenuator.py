@@ -18,6 +18,9 @@ import importlib
 
 from acts.keys import Config
 
+ACTS_CONTROLLER_CONFIG_NAME = "Attenuator"
+ACTS_CONTROLLER_REFERENCE_NAME = "attenuators"
+
 def create(configs, logger):
     objs = []
     for c in configs:
