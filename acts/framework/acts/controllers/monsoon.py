@@ -40,6 +40,9 @@ import acts.signals
 from acts import utils
 from acts.controllers import android_device
 
+ACTS_CONTROLLER_CONFIG_NAME = "Monsoon"
+ACTS_CONTROLLER_REFERENCE_NAME = "monsoons"
+
 def create(configs, logger):
     objs = []
     for c in configs:
