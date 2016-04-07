@@ -291,7 +291,7 @@ def exe_cmd(*cmds):
         The output of the command run.
 
     Raises:
-        Exception is raised if an error occurred during the command execution.
+        OSError is raised if an error occurred during the command execution.
     """
     cmd = ' '.join(cmds)
     proc = subprocess.Popen(cmd,
@@ -301,7 +301,7 @@ def exe_cmd(*cmds):
     (out, err) = proc.communicate()
     if not err:
         return out
-    raise Exception(err)
+    raise OSError(err)
 
 
 def require_sl4a(android_devices):
