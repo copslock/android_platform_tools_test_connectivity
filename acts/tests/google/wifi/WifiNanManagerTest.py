@@ -21,7 +21,7 @@ from acts import base_test
 from acts.controllers import android_device
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
+ON_CONNECT_SUCCESS = "WifiNanOnConnectSuccess"
 ON_MATCH = "WifiNanSessionOnMatch"
 ON_MESSAGE_RX = "WifiNanSessionOnMessageReceived"
 ON_MESSAGE_TX_FAIL = "WifiNanSessionOnMessageSendFail"
@@ -46,7 +46,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         asserts.assert_true(wutils.wifi_toggle_state(self.subscriber, True),
                             "Failed enabling Wi-Fi interface on subscriber")
 
-    # def teardown_class(self): (b/27692829)
+    # def teardown_class(self): # (b/27692829)
        # asserts.assert_true(wutils.wifi_toggle_state(self.publisher, False),
        #                     "Failed disabling Wi-Fi interface on publisher")
        # asserts.assert_true(wutils.wifi_toggle_state(self.subscriber, False),
@@ -94,26 +94,26 @@ class WifiNanManagerTest(base_test.BaseTestClass):
           * P sends a message to S, confirming that sent successfully
           * S waits for a message and confirms that received (uncorrupted)
         """
-        self.publisher.droid.wifiNanEnable(self.config_request1)
-        self.subscriber.droid.wifiNanEnable(self.config_request2)
+        self.publisher.droid.wifiNanConnect(self.config_request1)
+        self.subscriber.droid.wifiNanConnect(self.config_request2)
 
         sub2pub_msg = "How are you doing?"
         pub2sub_msg = "Doing ok - thanks!"
 
         try:
-            event = self.publisher.ed.pop_event(ON_IDENTITY_CHANGED, 30)
-            self.log.info('%s: %s' % (ON_IDENTITY_CHANGED, event['data']))
+            event = self.publisher.ed.pop_event(ON_CONNECT_SUCCESS, 30)
+            self.log.info('%s: %s' % (ON_CONNECT_SUCCESS, event['data']))
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on Publisher' %
-                      ON_IDENTITY_CHANGED)
+                      ON_CONNECT_SUCCESS)
         self.log.debug(event)
 
         try:
-            event = self.subscriber.ed.pop_event(ON_IDENTITY_CHANGED, 30)
-            self.log.info('%s: %s' % (ON_IDENTITY_CHANGED, event['data']))
+            event = self.subscriber.ed.pop_event(ON_CONNECT_SUCCESS, 30)
+            self.log.info('%s: %s' % (ON_CONNECT_SUCCESS, event['data']))
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on Subscriber' %
-                      ON_IDENTITY_CHANGED)
+                      ON_CONNECT_SUCCESS)
         self.log.debug(event)
 
         pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
@@ -159,5 +159,5 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.publisher.droid.wifiNanTerminateSession(pub_id)
         self.subscriber.droid.wifiNanTerminateSession(sub_id)
 
-        self.publisher.droid.wifiNanDisable()
-        self.subscriber.droid.wifiNanDisable()
+        self.publisher.droid.wifiNanDisconnect()
+        self.subscriber.droid.wifiNanDisconnect()
