@@ -284,19 +284,10 @@ class BaseTestClass(object):
             ret = self._setup_test(test_name)
             asserts.assert_true(ret is not False,
                                 "Setup for %s failed." % test_name)
-            try:
-                if args or kwargs:
-                    verdict = test_func(*args, **kwargs)
-                else:
-                    verdict = test_func()
-            except TypeError as e:
-                e_str = str(e)
-                if test_name in e_str:
-                    raise signals.TestSkip("%s. Got args: %s, kwargs %s." % (
-                                           e_str,
-                                           args,
-                                           kwargs))
-                raise e
+            if args or kwargs:
+                verdict = test_func(*args, **kwargs)
+            else:
+                verdict = test_func()
         except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
             self._exec_func(self._on_fail, tr_record)
