@@ -112,6 +112,11 @@ from acts.test_utils.tel.tel_lookup_tables import \
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
+from acts.test_utils.tel.tel_subscription_setup_utils import get_default_data_sub_id
+from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_message_sub_id
 from acts.utils import load_config
 from acts.logger import LoggerProxy
 log = LoggerProxy()
@@ -426,7 +431,7 @@ def wait_and_answer_call(log,
         False: for errors
         """
     return wait_and_answer_call_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), incoming_number,
+        log, ad, get_incoming_voice_sub_id(ad), incoming_number,
         incall_ui_display)
 
 
@@ -570,7 +575,7 @@ def wait_and_reject_call(log,
         False: for errors
     """
     return wait_and_reject_call_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), incoming_number,
+        log, ad, get_incoming_voice_sub_id(ad), incoming_number,
         delay_reject)
 
 
@@ -723,7 +728,7 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
         result: if phone call is placed successfully.
     """
     ad_caller.ed.clear_all_events()
-    sub_id = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
+    sub_id = get_outgoing_voice_sub_id(ad_caller)
     ad_caller.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
 
     wait_time_for_incall_state = MAX_WAIT_TIME_CALL_INITIATION
@@ -792,8 +797,8 @@ def call_reject_leave_message(log,
         True: if voice message is received on callee successfully.
         False: for errors
     """
-    subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
-    subid_callee = ad_callee.droid.subscriptionGetDefaultVoiceSubId()
+    subid_caller = get_outgoing_voice_sub_id(ad_caller)
+    subid_callee = get_incoming_voice_sub_id(ad_callee)
     return call_reject_leave_message_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee,
         verify_caller_func, wait_time_in_call)
@@ -1018,8 +1023,8 @@ def call_setup_teardown(log,
         False if error happened.
 
     """
-    subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
-    subid_callee = ad_callee.incoming_voice_sub_id
+    subid_caller = get_outgoing_voice_sub_id(ad_caller)
+    subid_callee = get_incoming_voice_sub_id(ad_callee)
     log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller, subid_callee))
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
@@ -1281,7 +1286,7 @@ def wait_for_cell_data_connection(
         True if success.
         False if failed.
     """
-    sub_id = ad.droid.subscriptionGetDefaultDataSubId()
+    sub_id = get_default_data_sub_id(ad)
     return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
                                                           state, timeout_value)
 
@@ -1593,7 +1598,7 @@ def toggle_volte(log, ad, new_state=None):
         TelTestUtilsError if platform does not support VoLTE.
     """
     return toggle_volte_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), new_state)
+        log, ad, get_outgoing_voice_sub_id(ad), new_state)
 
 
 def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
@@ -2003,7 +2008,7 @@ def get_phone_number(log, ad):
         Phone number.
     """
     return get_phone_number_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def get_phone_number_for_subscription(log, ad, subid):
@@ -2037,7 +2042,7 @@ def set_phone_number(log, ad, phone_num):
         True if success.
     """
     return set_phone_number_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), phone_num)
+        log, ad, get_outgoing_voice_sub_id(ad), phone_num)
 
 
 def set_phone_number_for_subscription(log, ad, subid, phone_num):
@@ -2147,8 +2152,8 @@ def sms_send_receive_verify(log, ad_tx, ad_rx, array_message):
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
-    subid_tx = ad_tx.droid.subscriptionGetDefaultSmsSubId()
-    subid_rx = ad_rx.incoming_message_sub_id
+    subid_tx = get_outgoing_message_sub_id(ad_tx)
+    subid_rx = get_incoming_message_sub_id(ad_rx)
     return sms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, subid_tx, subid_rx, array_message)
 
@@ -2258,8 +2263,8 @@ def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
         array_message: the array of message to send/receive
     """
     return mms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, ad_tx.droid.subscriptionGetDefaultSmsSubId(),
-        ad_rx.droid.subscriptionGetDefaultSmsSubId(), array_message)
+        log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
+        get_incoming_message_sub_id(ad_rx), array_message)
 
 
 #TODO: b/21569494 This function is still a WIP and is disabled

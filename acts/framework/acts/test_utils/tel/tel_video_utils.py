@@ -51,6 +51,8 @@ from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRe
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED
 from acts.test_utils.tel.tel_defines import CallStateContainer
+from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import is_event_match
@@ -78,7 +80,7 @@ def phone_setup_video(log, ad):
         True if ad (default sub_id) is setup correctly and idle for video call.
     """
     return phone_setup_video_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_video_for_subscription(log, ad, sub_id):
@@ -123,7 +125,7 @@ def phone_idle_video(log, ad):
         True if ad is idle for video call.
     """
     return phone_idle_video_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_video_for_subscription(log, ad, sub_id):
@@ -165,7 +167,7 @@ def is_phone_in_call_video(log, ad):
         True if ad (for sub_id) is in a video call (in expected video state).
     """
     return is_phone_in_call_video_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad)))
 
 
 def is_phone_in_call_video_for_subscription(log, ad, sub_id, video_state=None):
@@ -223,7 +225,7 @@ def is_phone_in_call_video_bidirectional(log, ad):
         True if phone in bi-directional video call.
     """
     return is_phone_in_call_video_bidirectional_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_video_bidirectional_for_subscription(log, ad, sub_id):
@@ -254,7 +256,7 @@ def is_phone_in_call_video_tx_enabled(log, ad):
         True if phone in tx_enabled video call.
     """
     return is_phone_in_call_video_tx_enabled_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_video_tx_enabled_for_subscription(log, ad, sub_id):
@@ -285,7 +287,7 @@ def is_phone_in_call_video_rx_enabled(log, ad):
         True if phone in rx_enabled video call.
     """
     return is_phone_in_call_video_rx_enabled_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_video_rx_enabled_for_subscription(log, ad, sub_id):
@@ -316,7 +318,7 @@ def is_phone_in_call_voice_hd(log, ad):
         True if phone in hd voice call.
     """
     return is_phone_in_call_voice_hd_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId())
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_voice_hd_for_subscription(log, ad, sub_id):
@@ -391,7 +393,7 @@ def wait_and_answer_video_call(log,
         False: for errors
     """
     return wait_and_answer_video_call_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultVoiceSubId(), incoming_number,
+        log, ad, get_outgoing_voice_sub_id(ad), incoming_number,
         video_state, incall_ui_display)
 
 
@@ -519,8 +521,8 @@ def video_call_setup_teardown(log,
     """
     return video_call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee,
-        ad_caller.droid.subscriptionGetDefaultVoiceSubId(),
-        ad_callee.droid.subscriptionGetDefaultVoiceSubId(), ad_hangup,
+        get_outgoing_voice_sub_id(ad_caller),
+        get_incoming_voice_sub_id(ad_callee), ad_hangup,
         video_state, verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display)
 
