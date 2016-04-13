@@ -20,6 +20,7 @@ from acts.utils import rand_ascii_str
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_subscription_setup_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
@@ -242,7 +243,7 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
     try:
 
         if not ensure_network_generation_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+        log, ad, get_default_data_sub_id(ad), nw_gen,
         MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
@@ -370,7 +371,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     ensure_phones_idle(log, [ad])
 
     if not ensure_network_generation_for_subscription(
-        log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+        log, ad, get_default_data_sub_id(ad), nw_gen,
         MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
         log.error("Device failed to reselect in {}s.".format(
             MAX_WAIT_TIME_NW_SELECTION))
@@ -409,14 +410,14 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         if not is_droid_in_network_generation_for_subscription(
-            log, ad, ad.droid.subscriptionGetDefaultDataSubId(), nw_gen,
+            log, ad, get_default_data_sub_id(ad), nw_gen,
             NETWORK_SERVICE_DATA):
             log.error("Failed: droid is no longer on correct network")
             log.info("Expected:{}, Current:{}".format(
                 nw_gen, rat_generation_from_rat(
                     get_network_rat_for_subscription(
-                        log, ad, ad.droid.subscriptionGetDefaultSubId(
-                        ), NETWORK_SERVICE_DATA))))
+                        log, ad, get_default_data_sub_id(ad),
+                        NETWORK_SERVICE_DATA))))
             return False
         return True
     finally:
