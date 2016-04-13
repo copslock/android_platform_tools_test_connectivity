@@ -19,41 +19,31 @@ import os
 import acts.base_test
 from acts import asserts
 from acts import utils
+from acts.controllers import iperf_server as ip_server
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.tel import tel_test_utils as tel_utils
+
 
 pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
 start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
     "PMCMainActivity")
-pmc_interval_cmd = ("am broadcast -a com.android.pmc.action.SETINTERVAL --es "
-                    "Value %s ")
+pmc_interval_cmd = ("am broadcast -a com.android.pmc.action.SETPARAMS --es "
+                    "Interval %s ")
+pmc_set_params = "am broadcast -a com.android.pmc.action.SETPARAMS --es "
+
 pmc_start_connect_scan_cmd = "%sStartConnectivityScan" % pmc_base_cmd
 pmc_stop_connect_scan_cmd = "%sStopConnectivityScan" % pmc_base_cmd
 pmc_start_gscan_no_dfs_cmd = "%sStartGScanBand" % pmc_base_cmd
 pmc_start_gscan_specific_channels_cmd = "%sStartGScanChannel" % pmc_base_cmd
 pmc_stop_gscan_cmd = "%sStopGScan" % pmc_base_cmd
-pmc_start_1MB_download_cmd = "%sDownload1MB" % pmc_base_cmd
-pmc_stop_1MB_download_cmd = "%sStopDownload" % pmc_base_cmd
+pmc_start_iperf_client = "%sStartIperfClient" % pmc_base_cmd
+pmc_stop_iperf_client = "%sStopIperfClient" % pmc_base_cmd
+# Path of the iperf json output file from an iperf run.
+pmc_iperf_json_file = "/sdcard/iperf.txt"
+
 
 class WifiPowerTest(acts.base_test.BaseTestClass):
-
-    def __init__(self, controllers):
-        super(WifiPowerTest, self).__init__(controllers)
-        self.tests = (
-            "test_power_wifi_off",
-            "test_power_wifi_on_idle",
-            "test_power_disconnected_connectivity_scan",
-            "test_power_connected_2g_continuous_download",
-            "test_power_connected_2g_idle",
-            "test_power_connected_5g_continuous_download",
-            "test_power_connected_5g_idle",
-            "test_power_gscan_three_2g_channels",
-            "test_power_gscan_all_channels_no_dfs",
-            "test_power_connected_2g_gscan_all_channels_no_dfs",
-            "test_power_connected_5g_gscan_all_channels_no_dfs"
-        )
 
     def setup_class(self):
         self.hz = 10
@@ -70,18 +60,26 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.dut = self.android_devices[0]
         self.mon.attach_device(self.dut)
         asserts.assert_true(self.mon.usb("auto"),
-                         "Failed to turn USB mode to auto on monsoon.")
+                            "Failed to turn USB mode to auto on monsoon.")
         required_userparam_names = (
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
             "network_2g",
-            "network_5g"
+            "network_5g",
+            "iperf_server_address"
         )
-        self.unpack_userparams(required_userparam_names, threshold=None)
+        self.unpack_userparams(required_userparam_names, ("threshold",))
         wutils.wifi_test_device_init(self.dut)
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)
         self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
+        self.iperf_server = self.iperf_servers[0]
+        # Setup iperf related params on the client side.
+        self.dut.adb.shell("%sServerIP %s" % (pmc_set_params,
+                                              self.iperf_server_address))
+        self.dut.adb.shell("%sServerPort %s" % (pmc_set_params,
+                                                self.iperf_server.port))
+        self.dut.adb.shell("rm %s" % pmc_iperf_json_file)
 
     def teardown_class(self):
         self.mon.usb("on")
@@ -89,6 +87,18 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
     def setup_test(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
+
+    def get_iperf_result(self):
+        """Pulls the iperf json output from device.
+
+        Returns:
+            An IPerfResult object based on the iperf run output.
+        """
+        dest = os.path.join(self.iperf_server.log_path, "iperf.txt")
+        self.dut.adb.pull(pmc_iperf_json_file, " ", dest)
+        result = ip_server.IPerfResult(dest)
+        self.dut.adb.shell("rm %s" % pmc_iperf_json_file)
+        return result
 
     def measure_and_process_result(self):
         """Measure the current drawn by the device for the period of
@@ -102,13 +112,22 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
                                         self.duration,
                                         tag=tag,
                                         offset=self.offset)
-        asserts.assert_true(result, "Got empty measurement data set in %s." % tag)
+        asserts.assert_true(result,
+                            "Got empty measurement data set in %s." % tag)
         self.log.info(repr(result))
         data_path = os.path.join(self.mon_data_path, "%s.txt" % tag)
         monsoon.MonsoonData.save_to_text_file([result], data_path)
         actual_current = result.average_current
         actual_current_str = "%.2fmA" % actual_current
         result_extra = {"Average Current": actual_current_str}
+        if "continuous_traffic" in tag:
+            self.dut.adb.shell(pmc_stop_iperf_client)
+            iperf_result = self.get_iperf_result()
+            asserts.assert_true(iperf_result.avg_rate,
+                                "Failed to send iperf traffic",
+                                extras=result_extra)
+            rate = "%.2fMB/s" % iperf_result.avg_rate
+            result_extra["Average Rate"] = rate
         if self.threshold:
             model = utils.trim_model_name(self.dut.model)
             asserts.assert_true(tag in self.threshold[model],
@@ -116,12 +135,12 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
                              extras=result_extra)
             acceptable_threshold = self.threshold[model][tag]
             asserts.assert_true(actual_current < acceptable_threshold,
-                             ("Measured average current for %s - %s - is "
-                              "higher than acceptable threshold %.2f.") % (
+                             ("Measured average current in [%s]: %s, which is "
+                              "higher than acceptable threshold %.2fmA.") % (
                               tag, actual_current_str, acceptable_threshold),
                               extras=result_extra)
         asserts.explicit_pass("Measurement finished for %s." % tag,
-                           extras=result_extra)
+                              extras=result_extra)
 
     def test_power_wifi_off(self):
         asserts.assert_true(wutils.wifi_toggle_state(self.dut, False),
@@ -144,18 +163,23 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             self.log.info("Stoped connectivity scan.")
 
     def test_power_connected_2g_idle(self):
+        wutils.reset_wifi(self.dut)
+        self.dut.ed.clear_all_events()
         wutils.wifi_connect(self.dut, self.network_2g)
         self.measure_and_process_result()
 
-    def test_power_connected_2g_continuous_download(self):
+    def test_power_connected_2g_continuous_traffic(self):
         try:
-            self.dut.adb.shell(pmc_interval_cmd % self.download_interval)
-            self.dut.adb.shell(pmc_start_1MB_download_cmd)
-            self.log.info("Start downloading 1MB file continuously.")
+            wutils.reset_wifi(self.dut)
+            self.dut.ed.clear_all_events()
+            wutils.wifi_connect(self.dut, self.network_2g)
+            self.iperf_server.start()
+            self.dut.adb.shell(pmc_start_iperf_client)
+            self.log.info("Started iperf traffic.")
             self.measure_and_process_result()
         finally:
-            self.dut.adb.shell(pmc_stop_1MB_download_cmd)
-            self.log.info("Stopped downloading 1MB file.")
+            self.iperf_server.stop()
+            self.log.info("Stopped iperf traffic.")
 
     def test_power_connected_5g_idle(self):
         wutils.reset_wifi(self.dut)
@@ -163,15 +187,18 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, self.network_5g)
         self.measure_and_process_result()
 
-    def test_power_connected_5g_continuous_download(self):
+    def test_power_connected_5g_continuous_traffic(self):
         try:
-            self.dut.adb.shell(pmc_interval_cmd % self.download_interval)
-            self.dut.adb.shell(pmc_start_1MB_download_cmd)
-            self.log.info("Started downloading 1MB file continuously.")
+            wutils.reset_wifi(self.dut)
+            self.dut.ed.clear_all_events()
+            wutils.wifi_connect(self.dut, self.network_5g)
+            self.iperf_server.start()
+            self.dut.adb.shell(pmc_start_iperf_client)
+            self.log.info("Started iperf traffic.")
             self.measure_and_process_result()
         finally:
-            self.dut.adb.shell(pmc_stop_1MB_download_cmd)
-            self.log.info("Stopped downloading 1MB file.")
+            self.iperf_server.stop()
+            self.log.info("Stopped iperf traffic.")
 
     def test_power_gscan_three_2g_channels(self):
         try:
