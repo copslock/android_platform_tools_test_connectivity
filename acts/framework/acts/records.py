@@ -21,9 +21,8 @@
 import json
 import pprint
 
-from acts.signals import TestSignal
-from acts.utils import epoch_to_human_time
-from acts.utils import get_current_epoch_time
+from acts import signals
+from acts import utils
 
 class TestResultEnums(object):
     """Enums used for TestResultRecord class.
@@ -73,7 +72,7 @@ class TestResultRecord(object):
 
         Sets the begin_time of this record.
         """
-        self.begin_time = get_current_epoch_time()
+        self.begin_time = utils.get_current_epoch_time()
 
     def _test_end(self, result, e):
         """Class internal function to signal the end of a test case execution.
@@ -82,11 +81,11 @@ class TestResultRecord(object):
             result: One of the TEST_RESULT enums in TestResultEnums.
             e: A test termination signal (usually an exception object). It can
                 be any exception instance or of any subclass of
-                base_test._TestSignal.
+                acts.signals.TestSignal.
         """
-        self.end_time = get_current_epoch_time()
+        self.end_time = utils.get_current_epoch_time()
         self.result = result
-        if isinstance(e, TestSignal):
+        if isinstance(e, signals.TestSignal):
             self.details = e.details
             self.extras = e.extras
         elif e:
@@ -136,7 +135,7 @@ class TestResultRecord(object):
 
     def __repr__(self):
         """This returns a short string representation of the test record."""
-        t = epoch_to_human_time(self.begin_time)
+        t = utils.epoch_to_human_time(self.begin_time)
         return "%s %s %s" % (t, self.test_name, self.result)
 
     def to_dict(self):
@@ -207,7 +206,9 @@ class TestResult(object):
         Returns:
             A TestResult instance that's the sum of two TestResult instances.
         """
-        assert isinstance(r, TestResult)
+        if not isinstance(r, TestResult):
+            raise TypeError("Operand %s of type %s is not a TestResult." % (
+                            r, type(r)))
         sum_result = TestResult()
         for name in sum_result.__dict__:
             l_value = list(getattr(self, name))
@@ -241,15 +242,9 @@ class TestResult(object):
             class_name: A string that is the name of the failed test class.
             e: An exception object.
         """
-        record = TestResultRecord("", class_name)
+        record = TestResultRecord("setup_class", class_name)
         record.test_begin()
-        if isinstance(e, TestSignal):
-            new_e = type(e)("setup_class failed for %s: %s" % (
-                            class_name, e.details), e.extras)
-        else:
-            new_e = type(e)("setup_class failed for %s: %s" % (
-                            class_name, str(e)))
-        record.test_fail(new_e)
+        record.test_fail(e)
         self.executed.append(record)
         self.failed.append(record)
 
