@@ -146,5 +146,65 @@ class ActsRecordsTest(unittest.TestCase):
                            details=self.details,
                            extras=self.json_extra)
 
+    def test_result_add_operator_success(self):
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        s = signals.TestPass(self.details, self.float_extra)
+        record1.test_pass(s)
+        tr1 = records.TestResult()
+        tr1.add_record(record1)
+        record2 = records.TestResultRecord(self.tn)
+        record2.test_begin()
+        s = signals.TestPass(self.details, self.json_extra)
+        record2.test_pass(s)
+        tr2 = records.TestResult()
+        tr2.add_record(record2)
+        tr2 += tr1
+        self.assertTrue(tr2.passed, [tr1, tr2])
+
+    def test_result_add_operator_type_mismatch(self):
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        s = signals.TestPass(self.details, self.float_extra)
+        record1.test_pass(s)
+        tr1 = records.TestResult()
+        tr1.add_record(record1)
+        expected_msg = "Operand .* of type .* is not a TestResult."
+        with self.assertRaisesRegexp(TypeError, expected_msg):
+            tr1 += "haha"
+
+    def test_result_fail_class_with_test_signal(self):
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        s = signals.TestPass(self.details, self.float_extra)
+        record1.test_pass(s)
+        tr = records.TestResult()
+        tr.add_record(record1)
+        s = signals.TestFailure(self.details, self.float_extra)
+        tr.fail_class("SomeTest", s)
+        self.assertEqual(len(tr.passed), 1)
+        self.assertEqual(len(tr.failed), 1)
+        self.assertEqual(len(tr.executed), 2)
+
+    def test_result_fail_class_with_special_error(self):
+        """Call TestResult.fail_class with an error class that requires more
+        than one arg to instantiate.
+        """
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        s = signals.TestPass(self.details, self.float_extra)
+        record1.test_pass(s)
+        tr = records.TestResult()
+        tr.add_record(record1)
+        class SpecialError(Exception):
+            def __init__(self, arg1, arg2):
+                self.msg = "%s %s" % (arg1, arg2)
+        se = SpecialError("haha", 42)
+        tr.fail_class("SomeTest", se)
+        self.assertEqual(len(tr.passed), 1)
+        self.assertEqual(len(tr.failed), 1)
+        self.assertEqual(len(tr.executed), 2)
+
+
 if __name__ == "__main__":
    unittest.main()

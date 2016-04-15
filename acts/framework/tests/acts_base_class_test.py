@@ -145,10 +145,8 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.failed[0]
-        self.assertEqual(actual_record.test_name, "")
-        expected_msg = "setup_class failed for MockBaseTest: %s" % (
-                       MSG_EXPECTED_EXCEPTION)
-        self.assertEqual(actual_record.details, expected_msg)
+        self.assertEqual(actual_record.test_name, "setup_class")
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
                             "Skipped 0, Unknown 0")
