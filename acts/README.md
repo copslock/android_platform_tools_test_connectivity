@@ -1,8 +1,20 @@
 # Android Comms Test Suite
-ACTS is a python-based test framework that is designed to be lightweight,
-pluggable, and easy to use. It initializes equipment and services associated
-to a test run, provides those resources to test classes, executes test cases,
-and generates test reports.
+The Android Comms Test Suite, is a lightweight Python-based automation tool set
+that is used to perform automated testing of current and upcoming Android
+devices. It provides a simple execution interface; a set of pluggable libraries
+for accessing commercially avilable devices, Android devices, and a collection
+of utility functions to further ease test development. It is an ideal desktop
+tool for a wireless stack developer or integrator whether exercising a new code
+path, performing sanity testing, or running extended regression test suites.
+
+Included in the tests/google directory are a bundle of tests, many of which can
+be run with as little as one or two Android devices with wifi, cellular, or
+bluetooth connectivity, including:
+1. Wifi tests for access point interopability, enterprise server integration,
+WiFi scanning, WiFi auto join, and round trip time.
+2. Bluetooth tests for low energy, GATT, SPP, and bonding.
+3. Cellular tests for circuit switch and IMS calling, data connectivity,
+messaging, network switching, and WiFi hotspot.
 
 ACTS follows the Google Open-source
 [Python Style Guide](https://google.github.io/styleguide/pyguide.html), and
@@ -42,18 +54,14 @@ In developer mode:
 displayed. Check the "Always" box and click "Yes".
 
 ## ACTS Setup
-1. ACTS requires three python dependencies:
-- Python3.4
-- The setuptools package
-- The pyserial package
-2. From the ACTS directory, run setup
-- `$ sudo python3 setup.py develop`
+From the ACTS directory, run setup
+- `$ sudo python setup.py develop`
 
-After installation, `act.py` and `flashutil.py` will be in usr/bin and can be
-called as command line utilities. Components in ACTS are importable under the
-package "acts." in Python3.4, for example:
+After installation, `act.py` will be in usr/bin and can be called as command
+line utilities. Components in ACTS are importable under the package "acts."
+in Python, for example:
 ```
-$ python3
+$ python
 >>> from acts.controllers import android_device
 >>> device_list = android_device.get_all_instances()
 ```
