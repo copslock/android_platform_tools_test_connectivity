@@ -49,6 +49,7 @@ class ActsRecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
         d[records.TestResultEnums.RECORD_UID] = None
         d[records.TestResultEnums.RECORD_CLASS] = None
+        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
         actual_d = record.to_dict()
         self.assertDictEqual(actual_d, d)
         # Verify that these code paths do not cause crashes and yield non-empty
