@@ -18,10 +18,9 @@
 # It will be deleted once we have better solution for subscription ids.
 from future import standard_library
 standard_library.install_aliases()
-from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
-from acts.test_utils.tel.tel_test_utils import set_subid_for_data
-from acts.test_utils.tel.tel_test_utils import set_subid_for_message
-from acts.test_utils.tel.tel_test_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
+import time
 
 def initial_set_up_for_subid_infomation(log, ad):
     """Initial subid setup for voice, message and data according to ad's
@@ -147,3 +146,57 @@ def get_incoming_message_sub_id(ad):
         return ad.incoming_message_sub_id
     else:
         return ad.droid.subscriptionGetDefaultSmsSubId()
+
+def get_subid_from_slot_index(log, ad, sim_slot_index):
+    """ Get the subscription ID for a SIM at a particular slot
+
+    Args:
+        ad: android_device object.
+
+    Returns:
+        result: Subscription ID
+    """
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    for info in subInfo:
+        if info['simSlotIndex'] == sim_slot_index:
+            return info['subscriptionId']
+    return INVALID_SUB_ID
+
+def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
+    """Set subId for data
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    # TODO: Need to check onSubscriptionChanged event. b/27843365
+    if ad.droid.subscriptionGetDefaultDataSubId() != sub_id:
+        ad.droid.subscriptionSetDefaultDataSubId(sub_id)
+        time.sleep(time_to_sleep)
+
+def set_subid_for_message(ad, sub_id):
+    """Set subId for outgoing message
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
+
+def set_subid_for_outgoing_call(ad, sub_id):
+    """Set subId for outgoing voice call
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+
+    Returns:
+        None
+    """
+    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
