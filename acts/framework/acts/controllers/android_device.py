@@ -678,20 +678,24 @@ class AndroidDevice:
             return False, clean_out
         return True, clean_out
 
+    @utils.timeout(15 * 60)
     def wait_for_boot_completion(self):
-        """Waits for the device to boot up.
+        """Waits for the Android framework to boot back up and ready to launch
+        apps.
 
-        Returns:
-            True if the device successfully finished booting, False otherwise.
+        This function times out after 15 minutes.
         """
-        timeout = time.time() + 60*15 # wait for 15 minutes
+        self.adb.wait_for_device()
         while True:
-            out = self.adb.shell("getprop sys.boot_completed")
-            completed = out.decode('utf-8').strip()
-            if completed == '1':
-                return True
-            if time.time() > timeout:
-                return False
+            try:
+                out = self.adb.shell("getprop sys.boot_completed")
+                completed = out.decode('utf-8').strip()
+                if completed == '1':
+                    return
+            except adb.AdbError:
+                # adb shell calls may fail during certain period of booting
+                # process, which is normal. Ignoring these errors.
+                pass
             time.sleep(5)
 
     def reboot(self):
@@ -723,9 +727,7 @@ class AndroidDevice:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
         self.adb.reboot()
-        time.sleep(5)
-        if not self.wait_for_boot_completion():
-            raise AndroidDeviceError("Reboot timed out on %s." % self.serial)
+        self.wait_for_boot_completion()
         self.root_adb()
         droid, ed = self.get_droid()
         ed.start()
