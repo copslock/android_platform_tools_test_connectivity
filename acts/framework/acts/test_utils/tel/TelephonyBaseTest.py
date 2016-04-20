@@ -22,18 +22,20 @@ import traceback
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 
-from acts.test_utils.tel.tel_subscription_setup_utils import \
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import get_sub_ids_for_sim_slots
-from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import set_subid_for_data
-from acts.test_utils.tel.tel_test_utils import set_subid_for_message
-from acts.test_utils.tel.tel_test_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -116,9 +118,6 @@ class TelephonyBaseTest(BaseTestClass):
 
             # Reset preferred network type.
             reset_preferred_network_type_to_allowable_range(self.log, ad)
-
-        setattr(self, 'sim_sub_ids',
-                get_sub_ids_for_sim_slots(self.log, self.android_devices))
 
         # Sub ID setup
         for ad in self.android_devices:
