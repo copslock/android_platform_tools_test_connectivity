@@ -17,19 +17,20 @@
 import time
 
 from acts.utils import rand_ascii_str
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_subscription_setup_utils import get_default_data_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
-from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
-from acts.test_utils.tel.tel_test_utils import set_subid_for_data
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
