@@ -19,6 +19,13 @@
 
 import time
 from acts.utils import load_config
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_outgoing_call
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING

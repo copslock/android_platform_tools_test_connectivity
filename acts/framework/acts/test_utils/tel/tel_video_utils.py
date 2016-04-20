@@ -51,8 +51,8 @@ from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionModifyRe
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED
 from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED
 from acts.test_utils.tel.tel_defines import CallStateContainer
-from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import check_phone_number_match
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import is_event_match
