@@ -112,11 +112,16 @@ from acts.test_utils.tel.tel_lookup_tables import \
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts.test_utils.tel.tel_subscription_setup_utils import get_default_data_sub_id
-from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_setup_utils import get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_setup_utils import get_incoming_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_default_data_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_incoming_message_sub_id
 from acts.utils import load_config
 from acts.logger import LoggerProxy
 log = LoggerProxy()
@@ -201,21 +206,6 @@ def refresh_droid_config(log, ad):
         # Update Operator Name
         ad.cfg['subscription'][sub_id]['operator'] = get_operator_name(
             log, ad, sub_id)
-
-def get_subid_from_slot_index(log, ad, sim_slot_index):
-    """ Get the subscription ID for a SIM at a particular slot
-
-    Args:
-        ad: android_device object.
-
-    Returns:
-        result: Subscription ID
-    """
-    subInfo = ad.droid.subscriptionGetAllSubInfoList()
-    for info in subInfo:
-        if info['simSlotIndex'] == sim_slot_index:
-            return info['subscriptionId']
-    return INVALID_SUB_ID
 
 def get_slot_index_from_subid(log, ad, sub_id):
     try:
@@ -3104,30 +3094,6 @@ def setup_sim(log, ad, sub_id, voice=False, sms=False, data=False):
                 return False
     return True
 
-
-def get_sub_ids_for_sim_slots(log, ads):
-    """get subscription id for each sim slots avaialble in all devices
-       in  ads
-
-    Args:
-        log: Log object.
-        ads: Android device object list.
-
-    Returns:
-        list of sub ids for all devices.
-        it is a matrix.
-        eg: sim_sub_ids[0][0] is sub id for sim1 in device 1
-    """
-    sim_sub_ids = []
-    for index in range(len(ads)):
-        sim_sub_ids.append([])
-        sim_count = ads[index].droid.telephonyGetSimCount()
-        for count in range(sim_count):
-            subid = get_subid_from_slot_index(log, ads[index], count)
-            sim_sub_ids[index].append(subid)
-    return sim_sub_ids
-
-
 def is_event_match(event, field, value):
     """Return if <field> in "event" match <value> or not.
 
@@ -3259,45 +3225,6 @@ def get_call_uri(ad, call_id):
         return call_detail["Handle"]["Uri"]
     except:
         return None
-
-def set_subid_for_outgoing_call(ad, sub_id):
-    """Set subId for outgoing voice call
-
-    Args:
-        ad: android device object.
-        sub_id: subscription id (integer)
-
-    Returns:
-        None
-    """
-    ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
-
-def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
-    """Set subId for data
-
-    Args:
-        ad: android device object.
-        sub_id: subscription id (integer)
-
-    Returns:
-        None
-    """
-    # TODO: Need to check onSubscriptionChanged event. b/27843365
-    if ad.droid.subscriptionGetDefaultDataSubId() != sub_id:
-        ad.droid.subscriptionSetDefaultDataSubId(sub_id)
-        time.sleep(time_to_sleep)
-
-def set_subid_for_message(ad, sub_id):
-    """Set subId for outgoing message
-
-    Args:
-        ad: android device object.
-        sub_id: subscription id (integer)
-
-    Returns:
-        None
-    """
-    ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
 
 # TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
 class WifiUtils():
