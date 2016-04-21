@@ -25,6 +25,8 @@ class IntegrationTest(base_test.BaseTestClass):
         self.register_controller(mock_controller)
 
     def test_hello_world(self):
+        asserts.assert_equal(self.user_params["icecream"], 42)
+        asserts.assert_equal(self.user_params["extra_param"], "haha")
         self.log.info("This is a bare minimal test to make sure the basic ACTS"
                       "test flow works.")
         asserts.explicit_pass("Hello World")
