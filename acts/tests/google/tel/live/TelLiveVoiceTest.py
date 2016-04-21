@@ -19,6 +19,13 @@
 
 import time
 from acts.utils import load_config
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_subid_for_outgoing_call
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
@@ -43,7 +50,6 @@ from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_phone_number
-from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
@@ -51,9 +57,6 @@ from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_phone_number
-from acts.test_utils.tel.tel_test_utils import set_subid_for_data
-from acts.test_utils.tel.tel_test_utils import set_subid_for_message
-from acts.test_utils.tel.tel_test_utils import set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode

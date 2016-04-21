@@ -20,6 +20,9 @@
 import time
 from acts.base_test import BaseTestClass
 from queue import Empty
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
@@ -61,13 +64,11 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
-from acts.test_utils.tel.tel_test_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import setup_sim
-from acts.test_utils.tel.tel_test_utils import set_subid_for_data
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
@@ -1284,15 +1285,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             return True
         else:
             return False
-
-    #SIM2 tests
-    def _reset_subscriptions_to_sim1(self, ads):
-        set_call_state_listen_level(self.log, ads[0], False,
-                                    self.sim_sub_ids[0][1])
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        setup_sim(self.log, ads[0], self.sim_sub_ids[0][0], True, False, True)
-        ensure_network_generation_for_subscription(
-            self.log, ads[0], self.sim_sub_ids[0][0], GEN_3G)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_ssid_quotes(self):
