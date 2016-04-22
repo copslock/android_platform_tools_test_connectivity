@@ -19,6 +19,7 @@
 
 import time
 from acts.base_test import BaseTestClass
+from acts import asserts
 from queue import Empty
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel.tel_test_utils import initiate_call
@@ -49,7 +50,7 @@ class TelLiveStressCallTest(BaseTestClass):
         # try removing lock
         self.android_devices[0].droid.wakeLockAcquireBright()
         self.android_devices[0].droid.wakeUpNow()
-        self.assert_true(
+        asserts.assert_true(
             ensure_phone_default_state(self.log, self.ad_caller),
             "Make sure phone is in default state")
         return True
@@ -57,7 +58,7 @@ class TelLiveStressCallTest(BaseTestClass):
     def teardown_test(self):
         self.android_devices[0].droid.wakeLockRelease()
         self.android_devices[0].droid.goToSleepNow()
-        self.assert_true(
+        asserts.assert_true(
             ensure_phone_default_state(self.log, self.ad_caller),
             "Make sure phone returns to default state")
 
@@ -81,13 +82,13 @@ class TelLiveStressCallTest(BaseTestClass):
         """
         ad_caller = self.ad_caller
         callee_number = self.stress_test_callee_number
-        self.assert_true(
+        asserts.assert_true(
             phone_setup_3g(self.log,
                            ad_caller), "Phone Failed to Set Up Properly.")
 
         # Make sure phone is idle.
         ensure_phone_idle(self.log, ad_caller)
-        self.assert_true(
+        asserts.assert_true(
             phone_idle_3g(self.log, ad_caller), "DUT Failed to Reselect")
 
         self.log.info("Call test:{} to {}".format(ad_caller.serial,
@@ -101,21 +102,21 @@ class TelLiveStressCallTest(BaseTestClass):
             self.log.info("---> Call test: iteration {} redial {}<---"
                           .format(current_iteration, redial_time))
             self.log.info("Checking Telephony Manager Call State")
-            self.assert_true(
+            asserts.assert_true(
                 self._check_phone_call_status(
                     ad_caller, tel_defines.TELEPHONY_STATE_IDLE),
                 INCORRECT_STATE_MSG)
 
             self.log.info("Making a phone call")
-            self.assert_true(
+            asserts.assert_true(
                 initiate_call(self.log, ad_caller, callee_number),
                 "Initiate call failed.")
 
             self.log.info("Ensure that all internal states are updated")
             time.sleep(tel_defines.WAIT_TIME_ANDROID_STATE_SETTLING)
-            self.assert_true(
+            asserts.assert_true(
                 is_phone_in_call_3g(self.log, ad_caller), INCORRECT_STATE_MSG)
-            self.assert_true(
+            asserts.assert_true(
                 self._check_phone_call_status(
                     ad_caller, tel_defines.TELEPHONY_STATE_OFFHOOK,
                     tel_defines.CALL_STATE_DIALING), INCORRECT_STATE_MSG)
@@ -134,20 +135,20 @@ class TelLiveStressCallTest(BaseTestClass):
                 self.log.info("The line is busy, try again")
                 redial_time += 1
                 if redial_time > MAX_NUMBER_REDIALS:
-                    self.assert_true(
+                    asserts.assert_true(
                         False, "Re-dial {} times and still having busy signal"
                         .format(redial_time))
             else:
-                self.assert_true(False, INCORRECT_STATE_MSG)
+                asserts.assert_true(False, INCORRECT_STATE_MSG)
                 current_iteration += 1
 
             self.log.info("Hang up phone for this iteration")
-            self.assert_true(
+            asserts.assert_true(
                 hangup_call(self.log, ad_caller), "Error in Hanging-Up Call")
             time.sleep(tel_defines.WAIT_TIME_ANDROID_STATE_SETTLING)
             self.log.info(
                 "Checking Telephony Manager Call State after hang up")
-            self.assert_true(
+            asserts.assert_true(
                 self._check_phone_call_status(
                     ad_caller, tel_defines.TELEPHONY_STATE_IDLE),
                 INCORRECT_STATE_MSG)
