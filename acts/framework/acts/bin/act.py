@@ -181,21 +181,15 @@ def load_test_config_file(test_config_path, tb_filters=None):
     # Unpack testbeds into separate json objects.
     beds = configs.pop(Config.key_testbed.value)
     config_jsons = []
-    for b in beds:
-        j = dict(configs)
-        j[Config.key_testbed.value] = b
-        # Custom keys in each test bed config will be moved up an level to be
+    for original_bed_config in beds:
+        new_test_config = dict(configs)
+        new_test_config[Config.key_testbed.value] = original_bed_config
+        # Keys in each test bed config will be copied to a level up to be
         # picked up for user_params. If the key already exists in the upper
         # level, the local one defined in test bed config overwrites the
         # general one.
-        for k in list(b.keys()):
-            if k in j:
-                j[k] = b[k]
-                del b[k]
-            elif k not in Config.tb_config_reserved_keys.value:
-                j[k] = b[k]
-                del b[k]
-        config_jsons.append(j)
+        new_test_config.update(original_bed_config)
+        config_jsons.append(new_test_config)
     return config_jsons
 
 def _run_test(test_runner, repeat=1):
