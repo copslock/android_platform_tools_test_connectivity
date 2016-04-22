@@ -251,6 +251,20 @@ class BaseTestClass(object):
             begin_time: Logline format timestamp taken when the test started.
         """
 
+    def _on_exception(self, record):
+        """Proxy function to guarantee the base implementation of on_exception
+        is called.
+
+        Args:
+            record: The records.TestResultRecord object for the failed test
+                    case.
+        """
+        test_name = record.test_name
+        self.log.exception(record.details)
+        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.on_exception(test_name, begin_time)
+
     def on_exception(self, test_name, begin_time):
         """A function that is executed upon an unhandled exception from a test
         case.
@@ -261,6 +275,29 @@ class BaseTestClass(object):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
+
+    def _exec_procedure_func(self, func, tr_record):
+        """Executes a procedure function like on_pass, on_fail etc.
+
+        This function will alternate the 'Result' of the test's record if
+        exceptions happened when executing the procedure function.
+
+        This will let signals.TestAbortAll through so abort_all works in all
+        procedure functions.
+
+        Args:
+            func: The procedure function to be executed.
+            tr_record: The TestResultRecord object associated with the test
+                       case executed.
+        """
+        try:
+            func(tr_record)
+        except signals.TestAbortAll:
+            raise
+        except Exception as e:
+            self.log.exception("Exception happened when executing %s for %s.",
+                               func.__name__, self.current_test_name)
+            tr_record.add_error(func.__name__, e)
 
     def exec_one_testcase(self, test_name, test_func, args, **kwargs):
         """Executes one test case and update test results.
@@ -284,17 +321,20 @@ class BaseTestClass(object):
             ret = self._setup_test(test_name)
             asserts.assert_true(ret is not False,
                                 "Setup for %s failed." % test_name)
-            if args or kwargs:
-                verdict = test_func(*args, **kwargs)
-            else:
-                verdict = test_func()
+            try:
+                if args or kwargs:
+                    verdict = test_func(*args, **kwargs)
+                else:
+                    verdict = test_func()
+            finally:
+                self._teardown_test(test_name)
         except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
-            self._exec_func(self._on_fail, tr_record)
+            self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
             tr_record.test_skip(e)
-            self._exec_func(self._on_skip, tr_record)
+            self._exec_procedure_func(self._on_skip, tr_record)
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
@@ -302,32 +342,29 @@ class BaseTestClass(object):
         except signals.TestPass as e:
             # Explicit test pass.
             tr_record.test_pass(e)
-            self._exec_func(self._on_pass, tr_record)
+            self._exec_procedure_func(self._on_pass, tr_record)
         except signals.TestSilent as e:
             # This is a trigger test for generated tests, suppress reporting.
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
             # Exception happened during test.
-            self.log.exception("Uncaught exception in %s", test_name)
             tr_record.test_unknown(e)
-            bt = logger.epoch_to_log_line_timestamp(tr_record.begin_time)
-            self._exec_func(self.on_exception, tr_record.test_name, bt)
-            self._exec_func(self._on_fail, tr_record)
+            self._exec_procedure_func(self._on_exception, tr_record)
+            self._exec_procedure_func(self._on_fail, tr_record)
         else:
             # Keep supporting return False for now.
             # TODO(angli): Deprecate return False support.
             if verdict or (verdict is None):
                 # Test passed.
                 tr_record.test_pass()
-                self._exec_func(self._on_pass, tr_record)
+                self._exec_procedure_func(self._on_pass, tr_record)
                 return
             # Test failed because it didn't return True.
             # This should be removed eventually.
             tr_record.test_fail()
-            self._exec_func(self._on_fail, tr_record)
+            self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            self._exec_func(self._teardown_test, test_name)
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
