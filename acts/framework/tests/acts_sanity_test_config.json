@@ -3,9 +3,12 @@
     [
         {
             "_description": "ACTS sanity test bed, no device needed.",
-            "name": "Sanity"
+            "name": "Sanity",
+            "icecream": 42
         }
     ],
     "logpath": "/tmp/logs",
-    "testpaths": ["./"]
+    "testpaths": ["./"],
+    "icecream": "mememe",
+    "extra_param": "haha"
 }
