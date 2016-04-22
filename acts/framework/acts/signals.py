@@ -50,6 +50,8 @@ class TestSignal(Exception):
         except TypeError:
             raise TestSignalError(("Extras must be json serializable. %s "
                                    "is not.") % extras)
+    def __str__(self):
+        return "Details=%s, Extras=%s" % (self.details, self.extras)
 
 class TestFailure(TestSignal):
     """Raised when a test has failed."""
