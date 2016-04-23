@@ -17,7 +17,12 @@
 from acts import asserts
 from acts import base_test
 
-class HelloWorldTest(base_test.BaseTestClass):
+import mock_controller
+
+class IntegrationTest(base_test.BaseTestClass):
+
+    def setup_class(self):
+        self.register_controller(mock_controller)
 
     def test_hello_world(self):
         self.log.info("This is a bare minimal test to make sure the basic ACTS"
