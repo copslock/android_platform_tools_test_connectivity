@@ -29,51 +29,33 @@ SL4A. The script does the following:
 import time
 
 from acts.base_test import BaseTestClass
-from acts.test_utils.bt.bt_test_utils import log_energy_info
-from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts.test_utils.bt import bt_test_utils
+from acts import asserts
 
 class BtCarPairedConnectDisconnectTest(BaseTestClass):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
         self.droid_ad = self.android_devices[0]
         self.droid1_ad = self.android_devices[1]
-        self.tests = (
-            "test_connect_disconnect_paired",
-        )
-
-    def setup_class(self):
-        return True
 
     def setup_test(self):
         # Reset the devices in a clean state.
-        setup_multiple_devices_for_bt_test(self.android_devices)
-        reset_bluetooth(self.android_devices)
+        bt_test_utils.setup_multiple_devices_for_bt_test(self.android_devices)
+        bt_test_utils.reset_bluetooth(self.android_devices)
         for a in self.android_devices:
             a.ed.clear_all_events()
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
-        result = pair_pri_to_sec(self.droid_ad.droid, self.droid1_ad.droid)
+        result = bt_test_utils.pair_pri_to_sec(self.droid_ad.droid, self.droid1_ad.droid)
 
-        if result is False:
-            self.log.info("pair_pri_to_sec returned false.")
-            return False
+        asserts.assert_true(result, "pair_pri_to_sec returned false.");
 
         # Check for successful setup of test.
         devices = self.droid_ad.droid.bluetoothGetBondedDevices()
-        if (len(devices) == 0):
-            self.log.info("pair_pri_to_sec succeeded but no bonded devices.")
-            return False
-        return True
-
-    def teardown_test(self):
-        return True
+        asserts.assert_equal(len(devices), 1, "pair_pri_to_sec succeeded but no bonded devices.")
 
     def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.android_devices, self, test_name)
+        bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name)
 
     def test_connect_disconnect_paired(self):
         NUM_TEST_RUNS = 2
@@ -89,9 +71,13 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
 
             self.log.info("Attempting to connect.")
             self.droid_ad.droid.bluetoothConnectBonded(devices[0]['address'])
-            end_time = time.time() + 10
+            end_time = time.time() + 20
             expected_address = self.droid1_ad.droid.bluetoothGetLocalAddress()
             connected = False
+            a2dp_sink_connected = False
+            pbap_client_connected = False
+            hfp_client_connected = False
+
             # Busy loop to check if we found a matching device.
             while time.time() < end_time:
                 connected_devices = self.droid_ad.droid.bluetoothGetConnectedDevices()
@@ -99,13 +85,44 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
                     if d['address'] == expected_address:
                         connected = True
                         break
-                if connected is True:
+                a2dp_sink_connected_devices = (self.droid_ad.droid
+                                               .bluetoothGetConnectedDevicesOnProfile(11))
+                for d in a2dp_sink_connected_devices:
+                    if d['address'] == expected_address:
+                        a2dp_sink_connected = True
+                        break
+
+                hfp_client_connected_devices = (self.droid_ad.droid.
+                                                bluetoothGetConnectedDevicesOnProfile(16))
+                for d in hfp_client_connected_devices:
+                    if d['address'] == expected_address:
+                        hfp_client_connected = True
+                        break
+
+                pbap_client_connected_devices = (self.droid_ad.droid.
+                                                 bluetoothGetConnectedDevicesOnProfile(17))
+                for d in hfp_client_connected_devices:
+                    if d['address'] == expected_address:
+                        pbap_client_connected = True
+                        break
+                time.sleep(5)
+
+                self.log.info("Connected " + str(connected))
+                self.log.info("A2DP Sink Connected " + str(a2dp_sink_connected))
+                self.log.info("HFP client connected " + str(hfp_client_connected))
+                self.log.info("PBAP Client connected " + str(pbap_client_connected))
+
+                if (all([connected, a2dp_sink_connected,
+                         hfp_client_connected, pbap_client_connected])):
                     break
-                time.sleep(1)
+
+                # Try again to overcome occasional throw away by bluetooth
+                self.droid_ad.droid.bluetoothConnectBonded(devices[0]['address'])
 
             # Check if we got connected.
-            if connected is False:
-                self.log.info("No connected devices.")
+            if (not all([connected, a2dp_sink_connected, pbap_client_connected,
+                         hfp_client_connected])):
+                self.log.info("Not all profiles connected.")
                 failure = failure + 1
                 continue
 
@@ -135,7 +152,4 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
                 failure = failure + 1
                 continue
         self.log.info("Failure {} total tests {}".format(failure, NUM_TEST_RUNS))
-        if failure > 0:
-            return False
-        else:
-            return True
+        asserts.assert_equal(failure, 0, "")
