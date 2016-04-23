@@ -18,12 +18,12 @@ import json
 import subprocess
 import unittest
 
-class ActsHelloWorldTest(unittest.TestCase):
-    """Execute a simple hello world ACTS test to make sure the basic workflow
-    of ACTS is intact.
+class ActsIntegrationTest(unittest.TestCase):
+    """Execute a simple ACTS test to make sure the basic workflow of ACTS is
+    intact.
     """
     def test_acts(self):
-        cmd = "act.py -c acts_sanity_test_config.json -tc HelloWorldTest"
+        cmd = "act.py -c acts_sanity_test_config.json -tc IntegrationTest"
         subprocess.check_call([cmd], shell=True)
         with open("/tmp/logs/Sanity/latest/test_run_summary.json", 'r') as f:
             results = json.load(f)
