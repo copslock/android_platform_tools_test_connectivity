@@ -60,7 +60,7 @@ class EventDispatcher:
             event_obj = None
             event_name = None
             try:
-                event_obj = self.droid.eventWait(60000)
+                event_obj = self.droid.eventWait(50000)
             except:
                 if self.started:
                     print("Exception happened during polling.")
