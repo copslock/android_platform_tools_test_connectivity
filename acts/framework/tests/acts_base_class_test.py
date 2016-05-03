@@ -42,7 +42,7 @@ class ActsBaseClassTest(unittest.TestCase):
             'log': mock.MagicMock(),
             'log_path': '/tmp',
             'cli_args': None,
-            'user_params': {}
+            'user_params': {"some_param": "hahaha"}
         }
         self.mock_test_name = "test_something"
 
@@ -515,6 +515,14 @@ class ActsBaseClassTest(unittest.TestCase):
 
     def test_unpack_userparams_required(self):
         """Missing a required param should raise an error."""
+        required = ["some_param"]
+        bc = base_test.BaseTestClass(self.mock_test_cls_configs)
+        bc.unpack_userparams(required)
+        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        self.assertEqual(bc.some_param, expected_value)
+
+    def test_unpack_userparams_required_missing(self):
+        """Missing a required param should raise an error."""
         required = ["something"]
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         expected_msg = ("Missing required user param '%s' in test "
@@ -523,6 +531,24 @@ class ActsBaseClassTest(unittest.TestCase):
             bc.unpack_userparams(required)
 
     def test_unpack_userparams_optional(self):
+        """If an optional param is specified, the value should be what's in the
+        config.
+        """
+        opt = ["some_param"]
+        bc = base_test.BaseTestClass(self.mock_test_cls_configs)
+        bc.unpack_userparams(opt_param_names=opt)
+        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        self.assertEqual(bc.some_param, expected_value)
+
+    def test_unpack_userparams_optional_with_default(self):
+        """If an optional param is specified with a default value, and the
+        param is not in the config, the value should be the default value.
+        """
+        bc = base_test.BaseTestClass(self.mock_test_cls_configs)
+        bc.unpack_userparams(optional_thing="whatever")
+        self.assertEqual(bc.optional_thing, "whatever")
+
+    def test_unpack_userparams_optional_missing(self):
         """Missing an optional param should not raise an error."""
         opt = ["something"]
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
