@@ -217,6 +217,20 @@ class TestRunner(object):
         self.controller_destructors[module_ref_name] = destroy_func
         return objects
 
+    def unregister_controllers(self):
+        """Destroy controller objects and clear internal registry.
+
+        This will be called at the end of each TestRunner.run call.
+        """
+        for name, destroy in self.controller_destructors.items():
+            try:
+                self.log.debug("Destroying %s.", name)
+                destroy(self.controller_registry[name])
+            except:
+                self.log.exception("Exception occurred destroying %s.", name)
+        self.controller_registry = {}
+        self.controller_destructors = {}
+
     def parse_config(self, test_configs):
         """Parses the test configuration and unpacks objects and parameters
         into a dictionary to be passed to test classes.
@@ -298,56 +312,55 @@ class TestRunner(object):
                 raise e
 
     def run(self):
-        """Kicks off the test run.
+        """Executes test cases.
 
         This will instantiate controller and test classes, and execute test
-        classes. A call to TestRunner.run should always be accompanied by a
-        call to TestRunner.stop.
+        classes. This can be called multiple times to repeatly execute the
+        requested test cases.
+
+        A call to TestRunner.stop should eventually happen to conclude the life
+        cycle of a TestRunner.
         """
         if not self.running:
             self.running = True
-        # Initialize controller objects and pack appropriate objects/params to
-        # be passed to test class.
+        # Initialize controller objects and pack appropriate objects/params
+        # to be passed to test class.
         self.parse_config(self.test_configs)
         t_configs = self.test_configs[keys.Config.key_test_paths.value]
         self.test_classes = self.import_test_modules(t_configs)
         self.log.debug("Executing run list %s.", self.run_list)
-        for test_cls_name, test_case_names in self.run_list:
-            if not self.running:
-                break
-            if test_case_names:
-                self.log.debug("Executing test cases %s in test class %s.",
-                               test_case_names,
-                               test_cls_name)
-            else:
-                self.log.debug("Executing test class %s", test_cls_name)
-            try:
-                self.run_test_class(test_cls_name, test_case_names)
-            except signals.TestAbortAll as e:
-                self.log.warning(("Abort all subsequent test classes. Reason: "
-                                  "%s"), e)
-                raise
+        try:
+            for test_cls_name, test_case_names in self.run_list:
+                if not self.running:
+                    break
+                if test_case_names:
+                    self.log.debug("Executing test cases %s in test class %s.",
+                                   test_case_names,
+                                   test_cls_name)
+                else:
+                    self.log.debug("Executing test class %s", test_cls_name)
+                try:
+                    self.run_test_class(test_cls_name, test_case_names)
+                except signals.TestAbortAll as e:
+                    self.log.warning(("Abort all subsequent test classes. Reason: "
+                                      "%s"), e)
+                    raise
+        finally:
+            self.unregister_controllers()
 
     def stop(self):
         """Releases resources from test run. Should always be called after
         TestRunner.run finishes.
+
+        This function concludes a test run and writes out a test report.
         """
         if self.running:
             msg = "\nSummary for test run %s: %s\n" % (self.id,
                 self.results.summary_str())
             self._write_results_json_str()
             self.log.info(msg.strip())
-            self.clean_up()
             logger.kill_test_logger(self.log)
             self.running = False
-
-    def clean_up(self):
-        for name, destroy in self.controller_destructors.items():
-            try:
-                self.log.debug("Destroying %s.", name)
-                destroy(self.controller_registry[name])
-            except:
-                self.log.exception("Exception occurred destroying %s.", name)
 
     def _write_results_json_str(self):
         """Writes out a json file with the test result info for easy parsing.
