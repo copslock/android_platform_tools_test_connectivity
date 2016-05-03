@@ -66,6 +66,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_network_rat_for_subscription
@@ -73,6 +74,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_volte_enabled
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 
 
 def two_phone_call_leave_voice_mail(
@@ -424,14 +426,14 @@ def phone_setup_iwlan_cellular_preferred(log,
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
             log.error("{} connect to WiFi failed.".format(ad.serial))
             return False
-    if wait_for_network_rat(log,
-                            ad,
-                            RAT_FAMILY_WLAN,
-                            voice_or_data=NETWORK_SERVICE_DATA):
+    if not wait_for_not_network_rat(log,
+                                    ad,
+                                    RAT_FAMILY_WLAN,
+                                    voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat in iwlan mode.".format(ad.serial))
         return False
-    if wait_for_wfc_enabled(log, ad, MAX_WAIT_TIME_WFC_ENABLED):
-        log.error("{} should not <report wfc enabled true> within {}s.".format(
+    elif not wait_for_wfc_disabled(log, ad, MAX_WAIT_TIME_WFC_ENABLED):
+        log.error("{} should report wifi calling disabled within {}s.".format(
             ad.serial, MAX_WAIT_TIME_WFC_ENABLED))
         return False
     return True
