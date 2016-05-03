@@ -202,6 +202,8 @@ class WifiScannerScanTest(BaseTestClass):
                                                               self.stime_channel)
         scan_time_mic = scan_time * 1000
         for i, batch in enumerate(scan_resutls, start=1):
+            asserts.assert_true(batch["ScanResults"],
+                                "At least one scan result is required to validate")
             max_scan_interval =  batch["ScanResults"][0]["timestamp"] + scan_time_mic
             self.log.debug("max_scan_interval: {}".format(max_scan_interval) )
             for result in batch["ScanResults"]:
@@ -1036,14 +1038,10 @@ class WifiScannerScanTest(BaseTestClass):
             event = self.dut.ed.pop_event(event_name, wait_time)
             self.log.debug("Event received: {}".format(event))
             results = event["data"]["Results"]
-            bssids, validity = (self.proces_and_valid_batch_scan_result(
-                                                      results, scan_rt,
-                                                      event["data"][KEY_RET],
-                                                      self.default_scan_setting))
-            self.log.info("Scan number Buckets: {}\nTotal BSSID: {}".
-                          format(len(results), bssids))
-            asserts.assert_true(bssids == 0, ("Test fail because report scan "
-                                              "results reported are not empty"))
+            for batch in results:
+              asserts.assert_true(not batch["ScanResults"],
+                                  "Test fail because report scan "
+                                  "results reported are not empty")
         except Empty as error:
             raise AssertionError("Event did not triggered for in isolated environment {}".
                    format(error))
