@@ -34,11 +34,13 @@ class ActsTestRunnerTest(unittest.TestCase):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = {
             "testbed":{
-                "name": "SampleTestBed"
+                "name": "SampleTestBed",
             },
             "logpath": self.tmp_dir,
             "cli_args": None,
-            "testpaths": ["../tests/sample"]
+            "testpaths": ["./"],
+            "icecream": 42,
+            "extra_param": "haha"
         }
         self.mock_run_list = [('SampleTest', None)]
 
@@ -113,6 +115,25 @@ class ActsTestRunnerTest(unittest.TestCase):
         magic_devices = tr.register_controller(mock_controller)
         self.assertEqual(magic_devices[0].magic, "magic1")
         self.assertEqual(magic_devices[1].magic, "magic2")
+
+    def test_run_twice(self):
+        mock_test_config = dict(self.base_mock_test_config)
+        tb_key = keys.Config.key_testbed.value
+        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
+        tr = test_runner.TestRunner(self.base_mock_test_config,
+                                    [('IntegrationTest', None)])
+        tr.run()
+        self.assertFalse(tr.controller_registry)
+        self.assertFalse(tr.controller_destructors)
+        tr.run()
+        tr.stop()
+        self.assertFalse(tr.controller_registry)
+        self.assertFalse(tr.controller_destructors)
+        results = tr.results.summary_dict()
+        self.assertEqual(results["Requested"], 2)
+        self.assertEqual(results["Executed"], 2)
+        self.assertEqual(results["Passed"], 2)
 
     def test_verify_controller_module(self):
         test_runner.TestRunner.verify_controller_module(mock_controller)
