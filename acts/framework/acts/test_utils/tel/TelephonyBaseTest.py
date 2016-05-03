@@ -71,7 +71,7 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.info(log_string)
                     self.setup_test()
                     for ad in self.android_devices:
-                        ad.droid.logI("Rerun Started "+log_string)
+                        ad.droid.logI("Rerun Started " + log_string)
                     result = fn(self, *args, **kwargs)
                     if result:
                         self.log.info("Rerun passed.")
@@ -143,11 +143,12 @@ class TelephonyBaseTest(BaseTestClass):
                 try:
                     ad.droid.connectivityToggleAirplaneMode(True)
                 except BrokenPipeError:
-                # Broken Pipe, can not call SL4A API to turn on Airplane Mode.
-                # Use adb command to turn on Airplane Mode.
+                    # Broken Pipe, can not call SL4A API to turn on Airplane Mode.
+                    # Use adb command to turn on Airplane Mode.
                     if not force_airplane_mode(ad, True):
-                        self.log.error("Can not turn on airplane mode on:{}".
-                            format(ad.serial))
+                        self.log.error(
+                            "Can not turn on airplane mode on:{}".format(
+                                ad.serial))
         return True
 
     def setup_test(self):
