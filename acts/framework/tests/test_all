@@ -3,13 +3,13 @@
 import sys
 import unittest
 
-import acts_hello_world_test
+import acts_integration_test
 import acts_unittest_suite
 
 if __name__ == "__main__":
     # This files executes both the unit tests and the integration test.
     suite = acts_unittest_suite.compile_suite()
-    suite.addTest(acts_hello_world_test.ActsHelloWorldTest("test_acts"))
+    suite.addTest(acts_integration_test.ActsIntegrationTest("test_acts"))
     runner = unittest.TextTestRunner()
     results = runner.run(suite)
     sys.exit(not results.wasSuccessful())

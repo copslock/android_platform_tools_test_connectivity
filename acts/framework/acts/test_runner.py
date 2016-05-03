@@ -139,6 +139,104 @@ class TestRunner(object):
                             test_classes[member_name] = test_class
         return test_classes
 
+    @staticmethod
+    def verify_controller_module(module):
+        """Verifies a module object follows the required interface for
+        controllers.
+
+        Args:
+            module: An object that is a controller module. This is usually
+                    imported with import statements or loaded by importlib.
+
+        Raises:
+            ControllerError is raised if the module does not match the ACTS
+            controller interface, or one of the required members is null.
+        """
+        required_attributes = ("create",
+                               "destroy",
+                               "ACTS_CONTROLLER_CONFIG_NAME")
+        for attr in required_attributes:
+            if not hasattr(module, attr):
+                raise signals.ControllerError(("Module %s missing required "
+                    "controller module attribute %s.") % (module.__name__,
+                                                          attr))
+            if not getattr(module, attr):
+                raise signals.ControllerError(("Controller interface %s in %s "
+                    "cannot be null.") % (attr, module.__name__))
+
+    def register_controller(self, module):
+        """Registers a controller module for a test run.
+
+        This declares a controller dependency of this test class. If the target
+        module exists and matches the controller interface, the controller
+        module will be instantiated with corresponding configs in the test
+        config file. The module should be imported first.
+
+        Params:
+            module: A module that follows the controller module interface.
+
+        Returns:
+            A list of controller objects instantiated from controller_module.
+
+        Raises:
+            ControllerError is raised if no corresponding config can be found,
+            or if the controller module has already been registered.
+        """
+        TestRunner.verify_controller_module(module)
+        try:
+            # If this is a builtin controller module, use the default ref name.
+            module_ref_name = module.ACTS_CONTROLLER_REFERENCE_NAME
+            builtin = True
+        except AttributeError:
+            # Or use the module's name
+            builtin = False
+            module_ref_name = module.__name__.split('.')[-1]
+        if module_ref_name in self.controller_registry:
+            raise signals.ControllerError(("Controller module %s has already "
+                                           "been registered. It can not be "
+                                           "registered again."
+                                           ) % module_ref_name)
+        # Create controller objects.
+        create = module.create
+        module_config_name = module.ACTS_CONTROLLER_CONFIG_NAME
+        if module_config_name not in self.testbed_configs:
+            raise signals.ControllerError(("No corresponding config found for"
+                                           " %s") % module_config_name)
+        try:
+            objects = create(self.testbed_configs[module_config_name],
+                             self.log)
+        except:
+            self.log.exception(("Failed to initialize objects for controller "
+                                "%s, abort!"), module_config_name)
+            raise
+        if not isinstance(objects, list):
+            raise ControllerError(("Controller module %s did not return a list"
+                                   " of objects, abort.") % module_ref_name)
+        self.controller_registry[module_ref_name] = objects
+        # TODO(angli): After all tests move to register_controller, stop
+        # tracking controller objs in test_run_info.
+        if builtin:
+            self.test_run_info[module_ref_name] = objects
+        self.log.debug("Found %d objects for controller %s", len(objects),
+                       module_config_name)
+        destroy_func = module.destroy
+        self.controller_destructors[module_ref_name] = destroy_func
+        return objects
+
+    def unregister_controllers(self):
+        """Destroy controller objects and clear internal registry.
+
+        This will be called at the end of each TestRunner.run call.
+        """
+        for name, destroy in self.controller_destructors.items():
+            try:
+                self.log.debug("Destroying %s.", name)
+                destroy(self.controller_registry[name])
+            except:
+                self.log.exception("Exception occurred destroying %s.", name)
+        self.controller_registry = {}
+        self.controller_destructors = {}
+
     def parse_config(self, test_configs):
         """Parses the test configuration and unpacks objects and parameters
         into a dictionary to be passed to test classes.
@@ -236,45 +334,55 @@ class TestRunner(object):
                 raise e
 
     def run(self):
+        """Executes test cases.
+
+        This will instantiate controller and test classes, and execute test
+        classes. This can be called multiple times to repeatly execute the
+        requested test cases.
+
+        A call to TestRunner.stop should eventually happen to conclude the life
+        cycle of a TestRunner.
+        """
         if not self.running:
             self.running = True
+        # Initialize controller objects and pack appropriate objects/params
+        # to be passed to test class.
+        self.parse_config(self.test_configs)
+        t_configs = self.test_configs[keys.Config.key_test_paths.value]
+        self.test_classes = self.import_test_modules(t_configs)
         self.log.debug("Executing run list %s.", self.run_list)
-        for test_cls_name, test_case_names in self.run_list:
-            if not self.running:
-                break
-            if test_case_names:
-                self.log.debug("Executing test cases %s in test class %s.",
-                               test_case_names,
-                               test_cls_name)
-            else:
-                self.log.debug("Executing test class %s", test_cls_name)
-            try:
-                self.run_test_class(test_cls_name, test_case_names)
-            except TestAbortAll as e:
-                self.log.warning(("Abort all subsequent test classes. Reason: "
-                                  "%s"), e)
-                raise
+        try:
+            for test_cls_name, test_case_names in self.run_list:
+                if not self.running:
+                    break
+                if test_case_names:
+                    self.log.debug("Executing test cases %s in test class %s.",
+                                   test_case_names,
+                                   test_cls_name)
+                else:
+                    self.log.debug("Executing test class %s", test_cls_name)
+                try:
+                    self.run_test_class(test_cls_name, test_case_names)
+                except signals.TestAbortAll as e:
+                    self.log.warning(("Abort all subsequent test classes. Reason: "
+                                      "%s"), e)
+                    raise
+        finally:
+            self.unregister_controllers()
 
     def stop(self):
-        """Releases resources from test run. Should be called right after run()
-        finishes.
+        """Releases resources from test run. Should always be called after
+        TestRunner.run finishes.
+
+        This function concludes a test run and writes out a test report.
         """
         if self.running:
             msg = "\nSummary for test run %s: %s\n" % (self.id,
                 self.results.summary_str())
             self._write_results_json_str()
             self.log.info(msg.strip())
-            self.clean_up()
             logger.kill_test_logger(self.log)
             self.running = False
-
-    def clean_up(self):
-        for name, destroy in self.controller_destructors.items():
-            try:
-                self.log.debug("Destroying %s.", name)
-                destroy(self.configs[name])
-            except:
-                self.log.exception("Exception occurred destroying %s.", name)
 
     def _write_results_json_str(self):
         """Writes out a json file with the test result info for easy parsing.
