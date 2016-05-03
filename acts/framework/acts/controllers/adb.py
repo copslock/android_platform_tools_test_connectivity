@@ -148,13 +148,15 @@ class AdbProxy():
         Args:
             port: Port number to use on the android device.
         """
+        MAX_SL4A_WAIT_TIME = 10
         print(self.shell(SL4A_LAUNCH_CMD.format(port)))
-        # TODO(angli): Make is_sl4a_running reliable so we don't have to do a
-        # dumb wait.
-        time.sleep(3)
-        if not self.is_sl4a_running():
-            raise AdbError(
-              "com.googlecode.android_scripting process never started.")
+
+        for _ in range(MAX_SL4A_WAIT_TIME):
+            time.sleep(1)
+            if self.is_sl4a_running():
+                return
+        raise AdbError(
+                "com.googlecode.android_scripting process never started.")
 
     def is_sl4a_running(self):
         """Checks if the sl4a app is running on an android device.
