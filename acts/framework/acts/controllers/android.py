@@ -24,6 +24,7 @@ import json
 import os
 import socket
 import threading
+import time
 
 HOST = os.environ.get('AP_HOST', None)
 PORT = os.environ.get('AP_PORT', 9999)
@@ -49,16 +50,31 @@ def IDCounter():
 class Android(object):
     COUNTER = IDCounter()
 
+    _SOCKET_CONNECT_TIMEOUT = 60
+
     def __init__(self, cmd='initiate', uid=-1, port=PORT, addr=HOST, timeout=None):
         self.lock = threading.RLock()
         self.client = None  # prevent close errors on connect failure
         self.uid = None
-        try:
-            self.conn = socket.create_connection((addr, port), 60)
-            self.conn.settimeout(timeout)
-        except (TimeoutError, socket.timeout):
-            print("Failed to create socket connection!")
-            raise
+        timeout_time = time.time() + self._SOCKET_CONNECT_TIMEOUT
+        while True:
+            try:
+                self.conn = socket.create_connection(
+                        (addr, port), max(1,timeout_time - time.time()))
+                self.conn.settimeout(timeout)
+                break
+            except (TimeoutError, socket.timeout):
+                print("Failed to create socket connection!")
+                raise
+            except (socket.error, IOError):
+                # TODO: optimize to only forgive some errors here
+                # error values are OS-specific so this will require
+                # additional tuning to fail faster
+                if time.time() + 1 >= timeout_time:
+                    print("Failed to create socket connection!")
+                    raise
+                time.sleep(1)
+
         self.client = self.conn.makefile(mode="brw")
 
         resp = self._cmd(cmd, uid)
