@@ -124,7 +124,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                        new=mock_list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
-        actual_ads = android_device.create(pick_all_token, logging)
+        actual_ads = android_device.create(pick_all_token)
         for actual, expected in zip(actual_ads, get_mock_ads(5)):
             self.assertEqual(actual.serial, expected.serial)
 
@@ -132,13 +132,13 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
         with self.assertRaisesRegexp(android_device.AndroidDeviceError,
                                      expected_msg):
-            android_device.create([], logging)
+            android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
         with self.assertRaisesRegexp(android_device.AndroidDeviceError,
                                      expected_msg):
-            android_device.create("HAHA", logging)
+            android_device.create("HAHA")
 
     def test_get_device_success_with_serial(self):
         ads = get_mock_ads(5)
