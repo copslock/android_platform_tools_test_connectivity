@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import mock
 import socket
 import unittest
 
@@ -23,14 +24,16 @@ class ActsAdbTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under acts.controllers.adb.
     """
-    def test_is_port_available_positive(self):
+    @mock.patch('acts.controllers.adb.list_occupied_adb_ports')
+    def test_is_port_available_positive(self, mock_list_occupied_adb_ports):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         test_s.close()
         self.assertTrue(adb.is_port_available(port))
 
-    def test_is_port_available_negative(self):
+    @mock.patch('acts.controllers.adb.list_occupied_adb_ports')
+    def test_is_port_available_negative(self, mock_list_occupied_adb_ports):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
