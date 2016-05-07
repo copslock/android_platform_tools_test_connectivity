@@ -79,8 +79,8 @@ def phone_setup_video(log, ad):
     Returns:
         True if ad (default sub_id) is setup correctly and idle for video call.
     """
-    return phone_setup_video_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_video_for_subscription(log, ad,
+                                              get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_video_for_subscription(log, ad, sub_id):
@@ -124,8 +124,8 @@ def phone_idle_video(log, ad):
     Returns:
         True if ad is idle for video call.
     """
-    return phone_idle_video_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_video_for_subscription(log, ad,
+                                             get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_video_for_subscription(log, ad, sub_id):
@@ -167,7 +167,7 @@ def is_phone_in_call_video(log, ad):
         True if ad (for sub_id) is in a video call (in expected video state).
     """
     return is_phone_in_call_video_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad)))
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_video_for_subscription(log, ad, sub_id, video_state=None):
@@ -393,8 +393,8 @@ def wait_and_answer_video_call(log,
         False: for errors
     """
     return wait_and_answer_video_call_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad), incoming_number,
-        video_state, incall_ui_display)
+        log, ad, get_outgoing_voice_sub_id(ad), incoming_number, video_state,
+        incall_ui_display)
 
 
 def wait_and_answer_video_call_for_subscription(
@@ -520,10 +520,9 @@ def video_call_setup_teardown(log,
 
     """
     return video_call_setup_teardown_for_subscription(
-        log, ad_caller, ad_callee,
-        get_outgoing_voice_sub_id(ad_caller),
-        get_incoming_voice_sub_id(ad_callee), ad_hangup,
-        video_state, verify_caller_func, verify_callee_func, wait_time_in_call,
+        log, ad_caller, ad_callee, get_outgoing_voice_sub_id(ad_caller),
+        get_incoming_voice_sub_id(ad_callee), ad_hangup, video_state,
+        verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display)
 
 

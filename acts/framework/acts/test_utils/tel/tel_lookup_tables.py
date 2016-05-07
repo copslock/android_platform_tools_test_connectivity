@@ -107,6 +107,7 @@ def get_voice_mail_number_function(operator):
 def get_voice_mail_count_check_function(operator):
     return _TelTables.voice_mail_count_check_function_tbl[operator]
 
+
 def get_allowable_network_preference(operator):
     return _TelTables.allowable_network_preference_tbl[operator]
 
@@ -417,19 +418,16 @@ class _TelTables():
             'rat_family_list': [tel_defines.RAT_FAMILY_CDMA2000]
         },
         tel_defines.NETWORK_MODE_GLOBAL: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_TDSCDMA,
-                                tel_defines.RAT_FAMILY_WCDMA,
-                                tel_defines.RAT_FAMILY_GSM,
-                                tel_defines.RAT_FAMILY_CDMA2000,
-                                tel_defines.RAT_FAMILY_CDMA]
+            'rat_family_list':
+            [tel_defines.RAT_FAMILY_LTE, tel_defines.RAT_FAMILY_TDSCDMA,
+             tel_defines.RAT_FAMILY_WCDMA, tel_defines.RAT_FAMILY_GSM,
+             tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
         },
         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_WCDMA,
-                                tel_defines.RAT_FAMILY_GSM,
-                                tel_defines.RAT_FAMILY_CDMA2000,
-                                tel_defines.RAT_FAMILY_CDMA]
+            'rat_family_list':
+            [tel_defines.RAT_FAMILY_LTE, tel_defines.RAT_FAMILY_WCDMA,
+             tel_defines.RAT_FAMILY_GSM, tel_defines.RAT_FAMILY_CDMA2000,
+             tel_defines.RAT_FAMILY_CDMA]
         },
         tel_defines.NETWORK_MODE_LTE_ONLY: {
             'rat_family_list': [tel_defines.RAT_FAMILY_LTE]
@@ -469,24 +467,20 @@ class _TelTables():
                                 tel_defines.RAT_FAMILY_LTE]
         },
         tel_defines.NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
-                                tel_defines.RAT_FAMILY_TDSCDMA,
-                                tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_GSM]
+            'rat_family_list':
+            [tel_defines.RAT_FAMILY_WCDMA, tel_defines.RAT_FAMILY_TDSCDMA,
+             tel_defines.RAT_FAMILY_LTE, tel_defines.RAT_FAMILY_GSM]
         },
         tel_defines.NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
-                                tel_defines.RAT_FAMILY_TDSCDMA,
-                                tel_defines.RAT_FAMILY_CDMA2000,
-                                tel_defines.RAT_FAMILY_CDMA]
+            'rat_family_list':
+            [tel_defines.RAT_FAMILY_WCDMA, tel_defines.RAT_FAMILY_TDSCDMA,
+             tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
         },
         tel_defines.NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA: {
-            'rat_family_list': [tel_defines.RAT_FAMILY_WCDMA,
-                                tel_defines.RAT_FAMILY_TDSCDMA,
-                                tel_defines.RAT_FAMILY_LTE,
-                                tel_defines.RAT_FAMILY_GSM,
-                                tel_defines.RAT_FAMILY_CDMA2000,
-                                tel_defines.RAT_FAMILY_CDMA]
+            'rat_family_list':
+            [tel_defines.RAT_FAMILY_WCDMA, tel_defines.RAT_FAMILY_TDSCDMA,
+             tel_defines.RAT_FAMILY_LTE, tel_defines.RAT_FAMILY_GSM,
+             tel_defines.RAT_FAMILY_CDMA2000, tel_defines.RAT_FAMILY_CDMA]
         }
     }
     default_umts_operator_network_tbl = {
@@ -563,11 +557,10 @@ device_capabilities = {
     NexusModelNames.ONE:
     [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_MSIM],
     NexusModelNames.N5: [tel_defines.CAPABILITY_PHONE],
-    NexusModelNames.N5v2: [tel_defines.CAPABILITY_PHONE,
-                           tel_defines.CAPABILITY_OMADM,
-                           tel_defines.CAPABILITY_VOLTE,
-                           tel_defines.CAPABILITY_WFC,
-                           tel_defines.CAPABILITY_VT],
+    NexusModelNames.N5v2:
+    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
+     tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
+     tel_defines.CAPABILITY_VT],
     NexusModelNames.N6: [tel_defines.CAPABILITY_PHONE,
                          tel_defines.CAPABILITY_OMADM,
                          tel_defines.CAPABILITY_VOLTE,
