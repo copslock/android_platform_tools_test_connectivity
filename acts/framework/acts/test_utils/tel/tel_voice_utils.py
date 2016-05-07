@@ -274,8 +274,8 @@ def phone_setup_volte(log, ad):
         True: if VoLTE is enabled successfully.
         False: for errors
     """
-    return phone_setup_volte_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_volte_for_subscription(log, ad,
+                                              get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_volte_for_subscription(log, ad, sub_id):
@@ -330,8 +330,8 @@ def phone_setup_iwlan(log,
         True if success. False if fail.
     """
     return phone_setup_iwlan_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad), is_airplane_mode,
-        wfc_mode, wifi_ssid, wifi_pwd)
+        log, ad, get_outgoing_voice_sub_id(ad), is_airplane_mode, wfc_mode,
+        wifi_ssid, wifi_pwd)
 
 
 def phone_setup_iwlan_for_subscription(log,
@@ -450,8 +450,8 @@ def phone_setup_csfb(log, ad):
         True if setup successfully.
         False for errors.
     """
-    return phone_setup_csfb_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_csfb_for_subscription(log, ad,
+                                             get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_csfb_for_subscription(log, ad, sub_id):
@@ -499,8 +499,8 @@ def phone_setup_3g(log, ad):
         True if setup successfully.
         False for errors.
     """
-    return phone_setup_3g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_3g_for_subscription(log, ad,
+                                           get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_3g_for_subscription(log, ad, sub_id):
@@ -535,8 +535,8 @@ def phone_setup_3g_for_subscription(log, ad, sub_id):
 
 
 def phone_setup_voice_3g(log, ad):
-    return phone_setup_voice_3g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_voice_3g_for_subscription(log, ad,
+                                                 get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_voice_3g_for_subscription(log, ad, sub_id):
@@ -564,8 +564,8 @@ def phone_setup_2g(log, ad):
         True if setup successfully.
         False for errors.
     """
-    return phone_setup_2g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_2g_for_subscription(log, ad,
+                                           get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_2g_for_subscription(log, ad, sub_id):
@@ -594,8 +594,8 @@ def phone_setup_2g_for_subscription(log, ad, sub_id):
 
 
 def phone_setup_voice_2g(log, ad):
-    return phone_setup_voice_2g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_setup_voice_2g_for_subscription(log, ad,
+                                                 get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_voice_2g_for_subscription(log, ad, sub_id):
@@ -720,8 +720,8 @@ def phone_idle_volte(log, ad):
     Args:
         ad: Android device object.
     """
-    return phone_idle_volte_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_volte_for_subscription(log, ad,
+                                             get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_volte_for_subscription(log, ad, sub_id):
@@ -753,8 +753,8 @@ def phone_idle_iwlan(log, ad):
     Args:
         ad: Android device object.
     """
-    return phone_idle_iwlan_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_iwlan_for_subscription(log, ad,
+                                             get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_iwlan_for_subscription(log, ad, sub_id):
@@ -785,8 +785,8 @@ def phone_idle_csfb(log, ad):
     Args:
         ad: Android device object.
     """
-    return phone_idle_csfb_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_csfb_for_subscription(log, ad,
+                                            get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_csfb_for_subscription(log, ad, sub_id):
@@ -813,8 +813,8 @@ def phone_idle_3g(log, ad):
     Args:
         ad: Android device object.
     """
-    return phone_idle_3g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_3g_for_subscription(log, ad,
+                                          get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_3g_for_subscription(log, ad, sub_id):
@@ -838,8 +838,8 @@ def phone_idle_2g(log, ad):
     Args:
         ad: Android device object.
     """
-    return phone_idle_2g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return phone_idle_2g_for_subscription(log, ad,
+                                          get_outgoing_voice_sub_id(ad))
 
 
 def phone_idle_2g_for_subscription(log, ad, sub_id):
@@ -921,8 +921,8 @@ def is_phone_in_call_3g(log, ad):
     Args:
         ad: Android device object.
     """
-    return is_phone_in_call_3g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return is_phone_in_call_3g_for_subscription(log, ad,
+                                                get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_3g_for_subscription(log, ad, sub_id):
@@ -950,8 +950,8 @@ def is_phone_in_call_2g(log, ad):
     Args:
         ad: Android device object.
     """
-    return is_phone_in_call_2g_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return is_phone_in_call_2g_for_subscription(log, ad,
+                                                get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_2g_for_subscription(log, ad, sub_id):
@@ -979,8 +979,8 @@ def is_phone_in_call_1x(log, ad):
     Args:
         ad: Android device object.
     """
-    return is_phone_in_call_1x_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad))
+    return is_phone_in_call_1x_for_subscription(log, ad,
+                                                get_outgoing_voice_sub_id(ad))
 
 
 def is_phone_in_call_1x_for_subscription(log, ad, sub_id):
