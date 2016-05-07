@@ -545,6 +545,7 @@ NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
 
+
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"
     SIGNAL_STRENGTH_GSM_DBM = "gsmDbm"
@@ -565,13 +566,16 @@ class SignalStrengthContainer:
     SIGNAL_STRENGTH_LEVEL = "level"
     SIGNAL_STRENGTH_ASU_LEVEL = "asuLevel"
 
+
 class MessageWaitingIndicatorContainer:
     IS_MESSAGE_WAITING = "isMessageWaiting"
+
 
 class CallStateContainer:
     INCOMING_NUMBER = "incomingNumber"
     SUBSCRIPTION_ID = "subscriptionId"
     CALL_STATE = "callState"
+
 
 class PreciseCallStateContainer:
     TYPE = "type"
@@ -579,11 +583,13 @@ class PreciseCallStateContainer:
     SUBSCRIPTION_ID = "subscriptionId"
     PRECISE_CALL_STATE = "preciseCallState"
 
+
 class DataConnectionRealTimeInfoContainer:
     TYPE = "type"
     TIME = "time"
     SUBSCRIPTION_ID = "subscriptionId"
     DATA_CONNECTION_POWER_STATE = "dataConnectionPowerState"
+
 
 class DataConnectionStateContainer:
     TYPE = "type"
@@ -591,6 +597,7 @@ class DataConnectionStateContainer:
     STATE_CODE = "stateCode"
     SUBSCRIPTION_ID = "subscriptionId"
     DATA_CONNECTION_STATE = "dataConnectionState"
+
 
 class ServiceStateContainer:
     VOICE_REG_STATE = "voiceRegState"
@@ -607,15 +614,18 @@ class ServiceStateContainer:
     SUBSCRIPTION_ID = "subscriptionId"
     SERVICE_STATE = "serviceState"
 
+
 class PacketKeepaliveContainer:
     ID = "id"
     PACKET_KEEPALIVE_EVENT = "packetKeepaliveEvent"
+
 
 class NetworkCallbackContainer:
     ID = "id"
     NETWORK_CALLBACK_EVENT = "networkCallbackEvent"
     MAX_MS_TO_LIVE = "maxMsToLive"
     RSSI = "rssi"
+
 
 """
 End shared constant define for both Python and Java

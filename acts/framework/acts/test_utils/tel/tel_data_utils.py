@@ -244,8 +244,8 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
     try:
 
         if not ensure_network_generation_for_subscription(
-        log, ad, get_default_data_sub_id(ad), nw_gen,
-        MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                log, ad, get_default_data_sub_id(ad), nw_gen,
+                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             log.error("Device failed to register in {}".format(nw_gen))
             return False
 
@@ -372,8 +372,8 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     ensure_phones_idle(log, [ad])
 
     if not ensure_network_generation_for_subscription(
-        log, ad, get_default_data_sub_id(ad), nw_gen,
-        MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+            log, ad, get_default_data_sub_id(ad), nw_gen,
+            MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
         log.error("Device failed to reselect in {}s.".format(
             MAX_WAIT_TIME_NW_SELECTION))
         return False
@@ -411,18 +411,19 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         if not is_droid_in_network_generation_for_subscription(
-            log, ad, get_default_data_sub_id(ad), nw_gen,
-            NETWORK_SERVICE_DATA):
+                log, ad, get_default_data_sub_id(ad), nw_gen,
+                NETWORK_SERVICE_DATA):
             log.error("Failed: droid is no longer on correct network")
             log.info("Expected:{}, Current:{}".format(
                 nw_gen, rat_generation_from_rat(
                     get_network_rat_for_subscription(
-                        log, ad, get_default_data_sub_id(ad),
-                        NETWORK_SERVICE_DATA))))
+                        log, ad, get_default_data_sub_id(
+                            ad), NETWORK_SERVICE_DATA))))
             return False
         return True
     finally:
         ad.droid.telephonyToggleDataConnection(True)
+
 
 def change_data_sim_and_verify_data(log, ad, sim_slot):
     """Change Data SIM and verify Data attach and Internet access
@@ -439,7 +440,7 @@ def change_data_sim_and_verify_data(log, ad, sim_slot):
     log.info("Change Data to subId: {}, SIM slot: {}".format(sub_id, sim_slot))
     set_subid_for_data(ad, sub_id)
     if not wait_for_data_attach_for_subscription(log, ad, sub_id,
-        MAX_WAIT_TIME_NW_SELECTION):
+                                                 MAX_WAIT_TIME_NW_SELECTION):
         log.error("Failed to attach data on subId:{}".format(sub_id))
         return False
     if not verify_http_connection(log, ad):
