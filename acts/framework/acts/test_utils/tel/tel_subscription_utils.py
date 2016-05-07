@@ -22,6 +22,7 @@ from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 import time
 
+
 def initial_set_up_for_subid_infomation(log, ad):
     """Initial subid setup for voice, message and data according to ad's
     attribute.
@@ -46,8 +47,8 @@ def initial_set_up_for_subid_infomation(log, ad):
     # is not set, then use default voice sub_id as default_outgoing_sub_id.
     # Outgoing voice call will be made on default_outgoing_sub_id by default.
     if hasattr(ad, "default_voice_sim_slot_index"):
-        outgoing_voice_sub_id = get_subid_from_slot_index(log, ad,
-            ad.default_voice_sim_slot_index)
+        outgoing_voice_sub_id = get_subid_from_slot_index(
+            log, ad, ad.default_voice_sim_slot_index)
         set_subid_for_outgoing_call(ad, outgoing_voice_sub_id)
     else:
         outgoing_voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
@@ -59,8 +60,8 @@ def initial_set_up_for_subid_infomation(log, ad):
     # is not set, then use default Sms sub_id as outgoing_message_sub_id.
     # Outgoing SMS will be sent on outgoing_message_sub_id by default.
     if hasattr(ad, "default_message_sim_slot_index"):
-        outgoing_message_sub_id = get_subid_from_slot_index(log, ad,
-            ad.default_message_sim_slot_index)
+        outgoing_message_sub_id = get_subid_from_slot_index(
+            log, ad, ad.default_message_sim_slot_index)
         set_subid_for_message(ad, outgoing_message_sub_id)
     else:
         outgoing_message_sub_id = ad.droid.subscriptionGetDefaultSmsSubId()
@@ -72,8 +73,8 @@ def initial_set_up_for_subid_infomation(log, ad):
     # is not set, then use default Data sub_id as default_data_sub_id.
     # Data connection will be established on default_data_sub_id by default.
     if hasattr(ad, "default_data_sim_slot_index"):
-        default_data_sub_id = get_subid_from_slot_index(log, ad,
-            ad.default_data_sim_slot_index)
+        default_data_sub_id = get_subid_from_slot_index(
+            log, ad, ad.default_data_sim_slot_index)
         set_subid_for_data(ad, default_data_sub_id, 0)
     else:
         default_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
@@ -107,6 +108,7 @@ def initial_set_up_for_subid_infomation(log, ad):
         incoming_message_sub_id = ad.droid.subscriptionGetDefaultSmsSubId()
     setattr(ad, "incoming_message_sub_id", incoming_message_sub_id)
 
+
 def get_default_data_sub_id(ad):
     """ Get default data subscription id
     """
@@ -114,6 +116,7 @@ def get_default_data_sub_id(ad):
         return ad.default_data_sub_id
     else:
         return ad.droid.subscriptionGetDefaultDataSubId()
+
 
 def get_outgoing_message_sub_id(ad):
     """ Get outgoing message subscription id
@@ -123,6 +126,7 @@ def get_outgoing_message_sub_id(ad):
     else:
         return ad.droid.subscriptionGetDefaultSmsSubId()
 
+
 def get_outgoing_voice_sub_id(ad):
     """ Get outgoing voice subscription id
     """
@@ -130,6 +134,7 @@ def get_outgoing_voice_sub_id(ad):
         return ad.outgoing_voice_sub_id
     else:
         return ad.droid.subscriptionGetDefaultVoiceSubId()
+
 
 def get_incoming_voice_sub_id(ad):
     """ Get incoming voice subscription id
@@ -139,6 +144,7 @@ def get_incoming_voice_sub_id(ad):
     else:
         return ad.droid.subscriptionGetDefaultVoiceSubId()
 
+
 def get_incoming_message_sub_id(ad):
     """ Get incoming message subscription id
     """
@@ -146,6 +152,7 @@ def get_incoming_message_sub_id(ad):
         return ad.incoming_message_sub_id
     else:
         return ad.droid.subscriptionGetDefaultSmsSubId()
+
 
 def get_subid_from_slot_index(log, ad, sim_slot_index):
     """ Get the subscription ID for a SIM at a particular slot
@@ -162,6 +169,7 @@ def get_subid_from_slot_index(log, ad, sim_slot_index):
             return info['subscriptionId']
     return INVALID_SUB_ID
 
+
 def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     """Set subId for data
 
@@ -177,6 +185,7 @@ def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
         ad.droid.subscriptionSetDefaultDataSubId(sub_id)
         time.sleep(time_to_sleep)
 
+
 def set_subid_for_message(ad, sub_id):
     """Set subId for outgoing message
 
@@ -188,6 +197,7 @@ def set_subid_for_message(ad, sub_id):
         None
     """
     ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
+
 
 def set_subid_for_outgoing_call(ad, sub_id):
     """Set subId for outgoing voice call
