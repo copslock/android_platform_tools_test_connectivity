@@ -29,7 +29,6 @@ from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 
 
 class BleExamplesTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     active_scan_callback_list = []
     active_adv_callback_list = []
@@ -46,7 +45,6 @@ class BleExamplesTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = ("test_bt_toggle", )
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(

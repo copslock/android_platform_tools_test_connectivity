@@ -32,7 +32,7 @@ from acts.test_utils.bt.bt_test_utils import rfcomm_connect
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
-class SppStressTest(BluetoothBaseTest):
+class RfcommStressTest(BluetoothBaseTest):
     default_timeout = 10
     scan_discovery_time = 5
     thread_list = []
@@ -44,16 +44,8 @@ class SppStressTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.server_ad = self.android_devices[0]
-        self.client_ad = self.android_devices[1]
-        self.tests = ("test_rfcomm_connection_stress",
-                      "test_rfcomm_read_write_stress", )
-
-    def _clear_bonded_devices(self):
-        for a in self.android_devices:
-            bonded_device_list = a.droid.bluetoothGetConnectedDevices()
-            for device in bonded_device_list:
-                a.droid.bluetoothUnbond(device)
+        self.client_ad = self.android_devices[0]
+        self.server_ad = self.android_devices[1]
 
     def on_fail(self, test_name, begin_time):
         take_btsnoop_logs(self.android_devices, self, test_name)
@@ -96,15 +88,10 @@ class SppStressTest(BluetoothBaseTest):
           Pass if True
           Fail if False
 
-        TAGS: Classic, Stress, RFCOMM, SPP
+        TAGS: Classic, Stress, RFCOMM
         Priority: 1
         """
-        server_mac = get_bt_mac_address(self.client_ad.droid,
-                                        self.server_ad.droid)
-        self._clear_bonded_devices()
-        # temporary workaround. Need to find out why I can't connect after
-        # I do a device discovery from get_bt_mac_address.
-        reset_bluetooth([self.server_ad])
+        server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
         for n in range(1000):
             self.orchestrate_rfcomm_connect(server_mac)
             self.log.info("Write message.")
@@ -143,14 +130,10 @@ class SppStressTest(BluetoothBaseTest):
           Pass if True
           Fail if False
 
-        TAGS: Classic, Stress, RFCOMM, SPP
+        TAGS: Classic, Stress, RFCOMM
         Priority: 1
         """
-        server_mac = get_bt_mac_address(self.client_ad.droid,
-                                        self.server_ad.droid)
-        self._clear_bonded_devices()
-        # temporary workaround. Need to find out why I can't connect after
-        # I do a device discovery from get_bt_mac_address.
+        server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
         reset_bluetooth([self.server_ad])
         self.orchestrate_rfcomm_connect(server_mac)
         for n in range(10000):

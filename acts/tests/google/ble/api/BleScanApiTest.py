@@ -46,50 +46,10 @@ class BleSetScanFilterError(Exception):
 
 
 class BleScanApiTest(BluetoothBaseTest):
-    tests = None
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.droid = self.android_devices[0].droid
-        self.tests = (
-            "test_start_ble_scan_with_default_settings",
-            "test_stop_ble_scan_default_settings",
-            "test_scan_settings_callback_type_all_matches",
-            "test_scan_settings_set_callback_type_first_match",
-            "test_scan_settings_set_callback_type_match_lost",
-            "test_scan_settings_set_invalid_callback_type",
-            "test_scan_settings_set_scan_mode_low_power",
-            "test_scan_settings_set_scan_mode_balanced",
-            "test_scan_settings_set_scan_mode_low_latency",
-            "test_scan_settings_set_invalid_scan_mode",
-            "test_scan_settings_set_report_delay_millis_min",
-            "test_scan_settings_set_report_delay_millis_min_plus_one",
-            "test_scan_settings_set_report_delay_millis_max",
-            "test_scan_settings_set_report_delay_millis_max_minus_one",
-            "test_scan_settings_set_invalid_report_delay_millis_min_minus_one",
-            "test_scan_settings_set_scan_result_type_full",
-            "test_scan_settings_set_scan_result_type_abbreviated",
-            "test_scan_settings_set_invalid_scan_result_type",
-            "test_scan_filter_set_device_name",
-            "test_scan_filter_set_device_name_blank",
-            "test_scan_filter_set_device_name_special_chars",
-            "test_scan_filter_set_device_address",
-            "test_scan_filter_set_invalid_device_address_lower_case",
-            "test_scan_filter_set_invalid_device_address_blank",
-            "test_scan_filter_set_invalid_device_address_bad_format",
-            "test_scan_filter_set_invalid_device_address_bad_address",
-            "test_scan_filter_set_manufacturer_id_data",
-            "test_scan_filter_set_manufacturer_id_data_mask",
-            "test_scan_filter_set_manufacturer_max_id",
-            "test_scan_filter_set_manufacturer_data_empty",
-            "test_scan_filter_set_manufacturer_data_mask_empty",
-            "test_scan_filter_set_invalid_manufacturer_min_id_minus_one",
-            "test_scan_filter_set_service_uuid",
-            "test_scan_filter_service_uuid_p_service",
-            "test_classic_ble_scan_with_service_uuids_p",
-            "test_classic_ble_scan_with_service_uuids_hr",
-            "test_classic_ble_scan_with_service_uuids_empty_uuid_list",
-            "test_classic_ble_scan_with_service_uuids_hr_and_p", )
 
     def _format_defaults(self, input):
         """

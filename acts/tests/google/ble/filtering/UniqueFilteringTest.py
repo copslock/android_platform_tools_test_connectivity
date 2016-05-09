@@ -34,7 +34,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class UniqueFilteringTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
 
     def __init__(self, controllers):

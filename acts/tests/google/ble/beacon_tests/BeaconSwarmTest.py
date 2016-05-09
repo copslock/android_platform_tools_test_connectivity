@@ -37,7 +37,6 @@ from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class BeaconSwarmTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     beacon_swarm_count = 0
     advertising_device_name_list = []
@@ -46,10 +45,6 @@ class BeaconSwarmTest(BluetoothBaseTest):
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
-        self.tests = ("test_swarm_1000_on_scan_result",
-                      "test_swarm_10000_on_batch_scan_result",
-                      "test_swarm_rotate_addresses",
-                      "test_swarm_scan_result_filter_each_device_name", )
 
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
