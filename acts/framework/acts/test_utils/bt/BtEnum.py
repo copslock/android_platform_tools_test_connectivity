@@ -22,3 +22,13 @@ class BluetoothScanModeType(Enum):
     SCAN_MODE_NONE = 0
     SCAN_MODE_CONNECTABLE = 1
     SCAN_MODE_CONNECTABLE_DISCOVERABLE = 3
+
+
+class BluetoothAdapterState(Enum):
+    STATE_OFF = 10
+    STATE_TURNING_ON = 11
+    STATE_ON = 12
+    STATE_TURNING_OFF = 13
+    STATE_BLE_TURNING_ON = 14
+    STATE_BLE_ON = 15
+    STATE_BLE_TURNING_OFF = 16

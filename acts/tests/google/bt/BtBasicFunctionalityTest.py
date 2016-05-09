@@ -40,14 +40,6 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.droid_ad = self.android_devices[0]
         self.droid1_ad = self.android_devices[1]
-        self.tests = ("test_bluetooth_reset",
-                      "test_make_device_discoverable",
-                      "test_make_device_undiscoverable",
-                      "test_set_device_name",
-                      "test_scan_mode_off",
-                      "test_scan_mode_none",
-                      "test_scan_mode_connectable",
-                      "test_scan_mode_connectable_discoverable", )
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
