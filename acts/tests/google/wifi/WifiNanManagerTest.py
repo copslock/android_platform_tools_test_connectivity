@@ -21,14 +21,13 @@ from acts import base_test
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WIFI_NAN_ENABLED = "WifiNanEnabled"
+WIFI_NAN_DISABLED = "WifiNanDisabled"
 ON_CONNECT_SUCCESS = "WifiNanOnConnectSuccess"
 ON_NAN_DOWN = "WifiNanOnNanDown"
 ON_MATCH = "WifiNanSessionOnMatch"
 ON_MESSAGE_RX = "WifiNanSessionOnMessageReceived"
 ON_MESSAGE_TX_FAIL = "WifiNanSessionOnMessageSendFail"
 ON_MESSAGE_TX_OK = "WifiNanSessionOnMessageSendSuccess"
-
-REASON_REQUESTED = 1002
 
 class WifiNanManagerTest(base_test.BaseTestClass):
     def setup_test(self):
@@ -210,13 +209,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                             "Failed disabling Wi-Fi interface on dut")
 
         try:
-            event = self.dut.ed.pop_event(ON_NAN_DOWN, 30)
-            self.log.info('%s: %s', ON_NAN_DOWN, event['data'])
-            asserts.assert_equal(event['data']['reason'], REASON_REQUESTED,
-                                "%s reason code is not %s -- %s" %
-                                  (ON_NAN_DOWN, REASON_REQUESTED,
-                                   event['data']['reason']))
+            event = self.dut.ed.pop_event(WIFI_NAN_DISABLED, 30)
+            self.log.info(WIFI_NAN_DISABLED)
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on dut' %
-                      ON_NAN_DOWN)
+                         WIFI_NAN_DISABLED)
         self.log.debug(event)
