@@ -17,6 +17,7 @@
 from future import standard_library
 standard_library.install_aliases()
 
+import copy
 import importlib
 import inspect
 import os
@@ -197,8 +198,11 @@ class TestRunner(object):
             raise signals.ControllerError(("No corresponding config found for"
                                            " %s") % module_config_name)
         try:
-            objects = create(self.testbed_configs[module_config_name],
-                             self.log)
+            # Make a deep copy of the config to pass to the controller module,
+            # in case the controller module modifies the config internally.
+            original_config = self.testbed_configs[module_config_name]
+            controller_config = copy.deepcopy(original_config)
+            objects = create(controller_config, self.log)
         except:
             self.log.exception(("Failed to initialize objects for controller "
                                 "%s, abort!"), module_config_name)
@@ -256,7 +260,8 @@ class TestRunner(object):
         for item in test_configs.items():
             if item[0] not in keys.Config.reserved_keys.value:
                 user_param_pairs.append(item)
-        self.test_run_info[keys.Config.ikey_user_param.value] = dict(user_param_pairs)
+        self.test_run_info[keys.Config.ikey_user_param.value] = copy.deepcopy(
+            dict(user_param_pairs))
 
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.
