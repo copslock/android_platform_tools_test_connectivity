@@ -17,10 +17,12 @@
     Base Class for Defining Common Telephony Test Functionality
 """
 
+import os
 import time
 import traceback
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
+from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
@@ -160,22 +162,26 @@ class TelephonyBaseTest(BaseTestClass):
     def teardown_test(self):
         return True
 
-    def on_fail(self, test_name, begin_time):
-        return True
-
     def on_exception(self, test_name, begin_time):
-        # Since it's a debug flag, as long as it's "set" we consider it valid
-        if "no_bug_report_on_fail" not in self.user_params:
-            # magical sleep to ensure the runtime restart or reboot begins
-            time.sleep(1)
-            for ad in self.android_devices:
-                try:
-                    ad.adb.wait_for_device()
-                    ad.take_bug_report(test_name, begin_time)
-                    # TODO: b/25290103 rename tombstone files correctly
-                    # and make support generic and move to
-                    # base_test and utils respectively
-                    ad.adb.pull('/data/tombstones/', self.log_path)
-                except:
-                    ad.log.error("Failed to take a bug report for {}, {}"
-                                 .format(ad.serial, test_name))
+        return self._take_bug_report(test_name, begin_time)
+
+    def on_fail(self, test_name, begin_time):
+        return self._take_bug_report(test_name, begin_time)
+
+    def _take_bug_report(self, test_name, begin_time):
+        if "no_bug_report_on_fail" in self.user_params:
+            return
+
+        # magical sleep to ensure the runtime restart or reboot begins
+        time.sleep(1)
+        for ad in self.android_devices:
+            try:
+                ad.adb.wait_for_device()
+                ad.take_bug_report(test_name, begin_time)
+                tombstone_path = os.path.join(ad.log_path, "BugReports",
+                        "{},{}".format(begin_time, ad.serial).replace(' ','_'))
+                utils.create_dir(tombstone_path)
+                ad.adb.pull('/data/tombstones/', tombstone_path)
+            except:
+                ad.log.error("Failed to take a bug report for {}, {}"
+                             .format(ad.serial, test_name))
