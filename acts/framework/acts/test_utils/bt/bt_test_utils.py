@@ -1,20 +1,4 @@
-#/usr/bin/env python3.4
-#
-# Copyright (C) 2016 The Android Open Source Project
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not
-# use this file except in compliance with the License. You may obtain a copy of
-# the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations under
-# the License.
-
-import random
+mport random
 import pprint
 import string
 import queue
@@ -24,8 +8,19 @@ import time
 from contextlib2 import suppress
 
 from acts.logger import LoggerProxy
-from acts.test_utils.bt.BleEnum import *
-from acts.test_utils.bt.BtEnum import *
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
+from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
+from acts.test_utils.bt.BleEnum import ScanSettingsMatchMode
+from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
+from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BleEnum import ScanSettingsReportDelaySeconds
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseType
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
+from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
+from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.utils import exe_cmd
 
 default_timeout = 10
@@ -34,21 +29,13 @@ default_discovery_timeout = 3
 log = LoggerProxy()
 
 # Callback strings
-characteristic_write_request = "GattServer{}onCharacteristicWriteRequest"
-characteristic_write = "GattConnect{}onCharacteristicWrite"
-descriptor_write_request = "GattServer{}onDescriptorWriteRequest"
-descriptor_write = "GattConnect{}onDescriptorWrite"
-read_remote_rssi = "GattConnect{}onReadRemoteRssi"
-gatt_services_discovered = "GattConnect{}onServicesDiscovered"
 scan_result = "BleScan{}onScanResults"
 scan_failed = "BleScan{}onScanFailed"
-service_added = "GattServer{}onServiceAdded"
 batch_scan_result = "BleScan{}onBatchScanResult"
 adv_fail = "BleAdvertise{}onFailure"
 adv_succ = "BleAdvertise{}onSuccess"
 bluetooth_off = "BluetoothStateChangedOff"
 bluetooth_on = "BluetoothStateChangedOn"
-mtu_changed = "GattConnect{}onMtuChanged"
 
 # rfcomm test uuids
 rfcomm_secure_uuid = "fa87c0d0-afac-11de-8a39-0800200c9a66"
@@ -57,7 +44,7 @@ rfcomm_insecure_uuid = "8ce255c0-200a-11e0-ac64-0800200c9a66"
 advertisements_to_devices = {
     "Nexus 4": 0,
     "Nexus 5": 0,
-    "Nexus 5X":15,
+    "Nexus 5X": 15,
     "Nexus 7": 0,
     "Nexus Player": 1,
     "Nexus 6": 4,
@@ -74,7 +61,7 @@ advertisements_to_devices = {
     "AOSP on Shamu": 4,
     "MSM8992 for arm64": 9,
     "LG Watch Urbane": 1,
-    "Pixel C":4,
+    "Pixel C": 4,
     "angler": 4,
     "bullhead": 15,
 }
@@ -92,7 +79,7 @@ batch_scan_supported_list = {
     "Sprout": True,
     "Micromax AQ4501": True,
     "4560MMX": True,
-    "Pixel C":True,
+    "Pixel C": True,
     "G Watch R": True,
     "Gear Live": True,
     "SmartWatch 3": True,
@@ -151,6 +138,7 @@ def build_advertise_settings(droid, mode, txpower, type):
     settings = droid.bleBuildAdvertiseSettings()
     return settings
 
+
 def setup_multiple_devices_for_bt_test(android_devices):
     log.info("Setting up Android Devices")
     threads = []
@@ -187,17 +175,16 @@ def reset_bluetooth(android_devices):
     """
     for a in android_devices:
         droid, ed = a.droid, a.ed
-        log.info(
-            "Reset state of bluetooth on device: {}".format(
-                droid.getBuildSerial()))
+        log.info("Reset state of bluetooth on device: {}".format(
+            droid.getBuildSerial()))
         if droid.bluetoothCheckState() is True:
             droid.bluetoothToggleState(False)
             expected_bluetooth_off_event_name = bluetooth_off
             try:
-                ed.pop_event(
-                    expected_bluetooth_off_event_name, default_timeout)
+                ed.pop_event(expected_bluetooth_off_event_name,
+                             default_timeout)
             except Exception:
-                log.info("Failed to toggle Bluetooth off.")
+                log.error("Failed to toggle Bluetooth off.")
                 return False
         # temp sleep for b/17723234
         time.sleep(3)
@@ -206,7 +193,7 @@ def reset_bluetooth(android_devices):
         try:
             ed.pop_event(expected_bluetooth_on_event_name, default_timeout)
         except Exception:
-            log.info("Failed to toggle Bluetooth on.")
+            log.error("Failed to toggle Bluetooth on.")
             return False
     return True
 
@@ -216,7 +203,7 @@ def get_advanced_droid_list(android_devices):
     for a in android_devices:
         d, e = a.droid, a.ed
         model = d.getBuildModel()
-        max_advertisements = 0
+        max_advertisements = 1
         batch_scan_supported = True
         if model in advertisements_to_devices.keys():
             max_advertisements = advertisements_to_devices[model]
@@ -232,9 +219,10 @@ def get_advanced_droid_list(android_devices):
     return droid_list
 
 
-def generate_id_by_size(size,
-                        chars=(string.ascii_lowercase +
-                               string.ascii_uppercase + string.digits)):
+def generate_id_by_size(
+        size,
+        chars=(
+            string.ascii_lowercase + string.ascii_uppercase + string.digits)):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
@@ -257,29 +245,6 @@ def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
         reset_bluetooth([adv_android_device])
 
 
-def setup_gatt_characteristics(droid, input):
-    characteristic_list = []
-    for item in input:
-        index = droid.gattServerCreateBluetoothGattCharacteristic(
-            item['uuid'],
-            item['property'],
-            item['permission'])
-        characteristic_list.append(index)
-    return characteristic_list
-
-
-def setup_gatt_descriptors(droid, input):
-    descriptor_list = []
-    for item in input:
-        index = droid.gattServerCreateBluetoothGattDescriptor(
-            item['uuid'],
-            item['property'],
-        )
-        descriptor_list.append(index)
-    log.info("setup descriptor list: {}".format(descriptor_list))
-    return descriptor_list
-
-
 def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
     adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
@@ -289,15 +254,15 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value)
     advertise_callback, advertise_data, advertise_settings = (
         generate_ble_advertise_objects(adv_ad.droid))
-    adv_ad.droid.bleStartBleAdvertising(
-        advertise_callback, advertise_data, advertise_settings)
-    adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(
-        advertise_callback), default_timeout)
+    adv_ad.droid.bleStartBleAdvertising(advertise_callback, advertise_data,
+                                        advertise_settings)
+    adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(advertise_callback),
+                        default_timeout)
     filter_list = scan_ad.droid.bleGenFilterList()
     scan_settings = scan_ad.droid.bleBuildScanSetting()
     scan_callback = scan_ad.droid.bleGenScanCallback()
-    scan_ad.droid.bleSetScanFilterDeviceName(adv_ad.droid
-        .bluetoothGetLocalName())
+    scan_ad.droid.bleSetScanFilterDeviceName(
+        adv_ad.droid.bluetoothGetLocalName())
     scan_ad.droid.bleBuildScanFilter(filter_list)
     scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
     event = scan_ad.ed.pop_event(
@@ -305,222 +270,6 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     mac_address = event['data']['Result']['deviceInfo']['address']
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
-
-
-def setup_gatt_connection(cen_ad, mac_address, autoconnect):
-    test_result = True
-    gatt_callback = cen_ad.droid.gattCreateGattCallback()
-    log.info("Gatt Connect to mac address {}.".format(mac_address))
-    bluetooth_gatt = cen_ad.droid.gattClientConnectGatt(
-        gatt_callback, mac_address,
-        autoconnect)
-    event = cen_ad.ed.pop_event(
-        "GattConnect{}onConnectionStateChange".format(gatt_callback),
-        default_timeout)
-    if event['data']['State'] != GattConnectionState.STATE_CONNECTED.value:
-        log.info("Could not establish a connection to peripheral. Event "
-                 "Details:".format(pprint.pformat(event)))
-        test_result = False
-    # To avoid race condition of quick connect/disconnect
-    time.sleep(1)
-    return test_result, bluetooth_gatt, gatt_callback
-
-
-def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
-    cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
-    event = cen_ad.ed.pop_event(
-        "GattConnect{}onConnectionStateChange".format(gatt_callback),
-        default_timeout)
-    if event['data']['State'] != GattConnectionState.STATE_DISCONNECTED.value:
-        return False
-    return True
-
-
-def orchestrate_gatt_connection(cen_ad, per_ad, le=True, mac_address=None):
-    adv_callback = None
-    if mac_address is None:
-        if le:
-            mac_address, adv_callback = (
-                get_mac_address_of_generic_advertisement(cen_ad, per_ad))
-        else:
-            mac_address = get_bt_mac_address(cen_ad.droid, per_ad.droid, le)
-            adv_callback = None
-    autoconnect = False
-    test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
-        cen_ad, mac_address, autoconnect)
-    if not test_result:
-        log.info("Could not connect to peripheral.")
-        return False
-    return bluetooth_gatt, gatt_callback, adv_callback
-
-
-def run_continuous_write_descriptor(
-        cen_droid, cen_ed, per_droid, per_ed, gatt_server, gatt_server_callback,
-        bluetooth_gatt, services_count, discovered_services_index):
-    log.info("starting continuous write")
-    bt_device_id = 0
-    status = 1
-    offset = 1
-    test_value = "1,2,3,4,5,6,7"
-    test_value_return = "1,2,3"
-    with suppress(Exception):
-        for x in range(100000):
-            for i in range(services_count):
-                characteristic_uuids = (
-                    cen_droid.gattClientGetDiscoveredCharacteristicUuids(
-                        discovered_services_index, i))
-                log.info(characteristic_uuids)
-                for characteristic in characteristic_uuids:
-                    descriptor_uuids = (
-                        cen_droid.gattClientGetDiscoveredDescriptorUuids(
-                            discovered_services_index, i, characteristic))
-                    log.info(descriptor_uuids)
-                    for descriptor in descriptor_uuids:
-                        log.info(
-                            "descriptor to be written {}".format(descriptor))
-                        cen_droid.gattClientDescriptorSetValue(
-                            bluetooth_gatt, discovered_services_index,
-                            i, characteristic, descriptor, test_value)
-                        cen_droid.gattClientWriteDescriptor(
-                            bluetooth_gatt, discovered_services_index,
-                            i, characteristic, descriptor)
-                        event = per_ed.pop_event(
-                            descriptor_write_request.format(
-                                gatt_server_callback), default_timeout)
-                        log.info(
-                            "onDescriptorWriteRequest event found: {}".format(
-                                event))
-                        request_id = event['data']['requestId']
-                        found_value = event['data']['value']
-                        if found_value != test_value:
-                            log.info(
-                                "Values didn't match. Found: {}, Expected: "
-                                "{}".format(found_value, test_value))
-                        per_droid.gattServerSendResponse(
-                            gatt_server, bt_device_id, request_id, status,
-                            offset, test_value_return)
-                        log.info("onDescriptorWrite event found: {}".format(
-                            cen_ed.pop_event(
-                                descriptor_write.format(bluetooth_gatt),
-                                default_timeout)))
-
-
-def setup_characteristics_and_descriptors(droid):
-    characteristic_input = [
-        {
-            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': BluetoothGattCharacteristic.PROPERTY_WRITE.value |
-                    BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-            'permission': BluetoothGattCharacteristic.PROPERTY_WRITE.value
-        },
-        {
-            'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-                    BluetoothGattCharacteristic.PROPERTY_READ.value,
-            'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
-        },
-        {
-            'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-                    BluetoothGattCharacteristic.PROPERTY_READ.value,
-            'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
-        },
-    ]
-    descriptor_input = [
-        {
-            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': BluetoothGattDescriptor.PERMISSION_READ.value |
-                    BluetoothGattDescriptor.PERMISSION_WRITE.value,
-        },
-        {
-            'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-            'property': BluetoothGattDescriptor.PERMISSION_READ.value |
-                    BluetoothGattCharacteristic.PERMISSION_WRITE.value,
-        }
-    ]
-    characteristic_list = setup_gatt_characteristics(
-        droid, characteristic_input)
-    descriptor_list = setup_gatt_descriptors(droid, descriptor_input)
-    return characteristic_list, descriptor_list
-
-
-def setup_multiple_services(per_ad):
-    per_droid, per_ed = per_ad.droid, per_ad.ed
-    gatt_server_callback = per_droid.gattServerCreateGattServerCallback()
-    gatt_server = per_droid.gattServerOpenGattServer(gatt_server_callback)
-    characteristic_list, descriptor_list = (
-        setup_characteristics_and_descriptors(per_droid))
-    per_droid.gattServerCharacteristicAddDescriptor(
-        characteristic_list[1], descriptor_list[0])
-    per_droid.gattServerCharacteristicAddDescriptor(
-        characteristic_list[2], descriptor_list[1])
-    gattService = per_droid.gattServerCreateService(
-        "00000000-0000-1000-8000-00805f9b34fb",
-        BluetoothGattService.SERVICE_TYPE_PRIMARY.value)
-    gattService2 = per_droid.gattServerCreateService(
-        "FFFFFFFF-0000-1000-8000-00805f9b34fb",
-        BluetoothGattService.SERVICE_TYPE_PRIMARY.value)
-    gattService3 = per_droid.gattServerCreateService(
-        "3846D7A0-69C8-11E4-BA00-0002A5D5C51B",
-        BluetoothGattService.SERVICE_TYPE_PRIMARY.value)
-    for characteristic in characteristic_list:
-        per_droid.gattServerAddCharacteristicToService(
-            gattService, characteristic)
-    per_droid.gattServerAddService(gatt_server, gattService)
-    per_ed.pop_event(service_added.format(gatt_server_callback),
-                     default_timeout)
-    for characteristic in characteristic_list:
-        per_droid.gattServerAddCharacteristicToService(
-            gattService2, characteristic)
-    per_droid.gattServerAddService(gatt_server, gattService2)
-    per_ed.pop_event(service_added.format(gatt_server_callback),
-                     default_timeout)
-    for characteristic in characteristic_list:
-        per_droid.gattServerAddCharacteristicToService(gattService3,
-                                                       characteristic)
-    per_droid.gattServerAddService(gatt_server, gattService3)
-    per_ed.pop_event(service_added.format(gatt_server_callback),
-                     default_timeout)
-    return gatt_server_callback, gatt_server
-
-
-def setup_characteristics_and_descriptors(droid):
-    characteristic_input = [
-        {
-            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': BluetoothGattCharacteristic.PROPERTY_WRITE.value |
-            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-            'permission': BluetoothGattCharacteristic.PROPERTY_WRITE.value
-        },
-        {
-            'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-            BluetoothGattCharacteristic.PROPERTY_READ.value,
-            'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
-        },
-        {
-            'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property': BluetoothGattCharacteristic.PROPERTY_NOTIFY.value |
-            BluetoothGattCharacteristic.PROPERTY_READ.value,
-            'permission': BluetoothGattCharacteristic.PERMISSION_READ.value
-        },
-    ]
-    descriptor_input = [
-        {
-            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': BluetoothGattDescriptor.PERMISSION_READ.value |
-            BluetoothGattDescriptor.PERMISSION_WRITE.value,
-        },
-        {
-            'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-            'property': BluetoothGattDescriptor.PERMISSION_READ.value |
-            BluetoothGattCharacteristic.PERMISSION_WRITE.value,
-        }
-    ]
-    characteristic_list = setup_gatt_characteristics(
-        droid, characteristic_input)
-    descriptor_list = setup_gatt_descriptors(droid, descriptor_input)
-    return characteristic_list, descriptor_list
 
 
 def get_device_local_info(droid):
@@ -566,7 +315,7 @@ def set_bt_scan_mode(ad, scan_mode_value):
         if scan_mode != scan_mode_value:
             return False
     elif (scan_mode_value ==
-              BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
+          BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
         droid.bluetoothMakeDiscoverable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
@@ -599,9 +348,10 @@ def log_energy_info(droids, state):
     return_string = "{} Energy info collection:\n".format(state)
     for d in droids:
         with suppress(Exception):
-            if (d.getBuildModel() == "Nexus 6" or d.getBuildModel() == "Nexus 9"
-                or d.getBuildModel() == "Nexus 6P"
-                or d.getBuildModel() == "Nexus5X"):
+            if (d.getBuildModel() == "Nexus 6" or
+                    d.getBuildModel() == "Nexus 9" or
+                    d.getBuildModel() == "Nexus 6P" or
+                    d.getBuildModel() == "Nexus5X"):
 
                 description = ("Device: {}\tEnergyStatus: {}\n".format(
                     d.getBuildSerial(),
@@ -627,8 +377,8 @@ def pair_pri_to_sec(pri_droid, sec_droid):
         expected_address = sec_droid.bluetoothGetLocalAddress()
         bonded = False
         for d in bonded_devices:
-          if d['address'] == expected_address:
-              return True
+            if d['address'] == expected_address:
+                return True
         time.sleep(1)
     # Timed out trying to bond.
     return False
@@ -680,8 +430,7 @@ def take_btsnoop_log(droid, testcase, test_name):
         device_model = device_model.replace(" ", "")
         out_name = ','.join((test_name, device_model, serial))
         cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
-                       testcase.log_path + "/" + out_name,
-                       ".btsnoop_hci.log"))
+                       testcase.log_path + "/" + out_name, ".btsnoop_hci.log"))
         testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                           .format(device_model, serial))
         exe_cmd(cmd)
@@ -693,3 +442,4 @@ def rfcomm_connect(droid, device_address):
 
 def rfcomm_accept(droid):
     droid.bluetoothRfcommAccept()
+

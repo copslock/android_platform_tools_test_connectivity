@@ -50,12 +50,6 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
                 "test_max_concurrent_ble_scans_plus_one",
             )
             return
-        self.tests = (
-            "test_max_concurrent_ble_scans",
-            "test_max_concurrent_ble_scans_then_discover_advertisement",
-            "test_max_concurrent_ble_scans_plus_one",
-            "test_max_concurrent_ble_scans_verify_scans_stop_independently",
-        )
 
     def on_fail(self, test_name, begin_time):
         self.log.debug(
