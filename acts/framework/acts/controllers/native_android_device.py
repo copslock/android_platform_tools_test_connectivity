@@ -24,6 +24,9 @@ import time
 
 #TODO(tturney): Merge this into android device
 
+ACTS_CONTROLLER_CONFIG_NAME = "NativeAndroidDevice"
+ACTS_CONTROLLER_REFERENCE_NAME = "native_android_devices"
+
 def create(configs, logger):
     ads = get_instances(configs, logger)
     for ad in ads:

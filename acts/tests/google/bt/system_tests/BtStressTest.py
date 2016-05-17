@@ -25,14 +25,10 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class BtStressTest(BaseTestClass):
-    tests = None
     default_timeout = 10
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_toggle_bluetooth",
-        )
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
