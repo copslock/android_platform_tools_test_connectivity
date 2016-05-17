@@ -25,16 +25,10 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class GattApiTest(BluetoothBaseTest):
-    tests = None
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
-        self.tests = (
-            "test_open_gatt_server",
-            "test_open_gatt_server_on_same_callback",
-            "test_open_gatt_server_on_invalid_callback",
-        )
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
