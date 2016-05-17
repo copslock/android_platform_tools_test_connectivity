@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 This test script exercises background scan test scenarios.
 """
@@ -33,7 +32,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class BleBackgroundScanTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     max_scan_instances = 28
     report_delay = 2000
@@ -50,10 +48,6 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = (
-            "test_background_scan",
-            "test_background_scan_ble_disabled",
-        )
 
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
@@ -68,16 +62,16 @@ class BleBackgroundScanTest(BluetoothBaseTest):
     def teardown_test(self):
         self.log.debug(log_energy_info(self.android_devices, "End"))
         cleanup_scanners_and_advertisers(
-            self.scn_ad, self.active_adv_callback_list,
-            self.adv_ad, self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list, self.adv_ad,
+            self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
             self.adv_ad.droid)
-        self.adv_ad.droid.bleStartBleAdvertising(
-            adv_callback, adv_data, adv_settings)
+        self.adv_ad.droid.bleStartBleAdvertising(adv_callback, adv_data,
+                                                 adv_settings)
         self.active_adv_callback_list.append(adv_callback)
 
     def _verify_no_events_found(self, event_name):
@@ -88,10 +82,6 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         except Empty:
             self.log.info("No scan result found as expected.")
             return True
-
-    def _delete_me(self):
-        import time
-        time.sleep(5)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_background_scan(self):
@@ -120,18 +110,36 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         import time
         self._setup_generic_advertisement()
         self.scn_ad.droid.bluetoothToggleState(False)
-        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        try:
+            self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        except Empty:
+            self.log.error("Bluetooth Off event not found. Expected {}".format(
+                bluetooth_off))
+            return False
         self.scn_ad.droid.bluetoothDisableBLE()
-        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        try:
+            self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        except Empty:
+            self.log.error("Bluetooth Off event not found. Expected {}".format(
+                bluetooth_off))
+            return False
         self.scn_ad.droid.bluetoothEnableBLE()
-        self._delete_me()
-        self.scn_ad.ed.pop_event(bluetooth_on, self.default_timeout * 2)
+        try:
+            self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout*2)
+        except Empty:
+            self.log.error("Bluetooth On event not found. Expected {}".format(
+                bluetooth_on))
+            return False
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
-        self.scn_ad.ed.pop_event(
-            scan_result.format(scan_callback), self.default_timeout)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
+        expected_event = scan_result.format(scan_callback)
+        try:
+            self.scn_ad.ed.pop_event(expected_event, self.default_timeout)
+        except Empty:
+            self.log.error("Scan Result event not found. Expected {}".format(expected_event))
+            return False
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -161,14 +169,23 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         self._setup_generic_advertisement()
         self.scn_ad.droid.bluetoothEnableBLE()
         self.scn_ad.droid.bluetoothToggleState(False)
-        self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
-        self._delete_me()
+        try:
+            self.scn_ad.ed.pop_event(bluetooth_off, self.default_timeout)
+        except Empty:
+            self.log.error("Bluetooth Off event not found. Expected {}".format(
+                bluetooth_off))
+            return False
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
         try:
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
-            self.scn_ad.ed.pop_event(scan_result.format(scan_callback))
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
+            expected_event = scan_result.format(scan_callback)
+            try:
+                self.scn_ad.ed.pop_event(expected_event, self.default_timeout)
+            except Empty:
+                self.log.error("Scan Result event not found. Expected {}".format(expected_event))
+                return False
             self.log.info("Was able to start background scan even though ble "
                           "was disabled.")
             return False
@@ -176,3 +193,4 @@ class BleBackgroundScanTest(BluetoothBaseTest):
             self.log.info(
                 "Was not able to start a background scan as expected.")
         return True
+

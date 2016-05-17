@@ -37,7 +37,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class BleOpportunisticScanTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     max_scan_instances = 28
     report_delay = 2000

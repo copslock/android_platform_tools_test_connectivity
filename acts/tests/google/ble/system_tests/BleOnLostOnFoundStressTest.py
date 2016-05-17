@@ -30,14 +30,13 @@ from acts.test_utils.bt.BleEnum import ScanSettingsMatchMode
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
 from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
 from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
-from acts.test_utils.bt.bt_test_utils import orchestrate_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import run_continuous_write_descriptor
-from acts.test_utils.bt.bt_test_utils import setup_multiple_services
+from acts.test_utils.bt.bt_gatt_utils import run_continuous_write_descriptor
+from acts.test_utils.bt.bt_gatt_utils import setup_multiple_services
 
 
 class BleOnLostOnFoundStressTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     max_scan_instances = 28
     report_delay = 2000
@@ -54,10 +53,6 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = (
-            "test_on_star_while_polling_energy_stats",
-            "test_more_stress_test",
-        )
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(
@@ -159,8 +154,7 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         gatt_server_callback, gatt_server = setup_multiple_services(
             self.adv_ad)
         bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.scn_ad.droid, self.scn_ad.ed,
-                                        self.adv_ad.droid, self.adv_ad.ed))
+            orchestrate_gatt_connection(self.scn_ad, self.adv_ad))
         self.active_scan_callback_list.append(adv_callback)
         if self.scn_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             event = self.scn_ad.ed.pop_event(
