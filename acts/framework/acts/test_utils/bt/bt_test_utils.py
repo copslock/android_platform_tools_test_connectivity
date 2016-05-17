@@ -64,6 +64,8 @@ advertisements_to_devices = {
     "Pixel C": 4,
     "angler": 4,
     "bullhead": 15,
+    "marlin": 15,
+    "sailfish": 15,
 }
 
 batch_scan_supported_list = {
@@ -89,6 +91,8 @@ batch_scan_supported_list = {
     "LG Watch Urbane": True,
     "angler": True,
     "bullhead": True,
+    "marlin": True,
+    "sailfish": True,
 }
 
 
