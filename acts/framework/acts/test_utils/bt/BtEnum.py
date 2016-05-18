@@ -16,6 +16,7 @@
 
 from enum import Enum
 
+
 class BluetoothScanModeType(Enum):
     STATE_OFF = -1
     SCAN_MODE_NONE = 0
@@ -31,4 +32,3 @@ class BluetoothAdapterState(Enum):
     STATE_BLE_TURNING_ON = 14
     STATE_BLE_ON = 15
     STATE_BLE_TURNING_OFF = 16
-
