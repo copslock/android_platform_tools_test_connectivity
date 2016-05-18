@@ -193,3 +193,4 @@ class BleBackgroundScanTest(BluetoothBaseTest):
             self.log.info(
                 "Was not able to start a background scan as expected.")
         return True
+

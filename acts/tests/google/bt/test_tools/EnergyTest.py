@@ -13,6 +13,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 """
 Continuously poll for energy info for a single Android Device
 """
@@ -23,14 +24,17 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 
 class EnergyTest(BluetoothBaseTest):
+
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.tests = ("test_continuous_energy_report", )
+        self.tests = (
+            "test_continuous_energy_report",
+        )
 
     @BluetoothBaseTest.bt_test_wrap
     def test_continuous_energy_report(self):
         while (True):
             with suppress(Exception):
-                self.log.info(self.android_devices[
-                    0].droid.bluetoothGetControllerActivityEnergyInfo(1))
+                self.log.info(
+                    self.android_devices[0].droid.bluetoothGetControllerActivityEnergyInfo(1))
         return True

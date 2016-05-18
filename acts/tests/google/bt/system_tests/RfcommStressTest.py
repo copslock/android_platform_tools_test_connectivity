@@ -151,3 +151,4 @@ class RfcommStressTest(BluetoothBaseTest):
             t.join()
         self.thread_list.clear()
         return True
+

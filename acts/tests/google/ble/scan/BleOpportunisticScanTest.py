@@ -13,6 +13,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 """
 This test script exercises different opportunistic scan scenarios.
 It is expected that the second AndroidDevice is able to advertise.
@@ -65,13 +66,14 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         )
         if self.droid_list[0]['batch_scan_supported']:
             self.tests = self.tests + (
-                "test_batch_scan_result",
-                "test_max_opportunistic_batch_scan_instances", )
+                    "test_batch_scan_result",
+                    "test_max_opportunistic_batch_scan_instances",
+                    )
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(
-            self.scn_ad, self.active_adv_callback_list, self.adv_ad,
-            self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list,
+            self.adv_ad, self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
@@ -81,15 +83,15 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
             self.adv_ad.droid)
-        self.adv_ad.droid.bleStartBleAdvertising(adv_callback, adv_data,
-                                                 adv_settings)
+        self.adv_ad.droid.bleStartBleAdvertising(
+            adv_callback, adv_data, adv_settings)
         self.active_adv_callback_list.append(adv_callback)
 
     def _verify_no_events_found(self, event_name):
         try:
             event = self.scn_ad.ed.pop_event(event_name, self.default_timeout)
-            self.log.error("Found an event when none was expected: {}".format(
-                event))
+            self.log.error(
+                "Found an event when none was expected: {}".format(event))
             return False
         except Empty:
             self.log.info("No scan result found as expected.")
@@ -121,8 +123,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
@@ -155,15 +157,14 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         """
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(batch_scan_result.format(
-                scan_callback)):
+            scan_callback)):
             return False
         self.scn_ad.droid.bleStopBleScan(scan_callback)
         return True
@@ -200,8 +201,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
 
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
@@ -209,8 +210,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback2), self.default_timeout)
@@ -251,25 +252,23 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         self._setup_generic_advertisement()
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(batch_scan_result.format(
-                scan_callback)):
+            scan_callback)):
             return False
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2 = self.scn_ad.droid.bleGenFilterList()
         scan_settings2 = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback2 = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             batch_scan_result.format(scan_callback2), self.default_timeout)
@@ -311,23 +310,22 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         self._setup_generic_advertisement()
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(batch_scan_result.format(
-                scan_callback)):
+            scan_callback)):
 
             return False
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback2), self.default_timeout)
@@ -368,19 +366,18 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         filter_list = self.scn_ad.droid.bleGenFilterList()
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             batch_scan_result.format(scan_callback2), self.default_timeout)
@@ -420,16 +417,16 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             filter_list = self.scn_ad.droid.bleGenFilterList()
             scan_settings = self.scn_ad.droid.bleBuildScanSetting()
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
-            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                              scan_callback)
+            self.scn_ad.droid.bleStartBleScan(
+                filter_list, scan_settings, scan_callback)
             self.active_scan_callback_list.append(scan_callback)
 
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
 
         for callback in self.active_scan_callback_list:
@@ -475,18 +472,17 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             filter_list = self.scn_ad.droid.bleGenFilterList()
             scan_settings = self.scn_ad.droid.bleBuildScanSetting()
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
-            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                              scan_callback)
+            self.scn_ad.droid.bleStartBleScan(
+                filter_list, scan_settings, scan_callback)
             self.active_scan_callback_list.append(scan_callback)
 
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(
-            self.report_delay)
+        self.scn_ad.droid.bleSetScanSettingsReportDelayMillis(self.report_delay)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
 
         for callback in self.active_scan_callback_list:
@@ -496,8 +492,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
-    def test_discover_opportunistic_scan_result_off_secondary_scan_filter(
-            self):
+    def test_discover_opportunistic_scan_result_off_secondary_scan_filter(self):
         """Test opportunistic scan result from secondary scan filter.
 
         Tests opportunistic scan where the secondary scan instance does not find
@@ -532,8 +527,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
 
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
@@ -543,19 +538,17 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             generate_ble_scan_objects(self.scn_ad.droid))
         self.scn_ad.droid.bleSetScanFilterDeviceName("opp_test")
         self.scn_ad.droid.bleBuildScanFilter(filter_list2)
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
-        if not self._verify_no_events_found(scan_result.format(
-                scan_callback2)):
+        if not self._verify_no_events_found(scan_result.format(scan_callback2)):
             return False
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
-    def test_negative_opportunistic_scan_filter_result_off_secondary_scan_result(
-            self):
+    def test_negative_opportunistic_scan_filter_result_off_secondary_scan_result(self):
         """Test opportunistic scan not found scenario.
 
         Tests opportunistic scan where the secondary scan instance does find an
@@ -591,8 +584,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             self.scn_ad.droid)
         self.scn_ad.droid.bleSetScanFilterDeviceName("opp_test")
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
@@ -600,8 +593,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback2), self.default_timeout)
@@ -646,8 +639,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             self.scn_ad.droid)
         self.scn_ad.droid.bleSetScanFilterDeviceName(adv_device_name)
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
@@ -657,8 +650,8 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             generate_ble_scan_objects(self.scn_ad.droid))
         self.scn_ad.droid.bleSetScanFilterDeviceName(adv_device_name)
         self.scn_ad.droid.bleBuildScanFilter(filter_list2)
-        self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
-                                          scan_callback2)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list2, scan_settings2, scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
         self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback2), self.default_timeout)

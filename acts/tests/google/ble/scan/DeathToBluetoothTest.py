@@ -13,6 +13,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 """
 """
 
@@ -37,7 +38,9 @@ class DeathToBluetoothTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.scn_ad = self.android_devices[0]
-        self.tests = ("test_death", )
+        self.tests = (
+            "test_death",
+        )
 
     def teardown_test(self):
         self.active_adv_callback_list = []
@@ -52,8 +55,8 @@ class DeathToBluetoothTest(BluetoothBaseTest):
     def _setup_generic_advertisement(self):
         adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
             self.adv_droid)
-        self.adv_droid.bleStartBleAdvertising(adv_callback, adv_data,
-                                              adv_settings)
+        self.adv_droid.bleStartBleAdvertising(
+            adv_callback, adv_data, adv_settings)
         self.active_adv_callback_list.append(adv_callback)
 
     def _verify_no_events_found(self, event_name):
@@ -82,8 +85,8 @@ class DeathToBluetoothTest(BluetoothBaseTest):
         self.scn_ad.droid.bleSetScanSettingsNumOfMatches(1)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
+        self.scn_ad.droid.bleStartBleScan(
+            filter_list, scan_settings, scan_callback)
         for _ in range(10000):
             self.scn_ad.ed.pop_event(scan_result.format(scan_callback))
         return True

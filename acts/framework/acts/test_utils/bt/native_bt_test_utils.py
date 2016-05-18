@@ -20,19 +20,18 @@ import time
 
 log = LoggerProxy()
 
-
 def setup_native_bluetooth(native_devices):
-    for n in native_devices:
-        droid = n.droid
-        pid = n.adb.shell("ps | grep bluetoothtbd | awk '{print $2}'").decode(
-            'ascii')
-        if not pid:
-            call(
-                ["adb -s " + n.serial + " shell sh -c \"bluetoothtbd\" &"],
-                shell=True)
-        droid.BluetoothBinderInitInterface()
-        time.sleep(5)  #temporary sleep statement
-        droid.BluetoothBinderEnable()
-        time.sleep(5)  #temporary sleep statement
-        droid.BluetoothBinderRegisterBLE()
-        time.sleep(5)  #temporary sleep statement
+  for n in native_devices:
+    droid = n.droid
+    pid = n.adb.shell(
+            "ps | grep bluetoothtbd | awk '{print $2}'").decode('ascii')
+    if not pid:
+      call(["adb -s " + n.serial + " shell sh -c \"bluetoothtbd\" &"],
+        shell=True)
+    droid.BluetoothBinderInitInterface()
+    time.sleep(5) #temporary sleep statement
+    droid.BluetoothBinderEnable()
+    time.sleep(5) #temporary sleep statement
+    droid.BluetoothBinderRegisterBLE()
+    time.sleep(5) #temporary sleep statement
+

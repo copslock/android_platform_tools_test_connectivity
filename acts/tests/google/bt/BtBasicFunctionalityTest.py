@@ -13,6 +13,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 """
 Test script to execute Bluetooth basic functionality test cases.
 This test was designed to be run in a shield box.
@@ -119,13 +120,11 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             # Give Bluetooth time to discover advertising devices
             time.sleep(self.scan_discovery_time)
             droid_name = self.droid_ad.droid.bluetoothGetLocalName()
-            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices(
-            )
+            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices()
             find_flag = False
             if get_all_discovered_devices:
-                self.log.debug(
-                    "Android device2 get all the discovered devices "
-                    "list {}".format(get_all_discovered_devices))
+                self.log.debug("Android device2 get all the discovered devices "
+                               "list {}".format(get_all_discovered_devices))
                 for i in get_all_discovered_devices:
                     if 'name' in i and i['name'] == droid_name:
                         self.log.debug("Android device1 is in the discovery "
@@ -133,9 +132,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
                         find_flag = True
                         break
             else:
-                self.log.debug(
-                    "Android device2 get all the discovered devices "
-                    "list is empty")
+                self.log.debug("Android device2 get all the discovered devices "
+                               "list is empty")
                 return False
         else:
             self.log.debug("Android device2 start discovery process error")
@@ -170,7 +168,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         """
         self.droid_ad.droid.bluetoothMakeUndiscoverable()
         set_bt_scan_mode(self.droid1_ad,
-                         BluetoothScanModeType.SCAN_MODE_NONE.value)
+            BluetoothScanModeType.SCAN_MODE_NONE.value)
         scan_mode = self.droid1_ad.droid.bluetoothGetScanMode()
         if scan_mode == BluetoothScanModeType.SCAN_MODE_NONE.value:
             self.log.debug("Android device1 scan mode is SCAN_MODE_NONE")
@@ -182,13 +180,11 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             # Give Bluetooth time to discover advertising devices
             time.sleep(self.scan_discovery_time)
             droid_name = self.droid_ad.droid.bluetoothGetLocalName()
-            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices(
-            )
+            get_all_discovered_devices = self.droid1_ad.droid.bluetoothGetDiscoveredDevices()
             find_flag = False
             if get_all_discovered_devices:
-                self.log.debug(
-                    "Android device2 get all the discovered devices "
-                    "list {}".format(get_all_discovered_devices))
+                self.log.debug("Android device2 get all the discovered devices "
+                               "list {}".format(get_all_discovered_devices))
                 for i in get_all_discovered_devices:
                     if 'name' in i and i['name'] == droid_name:
                         self.log.debug(
@@ -301,8 +297,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 2
         """
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE.")
-        return set_bt_scan_mode(
-            self.droid_ad, BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value)
+        return set_bt_scan_mode(self.droid_ad,
+            BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_scan_mode_connectable_discoverable(self):
@@ -326,8 +322,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 2
         """
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
-        return set_bt_scan_mode(
-            self.droid_ad,
+        return set_bt_scan_mode(self.droid_ad,
             BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value)
 
     @BluetoothBaseTest.bt_test_wrap

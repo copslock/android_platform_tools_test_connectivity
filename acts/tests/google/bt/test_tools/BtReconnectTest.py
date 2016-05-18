@@ -26,7 +26,9 @@ class BtReconnectTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.tests = ("test_tool_reconnect", )
+        self.tests = (
+            "test_tool_reconnect",
+        )
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
@@ -66,15 +68,13 @@ class BtReconnectTest(BluetoothBaseTest):
             connected_devices = droid.bluetoothGetConnectedDevices()
             self.log.info(
                 "Waiting up to 10 seconds for device to reconnect...")
-            while time.time() < start_time + 10 and len(
-                    connected_devices) != 1:
+            while time.time() < start_time + 10 and len(connected_devices) != 1:
                 connected_devices = droid.bluetoothGetConnectedDevices()
                 if len(connected_devices) > 0:
                     break
             if len(connected_devices) != 1:
-                print(
-                    "Failed to reconnect at iteration {}... continuing".format(
-                        n))
+                print (
+                    "Failed to reconnect at iteration {}... continuing".format(n))
             test_result_list.append(test_result)
             n += 1
         if False in test_result_list:

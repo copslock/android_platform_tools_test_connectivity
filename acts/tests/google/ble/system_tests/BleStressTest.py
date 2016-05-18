@@ -14,263 +14,68 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """
-Basic LE Stress tests.
+Basic Bluetooth Classic stress tests.
 """
 
-import concurrent
-import pprint
-import time
-
-from queue import Empty
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
+from acts.base_test import BaseTestClass
+from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import scan_result
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
-class BleStressTest(BluetoothBaseTest):
+class BtStressTest(BaseTestClass):
     default_timeout = 10
 
     def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.android_devices)
-        self.scn_ad = self.android_devices[0]
-        self.adv_ad = self.android_devices[1]
-        self.tests = ("test_loop_scanning_1000",
-                      "test_restart_scan_callback_after_bt_toggle",
-                      "test_start_le_scan_while_toggling_bt", )
-        if self.droid_list[0]['max_advertisements'] > 0:
-            self.tests = self.tests + (
-                "test_loop_advertising_100",
-                "test_restart_advertise_callback_after_bt_toggle", )
-        if self.droid_list[1]['max_advertisements'] >= 4:
-            self.tests = self.tests + (
-                "test_loop_scanning_100_verify_no_hci_timeout", )
+        BaseTestClass.__init__(self, controllers)
 
-    def bleadvertise_verify_onsuccess_handler(self, event):
-        test_result = True
-        self.log.debug("Verifying onSuccess event")
-        self.log.debug(pprint.pformat(event))
-        return test_result
+    def setup_class(self):
+        return setup_multiple_devices_for_bt_test(self.android_devices)
 
-    @BluetoothBaseTest.bt_test_wrap
-    def test_loop_scanning_1000(self):
-        """Stress start/stop scan instances.
+    def setup_test(self):
+        return reset_bluetooth(self.android_devices)
 
-        This test will start and stop scan instances as fast as possible. This
-        will guarantee that the scan instances are properly being cleaned up
-        when the scan is stopped.
+    def setup_test(self):
+        setup_result = reset_bluetooth(self.android_devices)
+        self.log.debug(log_energy_info(self.android_devices, "Start"))
+        for a in self.android_devices:
+            a.ed.clear_all_events()
+        return setup_result
 
-        Steps:
-        1. Start a scan instance.
-        2. Stop the scan instance.
-        3. Repeat steps 1-2 1000 times.
-
-        Expected Result:
-        Neither starting or stopping scan instances causes any failures.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: LE, Scanning, Stress
-        Priority: 1
-        """
-        test_result = True
-        for _ in range(1000):
-            filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-                self.scn_ad.droid)
-            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                              scan_callback)
-            self.scn_ad.droid.bleStopBleScan(scan_callback)
-        return test_result
-
-    @BluetoothBaseTest.bt_test_wrap
-    def test_loop_scanning_100_verify_no_hci_timeout(self):
-        """Stress start/stop scan instances variant.
-
-        This test will start and stop scan instances with a one second timeout
-        in between each iteration. This testcase was added because the specific
-        timing combination caused hci timeouts.
-
-        Steps:
-        1. Start a scan instance.
-        2. Stop the scan instance.
-        3. Sleep for 1 second.
-        4. Repeat steps 1-3 100 times.
-
-        Expected Result:
-        Neither starting or stopping scan instances causes any failures.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: LE, Scanning, Stress
-        Priority: 1
-        """
-        for _ in range(self.droid_list[1]['max_advertisements']):
-            adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
-                self.adv_ad.droid)
-            self.adv_ad.droid.bleStartBleAdvertising(adv_callback, adv_data,
-                                                     adv_settings)
-        for _ in range(100):
-            filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-                self.scn_ad.droid)
-            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                              scan_callback)
-            self.log.info(self.scn_ad.ed.pop_event(scan_result.format(
-                scan_callback)))
-            self.scn_ad.droid.bleStopBleScan(scan_callback)
-            time.sleep(1)
+    def teardown_test(self):
+        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
-    @BluetoothBaseTest.bt_test_wrap
-    def test_loop_advertising_100(self):
-        """Stress start/stop advertising instances.
+    def test_toggle_bluetooth(self):
+        """Stress test toggling bluetooth on and off.
 
-        This test will start and stop advertising instances as fast as possible.
+        Test the integrity of toggling bluetooth on and off.
 
         Steps:
-        1. Start a advertising instance.
-        2. Find that an onSuccess callback is triggered.
-        3. Stop the advertising instance.
-        4. Repeat steps 1-3 100 times.
+        1. Toggle bluetooth off.
+        2. Toggle bluetooth on.
+        3. Repeat steps 1 and 2 one-hundred times.
 
         Expected Result:
-        Neither starting or stopping advertising instances causes any failures.
+        Each iteration of toggling bluetooth on and off should not cause an
+        exception.
 
         Returns:
           Pass if True
           Fail if False
 
-        TAGS: LE, Advertising, Stress
+        TAGS: Classic, Stress
         Priority: 1
         """
+        n = 0
         test_result = True
-        for _ in range(100):
-            advertise_callback, advertise_data, advertise_settings = generate_ble_advertise_objects(
-                self.adv_ad.droid)
-            self.adv_ad.droid.bleStartBleAdvertising(
-                advertise_callback, advertise_data, advertise_settings)
-            expected_advertise_event_name = "".join(["BleAdvertise", str(
-                advertise_callback), "onSuccess"])
-            worker = self.adv_ad.ed.handle_event(
-                self.bleadvertise_verify_onsuccess_handler,
-                expected_advertise_event_name, ([]), self.default_timeout)
-            try:
-                self.log.debug(worker.result(self.default_timeout))
-            except Empty as error:
-                self.log.debug(" ".join(["Test failed with Empty error:", str(
-                    error)]))
-                test_result = False
-            except concurrent.futures._base.TimeoutError as error:
-                self.log.debug(" ".join([
-                    "Test failed, filtering callback onSuccess never occurred:",
-                    str(error)
-                ]))
-                test_result = False
-            self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
+        test_result_list = []
+        while n < 100:
+            self.log.info("Toggling bluetooth iteration {}.".format(n))
+            test_result = reset_bluetooth([self.android_devices[0]])
+            test_result_list.append(test_result)
+            n += 1
+        if False in test_result_list:
+            return False
         return test_result
 
-    @BluetoothBaseTest.bt_test_wrap
-    def test_restart_advertise_callback_after_bt_toggle(self):
-        """Test to reuse an advertise callback.
-
-        This will verify if advertising objects can be reused after a bluetooth
-        toggle.
-
-        Steps:
-        1. Start a advertising instance.
-        2. Find that an onSuccess callback is triggered.
-        3. Stop the advertising instance.
-        4. Toggle bluetooth off and on.
-        5. Start an advertising instance on the same objects used in step 1.
-        6. Find that an onSuccess callback is triggered.
-
-        Expected Result:
-        Advertisement should start successfully.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: LE, Advertising, Stress
-        Priority: 1
-        """
-        test_result = True
-        advertise_callback, advertise_data, advertise_settings = generate_ble_advertise_objects(
-            self.adv_ad.droid)
-        self.adv_ad.droid.bleStartBleAdvertising(
-            advertise_callback, advertise_data, advertise_settings)
-        expected_advertise_event_name = "".join(["BleAdvertise", str(
-            advertise_callback), "onSuccess"])
-        worker = self.adv_ad.ed.handle_event(
-            self.bleadvertise_verify_onsuccess_handler,
-            expected_advertise_event_name, ([]), self.default_timeout)
-        try:
-            self.log.debug(worker.result(self.default_timeout))
-        except Empty as error:
-            self.log.debug(" ".join(["Test failed with Empty error:", str(
-                error)]))
-            test_result = False
-        except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(" ".join(
-                ["Test failed, filtering callback onSuccess never occurred:",
-                 str(error)]))
-        test_result = reset_bluetooth([self.scn_ad])
-        if not test_result:
-            return test_result
-        time.sleep(5)
-        self.adv_ad.droid.bleStartBleAdvertising(
-            advertise_callback, advertise_data, advertise_settings)
-        worker = self.adv_ad.ed.handle_event(
-            self.bleadvertise_verify_onsuccess_handler,
-            expected_advertise_event_name, ([]), self.default_timeout)
-        try:
-            self.log.debug(worker.result(self.default_timeout))
-        except Empty as error:
-            self.log.debug(" ".join(["Test failed with Empty error:", str(
-                error)]))
-            test_result = False
-        except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(" ".join(
-                ["Test failed, filtering callback onSuccess never occurred:",
-                 str(error)]))
-        return test_result
-
-    @BluetoothBaseTest.bt_test_wrap
-    def test_restart_scan_callback_after_bt_toggle(self):
-        """Test to reuse an scan callback.
-
-        This will verify if scan objects can be reused after a bluetooth
-        toggle.
-
-        Steps:
-        1. Start a scanning instance.
-        3. Stop the scanning instance.
-        4. Toggle bluetooth off and on.
-        5. Start an scanning instance on the same objects used in step 1.
-
-        Expected Result:
-        Scanner should start successfully.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: LE, Scanning, Stress
-        Priority: 1
-        """
-        test_result = True
-        filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            self.scn_ad.droid)
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
-        reset_bluetooth([self.scn_ad])
-        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
-                                          scan_callback)
-
-        return test_result
