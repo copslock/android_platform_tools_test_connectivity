@@ -27,13 +27,10 @@ class ToolsTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.tests = (
-            "test_toggle_bluetooth",
-            "test_toggle_airplane_mode",
-            "test_create_10_sms",
-            "test_continuously_log_battery_stats",
-
-        )
+        self.tests = ("test_toggle_bluetooth",
+                      "test_toggle_airplane_mode",
+                      "test_create_10_sms",
+                      "test_continuously_log_battery_stats", )
 
     @BluetoothBaseTest.bt_test_wrap
     def test_toggle_bluetooth(self):
@@ -45,8 +42,7 @@ class ToolsTest(BluetoothBaseTest):
         3. Repeat steps 1 and 2 one-hundred times.
         :return: boolean test_result
         """
-        droid, ed = (self.android_devices[0].droid,
-                     self.android_devices[0].ed)
+        droid, ed = (self.android_devices[0].droid, self.android_devices[0].ed)
         n = 0
         test_result = True
         test_result_list = []
@@ -55,13 +51,14 @@ class ToolsTest(BluetoothBaseTest):
             test_result = reset_bluetooth([self.android_devices[0]])
             start_time = time.time()
             connected_devices = droid.bluetoothGetConnectedDevices()
-            print (pprint.pformat(connected_devices))
-            while time.time() < start_time + 10 and len(connected_devices) != 1:
+            print(pprint.pformat(connected_devices))
+            while time.time() < start_time + 10 and len(
+                    connected_devices) != 1:
                 time.sleep(1)
                 connected_devices = droid.bluetoothGetConnectedDevices()
-                print (pprint.pformat(connected_devices))
+                print(pprint.pformat(connected_devices))
             if len(connected_devices) != 1:
-                print ("died at iteration {}".format(n))
+                print("died at iteration {}".format(n))
                 return False
             test_result_list.append(test_result)
             n += 1
@@ -79,8 +76,7 @@ class ToolsTest(BluetoothBaseTest):
         3. Repeat steps 1 and 2 one-hundred times.
         :return: boolean test_result
         """
-        droid, ed = (self.android_devices[0].droid,
-                     self.android_devices[0].ed)
+        droid, ed = (self.android_devices[0].droid, self.android_devices[0].ed)
         n = 0
         test_result = True
         test_result_list = []
@@ -91,13 +87,14 @@ class ToolsTest(BluetoothBaseTest):
             droid.toggleAirplaneMode(False)
             start_time = time.time()
             connected_devices = droid.bluetoothGetConnectedDevices()
-            print (pprint.pformat(connected_devices))
-            while time.time() < start_time + 10 and len(connected_devices) != 1:
+            print(pprint.pformat(connected_devices))
+            while time.time() < start_time + 10 and len(
+                    connected_devices) != 1:
                 time.sleep(1)
                 connected_devices = droid.bluetoothGetConnectedDevices()
-                print (pprint.pformat(connected_devices))
+                print(pprint.pformat(connected_devices))
             if len(connected_devices) != 1:
-                print ("died at iteration {}".format(n))
+                print("died at iteration {}".format(n))
                 return False
             test_result_list.append(test_result)
             n += 1
@@ -119,8 +116,7 @@ class ToolsTest(BluetoothBaseTest):
     def test_continuously_log_battery_stats(self):
         interval = input("Enter time interval to collect stats: ")
         while True:
-            self.log.info(
-                log_energy_info([self.android_devices[0]], "Log_time: {}"
-                    .format(time.time())))
+            self.log.info(log_energy_info(
+                [self.android_devices[0]], "Log_time: {}".format(time.time())))
             time.sleep(int(interval))
         return True

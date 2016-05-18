@@ -1168,6 +1168,3 @@ class GattConnectTest(BluetoothBaseTest):
                                 bonded = True
                                 break
         return True
-
-
-

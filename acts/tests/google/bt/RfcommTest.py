@@ -180,4 +180,3 @@ class RfcommTest(BluetoothBaseTest):
         self.client_ad.droid.bluetoothRfcommStop()
         self.server_ad.droid.bluetoothRfcommStop()
         return True
-
