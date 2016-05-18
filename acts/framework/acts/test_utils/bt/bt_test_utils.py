@@ -37,6 +37,8 @@ from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
 from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BtEnum import BluetoothProfile
+from acts.test_utils.bt.BtEnum import BluetoothProfileState
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -58,6 +60,7 @@ adv_fail = "BleAdvertise{}onFailure"
 adv_succ = "BleAdvertise{}onSuccess"
 bluetooth_off = "BluetoothStateChangedOff"
 bluetooth_on = "BluetoothStateChangedOn"
+mtu_changed = "GattConnect{}onMtuChanged"
 bluetooth_profile_connection_state_changed = \
     "BluetoothProfileConnectionStateChanged"
 
