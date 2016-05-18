@@ -39,7 +39,7 @@ from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.utils import exe_cmd
 
-default_timeout = 10
+default_timeout = 15
 # bt discovery timeout
 default_discovery_timeout = 3
 log = LoggerProxy()
@@ -383,20 +383,20 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
+    self.log.info("Bonding device {} to {}".format(
+        pri_droid.bluetoothGetLocalAddress, sec_droid.bluetoothGetLocalAddress))
     sec_droid.bluetoothMakeDiscoverable(default_timeout)
-    target_name = sec_droid.bluetoothGetLocalName()
+    target_address = sec_droid.bluetoothGetLocalAddress()
     pri_droid.bluetoothStartPairingHelper()
     sec_droid.bluetoothStartPairingHelper()
-    result = pri_droid.bluetoothDiscoverAndBond(target_name)
-
+    result = pri_droid.bluetoothDiscoverAndBond(target_address)
     # Loop until we have bonded successfully or timeout.
     end_time = time.time() + default_timeout
     while time.time() < end_time:
         bonded_devices = pri_droid.bluetoothGetBondedDevices()
-        expected_address = sec_droid.bluetoothGetLocalAddress()
         bonded = False
         for d in bonded_devices:
-            if d['address'] == expected_address:
+            if d['address'] == target_address:
                 return True
         time.sleep(1)
     # Timed out trying to bond.
@@ -407,7 +407,7 @@ def get_bt_mac_address(droid, droid1, make_undisocverable=True):
     droid1.bluetoothMakeDiscoverable(default_timeout)
     droid.bluetoothStartDiscovery()
     mac = ""
-    target_name = droid1.bluetoothGetLocalName()
+    target_name = droid1.bluetoothGetLocalAddress()
     time.sleep(default_discovery_timeout)
     discovered_devices = droid.bluetoothGetDiscoveredDevices()
     for device in discovered_devices:
