@@ -18,8 +18,10 @@
 Basic Bluetooth Classic stress tests.
 """
 
+import time
 from acts.base_test import BaseTestClass
 from acts.test_utils.bt.bt_test_utils import log_energy_info
+from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
@@ -72,10 +74,53 @@ class BtStressTest(BaseTestClass):
         test_result = True
         test_result_list = []
         while n < 100:
-            self.log.info("Toggling bluetooth iteration {}.".format(n))
+            self.log.info("Toggling bluetooth iteration {}.".format(n+1))
             test_result = reset_bluetooth([self.android_devices[0]])
             test_result_list.append(test_result)
             n += 1
         if False in test_result_list:
             return False
         return test_result
+
+    def test_pair_bluetooth_stress(self):
+        """Stress test for pairing BT devices.
+
+        Test the integrity of Bluetooth pairing.
+
+        Steps:
+        1. Pair two Android devices
+        2. Verify both devices are paired
+        3. Unpair devices.
+        4. Verify devices unpaired.
+        5. Repeat steps 1-4 100 times.
+
+        Expected Result:
+        Each iteration of toggling Bluetooth pairing and unpairing
+        should succeed.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: Classic, Stress
+        Priority: 1
+        """
+        for n in range(100):
+            self.log.info("Pair bluetooth iteration {}.".format(n+1))
+            if (pair_pri_to_sec(
+                self.android_devices[0].droid,
+                self.android_devices[1].droid) == False):
+                self.log.error("Failed to bond devices.")
+                return False
+            for ad in self.android_devices:
+                bonded_devices = ad.droid.bluetoothGetBondedDevices()
+                for b in bonded_devices:
+                    ad.droid.bluetoothUnbond(b['address'])
+                #Necessary sleep time for entries to update unbonded state
+                time.sleep(1)
+                bonded_devices = ad.droid.bluetoothGetBondedDevices()
+                if len(bonded_devices) > 0:
+                    self.log.error("Failed to unbond devices: {}".format(bonded_devices))
+                    return False
+        return True
+
