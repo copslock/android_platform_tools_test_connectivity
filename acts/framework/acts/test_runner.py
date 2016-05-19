@@ -197,8 +197,7 @@ class TestRunner(object):
             raise signals.ControllerError(("No corresponding config found for"
                                            " %s") % module_config_name)
         try:
-            objects = create(self.testbed_configs[module_config_name],
-                             self.log)
+            objects = create(self.testbed_configs[module_config_name])
         except:
             self.log.exception(("Failed to initialize objects for controller "
                                 "%s, abort!"), module_config_name)
