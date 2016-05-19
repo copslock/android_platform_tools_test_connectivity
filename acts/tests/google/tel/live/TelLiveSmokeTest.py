@@ -55,13 +55,6 @@ SKIP = 'Skip'
 class TelLiveSmokeTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-            "test_smoke_volte_call_data_sms",
-            "test_smoke_csfb_3g_call_data_sms",
-            "test_smoke_3g_call_data_sms",
-            "test_smoke_wfc_call_sms",
-            "test_smoke_data_airplane_mode_network_switch_tethering"
-            )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
 
