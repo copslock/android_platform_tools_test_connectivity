@@ -63,8 +63,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
-        tr = test_runner.TestRunner(self.base_mock_test_config,
-                                    self.mock_run_list)
+        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
         tr.register_controller(mock_controller)
         registered_name = "mock_controller"
         self.assertTrue(registered_name in tr.controller_registry)
@@ -90,8 +89,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         try:
             mock_ctrlr_ref_name = mock_controller.ACTS_CONTROLLER_REFERENCE_NAME
             mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
-            tr = test_runner.TestRunner(self.base_mock_test_config,
-                                        self.mock_run_list)
+            tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
             tr.register_controller(mock_controller)
             self.assertTrue(mock_ref_name in tr.test_run_info)
             self.assertTrue(mock_ref_name in tr.controller_registry)
@@ -110,22 +108,28 @@ class ActsTestRunnerTest(unittest.TestCase):
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
-        tr = test_runner.TestRunner(self.base_mock_test_config,
-                                    self.mock_run_list)
+        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
         magic_devices = tr.register_controller(mock_controller)
         self.assertEqual(magic_devices[0].magic, "magic1")
         self.assertEqual(magic_devices[1].magic, "magic2")
 
     def test_run_twice(self):
+        """Verifies that:
+        1. Repeated run works properly.
+        2. The original configuration is not altered if a test controller
+           module modifies configuration.
+        """
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
-        mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
-        tr = test_runner.TestRunner(self.base_mock_test_config,
-                                    [('IntegrationTest', None)])
+        my_config = [{"serial": "xxxx", "magic": "Magic1"},
+                     {"serial": "xxxx", "magic": "Magic2"}]
+        mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
+        tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest', None)])
         tr.run()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
+        self.assertTrue(mock_test_config[tb_key][mock_ctrlr_config_name][0])
         tr.run()
         tr.stop()
         self.assertFalse(tr.controller_registry)
