@@ -21,6 +21,8 @@ ACTS_CONTROLLER_CONFIG_NAME = "MagicDevice"
 def create(configs, logger):
     objs = []
     for c in configs:
+        if isinstance(c, dict):
+            c.pop("serial")
         objs.append(MagicDevice(c, logger))
     return objs
 
