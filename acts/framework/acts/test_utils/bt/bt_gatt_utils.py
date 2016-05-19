@@ -64,7 +64,11 @@ def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
     return True
 
 
-def orchestrate_gatt_connection(cen_ad, per_ad, le=True, mac_address=None):
+def orchestrate_gatt_connection(cen_ad,
+                                per_ad,
+                                le=True,
+                                mac_address=None,
+                                autoconnect=False):
     adv_callback = None
     if mac_address is None:
         if le:
@@ -73,7 +77,6 @@ def orchestrate_gatt_connection(cen_ad, per_ad, le=True, mac_address=None):
         else:
             mac_address = per_ad.droid.bluetoothGetLocalAddress()
             adv_callback = None
-    autoconnect = False
     test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
         cen_ad, mac_address, autoconnect)
     if not test_result:
