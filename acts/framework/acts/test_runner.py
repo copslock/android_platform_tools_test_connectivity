@@ -17,23 +17,18 @@
 from future import standard_library
 standard_library.install_aliases()
 
-import argparse
-import functools
 import importlib
 import inspect
 import os
 import pkgutil
 import sys
-from urllib.error import URLError
 
+from acts import keys
 from acts import logger
-from acts.keys import Config
-from acts.keys import get_internal_value
-from acts.keys import get_module_name
-from acts.records import TestResult
-from acts.signals import TestAbortAll
-from acts.utils import find_files
-from acts.utils import load_config
+from acts import records
+from acts import signals
+from acts import utils
+
 
 class USERError(Exception):
     """Raised when a problem is caused by user mistake, e.g. wrong command,
@@ -43,50 +38,49 @@ class USERError(Exception):
 class TestRunner(object):
     """The class that instantiates test classes, executes test cases, and
     report results.
-        Attrubutes:
-        self.configs: A dictionary containing the configurations for this test
-            run. This is populated during instantiation.
+
+    Attributes:
+        self.test_run_info: A dictionary containing the information needed by
+                            test classes for this test run, including params,
+                            controllers, and other objects. All of these will
+                            be passed to test classes.
+        self.test_configs: A dictionary that is the original test configuration
+                           passed in by user.
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
-            all logs from this test run should be written.
+                       all logs from this test run should be written.
         self.log: The logger object used throughout this test run.
+        self.controller_registry: A dictionary that holds the controller
+                                  objects used in a test run.
         self.controller_destructors: A dictionary that holds the controller
-            distructors. Keys are controllers' names.
+                                     distructors. Keys are controllers' names.
         self.test_classes: A dictionary where we can look up the test classes
-            by name to instantiate.
+                           by name to instantiate.
         self.run_list: A list of tuples specifying what tests to run.
         self.results: The test result object used to record the results of
-            this test run.
+                      this test run.
         self.running: A boolean signifies whether this test run is ongoing or
-            not.
+                      not.
     """
     def __init__(self, test_configs, run_list):
-        self.configs = {}
-        tb = test_configs[Config.key_testbed.value]
-        self.testbed_name = tb[Config.key_testbed_name.value]
+        self.test_run_info = {}
+        self.test_configs = test_configs
+        self.testbed_configs = self.test_configs[keys.Config.key_testbed.value]
+        self.testbed_name = self.testbed_configs[keys.Config.key_testbed_name.value]
         start_time = logger.get_log_file_timestamp()
         self.id = "{}@{}".format(self.testbed_name, start_time)
         # log_path should be set before parsing configs.
-        l_path = os.path.join(test_configs[Config.key_log_path.value],
-            self.testbed_name, start_time)
+        l_path = os.path.join(self.test_configs[keys.Config.key_log_path.value],
+                              self.testbed_name,
+                              start_time)
         self.log_path = os.path.abspath(l_path)
         self.log = logger.get_test_logger(self.log_path,
                                           self.id,
                                           self.testbed_name)
+        self.controller_registry = {}
         self.controller_destructors = {}
         self.run_list = run_list
-        try:
-            # self.parse_config initializes controllers. If anything happens in
-            # __init__ after controllers are initialized, controllers should be
-            # cleaned up.
-            self.parse_config(test_configs)
-            t_configs = test_configs[Config.key_test_paths.value]
-            self.test_classes = self.import_test_modules(t_configs)
-            self.set_test_util_logs()
-        except:
-            self.clean_up()
-            raise
-        self.results = TestResult()
+        self.results = records.TestResult()
         self.running = False
 
     def import_test_modules(self, test_paths):
@@ -109,7 +103,7 @@ class TestRunner(object):
                 if name.endswith("Test") or name.endswith("_test"):
                     return True
             return False
-        file_list = find_files(test_paths, is_testfile_name)
+        file_list = utils.find_files(test_paths, is_testfile_name)
         test_classes = {}
         for path, name, _ in file_list:
             sys.path.append(path)
@@ -203,8 +197,7 @@ class TestRunner(object):
             raise signals.ControllerError(("No corresponding config found for"
                                            " %s") % module_config_name)
         try:
-            objects = create(self.testbed_configs[module_config_name],
-                             self.log)
+            objects = create(self.testbed_configs[module_config_name])
         except:
             self.log.exception(("Failed to initialize objects for controller "
                                 "%s, abort!"), module_config_name)
@@ -244,41 +237,25 @@ class TestRunner(object):
         Args:
             test_configs: A json object representing the test configurations.
         """
-        data = test_configs[Config.key_testbed.value]
-        testbed_configs = data[Config.key_testbed_name.value]
-        self.configs[Config.ikey_testbed_name.value] = testbed_configs
-        # Unpack controllers
-        for ctrl_name in Config.controller_names.value:
-            if ctrl_name in data:
-                module_name = get_module_name(ctrl_name)
+        self.test_run_info[keys.Config.ikey_testbed_name.value] = self.testbed_name
+        # Instantiate builtin controllers
+        for ctrl_name in keys.Config.builtin_controller_names.value:
+            if ctrl_name in self.testbed_configs:
+                module_name = keys.get_module_name(ctrl_name)
                 module = importlib.import_module("acts.controllers.%s" %
-                    module_name)
-                # Create controller objects.
-                create = getattr(module, "create")
-                try:
-                    objects = create(data[ctrl_name], self.log)
-                    controller_var_name = get_internal_value(ctrl_name)
-                    self.configs[controller_var_name] = objects
-                    self.log.debug("Found %d objects for controller %s",
-                                   len(objects), module_name)
-                    # Bind controller objects to their destructors.
-                    destroy_func = getattr(module, "destroy")
-                    self.controller_destructors[controller_var_name] = destroy_func
-                except:
-                    msg = ("Failed to initialize objects for controller {}, "
-                        "abort!").format(module_name)
-                    self.log.error(msg)
-                    raise
+                                                 module_name)
+                self.register_controller(module)
         # Unpack other params.
-        self.configs[Config.ikey_logpath.value] = self.log_path
-        self.configs[Config.ikey_logger.value] = self.log
-        cli_args = test_configs[Config.ikey_cli_args.value]
-        self.configs[Config.ikey_cli_args.value] = cli_args
+        self.test_run_info["register_controller"] = self.register_controller
+        self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
+        self.test_run_info[keys.Config.ikey_logger.value] = self.log
+        cli_args = test_configs[keys.Config.ikey_cli_args.value]
+        self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
         for item in test_configs.items():
-            if item[0] not in Config.reserved_keys.value:
+            if item[0] not in keys.Config.reserved_keys.value:
                 user_param_pairs.append(item)
-        self.configs[Config.ikey_user_param.value] = dict(user_param_pairs)
+        self.test_run_info[keys.Config.ikey_user_param.value] = dict(user_param_pairs)
 
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.
@@ -325,11 +302,11 @@ class TestRunner(object):
             raise USERError(("Unable to locate class %s in any of the test "
                 "paths specified.") % test_cls_name)
 
-        with test_cls(self.configs) as test_cls_instance:
+        with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
                 self.results += cls_result
-            except TestAbortAll as e:
+            except signals.TestAbortAll as e:
                 self.results += e.results
                 raise e
 
