@@ -9,5 +9,7 @@
         }
     ],
     "logpath": "/tmp/logs",
-    "testpaths": ["./"]
+    "testpaths": ["./"],
+    "icecream": "mememe",
+    "extra_param": "haha"
 }
