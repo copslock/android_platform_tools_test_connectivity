@@ -31,7 +31,7 @@ from acts.test_utils.bt.bt_test_utils import rfcomm_accept
 from acts.test_utils.bt.bt_test_utils import rfcomm_connect
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts.test_utils.bt.bt_test_utils import write_read_verity_data
+from acts.test_utils.bt.bt_test_utils import write_read_verify_data
 
 
 class RfcommTest(BluetoothBaseTest):
