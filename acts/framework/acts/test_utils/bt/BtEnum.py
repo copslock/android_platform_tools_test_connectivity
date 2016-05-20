@@ -32,3 +32,6 @@ class BluetoothAdapterState(Enum):
     STATE_BLE_ON = 15
     STATE_BLE_TURNING_OFF = 16
 
+class RfcommUuid(Enum):
+    DEFAULT_UUID = "457807c0-4897-11df-9879-0800200c9a66"
+

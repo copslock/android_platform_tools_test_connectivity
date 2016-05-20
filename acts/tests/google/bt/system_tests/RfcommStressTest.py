@@ -63,7 +63,7 @@ class RfcommStressTest(BluetoothBaseTest):
         accept_thread.start()
         connect_thread = threading.Thread(
             target=rfcomm_connect,
-            args=(self.client_ad.droid, server_mac))
+            args=(self.client_ad, server_mac))
         self.thread_list.append(connect_thread)
         connect_thread.start()
 
