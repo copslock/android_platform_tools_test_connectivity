@@ -201,9 +201,78 @@ class ActsBaseClassTest(unittest.TestCase):
         expected_msg = "Setup for %s failed." % self.mock_test_name
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, expected_msg)
-        self.assertIsNone(actual_record.extras, None)
+        self.assertIsNone(actual_record.extras)
         expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
                             "Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_teardown_test_assert_fail(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_teardown_test_raise_exception(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_pass_raise_exception(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_pass(self, test_name, begin_time):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        self.assertEqual(actual_record.extra_errors,
+                         {'_on_pass': MSG_EXPECTED_EXCEPTION})
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_fail_raise_exception(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, test_name, begin_time):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                asserts.fail(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(bt_cls.results.failed, [])
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        self.assertEqual(actual_record.extra_errors,
+                         {'_on_fail': MSG_EXPECTED_EXCEPTION})
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_abort_class(self):

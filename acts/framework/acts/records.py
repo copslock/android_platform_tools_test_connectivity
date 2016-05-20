@@ -39,6 +39,7 @@ class TestResultEnums(object):
     RECORD_RESULT = "Result"
     RECORD_UID = "UID"
     RECORD_EXTRAS = "Extras"
+    RECORD_EXTRA_ERRORS = "Extra Errors"
     RECORD_DETAILS = "Details"
     TEST_RESULT_PASS = "PASS"
     TEST_RESULT_FAIL = "FAIL"
@@ -67,6 +68,7 @@ class TestResultRecord(object):
         self.result = None
         self.extras = None
         self.details = None
+        self.extra_errors = {}
 
     def test_begin(self):
         """Call this when the test case it records begins execution.
@@ -128,6 +130,20 @@ class TestResultRecord(object):
         """
         self._test_end(TestResultEnums.TEST_RESULT_UNKNOWN, e)
 
+    def add_error(self, tag, e):
+        """Add extra error happened during a test mark the test result as
+        UNKNOWN.
+
+        If an error is added the test record, the record's result is equivalent
+        to the case where an uncaught exception happened.
+
+        Args:
+            tag: A string describing where this error came from, e.g. 'on_pass'.
+            e: An exception object.
+        """
+        self.result = TestResultEnums.TEST_RESULT_UNKNOWN
+        self.extra_errors[tag] = str(e)
+
     def __str__(self):
         d = self.to_dict()
         l = ["%s = %s" % (k, v) for k, v in d.items()]
@@ -154,6 +170,7 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_UID] = self.uid
         d[TestResultEnums.RECORD_EXTRAS] = self.extras
         d[TestResultEnums.RECORD_DETAILS] = self.details
+        d[TestResultEnums.RECORD_EXTRA_ERRORS] = self.extra_errors
         return d
 
     def json_str(self):
