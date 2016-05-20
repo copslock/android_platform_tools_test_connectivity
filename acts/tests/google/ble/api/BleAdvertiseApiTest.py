@@ -37,43 +37,10 @@ class BleAdvertiseVerificationError(Exception):
 
 
 class BleAdvertiseApiTest(BluetoothBaseTest):
-    tests = None
-
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.droid = self.android_devices[0].droid
-        self.tests = (
-            "test_adv_settings_defaults",
-            "test_adv_data_defaults",
-            "test_adv_settings_set_adv_mode_balanced",
-            "test_adv_settings_set_adv_mode_low_power",
-            "test_adv_settings_set_adv_mode_low_latency",
-            "test_adv_settings_set_invalid_adv_mode",
-            "test_adv_settings_set_adv_tx_power_level_high",
-            "test_adv_settings_set_adv_tx_power_level_medium",
-            "test_adv_settings_set_adv_tx_power_level_low",
-            "test_adv_settings_set_adv_tx_power_level_ultra_low",
-            "test_adv_settings_set_invalid_adv_tx_power_level",
-            "test_adv_settings_set_is_connectable_true",
-            "test_adv_settings_set_is_connectable_false",
-            "test_adv_data_set_service_uuids_empty",
-            "test_adv_data_set_service_uuids_single",
-            "test_adv_data_set_service_uuids_multiple",
-            "test_adv_data_set_service_uuids_invalid_uuid",
-            "test_adv_data_set_service_data",
-            "test_adv_data_set_service_data_invalid_service_data",
-            "test_adv_data_set_service_data_invalid_service_data_uuid",
-            "test_adv_data_set_manu_id",
-            "test_adv_data_set_manu_id_invalid_manu_id",
-            "test_adv_data_set_manu_id_invalid_manu_specific_data",
-            "test_adv_data_set_manu_id_max",
-            "test_adv_data_set_include_tx_power_level_true",
-            "test_adv_data_set_include_tx_power_level_false",
-            "test_adv_data_set_include_device_name_true",
-            "test_adv_data_set_include_device_name_false",
-        )
-
         if self.droid_list[0]['max_advertisements'] > 0:
             self.tests = self.tests + (
                 "test_advertisement_greater_than_31_bytes",)

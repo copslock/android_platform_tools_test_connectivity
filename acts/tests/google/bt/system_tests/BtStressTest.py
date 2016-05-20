@@ -70,14 +70,16 @@ class BtStressTest(BaseTestClass):
         TAGS: Classic, Stress
         Priority: 1
         """
-        n = 0
         test_result = True
         test_result_list = []
-        while n < 100:
-            self.log.info("Toggling bluetooth iteration {}.".format(n+1))
+        for n in range(100):
+            self.log.info("Toggling bluetooth iteration {}.".format(n + 1))
             test_result = reset_bluetooth([self.android_devices[0]])
             test_result_list.append(test_result)
-            n += 1
+            if not test_result:
+                self.log.debug("Failure to reset Bluetooth... continuing")
+        self.log.info("Toggling Bluetooth failed {}/100 times".format(len(
+            test_result_list)))
         if False in test_result_list:
             return False
         return test_result
@@ -106,10 +108,9 @@ class BtStressTest(BaseTestClass):
         Priority: 1
         """
         for n in range(100):
-            self.log.info("Pair bluetooth iteration {}.".format(n+1))
-            if (pair_pri_to_sec(
-                self.android_devices[0].droid,
-                self.android_devices[1].droid) == False):
+            self.log.info("Pair bluetooth iteration {}.".format(n + 1))
+            if (pair_pri_to_sec(self.android_devices[0].droid,
+                                self.android_devices[1].droid) == False):
                 self.log.error("Failed to bond devices.")
                 return False
             for ad in self.android_devices:
@@ -120,7 +121,7 @@ class BtStressTest(BaseTestClass):
                 time.sleep(1)
                 bonded_devices = ad.droid.bluetoothGetBondedDevices()
                 if len(bonded_devices) > 0:
-                    self.log.error("Failed to unbond devices: {}".format(bonded_devices))
+                    self.log.error("Failed to unbond devices: {}".format(
+                        bonded_devices))
                     return False
         return True
-
