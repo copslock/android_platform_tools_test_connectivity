@@ -18,9 +18,8 @@ from builtins import str
 
 import random
 import socket
+import subprocess
 import time
-
-from acts.utils import exe_cmd
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -96,15 +95,43 @@ class AdbProxy():
     >> adb.start_server()
     >> adb.devices() # will return the console output of "adb devices".
     """
-    def __init__(self, serial=""):
+    def __init__(self, serial="", log=None):
         self.serial = serial
         if serial:
             self.adb_str = "adb -s {}".format(serial)
         else:
             self.adb_str = "adb"
+        self.log = log
+
+    def _exec_cmd(self, cmd):
+        """Executes adb commands in a new shell.
+
+        This is specific to executing adb binary because stderr is not a good
+        indicator of cmd execution status.
+
+        Args:
+            cmds: A string that is the adb command to execute.
+
+        Returns:
+            The output of the adb command run if exit code is 0.
+
+        Raises:
+            AdbError is raised if the adb command exit code is not 0.
+        """
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        ret = proc.returncode
+        total_output = "stdout: {}, stderr: {}, ret: {}".format(out, err, ret)
+        # TODO(angli): Fix this when global logger is done.
+        if self.log:
+            self.log.debug("{}\n{}".format(cmd, total_output))
+        if ret == 0:
+            return out
+        else:
+            raise AdbError(total_output)
 
     def _exec_adb_cmd(self, name, arg_str):
-        return exe_cmd(' '.join((self.adb_str, name, arg_str)))
+        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)))
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding.
