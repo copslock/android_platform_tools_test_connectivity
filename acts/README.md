@@ -22,9 +22,11 @@ it is recommended for all new test cases.
 
 ## ACTS Execution Flow Overview
 Below is a high level view of the ACTS flow:
+
 1. Read configuration files
 2. Create controllers
 3. Sequentially execute test classes
+
 ```
 FooTest.setup_class()
 FooTest.setup_test()
@@ -38,6 +40,7 @@ FooTest.teardown_class()
 BarTest.setup_class()
 ....
 ```
+
 4. Destroy controllers
 
 ## Preparing an Android Device
@@ -55,11 +58,13 @@ displayed. Check the "Always" box and click "Yes".
 
 ## ACTS Setup
 From the ACTS directory, run setup
+
 - `$ sudo python setup.py develop`
 
 After installation, `act.py` will be in usr/bin and can be called as command
 line utilities. Components in ACTS are importable under the package "acts."
 in Python, for example:
+
 ```
 $ python
 >>> from acts.controllers import android_device
@@ -68,10 +73,12 @@ $ python
 
 ## Verifying Setup
 To verify the host and device are ready, from the frameworks folder run:
+
 - `$ act.py -c sample_config.json -tb SampleTestBed -tc SampleTest`
 
 If the above command executed successfully, the ouput should look something
 similar to following:
+
 ```
 [SampleTestBed] 07-22 15:23:50.323 INFO ==========> SampleTest <==========
 [SampleTestBed] 07-22 15:23:50.327 INFO [Test Case] test_make_toast
@@ -82,6 +89,7 @@ Requested 1, Executed 1, Passed 1, Failed 0, Skipped 0
 SampleTestBed@07-22-2015_1-23-44-096: Requested 1, Executed 1, Passed 1,
 Failed 0, Skipped 0
 ```
+
 By default, all logs are saved in `/tmp/logs`
 
 ## Breaking Down the Example
@@ -98,6 +106,7 @@ text file. The required information includes a list of “testbed” configs.
 Each specifies the hardware, services, the path to the logs directory, and
 a list of paths where the python test case files are located. Below are the
 contents of a sample configuration file:
+
 ```
 {   "_description": "This is an example skeleton test configuration file.",
     "testbed":
@@ -121,6 +130,7 @@ and are created based on the provided configuration file.
 Test classes must also contain an iterable member self.tests that lists the
 test case names within the class.  More on this is discussed after the following
 code snippet.
+
 ```
 from acts.base_test import BaseTestClass
 
@@ -143,9 +153,11 @@ Using the syntax below will override the default behavior by executing only
 specific tests within a test class.
 
 The following will run a single test, test_make_toast:
+
 `$ act.py -c sample_config.txt -tb SampleTestBed -tc SampleTest:test_make_toast`
 
 Multiple tests may be specified with a comma-delimited list. The following
 will execute test_make_toast and test_make_bagel:
+
 - `$ act.py -c sample_config.txt -tb SampleTestBed -tc
 SampleTest:test_make_toast,test_make_bagel`
