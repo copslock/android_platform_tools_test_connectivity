@@ -17,6 +17,7 @@
 from builtins import str
 from builtins import open
 
+import logging
 import os
 import time
 import traceback
@@ -45,7 +46,8 @@ class DoesNotExistError(AndroidDeviceError):
     """Raised when something that does not exist is referenced.
     """
 
-def create(configs, logger):
+def create(configs):
+    logger = logging.getLogger()
     if not configs:
         raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
