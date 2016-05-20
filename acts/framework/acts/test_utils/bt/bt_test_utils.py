@@ -214,7 +214,11 @@ def reset_bluetooth(android_devices):
         try:
             ed.pop_event(expected_bluetooth_on_event_name, default_timeout)
         except Exception:
-            log.error("Failed to toggle Bluetooth on.")
+            log.info("Failed to toggle Bluetooth on (no broadcast received).")
+            # Try one more time to poke at the actual state.
+            if droid.bluetoothCheckState() is True:
+                log.info(".. actual state is ON")
+                return True
             return False
     return True
 
