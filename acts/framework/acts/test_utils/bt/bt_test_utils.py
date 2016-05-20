@@ -22,6 +22,7 @@ import threading
 import time
 
 from contextlib2 import suppress
+from subprocess import call
 
 from acts.logger import LoggerProxy
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
@@ -37,6 +38,7 @@ from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
 from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
+from acts.test_utils.bt.BtEnum import RfcommUuid
 from acts.utils import exe_cmd
 
 default_timeout = 15
@@ -173,6 +175,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
             d = a.droid
             setup_result = d.bluetoothSetLocalName(generate_id_by_size(4))
             if not setup_result:
+                log.error("Failed to set device name.")
                 return setup_result
             d.bluetoothDisableBLE()
             bonded_devices = d.bluetoothGetBondedDevices()
@@ -181,8 +184,10 @@ def setup_multiple_devices_for_bt_test(android_devices):
         for a in android_devices:
             setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
             if not setup_result:
+                log.error("Failed to enable Bluetooth Hci Snoop Logging.")
                 return setup_result
-    except Exception:
+    except Exception as err:
+        log.error("Something went wrong in multi device setup: {}".format(err))
         return False
     return setup_result
 
@@ -255,12 +260,18 @@ def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
     try:
         for scan_callback in scan_callback_list:
             scan_droid.bleStopBleScan(scan_callback)
-    except Exception:
+    except Exception as err:
+        log.debug(
+            "Failed to stop LE scan... reseting Bluetooth. Error {}".format(
+                err))
         reset_bluetooth([scn_android_device])
     try:
         for adv_callback in adv_callback_list:
             adv_droid.bleStopBleAdvertising(adv_callback)
-    except Exception:
+    except Exception as err:
+        log.debug(
+            "Failed to stop LE advertisement... reseting Bluetooth. Error {}".format(
+                err))
         reset_bluetooth([adv_android_device])
 
 
@@ -367,10 +378,8 @@ def log_energy_info(droids, state):
     return_string = "{} Energy info collection:\n".format(state)
     for d in droids:
         with suppress(Exception):
-            if (d.getBuildModel() == "Nexus 6" or
-                    d.getBuildModel() == "Nexus 9" or
-                    d.getBuildModel() == "Nexus 6P" or
-                    d.getBuildModel() == "Nexus5X"):
+            if (d.getBuildModel() != "Nexus 5" or
+                    d.getBuildModel() != "Nexus 4"):
 
                 description = ("Device: {}\tEnergyStatus: {}\n".format(
                     d.getBuildSerial(),
@@ -383,47 +392,30 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
-    self.log.info("Bonding device {} to {}".format(
-        pri_droid.bluetoothGetLocalAddress, sec_droid.bluetoothGetLocalAddress))
+    log.info(
+        "Bonding device {} to {}".format(pri_droid.bluetoothGetLocalAddress(),
+                                         sec_droid.bluetoothGetLocalAddress()))
     sec_droid.bluetoothMakeDiscoverable(default_timeout)
     target_address = sec_droid.bluetoothGetLocalAddress()
+    log.debug("Starting paring helper on each device")
     pri_droid.bluetoothStartPairingHelper()
     sec_droid.bluetoothStartPairingHelper()
+    log.info("Primary device starting discovery and executing bond")
     result = pri_droid.bluetoothDiscoverAndBond(target_address)
     # Loop until we have bonded successfully or timeout.
     end_time = time.time() + default_timeout
+    log.info("Verifying devices are bonded")
     while time.time() < end_time:
         bonded_devices = pri_droid.bluetoothGetBondedDevices()
         bonded = False
         for d in bonded_devices:
             if d['address'] == target_address:
+                log.info("Successfully bonded to device")
                 return True
         time.sleep(1)
     # Timed out trying to bond.
+    log.debug("Failed to bond devices.")
     return False
-
-
-def get_bt_mac_address(droid, droid1, make_undisocverable=True):
-    droid1.bluetoothMakeDiscoverable(default_timeout)
-    droid.bluetoothStartDiscovery()
-    mac = ""
-    target_name = droid1.bluetoothGetLocalAddress()
-    time.sleep(default_discovery_timeout)
-    discovered_devices = droid.bluetoothGetDiscoveredDevices()
-    for device in discovered_devices:
-        if 'name' in device.keys() and target_name == device['name']:
-            mac = device['address']
-            continue
-    if make_undisocverable:
-        droid1.bluetoothMakeUndiscoverable()
-    droid.bluetoothCancelDiscovery()
-    if mac == "":
-        return False
-    return mac
-
-
-def get_client_server_bt_mac_address(droid, droid1):
-    return get_bt_mac_address(droid, droid1), get_bt_mac_address(droid1, droid)
 
 
 def take_btsnoop_logs(android_devices, testcase, testname):
@@ -456,9 +448,62 @@ def take_btsnoop_log(droid, testcase, test_name):
         exe_cmd(cmd)
 
 
-def rfcomm_connect(droid, device_address):
-    droid.bluetoothRfcommConnect(device_address)
+def kill_bluetooth_process(ad):
+    log.info("Killing Bluetooth process.")
+    pid = ad.adb.shell(
+        "ps | grep com.android.bluetooth | awk '{print $2}'").decode('ascii')
+    call(["adb -s " + ad.serial + " shell kill " + pid],
+            shell=True)
 
 
-def rfcomm_accept(droid):
-    droid.bluetoothRfcommAccept()
+def rfcomm_connect(ad, device_address):
+    rf_client_ad = ad
+    log.debug("Performing RFCOMM connection to {}".format(device_address))
+    try:
+        ad.droid.bluetoothRfcommConnect(device_address)
+    except Exception as err:
+        log.error("Failed to connect: {}".format(err))
+        ad.droid.bluetoothRfcommCloseSocket()
+        return
+    return
+
+
+def rfcomm_accept(ad):
+    rf_server_ad = ad
+    log.debug("Performing RFCOMM accept")
+    try:
+        ad.droid.bluetoothRfcommAccept(RfcommUuid.DEFAULT_UUID.value,
+            default_timeout)
+    except Exception as err:
+        log.error("Failed to accept: {}".format(err))
+        ad.droid.bluetoothRfcommCloseSocket()
+        return
+    return
+
+
+def write_read_verify_data(client_ad, server_ad, msg, binary=False):
+    log.info("Write message.")
+    try:
+        if binary:
+            client_ad.droid.bluetoothRfcommWriteBinary(msg)
+        else:
+            client_ad.droid.bluetoothRfcommWrite(msg)
+    except Exception as err:
+        log.error("Failed to write data: {}".format(err))
+        return False
+    log.info("Read message.")
+    try:
+        if binary:
+            read_msg = server_ad.droid.bluetoothRfcommReadBinary().rstrip("\r\n")
+        else:
+            read_msg = server_ad.droid.bluetoothRfcommRead()
+    except Exception as err:
+        log.error("Failed to read data: {}".format(err))
+        return False
+    log.info("Verify message.")
+    if msg != read_msg:
+        log.error("Mismatch! Read: {}, Expected: {}".format(
+            read_msg, msg))
+        return False
+    return True
+

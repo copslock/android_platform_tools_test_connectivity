@@ -222,6 +222,56 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    def test_gatt_connect_autoconnect(self):
+        """Test GATT connection over LE.
+
+        Test re-establishing a gat connection using autoconnect
+        set to True in order to test connection whitelist.
+
+        Steps:
+        1. Start a generic advertisement.
+        2. Start a generic scanner.
+        3. Find the advertisement and extract the mac address.
+        4. Stop the first scanner.
+        5. Create a GATT connection between the scanner and advertiser.
+        6. Disconnect the GATT connection.
+        7. Create a GATT connection with autoconnect set to True
+        8. Disconnect the GATT connection.
+
+        Expected Result:
+        Verify that a connection was re-established and then disconnected
+        successfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Filtering, Scanning, GATT
+        Priority: 0
+        """
+        autoconnect = False
+        mac_address, adv_callback = (
+            get_mac_address_of_generic_advertisement(self.cen_ad, self.per_ad))
+        test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
+            self.cen_ad, mac_address, autoconnect)
+        if not disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
+                                          gatt_callback):
+            return False
+        autoconnect = True
+        bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
+            gatt_callback, mac_address, autoconnect)
+        expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(
+            gatt_callback)
+        try:
+            event = self.cen_ad.ed.pop_event(expected_event,
+                                             self.default_timeout)
+        except Empty:
+            log.error(GattCbErr.GATT_CONN_CHANGE_ERR.value.format(
+                expected_event))
+            test_result = False
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
     def test_gatt_request_min_mtu(self):
         """Test GATT connection over LE and exercise MTU sizes.
 

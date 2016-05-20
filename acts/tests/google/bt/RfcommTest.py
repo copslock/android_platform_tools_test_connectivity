@@ -24,13 +24,14 @@ import time
 
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import get_bt_mac_address
 from acts.test_utils.bt.bt_test_utils import log_energy_info
+from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import rfcomm_accept
 from acts.test_utils.bt.bt_test_utils import rfcomm_connect
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts.test_utils.bt.bt_test_utils import write_read_verity_data
 
 
 class RfcommTest(BluetoothBaseTest):
@@ -75,22 +76,35 @@ class RfcommTest(BluetoothBaseTest):
 
     def teardown_test(self):
         with suppress(Exception):
-            for thread in self.thread_list:
-                thread.join()
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
+            self.client_ad.droid.bluetoothRfcommCloseSocket()
+            self.server_ad.droid.bluetoothRfcommCloseSocket()
+        for thread in self.thread_list:
+            thread.join()
+        self.thread_list.clear()
 
     def orchestrate_rfcomm_connect(self, server_mac):
         accept_thread = threading.Thread(target=rfcomm_accept,
-                                         args=(self.server_ad.droid, ))
+                                         args=(self.server_ad, ))
         self.thread_list.append(accept_thread)
         accept_thread.start()
-        connect_thread = threading.Thread(
-            target=rfcomm_connect,
-            args=(self.client_ad.droid, server_mac))
+        connect_thread = threading.Thread(target=rfcomm_connect,
+                                          args=(self.client_ad, server_mac))
         self.rf_client_th = connect_thread
         self.thread_list.append(connect_thread)
         connect_thread.start()
+        for thread in self.thread_list:
+            thread.join()
+        end_time = time.time() + self.default_timeout
+        result = False
+        while time.time() < end_time:
+            if len(self.client_ad.droid.bluetoothRfcommActiveConnections(
+            )) > 0:
+                self.log.info("RFCOMM Connection Active")
+                return True
+        self.log.error("Failed to establish an RFCOMM connection")
+        return False
 
     @BluetoothBaseTest.bt_test_wrap
     def test_rfcomm_connection_write_ascii(self):
@@ -118,13 +132,11 @@ class RfcommTest(BluetoothBaseTest):
         Priority: 1
         """
         server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
-        self.orchestrate_rfcomm_connect(server_mac)
-        self.log.info("Write message.")
-        self.client_ad.droid.bluetoothRfcommWrite(self.message)
-        self.log.info("Read message.")
-        read_msg = self.server_ad.droid.bluetoothRfcommRead()
-        self.log.info("Verify message.")
-        assert self.message == read_msg, "Mismatch! Read {}".format(read_msg)
+        if not self.orchestrate_rfcomm_connect(server_mac):
+            return False
+        if not write_read_verify_data(self.client_ad, self.server_ad,
+                                      self.message, False):
+            return False
         if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
             self.log.info("No rfcomm connections found on server.")
             return False
@@ -162,14 +174,12 @@ class RfcommTest(BluetoothBaseTest):
         Priority: 1
         """
         server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
-        self.orchestrate_rfcomm_connect(server_mac)
+        if not self.orchestrate_rfcomm_connect(server_mac):
+            return False
         binary_message = "11010101"
-        self.log.info("Write message.")
-        self.client_ad.droid.bluetoothRfcommWriteBinary(binary_message)
-        self.log.info("Read message.")
-        read_msg = self.server_ad.droid.bluetoothRfcommReadBinary().rstrip("\r\n")
-        self.log.info("Verify message.")
-        assert binary_message == read_msg, "Mismatch! Read {}".format(read_msg)
+        if not write_read_verify_data(self.client_ad, self.server_ad,
+                                      binary_message, True):
+            return False
         if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
             self.log.info("No rfcomm connections found on server.")
             return False
