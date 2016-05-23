@@ -15,13 +15,14 @@
 #   limitations under the License.
 
 import importlib
+import logging
 
 from acts.keys import Config
 
 ACTS_CONTROLLER_CONFIG_NAME = "Attenuator"
 ACTS_CONTROLLER_REFERENCE_NAME = "attenuators"
 
-def create(configs, logger):
+def create(configs):
     objs = []
     for c in configs:
         attn_model = c["Model"]
@@ -43,7 +44,7 @@ def create(configs, logger):
                 try:
                     setattr(attn, "path", c["Paths"][i])
                 except IndexError:
-                    logger.error("No path specified for attenuator %d." % i)
+                    logging.error("No path specified for attenuator %d.", i)
                     raise
             objs.append(attn)
     return objs

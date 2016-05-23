@@ -15,11 +15,12 @@
 #   limitations under the License.
 
 import importlib
+import logging
 
 ACTS_CONTROLLER_CONFIG_NAME = "Sniffer"
 ACTS_CONTROLLER_REFERENCE_NAME = "sniffers"
 
-def create(configs, logger):
+def create(configs):
     """Initializes the sniffer structures based on the JSON configuration. The
     expected keys are:
 
@@ -41,7 +42,7 @@ def create(configs, logger):
         module_name = "acts.controllers.sniffer_lib.{}.{}".format(sniffer_type,
                                                             sniffer_subtype)
         module = importlib.import_module(module_name)
-        objs.append(module.Sniffer(interface, logger,
+        objs.append(module.Sniffer(interface, logging.getLogger(),
                                    base_configs=base_configs))
     return objs
 

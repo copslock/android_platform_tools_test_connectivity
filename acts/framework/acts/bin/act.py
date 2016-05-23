@@ -192,15 +192,18 @@ def load_test_config_file(test_config_path, tb_filters=None):
         config_jsons.append(new_test_config)
     return config_jsons
 
-def _run_test(test_runner, repeat=1):
+def _run_test(parsed_config, test_identifiers, repeat=1):
     """Instantiate and runs TestRunner.
 
     This is the function to start separate processes with.
 
     Args:
-        test_runner: The test_runner instance to be executed.
+        parsed_config: A dict that is a set of configs for one TestRunner.
+        test_identifiers: A list of tuples, each identifies what test case to
+                          run on what test class.
         repeat: Number of times to iterate the specified tests.
     """
+    test_runner = _create_test_runner(parsed_config, test_identifiers)
     try:
         for i in range(repeat):
             test_runner.run()
@@ -221,21 +224,89 @@ def _gen_term_signal_handler(test_runners):
         sys.exit(1)
     return termination_sig_handler
 
-def _run_tests_parallel(process_args):
-    print("Executing {} concurrent test runs.".format(len(process_args)))
-    results = concurrent_exec(_run_test, process_args)
+def _create_test_runner(parsed_config, test_identifiers):
+    """Instantiates one TestRunner object and register termination signal
+    handlers that properly shut down the TestRunner run.
+
+    Args:
+        parsed_config: A dict that is a set of configs for one TestRunner.
+        test_identifiers: A list of tuples, each identifies what test case to
+                          run on what test class.
+
+    Returns:
+        A TestRunner object.
+    """
+    try:
+        t = TestRunner(parsed_config, test_identifiers)
+    except:
+        print("Failed to instantiate test runner, abort.")
+        print(traceback.format_exc())
+        sys.exit(1)
+    # Register handler for termination signals.
+    handler = _gen_term_signal_handler([t])
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+    return t
+
+def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
+    """Executes requested tests in parallel.
+
+    Each test run will be in its own process.
+
+    Args:
+        parsed_config: A list of dicts, each is a set of configs for one
+                       TestRunner.
+        test_identifiers: A list of tuples, each identifies what test case to
+                          run on what test class.
+        repeat: Number of times to iterate the specified tests.
+
+    Returns:
+        True if all test runs executed successfully, False otherwise.
+    """
+    print("Executing {} concurrent test runs.".format(len(parsed_configs)))
+    arg_list = [(c, test_identifiers, repeat) for c in parsed_configs]
+    results = []
+    with multiprocessing.Pool(processes=len(parsed_configs)) as pool:
+        # Can't use starmap for py2 compatibility. One day, one day......
+        for args in arg_list:
+            results.append(pool.apply_async(_run_test, args))
+        pool.close()
+        pool.join()
     for r in results:
         if r is False or isinstance(r, Exception):
             return False
 
-def _run_tests_sequential(process_args):
+def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
+    """Executes requested tests sequentially.
+
+    Requested test runs will commence one after another according to the order
+    of their corresponding configs.
+
+    Args:
+        parsed_config: A list of dicts, each is a set of configs for one
+                       TestRunner.
+        test_identifiers: A list of tuples, each identifies what test case to
+                          run on what test class.
+        repeat: Number of times to iterate the specified tests.
+
+    Returns:
+        True if all test runs executed successfully, False otherwise.
+    """
     ok = True
-    for args in process_args:
-        if _run_test(*args) is False:
+    for c in parsed_configs:
+        if _run_test(c, test_identifiers, repeat) is False:
             ok = False
     return ok
 
 def _parse_test_file(fpath):
+    """Parses a test file that contains test specifiers.
+
+    Args:
+        fpath: A string that is the path to the test file to parse.
+
+    Returns:
+        A list of strings, each is a test specifier.
+    """
     try:
         with open(fpath, 'r') as f:
             tf = []
@@ -261,8 +332,6 @@ def main(argv):
         metavar="Arg1 Arg2 ...",
         help=("Command-line arguments to be passed to every test case in a "
               "test run. Use with caution."))
-    parser.add_argument('-d', '--debug', action="store_true",
-        help=("Set this flag if manual debugging is required."))
     parser.add_argument('-p', '--parallel', action="store_true",
         help=("If set, tests will be executed on all testbeds in parallel. "
               "Otherwise, tests are executed iteratively testbed by testbed."))
@@ -294,30 +363,15 @@ def main(argv):
     if not parsed_configs:
         print("Encountered error when parsing the config file, abort!")
         sys.exit(1)
+    for c in parsed_configs:
+        c[Config.ikey_cli_args.value] = args.test_args
     # Prepare args for test runs
     test_identifiers = parse_test_list(test_list)
-    test_runners = []
-    process_args = []
-    try:
-        for c in parsed_configs:
-            c[Config.ikey_cli_args.value] = args.test_args
-            t = TestRunner(c, test_identifiers)
-            test_runners.append(t)
-            process_args.append((t, repeat))
-    except:
-        print("Failed to instantiate test runner, abort.")
-        print(traceback.format_exc())
-        sys.exit(1)
-    # Register handler for term signals if in -i mode.
-    if not args.debug:
-        handler = _gen_term_signal_handler(test_runners)
-        signal.signal(signal.SIGTERM, handler)
-        signal.signal(signal.SIGINT, handler)
     # Execute test runners.
-    if args.parallel and len(process_args) > 1:
-        exec_result = _run_tests_parallel(process_args)
+    if args.parallel and len(parsed_configs) > 1:
+        exec_result = _run_tests_parallel(parsed_configs, test_identifiers, repeat)
     else:
-        exec_result = _run_tests_sequential(process_args)
+        exec_result = _run_tests_sequential(parsed_configs, test_identifiers, repeat)
     if exec_result is False:
         sys.exit(1)
     sys.exit(0)
