@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import json
+import logging
 import os
 import subprocess
 
@@ -24,11 +25,11 @@ from acts import utils
 ACTS_CONTROLLER_CONFIG_NAME = "IPerfServer"
 ACTS_CONTROLLER_REFERENCE_NAME = "iperf_servers"
 
-def create(configs, logger):
+def create(configs):
     results = []
     for c in configs:
         try:
-            results.append(IPerfServer(c, logger.log_path))
+            results.append(IPerfServer(c, logging.log_path))
         except:
             pass
     return results
