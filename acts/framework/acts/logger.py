@@ -112,8 +112,8 @@ def get_log_file_timestamp(delta=None):
     """
     return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
 
-def _get_test_logger(log_path, TAG, prefix=None, filename=None):
-    """Returns a logger object used for tests.
+def _setup_test_logger(log_path, prefix=None, filename=None):
+    """Customizes the root logger for a test run.
 
     The logger object has a stream handler and a file handler. The stream
     handler logs INFO level to the terminal, the file handler logs DEBUG
@@ -121,18 +121,14 @@ def _get_test_logger(log_path, TAG, prefix=None, filename=None):
 
     Args:
         log_path: Location of the log file.
-        TAG: Name of the logger's owner.
         prefix: A prefix for each log line in terminal.
         filename: Name of the log file. The default is the time the logger
-            is requested.
-
-    Returns:
-        A logger configured with one stream handler and one file handler
+                  is requested.
     """
-    log = logging.getLogger(TAG)
+    log = logging.getLogger()
     if log.handlers:
         # This logger has been requested before.
-        return log
+        return
     log.propagate = False
     log.setLevel(logging.DEBUG)
     # Log info to stream
@@ -155,10 +151,10 @@ def _get_test_logger(log_path, TAG, prefix=None, filename=None):
     log.addHandler(ch)
     log.addHandler(fh)
     log.log_path = log_path
-    return log
+    logging.log_path = log_path
 
 def kill_test_logger(logger):
-    """Cleans up a test logger object created by get_test_logger.
+    """Cleans up a test logger object created by setup_test_logger.
 
     Args:
         logger: The logging object to clean up.
@@ -179,25 +175,20 @@ def create_latest_log_alias(actual_path):
         os.remove(link_path)
     os.symlink(actual_path, link_path)
 
-def get_test_logger(log_path, TAG, prefix=None, filename=None):
-    """Returns a logger customized for a test run.
+def setup_test_logger(log_path, prefix=None, filename=None):
+    """Customizes the root logger for a test run.
 
     Args:
         log_path: Location of the report file.
-        TAG: Name of the logger's owner.
         prefix: A prefix for each log line in terminal.
         filename: Name of the files. The default is the time the objects
             are requested.
-
-    Returns:
-        A logger object.
     """
     if filename is None:
         filename = get_log_file_timestamp()
     create_dir(log_path)
-    logger = _get_test_logger(log_path, TAG, prefix, filename)
+    logger = _setup_test_logger(log_path, prefix, filename)
     create_latest_log_alias(log_path)
-    return logger
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
