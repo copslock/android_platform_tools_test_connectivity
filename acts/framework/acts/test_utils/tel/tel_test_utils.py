@@ -18,6 +18,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import concurrent.futures
+import logging
 import urllib.parse
 import time
 
@@ -123,8 +124,8 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_message_sub_id
 from acts.utils import load_config
-from acts.logger import LoggerProxy
-log = LoggerProxy()
+
+log = logging
 
 
 class TelTestUtilsError(Exception):

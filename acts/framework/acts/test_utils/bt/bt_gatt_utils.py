@@ -14,7 +14,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from acts.logger import LoggerProxy
+import logging
+
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts.test_utils.bt.GattEnum import GattCbErr
 from acts.test_utils.bt.GattEnum import GattCbStrings
@@ -28,7 +29,7 @@ from queue import Empty
 from contextlib import suppress
 
 default_timeout = 10
-log = LoggerProxy()
+log = logging
 
 
 def setup_gatt_connection(cen_ad, mac_address, autoconnect):
