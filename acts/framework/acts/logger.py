@@ -204,28 +204,3 @@ def normalize_log_line_timestamp(log_line_timestamp):
     norm_tp = log_line_timestamp.replace(' ', '_')
     norm_tp = norm_tp.replace(':', '-')
     return norm_tp
-
-class LoggerProxy(object):
-    """This class is for situations where a logger may or may not exist.
-
-    e.g. In controller classes, sometimes we don't have a logger to pass in,
-    like during a quick try in python console. In these cases, we don't want to
-    crash on the log lines because logger is None, so we should set self.log to
-    an object of this class in the controller classes, instead of the actual
-    logger object.
-    """
-    def __init__(self, logger=None):
-        self.log = logger
-
-    @property
-    def log_path(self):
-        if self.log:
-            return self.log.log_path
-        return "/tmp/logs"
-
-    def __getattr__(self, name):
-        def log_call(*args):
-            if self.log:
-                return getattr(self.log, name)(*args)
-            print(*args)
-        return log_call
