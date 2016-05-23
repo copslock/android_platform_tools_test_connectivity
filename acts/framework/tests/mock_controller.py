@@ -16,24 +16,25 @@
 
 # This is a mock third-party controller module used for unit testing ACTS.
 
+import logging
+
 ACTS_CONTROLLER_CONFIG_NAME = "MagicDevice"
 
-def create(configs, logger):
+def create(configs):
     objs = []
     for c in configs:
         if isinstance(c, dict):
             c.pop("serial")
-        objs.append(MagicDevice(c, logger))
+        objs.append(MagicDevice(c))
     return objs
 
 def destroy(objs):
     print("Destroying magic")
 
 class MagicDevice(object):
-    def __init__(self, config, log):
+    def __init__(self, config):
         self.magic = config
-        self.log = log
 
     def get_magic(self):
-        self.log.info("My magic is %s." % self.magic)
+        logging.info("My magic is %s.", self.magic)
         return self.magic

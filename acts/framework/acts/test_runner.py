@@ -20,6 +20,7 @@ standard_library.install_aliases()
 import copy
 import importlib
 import inspect
+import logging
 import os
 import pkgutil
 import sys
@@ -75,9 +76,8 @@ class TestRunner(object):
                               self.testbed_name,
                               start_time)
         self.log_path = os.path.abspath(l_path)
-        self.log = logger.get_test_logger(self.log_path,
-                                          self.id,
-                                          self.testbed_name)
+        logger.setup_test_logger(self.log_path, self.testbed_name)
+        self.log = logging.getLogger()
         self.controller_registry = {}
         self.controller_destructors = {}
         self.run_list = run_list
@@ -202,7 +202,7 @@ class TestRunner(object):
             # in case the controller module modifies the config internally.
             original_config = self.testbed_configs[module_config_name]
             controller_config = copy.deepcopy(original_config)
-            objects = create(controller_config, self.log)
+            objects = create(controller_config)
         except:
             self.log.exception(("Failed to initialize objects for controller "
                                 "%s, abort!"), module_config_name)
