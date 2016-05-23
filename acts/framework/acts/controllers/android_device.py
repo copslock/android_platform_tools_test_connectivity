@@ -47,19 +47,18 @@ class DoesNotExistError(AndroidDeviceError):
     """
 
 def create(configs):
-    logger = logging.getLogger()
     if not configs:
         raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
-        ads = get_all_instances(logger=logger)
+        ads = get_all_instances()
     elif not isinstance(configs, list):
         raise AndroidDeviceError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
-        ads = get_instances(configs, logger)
+        ads = get_instances(configs)
     else:
         # Configs is a list of dicts.
-        ads = get_instances_with_configs(configs, logger)
+        ads = get_instances_with_configs(configs)
     connected_ads = list_adb_devices()
     for ad in ads:
         if ad.serial not in connected_ads:
@@ -74,7 +73,7 @@ def create(configs):
             # because "exception raised while processing another exception" is
             # only printed under py3.
             msg = "Failed to start sl4a on %s" % ad.serial
-            logger.exception(msg)
+            logging.exception(msg)
             raise AndroidDeviceError(msg)
     return ads
 
@@ -126,22 +125,21 @@ def list_fastboot_devices():
     out = fastboot.FastbootProxy().devices()
     return _parse_device_list(out, "fastboot")
 
-def get_instances(serials, logger=None):
+def get_instances(serials):
     """Create AndroidDevice instances from a list of serials.
 
     Args:
         serials: A list of android device serials.
-        logger: A logger to be passed to each instance.
 
     Returns:
         A list of AndroidDevice objects.
     """
     results = []
     for s in serials:
-        results.append(AndroidDevice(s, logger=logger))
+        results.append(AndroidDevice(s))
     return results
 
-def get_instances_with_configs(configs, logger=None):
+def get_instances_with_configs(configs):
     """Create AndroidDevice instances from a list of json configs.
 
     Each config should have the required key-value pair "serial".
@@ -149,7 +147,6 @@ def get_instances_with_configs(configs, logger=None):
     Args:
         configs: A list of dicts each representing the configuration of one
             android device.
-        logger: A logger to be passed to each instance.
 
     Returns:
         A list of AndroidDevice objects.
@@ -161,17 +158,16 @@ def get_instances_with_configs(configs, logger=None):
         except KeyError:
             raise AndroidDeviceError(('Required value "serial" is missing in '
                 'AndroidDevice config %s.') % c)
-        ad = AndroidDevice(serial, logger=logger)
+        ad = AndroidDevice(serial)
         ad.load_config(c)
         results.append(ad)
     return results
 
-def get_all_instances(include_fastboot=False, logger=None):
+def get_all_instances(include_fastboot=False):
     """Create AndroidDevice instances for all attached android devices.
 
     Args:
         include_fastboot: Whether to include devices in bootloader mode or not.
-        logger: A logger to be passed to each instance.
 
     Returns:
         A list of AndroidDevice objects each representing an android device
@@ -179,8 +175,8 @@ def get_all_instances(include_fastboot=False, logger=None):
     """
     if include_fastboot:
         serial_list = list_adb_devices() + list_fastboot_devices()
-        return get_instances(serial_list, logger=logger)
-    return get_instances(list_adb_devices(), logger=logger)
+        return get_instances(serial_list)
+    return get_instances(list_adb_devices())
 
 def filter_devices(ads, func):
     """Finds the AndroidDevice instances from a list that match certain
@@ -269,7 +265,6 @@ class AndroidDevice:
                 on the computer the Android device is connected
         d_port: An integer  that's the port number used on the Android device
                 for adb port forwarding.
-        log: A LoggerProxy object used for the class's internal logging.
         log_path: A string that is the path where all logs collected on this
                   android device should be stored.
         adb_logcat_process: A process that collects the adb logcat.
@@ -280,14 +275,12 @@ class AndroidDevice:
                   via fastboot.
     """
 
-    def __init__(self, serial="", host_port=None, device_port=8080,
-                 logger=None):
+    def __init__(self, serial="", host_port=None, device_port=8080):
         self.serial = serial
         self.h_port = host_port
         self.d_port = device_port
-        self.log = acts_logger.LoggerProxy(logger)
-        lp = self.log.log_path
-        self.log_path = os.path.join(lp, "AndroidDevice%s" % serial)
+        self.log_path = os.path.join(logging.log_path,
+                                     "AndroidDevice%s" % serial)
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -471,7 +464,7 @@ class AndroidDevice:
         if ed_key in self._event_dispatchers:
             if self._event_dispatchers[ed_key] is None:
                 raise AndroidDeviceError("EventDispatcher Key Empty")
-            self.log.debug("Returning existing key %s for event dispatcher!",
+            logging.debug("Returning existing key %s for event dispatcher!",
                            ed_key)
             return self._event_dispatchers[ed_key]
         event_droid = self.add_new_connection_to_session(droid.uid)
@@ -498,7 +491,7 @@ class AndroidDevice:
                                       " been collected on Android device %s."
                                       ) % self.serial)
         end_time = acts_logger.get_log_line_timestamp()
-        self.log.debug("Extracting adb log from logcat.")
+        logging.debug("Extracting adb log from logcat.")
         adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
@@ -578,9 +571,9 @@ class AndroidDevice:
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
         full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
-        self.log.info("Taking bugreport for %s on %s", test_name, self.serial)
+        logging.info("Taking bugreport for %s on %s", test_name, self.serial)
         self.adb.bugreport(" > {}".format(full_out_path))
-        self.log.info("Bugreport for %s taken at %s", test_name, full_out_path)
+        logging.info("Bugreport for %s taken at %s", test_name, full_out_path)
 
     def start_new_session(self):
         """Start a new session in sl4a.
@@ -653,8 +646,8 @@ class AndroidDevice:
                     self.terminate_session(session_id)
                 except:
                     msg = "Failed to terminate session %d." % session_id
-                    self.log.exception(msg)
-                    self.log.error(traceback.format_exc())
+                    logging.exception(msg)
+                    logging.error(traceback.format_exc())
             if self.h_port:
                 self.adb.forward("--remove tcp:%d" % self.h_port)
                 self.h_port = None
