@@ -64,7 +64,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             self.log.info('%s: %s', ON_CONNECT_SUCCESS, event['data'])
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on %s' %
-                         ON_CONNECT_SUCCESS, name)
+                         (ON_CONNECT_SUCCESS, name) )
         self.log.debug(event)
 
     def reliable_tx(self, device, session_id, peer, msg):
