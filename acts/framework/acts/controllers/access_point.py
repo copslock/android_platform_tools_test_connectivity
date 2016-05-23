@@ -17,7 +17,10 @@
 import acts.jsonrpc as jsonrpc
 from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 
-def create(configs, logger):
+ACTS_CONTROLLER_CONFIG_NAME = "AP"
+ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
+
+def create(configs):
     results = []
     for c in configs:
         addr = c[Config.key_address.value]

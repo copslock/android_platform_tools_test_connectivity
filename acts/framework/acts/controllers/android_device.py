@@ -17,6 +17,7 @@
 from builtins import str
 from builtins import open
 
+import logging
 import os
 import time
 import traceback
@@ -28,6 +29,9 @@ from acts.controllers import adb
 from acts.controllers import android
 from acts.controllers import event_dispatcher
 from acts.controllers import fastboot
+
+ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
+ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
 # Key name for adb logcat extra params in config file.
@@ -42,7 +46,8 @@ class DoesNotExistError(AndroidDeviceError):
     """Raised when something that does not exist is referenced.
     """
 
-def create(configs, logger):
+def create(configs):
+    logger = logging.getLogger()
     if not configs:
         raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:

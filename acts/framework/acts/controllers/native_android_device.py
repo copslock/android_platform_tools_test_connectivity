@@ -20,6 +20,7 @@ from acts.controllers.adb import get_available_host_port
 import acts.controllers.native as native
 from subprocess import call
 
+import logging
 import time
 
 #TODO(tturney): Merge this into android device
@@ -27,7 +28,8 @@ import time
 ACTS_CONTROLLER_CONFIG_NAME = "NativeAndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "native_android_devices"
 
-def create(configs, logger):
+def create(configs):
+    logger = logging.getLogger()
     ads = get_instances(configs, logger)
     for ad in ads:
         try:

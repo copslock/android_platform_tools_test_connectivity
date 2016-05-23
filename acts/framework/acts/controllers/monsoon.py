@@ -22,6 +22,7 @@ _new_author_ = 'angli@google.com (Ang Li)'
 _author_ = 'kens@google.com (Ken Shirriff)'
 
 import fcntl
+import logging
 import os
 import select
 import struct
@@ -34,16 +35,18 @@ import collections
 # On ubuntu, apt-get install python3-pyserial
 import serial
 
-import acts.logger
 import acts.signals
 
 from acts import utils
 from acts.controllers import android_device
 
-def create(configs, logger):
+ACTS_CONTROLLER_CONFIG_NAME = "Monsoon"
+ACTS_CONTROLLER_REFERENCE_NAME = "monsoons"
+
+def create(configs):
     objs = []
     for c in configs:
-        objs.append(Monsoon(serial=c, logger=logger))
+        objs.append(Monsoon(serial=c))
     return objs
 
 def destroy(objs):
@@ -586,10 +589,7 @@ class Monsoon:
     def __init__(self, *args, **kwargs):
         serial = kwargs["serial"]
         device = None
-        if "logger" in kwargs:
-            self.log = acts.logger.LoggerProxy(kwargs["logger"])
-        else:
-            self.log = acts.logger.LoggerProxy()
+        self.log = logging.getLogger()
         if "device" in kwargs:
             device = kwargs["device"]
         self.mon = MonsoonProxy(serialno=serial, device=device)
