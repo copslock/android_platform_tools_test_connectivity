@@ -32,6 +32,8 @@ ON_RANGING_SUCCESS = "WifiNanRangingListenerOnSuccess"
 ON_RANGING_FAILURE = "WifiNanRangingListenerOnFailure"
 ON_RANGING_ABORTED = "WifiNanRangingListenerOnAborted"
 
+WIFI_MAX_TX_RETRIES = 5
+
 
 class WifiNanManagerTest(base_test.BaseTestClass):
     def setup_test(self):
@@ -50,12 +52,12 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                     asserts.fail('Timed out while waiting for %s' %
                                  WIFI_NAN_ENABLED)
 
-    def teardown_test(self):
-        for ad in self.android_devices:
-            ad.droid.wifiNanDisconnect()
-            asserts.assert_true(
-                wutils.wifi_toggle_state(ad, False),
-                "Failed disabling Wi-Fi interface")
+    # def teardown_test(self):
+    #     for ad in self.android_devices:
+    #         ad.droid.wifiNanDisconnect()
+    #         asserts.assert_true(
+    #             wutils.wifi_toggle_state(ad, False),
+    #             "Failed disabling Wi-Fi interface")
 
     def exec_connect(self, device, config_request, name):
         device.droid.wifiNanConnect(config_request)
@@ -68,16 +70,14 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.log.debug(event)
 
     def reliable_tx(self, device, session_id, peer, msg):
-        num_tries = 0
-        max_num_tries = 10
         events_regex = '%s|%s' % (ON_MESSAGE_TX_FAIL, ON_MESSAGE_TX_OK)
         self.msg_id = self.msg_id + 1
 
         while True:
             try:
-                num_tries += 1
                 device.droid.wifiNanSendMessage(session_id, peer, msg,
-                                                self.msg_id)
+                                                self.msg_id,
+                                                WIFI_MAX_TX_RETRIES)
                 events = device.ed.pop_events(events_regex, 30)
                 for event in events:
                     self.log.info('%s: %s', event['name'], event['data'])
@@ -85,9 +85,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                         continue
                     if event['name'] == ON_MESSAGE_TX_OK:
                         return True
-                    if num_tries == max_num_tries:
-                        self.log.info("Max number of retries reached")
-                        return False
+                    return False
             except queue.Empty:
                 self.log.info('Timed out while waiting for %s', events_regex)
                 return False
