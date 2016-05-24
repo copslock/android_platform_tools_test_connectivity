@@ -40,10 +40,6 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.droid = self.android_devices[0].droid
 
-        if self.droid_list[0]['max_advertisements'] > 0:
-            self.tests = self.tests + (
-                "test_advertisement_greater_than_31_bytes", )
-
     @BluetoothBaseTest.bt_test_wrap
     def test_adv_settings_defaults(self):
         """Tests the default advertisement settings.

@@ -20,6 +20,7 @@ import string
 import queue
 import threading
 import time
+from acts import utils
 
 from contextlib2 import suppress
 from subprocess import call
@@ -159,6 +160,9 @@ def build_advertise_settings(droid, mode, txpower, type):
 
 def setup_multiple_devices_for_bt_test(android_devices):
     log.info("Setting up Android Devices")
+    # TODO: Temp fix for an selinux error.
+    for ad in android_devices:
+        ad.adb.shell("setenforce 0")
     threads = []
     try:
         for a in android_devices:
@@ -219,6 +223,7 @@ def reset_bluetooth(android_devices):
             if droid.bluetoothCheckState() is True:
                 log.info(".. actual state is ON")
                 return True
+            log.info(".. actual state is OFF")
             return False
     return True
 
@@ -421,9 +426,10 @@ def pair_pri_to_sec(pri_droid, sec_droid):
 
 def take_btsnoop_logs(android_devices, testcase, testname):
     for a in android_devices:
-        take_btsnoop_log(a.droid, testcase, testname)
+        take_btsnoop_log(a, testcase, testname)
 
-def take_btsnoop_log(droid, testcase, test_name):
+
+def take_btsnoop_log(ad, testcase, test_name):
     """Grabs the btsnoop_hci log on a device and stores it in the log directory
     of the test class.
 
@@ -437,12 +443,14 @@ def take_btsnoop_log(droid, testcase, test_name):
     """
     test_name = "".join(x for x in test_name if x.isalnum())
     with suppress(Exception):
-        serial = droid.getBuildSerial()
-        device_model = droid.getBuildModel()
+        serial = ad.droid.getBuildSerial()
+        device_model = ad.droid.getBuildModel()
         device_model = device_model.replace(" ", "")
         out_name = ','.join((test_name, device_model, serial))
+        snoop_path = ad.log_path + "/BluetoothSnoopLogs"
+        utils.create_dir(snoop_path)
         cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
-                       testcase.log_path + "/" + out_name, ".btsnoop_hci.log"))
+                       snoop_path + '/' + out_name, ".btsnoop_hci.log"))
         testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                           .format(device_model, serial))
         exe_cmd(cmd)
@@ -465,6 +473,8 @@ def rfcomm_connect(ad, device_address):
         log.error("Failed to connect: {}".format(err))
         ad.droid.bluetoothRfcommCloseSocket()
         return
+    finally:
+        return
     return
 
 
@@ -477,6 +487,8 @@ def rfcomm_accept(ad):
     except Exception as err:
         log.error("Failed to accept: {}".format(err))
         ad.droid.bluetoothRfcommCloseSocket()
+        return
+    finally:
         return
     return
 
