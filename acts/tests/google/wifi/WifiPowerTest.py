@@ -46,7 +46,7 @@ pmc_iperf_json_file = "/sdcard/iperf.txt"
 class WifiPowerTest(acts.base_test.BaseTestClass):
 
     def setup_class(self):
-        self.hz = 10
+        self.hz = 5000
         self.offset = 5 * 60
         self.duration = 30 * 60 + self.offset
         self.scan_interval = 15
@@ -87,6 +87,12 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
     def setup_test(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
+
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+
+    def on_pass(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
 
     def get_iperf_result(self):
         """Pulls the iperf json output from device.
