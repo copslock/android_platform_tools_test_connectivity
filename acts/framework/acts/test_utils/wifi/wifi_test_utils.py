@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import time
 import pprint
 
@@ -22,13 +23,12 @@ from queue import Empty
 
 from acts import asserts
 from acts import signals
-from acts.logger import LoggerProxy
 from acts.utils import exe_cmd
 from acts.utils import require_sl4a
 from acts.utils import sync_device_time
 from acts.utils import trim_model_name
 
-log = LoggerProxy()
+log = logging
 
 # Number of seconds to wait for events that are supposed to happen quickly.
 # Like onSuccess for start background scan and confirmation on wifi state

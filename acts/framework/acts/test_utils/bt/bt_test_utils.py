@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import logging
 import random
 import pprint
 import string
@@ -24,7 +25,6 @@ import time
 from contextlib2 import suppress
 from subprocess import call
 
-from acts.logger import LoggerProxy
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchMode
@@ -44,7 +44,7 @@ from acts.utils import exe_cmd
 default_timeout = 15
 # bt discovery timeout
 default_discovery_timeout = 3
-log = LoggerProxy()
+log = logging
 
 # Callback strings
 scan_result = "BleScan{}onScanResults"
