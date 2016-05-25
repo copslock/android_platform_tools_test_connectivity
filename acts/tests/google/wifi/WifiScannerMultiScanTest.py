@@ -392,7 +392,7 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
                            "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
                            "numBssidsPerScan": 20},
                          { "band": WifiEnums.WIFI_BAND_5_GHZ,
-                           "periodInMs": 20000, # ms
+                           "periodInMs": 30000, # ms
                            "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
                            "numBssidsPerScan": 24}]
 
@@ -466,15 +466,15 @@ class WifiScannerMultiScanTest(acts.base_test.BaseTestClass):
           * Number of BSSIDs doesn't exceed
         """
         scan_settings = [{ "band": WifiEnums.WIFI_BAND_5_GHZ_DFS_ONLY,
-                           "periodInMs": 20000, # ms
+                           "periodInMs": 10000, # ms
                            "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
                            "numBssidsPerScan": 24},
                          { "band": WifiEnums.WIFI_BAND_5_GHZ,
-                           "periodInMs": 20000, # ms
+                           "periodInMs": 10000, # ms
                            "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
                            "numBssidsPerScan": 24},
                          { "band": WifiEnums.WIFI_BAND_24_GHZ,
-                           "periodInMs": 40000, # ms
+                           "periodInMs": 30000, # ms
                            "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
                            "numBssidsPerScan": 24}]
 
