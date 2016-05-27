@@ -43,6 +43,11 @@ class NexusModelNames:
     N6v3 = 'marlin'
     N5v3 = 'sailfish'
 
+class DozeModeStatus:
+    ACTIVE = "ACTIVE"
+    IDLE = "IDLE"
+
+
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
 
@@ -509,19 +514,13 @@ def enable_doze(ad):
     """
     ad.adb.shell("dumpsys battery unplug")
     ad.adb.shell("dumpsys deviceidle enable")
-    if (ad.adb.shell("dumpsys deviceidle force-idle") !=
-            b'Now forced in to idle mode\r\n'):
-        return False
+    ad.adb.shell("dumpsys deviceidle force-idle")
     ad.droid.goToSleepNow()
     time.sleep(5)
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle step")
-    if adb_shell_result not in [b'Stepped to: IDLE_MAINTENANCE\r\n',
-                                b'Stepped to: IDLE\r\n']:
-        info = ("dumpsys deviceidle step: {}dumpsys battery: {}"
-                "dumpsys deviceidle: {}".format(
-                    adb_shell_result.decode('utf-8'),
-                    ad.adb.shell("dumpsys battery").decode('utf-8'),
-                    ad.adb.shell("dumpsys deviceidle").decode('utf-8')))
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
+        'utf-8')
+    if not adb_shell_result.startswith(DozeModeStatus.IDLE):
+        info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
         print(info)
         return False
     return True
@@ -539,13 +538,55 @@ def disable_doze(ad):
     """
     ad.adb.shell("dumpsys deviceidle disable")
     ad.adb.shell("dumpsys battery reset")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle step")
-    if (adb_shell_result != b'Stepped to: ACTIVE\r\n'):
-        info = ("dumpsys deviceidle step: {}dumpsys battery: {}"
-                "dumpsys deviceidle: {}".format(
-                    adb_shell_result.decode('utf-8'),
-                    ad.adb.shell("dumpsys battery").decode('utf-8'),
-                    ad.adb.shell("dumpsys deviceidle").decode('utf-8')))
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
+        'utf-8')
+    if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
+        info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
+        print(info)
+        return False
+    return True
+
+
+def enable_doze_light(ad):
+    """Force the device into doze light mode.
+
+    Args:
+        ad: android device object.
+
+    Returns:
+        True if device is in doze light mode.
+        False otherwise.
+    """
+    ad.adb.shell("dumpsys battery unplug")
+    ad.droid.goToSleepNow()
+    time.sleep(5)
+    ad.adb.shell("cmd deviceidle enable light")
+    ad.adb.shell("cmd deviceidle step light")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
+        'utf-8')
+    if not adb_shell_result.startswith(DozeModeStatus.IDLE):
+        info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
+        print(info)
+        return False
+    return True
+
+
+def disable_doze_light(ad):
+    """Force the device not in doze light mode.
+
+    Args:
+        ad: android device object.
+
+    Returns:
+        True if device is not in doze light mode.
+        False otherwise.
+    """
+    ad.adb.shell("dumpsys battery reset")
+    ad.adb.shell("cmd deviceidle disable light")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
+        'utf-8')
+    if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
+        info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
         print(info)
         return False
     return True
