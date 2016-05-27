@@ -43,7 +43,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -229,8 +229,8 @@ class TelLiveSmokeTest(TelephonyBaseTest):
 
             self.log.info("--------start test_smoke_3g_call_data_sms--------")
             ensure_phones_default_state(self.log, ads)
-            tasks = [(phone_setup_3g, (self.log, ads[0])),
-                     (phone_setup_3g, (self.log, ads[1]))]
+            tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
+                     (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up 3G.")
                 return False

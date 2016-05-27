@@ -26,7 +26,7 @@ from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import verify_active_call_number
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 
@@ -82,8 +82,8 @@ class TelLiveStressCallTest(BaseTestClass):
         ad_caller = self.ad_caller
         callee_number = self.stress_test_callee_number
         self.assert_true(
-            phone_setup_3g(self.log,
-                           ad_caller), "Phone Failed to Set Up Properly.")
+            phone_setup_voice_3g(self.log,
+                                 ad_caller), "Phone Failed to Set Up Properly.")
 
         # Make sure phone is idle.
         ensure_phone_idle(self.log, ad_caller)

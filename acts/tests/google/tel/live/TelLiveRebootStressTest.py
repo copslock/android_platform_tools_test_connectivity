@@ -50,7 +50,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import \
@@ -151,7 +151,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def _check_3g(self, ad, ad_reference):
         self.log.info("Check 3G data and CS call")
-        if not phone_setup_3g(self.log, ad):
+        if not phone_setup_voice_3g(self.log, ad):
             self.log.error("Failed to setup 3G")
             return False
         if not verify_http_connection(self.log, ad):
