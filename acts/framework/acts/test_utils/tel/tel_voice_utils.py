@@ -46,6 +46,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
@@ -59,6 +60,8 @@ from acts.test_utils.tel.tel_test_utils import get_network_gen_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_network_rat
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import \
+    reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
@@ -265,47 +268,6 @@ def two_phone_call_long_seq(log,
 
     return True
 
-
-def phone_setup_volte(log, ad):
-    """Setup VoLTE enable.
-
-    Args:
-        ad: android device object.
-
-    Returns:
-        True: if VoLTE is enabled successfully.
-        False: for errors
-    """
-    return phone_setup_volte_for_subscription(log, ad,
-                                              get_outgoing_voice_sub_id(ad))
-
-
-def phone_setup_volte_for_subscription(log, ad, sub_id):
-    """Setup VoLTE enable for subscription id.
-
-    Args:
-        ad: android device object.
-        sub_id: subscription id.
-
-    Returns:
-        True: if VoLTE is enabled successfully.
-        False: for errors
-    """
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
-        return False
-    toggle_volte_for_subscription(log, ad, sub_id, True)
-    if not ensure_network_generation_for_subscription(
-            log,
-            ad,
-            sub_id,
-            GEN_4G,
-            voice_or_data=NETWORK_SERVICE_DATA):
-        return False
-    return phone_idle_volte_for_subscription(log, ad, sub_id)
-
-
 def phone_setup_iwlan(log,
                       ad,
                       is_airplane_mode,
@@ -438,6 +400,108 @@ def phone_setup_iwlan_cellular_preferred(log,
         return False
     return True
 
+def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
+    """Setup Phone <sub_id> Data to <network_generation>
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+        network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G
+
+    Returns:
+        True if success, False if fail.
+    """
+    toggle_airplane_mode(log, ad, False)
+    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
+        log.error("{} Disable WFC failed.".format(ad.serial))
+        return False
+    if not ensure_network_generation_for_subscription(
+            log,
+            ad,
+            sub_id,
+            network_generation,
+            voice_or_data=NETWORK_SERVICE_DATA):
+        return False
+    return True
+
+def phone_setup_4g(log, ad):
+    """Setup Phone default data sub_id data to 4G.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_4g_for_subscription(
+        log, ad, get_default_data_sub_id(ad))
+
+def phone_setup_4g_for_subscription(log, ad, sub_id):
+    """Setup Phone <sub_id> Data to 4G.
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_4G)
+
+def phone_setup_3g(log, ad):
+    """Setup Phone default data sub_id data to 3G.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_3g_for_subscription(
+        log, ad, get_default_data_sub_id(ad))
+
+def phone_setup_3g_for_subscription(log, ad, sub_id):
+    """Setup Phone <sub_id> Data to 3G.
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_3G)
+
+def phone_setup_2g(log, ad):
+    """Setup Phone default data sub_id data to 2G.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_2g_for_subscription(
+        log, ad, get_default_data_sub_id(ad))
+
+def phone_setup_2g_for_subscription(log, ad, sub_id):
+    """Setup Phone <sub_id> Data to 3G.
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_2G)
 
 def phone_setup_csfb(log, ad):
     """Setup phone for CSFB call test.
@@ -446,6 +510,7 @@ def phone_setup_csfb(log, ad):
     Disabled VoLTE.
 
     Args:
+        log: log object
         ad: Android device object.
 
     Returns:
@@ -463,6 +528,7 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
     Disabled VoLTE.
 
     Args:
+        log: log object
         ad: Android device object.
         sub_id: subscription id.
 
@@ -470,9 +536,8 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         True if setup successfully.
         False for errors.
     """
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
+    if not phone_setup_4g_for_subscription(log, ad, sub_id):
+        log.error("{} failed to set to 4G data.".format(ad.serial))
         return False
     if ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         toggle_volte(log, ad, False)
@@ -490,90 +555,58 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
 
     return phone_idle_csfb_for_subscription(log, ad, sub_id)
 
-
-def phone_setup_3g(log, ad):
-    """Setup phone for 3G call test.
+def phone_setup_volte(log, ad):
+    """Setup VoLTE enable.
 
     Args:
-        ad: Android device object.
+        log: log object
+        ad: android device object.
 
     Returns:
-        True if setup successfully.
-        False for errors.
+        True: if VoLTE is enabled successfully.
+        False: for errors
     """
-    return phone_setup_3g_for_subscription(log, ad,
-                                           get_outgoing_voice_sub_id(ad))
+    return phone_setup_volte_for_subscription(
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
-def phone_setup_3g_for_subscription(log, ad, sub_id):
-    """Setup phone for 3G call test for subscription id.
+def phone_setup_volte_for_subscription(log, ad, sub_id):
+    """Setup VoLTE enable for subscription id.
 
     Args:
-        ad: Android device object.
+        log: log object
+        ad: android device object.
         sub_id: subscription id.
 
     Returns:
+        True: if VoLTE is enabled successfully.
+        False: for errors
+    """
+    if not phone_setup_4g_for_subscription(log, ad, sub_id):
+        log.error("{} failed to set to 4G data.".format(ad.serial))
+        return False
+    toggle_volte_for_subscription(log, ad, sub_id, True)
+    return phone_idle_volte_for_subscription(log, ad, sub_id)
+
+def phone_setup_voice_3g(log, ad):
+    """Setup phone voice to 3G.
+
+    Args:
+        log: log object
+        ad: Android device object.
+
+    Returns:
         True if setup successfully.
         False for errors.
     """
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
-        return False
-
-    if not ensure_network_generation_for_subscription(
-            log,
-            ad,
-            sub_id,
-            GEN_3G,
-            voice_or_data=NETWORK_SERVICE_DATA):
-        return False
-
-    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  MAX_WAIT_TIME_NW_SELECTION):
-        return False
-
-    return phone_idle_3g_for_subscription(log, ad, sub_id)
-
-
-def phone_setup_voice_3g(log, ad):
     return phone_setup_voice_3g_for_subscription(log, ad,
                                                  get_outgoing_voice_sub_id(ad))
 
-
 def phone_setup_voice_3g_for_subscription(log, ad, sub_id):
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
-        return False
-    if not ensure_network_generation_for_subscription(
-            log,
-            ad,
-            sub_id,
-            GEN_3G,
-            voice_or_data=NETWORK_SERVICE_VOICE):
-        return False
-    return phone_idle_3g_for_subscription(log, ad, sub_id)
-
-
-def phone_setup_2g(log, ad):
-    """Setup phone for 2G call test.
+    """Setup phone voice to 3G for subscription id.
 
     Args:
-        ad: Android device object.
-
-    Returns:
-        True if setup successfully.
-        False for errors.
-    """
-    return phone_setup_2g_for_subscription(log, ad,
-                                           get_outgoing_voice_sub_id(ad))
-
-
-def phone_setup_2g_for_subscription(log, ad, sub_id):
-    """Setup phone for 2G call test for subscription id.
-
-    Args:
+        log: log object
         ad: Android device object.
         sub_id: subscription id.
 
@@ -581,40 +614,48 @@ def phone_setup_2g_for_subscription(log, ad, sub_id):
         True if setup successfully.
         False for errors.
     """
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
+    if not phone_setup_3g_for_subscription(log, ad, sub_id):
+        log.error("{} failed to set to 3G data.".format(ad.serial))
         return False
-    if not ensure_network_generation_for_subscription(
-            log,
-            ad,
-            sub_id,
-            GEN_2G,
-            voice_or_data=NETWORK_SERVICE_DATA):
+    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
+                                                  MAX_WAIT_TIME_NW_SELECTION):
         return False
-    return phone_idle_2g_for_subscription(log, ad, sub_id)
-
+    return phone_idle_3g_for_subscription(log, ad, sub_id)
 
 def phone_setup_voice_2g(log, ad):
-    return phone_setup_voice_2g_for_subscription(log, ad,
-                                                 get_outgoing_voice_sub_id(ad))
+    """Setup phone voice to 2G.
+
+    Args:
+        log: log object
+        ad: Android device object.
+
+    Returns:
+        True if setup successfully.
+        False for errors.
+    """
+    return phone_setup_voice_2g_for_subscription(
+        log, ad, get_outgoing_voice_sub_id(ad))
 
 
 def phone_setup_voice_2g_for_subscription(log, ad, sub_id):
-    toggle_airplane_mode(log, ad, False)
-    if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
-        log.error("{} Disable WFC failed.".format(ad.serial))
-        return False
+    """Setup phone voice to 2G for subscription id.
 
-    if not ensure_network_generation_for_subscription(
-            log,
-            ad,
-            sub_id,
-            GEN_2G,
-            voice_or_data=NETWORK_SERVICE_VOICE):
+    Args:
+        log: log object
+        ad: Android device object.
+        sub_id: subscription id.
+
+    Returns:
+        True if setup successfully.
+        False for errors.
+    """
+    if not phone_setup_2g_for_subscription(log, ad, sub_id):
+        log.error("{} failed to set to 2G data.".format(ad.serial))
+        return False
+    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
+                                                  MAX_WAIT_TIME_NW_SELECTION):
         return False
     return phone_idle_2g_for_subscription(log, ad, sub_id)
-
 
 def phone_setup_voice_general(log, ad):
     """Setup phone for voice general call test.
@@ -650,11 +691,48 @@ def phone_setup_voice_general_for_subscription(log, ad, sub_id):
     toggle_airplane_mode(log, ad, False)
     if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
                                                   MAX_WAIT_TIME_NW_SELECTION):
-        # if phone can not attach voice, try phone_setup_3g
-        return phone_setup_3g_for_subscription(log, ad, sub_id)
-
+        # if phone can not attach voice, try phone_setup_voice_3g
+        return phone_setup_voice_3g_for_subscription(log, ad, sub_id)
     return True
 
+def phone_setup_data_general(log, ad):
+    """Setup phone for data general test.
+
+    Make sure phone attached to data.
+    Make necessary delay.
+
+    Args:
+        ad: Android device object.
+
+    Returns:
+        True if setup successfully.
+        False for errors.
+    """
+    return phone_setup_data_general_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultDataSubId())
+
+def phone_setup_data_general_for_subscription(log, ad, sub_id):
+    """Setup phone for data general test for subscription id.
+
+    Make sure phone attached to data.
+    Make necessary delay.
+
+    Args:
+        ad: Android device object.
+        sub_id: subscription id.
+
+    Returns:
+        True if setup successfully.
+        False for errors.
+    """
+    toggle_airplane_mode(log, ad, False)
+    if not wait_for_data_attach_for_subscription(log, ad, sub_id,
+                                                 MAX_WAIT_TIME_NW_SELECTION):
+        # if phone can not attach data, try reset network preference settings
+        reset_preferred_network_type_to_allowable_range(log, ad)
+
+    return wait_for_data_attach_for_subscription(log, ad, sub_id,
+                                                 MAX_WAIT_TIME_NW_SELECTION)
 
 def phone_setup_rat_for_subscription(log, ad, sub_id, network_preference,
                                      rat_family):
