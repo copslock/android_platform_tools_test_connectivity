@@ -671,6 +671,33 @@ def disconnect_call_by_id(log, ad, call_id):
     ad.droid.telecomCallDisconnect(call_id)
     return True
 
+def _phone_number_remove_prefix(number):
+    """Remove the country code and other prefix from the input phone number.
+    Currently only handle phone number with the following formats:
+        (US phone number format)
+        +1abcxxxyyyy
+        1abcxxxyyyy
+        abcxxxyyyy
+        abc xxx yyyy
+        abc.xxx.yyyy
+        abc-xxx-yyyy
+        (EEUK phone number format)
+        +44abcxxxyyyy
+        0abcxxxyyyy
+
+    Args:
+        number: input phone number
+
+    Returns:
+        Phone number without country code or prefix
+    """
+    country_code_list = ["+1", "+44"]
+    for country_code in country_code_list:
+        if number.startswith(country_code):
+            return number[len(country_code):], country_code
+    if number[0] == "1" or number[0] == "0":
+        return number[1:], None
+
 
 def check_phone_number_match(number1, number2):
     """Check whether two input phone numbers match or not.
@@ -685,6 +712,13 @@ def check_phone_number_match(number1, number2):
         abc xxx yyyy
         abc.xxx.yyyy
         abc-xxx-yyyy
+        (EEUK phone number format)
+        +44abcxxxyyyy
+        0abcxxxyyyy
+
+        There are some scenarios we can not verify, one example is:
+            number1 = +15555555555, number2 = 5555555555
+            (number2 have no country code)
 
     Args:
         number1: 1st phone number to be compared.
@@ -693,18 +727,16 @@ def check_phone_number_match(number1, number2):
     Returns:
         True if two phone numbers match. Otherwise False.
     """
-    # Remove "1"  or "+1"from front
-    if number1[0] == "1":
-        number1 = number1[1:]
-    elif number1[0:2] == "+1":
-        number1 = number1[2:]
-    if number2[0] == "1":
-        number2 = number2[1:]
-    elif number2[0:2] == "+1":
-        number2 = number2[2:]
+    # Remove country code and prefix
+    number1, country_code1 = _phone_number_remove_prefix(number1)
+    number2, country_code2 = _phone_number_remove_prefix(number2)
+    if ((country_code1 is not None) and
+        (country_code2 is not None) and
+        (country_code1 != country_code2)):
+        return False
     # Remove white spaces, dashes, dots
-    number1 = number1.replace(" ", "").replace("-", "").replace(".", "")
-    number2 = number2.replace(" ", "").replace("-", "").replace(".", "")
+    number1 = phone_number_formatter(number1)
+    number2 = phone_number_formatter(number2)
     return number1 == number2
 
 
