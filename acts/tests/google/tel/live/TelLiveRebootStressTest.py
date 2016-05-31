@@ -68,10 +68,6 @@ from acts.utils import rand_ascii_str
 class TelLiveRebootStressTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-            "test_reboot_stress",
-            "test_reboot_stress_without_clear_provisioning"
-            )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])

@@ -80,38 +80,6 @@ WAKEUP_PING_TEST_NUMBER_OF_ALARM = math.ceil(
 class TelPowerTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-            # Note: For all these power tests, please do environment calibration
-            # and baseline for pass criteria.
-            # All pass criteria information should be included in test config file.
-            # The test result will be meaning less if pass criteria is not correct.
-            "test_power_active_call_3g",
-            "test_power_active_call_volte",
-            "test_power_active_call_wfc_2g_apm",
-            "test_power_active_call_wfc_2g_lte_volte_on",
-            "test_power_active_call_wfc_5g_apm",
-            "test_power_active_call_wfc_5g_lte_volte_on",
-            "test_power_idle_baseline",
-            "test_power_idle_baseline_wifi_connected",
-            "test_power_idle_wfc_2g_apm",
-            "test_power_idle_wfc_2g_lte",
-            "test_power_idle_lte_volte_enabled",
-            "test_power_idle_lte_volte_disabled",
-            "test_power_idle_3g",
-            "test_power_idle_lte_volte_enabled_wakeup_ping",
-            "test_power_idle_lte_volte_disabled_wakeup_ping",
-            "test_power_idle_3g_wakeup_ping",
-
-            # Mobile Data Always On
-            "test_power_mobile_data_always_on_lte",
-            "test_power_mobile_data_always_on_wcdma",
-            "test_power_mobile_data_always_on_gsm",
-            "test_power_mobile_data_always_on_1x",
-            "test_power_mobile_data_always_on_lte_wifi_on",
-            "test_power_mobile_data_always_on_wcdma_wifi_on",
-            "test_power_mobile_data_always_on_gsm_wifi_on",
-            "test_power_mobile_data_always_on_1x_wifi_on"
-            )
 
     def setup_class(self):
         super().setup_class()

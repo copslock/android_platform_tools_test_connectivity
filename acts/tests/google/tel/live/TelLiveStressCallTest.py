@@ -38,7 +38,6 @@ INCORRECT_STATE_MSG = "Caller not in correct state!"
 class TelLiveStressCallTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_call_3g_stress", )
 
     def setup_class(self):
         self.ad_caller = self.android_devices[0]
