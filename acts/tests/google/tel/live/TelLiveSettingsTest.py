@@ -59,37 +59,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-            "test_lte_volte_wifi_connected_toggle_wfc",
-            "test_lte_wifi_connected_toggle_wfc",
-            "test_3g_wifi_connected_toggle_wfc",
-            "test_apm_wifi_connected_toggle_wfc",
 
-            "test_lte_volte_wfc_enabled_toggle_wifi",
-            "test_lte_wfc_enabled_toggle_wifi",
-            "test_3g_wfc_enabled_toggle_wifi",
-            "test_apm_wfc_enabled_toggle_wifi",
-
-            "test_lte_wfc_enabled_wifi_connected_toggle_volte",
-
-            "test_lte_volte_wfc_wifi_preferred_to_cellular_preferred",
-            "test_lte_wfc_wifi_preferred_to_cellular_preferred",
-            "test_3g_wfc_wifi_preferred_to_cellular_preferred",
-            "test_apm_wfc_wifi_preferred_to_cellular_preferred",
-            "test_lte_volte_wfc_cellular_preferred_to_wifi_preferred",
-            "test_lte_wfc_cellular_preferred_to_wifi_preferred",
-            "test_3g_wfc_cellular_preferred_to_wifi_preferred",
-            "test_apm_wfc_cellular_preferred_to_wifi_preferred",
-
-            "test_apm_wfc_wifi_preferred_turn_off_apm",
-            "test_apm_wfc_cellular_preferred_turn_off_apm",
-
-            "test_wfc_setup_timing",
-            "test_lte_volte_wfc_enabled_toggle_wifi_stress",
-            "test_lte_volte_wfc_enabled_reset_wifi_stress",
-            "test_lte_volte_wfc_wifi_preferred_to_cellular_preferred_stress"
-
-        )
         self.ad = self.android_devices[0]
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]

@@ -66,44 +66,6 @@ from acts.utils import load_config
 class TelLiveVideoTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = (
-            "test_call_video_to_video",
-            "test_call_video_accept_as_voice",
-            "test_call_video_to_video_mo_disable_camera",
-            "test_call_video_to_video_mt_disable_camera",
-            "test_call_video_to_video_mo_mt_disable_camera",
-            "test_call_video_to_video_mt_mo_disable_camera",
-            "test_call_volte_to_volte_mo_upgrade_bidirectional",
-            "test_call_video_accept_as_voice_mo_upgrade_bidirectional",
-            "test_call_volte_to_volte_mo_upgrade_reject",
-            "test_call_video_accept_as_voice_mo_upgrade_reject",
-            "test_call_video_to_video_mo_to_backgroundpause_foregroundresume",
-            "test_call_video_to_video_mt_to_backgroundpause_foregroundresume",
-
-            # Video Call + Voice Call
-            "test_call_video_add_mo_voice",
-            "test_call_video_add_mt_voice",
-            "test_call_volte_add_mo_video",
-            "test_call_volte_add_mt_video",
-            "test_call_video_add_mt_voice_swap_once_local_drop",
-            "test_call_video_add_mt_voice_swap_twice_remote_drop_voice_unhold_video",
-
-            # Video + Video
-            "test_call_video_add_mo_video",
-            "test_call_video_add_mt_video",
-            "test_call_mt_video_add_mt_video",
-            "test_call_mt_video_add_mo_video",
-
-            # VT conference
-            "test_call_volte_add_mo_video_accept_as_voice_merge_drop",
-            "test_call_volte_add_mt_video_accept_as_voice_merge_drop",
-            "test_call_video_add_mo_voice_swap_downgrade_merge_drop",
-            "test_call_video_add_mt_voice_swap_downgrade_merge_drop",
-            "test_call_volte_add_mo_video_downgrade_merge_drop",
-            "test_call_volte_add_mt_video_downgrade_merge_drop",
-
-            # Disable Data, VT not available
-            "test_disable_data_vt_unavailable", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
