@@ -60,31 +60,6 @@ from acts.utils import rand_ascii_str
 class TelLiveSmsTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = ("test_sms_mo_4g",
-                      "test_sms_mt_4g",
-                      "test_sms_mo_in_call_volte",
-                      "test_sms_mt_in_call_volte",
-                      "test_sms_mo_in_call_csfb",
-                      "test_sms_mt_in_call_csfb",
-                      "test_sms_mo_in_call_csfb_1x",
-                      "test_sms_mt_in_call_csfb_1x",
-                      "test_sms_mo_3g",
-                      "test_sms_mt_3g",
-                      "test_sms_mo_in_call_wcdma",
-                      "test_sms_mt_in_call_wcdma",
-                      "test_sms_mo_in_call_1x",
-                      "test_sms_mt_in_call_1x",
-                      "test_sms_mo_2g",
-                      "test_sms_mt_2g",
-                      "test_sms_mo_in_call_gsm",
-                      "test_sms_mt_in_call_gsm",
-                      "test_sms_mo_iwlan",
-                      "test_sms_mt_iwlan",
-                      "test_sms_mo_in_call_iwlan",
-                      "test_sms_mt_in_call_iwlan",
-                      "test_sms_mo_in_call_vt",
-                      "test_sms_mt_in_call_vt",
-                    )
         # The path for "sim config file" should be set
         # in "testbed.config" entry "sim_conf_file".
         self.simconf = load_config(self.user_params["sim_conf_file"])
