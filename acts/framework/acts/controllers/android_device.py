@@ -678,6 +678,24 @@ class AndroidDevice:
             return False, clean_out
         return True, clean_out
 
+    def run_iperf_server(self, extra_args=""):
+        """Start iperf server on the device
+
+        Return status as true if iperf server started successfully.
+
+        Args:
+            extra_args: A string representing extra arguments for iperf server.
+
+        Returns:
+            status: true if iperf server started successfully.
+            results: results have output of command
+        """
+        out = self.adb.shell("iperf3 -s {}".format(extra_args))
+        clean_out = str(out,'utf-8').strip().split('\n')
+        if "error" in clean_out[0].lower():
+            return False, clean_out
+        return True, clean_out
+
     def wait_for_boot_completion(self):
         """Waits for the device to boot up.
 
