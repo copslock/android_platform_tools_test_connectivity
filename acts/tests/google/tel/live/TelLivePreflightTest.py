@@ -48,7 +48,6 @@ from acts.utils import load_config
 class TelLivePreflightTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = ("test_pre_flight_check", )
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
 
