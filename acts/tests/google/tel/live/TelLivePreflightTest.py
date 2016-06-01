@@ -34,15 +34,20 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
+from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import load_config
+from acts.asserts import abort_all
 
 
 class TelLivePreflightTest(TelephonyBaseTest):
@@ -51,7 +56,31 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
         self.simconf = load_config(self.user_params["sim_conf_file"])
 
+        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
+        try:
+            self.wifi_network_pass = self.user_params["wifi_network_pass"]
+        except KeyError:
+            self.wifi_network_pass = None
+
     """ Tests Begin """
+    @TelephonyBaseTest.tel_test_wrap
+    def test_check_environment(self):
+        ad = self.android_devices[0]
+        # Check WiFi environment.
+        # 1. Connect to WiFi.
+        # 2. Check WiFi have Internet access.
+        toggle_airplane_mode(self.log, ad, True)
+        try:
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                abort_all("WiFi connect fail.")
+            if (not wait_for_wifi_data_connection(self.log, ad, True) or
+                    not verify_http_connection(self.log, ad)):
+                abort_all("Data not available on WiFi.")
+        finally:
+            WifiUtils.wifi_toggle_state(self.log, ad, False)
+        # TODO: add more environment check here.
+        return True
 
     @TelephonyBaseTest.tel_test_wrap
     def test_pre_flight_check(self):
@@ -150,12 +179,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
                                 CAPABILITY_WFC: droid_has_wifi_calling,
                                 CAPABILITY_VT: droid_has_vt
                         }[capability](self.log, ad):
-                            self.abort_all(
+                            abort_all(
                                 "Pre-flight check FAILED for <{}>, <{}:{}>."
                                 " Failed Check: <{}>".format(
                                     operator, model, ad.serial, capability))
         except Exception as e:
-            self.abort_all("Pre-flight check exception: {}".format(e))
+            abort_all("Pre-flight check exception: {}".format(e))
         return True
 
 
