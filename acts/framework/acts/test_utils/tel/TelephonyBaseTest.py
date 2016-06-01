@@ -75,10 +75,17 @@ class TelephonyBaseTest(BaseTestClass):
                     for ad in self.android_devices:
                         ad.droid.logI("Rerun Started " + log_string)
                     result = fn(self, *args, **kwargs)
-                    if result:
+                    if result is True:
                         self.log.info("Rerun passed.")
-                    else:
+                    elif result is False:
                         self.log.info("Rerun failed.")
+                    else:
+                        # In the event that we have a non-bool or null
+                        # retval, we want to clearly distinguish this in the
+                        # logs from an explicit failure, though the test will
+                        # still be considered a failure for reporting purposes.
+                        self.log.info("Rerun indeterminate.")
+                        result = False
                 return result
             except TestSignal:
                 raise
