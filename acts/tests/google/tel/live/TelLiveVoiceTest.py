@@ -71,8 +71,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import \
@@ -440,7 +439,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_3g,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -470,7 +469,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("PhoneB not cdma phone, can not 3g 1x. Stop test.")
             return False
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_3g,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -501,7 +500,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 "PhoneB not gsm phone, can not 3g wcdma. Stop test.")
             return False
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_3g,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -525,7 +524,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_2g,
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_voice_2g,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -907,7 +906,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1]))]
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -933,7 +932,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1]))]
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -959,7 +958,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1]))]
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -985,7 +984,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1]))]
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -1032,7 +1031,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])), (phone_setup_voice_3g,
                                                         (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -1235,7 +1234,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])), (phone_setup_voice_3g,
                                                         (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -1603,7 +1602,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         MINIMUM_SUCCESS_RATE = .95
         ads = self.android_devices
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])), (phone_setup_3g,
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])), (phone_setup_voice_3g,
                                                         (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2136,7 +2135,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2181,7 +2180,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
             return False
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2396,7 +2395,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_voice_general, (self.log, ads[0])),
-                 (phone_setup_3g, (self.log, ads[1]))]
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2423,7 +2422,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_voice_general, (self.log, ads[1])),
-                 (phone_setup_2g, (self.log, ads[0]))]
+                 (phone_setup_voice_2g, (self.log, ads[0]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -2765,7 +2764,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
