@@ -44,7 +44,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import WifiUtils
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -300,7 +300,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
 
-        if not phone_setup_3g(self.log, self.ad):
+        if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G")
             return False
         return self._wifi_connected_enable_wfc_teardown_wfc(
@@ -399,7 +399,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
 
-        if not phone_setup_3g(self.log, self.ad):
+        if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G")
             return False
         return self._wifi_connected_enable_wfc_teardown_wfc(
@@ -540,7 +540,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
-        if not phone_setup_3g(self.log, self.ad):
+        if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
@@ -563,7 +563,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
-        if not phone_setup_3g(self.log, self.ad):
+        if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
@@ -658,7 +658,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
-        if not phone_setup_3g(self.log, self.ad):
+        if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(

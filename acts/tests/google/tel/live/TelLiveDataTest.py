@@ -83,7 +83,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -1582,7 +1582,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return self._test_tethering_wifi_and_voice_call(
             self.android_devices[0], self.android_devices[1], RAT_3G,
-            phone_setup_3g, is_phone_in_call_3g)
+            phone_setup_voice_3g, is_phone_in_call_3g)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_no_password(self):
