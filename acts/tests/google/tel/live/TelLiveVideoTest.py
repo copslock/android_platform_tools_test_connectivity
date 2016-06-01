@@ -24,6 +24,10 @@ from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
 from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_SPEAKER
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
+from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
@@ -60,6 +64,7 @@ from acts.test_utils.tel.tel_voice_utils import get_audio_route
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import set_audio_route
+from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts.utils import load_config
 
 
@@ -101,6 +106,14 @@ class TelLiveVideoTest(TelephonyBaseTest):
             "test_call_video_add_mt_voice_swap_downgrade_merge_drop",
             "test_call_volte_add_mo_video_downgrade_merge_drop",
             "test_call_volte_add_mt_video_downgrade_merge_drop",
+
+            # VT conference - Conference Event Package
+            "test_call_volte_add_mo_video_accept_as_voice_merge_drop_cep",
+            "test_call_volte_add_mt_video_accept_as_voice_merge_drop_cep",
+            "test_call_video_add_mo_voice_swap_downgrade_merge_drop_cep",
+            "test_call_video_add_mt_voice_swap_downgrade_merge_drop_cep",
+            "test_call_volte_add_mo_video_downgrade_merge_drop_cep",
+            "test_call_volte_add_mt_video_downgrade_merge_drop_cep",
 
             # Disable Data, VT not available
             "test_disable_data_vt_unavailable", )
@@ -1653,6 +1666,85 @@ class TelLiveVideoTest(TelephonyBaseTest):
         ads[0].droid.telecomEndCall()
         return True
 
+    def _test_vt_conference_merge_drop_cep(self, ads, call_ab_id, call_ac_id):
+        """Merge CEP conference call.
+
+        PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneB.
+        PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneC.
+        Merge calls to conference on PhoneA (CEP enabled IMS conference).
+
+        Args:
+            call_ab_id: call id for call_AB on PhoneA.
+            call_ac_id: call id for call_AC on PhoneA.
+
+        Returns:
+            call_id for conference
+        """
+
+        self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
+        ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
+        time.sleep(WAIT_TIME_IN_CALL)
+        calls = ads[0].droid.telecomCallGetCallIds()
+        self.log.info("Calls in PhoneA{}".format(calls))
+
+        call_conf_id = get_cep_conference_call_id(ads[0])
+        if call_conf_id is None:
+            self.log.error(
+                "No call with children. Probably CEP not enabled or merge failed.")
+            return False
+        calls.remove(call_conf_id)
+        if (set(ads[0].droid.telecomCallGetCallChildren(call_conf_id)) !=
+                set(calls)):
+            self.log.error(
+                "Children list<{}> for conference call is not correct.".format(
+                    ads[0].droid.telecomCallGetCallChildren(call_conf_id)))
+            return False
+
+        if (CALL_PROPERTY_CONFERENCE not in
+                ads[0].droid.telecomCallGetProperties(call_conf_id)):
+            self.log.error("Conf call id properties wrong: {}".format(ads[
+                0].droid.telecomCallGetProperties(call_conf_id)))
+            return False
+
+        if (CALL_CAPABILITY_MANAGE_CONFERENCE not in
+                ads[0].droid.telecomCallGetCapabilities(call_conf_id)):
+            self.log.error("Conf call id capabilities wrong: {}".format(ads[
+                0].droid.telecomCallGetCapabilities(call_conf_id)))
+            return False
+
+        if (call_ab_id in calls) or (call_ac_id in calls):
+            self.log.error(
+                "Previous call ids should not in new call list after merge.")
+            return False
+
+        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
+            return False
+
+        # Check if Conf Call is currently active
+        if ads[0].droid.telecomCallGetCallState(
+                call_conf_id) != CALL_STATE_ACTIVE:
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id, ads[0].droid.telecomCallGetCallState(
+                        call_conf_id)))
+            return False
+
+        self.log.info(
+            "End call on PhoneB and verify call continues.")
+        ads[1].droid.telecomEndCall()
+        time.sleep(WAIT_TIME_IN_CALL)
+        calls = ads[0].droid.telecomCallGetCallIds()
+        self.log.info("Calls in PhoneA{}".format(calls))
+        if not verify_incall_state(self.log, [ads[0], ads[2]], True):
+            return False
+        if not verify_incall_state(self.log, [ads[1]], False):
+            return False
+
+        ads[1].droid.telecomEndCall()
+        ads[0].droid.telecomEndCall()
+
+        return True
+
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mo_video_accept_as_voice_merge_drop(self):
         """Conference call
@@ -1667,6 +1759,29 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
+        return self._test_call_volte_add_mo_video_accept_as_voice_merge_drop(
+            False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_add_mo_video_accept_as_voice_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with VoLTE).
+        Make Sure PhoneC is in LTE mode (with Video Calling).
+        PhoneA VoLTE call to PhoneB. Accept on PhoneB.
+        PhoneA add a Bi-Directional Video call to PhoneC.
+        PhoneC accept as voice.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_volte_add_mo_video_accept_as_voice_merge_drop(
+            True)
+
+    def _test_call_volte_add_mo_video_accept_as_voice_merge_drop(
+            self,
+            use_cep=False):
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
@@ -1721,7 +1836,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_ACTIVE):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_ab_id, call_ac_id)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mt_video_accept_as_voice_merge_drop(self):
@@ -1737,6 +1854,29 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
+        return self._test_call_volte_add_mt_video_accept_as_voice_merge_drop(
+            False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_add_mt_video_accept_as_voice_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with VoLTE).
+        Make Sure PhoneC is in LTE mode (with Video Calling).
+        PhoneA VoLTE call to PhoneB. Accept on PhoneB.
+        PhoneC add a Bi-Directional Video call to PhoneA.
+        PhoneA accept as voice.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_volte_add_mt_video_accept_as_voice_merge_drop(
+            True)
+
+    def _test_call_volte_add_mt_video_accept_as_voice_merge_drop(
+            self,
+            use_cep=False):
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
@@ -1790,7 +1930,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_ACTIVE):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_ab_id, call_ac_id)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_add_mo_voice_swap_downgrade_merge_drop(self):
@@ -1808,7 +1950,29 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
-        # This test case is not supported by VZW.
+        return self._test_call_video_add_mo_voice_swap_downgrade_merge_drop(
+            False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_video_add_mo_voice_swap_downgrade_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with Video Calling).
+        Make Sure PhoneC is in LTE mode (with VoLTE).
+        PhoneA add a Bi-Directional Video call to PhoneB.
+        PhoneB accept as Video.
+        PhoneA VoLTE call to PhoneC. Accept on PhoneC.
+        Swap Active call on PhoneA.
+        Downgrade Video call on PhoneA and PhoneB to audio only.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_video_add_mo_voice_swap_downgrade_merge_drop(
+            True)
+
+    def _test_call_video_add_mo_voice_swap_downgrade_merge_drop(self, use_cep):
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
@@ -1888,10 +2052,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ab, ads[1],
-                get_call_id_in_video_state(self.log, ads[1],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ab, ads[1],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[1],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
@@ -1913,8 +2077,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_id_video_ab,
-                                                   call_id_voice_ac)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_id_video_ab, call_id_voice_ac)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_add_mt_voice_swap_downgrade_merge_drop(self):
@@ -1932,6 +2097,30 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
+        return self._test_call_video_add_mt_voice_swap_downgrade_merge_drop(
+            False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_video_add_mt_voice_swap_downgrade_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with Video Calling).
+        Make Sure PhoneC is in LTE mode (with VoLTE).
+        PhoneA add a Bi-Directional Video call to PhoneB.
+        PhoneB accept as Video.
+        PhoneC VoLTE call to PhoneA. Accept on PhoneA.
+        Swap Active call on PhoneA.
+        Downgrade Video call on PhoneA and PhoneB to audio only.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_video_add_mt_voice_swap_downgrade_merge_drop(
+            True)
+
+    def _test_call_video_add_mt_voice_swap_downgrade_merge_drop(self,
+                                                                use_cep=False):
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
@@ -2012,10 +2201,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ab, ads[1],
-                get_call_id_in_video_state(self.log, ads[1],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ab, ads[1],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[1],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
@@ -2037,8 +2226,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_id_video_ab,
-                                                   call_id_voice_ac)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_id_video_ab, call_id_voice_ac)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mo_video_downgrade_merge_drop(self):
@@ -2055,7 +2245,26 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
-        # This test case is not supported by VZW.
+        return self._test_call_volte_add_mo_video_downgrade_merge_drop(False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_add_mo_video_downgrade_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with VoLTE).
+        Make Sure PhoneC is in LTE mode (with Video Calling).
+        PhoneA VoLTE call to PhoneB. Accept on PhoneB.
+        PhoneA add a Bi-Directional Video call to PhoneC.
+        PhoneC accept as Video.
+        Downgrade Video call on PhoneA and PhoneC to audio only.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_volte_add_mo_video_downgrade_merge_drop(True)
+
+    def _test_call_volte_add_mo_video_downgrade_merge_drop(self, use_cep):
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
@@ -2117,10 +2326,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ac, ads[2],
-                get_call_id_in_video_state(self.log, ads[2],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ac, ads[2],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[2],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
@@ -2142,8 +2351,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_id_video_ac,
-                                                   call_id_voice_ab)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_id_video_ac, call_id_voice_ab)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_add_mt_video_downgrade_merge_drop(self):
@@ -2160,6 +2370,26 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hang up on PhoneB.
         Hang up on PhoneC.
         """
+        return self._test_call_volte_add_mt_video_downgrade_merge_drop(False)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_add_mt_video_downgrade_merge_drop_cep(self):
+        """Conference call
+
+        Make Sure PhoneA is in LTE mode (with Video Calling).
+        Make Sure PhoneB is in LTE mode (with VoLTE).
+        Make Sure PhoneC is in LTE mode (with Video Calling).
+        PhoneA VoLTE call to PhoneB. Accept on PhoneB.
+        PhoneC add a Bi-Directional Video call to PhoneA.
+        PhoneA accept as Video.
+        Downgrade Video call on PhoneA and PhoneC to audio only.
+        Merge call on PhoneA.
+        Hang up on PhoneB.
+        Hang up on PhoneC.
+        """
+        return self._test_call_volte_add_mt_video_downgrade_merge_drop(True)
+
+    def _test_call_volte_add_mt_video_downgrade_merge_drop(self, use_cep):
         # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
         # Phone C will drop call.
         ads = self.android_devices
@@ -2223,10 +2453,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ac, ads[2],
-                get_call_id_in_video_state(self.log, ads[2],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ac, ads[2],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[2],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(
@@ -2248,8 +2478,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 CALL_STATE_HOLDING):
             return False
 
-        return self._test_vt_conference_merge_drop(ads, call_id_video_ac,
-                                                   call_id_voice_ab)
+        return {False: self._test_vt_conference_merge_drop,
+                True: self._test_vt_conference_merge_drop_cep}[use_cep](
+                    ads, call_id_video_ac, call_id_voice_ab)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_disable_data_vt_unavailable(self):
