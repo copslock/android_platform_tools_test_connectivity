@@ -17,7 +17,9 @@
     Base Class for Defining Common Bluetooth Test Functionality
 """
 
+import os
 import time
+from acts import utils
 from acts.base_test import BaseTestClass
 from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import (log_energy_info,
@@ -60,14 +62,28 @@ class BluetoothBaseTest(BaseTestClass):
         self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs".
                        format(test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
-        reset_bluetooth(self.android_devices)
+        self._take_bug_report(test_name, begin_time)
+        for _ in range(5):
+            if reset_bluetooth(self.android_devices):
+                break
+            else:
+                self.log.error("Failed to reset Bluetooth... retrying.")
+        return
 
-        if "no_bug_report_on_fail" not in self.user_params:
+    def _take_bug_report(self, test_name, begin_time):
+        if "no_bug_report_on_fail" in self.user_params:
+            return
+
+        # magical sleep to ensure the runtime restart or reboot begins
+        time.sleep(1)
+        for ad in self.android_devices:
             try:
-                android_device.take_bug_reports(test_name,
-                                                begin_time,
-                                                self.android_devices)
+                ad.adb.wait_for_device()
+                ad.take_bug_report(test_name, begin_time)
+                tombstone_path = os.path.join(ad.log_path, "BugReports",
+                        "{},{}".format(begin_time, ad.serial).replace(' ','_'))
+                utils.create_dir(tombstone_path)
+                ad.adb.pull('/data/tombstones/', tombstone_path)
             except:
-                self.log.error("Failed to take a bug report for {}"
-                               .format(test_name))
-
+                ad.log.error("Failed to take a bug report for {}, {}"
+                             .format(ad.serial, test_name))
