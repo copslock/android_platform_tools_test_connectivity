@@ -45,20 +45,6 @@ class UniqueFilteringTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = (
-            "test_scan_flush_pending_scan_results",
-            "test_scan_non_existent_name_filter",
-            "test_scan_advertisement_with_device_service_uuid_filter_expect_no_events",
-            "test_scan_filter_device_address",
-        )
-        if self.droid_list[1]['max_advertisements'] > 1:
-            self.tests = self.tests + \
-                ("test_scan_filtering_multiple_advertisements_manufacturer_data",
-                 )
-        if self.droid_list[0]['batch_scan_supported']:
-            self.tests = self.tests + (
-                "test_scan_flush_results_without_on_batch_scan_results_triggered",
-                "test_scan_trigger_on_batch_scan_results",)
 
     def blescan_verify_onfailure_event_handler(self, event):
         self.log.debug("Verifying onFailure event")
