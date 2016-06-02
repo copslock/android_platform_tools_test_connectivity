@@ -56,7 +56,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
@@ -360,7 +360,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -401,7 +401,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -454,7 +454,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -782,7 +782,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_wcdma,
              is_phone_in_call_wcdma])
         if call_ab_id is None:
@@ -835,7 +835,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_wcdma,
              is_phone_in_call_wcdma])
         if call_ab_id is None:
@@ -888,7 +888,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_wcdma,
              is_phone_in_call_wcdma])
         if call_ab_id is None:
@@ -940,7 +940,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -991,7 +991,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -1042,7 +1042,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_3g, phone_setup_3g],
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
             [is_phone_in_call_volte, is_phone_in_call_1x, is_phone_in_call_1x])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -1092,7 +1092,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -1142,7 +1142,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -1192,7 +1192,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_3g, phone_setup_voice_general,
+            [phone_setup_voice_3g, phone_setup_voice_general,
              phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
@@ -7371,8 +7371,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
-                                                        (self.log, ads[2]))]
+                 (phone_setup_voice_3g, (self.log, ads[1])),
+                 (phone_setup_voice_3g, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7401,8 +7401,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
-                                                        (self.log, ads[2]))]
+                 (phone_setup_voice_3g, (self.log, ads[1])),
+                 (phone_setup_voice_3g, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7431,8 +7431,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
-                                                        (self.log, ads[2]))]
+                 (phone_setup_voice_3g, (self.log, ads[1])),
+                 (phone_setup_voice_3g, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7461,8 +7461,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
-                                                        (self.log, ads[2]))]
+                 (phone_setup_voice_3g, (self.log, ads[1])),
+                 (phone_setup_voice_3g, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7491,8 +7491,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
-                                                        (self.log, ads[2]))]
+                 (phone_setup_voice_3g, (self.log, ads[1])),
+                 (phone_setup_voice_3g, (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -7521,7 +7521,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -7551,7 +7551,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -7581,7 +7581,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8120,7 +8120,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8150,7 +8150,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8180,7 +8180,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8211,7 +8211,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8240,7 +8240,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8270,7 +8270,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8300,7 +8300,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8331,7 +8331,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8360,7 +8360,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8389,7 +8389,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8419,7 +8419,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8449,7 +8449,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8478,7 +8478,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8507,7 +8507,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8537,7 +8537,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -8567,7 +8567,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_3g, (self.log, ads[1])), (phone_setup_3g,
+                 (phone_setup_voice_3g, (self.log, ads[1])), (phone_setup_voice_3g,
                                                         (self.log, ads[2]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
