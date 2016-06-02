@@ -16,6 +16,7 @@
 
 from builtins import str
 
+import logging
 import random
 import socket
 import subprocess
@@ -95,13 +96,12 @@ class AdbProxy():
     >> adb.start_server()
     >> adb.devices() # will return the console output of "adb devices".
     """
-    def __init__(self, serial="", log=None):
+    def __init__(self, serial=""):
         self.serial = serial
         if serial:
             self.adb_str = "adb -s {}".format(serial)
         else:
             self.adb_str = "adb"
-        self.log = log
 
     def _exec_cmd(self, cmd):
         """Executes adb commands in a new shell.
@@ -122,9 +122,7 @@ class AdbProxy():
         (out, err) = proc.communicate()
         ret = proc.returncode
         total_output = "stdout: {}, stderr: {}, ret: {}".format(out, err, ret)
-        # TODO(angli): Fix this when global logger is done.
-        if self.log:
-            self.log.debug("{}\n{}".format(cmd, total_output))
+        logging.debug("adb cmd: %s\n%s", cmd, total_output)
         if ret == 0:
             return out
         else:
