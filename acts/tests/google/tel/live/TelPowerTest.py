@@ -32,8 +32,8 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_2g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -312,7 +312,7 @@ class TelPowerTest(TelephonyBaseTest):
             self._setup_phone_active_call,
             PASS_CRITERIA,
             phone_check_func_after_power_test=is_phone_in_call_3g,
-            phone_setup_func=phone_setup_3g,
+            phone_setup_func=phone_setup_voice_3g,
             phone_idle_check_func=phone_idle_3g,
             phone_in_call_check_func=is_phone_in_call_3g)
 
@@ -752,7 +752,7 @@ class TelPowerTest(TelephonyBaseTest):
             PASS_CRITERIA = DEFAULT_POWER_PASS_CRITERIA
 
         def _idle_3g(ad):
-            if not phone_setup_3g(self.log, ad):
+            if not phone_setup_voice_3g(self.log, ad):
                 self.log.error("Phone failed to setup 3g.")
                 return False
             ad.droid.goToSleepNow()
@@ -868,7 +868,7 @@ class TelPowerTest(TelephonyBaseTest):
         result = self._test_power_idle("test_power_idle_3g_wakeup_ping",
                                        self._setup_phone_idle_and_wakeup_ping,
                                        PASS_CRITERIA,
-                                       phone_setup_func=phone_setup_3g)
+                                       phone_setup_func=phone_setup_voice_3g)
         return result
 
     # TODO: This one is not working right now. Requires SL4A API to start alarm.
@@ -898,7 +898,7 @@ class TelPowerTest(TelephonyBaseTest):
         result = self._test_power_idle("test_power_mobile_data_always_on_wcdma",
                                        self._setup_phone_mobile_data_always_on,
                                        PASS_CRITERIA,
-                                       phone_setup_func=phone_setup_3g,
+                                       phone_setup_func=phone_setup_voice_3g,
                                        connect_wifi=False)
         set_mobile_data_always_on(self.ad, False)
         return result
@@ -914,7 +914,7 @@ class TelPowerTest(TelephonyBaseTest):
         result = self._test_power_idle("test_power_mobile_data_always_on_1xevdo",
                                        self._setup_phone_mobile_data_always_on,
                                        PASS_CRITERIA,
-                                       phone_setup_func=phone_setup_3g,
+                                       phone_setup_func=phone_setup_voice_3g,
                                        connect_wifi=False)
         set_mobile_data_always_on(self.ad, False)
         return result
@@ -930,7 +930,7 @@ class TelPowerTest(TelephonyBaseTest):
         result = self._test_power_idle("test_power_mobile_data_always_on_gsm",
                                        self._setup_phone_mobile_data_always_on,
                                        PASS_CRITERIA,
-                                       phone_setup_func=phone_setup_2g,
+                                       phone_setup_func=phone_setup_voice_2g,
                                        connect_wifi=False)
         set_mobile_data_always_on(self.ad, False)
         return result
@@ -968,7 +968,7 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_mobile_data_always_on_wcdma_wifi_on",
             self._setup_phone_mobile_data_always_on,
             PASS_CRITERIA,
-            phone_setup_func=phone_setup_3g,
+            phone_setup_func=phone_setup_voice_3g,
             connect_wifi=True,
             wifi_ssid=self.wifi_network_ssid_2g,
             wifi_password=self.wifi_network_pass_2g)
@@ -988,7 +988,7 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_mobile_data_always_on_1xevdo_wifi_on",
             self._setup_phone_mobile_data_always_on,
             PASS_CRITERIA,
-            phone_setup_func=phone_setup_3g,
+            phone_setup_func=phone_setup_voice_3g,
             connect_wifi=True,
             wifi_ssid=self.wifi_network_ssid_2g,
             wifi_password=self.wifi_network_pass_2g)
@@ -1008,7 +1008,7 @@ class TelPowerTest(TelephonyBaseTest):
             "test_power_mobile_data_always_on_gsm_wifi_on",
             self._setup_phone_mobile_data_always_on,
             PASS_CRITERIA,
-            phone_setup_func=phone_setup_2g,
+            phone_setup_func=phone_setup_voice_2g,
             connect_wifi=True,
             wifi_ssid=self.wifi_network_ssid_2g,
             wifi_password=self.wifi_network_pass_2g)
