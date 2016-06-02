@@ -709,12 +709,15 @@ def _phone_number_remove_prefix(number):
     Returns:
         Phone number without country code or prefix
     """
+    if number is None:
+        return None, None
     country_code_list = ["+1", "+44"]
     for country_code in country_code_list:
         if number.startswith(country_code):
             return number[len(country_code):], country_code
     if number[0] == "1" or number[0] == "0":
         return number[1:], None
+    return number, None
 
 
 def check_phone_number_match(number1, number2):
