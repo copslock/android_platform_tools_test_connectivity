@@ -300,6 +300,13 @@ class WifiScannerBssidTest(BaseTestClass):
             string += "_"
         return string
 
+    def combineBssids(self, *track_settings):
+        """Combine bssids in the track_settings to one list"""
+        bssids = []
+        for track_setting in track_settings:
+            bssids.extend(track_setting["bssidInfos"])
+        return bssids
+
     """ Helper Functions End """
 
     """ Tests Begin """
@@ -438,4 +445,50 @@ class WifiScannerBssidTest(BaseTestClass):
             if idx:
                 self.dut.droid.wifiScannerStopTrackingBssids(idx)
 
-    """ Tests End """
+    def test_wifi_tracking_bssid_multi_listeners_found(self):
+        """Test bssid tracking for multiple listeners
+            1. Start BSSID tracking for 5g bssids
+            2. Start BSSID tracking for 2g bssids
+            3. Start WifiScanner scan on both bands.
+            4. Valid the environment and check the APs are not in range.
+            5. Attenuate the signal to make the APs in range.
+            6. Verify onFound event triggered on both APs.
+        """
+        # Attenuate the signal to make APs invisible.
+        self.attenuators[self.attenuator_id].set_atten(90)
+        scan_setting = { "band": WifiEnums.WIFI_BAND_BOTH_WITH_DFS,
+                         "periodInMs": SCANTIME,
+                         "reportEvents": WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN,
+                         "numBssidsPerScan": 32}
+        track_setting_5g = {"bssidInfos":[self.bssid_5g], "apLostThreshold":3}
+        data_5g = start_wifi_track_bssid(self.dut, track_setting_5g)
+        idx_5g = data_5g["Index"]
+
+        track_setting_2g = {"bssidInfos":[self.bssid_2g], "apLostThreshold":3}
+        data_2g = start_wifi_track_bssid(self.dut, track_setting_2g)
+        idx_2g = data_2g["Index"]
+
+        valid_env = self.start_scan_and_validate_environment(
+            scan_setting, self.combineBssids(track_setting_5g, track_setting_2g))
+        try:
+            asserts.assert_true(valid_env,
+                                "Test environment is not valid, AP is in range")
+            self.attenuators[self.attenuator_id].set_atten(0)
+            event_name = "{}{}{}{}onFound".format(BSSID_EVENT_TAG, idx_5g, BSSID_EVENT_TAG, idx_2g)
+            self.log.info("Waiting for the BSSID event {}".format(event_name))
+            #waiting for 2x time to make sure
+            event = self.dut.ed.pop_event(event_name, BSSID_EVENT_WAIT * 2)
+            self.log.debug(event)
+            found = self.check_bssid_in_found_result(
+                self.combineBssids(track_setting_5g, track_setting_2g),
+                event["data"]["Results"])
+            asserts.assert_true(found,
+                                "Test failed because Bssid onFound event is not triggered")
+        finally:
+            self.dut.droid.wifiScannerStopBackgroundScan(self.scan_idx)
+            if idx_5g:
+                self.dut.droid.wifiScannerStopTrackingBssids(idx_5g)
+            if idx_2g:
+                self.dut.droid.wifiScannerStopTrackingBssids(idx_2g);
+
+""" Tests End """
