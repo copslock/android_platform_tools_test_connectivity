@@ -87,6 +87,8 @@ class TestResultRecord(object):
         """
         self.end_time = utils.get_current_epoch_time()
         self.result = result
+        if self.extra_errors:
+            self.result = TestResultEnums.TEST_RESULT_UNKNOWN
         if isinstance(e, signals.TestSignal):
             self.details = e.details
             self.extras = e.extras
