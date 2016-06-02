@@ -126,9 +126,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
                   is requested.
     """
     log = logging.getLogger()
-    if log.handlers:
-        # This logger has been requested before.
-        return
+    kill_test_logger(log)
     log.propagate = False
     log.setLevel(logging.DEBUG)
     # Log info to stream
@@ -154,7 +152,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     logging.log_path = log_path
 
 def kill_test_logger(logger):
-    """Cleans up a test logger object created by setup_test_logger.
+    """Cleans up a test logger object by removing all of its handlers.
 
     Args:
         logger: The logging object to clean up.
