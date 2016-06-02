@@ -34,9 +34,9 @@ MAX_WAIT_TIME_CALLEE_RINGING = 30
 # callee start ringing
 MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
 
-# Max time to wait after ad end a call and before get
-# "onCallStatehangedIdle" event
-MAX_WAIT_TIME_HANGUP_TO_IDLE_EVENT = 30
+# Max time to wait for "onCallStatehangedIdle" event after reject or ignore
+# incoming call
+MAX_WAIT_TIME_CALL_IDLE_EVENT = 60
 
 # Max time to wait after initiating a call for telecom to report in-call
 MAX_WAIT_TIME_CALL_INITIATION = 25

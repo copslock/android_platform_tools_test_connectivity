@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_test_utils import call_reject
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
@@ -223,6 +224,50 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None
 
         return call_ab_id
+
+    def _three_phone_call_mo_add_mt_reject(self, ads, verify_funcs, reject):
+        """Use 3 phones to make MO call and MT call.
+
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Call from PhoneC to PhoneA. PhoneA receive incoming call.
+            if reject is True, then reject the call on PhoneA.
+            if reject if False, then just ignore the incoming call on PhoneA.
+
+        Args:
+            ads: list of ad object.
+                The list should have three objects.
+            verify_funcs: list of phone call verify functions for
+                PhoneA and PhoneB. The list should have two objects.
+
+        Returns:
+            True if no error happened.
+        """
+
+        class _CallException(Exception):
+            pass
+
+        try:
+            verify_func_a, verify_func_b = verify_funcs
+            self.log.info("Step1: Call From PhoneA to PhoneB.")
+            if not call_setup_teardown(self.log,
+                                       ads[0],
+                                       ads[1],
+                                       ad_hangup=None,
+                                       verify_caller_func=verify_func_a,
+                                       verify_callee_func=verify_func_b):
+                raise _CallException("PhoneA call PhoneB failed.")
+
+            self.log.info("Step2: Call From PhoneC to PhoneA then decline.")
+            if not call_reject(self.log, ads[2], ads[0], reject):
+                raise _CallException("PhoneC call PhoneA then decline failed.")
+            time.sleep(WAIT_TIME_IN_CALL)
+            if not verify_incall_state(self.log, [ads[0], ads[1]], True):
+                raise _CallException("PhoneA and PhoneB are not in call.")
+
+        except _CallException:
+            return False
+
+        return True
 
     def _three_phone_call_mt_add_mt(self, ads, phone_setups, verify_funcs):
         """Use 3 phones to make MT call and MT call.
@@ -10274,5 +10319,173 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
             call_ab_id, call_ac_id)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wcdma_add_mt_decline(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_wcdma, None], True):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wcdma_add_mt_ignore(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_wcdma, None], False):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_1x_add_mt_decline(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_1x, None], True):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_1x_add_mt_ignore(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_1x, None], False):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_volte_add_mt_decline(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_volte_add_mt_ignore(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_lte_add_mt_decline(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_lte_add_mt_ignore(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_apm_add_mt_decline(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_apm_add_mt_ignore(self):
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not self._three_phone_call_mo_add_mt_reject(
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
+            return False
+        return True
 
     """ Tests End """
