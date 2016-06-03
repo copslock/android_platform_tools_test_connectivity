@@ -212,12 +212,12 @@ class ActsBaseClassTest(unittest.TestCase):
                 pass
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        actual_record = bt_cls.results.failed[0]
+        actual_record = bt_cls.results.unknown[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
-        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
-        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
-                            "Skipped 0, Unknown 0")
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_raise_exception(self):
@@ -230,8 +230,46 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls.run()
         actual_record = bt_cls.results.unknown[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
-        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_both_teardown_and_test_body_raise_exceptions(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                raise Exception("Test Body Exception.")
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, "Test Body Exception.")
+        self.assertIsNone(actual_record.extras)
+        self.assertEqual(actual_record.extra_errors["teardown_test"],
+                         "Details=This is an expected exception., Extras=None")
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_explicit_pass_but_teardown_test_raises_an_exception(self):
+        """Test record result should be marked as UNKNOWN as opposed to PASS.
+        """
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                asserts.explicit_pass("Test Passed!")
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, "Test Passed!")
+        self.assertIsNone(actual_record.extras)
+        self.assertEqual(actual_record.extra_errors["teardown_test"],
+                         "Details=This is an expected exception., Extras=None")
         expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
                             "Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
