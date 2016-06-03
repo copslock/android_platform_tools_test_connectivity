@@ -66,7 +66,7 @@ class GattConnectTest(BluetoothBaseTest):
                 'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
                 'property': GattCharacteristic.PROPERTY_WRITE.value
                 | GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-                'permission': GattCharacteristic.PROPERTY_WRITE.value
+                'permission': GattCharacteristic.PERMISSION_WRITE.value
             },
             {
                 'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
@@ -789,35 +789,14 @@ class GattConnectTest(BluetoothBaseTest):
         Characteristics, Descriptors
         Priority: 1
         """
-        gatt_server_callback = self.per_ad.droid.gattServerCreateGattServerCallback(
-        )
-        gatt_server = self.per_ad.droid.gattServerOpenGattServer(
-            gatt_server_callback)
+        gatt_server_callback, gatt_server = self._setup_multiple_services()
+        if not gatt_server_callback or not gatt_server:
+            return False
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
 
         service_uuid = "3846D7A0-69C8-11E4-BA00-0002A5D5C51B"
         characteristic_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
-
-        characteristic = (
-            self.per_ad.droid.gattServerCreateBluetoothGattCharacteristic(
-                characteristic_uuid, GattCharacteristic.PROPERTY_WRITE.value,
-                GattCharacteristic.PERMISSION_WRITE.value))
-
-        gatt_service = self.per_ad.droid.gattServerCreateService(
-            service_uuid, GattService.SERVICE_TYPE_PRIMARY.value)
-
-        self.per_ad.droid.gattServerAddCharacteristicToService(gatt_service,
-                                                               characteristic)
-
-        self.per_ad.droid.gattServerAddService(gatt_server, gatt_service)
-        result = self._find_service_added_event(gatt_server_callback,
-                                                service_uuid)
-        if not result:
-            return False
-
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad))
 
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             expected_event = GattCbStrings.GATT_SERV_DISC.value.format(
@@ -862,7 +841,7 @@ class GattConnectTest(BluetoothBaseTest):
         request_id = event['data']['requestId']
         bt_device_id = 0
         status = 0
-        offset = 1
+        offset = 0
         test_value_return = "1,2,3"
         self.per_ad.droid.gattServerGetConnectedDevices(gatt_server)
         self.per_ad.droid.gattServerSendResponse(gatt_server, bt_device_id,
