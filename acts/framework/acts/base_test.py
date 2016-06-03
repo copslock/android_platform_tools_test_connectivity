@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import traceback
 
 from acts import asserts
 from acts import keys
@@ -263,7 +264,6 @@ class BaseTestClass(object):
         test_name = record.test_name
         self.log.exception(record.details)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_exception(test_name, begin_time)
 
     def on_exception(self, test_name, begin_time):
@@ -328,8 +328,15 @@ class BaseTestClass(object):
                 else:
                     verdict = test_func()
             finally:
-                self._teardown_test(test_name)
+                try:
+                    self._teardown_test(test_name)
+                except signals.TestAbortAll:
+                    raise
+                except Exception as e:
+                    self.log.error(traceback.format_exc())
+                    tr_record.add_error("teardown_test", e)
         except (signals.TestFailure, AssertionError) as e:
+            self.log.error(traceback.format_exc())
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -349,6 +356,7 @@ class BaseTestClass(object):
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
+            self.log.error(traceback.format_exc())
             # Exception happened during test.
             tr_record.test_unknown(e)
             self._exec_procedure_func(self._on_exception, tr_record)
