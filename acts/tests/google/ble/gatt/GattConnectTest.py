@@ -798,19 +798,11 @@ class GattConnectTest(BluetoothBaseTest):
 
         service_uuid = "3846D7A0-69C8-11E4-BA00-0002A5D5C51B"
         characteristic_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
-        descriptor_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
 
         characteristic = (
             self.per_ad.droid.gattServerCreateBluetoothGattCharacteristic(
                 characteristic_uuid, GattCharacteristic.PROPERTY_WRITE.value,
                 GattCharacteristic.PERMISSION_WRITE.value))
-
-        descriptor = self.per_ad.droid.gattServerCreateBluetoothGattDescriptor(
-            descriptor_uuid,
-            GattDescriptor.PERMISSION_READ.value
-            | GattDescriptor.PERMISSION_WRITE.value, )
-        self.per_ad.droid.gattServerCharacteristicAddDescriptor(characteristic,
-                                                                descriptor)
 
         gatt_service = self.per_ad.droid.gattServerCreateService(
             service_uuid, GattService.SERVICE_TYPE_PRIMARY.value)
@@ -848,10 +840,6 @@ class GattConnectTest(BluetoothBaseTest):
                 disc_service_index = i
                 break
 
-        self.cen_ad.droid.gattClientSetCharacteristicNotification(
-            gatt_callback, discovered_services_index, disc_service_index,
-            characteristic_uuid, True)
-
         test_value = "1,2,3,4,5,6,7"
         self.cen_ad.droid.gattClientCharacteristicSetValue(
             bluetooth_gatt, discovered_services_index, disc_service_index,
@@ -873,7 +861,7 @@ class GattConnectTest(BluetoothBaseTest):
 
         request_id = event['data']['requestId']
         bt_device_id = 0
-        status = 1
+        status = 0
         offset = 1
         test_value_return = "1,2,3"
         self.per_ad.droid.gattServerGetConnectedDevices(gatt_server)
@@ -881,12 +869,15 @@ class GattConnectTest(BluetoothBaseTest):
                                                  request_id, status, offset,
                                                  test_value_return)
 
+        expected_event = GattCbStrings.CHAR_WRITE.value.format(gatt_callback)
         try:
-            self.cen_ad.ed.pop_event(
-                GattCbStrings.CHAR_WRITE_REQ.value.format(bluetooth_gatt),
-                self.default_timeout)
+            event = self.cen_ad.ed.pop_event(expected_event, self.default_timeout)
+            if event["data"]["Status"] != status:
+                self.log.error("Write status should be 0")
+                return False;
+
         except Empty:
-            self.log.error(GattCbErr.CHAR_WRITE_REQ_ERR.value.format(
+            self.log.error(GattCbErr.CHAR_WRITE_ERR.value.format(
                 expected_event))
             return False
         return True
