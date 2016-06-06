@@ -1037,25 +1037,11 @@ class GattConnectTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning, GATT, Characteristic, MITM
         Priority: 1
         """
-        gatt_server_callback = (
-            self.per_ad.droid.gattServerCreateGattServerCallback())
-        gatt_server = self.per_ad.droid.gattServerOpenGattServer(
-            gatt_server_callback)
-        service_uuid = "3846D7A0-69C8-11E4-BA00-0002A5D5C51B"
-        test_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
-        bonded = False
-        characteristic = self.per_ad.droid.gattServerCreateBluetoothGattCharacteristic(
-            test_uuid, GattCharacteristic.PROPERTY_WRITE.value,
-            GattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM.value)
-        gatt_service = self.per_ad.droid.gattServerCreateService(
-            service_uuid, GattService.SERVICE_TYPE_PRIMARY.value)
-        self.per_ad.droid.gattServerAddCharacteristicToService(gatt_service,
-                                                               characteristic)
-        self.per_ad.droid.gattServerAddService(gatt_server, gatt_service)
-        result = self._find_service_added_event(gatt_server_callback,
-                                                service_uuid)
-        if not result:
+        gatt_server_callback, gatt_server = self._setup_multiple_services()
+        if not gatt_server_callback or not gatt_server:
             return False
+        bonded = False
+        test_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
         self.adv_instances.append(adv_callback)
