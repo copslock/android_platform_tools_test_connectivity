@@ -650,6 +650,7 @@ class GattConnectTest(BluetoothBaseTest):
             if not test_result:
                 self.log.info("Failed to disconnect from peripheral device.")
                 return False
+        self.adv_instances.append(adv_callback)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -801,6 +802,7 @@ class GattConnectTest(BluetoothBaseTest):
             return False
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
+        self.adv_instances.append(adv_callback)
 
         service_uuid = "3846D7A0-69C8-11E4-BA00-0002A5D5C51B"
         characteristic_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
@@ -906,11 +908,11 @@ class GattConnectTest(BluetoothBaseTest):
             return False
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
+        self.adv_instances.append(adv_callback)
 
         service_uuid = "3846D7A0-69C8-11E4-BA00-0002A5D5C51B"
         characteristic_uuid = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
 
-        self.adv_instances.append(adv_callback)
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             expected_event = GattCbStrings.GATT_SERV_DISC.value.format(
                 gatt_callback)
