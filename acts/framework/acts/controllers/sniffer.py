@@ -20,6 +20,7 @@ import logging
 ACTS_CONTROLLER_CONFIG_NAME = "Sniffer"
 ACTS_CONTROLLER_REFERENCE_NAME = "sniffers"
 
+
 def create(configs):
     """Initializes the sniffer structures based on the JSON configuration. The
     expected keys are:
@@ -39,10 +40,11 @@ def create(configs):
         sniffer_subtype = c["SubType"]
         interface = c["Interface"]
         base_configs = c["BaseConfigs"]
-        module_name = "acts.controllers.sniffer_lib.{}.{}".format(sniffer_type,
-                                                            sniffer_subtype)
+        module_name = "acts.controllers.sniffer_lib.{}.{}".format(
+            sniffer_type, sniffer_subtype)
         module = importlib.import_module(module_name)
-        objs.append(module.Sniffer(interface, logging.getLogger(),
+        objs.append(module.Sniffer(interface,
+                                   logging.getLogger(),
                                    base_configs=base_configs))
     return objs
 
@@ -168,8 +170,11 @@ class Sniffer(object):
         """
         raise NotImplementedError("Base class should not be called directly!")
 
-    def start_capture(self, override_configs=None, additional_args=None,
-                      duration=None, packet_count=None):
+    def start_capture(self,
+                      override_configs=None,
+                      additional_args=None,
+                      duration=None,
+                      packet_count=None):
         """This function starts a capture which is saved to the specified file
         path.
 

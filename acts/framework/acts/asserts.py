@@ -19,6 +19,7 @@ import unittest
 
 from acts import signals
 
+
 # Have an instance of unittest.TestCase so we could reuse some logic from
 # python's own unittest.
 # _ProxyTest is required because py2 does not allow instantiating
@@ -26,7 +27,10 @@ from acts import signals
 class _ProxyTest(unittest.TestCase):
     def runTest(self):
         pass
+
+
 _pyunit_proxy = _ProxyTest()
+
 
 def assert_equal(first, second, msg=None, extras=None):
     """Assert an expression evaluates to true, otherwise fail the test.
@@ -48,6 +52,7 @@ def assert_equal(first, second, msg=None, extras=None):
             my_msg = "%s %s" % (my_msg, msg)
         fail(my_msg, extras=extras)
 
+
 def assert_raises(expected_exception, extras=None, *args, **kwargs):
     """Assert that an exception is raised when a function is called.
 
@@ -67,7 +72,11 @@ def assert_raises(expected_exception, extras=None, *args, **kwargs):
     context = _AssertRaisesContext(expected_exception, extras=extras)
     return context
 
-def assert_raises_regex(expected_exception, expected_regex, extras=None, *args,
+
+def assert_raises_regex(expected_exception,
+                        expected_regex,
+                        extras=None,
+                        *args,
                         **kwargs):
     """Assert that an exception is raised when a function is called.
 
@@ -86,9 +95,11 @@ def assert_raises_regex(expected_exception, expected_regex, extras=None, *args,
         extras: An optional field for extra information to be included in
                 test result.
     """
-    context = _AssertRaisesContext(expected_exception, expected_regex,
+    context = _AssertRaisesContext(expected_exception,
+                                   expected_regex,
                                    extras=extras)
     return context
+
 
 def assert_true(expr, msg, extras=None):
     """Assert an expression evaluates to true, otherwise fail the test.
@@ -101,6 +112,7 @@ def assert_true(expr, msg, extras=None):
     """
     if not expr:
         fail(msg, extras)
+
 
 def skip(reason, extras=None):
     """Skip a test case.
@@ -115,6 +127,7 @@ def skip(reason, extras=None):
     """
     raise signals.TestSkip(reason, extras)
 
+
 def skip_if(expr, reason, extras=None):
     """Skip a test case if expression evaluates to True.
 
@@ -126,6 +139,7 @@ def skip_if(expr, reason, extras=None):
     """
     if expr:
         skip(reason, extras)
+
 
 def abort_class(reason, extras=None):
     """Abort all subsequent test cases within the same test class in one
@@ -144,6 +158,7 @@ def abort_class(reason, extras=None):
         test class.
     """
     raise signals.TestAbortClass(reason, extras)
+
 
 def abort_class_if(expr, reason, extras=None):
     """Abort all subsequent test cases within the same test class in one
@@ -165,6 +180,7 @@ def abort_class_if(expr, reason, extras=None):
     if expr:
         abort_class(reason, extras)
 
+
 def abort_all(reason, extras=None):
     """Abort all subsequent test cases, including the ones not in this test
     class or iteration.
@@ -178,6 +194,7 @@ def abort_all(reason, extras=None):
         signals.TestAbortAll is raised to abort all subsequent tests.
     """
     raise signals.TestAbortAll(reason, extras)
+
 
 def abort_all_if(expr, reason, extras=None):
     """Abort all subsequent test cases, if the expression evaluates to
@@ -195,6 +212,7 @@ def abort_all_if(expr, reason, extras=None):
     if expr:
         abort_all(reason, extras)
 
+
 def fail(msg, extras=None):
     """Explicitly fail a test case.
 
@@ -207,6 +225,7 @@ def fail(msg, extras=None):
         signals.TestFailure is raised to mark a test case as failed.
     """
     raise signals.TestFailure(msg, extras)
+
 
 def explicit_pass(msg, extras=None):
     """Explicitly pass a test case.
@@ -224,6 +243,7 @@ def explicit_pass(msg, extras=None):
         signals.TestPass is raised to mark a test case as passed.
     """
     raise signals.TestPass(msg, extras)
+
 
 class _AssertRaisesContext(object):
     """A context manager used to implement TestCase.assertRaises* methods."""
@@ -248,7 +268,7 @@ class _AssertRaisesContext(object):
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through
             return False
-        self.exception = exc_value # store for later retrieval
+        self.exception = exc_value  # store for later retrieval
         if self.expected_regexp is None:
             return True
 
@@ -256,7 +276,8 @@ class _AssertRaisesContext(object):
         if isinstance(expected_regexp, str):
             expected_regexp = re.compile(expected_regexp)
         if not expected_regexp.search(str(exc_value)):
-            raise signals.TestFailure('"%s" does not match "%s"' %
-                     (expected_regexp.pattern, str(exc_value)),
-                      extras=self.extras)
+            raise signals.TestFailure(
+                '"%s" does not match "%s"' %
+                (expected_regexp.pattern, str(exc_value)),
+                extras=self.extras)
         return True
