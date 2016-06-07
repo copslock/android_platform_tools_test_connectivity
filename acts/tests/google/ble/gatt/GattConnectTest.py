@@ -190,6 +190,9 @@ class GattConnectTest(BluetoothBaseTest):
             return False, False
         return gatt_server_callback, gatt_server
 
+    def _cleanup_services(self, gatt_server):
+        self.per_ad.droid.gattServerClearServices(gatt_server)
+
     @BluetoothBaseTest.bt_test_wrap
     def test_gatt_connect(self):
         """Test GATT connection over LE.
@@ -600,6 +603,8 @@ class GattConnectTest(BluetoothBaseTest):
                 return False
             discovered_services_index = event['data']['ServicesIndex']
             self._iterate_attributes(discovered_services_index)
+
+        self._cleanup_services(gatt_server)
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
 
@@ -758,6 +763,7 @@ class GattConnectTest(BluetoothBaseTest):
                                 GattCbErr.DESC_WRITE_ERR.value.format(
                                     expected_event))
                             return False
+        self._cleanup_services(gatt_server)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -860,7 +866,10 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(GattCbErr.CHAR_WRITE_ERR.value.format(
                 expected_event))
             return False
-        return True
+
+        self._cleanup_services(gatt_server)
+        return self._orchestrate_gatt_disconnection(bluetooth_gatt,
+                                                    gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_write_characteristic_stress(self):
@@ -1194,4 +1203,6 @@ class GattConnectTest(BluetoothBaseTest):
                                     'name'] == target_name:
                                 bonded = True
                                 break
-        return True
+        self._cleanup_services(gatt_server)
+        return self._orchestrate_gatt_disconnection(bluetooth_gatt,
+                                                    gatt_callback)
