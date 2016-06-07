@@ -279,8 +279,9 @@ class AndroidDevice:
         self.serial = serial
         self.h_port = host_port
         self.d_port = device_port
-        self.log_path = os.path.join(logging.log_path,
-                                     "AndroidDevice%s" % serial)
+        # logging.log_path only exists when this is used in an ACTS test run.
+        log_path_base = getattr(logging, "log_path", "/tmp/logs")
+        self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
