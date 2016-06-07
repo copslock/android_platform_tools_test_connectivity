@@ -65,6 +65,10 @@ def create(configs):
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
         ad.start_adb_logcat()
+        # TODO(angli): This is a temporary solution for tests that don't want
+        # to require SL4A, which shall be replaced when b/29157104 is done.
+        if getattr(ad, "skip_sl4a", False):
+            continue
         try:
             ad.get_droid()
             ad.ed.start()
