@@ -15,10 +15,11 @@
 #   limitations under the License.
 
 import enum
-
 """This module has the global key values that are used across framework
 modules.
 """
+
+
 class Config(enum.Enum):
     """Enum values for test config related lookups.
     """
@@ -65,16 +66,13 @@ class Config(enum.Enum):
     # classes without unpacking first.
     reserved_keys = (key_testbed, key_log_path, key_test_paths)
 
-    controller_names = [
-        key_android_device,
-        key_native_android_device,
-        key_access_point,
-        key_attenuator,
-        key_iperf_server,
-        key_monsoon,
-        key_sniffer
+    # Controller names packaged with ACTS.
+    builtin_controller_names = [
+        key_android_device, key_native_android_device, key_access_point,
+        key_attenuator, key_iperf_server, key_monsoon, key_sniffer
     ]
     tb_config_reserved_keys = controller_names + [key_testbed_name]
+
 
 def get_name_by_value(value):
     for name, member in Config.__members__.items():
@@ -82,16 +80,19 @@ def get_name_by_value(value):
             return name
     return None
 
+
 def get_internal_value(external_value):
     """Translates the value of an external key to the value of its
     corresponding internal key.
     """
     return value_to_value(external_value, "i%s")
 
+
 def get_module_name(name_in_config):
     """Translates the name of a controller in config file to its module name.
     """
     return value_to_value(name_in_config, "m_%s")
+
 
 def value_to_value(ref_value, pattern):
     """Translates the value of a key to the value of its corresponding key. The

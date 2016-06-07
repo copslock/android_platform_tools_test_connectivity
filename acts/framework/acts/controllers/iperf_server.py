@@ -21,9 +21,9 @@ import subprocess
 
 from acts import utils
 
-
 ACTS_CONTROLLER_CONFIG_NAME = "IPerfServer"
 ACTS_CONTROLLER_REFERENCE_NAME = "iperf_servers"
+
 
 def create(configs):
     results = []
@@ -44,7 +44,6 @@ def destroy(objs):
 
 
 class IPerfResult(object):
-
     def __init__(self, result_path):
         try:
             with open(result_path, 'r') as f:
@@ -86,7 +85,7 @@ class IPerfResult(object):
         if not self._has_data or 'sum' not in self.result['end']:
             return None
         bps = self.result['end']['sum']['bits_per_second']
-        return bps/8/1024/1024
+        return bps / 8 / 1024 / 1024
 
     @property
     def avg_receive_rate(self):
@@ -98,7 +97,7 @@ class IPerfResult(object):
         if not self._has_data or 'sum_received' not in self.result['end']:
             return None
         bps = self.result['end']['sum_received']['bits_per_second']
-        return bps/8/1024/1024
+        return bps / 8 / 1024 / 1024
 
     @property
     def avg_send_rate(self):
@@ -110,12 +109,13 @@ class IPerfResult(object):
         if not self._has_data or 'sum_sent' not in self.result['end']:
             return None
         bps = self.result['end']['sum_sent']['bits_per_second']
-        return bps/8/1024/1024
+        return bps / 8 / 1024 / 1024
 
 
 class IPerfServer():
     """Class that handles iperf3 operations.
     """
+
     def __init__(self, port, log_path):
         self.port = port
         self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
@@ -138,8 +138,7 @@ class IPerfServer():
         utils.create_dir(self.log_path)
         if tag:
             tag = tag + ','
-        out_file_name = "IPerfServer,{},{}{}.log".format(self.port,
-                                                         tag,
+        out_file_name = "IPerfServer,{},{}{}.log".format(self.port, tag,
                                                          len(self.log_files))
         full_out_path = os.path.join(self.log_path, out_file_name)
         cmd = "{} {} > {}".format(self.iperf_str, extra_args, full_out_path)
@@ -151,4 +150,3 @@ class IPerfServer():
         if self.started:
             utils.stop_standing_subprocess(self.iperf_process)
             self.started = False
-

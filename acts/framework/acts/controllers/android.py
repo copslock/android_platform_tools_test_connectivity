@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 JSON RPC interface to android scripting engine.
 """
@@ -29,11 +28,14 @@ import time
 HOST = os.environ.get('AP_HOST', None)
 PORT = os.environ.get('AP_PORT', 9999)
 
+
 class SL4AException(Exception):
     pass
 
+
 class SL4AAPIError(SL4AException):
     """Raised when remote API reports an error."""
+
 
 class SL4AProtocolError(SL4AException):
     """Raised when there is some error in exchanging data with server on device."""
@@ -41,18 +43,25 @@ class SL4AProtocolError(SL4AException):
     NO_RESPONSE_FROM_SERVER = "No response from server."
     MISMATCHED_API_ID = "Mismatched API id."
 
+
 def IDCounter():
     i = 0
     while True:
         yield i
         i += 1
 
+
 class Android(object):
     COUNTER = IDCounter()
 
     _SOCKET_CONNECT_TIMEOUT = 60
 
-    def __init__(self, cmd='initiate', uid=-1, port=PORT, addr=HOST, timeout=None):
+    def __init__(self,
+                 cmd='initiate',
+                 uid=-1,
+                 port=PORT,
+                 addr=HOST,
+                 timeout=None):
         self.lock = threading.RLock()
         self.client = None  # prevent close errors on connect failure
         self.uid = None
@@ -60,7 +69,7 @@ class Android(object):
         while True:
             try:
                 self.conn = socket.create_connection(
-                        (addr, port), max(1,timeout_time - time.time()))
+                    (addr, port), max(1, timeout_time - time.time()))
                 self.conn.settimeout(timeout)
                 break
             except (TimeoutError, socket.timeout):
@@ -79,7 +88,8 @@ class Android(object):
 
         resp = self._cmd(cmd, uid)
         if not resp:
-            raise SL4AProtocolError(SL4AProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+            raise SL4AProtocolError(
+                SL4AProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
         result = json.loads(str(resp, encoding="utf8"))
         if result['status']:
             self.uid = result['uid']
@@ -94,9 +104,8 @@ class Android(object):
     def _cmd(self, command, uid=None):
         if not uid:
             uid = self.uid
-        self.client.write(
-            json.dumps({'cmd': command, 'uid': uid})
-                .encode("utf8")+b'\n')
+        self.client.write(json.dumps({'cmd': command,
+                                      'uid': uid}).encode("utf8") + b'\n')
         self.client.flush()
         return self.client.readline()
 
@@ -104,11 +113,9 @@ class Android(object):
         self.lock.acquire()
         apiid = next(Android.COUNTER)
         self.lock.release()
-        data = {'id': apiid,
-                'method': method,
-                'params': args}
+        data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
-        self.client.write(request.encode("utf8")+b'\n')
+        self.client.write(request.encode("utf8") + b'\n')
         self.client.flush()
         response = self.client.readline()
         if not response:
@@ -123,4 +130,5 @@ class Android(object):
     def __getattr__(self, name):
         def rpc_call(*args):
             return self._rpc(name, *args)
+
         return rpc_call

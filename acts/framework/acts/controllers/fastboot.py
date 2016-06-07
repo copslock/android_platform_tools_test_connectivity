@@ -16,6 +16,7 @@
 
 from subprocess import Popen, PIPE
 
+
 def exe_cmd(*cmds):
     """Executes commands in a new shell. Directing stderr to PIPE.
 
@@ -38,8 +39,10 @@ def exe_cmd(*cmds):
         return out
     return err
 
+
 class FastbootError(Exception):
     """Raised when there is an error in fastboot operations."""
+
 
 class FastbootProxy():
     """Proxy class for fastboot.
@@ -49,6 +52,7 @@ class FastbootProxy():
     >> fb = FastbootProxy(<serial>)
     >> fb.devices() # will return the console output of "fastboot devices".
     """
+
     def __init__(self, serial=""):
         self.serial = serial
         if serial:
@@ -60,11 +64,12 @@ class FastbootProxy():
         return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
 
     def args(self, *args):
-        return exe_cmd(' '.join((self.fastboot_str,) + args))
+        return exe_cmd(' '.join((self.fastboot_str, ) + args))
 
     def __getattr__(self, name):
         def fastboot_call(*args):
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
             return self._exec_fastboot_cmd(clean_name, arg_str)
+
         return fastboot_call

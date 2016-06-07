@@ -22,12 +22,16 @@ import socket
 import subprocess
 import time
 
+
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
 
-SL4A_LAUNCH_CMD=("am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
+
+SL4A_LAUNCH_CMD = (
+    "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
     "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
-    "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher" )
+    "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher")
+
 
 def get_available_host_port():
     """Gets a host port number available for adb forward.
@@ -40,6 +44,7 @@ def get_available_host_port():
         port = random.randint(1024, 9900)
         if is_port_available(port):
             return port
+
 
 def is_port_available(port):
     """Checks if a given port number is available on the system.
@@ -66,6 +71,7 @@ def is_port_available(port):
         if s:
             s.close()
 
+
 def list_occupied_adb_ports():
     """Lists all the host ports occupied by adb forward.
 
@@ -87,6 +93,7 @@ def list_occupied_adb_ports():
         used_ports.append(int(tokens[1]))
     return used_ports
 
+
 class AdbProxy():
     """Proxy class for ADB.
 
@@ -96,6 +103,7 @@ class AdbProxy():
     >> adb.start_server()
     >> adb.devices() # will return the console output of "adb devices".
     """
+
     def __init__(self, serial=""):
         self.serial = serial
         if serial:
@@ -154,7 +162,7 @@ class AdbProxy():
             if self.is_sl4a_running():
                 return
         raise AdbError(
-                "com.googlecode.android_scripting process never started.")
+            "com.googlecode.android_scripting process never started.")
 
     def is_sl4a_running(self):
         """Checks if the sl4a app is running on an android device.
@@ -164,8 +172,8 @@ class AdbProxy():
         """
         #Grep for process with a preceding S which means it is truly started.
         out = self.shell('ps | grep "S com.googlecode.android_scripting"')
-        if len(out)==0:
-          return False
+        if len(out) == 0:
+            return False
         return True
 
     def __getattr__(self, name):
@@ -173,4 +181,5 @@ class AdbProxy():
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
             return self._exec_adb_cmd(clean_name, arg_str)
+
         return adb_call
