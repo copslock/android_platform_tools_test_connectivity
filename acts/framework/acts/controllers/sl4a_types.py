@@ -16,15 +16,13 @@
 
 from acts.dict_object import DictObject
 
+
 class Sl4aEvent(DictObject):
     """Event returned by sl4a calls to eventPoll() and eventWait()
 
     The 'name' field uniquely identifies the contents of 'data'.
 
     """
+
     def __init__(self, name=None, time=None, data=None):
-        DictObject.__init__(
-                self,
-                name=name,
-                time=time,
-                data=data)
+        DictObject.__init__(self, name=name, time=time, data=data)

@@ -20,6 +20,7 @@ from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 ACTS_CONTROLLER_CONFIG_NAME = "AP"
 ACTS_CONTROLLER_REFERENCE_NAME = "access_points"
 
+
 def create(configs):
     results = []
     for c in configs:
@@ -30,18 +31,24 @@ def create(configs):
         results.append(AP(addr, port))
     return results
 
+
 def destroy(objs):
     return
+
 
 class ServerError(Exception):
     pass
 
+
 class ClientError(Exception):
     pass
+
 
 """
 Controller for OpenWRT routers.
 """
+
+
 class AP():
     """Interface to OpenWRT using the LuCI interface.
 
@@ -54,13 +61,16 @@ class AP():
         ap_instance.sys.dmesg()
         ap_instance.fs.stat("/etc/hosts")
     """
-    IFACE_DEFAULTS = {"mode": "ap", "disabled": "0",
-                      "encryption": "psk2", "network": "lan"}
+    IFACE_DEFAULTS = {"mode": "ap",
+                      "disabled": "0",
+                      "encryption": "psk2",
+                      "network": "lan"}
     RADIO_DEFAULTS = {"disabled": "0"}
 
     def __init__(self, addr, port=80):
-        self._client = jsonrpc.JSONRPCClient(
-                        "http://""{}:{}/cgi-bin/luci/rpc/".format(addr, port))
+        self._client = jsonrpc.JSONRPCClient("http://"
+                                             "{}:{}/cgi-bin/luci/rpc/".format(
+                                                 addr, port))
         self.RADIO_NAMES = []
         keys = self._client.get_all("wireless").keys()
         if "radio0" in keys:
@@ -162,8 +172,7 @@ class AP():
         """
         for k, v in radio_config.items():
             if k == "settings":
-                self._set_options('wireless', radio_id, v,
-                                  self.RADIO_DEFAULTS)
+                self._set_options('wireless', radio_id, v, self.RADIO_DEFAULTS)
             if k == "wifi-iface":
                 for cfg in v:
                     cfg["device"] = radio_id
@@ -201,7 +210,7 @@ class AP():
         if radio_name not in self.RADIO_NAMES:
             raise ClientError("Trying to change none-existent radio's state")
         cur_state = self._client.get("wireless", radio_name, "disabled")
-        cur_state = True if cur_state=='0' else False
+        cur_state = True if cur_state == '0' else False
         if state == cur_state:
             return
         new_state = '1' if cur_state else '0'
@@ -243,7 +252,7 @@ class AP():
         Returns:
             A list of ssids that are currently active.
         """
-        conds = (("disabled", "0"),)
+        conds = (("disabled", "0"), )
         return self.get_ssids(conds)
 
     def get_active_ssids_info(self, *keys):
@@ -259,8 +268,8 @@ class AP():
         Returns:
             Values of the requested info.
         """
-        conds = (("disabled", "0"),)
-        keys = [w.replace("frequency","device") for w in keys]
+        conds = (("disabled", "0"), )
+        keys = [w.replace("frequency", "device") for w in keys]
         if "device" not in keys:
             keys.append("device")
         info = self._section_option_lookup("wireless", conds, "ssid", *keys)
@@ -321,8 +330,8 @@ class AP():
             configs: A list of dicts each representing a wifi-iface config.
         """
         for config in configs:
-            self._add_cfg_section('wireless', 'wifi-iface',
-                              config, self.IFACE_DEFAULTS)
+            self._add_cfg_section('wireless', 'wifi-iface', config,
+                                  self.IFACE_DEFAULTS)
 
     def _add_cfg_section(self, cfg_name, section, options, defaults=None):
         """Adds a section in a configuration file.
@@ -340,7 +349,7 @@ class AP():
         section_id = self._client.add(cfg_name, section)
         if not section_id:
             raise ServerError(' '.join(("Failed adding", section, "in",
-                              cfg_name)))
+                                        cfg_name)))
         self._set_options(cfg_name, section_id, options, defaults)
 
     def _set_options(self, cfg_name, section_id, options, defaults):
@@ -381,8 +390,8 @@ class AP():
         status = self._client.set(cfg_name, section_id, k, v)
         if not status:
             # Delete whatever was added.
-                raise ServerError(' '.join(("Failed adding option", str(k),
-                                  ':', str(d), "to", str(section_id))))
+            raise ServerError(' '.join(("Failed adding option", str(k), ':',
+                                        str(d), "to", str(section_id))))
 
     def delete_ifaces_by_ids(self, ids):
         """Delete wifi-ifaces that are specified by the ids from the AP's
@@ -422,7 +431,7 @@ class AP():
         section_ids = self.section_id_lookup(cfg_name, key, value)
         if not section_ids:
             raise ClientError(' '.join(("Could not find any section that has ",
-                              key, ":", value)))
+                                        key, ":", value)))
         for section_id in section_ids:
             self._delete_cfg_section_by_id(cfg_name, section_id)
 
@@ -480,7 +489,7 @@ class AP():
         for i in infos:
             if wlan in i["interface"]:
                 r = {}
-                for k,v in i.items():
+                for k, v in i.items():
                     if k in args:
                         r[k] = v
                 r["bssid"] = i["bssid"].upper()
@@ -499,15 +508,15 @@ class AP():
     def __getattr__(self, name):
         return _LibCaller(self._client, name)
 
+
 class _LibCaller:
     def __init__(self, client, *args):
         self._client = client
         self._args = args
 
     def __getattr__(self, name):
-        return _LibCaller(self._client, *self._args+(name,))
+        return _LibCaller(self._client, *self._args + (name, ))
 
     def __call__(self, *args):
-        return self._client.call("/".join(self._args[:-1]),
-                                 self._args[-1],
+        return self._client.call("/".join(self._args[:-1]), self._args[-1],
                                  *args)

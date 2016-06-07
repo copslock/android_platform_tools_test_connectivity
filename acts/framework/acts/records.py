@@ -13,8 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 """This module is where all the record definitions and record containers live.
 """
 
@@ -23,6 +21,7 @@ import pprint
 
 from acts import signals
 from acts import utils
+
 
 class TestResultEnums(object):
     """Enums used for TestResultRecord class.
@@ -44,6 +43,7 @@ class TestResultEnums(object):
     TEST_RESULT_FAIL = "FAIL"
     TEST_RESULT_SKIP = "SKIP"
     TEST_RESULT_UNKNOWN = "UNKNOWN"
+
 
 class TestResultRecord(object):
     """A record that holds the information of a test case execution.
@@ -190,6 +190,7 @@ class TestResultRecord(object):
         """
         return json.dumps(self.to_dict())
 
+
 class TestResult(object):
     """A class that contains metrics of a test run.
 
@@ -226,8 +227,8 @@ class TestResult(object):
             A TestResult instance that's the sum of two TestResult instances.
         """
         if not isinstance(r, TestResult):
-            raise TypeError("Operand %s of type %s is not a TestResult." % (
-                            r, type(r)))
+            raise TypeError("Operand %s of type %s is not a TestResult." %
+                            (r, type(r)))
         sum_result = TestResult()
         for name in sum_result.__dict__:
             l_value = list(getattr(self, name))
