@@ -49,11 +49,13 @@ def _parse_logline_timestamp(t):
     s, ms = s.split('.')
     return (month, day, h, m, s, ms)
 
+
 def is_valid_logline_timestamp(timestamp):
     if len(timestamp) == log_line_timestamp_len:
         if logline_timestamp_re.match(timestamp):
             return True
     return False
+
 
 def logline_timestamp_comparator(t1, t2):
     """Comparator for timestamps in logline format.
@@ -74,15 +76,18 @@ def logline_timestamp_comparator(t1, t2):
             return 1
     return 0
 
+
 def _get_timestamp(time_format, delta=None):
     t = datetime.datetime.now()
     if delta:
         t = t + datetime.timedelta(seconds=delta)
     return t.strftime(time_format)[:-3]
 
+
 def epoch_to_log_line_timestamp(epoch_time):
     d = datetime.datetime.fromtimestamp(epoch_time / 1000)
     return d.strftime("%m-%d %H:%M:%S.%f")[:-3]
+
 
 def get_log_line_timestamp(delta=None):
     """Returns a timestamp in the format used by log lines.
@@ -98,6 +103,7 @@ def get_log_line_timestamp(delta=None):
     """
     return _get_timestamp("%m-%d %H:%M:%S.%f", delta)
 
+
 def get_log_file_timestamp(delta=None):
     """Returns a timestamp in the format used for log file names.
 
@@ -111,6 +117,7 @@ def get_log_file_timestamp(delta=None):
         A timestamp in log filen name format with an offset.
     """
     return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
+
 
 def _setup_test_logger(log_path, prefix=None, filename=None):
     """Customizes the root logger for a test run.
@@ -151,6 +158,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     log.log_path = log_path
     logging.log_path = log_path
 
+
 def kill_test_logger(logger):
     """Cleans up a test logger object by removing all of its handlers.
 
@@ -162,6 +170,7 @@ def kill_test_logger(logger):
         if isinstance(h, logging.FileHandler):
             h.close()
 
+
 def create_latest_log_alias(actual_path):
     """Creates a symlink to the latest test run logs.
 
@@ -172,6 +181,7 @@ def create_latest_log_alias(actual_path):
     if os.path.islink(link_path):
         os.remove(link_path)
     os.symlink(actual_path, link_path)
+
 
 def setup_test_logger(log_path, prefix=None, filename=None):
     """Customizes the root logger for a test run.
@@ -187,6 +197,7 @@ def setup_test_logger(log_path, prefix=None, filename=None):
     create_dir(log_path)
     logger = _setup_test_logger(log_path, prefix, filename)
     create_latest_log_alias(log_path)
+
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
