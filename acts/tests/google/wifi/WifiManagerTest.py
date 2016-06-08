@@ -30,9 +30,21 @@ WifiEventNames = wutils.WifiEventNames
 
 
 class WifiManagerTest(acts.base_test.BaseTestClass):
+    """Tests for APIs in Android's WifiManager class.
+
+    Test Bed Requirement:
+    * One Android device
+    * Several Wi-Fi networks visible to the device, including an open Wi-Fi
+      network.
+    """
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
+        # If running in a setup with attenuators, set attenuation on all
+        # channels to zero.
+        if getattr(self, "attenuators", []):
+            for a in self.attenuators:
+                a.set_atten(0)
         req_params = ("iot_networks", "open_network", "iperf_server_address",
                       "tdls_models", "energy_info_models")
         self.unpack_userparams(req_params)
@@ -207,9 +219,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         actual_support = self.dut.droid.wifiIsEnhancedPowerReportingSupported()
         model = self.dut.model
         expected_support = model in self.energy_info_models
-        msg = "Expect energy info support to be %s on %s, got %s." % (
-            expected_support, model, actual_support)
-        asserts.assert_true(actual_support == expected_support, msg)
+        asserts.assert_equal(expected_support, actual_support, msg)
         if not actual_support:
             asserts.skip(
                 ("Device %s does not support energy info reporting as "
