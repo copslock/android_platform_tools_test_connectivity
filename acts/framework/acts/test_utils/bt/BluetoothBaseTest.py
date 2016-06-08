@@ -84,5 +84,5 @@ class BluetoothBaseTest(BaseTestClass):
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path)
             except:
-                ad.log.error("Failed to take a bug report for {}, {}"
+                self.log.error("Failed to take a bug report for {}, {}"
                              .format(ad.serial, test_name))
