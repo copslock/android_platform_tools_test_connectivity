@@ -23,11 +23,10 @@ from acts.controllers import iperf_server as ip_server
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-
 pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
 start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
-    "PMCMainActivity")
+                 "PMCMainActivity")
 pmc_interval_cmd = ("am broadcast -a com.android.pmc.action.SETPARAMS --es "
                     "Interval %s ")
 pmc_set_params = "am broadcast -a com.android.pmc.action.SETPARAMS --es "
@@ -44,7 +43,6 @@ pmc_iperf_json_file = "/sdcard/iperf.txt"
 
 
 class WifiPowerTest(acts.base_test.BaseTestClass):
-
     def setup_class(self):
         self.hz = 5000
         self.offset = 5 * 60
@@ -59,16 +57,16 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.mon.set_max_current(7.8)
         self.dut = self.android_devices[0]
         self.mon.attach_device(self.dut)
-        asserts.assert_true(self.mon.usb("auto"),
-                            "Failed to turn USB mode to auto on monsoon.")
+        asserts.assert_true(
+            self.mon.usb("auto"),
+            "Failed to turn USB mode to auto on monsoon.")
         required_userparam_names = (
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
             "network_2g",
             "network_5g",
-            "iperf_server_address"
-        )
-        self.unpack_userparams(required_userparam_names, ("threshold",))
+            "iperf_server_address")
+        self.unpack_userparams(required_userparam_names, ("threshold", ))
         wutils.wifi_test_device_init(self.dut)
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)
@@ -137,25 +135,24 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         if self.threshold:
             model = utils.trim_model_name(self.dut.model)
             asserts.assert_true(tag in self.threshold[model],
-                             "Acceptance threshold for %s is missing" % tag,
-                             extras=result_extra)
+                                "Acceptance threshold for %s is missing" % tag,
+                                extras=result_extra)
             acceptable_threshold = self.threshold[model][tag]
-            asserts.assert_true(actual_current < acceptable_threshold,
-                             ("Measured average current in [%s]: %s, which is "
-                              "higher than acceptable threshold %.2fmA.") % (
-                              tag, actual_current_str, acceptable_threshold),
-                              extras=result_extra)
+            asserts.assert_true(
+                actual_current < acceptable_threshold,
+                ("Measured average current in [%s]: %s, which is "
+                 "higher than acceptable threshold %.2fmA.") % (
+                     tag, actual_current_str, acceptable_threshold),
+                extras=result_extra)
         asserts.explicit_pass("Measurement finished for %s." % tag,
                               extras=result_extra)
 
     def test_power_wifi_off(self):
-        asserts.assert_true(wutils.wifi_toggle_state(self.dut, False),
-                         "Failed to toggle wifi off.")
+        wutils.wifi_toggle_state(self.dut, False)
         self.measure_and_process_result()
 
     def test_power_wifi_on_idle(self):
-        asserts.assert_true(wutils.wifi_toggle_state(self.dut, True),
-                         "Failed to toggle wifi on.")
+        wutils.wifi_toggle_state(self.dut, True)
         self.measure_and_process_result()
 
     def test_power_disconnected_connectivity_scan(self):
