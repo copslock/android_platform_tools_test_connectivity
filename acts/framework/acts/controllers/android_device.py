@@ -597,6 +597,8 @@ class AndroidDevice:
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
         full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
+        # in case device restarted, wait for adb interface to return
+        self.wait_for_boot_completion()
         logging.info("Taking bugreport for %s on %s", test_name, self.serial)
         self.adb.bugreport(" > {}".format(full_out_path))
         logging.info("Bugreport for %s taken at %s", test_name, full_out_path)
