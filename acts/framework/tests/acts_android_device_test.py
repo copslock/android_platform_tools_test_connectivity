@@ -72,9 +72,11 @@ class MockAdbProxy():
     def shell(self, params):
         if params == "id -u":
             return b"root"
-        if (params == "getprop | grep ro.build.product" or
+        elif (params == "getprop | grep ro.build.product" or
             params == "getprop | grep ro.product.name"):
             return b"[ro.build.product]: [FakeModel]"
+        elif params == "getprop sys.boot_completed":
+            return b"1"
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
