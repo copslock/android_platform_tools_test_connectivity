@@ -114,6 +114,19 @@ def assert_true(expr, msg, extras=None):
         fail(msg, extras)
 
 
+def assert_false(expr, msg, extras=None):
+    """Assert an expression evaluates to false, otherwise fail the test.
+
+    Args:
+        expr: The expression that is evaluated.
+        msg: A string explaining the details in case of failure.
+        extras: An optional field for extra information to be included in
+                test result.
+    """
+    if expr:
+        fail(msg, extras)
+
+
 def skip(reason, extras=None):
     """Skip a test case.
 
