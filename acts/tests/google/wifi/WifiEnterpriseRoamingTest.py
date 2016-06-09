@@ -199,16 +199,12 @@ class WifiEnterpriseRoamingTest(acts.base_test.BaseTestClass):
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
         self.set_attns("a_on_b_off")
-        asserts.assert_true(
-            wutils.eap_connect(config, self.dut, validate_con=False),
-            "Failed to connect to %s" % config
-            )
+        wutils.eap_connect(config, self.dut, validate_con=False)
         wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s" % (self.bssid_a, self.bssid_b))
         self.trigger_roaming_and_validate("b_on_a_off", expected_con_to_b)
         self.log.info("Roaming from %s to %s" % (self.bssid_b, self.bssid_a))
         self.trigger_roaming_and_validate("a_on_b_off", expected_con_to_a)
-        return True
 
     """ Tests Begin """
     @acts.signals.generated_test
