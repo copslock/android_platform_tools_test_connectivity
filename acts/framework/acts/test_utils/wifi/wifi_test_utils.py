@@ -23,6 +23,7 @@ from queue import Empty
 
 from acts import asserts
 from acts import signals
+from acts.controllers import attenuator
 from acts.utils import exe_cmd
 from acts.utils import require_sl4a
 from acts.utils import sync_device_time
@@ -1027,3 +1028,43 @@ def expand_enterprise_config_by_phase2(config):
         c[WifiEnums.Enterprise.PHASE2] = phase2_type
         results.append(c)
     return results
+
+
+def group_attenuators(attenuators):
+    """Groups a list of attenuators into attenuator groups for backward
+    compatibility reasons.
+
+    Most legacy Wi-Fi setups have two attenuators each connected to a separate
+    AP. The new Wi-Fi setup has four attenuators, each connected to one channel
+    on an AP, so two of them are connected to one AP.
+
+    To make the existing scripts work in the new setup, when the script needs
+    to attenuate one AP, it needs to set attenuation on both attenuators
+    connected to the same AP.
+
+    This function groups attenuators properly so the scripts work in both
+    legacy and new Wi-Fi setups.
+
+    Args:
+        attenuators: A list of attenuator objects, either two or four in length.
+
+    Raises:
+        signals.TestFailure is raised if the attenuator list does not have two
+        or four objects.
+    """
+    attn0 = attenuator.AttenuatorGroup("AP0")
+    attn1 = attenuator.AttenuatorGroup("AP1")
+    # Legacy testbed setup has two attenuation channels.
+    num_of_attns = len(attenuators)
+    if num_of_attns == 2:
+        attn0.add(attenuators[0])
+        attn1.add(attenuators[1])
+    elif num_of_attns == 4:
+        attn0.add(attenuators[0])
+        attn0.add(attenuators[1])
+        attn1.add(attenuators[2])
+        attn1.add(attenuators[3])
+    else:
+        asserts.fail(("Either two or four attenuators are required for this "
+                      "test, but found %s") % num_of_attns)
+    return [attn0, attn1]
