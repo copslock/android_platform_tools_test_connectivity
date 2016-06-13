@@ -713,8 +713,8 @@ class GattConnectTest(BluetoothBaseTest):
         bt_device_id = 0
         status = 1
         offset = 1
-        test_value = "1,2,3,4,5,6,7"
-        test_value_return = "1,2,3"
+        test_value = [1,2,3,4,5,6,7]
+        test_value_return = [1,2,3]
         for i in range(services_count):
             characteristic_uuids = (
                 self.cen_ad.droid.gattClientGetDiscoveredCharacteristicUuids(
@@ -828,7 +828,8 @@ class GattConnectTest(BluetoothBaseTest):
                 disc_service_index = i
                 break
 
-        test_value = "1,2,3,4,5,6,7"
+        test_value = [1,2,3,4,5,6,7]
+
         self.cen_ad.droid.gattClientCharacteristicSetValue(
             bluetooth_gatt, discovered_services_index, disc_service_index,
             characteristic_uuid, test_value)
@@ -851,7 +852,7 @@ class GattConnectTest(BluetoothBaseTest):
         bt_device_id = 0
         status = 0
         offset = 0
-        test_value_return = "1,2,3"
+        test_value_return = [1,2,3]
         self.per_ad.droid.gattServerGetConnectedDevices(gatt_server)
         self.per_ad.droid.gattServerSendResponse(gatt_server, bt_device_id,
                                                  request_id, status, offset,
@@ -950,8 +951,8 @@ class GattConnectTest(BluetoothBaseTest):
         bt_device_id = 0
         status = 0
         offset = 0
-        test_value = "1,2,3,4,5,6,7"
-        test_value_return = "1,2,3"
+        test_value = [1,2,3,4,5,6,7]
+        test_value_return = [1,2,3]
         for i in range(100):
             self.cen_ad.droid.gattClientCharacteristicSetValue(
                 bluetooth_gatt, discovered_services_index,
@@ -1061,7 +1062,7 @@ class GattConnectTest(BluetoothBaseTest):
         else:
             self.log.info("Failed to discover services.")
             return False
-        test_value = "1,2,3,4,5,6,7"
+        test_value = [1,2,3,4,5,6,7]
         services_count = self.cen_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         for i in range(services_count):
