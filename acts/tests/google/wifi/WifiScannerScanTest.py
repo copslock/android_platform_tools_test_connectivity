@@ -43,7 +43,7 @@ class WifiScannerScanError(Exception):
 
 class WifiScannerScanTest(base_test.BaseTestClass):
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        base_test.BaseTestClass.__init__(self, controllers)
         # TODO(angli): Remove this list.
         # There are order dependencies among these tests so we'll have to leave
         # it here for now. :(
