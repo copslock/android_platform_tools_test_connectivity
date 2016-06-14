@@ -171,7 +171,8 @@ class AdbProxy():
             True if the sl4a app is running, False otherwise.
         """
         #Grep for process with a preceding S which means it is truly started.
-        out = self.shell('ps | grep "S com.googlecode.android_scripting"')
+        #ps output process state and cmdline with 99 character limit
+        out = self.shell('ps -o S,CMDLINE:99 | grep "S com.googlecode.android_scripting"')
         if len(out) == 0:
             return False
         return True
