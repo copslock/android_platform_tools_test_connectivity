@@ -609,8 +609,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         bt_device_id = 0
         status = 1
         offset = 1
-        test_value = "1,2,3,4,5,6,7"
-        test_value_return = "1,2,3"
+        test_value = [1,2,3,4,5,6,7]
+        test_value_return = [1,2,3]
         for i in range(services_count):
             characteristic_uuids = (
                 self.cen_ad.droid.gattClientGetDiscoveredCharacteristicUuids(
@@ -723,7 +723,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         else:
             self.log.info("Failed to discover services.")
             return False
-        test_value = "1,2,3,4,5,6,7"
+        test_value = [1,2,3,4,5,6,7]
         services_count = self.cen_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         for i in range(services_count):
