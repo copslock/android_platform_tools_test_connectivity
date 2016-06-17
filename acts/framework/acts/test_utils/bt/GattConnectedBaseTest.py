@@ -42,6 +42,9 @@ class GattConnectedBaseTest(BluetoothBaseTest):
     READABLE_DESC_UUID = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
     WRITABLE_CHAR_UUID = "aa7edd5a-4d1d-4f0e-883a-d145616a1630"
     WRITABLE_DESC_UUID = "76d5ed92-ca81-4edb-bb6b-9f019665fb32"
+    NOTIFIABLE_CHAR_UUID = "b2c83efa-34ca-11e6-ac61-9e71128cae77"
+    # CCC == Client Characteristic Configuration
+    CCC_DESC_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
@@ -125,14 +128,13 @@ class GattConnectedBaseTest(BluetoothBaseTest):
             },
             {
                 'uuid': self.READABLE_CHAR_UUID,
-                'property': GattCharacteristic.PROPERTY_NOTIFY.value |
-                GattCharacteristic.PROPERTY_READ.value,
+                'property': GattCharacteristic.PROPERTY_READ.value,
                 'permission': GattCharacteristic.PERMISSION_READ.value
             },
             {
-                'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
+                'uuid': self.NOTIFIABLE_CHAR_UUID,
                 'property': GattCharacteristic.PROPERTY_NOTIFY.value |
-                GattCharacteristic.PROPERTY_READ.value,
+                GattCharacteristic.PROPERTY_INDICATE.value,
                 'permission': GattCharacteristic.PERMISSION_READ.value
             },
         ]
@@ -146,10 +148,16 @@ class GattConnectedBaseTest(BluetoothBaseTest):
                 'uuid': self.READABLE_DESC_UUID,
                 'property': GattDescriptor.PERMISSION_READ.value |
                 GattDescriptor.PERMISSION_WRITE.value,
+            },
+            {
+                'uuid': self.CCC_DESC_UUID,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattDescriptor.PERMISSION_WRITE.value,
             }
         ]
         characteristic_list = setup_gatt_characteristics(droid,
                                                          characteristic_input)
+        self.notifiable_char_index = characteristic_list[2];
         descriptor_list = setup_gatt_descriptors(droid, descriptor_input)
         return characteristic_list, descriptor_list
 
@@ -190,6 +198,8 @@ class GattConnectedBaseTest(BluetoothBaseTest):
             characteristic_list[0], descriptor_list[0])
         self.per_ad.droid.gattServerCharacteristicAddDescriptor(
             characteristic_list[1], descriptor_list[1])
+        self.per_ad.droid.gattServerCharacteristicAddDescriptor(
+            characteristic_list[2], descriptor_list[2])
         gatt_service3 = self.per_ad.droid.gattServerCreateService(
             self.TEST_SERVICE_UUID, GattService.SERVICE_TYPE_PRIMARY.value)
         for characteristic in characteristic_list:
