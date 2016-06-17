@@ -55,6 +55,8 @@ adv_fail = "BleAdvertise{}onFailure"
 adv_succ = "BleAdvertise{}onSuccess"
 bluetooth_off = "BluetoothStateChangedOff"
 bluetooth_on = "BluetoothStateChangedOn"
+bluetooth_profile_connection_state_changed = \
+    "BluetoothProfileConnectionStateChanged"
 
 # rfcomm test uuids
 rfcomm_secure_uuid = "fa87c0d0-afac-11de-8a39-0800200c9a66"
@@ -426,6 +428,67 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     log.debug("Failed to bond devices.")
     return False
 
+def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+    """Connects pri droid to secondary droid.
+
+    Args:
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        profiles_set: Set of profiles to be connected
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    # Check if we support all profiles.
+    supported_profiles = [i.value for i in BluetoothProfile]
+    for profile in profiles_set:
+        if profile not in supported_profiles:
+            log.info("Profile {} is not supported list {}".format(
+                profile, supported_profiles))
+            return False
+
+    # First check that devices are bonded.
+    paired = False
+    for paired_device in pri_droid.droid.bluetoothGetBondedDevices():
+        if paired_device['address'] == \
+            sec_droid.bluetoothGetLocalAddress():
+            paired = True
+            break
+
+    if not paired:
+        log.info("{} not paired to {}".format(
+            pri_droid.droid.getBuildSerial(), sec_droid.getBuildSerial()))
+        return False
+
+    # Now try to connect them, the following call will try to initiate all
+    # connections.
+    pri_droid.droid.bluetoothConnectBonded(
+        sec_droid.bluetoothGetLocalAddress())
+
+    profile_connected = set()
+    log.info("Profiles to be connected {}".format(profiles_set))
+    while not profile_connected.issuperset(profiles_set):
+        try:
+            profile_event = pri_droid.ed.pop_event(
+                bluetooth_profile_connection_state_changed, default_timeout)
+            log.info("Got event {}".format(profile_event))
+        except Exception:
+            log.error("Did not get {} profiles left {}".format(
+                bluetooth_profile_connection_state_changed, profile_connected))
+            return False
+
+        profile = profile_event['data']['profile']
+        state = profile_event['data']['state']
+        device_addr = profile_event['data']['addr']
+
+        if state == BluetoothProfileState.STATE_CONNECTED.value and \
+            device_addr == sec_droid.bluetoothGetLocalAddress():
+            profile_connected.add(profile)
+        log.info("Profiles connected until now {}".format(profile_connected))
+    # Failure happens inside the while loop. If we came here then we already
+    # connected.
+    return True
 
 def take_btsnoop_logs(android_devices, testcase, testname):
     for a in android_devices:
