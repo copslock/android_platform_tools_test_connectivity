@@ -44,15 +44,7 @@ class SL4AProtocolError(SL4AException):
     MISMATCHED_API_ID = "Mismatched API id."
 
 
-def IDCounter():
-    i = 0
-    while True:
-        yield i
-        i += 1
-
-
 class Android(object):
-    COUNTER = IDCounter()
 
     _SOCKET_CONNECT_TIMEOUT = 60
 
@@ -62,10 +54,11 @@ class Android(object):
                  port=PORT,
                  addr=HOST,
                  timeout=None):
-        self.lock = threading.RLock()
+        self.lock = threading.Lock()
         self.client = None  # prevent close errors on connect failure
         self.uid = None
         timeout_time = time.time() + self._SOCKET_CONNECT_TIMEOUT
+        self._counter = self._id_counter()
         while True:
             try:
                 self.conn = socket.create_connection(
@@ -96,6 +89,12 @@ class Android(object):
         else:
             self.uid = -1
 
+    def _id_counter(self):
+        i = 0
+        while True:
+            yield i
+            i += 1
+
     def close(self):
         if self.conn is not None:
             self.conn.close()
@@ -110,9 +109,8 @@ class Android(object):
         return self.client.readline()
 
     def _rpc(self, method, *args):
-        self.lock.acquire()
-        apiid = next(Android.COUNTER)
-        self.lock.release()
+        with self.lock:
+            apiid = next(self._counter)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
         self.client.write(request.encode("utf8") + b'\n')
