@@ -17,6 +17,7 @@
 from enum import Enum
 from enum import IntEnum
 
+
 class BluetoothScanModeType(IntEnum):
     STATE_OFF = -1
     SCAN_MODE_NONE = 0
@@ -33,8 +34,10 @@ class BluetoothAdapterState(IntEnum):
     STATE_BLE_ON = 15
     STATE_BLE_TURNING_OFF = 16
 
+
 class RfcommUuid(Enum):
     DEFAULT_UUID = "457807c0-4897-11df-9879-0800200c9a66"
+
 
 class BluetoothProfile(IntEnum):
     # Should be kept in sync with BluetoothProfile.java
@@ -53,9 +56,16 @@ class BluetoothProfile(IntEnum):
     HEADSET_CLIENT = 16
     PBAP_CLIENT = 17
 
+
 class BluetoothProfileState(IntEnum):
     # Should be kept in sync with BluetoothProfile#STATE_* constants.
     STATE_DISCONNECTED = 0
     STATE_CONNECTING = 1
     STATE_CONNECTED = 2
     STATE_DISCONNECTING = 3
+
+
+class BluetoothAccessLevel(Enum):
+    # Access Levels from BluetoothDevice.
+    ACCESS_ALLOWED = 1
+    ACCESS_DENIED = 2
