@@ -547,15 +547,17 @@ def _wifi_toggle_state(ad, new_state=None):
 
 
 def reset_wifi(ad):
-    """Clears all saved networks on a device.
+    """Clears all saved Wi-Fi networks on a device.
+
+    This will turn Wi-Fi on.
 
     Args:
         ad: An AndroidDevice object.
 
     Raises:
-        WifiTestUtilsError is raised if forget network operation failed.
+        WifiTestUtilsError is raised if not all networks were removed.
     """
-    ad.droid.wifiToggleState(True)
+    wifi_toggle_state(ad, True)
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
@@ -565,7 +567,12 @@ def reset_wifi(ad):
             event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
                                     SHORT_TIMEOUT)
         except Empty:
-            raise WifiTestUtilsError("Failed to remove network %s." % n)
+            logging.warning("Could not confirm the removal of network %s.", n)
+    # Check again to see if there's any network left.
+    networks = ad.droid.wifiGetConfiguredNetworks()
+    if networks:
+        raise WifiTestUtilsError(
+            "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
 def wifi_forget_network(ad, net_ssid):
