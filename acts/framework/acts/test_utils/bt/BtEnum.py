@@ -35,18 +35,3 @@ class BluetoothAdapterState(Enum):
 
 class RfcommUuid(Enum):
     DEFAULT_UUID = "457807c0-4897-11df-9879-0800200c9a66"
-
-class BluetoothProfile(Enum):
-    # Should be kept in sync with BluetoothProfile.java
-    # Add more profile types as necessary.
-    A2DP_SINK = 11
-    AVRCP_CONTROLLER = 12
-    HEADSET_CLIENT = 16
-    PBAP_CLIENT = 17
-
-class BluetoothProfileState(Enum):
-    # Should be kept in sync with BluetoothProfile#STATE_* constants.
-    STATE_DISCONNECTED = 0
-    STATE_CONNECTING = 1
-    STATE_CONNECTED = 2
-    STATE_DISCONNECTING = 3
