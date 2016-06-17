@@ -437,9 +437,6 @@ PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND = "FOREGROUND"
 PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING = "RINGING"
 PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND = "BACKGROUND"
 
-# Constants used to register or de-register for call callback events
-EVENT_CALL_STATE_CHANGED = "EVENT_STATE_CHANGED"
-
 # Constants used to register or de-register for video call callback events
 EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED = "EVENT_VIDEO_SESSION_MODIFY_REQUEST_RECEIVED"
 EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED = "EVENT_VIDEO_SESSION_MODIFY_RESPONSE_RECEIVED"
@@ -497,11 +494,7 @@ EventDataSmsReceived = "DataSmsReceived"
 EventCmasReceived = "CmasReceived"
 EventEtwsReceived = "EtwsReceived"
 
-# Constants for Telecom Call Management Event Name (see InCallService.java).
-EventTelecomCallAdded = "TelecomCallAdded"
-EventTelecomCallRemoved = "TelecomCallRemoved"
-
-# Constant for Telecom Call Event Name (see Call.java)
+# Constant for Telecom Call Event Name
 EventTelecomCallStateChanged = "TelecomCallStateChanged"
 EventTelecomCallParentChanged = "TelecomCallParentChanged"
 EventTelecomCallChildrenChanged = "TelecomCallChildrenChanged"
