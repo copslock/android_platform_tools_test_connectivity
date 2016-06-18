@@ -146,7 +146,7 @@ def phone_idle_video_for_subscription(log, ad, sub_id):
 
     if not wait_for_video_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
         log.error(
-            "{} failed to <report volte enabled true> within {}s.".format(
+            "{} failed to <report video calling enabled> within {}s.".format(
                 ad.serial, MAX_WAIT_TIME_VOLTE_ENABLED))
         return False
     return True
