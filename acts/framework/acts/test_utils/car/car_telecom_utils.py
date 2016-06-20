@@ -311,6 +311,53 @@ def wait_for_ringing(log, ad):
         return False
     return True
 
+def wait_for_active(log, ad):
+    """Wait for the droid to be in active call state.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    log.info("waiting for active {}".format(ad.droid.getBuildSerial()))
+    # Start listening for events before anything else happens.
+    ad.droid.telecomStartListeningForCallAdded()
+
+    call_id = None
+    # Now check if we already have calls matching the state.
+    calls_in_state = ad.droid.telecomCallGetCallIds()
+
+    if len(calls_in_state) == 0:
+        event = None
+        try:
+            event = ad.ed.pop_event(
+                tel_defines.EventTelecomCallAdded,
+                tel_defines.MAX_WAIT_TIME_CALLEE_RINGING)
+        except queue.Empty:
+            log.info("Did not get {} droid {}".format(
+                tel_defines.EventTelecomCallAdded,
+                ad.droid.getBuildSerial()))
+            return False
+        finally:
+            ad.droid.telecomStopListeningForCallAdded()
+        call_id = event['data']['CallId']
+        log.info("wait_for_ringing call found {} dev {}".format(
+            call_id, ad.droid.getBuildSerial()))
+    else:
+        call_id = calls_in_state[0]
+
+    # We have found a new call to be added now wait it to transition into
+    # active state.
+    if wait_for_call_state(
+        log, ad, call_id, tel_defines.CALL_STATE_ACTIVE) != \
+        tel_defines.CALL_STATE_ACTIVE:
+        log.info("No active call id {} droid {}".format(
+            call_id, ad.droid.getBuildSerial()))
+        return False
+    return True
+
 def get_calls_in_states(log, ad, call_states):
     """Return the list of calls that are any of the states passed in call_states
 
