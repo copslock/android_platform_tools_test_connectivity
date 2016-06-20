@@ -414,6 +414,9 @@ def _timeout_handler(signum, frame):
 def timeout(sec):
     """A decorator used to add time out check to a function.
 
+    This only works in main thread due to its dependency on signal module.
+    Do NOT use it if the decorated funtion does not run in the Main thread.
+
     Args:
         sec: Number of seconds to wait before the function times out.
             No timeout if set to 0
