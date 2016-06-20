@@ -702,14 +702,16 @@ class AndroidDevice:
             return False, clean_out
         return True, clean_out
 
-    @utils.timeout(15 * 60)
     def wait_for_boot_completion(self):
         """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
         This function times out after 15 minutes.
         """
+        timeout_start = time.time()
+        timeout = 15 * 60
+
         self.adb.wait_for_device()
-        while True:
+        while time.time() < timeout_start + timeout:
             try:
                 out = self.adb.shell("getprop sys.boot_completed")
                 completed = out.decode('utf-8').strip()
@@ -720,6 +722,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
+        raise AndroidDeviceError("Device %s booting process timed out." %
+                                 self.serial)
 
     def reboot(self):
         """Reboots the device.
