@@ -27,7 +27,6 @@ from acts.signals import TestAbortAll
 from acts.test_runner import TestRunner
 from acts.test_runner import USERError
 from acts.utils import abs_path
-from acts.utils import concurrent_exec
 from acts.utils import load_config
 from acts.utils import valid_filename_chars
 
