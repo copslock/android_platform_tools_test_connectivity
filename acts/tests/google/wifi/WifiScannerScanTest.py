@@ -571,16 +571,21 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             wutils.WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN)
         self.log.debug("Scan settings: %s\n%s", len(scan_settings),
                        scan_settings)
-        name_func = (
-            lambda scan_setting: ("test_single_scan_report_each_scan_for_channels_{}"
-                                  "_numBssidsPerScan_{}_maxScansToCache_{}_period_{}").format(scan_setting["channels"], scan_setting["numBssidsPerScan"], scan_setting["maxScansToCache"], scan_setting["periodInMs"])
-        )
+
+        def name_func(scan_setting):
+            return (
+                "test_single_scan_report_each_scan_for_channels_%s"
+                "_numBssidsPerScan_%s_maxScansToCache_%s_period_%s") % (
+                    scan_setting["channels"], scan_setting["numBssidsPerScan"],
+                    scan_setting["maxScansToCache"],
+                    scan_setting["periodInMs"])
+
         failed = self.run_generated_testcases(self.wifi_scanner_single_scan,
                                               scan_settings,
                                               name_func=name_func)
-        asserts.assert_true(not failed, (
-            "Number of test_single_scan_report_each_scan_for_channels"
-            " failed {}").format(len(failed)))
+        asserts.assert_false(
+            failed, ("Number of test_single_scan_report_each_scan_for_channels"
+                     " failed {}").format(len(failed)))
 
     def test_single_scan_report_each_scan_for_band_with_enumerated_params(
             self):
@@ -631,7 +636,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func=name_func)
-        asserts.assert_true(not failed, (
+        asserts.assert_false(failed, (
             "Number of test_batch_scan_report_buffer_full_for_channels"
             " failed {}").format(len(failed)))
 
@@ -656,9 +661,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func=name_func)
-        asserts.assert_true(not failed, (
-            "Number of test_batch_scan_report_buffer_full_for_band"
-            " failed {}").format(len(failed)))
+        asserts.assert_false(
+            failed, ("Number of test_batch_scan_report_buffer_full_for_band"
+                     " failed {}").format(len(failed)))
 
     def test_batch_scan_report_each_scan_for_channels_with_enumerated_params(
             self):
@@ -681,9 +686,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         failed = self.run_generated_testcases(self.wifi_scanner_batch_scan,
                                               scan_settings,
                                               name_func=name_func)
-        asserts.assert_true(not failed, (
-            "Number of test_batch_scan_report_each_scan_for_channels"
-            " failed {}").format(len(failed)))
+        asserts.assert_false(
+            failed, ("Number of test_batch_scan_report_each_scan_for_channels"
+                     " failed {}").format(len(failed)))
 
     def test_batch_scan_report_each_scan_for_band_with_enumerated_params(self):
         """Test WiFi scanner batch scan using band with enumerated settings
@@ -730,9 +735,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             self.wifi_scanner_single_scan_full,
             scan_settings,
             name_func=name_func)
-        asserts.assert_true(not failed, (
-            "Number of test_single_scan_report_full_scan_for_channels"
-            " failed {}").format(len(failed)))
+        asserts.assert_false(
+            failed, ("Number of test_single_scan_report_full_scan_for_channels"
+                     " failed {}").format(len(failed)))
 
     def test_single_scan_report_full_scan_for_band_with_enumerated_params(
             self):
@@ -781,9 +786,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             self.wifi_scanner_batch_scan_full,
             scan_settings,
             name_func=name_func)
-        asserts.assert_true(not failed, (
-            "Number of test_batch_scan_report_full_scan_for_channels"
-            " failed {}").format(len(failed)))
+        asserts.assert_false(
+            failed, ("Number of test_batch_scan_report_full_scan_for_channels"
+                     " failed {}").format(len(failed)))
 
     def test_batch_scan_report_full_scan_for_band_with_enumerated_params(self):
         """Test WiFi scanner batch scan using channels with enumerated settings
@@ -1060,9 +1065,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             self.log.debug("Event received: {}".format(event))
             results = event["data"]["Results"]
             for batch in results:
-                asserts.assert_true(not batch["ScanResults"],
-                                    "Test fail because report scan "
-                                    "results reported are not empty")
+                asserts.assert_false(batch["ScanResults"],
+                                     "Test fail because report scan "
+                                     "results reported are not empty")
         except queue.Empty as error:
             raise AssertionError(
                 "Event did not triggered for in isolated environment {}".format(
