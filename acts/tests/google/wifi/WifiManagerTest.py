@@ -37,6 +37,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
+
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
@@ -188,7 +189,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.connect_to_wifi_network_with_password,
             params,
             name_func=name_gen)
-        asserts.assert_true(not failed, "Failed ones: {}".format(failed))
+        asserts.assert_false(failed, "Failed ones: {}".format(failed))
 
     def test_tdls_supported(self):
         model = acts.utils.trim_model_name(self.dut.model)
@@ -198,7 +199,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                 "TDLS should be supported on %s, but device is "
                 "reporting not supported.") % model)
         else:
-            asserts.assert_true(not self.dut.droid.wifiIsTdlsSupported(), (
+            asserts.assert_false(self.dut.droid.wifiIsTdlsSupported(), (
                 "TDLS should not be supported on %s, but device "
                 "is reporting supported.") % model)
 

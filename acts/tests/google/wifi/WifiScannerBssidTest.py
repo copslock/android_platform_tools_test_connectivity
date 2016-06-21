@@ -297,9 +297,8 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
             self.track_bssid_with_vaild_scan_for_found,
             track_settings,
             name_func=name_func)
-        asserts.assert_true(not failed,
-                            "Track bssid found failed with these bssids: %s" %
-                            failed)
+        asserts.assert_false(
+            failed, "Track bssid found failed with these bssids: %s" % failed)
 
     def test_wifi_track_bssid_lost(self):
         """Test bssid track for event lost with a list of different settings.
@@ -319,9 +318,8 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
             self.track_bssid_with_vaild_scan_for_lost,
             track_settings,
             name_func=name_func)
-        asserts.assert_true(not failed,
-                            "Track bssid lost failed with these bssids: %s" %
-                            failed)
+        asserts.assert_false(
+            failed, "Track bssid lost failed with these bssids: %s" % failed)
 
     def test_wifi_track_bssid_sanity(self):
         """Test bssid track for event found and lost with default settings.
