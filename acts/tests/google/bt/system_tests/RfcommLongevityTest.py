@@ -27,11 +27,10 @@ from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import get_bt_mac_address
 from acts.test_utils.bt.bt_test_utils import rfcomm_accept
 from acts.test_utils.bt.bt_test_utils import rfcomm_connect
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-
+from acts.test_utils.bt.bt_test_utils import write_read_verify_data
 
 class RfcommLongevityTest(BluetoothBaseTest):
     default_timeout = 10
@@ -61,12 +60,12 @@ class RfcommLongevityTest(BluetoothBaseTest):
 
     def orchestrate_rfcomm_connect(self, server_mac):
         accept_thread = threading.Thread(target=rfcomm_accept,
-                                         args=(self.server_ad.droid, ))
+                                         args=(self.server_ad, ))
         self.thread_list.append(accept_thread)
         accept_thread.start()
         connect_thread = threading.Thread(
             target=rfcomm_connect,
-            args=(self.client_ad.droid, server_mac))
+            args=(self.client_ad, server_mac))
         self.thread_list.append(connect_thread)
         connect_thread.start()
 
@@ -104,13 +103,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
             for n in range(write_iterations):
                 self.log.info("iteration {} data".format(((n + 1) + (
                     i * write_iterations))))
-                self.log.info("Write message.")
-                self.client_ad.droid.bluetoothRfcommWrite(self.generic_message)
-                self.log.info("Read message.")
-                read_msg = self.server_ad.droid.bluetoothRfcommRead()
-                self.log.info("Verify message.")
-                assert self.generic_message == read_msg, "Mismatch! Read {}".format(
-                    read_msg)
+                if not write_read_verify_data(self.client_ad, self.server_ad,
+                    self.generic_message, False):
+                    return False
                 self.log.info("Iteration {} completed".format(n))
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
@@ -155,13 +150,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
             for n in range(write_iterations):
                 self.log.info("iteration {} data".format(((n + 1) + (
                     i * write_iterations))))
-                self.log.info("Write message.")
-                self.client_ad.droid.bluetoothRfcommWrite(message)
-                self.log.info("Read message.")
-                read_msg = self.server_ad.droid.bluetoothRfcommRead()
-                self.log.info("Verify message.")
-                assert message == read_msg, "Mismatch! Read {}".format(
-                    read_msg)
+                if not write_read_verify_data(self.client_ad, self.server_ad,
+                    message, False):
+                    return False
                 self.log.info("Iteration {} completed".format(n))
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
@@ -198,7 +189,6 @@ class RfcommLongevityTest(BluetoothBaseTest):
         Priority: 2
         """
         server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
-        #message = "1001010101" #todo: investigate why this fails...
         binary_message = "11010101"
         write_iterations = 5000
         for i in range(self.longev_iterations):
@@ -207,13 +197,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
             for n in range(write_iterations):
                 self.log.info("iteration {} data".format(((n + 1) + (
                     i * write_iterations))))
-                self.log.info("Write message.")
-                self.client_ad.droid.bluetoothRfcommWriteBinary(binary_message)
-                self.log.info("Read message.")
-                read_msg = self.server_ad.droid.bluetoothRfcommReadBinary().rstrip("\r\n")
-                self.log.info("Verify message.")
-                assert binary_message == read_msg, "Mismatch! Read {}".format(
-                    read_msg)
+                if not write_read_verify_data(self.client_ad, self.server_ad,
+                    binary_message, True):
+                    return False
                 self.log.info("Iteration {} completed".format(n))
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
@@ -258,13 +244,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
             for n in range(write_iterations):
                 self.log.info("iteration {} data".format(((n + 1) + (
                     i * write_iterations))))
-                self.log.info("Write message.")
-                self.client_ad.droid.bluetoothRfcommWrite(message)
-                self.log.info("Read message.")
-                read_msg = self.server_ad.droid.bluetoothRfcommRead()
-                self.log.info("Verify message.")
-                assert message == read_msg, "Mismatch! Read {}".format(
-                    read_msg)
+                if not write_read_verify_data(self.client_ad, self.server_ad,
+                    message, False):
+                    return False
                 self.log.info("Iteration {} completed".format(n))
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
@@ -313,14 +295,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
                 for n in range(write_iterations):
                     self.log.info("iteration {} data".format(((n + 1) + (
                         i * write_iterations))))
-                    self.log.info("Write message.")
-                    self.client_ad.droid.bluetoothRfcommWrite(
-                        self.generic_message)
-                    self.log.info("Read message.")
-                    read_msg = self.server_ad.droid.bluetoothRfcommRead()
-                    self.log.info("Verify message.")
-                    assert self.generic_message == read_msg, "Mismatch! Read {}".format(
-                        read_msg)
+                    if not write_read_verify_data(self.client_ad, self.server_ad,
+                        self.generic_message, False):
+                        return False
                     self.log.info("Iteration {} completed".format(n))
                     if n > random_interup_iteration:
                         self.client_ad.droid.bluetoothRfcommCloseSocket()
@@ -390,13 +367,9 @@ class RfcommLongevityTest(BluetoothBaseTest):
                 for n in range(write_iterations):
                     self.log.info("iteration {} data".format(((n + 1) + (
                         i * write_iterations))))
-                    self.log.info("Write message.")
-                    self.client_ad.droid.bluetoothRfcommWrite(message)
-                    self.log.info("Read message.")
-                    read_msg = self.server_ad.droid.bluetoothRfcommRead()
-                    self.log.info("Verify message.")
-                    assert message == read_msg, "Mismatch! Read {}".format(
-                        read_msg)
+                    if not write_read_verify_data(self.client_ad, self.server_ad,
+                        message, False):
+                        return False
                     self.log.info("Iteration {} completed".format(n))
                     size_of_message = len(message)
                     #max size is 990 due to a bug in sl4a.
