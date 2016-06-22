@@ -18,6 +18,7 @@ Test script to execute Bluetooth basic functionality test cases.
 This test was designed to be run in a shield box.
 """
 
+from contextlib import suppress
 import threading
 import time
 
@@ -32,8 +33,9 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
-class SppTest(BluetoothBaseTest):
+class RfcommTest(BluetoothBaseTest):
     default_timeout = 10
+    rf_client_th = 0
     scan_discovery_time = 5
     thread_list = []
     message = (
@@ -44,9 +46,8 @@ class SppTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.server_ad = self.android_devices[0]
-        self.client_ad = self.android_devices[1]
-        self.tests = ("test_spp_connection", )
+        self.client_ad = self.android_devices[0]
+        self.server_ad = self.android_devices[1]
 
     def _clear_bonded_devices(self):
         for a in self.android_devices:
@@ -73,8 +74,11 @@ class SppTest(BluetoothBaseTest):
         reset_bluetooth(self.android_devices)
 
     def teardown_test(self):
-        for thread in self.thread_list:
-            thread.join()
+        with suppress(Exception):
+            for thread in self.thread_list:
+                thread.join()
+            self.client_ad.droid.bluetoothRfcommStop()
+            self.server_ad.droid.bluetoothRfcommStop()
 
     def orchestrate_rfcomm_connect(self, server_mac):
         accept_thread = threading.Thread(target=rfcomm_accept,
@@ -84,21 +88,24 @@ class SppTest(BluetoothBaseTest):
         connect_thread = threading.Thread(
             target=rfcomm_connect,
             args=(self.client_ad.droid, server_mac))
+        self.rf_client_th = connect_thread
         self.thread_list.append(connect_thread)
         connect_thread.start()
 
     @BluetoothBaseTest.bt_test_wrap
-    def test_spp_connection(self):
-        """Test bluetooth SPP profile.
+    def test_rfcomm_connection_write_ascii(self):
+        """Test bluetooth RFCOMM writing and reading ascii data
 
-        Test SPP profile though establishing an RFCOMM connection.
+        Test RFCOMM though establishing a connection.
 
         Steps:
         1. Get the mac address of the server device.
         2. Establish an RFCOMM connection from the client to the server AD.
         3. Verify that the RFCOMM connection is active from both the client and
         server.
-        4. Disconnect the RFCOMM connection.
+        4. Write data from the client and read received data from the server.
+        5. Verify data matches from client and server
+        6. Disconnect the RFCOMM connection.
 
         Expected Result:
         RFCOMM connection is established then disconnected succcessfully.
@@ -107,14 +114,10 @@ class SppTest(BluetoothBaseTest):
           Pass if True
           Fail if False
 
-        TAGS: Classic, SPP, RFCOMM
+        TAGS: Classic, RFCOMM
         Priority: 1
         """
-        server_mac = get_bt_mac_address(self.client_ad.droid,
-                                        self.server_ad.droid)
-        # temporary workaround. Need to find out why I can't connect after I do
-        # a device discovery from get_bt_mac_address
-        reset_bluetooth([self.server_ad])
+        server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
         self.orchestrate_rfcomm_connect(server_mac)
         self.log.info("Write message.")
         self.client_ad.droid.bluetoothRfcommWrite(self.message)
@@ -128,6 +131,52 @@ class SppTest(BluetoothBaseTest):
         if len(self.client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
             self.log.info("no rfcomm connections found on client.")
             return False
+
+        self.client_ad.droid.bluetoothRfcommStop()
+        self.server_ad.droid.bluetoothRfcommStop()
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_rfcomm_write_binary(self):
+        """Test bluetooth RFCOMM writing and reading binary data
+
+        Test profile though establishing an RFCOMM connection.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish an RFCOMM connection from the client to the server AD.
+        3. Verify that the RFCOMM connection is active from both the client and
+        server.
+        4. Write data from the client and read received data from the server.
+        5. Verify data matches from client and server
+        6. Disconnect the RFCOMM connection.
+
+        Expected Result:
+        RFCOMM connection is established then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: Classic, RFCOMM
+        Priority: 1
+        """
+        server_mac = self.server_ad.droid.bluetoothGetLocalAddress()
+        self.orchestrate_rfcomm_connect(server_mac)
+        binary_message = "11010101"
+        self.log.info("Write message.")
+        self.client_ad.droid.bluetoothRfcommWriteBinary(binary_message)
+        self.log.info("Read message.")
+        read_msg = self.server_ad.droid.bluetoothRfcommReadBinary().rstrip("\r\n")
+        self.log.info("Verify message.")
+        assert binary_message == read_msg, "Mismatch! Read {}".format(read_msg)
+        if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+            self.log.info("No rfcomm connections found on server.")
+            return False
+        if len(self.client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+            self.log.info("no rfcomm connections found on client.")
+            return False
+
         self.client_ad.droid.bluetoothRfcommStop()
         self.server_ad.droid.bluetoothRfcommStop()
         return True

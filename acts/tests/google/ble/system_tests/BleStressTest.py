@@ -31,7 +31,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class BleStressTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
 
     def __init__(self, controllers):
@@ -273,7 +272,7 @@ class BleStressTest(BluetoothBaseTest):
             self.scn_ad.droid)
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
-        reset_bluetooth([self.scan_ad])
+        reset_bluetooth([self.scn_ad])
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
 

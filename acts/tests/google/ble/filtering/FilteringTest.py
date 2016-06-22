@@ -34,7 +34,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class FilteringTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 30
 
     valid_filter_suite = [
@@ -171,13 +170,6 @@ class FilteringTest(BluetoothBaseTest):
             self.scn_ad.droid.getBuildModel()))
         self.log.info("Advertiser device model: {}".format(
             self.adv_ad.droid.getBuildModel()))
-        self.tests = ("test_valid_filters",
-                      "test_valid_filters_opportunistic_scan",
-                      "test_default_advertisement",
-                      "test_settings_in_effect_suite",
-                      "test_filters_suite",
-                      "test_filters_suite_opportunistic_scan",
-                      "test_non_connectable_advertise_data", )
 
     def blescan_verify_onfailure_event_handler(self, event):
         self.log.debug("Verifying {} event".format(adv_fail))

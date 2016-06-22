@@ -33,7 +33,6 @@ from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class BleOnLostOnFoundTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     max_scan_instances = 28
     active_scan_callback_list = []
@@ -47,9 +46,6 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         if self.droid_list[1]['max_advertisements'] == 0:
             self.tests = ()
             return
-        self.tests = ("test_onlost_onfound_defaults",
-                      "test_onlost_onfound_match_mode_sticky",
-                      "test_onlost_onfound_match_num_few", )
 
     def teardown_test(self):
         self.log.info(log_energy_info(self.droids, "End"))

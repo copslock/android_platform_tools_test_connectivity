@@ -37,7 +37,6 @@ from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
-    tests = None
     default_timeout = 10
     max_advertisements = 4
 
@@ -50,20 +49,6 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         if self.max_advertisements == 0:
             self.tests = ()
             return
-        self.tests = (
-            "test_max_advertisements_defaults",
-            "test_max_advertisements_include_device_name_and_filter_device_name",
-            "test_max_advertisements_exclude_device_name_and_filter_device_name",
-            "test_max_advertisements_with_manufacturer_data",
-            "test_max_advertisements_with_manufacturer_data_mask",
-            "test_max_advertisements_with_service_data",
-            "test_max_advertisements_with_manufacturer_data_mask_and_include_device_name",
-            "test_max_advertisements_with_service_uuids",
-            "test_max_advertisements_with_service_uuid_and_service_mask",
-            "test_max_advertisements_plus_one",
-            "test_start_two_advertisements_on_same_callback",
-            "test_toggle_advertiser_bt_state",
-            "test_restart_advertise_callback_after_bt_toggle", )
 
     def on_fail(self, test_name, begin_time):
         self.log.debug(
