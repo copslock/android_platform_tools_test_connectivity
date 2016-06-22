@@ -101,7 +101,7 @@ class GattConnectTest(BluetoothBaseTest):
         self.log.info("Disconnecting from peripheral device.")
         test_result = disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                                  gatt_callback)
-        self.cen_ad.droid.gattClientClose(gatt_callback)
+        self.cen_ad.droid.gattClientClose(bluetooth_gatt)
         if not test_result:
             self.log.info("Failed to disconnect from peripheral device.")
             return False
@@ -303,16 +303,16 @@ class GattConnectTest(BluetoothBaseTest):
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
         self.adv_instances.append(adv_callback)
-        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
-                                               MtuSize.MIN.value)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(bluetooth_gatt)
+        expected_mtu = MtuSize.MIN.value
+        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
+        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
             mtu_event = self.cen_ad.ed.pop_event(expected_event,
                                                  self.default_timeout)
             mtu_size_found = mtu_event['data']['MTU']
-            if mtu_size_found != MtuSize.MIN.value:
+            if mtu_size_found != expected_mtu:
                 self.log.error("MTU size found: {}, expected: {}".format(
-                    mtu_size_found, MtuSize.MIN.value))
+                    mtu_size_found, expected_mtu))
                 return False
         except Empty:
             self.log.error(GattCbErr.MTU_CHANGED_ERR.value.format(
@@ -353,16 +353,16 @@ class GattConnectTest(BluetoothBaseTest):
         bluetooth_gatt, gatt_callback, adv_callback = (
             orchestrate_gatt_connection(self.cen_ad, self.per_ad))
         self.adv_instances.append(adv_callback)
-        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
-                                               MtuSize.MAX.value)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(bluetooth_gatt)
+        expected_mtu = MtuSize.MAX.value
+        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
+        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
             mtu_event = self.cen_ad.ed.pop_event(expected_event,
                                                  self.default_timeout)
             mtu_size_found = mtu_event['data']['MTU']
-            if mtu_size_found != MtuSize.MAX.value:
+            if mtu_size_found != expected_mtu:
                 self.log.error("MTU size found: {}, expected: {}".format(
-                    mtu_size_found, MtuSize.MAX.value))
+                    mtu_size_found, expected_mtu))
                 return False
         except Empty:
             self.log.error(GattCbErr.MTU_CHANGED_ERR.value.format(
@@ -406,7 +406,7 @@ class GattConnectTest(BluetoothBaseTest):
         self.adv_instances.append(adv_callback)
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
                                                MtuSize.MIN.value - 1)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(bluetooth_gatt)
+        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
             self.cen_ad.ed.pop_event(expected_event, self.default_timeout)
             self.log.error("Found {} event when it wasn't expected".format(
@@ -1010,6 +1010,7 @@ class GattConnectTest(BluetoothBaseTest):
                         return False
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
     def test_gatt_connect_mitm_attack(self):
         """Test GATT connection with permission write encrypted mitm.
 
@@ -1217,6 +1218,7 @@ class GattConnectTest(BluetoothBaseTest):
                                 break
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
     def test_gatt_connect_mitm_attack(self):
         """Test GATT connection with permission write encrypted mitm.
 

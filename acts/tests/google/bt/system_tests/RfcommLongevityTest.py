@@ -49,13 +49,21 @@ class RfcommLongevityTest(BluetoothBaseTest):
 
     def on_fail(self, test_name, begin_time):
         take_btsnoop_logs(self.android_devices, self, test_name)
-        reset_bluetooth(self.android_devices)
+        for _ in range(5):
+            if reset_bluetooth(self.android_devices):
+                break
+            else:
+                self.log.info("Failed to reset bluetooth state, retrying...")
 
     def teardown_test(self):
         with suppress(Exception):
             for thread in self.thread_list:
                 thread.join()
-        reset_bluetooth(self.android_devices)
+        for _ in range(5):
+            if reset_bluetooth(self.android_devices):
+                break
+            else:
+                self.log.info("Failed to reset bluetooth state, retrying...")
         time.sleep(20) #safeguard in case of connId errors
 
     def orchestrate_rfcomm_connect(self, server_mac):
