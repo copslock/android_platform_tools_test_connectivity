@@ -528,10 +528,12 @@ def _wifi_toggle_state(ad, new_state=None):
     if new_state == ad.droid.wifiCheckState():
         return
     ad.droid.wifiStartTrackingStateChange()
-    log.info("Setting Wi-Fi state to %s on %s.", new_state, ad.serial)
+    if new_state is None:
+        new_state = not ad.droid.wifiCheckState()
+    ad.log.info("Setting Wi-Fi state to %s.", new_state)
+    # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
-    fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
-                                                           ad.serial)
+    fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state, ad.serial)
     try:
         event = ad.ed.pop_event(WifiEventNames.SUPPLICANT_CON_CHANGED,
                                 SHORT_TIMEOUT)
@@ -779,12 +781,12 @@ def _wifi_connect(ad, network, num_of_tries=1):
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
                             (network, serial))
-        log.debug("Connection result on %s: %s.", serial, connect_result)
+        ad.log.debug("Wi-Fi connection result: %s.", connect_result)
         expected_ssid = network[WifiEnums.SSID_KEY]
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
                              "Connected to the wrong network on %s." % serial)
-        log.info("Connected to Wi-Fi network %s on %s", actual_ssid, serial)
+        ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
     finally:
         ad.droid.wifiStopTrackingStateChange()
 
@@ -801,7 +803,7 @@ def start_wifi_single_scan(ad, scan_setting):
     """
     idx = ad.droid.wifiScannerStartScan(scan_setting)
     event = ad.ed.pop_event("WifiScannerScan%sonSuccess" % idx, SHORT_TIMEOUT)
-    log.debug("Got event %s", event)
+    ad.log.debug("Got event %s", event)
     return event['data']
 
 
@@ -820,7 +822,7 @@ def track_connection(ad, network_ssid, check_connection_count):
     droid.wifiStartTrackingStateChange()
     while check_connection_count > 0:
         connect_network = ed.pop_event("WifiNetworkConnected", 120)
-        log.info("connect_network {}".format(connect_network))
+        ad.log.info("Connected to network %s", connect_network)
         if (WifiEnums.SSID_KEY in connect_network['data'] and
                 connect_network['data'][WifiEnums.SSID_KEY] == network_ssid):
             return True
@@ -905,7 +907,7 @@ def check_internet_connection(ad, ping_addr):
     """
     droid, ed = ad.droid, ad.ed
     ping = droid.httpPing(ping_addr)
-    log.info("Http ping result: %s.", ping)
+    ad.log.info("Http ping result: %s.", ping)
     return ping
 
 
@@ -921,7 +923,7 @@ def verify_wifi_connection_info(ad, expected_con):
     """
     current_con = ad.droid.wifiGetConnectionInfo()
     case_insensitive = ["BSSID", "supplicant_state"]
-    log.debug("Current connection: %s", current_con)
+    ad.log.debug("Current connection: %s", current_con)
     for k, expected_v in expected_con.items():
         # Do not verify authentication related fields.
         if k == "password":
@@ -979,13 +981,13 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
     expect_ssid = None
     if WifiEnums.SSID_KEY in config:
         expect_ssid = config[WifiEnums.SSID_KEY]
-        log.info("Connecting to %s on %s.", expect_ssid, serial)
+        ad.log.info("Connecting to %s.", expect_ssid)
     else:
-        log.info("Connecting on %s.", serial)
+        ad.log.info("Connecting.")
     ad.droid.wifiEnterpriseConnect(config)
     try:
         event = ed.pop_event("WifiManagerEnterpriseConnectOnSuccess", 30)
-        log.info("Connection started on %s", serial)
+        ad.log.info("Connection started.")
     except Empty:
         asserts.fail("Failed to start connection process to %s on %s" %
                      (config, serial))
@@ -997,15 +999,15 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
     if expect_ssid:
         actual_ssid = event["data"][WifiEnums.SSID_KEY]
         asserts.assert_equal(expect_ssid, actual_ssid)
-        log.info("Connected to %s on %s.", expect_ssid, serial)
+        ad.log.info("Connected to %s.", expect_ssid)
     else:
-        log.info("Connected successfully on %s.", serial)
+        ad.log.info("Connected successfully.")
     if validate_con:
-        log.info("Checking Internet access.")
+        ad.log.info("Checking Internet access.")
         # Wait for data connection to stabilize.
         time.sleep(4)
         ping = ad.droid.httpPing(ping_addr)
-        log.info("Http ping result: %s on %s", ping, serial)
+        ad.log.info("Http ping result: %s.", ping)
         asserts.assert_true(ping,
                             "No Internet access on device %s on network %s." %
                             (serial, config))
