@@ -533,7 +533,8 @@ def _wifi_toggle_state(ad, new_state=None):
     ad.log.info("Setting Wi-Fi state to %s.", new_state)
     # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
-    fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state, ad.serial)
+    fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
+                                                           ad.serial)
     try:
         event = ad.ed.pop_event(WifiEventNames.SUPPLICANT_CON_CHANGED,
                                 SHORT_TIMEOUT)
@@ -627,6 +628,10 @@ def wifi_test_device_init(ad):
     asserts.assert_equal(ad.droid.wifiGetVerboseLoggingLevel(), 1, msg)
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     # We don't verify the following settings since they are not critical.
+    # Set wpa_supplicant log level to EXCESSIVE.
+    output = ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
+                          "wlan0 log_level EXCESSIVE")
+    ad.log.info("wpa_supplicant log change status: %s", output)
     sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
     # TODO(angli): need to verify the country code was actually set. No generic
