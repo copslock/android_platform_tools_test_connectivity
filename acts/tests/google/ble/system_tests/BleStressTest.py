@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Basic LE Stress tests.
 """
@@ -30,6 +29,7 @@ from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import scan_result
 
+
 class BleStressTest(BluetoothBaseTest):
     tests = None
     default_timeout = 10
@@ -39,16 +39,16 @@ class BleStressTest(BluetoothBaseTest):
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
-        self.tests = (
-            "test_loop_scanning_1000",
-            "test_restart_scan_callback_after_bt_toggle",
-            "test_start_le_scan_while_toggling_bt",
-        )
+        self.tests = ("test_loop_scanning_1000",
+                      "test_restart_scan_callback_after_bt_toggle",
+                      "test_start_le_scan_while_toggling_bt", )
         if self.droid_list[0]['max_advertisements'] > 0:
-            self.tests = self.tests + ("test_loop_advertising_100",
-                                       "test_restart_advertise_callback_after_bt_toggle",)
+            self.tests = self.tests + (
+                "test_loop_advertising_100",
+                "test_restart_advertise_callback_after_bt_toggle", )
         if self.droid_list[1]['max_advertisements'] >= 4:
-            self.tests = self.tests + ("test_loop_scanning_100_verify_no_hci_timeout",)
+            self.tests = self.tests + (
+                "test_loop_scanning_100_verify_no_hci_timeout", )
 
     def bleadvertise_verify_onsuccess_handler(self, event):
         test_result = True
@@ -83,9 +83,9 @@ class BleStressTest(BluetoothBaseTest):
         test_result = True
         for _ in range(1000):
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-                scan_droid)
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+                self.scn_ad.droid)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
             self.scn_ad.droid.bleStopBleScan(scan_callback)
         return test_result
 
@@ -116,15 +116,15 @@ class BleStressTest(BluetoothBaseTest):
         for _ in range(self.droid_list[1]['max_advertisements']):
             adv_callback, adv_data, adv_settings = generate_ble_advertise_objects(
                 self.adv_ad.droid)
-            self.adv_ad.droid.bleStartBleAdvertising(
-                adv_callback, adv_data, adv_settings)
+            self.adv_ad.droid.bleStartBleAdvertising(adv_callback, adv_data,
+                                                     adv_settings)
         for _ in range(100):
             filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
                 self.scn_ad.droid)
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
-            self.log.info(self.scn_ad.ed.pop_event(
-                scan_result.format(scan_callback)))
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
+            self.log.info(self.scn_ad.ed.pop_event(scan_result.format(
+                scan_callback)))
             self.scn_ad.droid.bleStopBleScan(scan_callback)
             time.sleep(1)
         return True
@@ -158,22 +158,22 @@ class BleStressTest(BluetoothBaseTest):
                 advertise_droid)
             advertise_droid.bleStartBleAdvertising(
                 advertise_callback, advertise_data, advertise_settings)
-            expected_advertise_event_name = "".join(
-                ["BleAdvertise", str(advertise_callback), "onSuccess"])
-            worker = advertise_event_dispatcher.handle_event(
-                self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, (
-                    []),
-                self.default_timeout)
+            expected_advertise_event_name = "".join(["BleAdvertise", str(
+                advertise_callback), "onSuccess"])
+            worker = self.adv_ad.ed.handle_event(
+                self.bleadvertise_verify_onsuccess_handler,
+                expected_advertise_event_name, ([]), self.default_timeout)
             try:
                 self.log.debug(worker.result(self.default_timeout))
             except Empty as error:
-                self.log.debug(
-                    " ".join(["Test failed with Empty error:", str(error)]))
+                self.log.debug(" ".join(["Test failed with Empty error:", str(
+                    error)]))
                 test_result = False
             except concurrent.futures._base.TimeoutError as error:
-                self.log.debug(
-                    " ".join(["Test failed, filtering callback onSuccess never occurred:",
-                              str(error)]))
+                self.log.debug(" ".join([
+                    "Test failed, filtering callback onSuccess never occurred:",
+                    str(error)
+                ]))
                 test_result = False
             advertise_droid.bleStopBleAdvertising(advertise_callback)
         return test_result
@@ -209,42 +209,40 @@ class BleStressTest(BluetoothBaseTest):
             advertise_droid)
         advertise_droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        expected_advertise_event_name = "".join(
-            ["BleAdvertise", str(advertise_callback), "onSuccess"])
-        worker = advertise_event_dispatcher.handle_event(
-            self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, (
-                []),
-            self.default_timeout)
+        expected_advertise_event_name = "".join(["BleAdvertise", str(
+            advertise_callback), "onSuccess"])
+        worker = self.adv_ad.ed.handle_event(
+            self.bleadvertise_verify_onsuccess_handler,
+            expected_advertise_event_name, ([]), self.default_timeout)
         try:
             self.log.debug(worker.result(self.default_timeout))
         except Empty as error:
-            self.log.debug(
-                " ".join(["Test failed with Empty error:", str(error)]))
+            self.log.debug(" ".join(["Test failed with Empty error:", str(
+                error)]))
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(
-                " ".join(["Test failed, filtering callback onSuccess never occurred:",
-                          str(error)]))
+            self.log.debug(" ".join(
+                ["Test failed, filtering callback onSuccess never occurred:",
+                 str(error)]))
         test_result = reset_bluetooth([self.scn_ad])
         if not test_result:
             return test_result
         time.sleep(5)
         advertise_droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        worker = advertise_event_dispatcher.handle_event(
-            self.bleadvertise_verify_onsuccess_handler, expected_advertise_event_name, (
-                []),
-            self.default_timeout)
+        worker = self.adv_ad.ed.handle_event(
+            self.bleadvertise_verify_onsuccess_handler,
+            expected_advertise_event_name, ([]), self.default_timeout)
         try:
             self.log.debug(worker.result(self.default_timeout))
         except Empty as error:
-            self.log.debug(
-                " ".join(["Test failed with Empty error:", str(error)]))
+            self.log.debug(" ".join(["Test failed with Empty error:", str(
+                error)]))
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(
-                " ".join(["Test failed, filtering callback onSuccess never occurred:",
-                          str(error)]))
+            self.log.debug(" ".join(
+                ["Test failed, filtering callback onSuccess never occurred:",
+                 str(error)]))
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
@@ -272,11 +270,11 @@ class BleStressTest(BluetoothBaseTest):
         """
         test_result = True
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
-            scan_droid)
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         reset_bluetooth([self.scan_ad])
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
 
         return test_result

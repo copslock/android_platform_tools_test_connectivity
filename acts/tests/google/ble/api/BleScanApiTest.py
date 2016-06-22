@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to exercise Ble Scan Api's. This exercises all getters and
 setters. This is important since there is a builder object that is immutable
@@ -31,22 +30,18 @@ from acts.test_utils.bt.BleEnum import Uuids
 
 
 class BleScanResultsError(Exception):
-
     """Error in getting scan results"""
 
 
 class BleScanVerificationError(Exception):
-
     """Error in comparing BleScan results"""
 
 
 class BleSetScanSettingsError(Exception):
-
     """Error in setting Ble Scan Settings"""
 
 
 class BleSetScanFilterError(Exception):
-
     """Error in setting Ble Scan Settings"""
 
 
@@ -94,8 +89,7 @@ class BleScanApiTest(BluetoothBaseTest):
             "test_classic_ble_scan_with_service_uuids_p",
             "test_classic_ble_scan_with_service_uuids_hr",
             "test_classic_ble_scan_with_service_uuids_empty_uuid_list",
-            "test_classic_ble_scan_with_service_uuids_hr_and_p",
-        )
+            "test_classic_ble_scan_with_service_uuids_hr_and_p", )
 
     def _format_defaults(self, input):
         """
@@ -128,8 +122,8 @@ class BleScanApiTest(BluetoothBaseTest):
         if 'ScanSettings' in input.keys():
             try:
                 droid.bleSetScanSettingsCallbackType(input['ScanSettings'][0])
-                droid.bleSetScanSettingsReportDelayMillis(
-                    input['ScanSettings'][1])
+                droid.bleSetScanSettingsReportDelayMillis(input[
+                    'ScanSettings'][1])
                 droid.bleSetScanSettingsScanMode(input['ScanSettings'][2])
                 droid.bleSetScanSettingsResultType(input['ScanSettings'][3])
             except SL4AAPIError as error:
@@ -144,14 +138,14 @@ class BleScanApiTest(BluetoothBaseTest):
                 return False
         if 'ScanFilterDeviceAddress' in input.keys():
             try:
-                droid.bleSetScanFilterDeviceAddress(
-                    input['ScanFilterDeviceAddress'])
+                droid.bleSetScanFilterDeviceAddress(input[
+                    'ScanFilterDeviceAddress'])
             except SL4AAPIError as error:
                 self.log.debug("Set Scan Filter Device Address failed with: {}"
                                .format(error))
                 return False
-        if ('ScanFilterManufacturerDataId' in input.keys()
-                and 'ScanFilterManufacturerDataMask' in input.keys()):
+        if ('ScanFilterManufacturerDataId' in input.keys() and
+                'ScanFilterManufacturerDataMask' in input.keys()):
             try:
                 droid.bleSetScanFilterManufacturerData(
                     input['ScanFilterManufacturerDataId'],
@@ -161,19 +155,20 @@ class BleScanApiTest(BluetoothBaseTest):
                 self.log.debug("Set Scan Filter Manufacturer info with data "
                                "mask failed with: {}".format(error))
                 return False
-        if ('ScanFilterManufacturerDataId' in input.keys()
-            and 'ScanFilterManufacturerData' in input.keys()
-                and 'ScanFilterManufacturerDataMask' not in input.keys()):
+        if ('ScanFilterManufacturerDataId' in input.keys() and
+                'ScanFilterManufacturerData' in input.keys() and
+                'ScanFilterManufacturerDataMask' not in input.keys()):
             try:
                 droid.bleSetScanFilterManufacturerData(
                     input['ScanFilterManufacturerDataId'],
                     input['ScanFilterManufacturerData'])
             except SL4AAPIError as error:
-                self.log.debug("Set Scan Filter Manufacturer info failed with: "
-                               "{}".format(error))
+                self.log.debug(
+                    "Set Scan Filter Manufacturer info failed with: "
+                    "{}".format(error))
                 return False
-        if ('ScanFilterServiceUuid' in input.keys() and 'ScanFilterServiceMask'
-            in input.keys()):
+        if ('ScanFilterServiceUuid' in input.keys() and
+                'ScanFilterServiceMask' in input.keys()):
 
             droid.bleSetScanFilterServiceUuid(input['ScanFilterServiceUuid'],
                                               input['ScanFilterServiceMask'])
@@ -182,11 +177,9 @@ class BleScanApiTest(BluetoothBaseTest):
         scan_settings_index = droid.bleBuildScanSetting()
         scan_settings = (
             droid.bleGetScanSettingsCallbackType(scan_settings_index),
-            droid.bleGetScanSettingsReportDelayMillis(
-                scan_settings_index),
+            droid.bleGetScanSettingsReportDelayMillis(scan_settings_index),
             droid.bleGetScanSettingsScanMode(scan_settings_index),
-            droid.bleGetScanSettingsScanResultType(
-                scan_settings_index))
+            droid.bleGetScanSettingsScanResultType(scan_settings_index))
 
         scan_filter_index = droid.bleBuildScanFilter(filter_list)
         device_name_filter = droid.bleGetScanFilterDeviceName(
@@ -209,43 +202,47 @@ class BleScanApiTest(BluetoothBaseTest):
             return False
         if device_address_filter != input['ScanFilterDeviceAddress']:
             self.log.debug("Scan Filter address name did not match. expected: "
-                           "{}, found: {}".format(
-                input['ScanFilterDeviceAddress'], device_address_filter))
+                           "{}, found: {}".format(input[
+                               'ScanFilterDeviceAddress'],
+                                                  device_address_filter))
             return False
         if manufacturer_id != input['ScanFilterManufacturerDataId']:
             self.log.debug("Scan Filter manufacturer data id did not match. "
-                           "expected: {}, found: {}".format(
-                input['ScanFilterManufacturerDataId'], manufacturer_id))
+                           "expected: {}, found: {}".format(input[
+                               'ScanFilterManufacturerDataId'],
+                                                            manufacturer_id))
             return False
         if manufacturer_data != input['ScanFilterManufacturerData']:
             self.log.debug("Scan Filter manufacturer data did not match. "
-                           "expected: {}, found: {}".format(
-                input['ScanFilterManufacturerData'], manufacturer_data))
+                           "expected: {}, found: {}".format(input[
+                               'ScanFilterManufacturerData'],
+                                                            manufacturer_data))
             return False
         if 'ScanFilterManufacturerDataMask' in input.keys():
             manufacturer_data_mask = droid.bleGetScanFilterManufacturerDataMask(
-                filter_list,
-                scan_filter_index)
+                filter_list, scan_filter_index)
             if manufacturer_data_mask != input[
                     'ScanFilterManufacturerDataMask']:
-                self.log.debug("Manufacturer data mask did not match. expected:"
-                               " {}, found: {}".format(
-                    input['ScanFilterManufacturerDataMask'],
-                    manufacturer_data_mask))
+                self.log.debug(
+                    "Manufacturer data mask did not match. expected:"
+                    " {}, found: {}".format(input[
+                        'ScanFilterManufacturerDataMask'],
+                                            manufacturer_data_mask))
 
                 return False
-        if ('ScanFilterServiceUuid' in input.keys() and 'ScanFilterServiceMask'
-            in input.keys()):
+        if ('ScanFilterServiceUuid' in input.keys() and
+                'ScanFilterServiceMask' in input.keys()):
 
             expected_service_uuid = input['ScanFilterServiceUuid']
             expected_service_mask = input['ScanFilterServiceMask']
             service_uuid = droid.bleGetScanFilterServiceUuid(filter_list,
                                                              scan_filter_index)
-            service_mask = droid.bleGetScanFilterServiceUuidMask(filter_list,
-                                                                 scan_filter_index)
+            service_mask = droid.bleGetScanFilterServiceUuidMask(
+                filter_list, scan_filter_index)
             if service_uuid != expected_service_uuid.lower():
                 self.log.debug("Service uuid did not match. expected: {}, "
-                               "found {}".format(expected_service_uuid,service_uuid))
+                               "found {}".format(expected_service_uuid,
+                                                 service_uuid))
                 return False
             if service_mask != expected_service_mask.lower():
                 self.log.debug("Service mask did not match. expected: {}, "
@@ -1278,8 +1275,8 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.verify_classic_ble_scan_with_service_uuids(
             droid, scan_callback, service_uuid_list)
 
-    def verify_classic_ble_scan_with_service_uuids(
-        self, droid, scan_callback, service_uuid_list):
+    def verify_classic_ble_scan_with_service_uuids(self, droid, scan_callback,
+                                                   service_uuid_list):
 
         test_result = True
         try:
