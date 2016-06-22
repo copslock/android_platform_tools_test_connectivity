@@ -14,11 +14,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import os
+__author__ = 'angli@google.com (Ang Li)'
 
-import acts.base_test
+import os
+import threading
+import time
+
+from acts import base_test
 from acts import asserts
 from acts import utils
+from acts.controllers import adb
 from acts.controllers import iperf_server as ip_server
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -38,20 +43,20 @@ pmc_start_gscan_specific_channels_cmd = "%sStartGScanChannel" % pmc_base_cmd
 pmc_stop_gscan_cmd = "%sStopGScan" % pmc_base_cmd
 pmc_start_iperf_client = "%sStartIperfClient" % pmc_base_cmd
 pmc_stop_iperf_client = "%sStopIperfClient" % pmc_base_cmd
+pmc_turn_screen_on = "%sTurnScreenOn" % pmc_base_cmd
+pmc_turn_screen_off = "%sTurnScreenOff" % pmc_base_cmd
 # Path of the iperf json output file from an iperf run.
 pmc_iperf_json_file = "/sdcard/iperf.txt"
 
 
-class WifiPowerTest(acts.base_test.BaseTestClass):
+class WifiPowerTest(base_test.BaseTestClass):
     def setup_class(self):
-        self.hz = 5000
         self.offset = 5 * 60
-        self.duration = 30 * 60 + self.offset
+        self.hz = 5000
         self.scan_interval = 15
         # Continuosly download
         self.download_interval = 0
         self.mon_data_path = os.path.join(self.log_path, "Monsoon")
-
         self.mon = self.monsoons[0]
         self.mon.set_voltage(4.2)
         self.mon.set_max_current(7.8)
@@ -68,6 +73,12 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
             "iperf_server_address")
         self.unpack_userparams(required_userparam_names, ("threshold", ))
         wutils.wifi_test_device_init(self.dut)
+        try:
+            self.attn = self.attenuators[0]
+            self.attn.set_atten(0)
+        except AttributeError:
+            self.log.warning("No attenuator found, some tests will fail.")
+            pass
         # Start pmc app.
         self.dut.adb.shell(start_pmc_cmd)
         self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
@@ -77,12 +88,19 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
                                               self.iperf_server_address))
         self.dut.adb.shell("%sServerPort %s" % (pmc_set_params,
                                                 self.iperf_server.port))
-        self.dut.adb.shell("rm %s" % pmc_iperf_json_file)
+        try:
+            self.dut.adb.shell("rm %s" % pmc_iperf_json_file)
+        except adb.AdbError:
+            pass
 
     def teardown_class(self):
         self.mon.usb("on")
 
     def setup_test(self):
+        # Default measurement time is 30min with an offset of 5min. Each test
+        # can overwrite this by setting self.duration and self.offset.
+        self.offset = 5 * 60
+        self.duration = 30 * 60 + self.offset
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
@@ -244,3 +262,52 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         finally:
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
+
+    def test_power_auto_reconnect(self):
+        """
+        Steps:
+            1. Connect to network, wait for three minutes.
+            2. Attenuate AP away, wait for one minute.
+            3. Make AP reappear, wait for three minutes for the device to
+               reconnect to the Wi-Fi network.
+        """
+        self.attn.set_atten(0)
+        wutils.wifi_connect(self.dut, self.network_2g)
+
+        def attn_control():
+            for i in range(7):
+                self.log.info("Iteration %s: Idle 3min after AP appeared.", i)
+                time.sleep(3 * 60)
+                self.attn.set_atten(90)
+                self.log.info("Iteration %s: Idle 1min after AP disappeared.",
+                              i)
+                time.sleep(60)
+                self.attn.set_atten(0)
+
+        t = threading.Thread(target=attn_control)
+        t.start()
+        try:
+            self.measure_and_process_result()
+        finally:
+            t.join()
+
+    def test_power_screen_on_wifi_off(self):
+        self.duration = 10 * 60
+        self.offset = 4 * 60
+        wutils.wifi_toggle_state(self.dut, False)
+        try:
+            self.dut.adb.shell(pmc_turn_screen_on)
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_turn_screen_off)
+
+    def test_power_screen_on_wifi_connected_2g_idle(self):
+        self.duration = 10 * 60
+        self.offset = 4 * 60
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_connect(self.dut, self.network_2g)
+        try:
+            self.dut.adb.shell(pmc_turn_screen_on)
+            self.measure_and_process_result()
+        finally:
+            self.dut.adb.shell(pmc_turn_screen_off)
