@@ -434,9 +434,9 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
         devices support device-to-ap RTT.
         """
         model = acts.utils.trim_model_name(self.dut.model)
-        asserts.assert_false(
+        asserts.assert_true(
             self.dut.droid.wifiIsDeviceToDeviceRttSupported(),
-            "Device to device is not supposed to be supported.")
+            "Device to device is supposed to be supported.")
         if any([model in m for m in self.support_models]):
             asserts.assert_true(self.dut.droid.wifiIsDeviceToApRttSupported(),
                                 "%s should support device-to-ap RTT." % model)
