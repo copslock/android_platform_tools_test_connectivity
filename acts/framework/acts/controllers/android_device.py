@@ -20,7 +20,6 @@ from builtins import open
 import logging
 import os
 import time
-import traceback
 
 from acts import logger as acts_logger
 from acts import signals
@@ -291,6 +290,8 @@ class AndroidDevice:
                 for adb port forwarding.
         log_path: A string that is the path where all logs collected on this
                   android device should be stored.
+        log: A logger adapted from root logger with added token specific to an
+             AndroidDevice instance.
         adb_logcat_process: A process that collects the adb logcat.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
@@ -306,6 +307,8 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {"serial": self.serial})
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -490,8 +493,8 @@ class AndroidDevice:
         if ed_key in self._event_dispatchers:
             if self._event_dispatchers[ed_key] is None:
                 raise AndroidDeviceError("EventDispatcher Key Empty")
-            logging.debug("Returning existing key %s for event dispatcher!",
-                          ed_key)
+            self.log.debug("Returning existing key %s for event dispatcher!",
+                           ed_key)
             return self._event_dispatchers[ed_key]
         event_droid = self.add_new_connection_to_session(droid.uid)
         ed = event_dispatcher.EventDispatcher(event_droid)
@@ -517,7 +520,7 @@ class AndroidDevice:
                 ("Attempting to cat adb log when none has"
                  " been collected on Android device %s.") % self.serial)
         end_time = acts_logger.get_log_line_timestamp()
-        logging.debug("Extracting adb log from logcat.")
+        self.log.debug("Extracting adb log from logcat.")
         adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
@@ -599,9 +602,10 @@ class AndroidDevice:
         full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
-        logging.info("Taking bugreport for %s on %s", test_name, self.serial)
+        self.log.info("Taking bugreport for %s.", test_name)
         self.adb.bugreport(" > {}".format(full_out_path))
-        logging.info("Bugreport for %s taken at %s", test_name, full_out_path)
+        self.log.info("Bugreport for %s taken at %s.", test_name,
+                      full_out_path)
 
     def start_new_session(self):
         """Start a new session in sl4a.
@@ -674,9 +678,8 @@ class AndroidDevice:
                 try:
                     self.terminate_session(session_id)
                 except:
-                    logging.exception("Failed to terminate session %d.",
-                                      session_id)
-                    logging.error(traceback.format_exc())
+                    self.log.exception("Failed to terminate session %d.",
+                                       session_id)
             if self.h_port:
                 self.adb.forward("--remove tcp:%d" % self.h_port)
                 self.h_port = None
@@ -779,3 +782,9 @@ class AndroidDevice:
         if has_adb_log:
             self.start_adb_logcat()
         return droid, ed
+
+
+class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        msg = "[AndroidDevice|%s] %s" % (self.extra["serial"], msg)
+        return (msg, kwargs)
