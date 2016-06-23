@@ -264,4 +264,3 @@ class BleStressTest(BluetoothBaseTest):
                                           scan_callback)
 
         return test_result
-

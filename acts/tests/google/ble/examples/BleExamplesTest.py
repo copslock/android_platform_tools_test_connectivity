@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 This script shows simple examples of how to get started with bluetooth low energy testing in acts.
 """
@@ -59,10 +58,9 @@ class BleExamplesTest(BluetoothBaseTest):
     # unexpected exception, you can customise it.
     def on_exception(self, test_name, begin_time):
         self.log.debug(
-            "Test {} failed. Gathering bugreport and btsnoop logs".
-            format(test_name))
-        android_devices.take_bug_reports(self.android_devices,
-                                         test_name,
+            "Test {} failed. Gathering bugreport and btsnoop logs".format(
+                test_name))
+        android_devices.take_bug_reports(self.android_devices, test_name,
                                          begin_time)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -103,14 +101,14 @@ class BleExamplesTest(BluetoothBaseTest):
         filter_list = self.scn_droid.bleGenFilterList()
         scan_settings = self.scn_droid.bleBuildScanSetting()
         scan_callback = self.scn_droid.bleGenScanCallback()
-        self.scn_droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_droid.bleStartBleScan(filter_list, scan_settings,
+                                       scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         event_name = scan_result.format(scan_callback)
         try:
             event = self.scn_ed.pop_event(event_name, self.default_timeout)
-            self.log.info(
-                "Found scan result: {}".format(pprint.pformat(event)))
+            self.log.info("Found scan result: {}".format(pprint.pformat(
+                event)))
         except Exception:
             self.log.info("Didn't find any scan results.")
         return True

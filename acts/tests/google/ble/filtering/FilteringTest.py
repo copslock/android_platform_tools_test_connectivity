@@ -136,15 +136,15 @@ class FilteringTest(BluetoothBaseTest):
         "tx_power_level": [
             AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
-            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_ULTRA_LOW.value,
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_ULTRA_LOW.
+            value,
             AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
         ],
         "is_connectable": [True, False],
         "scan_mode": [ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
                       ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
                       ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
-                      ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-                      ]
+                      ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, ]
     }
 
     default_callback = 1
@@ -154,9 +154,9 @@ class FilteringTest(BluetoothBaseTest):
 
     def _get_combinations(self, t):
         varNames = sorted(t)
-        return (
-            [dict(zip(varNames, prod)) for prod
-             in it.product(*(t[varName] for varName in varNames))])
+        return ([dict(zip(varNames, prod))
+                 for prod in it.product(*(t[varName]
+                                          for varName in varNames))])
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
@@ -194,9 +194,10 @@ class FilteringTest(BluetoothBaseTest):
                 'include_device_name'] is not False:
             if event['data']['Result']['deviceName'] != filters[
                     'include_device_name']:
-                self.log.error("Expected device name: {}, Found device name: {}"
-                               .format(filters['include_device_name'],
-                                       event['data']['Result']['deviceName']))
+                self.log.error(
+                    "Expected device name: {}, Found device name: {}"
+                    .format(filters['include_device_name'], event['data'][
+                        'Result']['deviceName']))
 
                 test_result = False
         elif 'deviceName' in event['data']['Result'].keys():
@@ -222,42 +223,41 @@ class FilteringTest(BluetoothBaseTest):
         test_result = True
         if 'is_connectable' in settings_in_effect.keys():
             if (event['data']['SettingsInEffect']['isConnectable'] !=
-               settings_in_effect['is_connectable']):
-                self.log.error(
-                    "Expected is connectable value: {}, Actual is "
-                    "connectable value:".format(
-                        settings_in_effect['is_connectable'],
-                        event['data']['SettingsInEffect']['isConnectable']))
+                    settings_in_effect['is_connectable']):
+                self.log.error("Expected is connectable value: {}, Actual is "
+                               "connectable value:".format(settings_in_effect[
+                                   'is_connectable'], event['data'][
+                                       'SettingsInEffect']['isConnectable']))
                 test_result = False
         elif (event['data']['SettingsInEffect']['isConnectable'] !=
-                self.default_is_connectable):
+              self.default_is_connectable):
             self.log.error(
                 "Default value for isConnectable did not match what was found.")
             test_result = False
         if 'mode' in settings_in_effect.keys():
             if (event['data']['SettingsInEffect']['mode'] !=
-               settings_in_effect['mode']):
-                self.log.error(
-                    "Expected mode value: {}, Actual mode value: {}"
-                    .format(settings_in_effect['mode'],
-                            event['data']['SettingsInEffect']['mode']))
+                    settings_in_effect['mode']):
+                self.log.error("Expected mode value: {}, Actual mode value: {}"
+                               .format(settings_in_effect['mode'], event[
+                                   'data']['SettingsInEffect']['mode']))
                 test_result = False
         elif (event['data']['SettingsInEffect']['mode'] !=
-                self.default_advertise_mode):
+              self.default_advertise_mode):
             self.log.error(
                 "Default value for filtering mode did not match what was "
                 "found.")
             test_result = False
         if 'tx_power_level' in settings_in_effect.keys():
             if (event['data']['SettingsInEffect']['txPowerLevel'] ==
-               JavaInteger.MIN.value):
+                    JavaInteger.MIN.value):
                 self.log.error("Expected tx power level was not meant to be: "
                                "{}".format(JavaInteger.MIN.value))
                 test_result = False
         elif (event['data']['SettingsInEffect']['txPowerLevel'] !=
-                self.default_tx_power_level):
-            self.log.error("Default value for tx power level did not match what"
-                           " was found.")
+              self.default_tx_power_level):
+            self.log.error(
+                "Default value for tx power level did not match what"
+                " was found.")
             test_result = False
         return test_result
 
@@ -265,28 +265,27 @@ class FilteringTest(BluetoothBaseTest):
         (filters, settings_in_effect) = params
         test_result = True
 
-        self.log.debug("Settings in effect: {}".format(
-            pprint.pformat(settings_in_effect)))
+        self.log.debug("Settings in effect: {}".format(pprint.pformat(
+            settings_in_effect)))
         self.log.debug("Filters:".format(pprint.pformat(filters)))
         if 'is_connectable' in settings_in_effect.keys():
             self.log.debug("Setting advertisement is_connectable to {}".format(
-                           settings_in_effect['is_connectable']))
+                settings_in_effect['is_connectable']))
             self.adv_ad.droid.bleSetAdvertiseSettingsIsConnectable(
                 settings_in_effect['is_connectable'])
         if 'mode' in settings_in_effect.keys():
-            self.log.debug(
-                "Setting advertisement mode to {}"
-                .format(settings_in_effect['mode']))
+            self.log.debug("Setting advertisement mode to {}"
+                           .format(settings_in_effect['mode']))
             self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
                 settings_in_effect['mode'])
         if 'tx_power_level' in settings_in_effect.keys():
             self.log.debug("Setting advertisement tx_power_level to {}".format(
-                           settings_in_effect['tx_power_level']))
+                settings_in_effect['tx_power_level']))
             self.adv_ad.droid.bleSetAdvertiseSettingsTxPowerLevel(
                 settings_in_effect['tx_power_level'])
         filter_list = self.scn_ad.droid.bleGenFilterList()
-        if ('include_device_name' in filters.keys()
-            and filters['include_device_name'] is not False):
+        if ('include_device_name' in filters.keys() and
+                filters['include_device_name'] is not False):
 
             self.log.debug("Setting advertisement include_device_name to {}"
                            .format(filters['include_device_name']))
@@ -294,9 +293,9 @@ class FilteringTest(BluetoothBaseTest):
             filters['include_device_name'] = (
                 self.adv_ad.droid.bluetoothGetLocalName())
             self.log.debug("Setting scanner include_device_name to {}".format(
-                           filters['include_device_name']))
-            self.scn_ad.droid.bleSetScanFilterDeviceName(
-                filters['include_device_name'])
+                filters['include_device_name']))
+            self.scn_ad.droid.bleSetScanFilterDeviceName(filters[
+                'include_device_name'])
         else:
             self.log.debug(
                 "Setting advertisement include_device_name to False")
@@ -324,52 +323,49 @@ class FilteringTest(BluetoothBaseTest):
                     filters['manufacturer_specific_data'])
         if 'service_data' in filters.keys():
             self.adv_ad.droid.bleAddAdvertiseDataServiceData(
-                filters['service_data_uuid'],
-                filters['service_data'])
+                filters['service_data_uuid'], filters['service_data'])
             self.scn_ad.droid.bleSetScanFilterServiceData(
-                filters['service_data_uuid'],
-                filters['service_data'])
+                filters['service_data_uuid'], filters['service_data'])
         if 'manufacturer_specific_data_list' in filters.keys():
             for pair in filters['manufacturer_specific_data_list']:
                 (manu_id, manu_data) = pair
-                self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(
-                    manu_id, manu_data)
+                self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(manu_id,
+                                                                    manu_data)
         if 'service_mask' in filters.keys():
             self.scn_ad.droid.bleSetScanFilterServiceUuid(
-                filters['service_uuid'].upper(),
-                filters['service_mask'])
-            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids(
-                [filters['service_uuid'].upper()])
+                filters['service_uuid'].upper(), filters['service_mask'])
+            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids([filters[
+                'service_uuid'].upper()])
         elif 'service_uuid' in filters.keys():
-            self.scn_ad.droid.bleSetScanFilterServiceUuid(
-                filters['service_uuid'])
-            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids(
-                [filters['service_uuid']])
+            self.scn_ad.droid.bleSetScanFilterServiceUuid(filters[
+                'service_uuid'])
+            self.adv_ad.droid.bleSetAdvertiseDataSetServiceUuids([filters[
+                'service_uuid']])
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
         advertise_callback, advertise_data, advertise_settings = (
             generate_ble_advertise_objects(self.adv_ad.droid))
-        if ('scan_mode' in settings_in_effect
-            and settings_in_effect['scan_mode']
-           != ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
-            self.scn_ad.droid.bleSetScanSettingsScanMode(
-                settings_in_effect['scan_mode'])
+        if ('scan_mode' in settings_in_effect and
+                settings_in_effect['scan_mode'] !=
+                ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
+            self.scn_ad.droid.bleSetScanSettingsScanMode(settings_in_effect[
+                'scan_mode'])
         else:
             self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         opportunistic = False
         scan_settings2, scan_callback2 = None, None
         if ('scan_mode' in settings_in_effect and
                 settings_in_effect['scan_mode'] ==
-                    ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
+                ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
             opportunistic = True
             scan_settings2 = self.scn_ad.droid.bleBuildScanSetting()
             scan_callback2 = self.scn_ad.droid.bleGenScanCallback()
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings2, scan_callback2)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings2,
+                                              scan_callback2)
             self.scn_ad.droid.bleSetScanSettingsScanMode(
                 ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
         self.adv_ad.droid.bleStartBleAdvertising(
@@ -392,8 +388,8 @@ class FilteringTest(BluetoothBaseTest):
         try:
             finished = False
             start_time = time.time()
-            while (time.time() < start_time + self.default_timeout and not
-                finished):
+            while (time.time() < start_time + self.default_timeout and
+                   not finished):
 
                 test_result = worker.result(self.default_timeout)
                 if test_result:
@@ -466,12 +462,12 @@ class FilteringTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning
         Priority: 1
         """
-        settings = self._get_combinations(
-            self.settings_in_effect_variants)
+        settings = self._get_combinations(self.settings_in_effect_variants)
         filters = [{"include_device_name": True}]
         params = list(it.product(filters, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="settings_in_effect_suite")
+        failed = self.run_generated_testcases(self._magic,
+                                              params,
+                                              tag="settings_in_effect_suite")
         if failed:
             return False
         return True
@@ -499,10 +495,13 @@ class FilteringTest(BluetoothBaseTest):
         """
         valid_filter_suit = self._get_combinations(self.valid_filter_variants)
         settings = [
-            {'mode':AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
+            {'mode':
+             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}
+        ]
         params = list(it.product(valid_filter_suit, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="filters_suite")
+        failed = self.run_generated_testcases(self._magic,
+                                              params,
+                                              tag="filters_suite")
         if failed:
             return False
         return True
@@ -532,11 +531,14 @@ class FilteringTest(BluetoothBaseTest):
         reset_bluetooth(self.android_devices)
         valid_filter_suit = self._get_combinations(self.valid_filter_variants)
         settings = [
-            {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value,
-             'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value}]
+            {'mode':
+             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value,
+             'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value}
+        ]
         params = list(it.product(valid_filter_suit, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="filters_suite")
+        failed = self.run_generated_testcases(self._magic,
+                                              params,
+                                              tag="filters_suite")
         if failed:
             return False
         return True
@@ -564,10 +566,13 @@ class FilteringTest(BluetoothBaseTest):
         """
         reset_bluetooth(self.android_devices)
         settings = [
-            {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}]
+            {'mode':
+             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value}
+        ]
         params = list(it.product(self.valid_filter_suite, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="valid_filters")
+        failed = self.run_generated_testcases(self._magic,
+                                              params,
+                                              tag="valid_filters")
         if failed:
             return False
         return True
@@ -595,11 +600,14 @@ class FilteringTest(BluetoothBaseTest):
         Priority: 1
         """
         settings = [
-            {'mode': AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value,
-             'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value}]
+            {'mode':
+             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value,
+             'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value}
+        ]
         params = list(it.product(self.valid_filter_suite, settings))
-        failed = self.run_generated_testcases(
-            self._magic, params, tag="valid_filters")
+        failed = self.run_generated_testcases(self._magic,
+                                              params,
+                                              tag="valid_filters")
         if failed:
             return False
         return True
