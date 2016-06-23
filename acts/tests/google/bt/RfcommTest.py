@@ -85,7 +85,6 @@ class RfcommTest(BluetoothBaseTest):
         self.thread_list.clear()
 
     def orchestrate_rfcomm_connect(self, server_mac):
-        print("BLAH")
         accept_thread = threading.Thread(target=rfcomm_accept,
                                          args=(self.server_ad, ))
         self.thread_list.append(accept_thread)
