@@ -20,6 +20,9 @@
 import os
 import time
 import traceback
+
+import acts.controllers.diag_logger
+
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 from acts import utils
@@ -51,6 +54,7 @@ from acts.utils import force_airplane_mode
 class TelephonyBaseTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
+        self.logger_sessions = []
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -105,6 +109,9 @@ class TelephonyBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+        setattr(self, "diag_logger",
+                self.register_controller(acts.controllers.diag_logger,
+                                         required=False))
         for ad in self.android_devices:
             setup_droid_properties(self.log, ad,
                                    self.user_params["sim_conf_file"])
@@ -163,16 +170,38 @@ class TelephonyBaseTest(BaseTestClass):
     def setup_test(self):
         for ad in self.android_devices:
             refresh_droid_config(self.log, ad)
+
+        if getattr(self, "diag_logger", None):
+            for logger in self.diag_logger:
+                self.log.info("Starting a diagnostic session {}".format(
+                    logger))
+                self.logger_sessions.append((logger, logger.start()))
+
         return ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Resetting a diagnostic session {},{}".format(
+                logger, session))
+            logger.reset()
+        self.logger_sessions = []
         return True
 
     def on_exception(self, test_name, begin_time):
+        self._pull_diag_logs(test_name, begin_time)
         return self._take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
+        self._pull_diag_logs(test_name, begin_time)
         return self._take_bug_report(test_name, begin_time)
+
+    def _pull_diag_logs(self, test_name, begin_time):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Pulling diagnostic session {}".format(logger))
+            logger.stop(session)
+            diag_path = os.path.join(self.log_path, begin_time)
+            utils.create_dir(diag_path)
+            logger.pull(session, diag_path)
 
     def _take_bug_report(self, test_name, begin_time):
         if "no_bug_report_on_fail" in self.user_params:
@@ -184,8 +213,9 @@ class TelephonyBaseTest(BaseTestClass):
             try:
                 ad.adb.wait_for_device()
                 ad.take_bug_report(test_name, begin_time)
-                tombstone_path = os.path.join(ad.log_path, "BugReports",
-                        "{},{}".format(begin_time, ad.serial).replace(' ','_'))
+                tombstone_path = os.path.join(
+                    ad.log_path, "BugReports",
+                    "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path)
             except:
