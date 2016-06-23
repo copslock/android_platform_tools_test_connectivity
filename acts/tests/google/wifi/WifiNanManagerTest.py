@@ -43,6 +43,7 @@ WIFI_MAX_TX_RETRIES = 5
 
 class WifiNanManagerTest(base_test.BaseTestClass):
     def setup_test(self):
+        self.msg_id = 10
         for ad in self.android_devices:
             asserts.assert_true(
                 wutils.wifi_toggle_state(ad, True),
@@ -193,7 +194,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         other as Subscriber (S)
 
         Logical steps:
-          * P & S connect to NAN
+          * P & S initiate NAN clustering (if not already up)
           * P & S wait for NAN connection confirmation
           * P starts publishing
           * S starts subscribing
@@ -209,10 +210,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         required_params = ("config_request1", "config_request2",
                            "publish_config", "subscribe_config")
         self.unpack_userparams(required_params)
-        self.msg_id = 10
 
-        sub2pub_msg = "How are you doing?"
-        pub2sub_msg = "Doing ok - thanks!"
+        sub2pub_msg = "How are you doing? 你好嗎？"
+        pub2sub_msg = "Doing ok - thanks! 做的不錯 - 謝謝！"
 
         # Start Test
         self.exec_connect(self.publisher, self.config_request1, "publisher")
@@ -259,6 +259,107 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.publisher.droid.wifiNanTerminateSession(pub_id)
         self.subscriber.droid.wifiNanTerminateSession(sub_id)
 
+    def test_nan_messaging(self):
+        """Perform NAN configuration, discovery, and large message exchange.
+
+        Configuration: 2 devices, one acting as Publisher (P) and the
+        other as Subscriber (S)
+
+        Logical steps:
+          * P & S initiate NAN clustering (if not already up)
+          * P & S wait for NAN connection confirmation
+          * P starts publishing
+          * S starts subscribing
+          * S waits for a match (discovery) notification
+          * S sends XX messages to P
+          * S confirms that all XXX messages were transmitted
+          * P confirms that all XXX messages are received
+        """
+        self.publisher = self.android_devices[0]
+        self.subscriber = self.android_devices[1]
+        required_params = ("config_request1", "config_request2",
+                           "publish_config", "subscribe_config")
+        self.unpack_userparams(required_params)
+        num_async_messages = 100
+
+        # Start Test
+        self.exec_connect(self.publisher, self.config_request1, "publisher")
+        self.exec_connect(self.subscriber, self.config_request2, "subscriber")
+
+        pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
+        sub_id = self.subscriber.droid.wifiNanSubscribe(0,
+                                                        self.subscribe_config)
+
+        try:
+            event_sub_match = self.subscriber.ed.pop_event(ON_MATCH, 30)
+            self.log.info('%s: %s', ON_MATCH, event_sub_match['data'])
+        except queue.Empty:
+            asserts.fail('Timed out while waiting for %s on Subscriber' %
+                         ON_MATCH)
+        self.log.debug(event_sub_match)
+
+        # send all messages at once
+        for i in range(num_async_messages):
+            self.msg_id = self.msg_id + 1
+            self.subscriber.droid.wifiNanSendMessage(sub_id,
+                                                     event_sub_match[
+                                                         'data']['peerId'],
+                                                     "msg %s" % i,
+                                                     self.msg_id,
+                                                     WIFI_MAX_TX_RETRIES)
+
+        # wait for all messages to be transmitted correctly
+        num_tx_ok = 0
+        num_tx_fail = 0
+        events_regex = '%s|%s' % (ON_MESSAGE_TX_FAIL, ON_MESSAGE_TX_OK)
+        while (num_tx_ok + num_tx_fail) < num_async_messages:
+            try:
+                events = self.subscriber.ed.pop_events(events_regex, 30)
+
+                for event in events:
+                    if event['name'] == ON_MESSAGE_TX_OK:
+                        num_tx_ok = num_tx_ok + 1
+                    if event['name'] == ON_MESSAGE_TX_FAIL:
+                        num_tx_fail = num_tx_fail + 1
+            except queue.Empty:
+                self.log.warning('Timed out while waiting for %s on Subscriber'
+                                 ' - %d events received', events_regex,
+                                 num_tx_ok + num_tx_fail)
+                break
+        self.log.info('Transmission stats: %d success, %d fail',
+                      num_tx_ok, num_tx_fail)
+
+        # validate that all messages are received (not just the correct
+        # number of messages - since on occassion there may be duplicates
+        # received).
+        num_received = 0
+        num_unique_received = 0
+        messages = {}
+        while num_unique_received != num_async_messages:
+            try:
+                event = self.publisher.ed.pop_event(ON_MESSAGE_RX, 30)
+                msg = event['data']['messageAsString']
+                num_received = num_received + 1
+                if msg not in messages:
+                    num_unique_received = num_unique_received + 1
+                    messages[msg] = 0
+                messages[msg] = messages[msg] + 1
+                self.log.debug('%s: %s', ON_MESSAGE_RX, msg)
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Publisher'
+                             ': %d messages received, %d unique message'
+                             % (ON_MESSAGE_RX, num_received,
+                                num_unique_received))
+        self.log.info('Reception stats: %d received (%d unique)', num_received,
+                      num_unique_received)
+        if num_received > num_unique_received:
+            self.log.info('%d duplicate receptions of %d messages: %s',
+                          num_received - num_unique_received,
+                          num_received, messages)
+
+        self.publisher.droid.wifiNanTerminateSession(pub_id)
+        self.subscriber.droid.wifiNanTerminateSession(sub_id)
+
     def test_nan_rtt(self):
         """Perform NAN configuration, discovery, and RTT.
 
@@ -266,7 +367,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         other as Subscriber (S)
 
         Logical steps:
-          * P & S connect to NAN
+          * P & S initiate NAN clustering (if not already up)
           * P & S wait for NAN connection confirmation
           * P starts publishing
           * S starts subscribing
@@ -311,7 +412,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         Configuration: 1 device - the DUT.
 
         Logical steps:
-          * DUT connect to NAN
+          * DUT initiate NAN clustering (if not already up)
           * DUT waits for NAN connection confirmation
           * DUT starts publishing
           * Disable Wi-Fi
@@ -355,7 +456,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         other as Subscriber (S)
 
         Logical steps:
-          * P & S connect to NAN
+          * P & S initiate NAN clustering (if not already up)
           * P & S wait for NAN connection confirmation
           * P starts publishing
           * S starts subscribing
@@ -378,7 +479,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                            "publish_config", "subscribe_config", "network_req",
                            "nan_interface")
         self.unpack_userparams(required_params)
-        self.msg_id = 10
 
         nan0 = self.nan_interface["NanInterface"]
         sub2pub_msg = "Get ready!"
