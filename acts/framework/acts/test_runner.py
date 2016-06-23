@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+__author__ = "angli@google.com"
+
 from future import standard_library
 standard_library.install_aliases()
 
@@ -159,7 +161,7 @@ class TestRunner(object):
                 raise signals.ControllerError(("Controller interface %s in %s "
                     "cannot be null.") % (attr, module.__name__))
 
-    def register_controller(self, module):
+    def register_controller(self, module, required=True):
         """Registers a controller module for a test run.
 
         This declares a controller dependency of this test class. If the target
@@ -169,13 +171,20 @@ class TestRunner(object):
 
         Params:
             module: A module that follows the controller module interface.
+            required: A bool. If True, failing to register the specified
+                      controller module raises exceptions. If False, returns
+                      None upon failures.
 
         Returns:
-            A list of controller objects instantiated from controller_module.
+            A list of controller objects instantiated from controller_module, or
+            None.
 
         Raises:
-            ControllerError is raised if no corresponding config can be found,
-            or if the controller module has already been registered.
+            When required is True, ControllerError is raised if no corresponding
+            config can be found.
+            Regardless of the value of "required", ControllerError is raised if
+            the controller module has already been registered or any other error
+            occurred in the registration process.
         """
         TestRunner.verify_controller_module(module)
         try:
@@ -195,8 +204,14 @@ class TestRunner(object):
         create = module.create
         module_config_name = module.ACTS_CONTROLLER_CONFIG_NAME
         if module_config_name not in self.testbed_configs:
-            raise signals.ControllerError(("No corresponding config found for"
-                                           " %s") % module_config_name)
+            if required:
+                raise signals.ControllerError(
+                    "No corresponding config found for %s" %
+                    module_config_name)
+            self.log.warning(
+                "No corresponding config found for optional controller %s",
+                module_config_name)
+            return None
         try:
             # Make a deep copy of the config to pass to the controller module,
             # in case the controller module modifies the config internally.
