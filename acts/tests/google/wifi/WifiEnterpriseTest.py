@@ -35,7 +35,8 @@ Ent = WifiEnums.Enterprise
 class WifiEnterpriseTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_eap_connect", "test_eap_connect_negative", )
+        self.tests = ("test_eap_connect", "test_eap_connect_negative",
+                      "test_eap_connect_config_store", )
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -305,6 +306,21 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             name += "-{}".format(config[Ent.PHASE2].name)
         return name
 
+    def gen_eap_test_name_for_config_store(self, config, ad):
+        """Generates a test case name based on an EAP configuration for config
+        store tests.
+
+        Args:
+            config: A dict representing an EAP credential.
+            ad: Discarded. This is here because name function signature needs
+                to be consistent with logic function signature for generated
+                test cases.
+
+        Returns:
+            A string representing the name of a generated EAP test case.
+        """
+        return self.gen_eap_test_name(config, ad) + "-config_store"
+
     def gen_passpoint_test_name(self, config, ad):
         """Generates a test case name based on an EAP passpoint configuration.
 
@@ -321,6 +337,42 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         name = self.gen_eap_test_name(config, ad)
         name = name.replace("connect", "passpoint_connect")
         return name
+
+    def gen_passpoint_test_name_for_config_store(self, config, ad):
+        """Generates a test case name based on an EAP passpoint configuration
+        for config store tests.
+
+        Args:
+            config: A dict representing an EAP passpoint credential.
+            ad: Discarded. This is here because name function signature needs
+                to be consistent with logic function signature for generated
+                test cases.
+
+        Returns:
+            A string representing the name of a generated EAP passpoint connect
+            test case.
+        """
+        return self.gen_passpoint_test_name(config, ad) + "-config_store"
+
+    def eap_connect_toggle_wifi(self,
+                                config,
+                                *args):
+        """Connects to an enterprise network, toggles wifi state and ensures
+        that the device reconnects.
+
+        This logic expect the enterprise network to have Internet access.
+
+        Args:
+            config: A dict representing a wifi enterprise configuration.
+            args: args to be passed to |wutils.eap_connect|.
+
+        Returns:
+            True if the connection is successful and Internet access works.
+        """
+        wutils.eap_connect(config, *args)
+        ad = args[0]
+        wutils.toggle_wifi_and_wait_for_reconnection(ad, config,
+                                                     num_of_tries=5)
 
     """Tests"""
 
@@ -381,6 +433,39 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         msg = ("The following configs failed negative EAP connect test: %s" %
                pprint.pformat(failed))
         asserts.assert_equal(len(failed), 0, msg)
+
+    @signals.generated_test
+    def test_eap_connect_config_store(self):
+        """Test connecting to enterprise networks of different authentication
+        types after wifi toggle.
+
+        The authentication types tested are:
+            EAP-TLS
+            EAP-PEAP with different phase2 types.
+            EAP-TTLS with different phase2 types.
+
+        Procedures:
+            For each enterprise wifi network
+            1. Connect to the network.
+            2. Send a GET request to a website and check response.
+            3. Toggle wifi.
+            4. Ensure that the device reconnects to the same network.
+
+        Expect:
+            Successful connection and Internet access through the enterprise
+            networks.
+        """
+        eap_configs = self.gen_eap_configs()
+        self.log.info("Testing %d different configs.", len(eap_configs))
+        random.shuffle(eap_configs)
+        failed = self.run_generated_testcases(
+            self.eap_connect_toggle_wifi,
+            eap_configs,
+            args=(self.dut, ),
+            name_func=self.gen_eap_test_name_for_config_store)
+        asserts.assert_equal(
+            len(failed), 0, "The following configs failed EAP connect test: %s"
+            % pprint.pformat(failed))
 
     @signals.generated_test
     def test_passpoint_connect(self):
@@ -448,3 +533,39 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             len(failed), 0,
             "The following configs failed negative passpoint connect test: %s"
             % pprint.pformat(failed))
+
+    @signals.generated_test
+    def test_passpoint_connect_config_store(self):
+        """Test connecting to enterprise networks of different authentication
+        types with passpoint support after wifi toggle.
+
+        The authentication types tested are:
+            EAP-TLS
+            EAP-TTLS with MSCHAPV2 as phase2.
+
+        Procedures:
+            For each enterprise wifi network
+            1. Connect to the network.
+            2. Send a GET request to a website and check response.
+            3. Toggle wifi.
+            4. Ensure that the device reconnects to the same network.
+
+        Expect:
+            Successful connection and Internet access through the enterprise
+            networks with passpoint support.
+        """
+        asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
+                        "Passpoint is not supported on device %s" %
+                        self.dut.model)
+        passpoint_configs = self.gen_passpoint_configs()
+        self.log.info("Testing %d different configs.", len(passpoint_configs))
+        random.shuffle(passpoint_configs)
+        failed = self.run_generated_testcases(
+            self.eap_connect_toggle_wifi,
+            passpoint_configs,
+            args=(self.dut, ),
+            name_func=self.gen_passpoint_test_name_for_config_store)
+        asserts.assert_equal(
+            len(failed), 0,
+            "The following configs failed passpoint connect test: %s" %
+            pprint.pformat(failed))
