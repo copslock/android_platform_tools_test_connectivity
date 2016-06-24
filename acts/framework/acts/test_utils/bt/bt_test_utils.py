@@ -67,6 +67,10 @@ advertisements_to_devices = {}
 batch_scan_not_supported_list = ["Nexus 4", "Nexus 5", "Nexus 7", ]
 
 
+class BtTestUtilsError(Exception):
+    pass
+
+
 def generate_ble_scan_objects(droid):
     filter_list = droid.bleGenFilterList()
     scan_settings = droid.bleBuildScanSetting()
@@ -295,8 +299,11 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         generate_ble_advertise_objects(adv_ad.droid))
     adv_ad.droid.bleStartBleAdvertising(advertise_callback, advertise_data,
                                         advertise_settings)
-    adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(advertise_callback),
-                        default_timeout)
+    try:
+        adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(advertise_callback),
+                            default_timeout)
+    except queue.Empty as err:
+        raise BtTestUtilsError("Advertiser did not start successfully {}".format(err))
     filter_list = scan_ad.droid.bleGenFilterList()
     scan_settings = scan_ad.droid.bleBuildScanSetting()
     scan_callback = scan_ad.droid.bleGenScanCallback()
@@ -304,8 +311,11 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         adv_ad.droid.bluetoothGetLocalName())
     scan_ad.droid.bleBuildScanFilter(filter_list)
     scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
-    event = scan_ad.ed.pop_event(
-        "BleScan{}onScanResults".format(scan_callback), default_timeout)
+    try:
+        event = scan_ad.ed.pop_event(
+            "BleScan{}onScanResults".format(scan_callback), default_timeout)
+    except queue.Empty:
+        raise BtTestUtilsError("Scanner did not find advertisement {}".format(err))
     mac_address = event['data']['Result']['deviceInfo']['address']
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
