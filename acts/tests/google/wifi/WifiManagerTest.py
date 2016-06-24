@@ -46,8 +46,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         if getattr(self, "attenuators", []):
             for a in self.attenuators:
                 a.set_atten(0)
-        req_params = ("iot_networks", "open_network", "iperf_server_address",
-                      "tdls_models", "energy_info_models")
+        req_params = ("iot_networks", "open_network", "config_store_networks",
+                      "iperf_server_address", "tdls_models",
+                      "energy_info_models")
         self.unpack_userparams(req_params)
         asserts.assert_true(
             len(self.iot_networks) > 0,
@@ -72,20 +73,12 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
 
     """Helper Functions"""
 
-    def connect_to_wifi_network_with_password(self, params):
+    def connect_to_wifi_network(self, params):
         """Connection logic for open and psk wifi networks.
-
-        Logic steps are
-        1. Connect to the network.
-        2. Run iperf traffic.
 
         Args:
             params: A tuple of network info and AndroidDevice object.
-
-        Returns:
-            True if successful, False otherwise.
         """
-        wait_time = 5
         network, ad = params
         droid = ad.droid
         ed = ad.ed
@@ -95,6 +88,16 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         scan_results = droid.wifiGetScanResults()
         wutils.assert_network_in_list({WifiEnums.SSID_KEY: SSID}, scan_results)
         wutils.wifi_connect(ad, network, num_of_tries=3)
+
+    def run_iperf_client(self, params):
+        """Run iperf traffic after connection.
+
+        Args:
+            params: A tuple of network info and AndroidDevice object.
+        """
+        wait_time = 5
+        network, ad = params
+        SSID = network[WifiEnums.SSID_KEY]
         self.log.info("Starting iperf traffic through {}".format(SSID))
         time.sleep(wait_time)
         port_arg = "-p {}".format(self.iperf_server.port)
@@ -102,6 +105,39 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                                             port_arg)
         self.log.debug(pprint.pformat(data))
         asserts.assert_true(success, "Error occurred in iPerf traffic.")
+
+    def connect_to_wifi_network_and_run_iperf(self, params):
+        """Connection logic for open and psk wifi networks.
+
+        Logic steps are
+        1. Connect to the network.
+        2. Run iperf traffic.
+
+        Args:
+            params: A tuple of network info and AndroidDevice object.
+        """
+        self.connect_to_wifi_network(params)
+        self.run_iperf_client(params)
+
+    def connect_to_wifi_network_toggle_wifi_and_run_iperf(self, params):
+        """ Connect to the provided network and then toggle wifi mode and wait
+        for reconnection to the provided network.
+
+        Logic steps are
+        1. Connect to the network.
+        2. Turn wifi off.
+        3. Turn wifi on.
+        4. Wait for connection to the network.
+        5. Run iperf traffic.
+
+        Args:
+            params: A tuple of network info and AndroidDevice object.
+       """
+        network, ad = params
+        self.connect_to_wifi_network(params)
+        wutils.toggle_wifi_and_wait_for_reconnection(
+                ad, network, num_of_tries=5)
+        self.run_iperf_client(params)
 
     def run_iperf(self, iperf_args):
         if "iperf_server_address" not in self.user_params:
@@ -186,7 +222,18 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                                         self.android_devices))
         name_gen = lambda p: "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
         failed = self.run_generated_testcases(
-            self.connect_to_wifi_network_with_password,
+            self.connect_to_wifi_network_and_run_iperf,
+            params,
+            name_func=name_gen)
+        asserts.assert_true(not failed, "Failed ones: {}".format(failed))
+
+    @acts.signals.generated_test
+    def test_config_store(self):
+        params = list(itertools.product(self.config_store_networks,
+                                        self.android_devices))
+        name_gen = lambda p: "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
+        failed = self.run_generated_testcases(
+            self.connect_to_wifi_network_toggle_wifi_and_run_iperf,
             params,
             name_func=name_gen)
         asserts.assert_false(failed, "Failed ones: {}".format(failed))
