@@ -726,6 +726,96 @@ def stop_wifi_tethering(ad):
     droid.wifiStopTrackingStateChange()
 
 
+def toggle_wifi_and_wait_for_reconnection(ad,
+                                          network,
+                                          num_of_tries=1,
+                                          assert_on_fail=True):
+    """Toggle wifi state and then wait for Android device to reconnect to
+    the provided wifi network.
+
+    This expects the device to be already connected to the provided network.
+
+    Logic steps are
+     1. Ensure that we're connected to the network.
+     2. Turn wifi off.
+     3. Wait for 10 seconds.
+     4. Turn wifi on.
+     5. Wait for the "connected" event, then confirm the connected ssid is the
+        one requested.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network: A dictionary representing the network to await connection. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure. Default is 1.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        If assert_on_fail is False, function returns True if the toggle was
+        successful, False otherwise. If assert_on_fail is True, no return value.
+    """
+    _assert_on_fail_handler(_toggle_wifi_and_wait_for_reconnection,
+                            assert_on_fail, ad, network, num_of_tries)
+
+
+def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
+    """Toggle wifi state and then wait for Android device to reconnect to
+    the provided wifi network.
+
+    This expects the device to be already connected to the provided network.
+
+    Logic steps are
+     1. Ensure that we're connected to the network.
+     2. Turn wifi off.
+     3. Wait for 10 seconds.
+     4. Turn wifi on.
+     5. Wait for the "connected" event, then confirm the connected ssid is the
+        one requested.
+
+    This will directly fail a test if anything goes wrong.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network: A dictionary representing the network to await connection. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure. Default is 1.
+    """
+    serial = ad.serial
+    expected_ssid = network[WifiEnums.SSID_KEY]
+    # First ensure that we're already connected to the provided network.
+    verify_con = {WifiEnums.SSID_KEY: expected_ssid}
+    verify_wifi_connection_info(ad, verify_con)
+    # Now toggle wifi state and wait for the connection event.
+    wifi_toggle_state(ad, False)
+    time.sleep(10)
+    wifi_toggle_state(ad, True)
+    ad.droid.wifiStartTrackingStateChange()
+    try:
+        connect_result = None
+        for i in range(num_of_tries):
+            try:
+                connect_result = ad.ed.pop_event(WifiEventNames.WIFI_CONNECTED,
+                                                 30)
+                break
+            except Empty:
+                pass
+        asserts.assert_true(connect_result,
+                            "Failed to connect to Wi-Fi network %s on %s" %
+                            (network, serial))
+        log.debug("Connection result on %s: %s.", serial, connect_result)
+        actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
+        asserts.assert_equal(actual_ssid, expected_ssid,
+                             "Connected to the wrong network on %s."
+                             "Expected %s, but got %s." %
+                             (serial, expected_ssid, actual_ssid))
+        log.info("Connected to Wi-Fi network %s on %s", actual_ssid, serial)
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+
 def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True):
     """Connect an Android device to a wifi network.
 
