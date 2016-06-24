@@ -16,6 +16,7 @@
 
 import logging
 
+from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts.test_utils.bt.GattEnum import GattCbErr
 from acts.test_utils.bt.GattEnum import GattCbStrings
@@ -30,6 +31,10 @@ from contextlib import suppress
 
 default_timeout = 10
 log = logging
+
+
+class GattTestUtilsError(Exception):
+    pass
 
 
 def setup_gatt_connection(cen_ad, mac_address, autoconnect):
@@ -73,16 +78,18 @@ def orchestrate_gatt_connection(cen_ad,
     adv_callback = None
     if mac_address is None:
         if le:
-            mac_address, adv_callback = (
-                get_mac_address_of_generic_advertisement(cen_ad, per_ad))
+            try:
+                mac_address, adv_callback = (
+                    get_mac_address_of_generic_advertisement(cen_ad, per_ad))
+            except BtTestUtilsError as err:
+                raise GattTestUtilsError("Error in getting mac address: {}".format(err))
         else:
             mac_address = per_ad.droid.bluetoothGetLocalAddress()
             adv_callback = None
     test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
         cen_ad, mac_address, autoconnect)
     if not test_result:
-        log.error("Could not connect to peripheral.")
-        return False, None, None
+        raise GattTestUtilsError("Could not connect to peripheral.")
     return bluetooth_gatt, gatt_callback, adv_callback
 
 
