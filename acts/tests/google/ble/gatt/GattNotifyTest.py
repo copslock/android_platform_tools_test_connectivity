@@ -86,7 +86,7 @@ class GattNotifyTest(GattConnectedBaseTest):
 
         #send notification
         self.per_ad.droid.gattServerNotifyCharacteristicChanged(
-            self.bluetooth_gatt, bt_device_id,
+            self.gatt_server, bt_device_id,
             self.notifiable_char_index, False)
 
         #wait for client to receive the notification
