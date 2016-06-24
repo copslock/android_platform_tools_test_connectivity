@@ -268,6 +268,14 @@ class TestResult(object):
         self.executed.append(record)
         self.failed.append(record)
 
+    @property
+    def is_all_pass(self):
+        """True if no tests failed or threw errors, False otherwise."""
+        num_of_failures = len(self.failed) + len(self.unknown)
+        if num_of_failures == 0:
+            return True
+        return False
+
     def json_str(self):
         """Converts this test result to a string in json format.
 
