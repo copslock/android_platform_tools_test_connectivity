@@ -31,7 +31,6 @@ from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_characteristics
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_descriptors
-from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
 from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
@@ -40,12 +39,10 @@ from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 class GattOverBrEdrTest(BluetoothBaseTest):
     default_timeout = 10
     default_discovery_timeout = 3
-    droid_list = ()
     per_droid_mac_address = None
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_list = get_advanced_droid_list(self.android_devices)
         self.cen_ad = self.android_devices[0]
         self.per_ad = self.android_devices[1]
 
