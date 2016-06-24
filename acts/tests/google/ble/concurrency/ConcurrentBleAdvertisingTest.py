@@ -47,9 +47,6 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
         self.max_advertisements = self.droid_list[1]['max_advertisements']
-        if self.max_advertisements == 0:
-            self.tests = ()
-            return
 
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs".
