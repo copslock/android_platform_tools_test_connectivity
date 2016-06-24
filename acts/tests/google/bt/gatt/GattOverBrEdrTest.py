@@ -26,6 +26,7 @@ from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattService
 from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.GattEnum import GattCbStrings
+from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_characteristics
@@ -208,9 +209,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: BR/EDR, Filtering, GATT, Scanning
         Priority: 0
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
 
@@ -243,14 +247,17 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning, GATT, MTU
         Priority: 0
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
                                                MtuSize.MIN.value)
         mtu_event = self.cen_ad.ed.pop_event(
-            GattCbStrings.MTU_CHANGED.value.format(
-                bluetooth_gatt), self.default_timeout)
+            GattCbStrings.MTU_CHANGED.value.format(bluetooth_gatt),
+            self.default_timeout)
         if mtu_event['data']['MTU'] != MtuSize.MIN.value:
             return False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
@@ -285,14 +292,17 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning, GATT, MTU
         Priority: 0
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
                                                MtuSize.MAX.value)
         mtu_event = self.cen_ad.ed.pop_event(
-            GattCbStrings.MTU_CHANGED.value.format(
-                bluetooth_gatt), self.default_timeout)
+            GattCbStrings.MTU_CHANGED.value.format(bluetooth_gatt),
+            self.default_timeout)
         if mtu_event['data']['MTU'] != MtuSize.MAX.value:
             return False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
@@ -328,9 +338,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Filtering, Scanning, GATT, MTU
         Priority: 0
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
                                                MtuSize.MIN.value - 1)
         try:
@@ -373,13 +386,16 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: BR/EDR, Scanning, GATT, RSSI
         Priority: 1
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         if self.cen_ad.droid.gattClientReadRSSI(bluetooth_gatt):
             self.cen_ad.ed.pop_event(
-                GattCbStrings.RD_REMOTE_RSSI.value.format(
-                    gatt_callback), self.default_timeout)
+                GattCbStrings.RD_REMOTE_RSSI.value.format(gatt_callback),
+                self.default_timeout)
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
 
@@ -410,9 +426,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         TAGS: BR/EDR, Scanning, GATT, Services
         Priority: 1
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         discovered_services_index = -1
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             event = self.cen_ad.ed.pop_event(
@@ -455,9 +474,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         Characteristics, Descriptors
         Priority: 1
         """
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         discovered_services_index = -1
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             event = self.cen_ad.ed.pop_event(
@@ -499,9 +521,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         gatt_server_callback, gatt_server = self._setup_multiple_services()
         if not gatt_server_callback or not gatt_server:
             return False
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         discovered_services_index = -1
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             event = self.cen_ad.ed.pop_event(
@@ -542,9 +567,13 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         autoconnect = False
         mac_address = self.per_ad.droid.bluetoothGetLocalAddress()
         for i in range(20):
-            bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                            self.per_droid_mac_address))
+            try:
+                bluetooth_gatt, gatt_callback, adv_callback = (
+                    orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                                False,
+                                                self.per_droid_mac_address))
+            except GattTestUtilsError:
+                return False
             self.log.info("Disconnecting from peripheral device.")
             test_result = self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                                gatt_callback)
@@ -584,9 +613,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         gatt_server_callback, gatt_server = self._setup_multiple_services()
         if not gatt_server_callback or not gatt_server:
             return False
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
             event = self.cen_ad.ed.pop_event(
                 GattCbStrings.GATT_SERV_DISC.value.format(gatt_callback),
@@ -606,8 +638,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         bt_device_id = 0
         status = 1
         offset = 1
-        test_value = [1,2,3,4,5,6,7]
-        test_value_return = [1,2,3]
+        test_value = [1, 2, 3, 4, 5, 6, 7]
+        test_value_return = [1, 2, 3]
         for i in range(services_count):
             characteristic_uuids = (
                 self.cen_ad.droid.gattClientGetDiscoveredCharacteristicUuids(
@@ -707,9 +739,12 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                 service_uuid)
         if not result:
             return False
-        bluetooth_gatt, gatt_callback, adv_callback = (
-            orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
-                                        self.per_droid_mac_address))
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                                            self.per_droid_mac_address))
+        except GattTestUtilsError:
+            return False
         if bluetooth_gatt is False:
             return False
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
@@ -720,7 +755,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         else:
             self.log.info("Failed to discover services.")
             return False
-        test_value = [1,2,3,4,5,6,7]
+        test_value = [1, 2, 3, 4, 5, 6, 7]
         services_count = self.cen_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         for i in range(services_count):
