@@ -783,4 +783,3 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                 bonded = True
                                 break
         return True
-

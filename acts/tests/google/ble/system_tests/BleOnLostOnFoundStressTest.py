@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 OnLost onFound Stress Test.
 """
@@ -51,8 +50,8 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
 
     def teardown_test(self):
         cleanup_scanners_and_advertisers(
-            self.scn_ad, self.active_adv_callback_list,
-            self.scn_ad, self.active_adv_callback_list)
+            self.scn_ad, self.active_adv_callback_list, self.scn_ad,
+            self.active_adv_callback_list)
         self.active_adv_callback_list = []
         self.active_scan_callback_list = []
 
@@ -115,8 +114,8 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         on_found_count = 0
         on_lost_count = 0
@@ -162,10 +161,10 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         services_count = self.scn_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         thread = threading.Thread(
-            target=run_continuous_write_descriptor, args=(
-                self.scn_ad.droid, self.scn_ad.ed, self.adv_ad.droid, self.adv_ad.ed,
-                gatt_server, gatt_server_callback, bluetooth_gatt,
-                services_count, discovered_services_index))
+            target=run_continuous_write_descriptor,
+            args=(self.scn_ad.droid, self.scn_ad.ed, self.adv_ad.droid,
+                  self.adv_ad.ed, gatt_server, gatt_server_callback,
+                  bluetooth_gatt, services_count, discovered_services_index))
         thread.start()
         thread2 = threading.Thread(target=self._poll_energy)
         thread2.start()
@@ -184,8 +183,8 @@ class BleOnLostOnFoundStressTest(BluetoothBaseTest):
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         self.active_scan_callback_list.append(scan_callback)
         on_found_count = 0
         on_lost_count = 0

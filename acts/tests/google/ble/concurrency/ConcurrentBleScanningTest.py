@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to exercises Ble Scans can run in concurrency.
 This test was designed to be run in a shield box.
@@ -45,9 +44,8 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
         self.adv_ad = self.android_devices[1]
 
     def on_fail(self, test_name, begin_time):
-        self.log.debug(
-            "Test {} failed. Gathering bugreport and btsnoop logs."
-            .format(test_name))
+        self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs."
+                       .format(test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
         reset_bluetooth(self.android_devices)
 
@@ -97,12 +95,13 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
             self.adv_ad.ed.pop_event(
                 adv_succ.format(advertise_callback), self.default_timeout)
         except Empty as error:
-            self.log.exception(
-                "Test failed with Empty error: {}".format(error))
+            self.log.exception("Test failed with Empty error: {}".format(
+                error))
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.exception("Test failed callback onSuccess never occurred: "
-                               "{}".format(error))
+            self.log.exception(
+                "Test failed callback onSuccess never occurred: "
+                "{}".format(error))
             test_result = False
         if not test_result:
             return test_result
@@ -116,18 +115,16 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
             self.log.debug("Concurrent Ble Scan iteration {}".format(i + 1))
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
             scan_callback_list.append(scan_callback)
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
             try:
                 self.scn_ad.ed.pop_event(
                     scan_result.format(scan_callback), self.default_timeout)
-                self.log.info(
-                    "Found scan event successfully. Iteration {} "
-                    "successful.".format(i))
+                self.log.info("Found scan event successfully. Iteration {} "
+                              "successful.".format(i))
             except Exception:
-                self.log.info(
-                    "Failed to find a scan result for callback {}"
-                    .format(scan_callback))
+                self.log.info("Failed to find a scan result for callback {}"
+                              .format(scan_callback))
                 test_result = False
                 break
         for callback in scan_callback_list:
@@ -186,15 +183,16 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
             self.log.debug("Concurrent Ble Scan iteration {}".format(i + 1))
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
             scan_callback_list.append(scan_callback)
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
         self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
         try:
             self.adv_ad.ed.pop_event(
                 adv_succ.format(advertise_callback), self.default_timeout)
         except Empty as error:
-            self.log.exception("Test failed with Empty error: {}".format(error))
+            self.log.exception("Test failed with Empty error: {}".format(
+                error))
             return False
         except concurrent.futures._base.TimeoutError as error:
             self.log.exception("Test failed, filtering callback onSuccess "
@@ -203,15 +201,14 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
         i = 0
         for callback in scan_callback_list:
             try:
-                self.scn_ad.ed.pop_event(scan_result.format(scan_callback),
-                                      self.default_timeout)
+                self.scn_ad.ed.pop_event(
+                    scan_result.format(scan_callback), self.default_timeout)
                 self.log.info(
                     "Found scan event successfully. Iteration {} successful."
                     .format(i))
             except Exception:
-                self.log.info(
-                    "Failed to find a scan result for callback {}"
-                    .format(scan_callback))
+                self.log.info("Failed to find a scan result for callback {}"
+                              .format(scan_callback))
                 return False
             i += 1
         for callback in scan_callback_list:
@@ -254,12 +251,12 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
         for i in range(self.max_concurrent_scans):
             self.log.debug("Concurrent Ble Scan iteration {}".format(i + 1))
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
             scan_callback_list.append(scan_callback)
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleStartBleScan(
-            filter_list, scan_settings, scan_callback)
+        self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
         try:
             self.scn_ad.ed.pop_event(
                 scan_failed.format(scan_callback), self.default_timeout)
@@ -320,35 +317,36 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
             self.log.debug("Concurrent Ble Scan iteration {}".format(i + 1))
             scan_callback = self.scn_ad.droid.bleGenScanCallback()
             scan_callback_list.append(scan_callback)
-            self.scn_ad.droid.bleStartBleScan(
-                filter_list, scan_settings, scan_callback)
+            self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                              scan_callback)
         self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
         try:
             self.adv_ad.ed.pop_event(
                 adv_succ.format(advertise_callback), self.default_timeout)
         except Empty as error:
-            self.log.exception(
-                "Test failed with Empty error: {}".format(error))
+            self.log.exception("Test failed with Empty error: {}".format(
+                error))
             return False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.exception("Test failed, filtering callback onSuccess never"
-                               " occurred: {}".format(error))
+            self.log.exception(
+                "Test failed, filtering callback onSuccess never"
+                " occurred: {}".format(error))
             return False
         i = 0
         for callback in scan_callback_list:
             expected_scan_event_name = scan_result.format(scan_callback)
             try:
-                self.scn_ad.ed.pop_event(
-                    expected_scan_event_name, self.default_timeout)
+                self.scn_ad.ed.pop_event(expected_scan_event_name,
+                                         self.default_timeout)
                 self.log.info(
-                    "Found scan event successfully. Iteration {} successful.".
-                    format(i))
+                    "Found scan event successfully. Iteration {} successful.".format(
+                        i))
                 i += 1
             except Exception:
                 self.log.info(
-                    "Failed to find a scan result for callback {}".
-                    format(scan_callback))
+                    "Failed to find a scan result for callback {}".format(
+                        scan_callback))
                 return False
             self.scn_ad.droid.bleStopBleScan(callback)
         self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)

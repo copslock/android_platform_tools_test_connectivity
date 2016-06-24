@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See thea
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Bluetooth Pre-Flight Test.
 """
@@ -24,12 +23,9 @@ import pprint
 
 
 class BtPreFlightTest(BaseTestClass):
-
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_setup_logging",
-        )
+        self.tests = ("test_setup_logging", )
 
     def setup_class(self):
         for a in self.android_devices:
@@ -46,8 +42,8 @@ class BtPreFlightTest(BaseTestClass):
         return True
 
     def test_setup_logging(self):
-        conf_path = "{}/bt_stack.conf".format(
-            os.path.dirname(os.path.realpath(__file__)))
+        conf_path = "{}/bt_stack.conf".format(os.path.dirname(os.path.realpath(
+            __file__)))
         log_level_check = "TRC_BTM=5"
         remount_check = "remount succeeded"
         for ad in self.android_devices:
