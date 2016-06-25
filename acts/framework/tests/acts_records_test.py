@@ -206,6 +206,44 @@ class ActsRecordsTest(unittest.TestCase):
         self.assertEqual(len(tr.failed), 1)
         self.assertEqual(len(tr.executed), 2)
 
+    def test_is_all_pass(self):
+        s = signals.TestPass(self.details, self.float_extra)
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_pass(s)
+        s = signals.TestSkip(self.details, self.float_extra)
+        record2 = records.TestResultRecord(self.tn)
+        record2.test_begin()
+        record2.test_skip(s)
+        tr = records.TestResult()
+        tr.add_record(record1)
+        tr.add_record(record2)
+        tr.add_record(record1)
+        self.assertEqual(len(tr.passed), 2)
+        self.assertTrue(tr.is_all_pass)
+
+    def test_is_all_pass_negative(self):
+        s = signals.TestFailure(self.details, self.float_extra)
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(s)
+        record2 = records.TestResultRecord(self.tn)
+        record2.test_begin()
+        record2.test_unknown(s)
+        tr = records.TestResult()
+        tr.add_record(record1)
+        tr.add_record(record2)
+        self.assertFalse(tr.is_all_pass)
+
+    def test_is_all_pass_with_fail_class(self):
+        """Verifies that is_all_pass yields correct value when fail_class is
+        used.
+        """
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        tr = records.TestResult()
+        tr.fail_class("SomeTest", Exception("Fail!"))
+        self.assertFalse(tr.is_all_pass)
 
 if __name__ == "__main__":
    unittest.main()
