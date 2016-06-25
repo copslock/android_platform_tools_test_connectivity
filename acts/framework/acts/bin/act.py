@@ -203,6 +203,7 @@ def _run_test(parsed_config, test_identifiers, repeat=1):
         repeat: Number of times to iterate the specified tests.
     """
     test_runner = _create_test_runner(parsed_config, test_identifiers)
+    ok = True
     try:
         for i in range(repeat):
             test_runner.run()
@@ -212,9 +213,10 @@ def _run_test(parsed_config, test_identifiers, repeat=1):
         print("Exception when executing {}, iteration {}.".format(
             test_runner.testbed_name, i))
         print(traceback.format_exc())
-        return False
+        ok = False
     finally:
         test_runner.stop()
+        return ok and test_runner.results.is_all_pass
 
 def _gen_term_signal_handler(test_runners):
     def termination_sig_handler(signal_num, frame):
@@ -272,7 +274,7 @@ def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
         pool.close()
         pool.join()
     for r in results:
-        if r is False or isinstance(r, Exception):
+        if r.get() is False or isinstance(r, Exception):
             return False
 
 def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
@@ -293,7 +295,8 @@ def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
     """
     ok = True
     for c in parsed_configs:
-        if _run_test(c, test_identifiers, repeat) is False:
+        ret = _run_test(c, test_identifiers, repeat)
+        if ret is False:
             ok = False
     return ok
 
