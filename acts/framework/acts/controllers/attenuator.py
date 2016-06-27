@@ -83,7 +83,7 @@ class InvalidOperationError(AttenuatorError):
     pass
 
 
-class AttenuatorInstrument():
+class AttenuatorInstrument(object):
     r"""This is a base class that defines the primitive behavior of all attenuator
     instruments.
 
@@ -160,7 +160,7 @@ class AttenuatorInstrument():
         raise NotImplementedError("Base class should not be called directly!")
 
 
-class Attenuator():
+class Attenuator(object):
     r"""This class defines an object representing a single attenuator in a remote instrument.
 
     A user wishing to abstract the mapping of attenuators to physical instruments should use this
