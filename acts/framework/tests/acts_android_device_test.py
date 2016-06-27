@@ -29,16 +29,17 @@ MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
 # The expected result of the cat adb operation.
 MOCK_ADB_LOGCAT_CAT_RESULT = [
     "02-29 14:02:21.456  4454  Something\n",
-    "02-29 14:02:21.789  4454  Something again\n"]
+    "02-29 14:02:21.789  4454  Something again\n"
+]
 # A mockd piece of adb logcat output.
-MOCK_ADB_LOGCAT = (
-    "02-29 14:02:19.123  4454  Nothing\n"
-    "%s"
-    "02-29 14:02:22.123  4454  Something again and again\n"
-    ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
+MOCK_ADB_LOGCAT = ("02-29 14:02:19.123  4454  Nothing\n"
+                   "%s"
+                   "02-29 14:02:22.123  4454  Something again and again\n"
+                   ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
 # Mock start and end time of the adb cat.
 MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
 MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
+
 
 def get_mock_ads(num):
     """Generates a list of mock AndroidDevice objects.
@@ -51,17 +52,18 @@ def get_mock_ads(num):
     """
     ads = []
     for i in range(num):
-        ad = mock.MagicMock(name="AndroidDevice",
-                            serial=i,
-                            h_port=None)
+        ad = mock.MagicMock(name="AndroidDevice", serial=i, h_port=None)
         ads.append(ad)
     return ads
+
 
 def mock_get_all_instances():
     return get_mock_ads(5)
 
+
 def mock_list_adb_devices():
     return [ad.serial for ad in get_mock_ads(5)]
+
 
 class MockAdbProxy():
     """Mock class that swaps out calls to adb with mock calls."""
@@ -73,17 +75,15 @@ class MockAdbProxy():
         if params == "id -u":
             return b"root"
         elif (params == "getprop | grep ro.build.product" or
-            params == "getprop | grep ro.product.name"):
+              params == "getprop | grep ro.product.name"):
             return b"[ro.build.product]: [FakeModel]"
         elif params == "getprop sys.boot_completed":
             return b"1"
 
     def bugreport(self, params):
-        expected = os.path.join(logging.log_path,
-                                "AndroidDevice%s" % self.serial,
-                                "BugReports",
-                                "test_something,sometime,%s.txt" % (
-                                    self.serial))
+        expected = os.path.join(
+            logging.log_path, "AndroidDevice%s" % self.serial, "BugReports",
+            "test_something,sometime,%s.txt" % (self.serial))
         expected = " > %s" % expected
         assert params == expected, "Expected '%s', got '%s'." % (expected,
                                                                  params)
@@ -92,11 +92,14 @@ class MockAdbProxy():
         """All calls to the none-existent functions in adb proxy would
         simply return the adb command string.
         """
+
         def adb_call(*args):
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
+
         return adb_call
+
 
 class ActsAndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
@@ -116,9 +119,11 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     # Tests for android_device module functions.
     # These tests use mock AndroidDevice instances.
 
-    @mock.patch.object(android_device, "get_all_instances",
+    @mock.patch.object(android_device,
+                       "get_all_instances",
                        new=mock_get_all_instances)
-    @mock.patch.object(android_device, "list_adb_devices",
+    @mock.patch.object(android_device,
+                       "list_adb_devices",
                        new=mock_list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
@@ -193,9 +198,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report(self,
-                                           exe_mock,
-                                           create_dir_mock,
+    def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,
                                            MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report calls the correct adb command
         and writes the bugreport file to the correct path.
@@ -203,20 +206,16 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         ad.take_bug_report("test_something", "sometime")
-        expected_path = os.path.join(logging.log_path,
-                                     "AndroidDevice%s" % ad.serial,
-                                     "BugReports")
+        expected_path = os.path.join(logging.log_path, "AndroidDevice%s" %
+                                     ad.serial, "BugReports")
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
-    def test_AndroidDevice_take_logcat(self,
-                                       stop_proc_mock,
-                                       start_proc_mock,
-                                       creat_dir_mock,
-                                       MockAdbProxy):
+    def test_AndroidDevice_take_logcat(self, stop_proc_mock, start_proc_mock,
+                                       creat_dir_mock, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -232,10 +231,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
-        expected_log_path = os.path.join(
-                                    logging.log_path,
-                                    "AndroidDevice%s" % ad.serial,
-                                    "adblog,fakemodel,%s.txt" % ad.serial)
+        expected_log_path = os.path.join(logging.log_path,
+                                         "AndroidDevice%s" % ad.serial,
+                                         "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -v threadtime -b all >> %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
@@ -257,11 +255,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
-    def test_AndroidDevice_take_logcat_with_user_param(self,
-                                                       stop_proc_mock,
-                                                       start_proc_mock,
-                                                       creat_dir_mock,
-                                                       MockAdbProxy):
+    def test_AndroidDevice_take_logcat_with_user_param(
+            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
+            MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -278,10 +274,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
-        expected_log_path = os.path.join(
-                                    logging.log_path,
-                                    "AndroidDevice%s" % ad.serial,
-                                    "adblog,fakemodel,%s.txt" % ad.serial)
+        expected_log_path = os.path.join(logging.log_path,
+                                         "AndroidDevice%s" % ad.serial,
+                                         "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -v threadtime -b radio >> %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
@@ -293,10 +288,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.utils.stop_standing_subprocess')
     @mock.patch('acts.logger.get_log_line_timestamp',
                 return_value=MOCK_ADB_LOGCAT_END_TIME)
-    def test_AndroidDevice_cat_adb_log(self,
-                                       mock_timestamp_getter,
-                                       stop_proc_mock,
-                                       start_proc_mock,
+    def test_AndroidDevice_cat_adb_log(self, mock_timestamp_getter,
+                                       stop_proc_mock, start_proc_mock,
                                        MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
@@ -318,15 +311,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         with open(mock_adb_log_path, 'w') as f:
             f.write(MOCK_ADB_LOGCAT)
         ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        cat_file_path = os.path.join(ad.log_path,
-                                     "AdbLogExcerpts",
-                                     ("some_test,02-29 14:02:20.123,%s,%s.txt"
-                                     ) % (ad.model, ad.serial))
+        cat_file_path = os.path.join(ad.log_path, "AdbLogExcerpts", (
+            "some_test,02-29 14:02:20.123,%s,%s.txt") % (ad.model, ad.serial))
         with open(cat_file_path, 'r') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
 
+
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()
