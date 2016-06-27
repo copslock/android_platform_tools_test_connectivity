@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = "angli@google.com (Ang Li)"
+
 import re
 import unittest
 
@@ -46,7 +48,12 @@ def assert_equal(first, second, msg=None, extras=None):
     """
     try:
         _pyunit_proxy.assertEqual(first, second)
-    except AssertionError as e:
+    except Exception as e:
+        # We have to catch all here for py2/py3 compatibility.
+        # In py2, assertEqual throws exceptions.AssertionError, which does not
+        # exist in py3. In py3, it throws unittest.case.failureException, which
+        # does not exist in py2. To accommodate using explicit catch complicates
+        # the code like hell, so I opted to catch all instead.
         my_msg = str(e)
         if msg:
             my_msg = "%s %s" % (my_msg, msg)
