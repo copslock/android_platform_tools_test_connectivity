@@ -90,7 +90,6 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 from acts.utils import disable_doze
 from acts.utils import enable_doze
-from acts.utils import load_config
 from acts.utils import rand_ascii_str
 
 
