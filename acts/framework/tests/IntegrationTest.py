@@ -14,13 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+__author__ = "angli@google.com (Ang Li)"
+
 from acts import asserts
 from acts import base_test
 
 import mock_controller
 
-class IntegrationTest(base_test.BaseTestClass):
 
+class IntegrationTest(base_test.BaseTestClass):
     def setup_class(self):
         self.register_controller(mock_controller)
 
