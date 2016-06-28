@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+__author__ = "angli@google.com (Ang Li)"
+
 import logging
 import mock
 import os
@@ -107,8 +109,10 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     """
 
     def setUp(self):
-        """Creates a temp dir to be used by tests in this test class.
-        """
+        # Set log_path to logging since acts logger setup is not called.
+        if not hasattr(logging, "log_path"):
+            setattr(logging, "log_path", "/tmp/logs")
+        # Creates a temp dir to be used by tests in this test class.
         self.tmp_dir = tempfile.mkdtemp()
 
     def tearDown(self):

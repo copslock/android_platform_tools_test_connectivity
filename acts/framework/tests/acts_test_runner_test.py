@@ -15,6 +15,8 @@
 #   limitations under the License.
 
 
+__author__ = "angli@google.com (Ang Li)"
+
 import mock
 import shutil
 import tempfile

@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-__author__ = "angli@google.com"
+__author__ = "angli@google.com (Ang Li)"
 
 from future import standard_library
 standard_library.install_aliases()
@@ -415,7 +415,3 @@ class TestRunner(object):
         path = os.path.join(self.log_path, "test_run_summary.json")
         with open(path, 'w') as f:
             f.write(self.results.json_str())
-
-
-if __name__ == "__main__":
-    pass
