@@ -47,7 +47,6 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.utils import load_config
 from acts.utils import rand_ascii_str
 
 SKIP = 'Skip'
@@ -55,8 +54,6 @@ SKIP = 'Skip'
 class TelLiveSmokeTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-
-        self.simconf = load_config(self.user_params["sim_conf_file"])
 
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         try:

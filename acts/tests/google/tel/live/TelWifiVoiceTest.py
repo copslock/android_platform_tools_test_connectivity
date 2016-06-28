@@ -84,7 +84,6 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts.utils import load_config
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI = 'wifi0'
@@ -111,7 +110,6 @@ WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT = -85
 class TelWifiVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
         self.live_network_ssid = self.user_params["wifi_network_ssid"]
 

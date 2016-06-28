@@ -46,15 +46,12 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.utils import load_config
 from acts.asserts import abort_all
 
 
 class TelLivePreflightTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-
-        self.simconf = load_config(self.user_params["sim_conf_file"])
 
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         try:
