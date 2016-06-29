@@ -18,7 +18,6 @@
 """
 
 import time
-from acts.utils import load_config
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -61,7 +60,6 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.ad = self.android_devices[0]
-        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         try:
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
