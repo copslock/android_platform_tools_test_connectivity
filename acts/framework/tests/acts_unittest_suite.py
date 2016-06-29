@@ -24,6 +24,8 @@ import acts_base_class_test
 import acts_records_test
 import acts_sl4a_client_test
 import acts_test_runner_test
+import acts_utils_test
+
 
 def compile_suite():
     test_classes_to_run = [
@@ -33,7 +35,8 @@ def compile_suite():
         acts_test_runner_test.ActsTestRunnerTest,
         acts_android_device_test.ActsAndroidDeviceTest,
         acts_records_test.ActsRecordsTest,
-        acts_sl4a_client_test.ActsSl4aClientTest
+        acts_sl4a_client_test.ActsSl4aClientTest,
+        acts_utils_test.ActsUtilsTest
     ]
 
     loader = unittest.TestLoader()
@@ -45,6 +48,7 @@ def compile_suite():
 
     big_suite = unittest.TestSuite(suites_list)
     return big_suite
+
 
 if __name__ == "__main__":
     # This is the entry point for running all ACTS unit tests.
