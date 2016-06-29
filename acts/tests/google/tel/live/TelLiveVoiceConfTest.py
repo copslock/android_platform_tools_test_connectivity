@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+!/usr/bin/env python3.4
 #
 #   Copyright 2016 - Google
 #
@@ -62,7 +62,6 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import swap_calls
-from acts.utils import load_config
 
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
@@ -75,7 +74,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
-        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:

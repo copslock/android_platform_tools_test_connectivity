@@ -18,7 +18,6 @@
 """
 
 import time
-from acts.utils import load_config
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
@@ -95,7 +94,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
-        self.simconf = load_config(self.user_params["sim_conf_file"])
         self.stress_test_number = int(self.user_params["stress_test_number"])
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
