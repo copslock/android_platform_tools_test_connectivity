@@ -18,9 +18,6 @@
 (http://msoon.com/LabEquipment/PowerMonitor/).
 """
 
-_new_author_ = 'angli@google.com (Ang Li)'
-_author_ = 'kens@google.com (Ken Shirriff)'
-
 import fcntl
 import os
 import select
