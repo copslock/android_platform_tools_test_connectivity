@@ -19,6 +19,7 @@ import concurrent.futures
 import datetime
 import json
 import functools
+import logging
 import os
 import random
 import re
@@ -31,6 +32,10 @@ import traceback
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
+
+
+class ActsUtilsError(Exception):
+    """Generic error raised for exceptions in ACTS utils."""
 
 
 class NexusModelNames:
@@ -326,43 +331,75 @@ def require_sl4a(android_devices):
         assert ad.droid, msg
 
 
-def start_standing_subprocess(cmd):
-    """Starts a non-blocking subprocess that is going to continue running after
-    this function returns.
-
-    A subprocess group is actually started by setting sid, so we can kill all
-    the processes spun out from the subprocess when stopping it. This is
-    necessary in case users pass in pipe commands.
+def _assert_subprocess_running(proc):
+    """Checks if a subprocess has terminated on its own.
 
     Args:
-        cmd: Command to start the subprocess with.
+        proc: A subprocess returned by subprocess.Popen.
+
+    Raises:
+        ActsUtilsError is raised if the subprocess has stopped.
+    """
+    ret = proc.poll()
+    if ret is not None:
+        out, err = proc.communicate()
+        raise ActsUtilsError("Process %d has terminated. ret: %d, stderr: %s,"
+                             " stdout: %s" % (proc.pid, ret, err, out))
+
+
+def start_standing_subprocess(cmd, check_health_delay=0):
+    """Starts a long-running subprocess.
+
+    This is not a blocking call and the subprocess started by it should be
+    explicitly terminated with stop_standing_subprocess.
+
+    For short-running commands, you should use exe_cmd, which blocks.
+
+    You can specify a health check after the subprocess is started to make sure
+    it did not stop prematurely.
+
+    Args:
+        cmd: string, the command to start the subprocess with.
+        check_health_delay: float, the number of seconds to wait after the
+                            subprocess starts to check its health. Default is 0,
+                            which means no check.
 
     Returns:
         The subprocess that got started.
     """
-    p = subprocess.Popen(cmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         shell=True,
-                         preexec_fn=os.setpgrp)
-    return p
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=True,
+                            preexec_fn=os.setpgrp)
+    logging.debug("Start standing subprocess with cmd: %s", cmd)
+    if check_health_delay > 0:
+        time.sleep(check_health_delay)
+        _assert_subprocess_running(proc)
+    return proc
 
 
-def stop_standing_subprocess(p, kill_signal=signal.SIGTERM):
+def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     """Stops a subprocess started by start_standing_subprocess.
+
+    Before killing the process, we check if the process is running, if it has
+    terminated, ActsUtilsError is raised.
 
     Catches and ignores the PermissionError which only happens on Macs.
 
     Args:
-        p: Subprocess to terminate.
+        proc: Subprocess to terminate.
     """
+    pid = proc.pid
+    logging.debug("Stop standing subprocess %d", pid)
+    _assert_subprocess_running(proc)
     try:
-        os.killpg(p.pid, kill_signal)
+        os.killpg(pid, kill_signal)
     except PermissionError:
         pass
 
 
-def wait_for_standing_subprocess(p, timeout=None):
+def wait_for_standing_subprocess(proc, timeout=None):
     """Waits for a subprocess started by start_standing_subprocess to finish
     or times out.
 
@@ -382,7 +419,7 @@ def wait_for_standing_subprocess(p, timeout=None):
         p: Subprocess to wait for.
         timeout: An integer number of seconds to wait before timing out.
     """
-    p.wait(timeout)
+    proc.wait(timeout)
 
 
 def sync_device_time(ad):
