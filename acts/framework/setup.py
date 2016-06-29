@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = "angli@google.com (Ang Li)"
-
 from setuptools import setup
 from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
