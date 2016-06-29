@@ -110,6 +110,11 @@ class TelephonyBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+
+        if not "sim_conf_file" in self.user_params.keys():
+            self.log.error("Missing mandatory user config \"sim_conf_file\"!")
+            return False
+
         setattr(self, "diag_logger",
                 self.register_controller(acts.controllers.diag_logger,
                                          required=False))
