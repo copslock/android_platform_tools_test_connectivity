@@ -28,6 +28,10 @@ SL4A_LAUNCH_CMD = (
     "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher")
 
 
+class Sl4aError(Exception):
+    """Raised when sl4a operations fail."""
+
+
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
 
@@ -160,21 +164,36 @@ class AdbProxy():
         """
         self.forward("tcp:{} tcp:{}".format(host_port, device_port))
 
+    # TODO(b/26204549): Move all sl4a related functions out of adb module.
     def start_sl4a(self, port=8080):
         """Starts sl4a server on the android device.
 
         Args:
             port: Port number to use on the android device.
         """
+        if not self.is_sl4a_installed():
+            raise Sl4aError("SL4A is not installed on %s" % self.serial)
         MAX_SL4A_WAIT_TIME = 10
-        print(self.shell(SL4A_LAUNCH_CMD.format(port)))
-
+        self.shell(SL4A_LAUNCH_CMD.format(port))
         for _ in range(MAX_SL4A_WAIT_TIME):
             time.sleep(1)
             if self.is_sl4a_running():
                 return
-        raise AdbError(
-            "com.googlecode.android_scripting process never started.")
+        raise Sl4aError("SL4A failed to start on %s." % self.serial)
+
+    def is_sl4a_installed(self):
+        """Checks if sl4a is installed by querying the package path of sl4a.
+
+        Returns:
+            True if sl4a is installed, False otherwise.
+        """
+        try:
+            self.shell("pm path com.googlecode.android_scripting")
+            return True
+        except AdbError as e:
+            if not e.stderr:
+                return False
+            raise
 
     def is_sl4a_running(self):
         """Checks if the sl4a app is running on an android device.
