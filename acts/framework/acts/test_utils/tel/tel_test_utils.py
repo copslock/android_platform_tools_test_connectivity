@@ -2946,8 +2946,7 @@ def ensure_phone_default_state(log, ad):
             "ensure_phones_default_state: wait_for_droid_not_in iwlan fail {}.".format(
                 ad.serial))
         result = False
-    if ((not WifiUtils.wifi_reset(log, ad)) or
-        (not WifiUtils.wifi_toggle_state(log, ad, False))):
+    if (not WifiUtils.wifi_reset(log, ad)):
         log.error("ensure_phones_default_state:reset WiFi fail {}.".format(
             ad.serial))
         result = False
@@ -2979,7 +2978,7 @@ def ensure_phones_default_state(log, ads):
     return True
 
 
-def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=1):
+def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=0):
     """Ensure ad connected to wifi.
 
     Args:
@@ -2991,12 +2990,11 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=1):
     """
     while (retry >= 0):
         WifiUtils.wifi_reset(log, ad)
-        WifiUtils.wifi_toggle_state(log, ad, False)
         WifiUtils.wifi_toggle_state(log, ad, True)
         if WifiUtils.wifi_connect(log, ad, wifi_ssid, wifi_pwd):
             return True
         else:
-            log.info("ensure_wifi_connected: Connect WiFi failed, retry + 1.")
+            log.info("ensure_wifi_connected: Connect WiFi failed")
             retry -= 1
     return False
 
@@ -3378,6 +3376,16 @@ class WifiUtils():
 
     @staticmethod
     def wifi_toggle_state(log, ad, state):
+        """Toggle the WiFi State
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+            state: True, False, or None
+
+        Returns:
+            boolean success (True) or failure (False)
+        """
         try:
             WifiUtils._wifi_toggle_state(ad, state)
         except Exception as e:
@@ -3386,21 +3394,63 @@ class WifiUtils():
         return True
 
     @staticmethod
-    def wifi_reset(log, ad, disable_wifi=True):
-        try:
-            WifiUtils._reset_wifi(ad)
-        except Exception as e:
-            log.error("WifiUtils.wifi_reset exception: {}".format(e))
+    def forget_all_networks(log, ad):
+        """Forget all stored wifi network information
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+
+        Returns:
+            boolean success (True) or failure (False)
+        """
+        networks = ad.droid.wifiGetConfiguredNetworks()
+        if networks is None:
+            return True
+        for network in networks:
+            ad.droid.wifiForgetNetwork(network['networkId'])
+            try:
+                event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+                                        SHORT_TIMEOUT)
+            except Empty:
+                log.warning("Could not confirm the removal of network {}.".format(network))
+        networks = ad.droid.ad.droid.wifiGetConfiguredNetworks()
+        if len(networks):
+            log.error("Failed to forget all networks {}.".format(networks))
             return False
-        finally:
-            if disable_wifi is True:
-                ad.droid.wifiToggleState(False)
-                # Ensure toggle state has human-time to take effect
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         return True
 
     @staticmethod
+    def wifi_reset(log, ad, disable_wifi=True):
+        """Forget all stored wifi networks and (optionally) disable WiFi
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+            disable_wifi: boolean to disable wifi, defaults to True
+        Returns:
+            boolean success (True) or failure (False)
+        """
+        if disable_wifi is True:
+            if not WifiUtils.wifi_toggle_state(log, ad, False):
+                log.error("Failed to disable WiFi during reset!")
+                return False
+            # Ensure toggle state has human-time to take effect
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        return WifiUtils.forget_all_networks(log, ad)
+
+    @staticmethod
     def wifi_connect(log, ad, ssid, password=None):
+        """Connect to a WiFi network with a provided SSID and Password
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+            ssid: the name of the WiFi network
+            password: optional password, used for secure networks.
+        Returns:
+            boolean success (True) or failure (False)
+        """
         if password == "":
             password = None
         try:
@@ -3431,6 +3481,17 @@ class WifiUtils():
 
     @staticmethod
     def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
+        """Start a Tethering Session
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+            ssid: the name of the WiFi network
+            password: optional password, used for secure networks.
+            ap_band=DEPRECATED specification of 2G or 5G tethering
+        Returns:
+            boolean success (True) or failure (False)
+        """
         try:
             return WifiUtils._start_wifi_tethering(ad, ssid, password, ap_band)
         except Exception as e:
@@ -3439,6 +3500,14 @@ class WifiUtils():
 
     @staticmethod
     def stop_wifi_tethering(log, ad):
+        """Stop a Tethering Session
+
+        Args:
+            log: log object
+            ad: AndroidDevice object
+        Returns:
+            boolean success (True) or failure (False)
+        """
         try:
             WifiUtils._stop_wifi_tethering(ad)
             return True
