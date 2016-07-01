@@ -594,16 +594,31 @@ class AndroidDevice:
             test_name: Name of the test case that triggered this bug report.
             begin_time: Logline format timestamp taken when the test started.
         """
+        new_br = True
+        try:
+            self.adb.shell("bugreportz -v")
+        except adb.AdbError:
+            new_br = False
         br_path = os.path.join(self.log_path, "BugReports")
         utils.create_dir(br_path)
         base_name = ",{},{}.txt".format(begin_time, self.serial)
+        if new_br:
+            base_name = base_name.replace(".txt", ".zip")
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
         full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
-        self.adb.bugreport(" > {}".format(full_out_path))
+        if new_br:
+            out = self.adb.shell("bugreportz").decode("utf-8")
+            if not out.startswith("OK"):
+                raise AndroidDeviceError("Failed to take bugreport on %s" %
+                                         self.serial)
+            br_out_path = out.split(':')[1].strip()
+            self.adb.pull("%s %s" % (br_out_path, full_out_path))
+        else:
+            self.adb.bugreport(" > {}".format(full_out_path))
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
 
