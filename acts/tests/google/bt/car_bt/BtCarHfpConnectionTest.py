@@ -147,6 +147,102 @@ class BtCarHfpConnectionTest(BluetoothBaseTest):
         return ret
 
     @BluetoothBaseTest.bt_test_wrap
+    def test_call_transfer_off_on(self):
+        """
+        Tests that after we turn adapter on when an active call is in
+        progress, we show the call.
+
+        Precondition:
+        1. AG & HF are disconnected but paired.
+        2. HF's adapter is OFF
+
+        Steps:
+        1. Make a call from AG role (since disconnected)
+        2. Accept from RE role and transition the call to Active
+        3. Turn HF's adapter ON
+        4. HF should transition into Active call state.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        Priority: 1
+        """
+        # Connect HF & AG
+        if not bt_test_utils.connect_pri_to_sec(
+            self.log, self.hf, self.ag.droid,
+            set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
+            self.log.error("Could not connect HF and AG {} {}".format(
+                self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial()))
+            return False
+
+        # make a call on AG
+        if not car_telecom_utils.dial_number(self.log, self.ag,
+                                             self.re_phone_number):
+            self.log.error("AG not in dialing {}".format(
+                self.ag.droid.getBuildSerial()))
+            return False
+
+        # Wait for all HF, AG and RE to be in ringing
+        if not car_telecom_utils.wait_for_dialing(self.log, self.hf):
+            self.log.error("HF not in ringing {}".format(
+                self.hf.droid.getBuildSerial()))
+            return False
+        if not car_telecom_utils.wait_for_dialing(self.log, self.ag):
+            self.log.error("AG not in ringing {}".format(
+                self.ag.droid.getBuildSerial()))
+            return False
+        if not car_telecom_utils.wait_for_ringing(self.log, self.re):
+            self.log.error("RE not in ringing {}".format(
+                self.re.droid.getBuildSerial()))
+            return False
+
+        # Accept the call on RE
+        self.re.droid.telecomAcceptRingingCall()
+
+        # Wait for all HF, AG, RE to go into an Active state.
+        if not car_telecom_utils.wait_for_active(self.log, self.ag):
+            self.log.error("AG not in Active {}".format(
+                self.hf.droid.getBuildSerial()))
+            return False
+        if not car_telecom_utils.wait_for_active(self.log, self.ag):
+            self.log.error("AG not in Active {}".format(
+                self.ag.droid.getBuildSerial()))
+            return False
+        if not car_telecom_utils.wait_for_active(self.log, self.re):
+            self.log.error("RE not in Active {}".format(
+                self.re.droid.getBuildSerial()))
+            return False
+
+        # Turn the adapter OFF on HF
+        if not bt_test_utils.disable_bluetooth(self.hf.droid):
+            self.log.error("Failed to turn BT off on HF {}".format(
+                self.hf.droid.getBuildSerial()))
+            return False
+
+
+        # Turn adapter ON on HF
+        if not bt_test_utils.enable_bluetooth(self.hf.droid, self.hf.ed):
+            self.log.error("Failed to turn BT ON after call on HF {}".format(
+                self.hf.droid.getBuildSerial()))
+            return False
+
+        # Check that HF is in active state
+        if not car_telecom_utils.wait_for_active(self.log, self.hf):
+            self.log.error("HF not in Active {}".format(
+                self.hf.droid.getBuildSerial()))
+            return False
+
+        # Hangup the call and check all devices are clean
+        self.hf.droid.telecomEndCall()
+        ret = True
+        ret &= car_telecom_utils.wait_for_not_in_call(self.log, self.hf)
+        ret &= car_telecom_utils.wait_for_not_in_call(self.log, self.ag)
+        ret &= car_telecom_utils.wait_for_not_in_call(self.log, self.re)
+
+        return ret
+
+    @BluetoothBaseTest.bt_test_wrap
     def test_call_transfer_connect_disconnect_connect(self):
         """
         Test that when we go from connect -> disconnect -> connect on an active

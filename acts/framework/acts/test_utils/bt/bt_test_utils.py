@@ -496,6 +496,25 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     return mac_address, advertise_callback
 
 
+def enable_bluetooth(droid, ed):
+    if droid.bluetoothCheckState() is True:
+        return True
+
+    droid.bluetoothToggleState(True)
+    expected_bluetooth_on_event_name = bluetooth_on
+    try:
+        ed.pop_event(expected_bluetooth_on_event_name, default_timeout)
+    except Exception:
+        log.info("Failed to toggle Bluetooth on (no broadcast received)")
+        if droid.bluetoothCheckState() is True:
+            log.info(".. actual state is ON")
+            return True
+        log.info(".. actual state is OFF")
+        return False
+
+    return True
+
+
 def disable_bluetooth(droid):
     """Disable Bluetooth on input Droid object.
 
