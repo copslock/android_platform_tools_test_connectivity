@@ -62,25 +62,46 @@ def create(configs):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
     connected_ads = list_adb_devices()
+    active_ads = []
+
     for ad in ads:
         if ad.serial not in connected_ads:
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
-        ad.start_adb_logcat()
-        # TODO(angli): This is a temporary solution for tests that don't want
-        # to require SL4A, which shall be replaced when b/29157104 is done.
-        if getattr(ad, "skip_sl4a", False):
-            continue
+
+    def _cleanup(msg, ad, active_ads):
+        # This exception is logged here to help with debugging under py2,
+        # because "exception raised while processing another exception" is
+        # only printed under py3.
+        logging.exception(msg)
+        # Incrementally clean up subprocesses in current ad
+        # before we continue
+        if ad.adb_logcat_process:
+            ad.stop_adb_logcat()
+        if ad.ed:
+            ad.ed.clean_up()
+        # Clean up all already-active ads before bombing out
+        destroy(active_ads)
+        raise AndroidDeviceError(msg)
+
+    for ad in ads:
         try:
-            ad.get_droid()
-            ad.ed.start()
+            ad.start_adb_logcat()
         except:
-            # This exception is logged here to help with debugging under py2,
-            # because "exception raised while processing another exception" is
-            # only printed under py3.
+            msg = "Failed to start logcat %s" % ad.serial
+            _cleanup(msg, ad, active_ads)
+
+        try:
+            # TODO(angli): This is a temporary solution for tests that don't want
+            # to require SL4A, which shall be replaced when b/29157104 is done.
+            if not getattr(ad, "skip_sl4a", False):
+                ad.get_droid()
+                ad.ed.start()
+        except:
             msg = "Failed to start sl4a on %s" % ad.serial
-            logging.exception(msg)
-            raise AndroidDeviceError(msg)
+            _cleanup(msg, ad, active_ads)
+
+        active_ads.append(ad)
     return ads
 
 
