@@ -191,6 +191,7 @@ def reset_bluetooth(android_devices):
 def determine_max_advertisements(android_device):
     log.info("Determining number of maximum concurrent advertisements...")
     advertisement_count = 0
+    bt_enabled = False
     if not android_device.droid.bluetoothCheckState():
         android_device.droid.bluetoothToggleState(True)
     try:
@@ -204,7 +205,7 @@ def determine_max_advertisements(android_device):
         else:
             log.error(
                 "Failed to turn Bluetooth on. Setting default advertisements to 1")
-            advertisement_count = 1
+            advertisement_count = -1
             return advertisement_count
     advertise_callback_list = []
     advertise_data = android_device.droid.bleBuildAdvertiseData()
@@ -243,6 +244,14 @@ def get_advanced_droid_list(android_devices):
             max_advertisements = advertisements_to_devices[model]
         else:
             max_advertisements = determine_max_advertisements(a)
+            max_tries = 3
+            #Retry to calculate max advertisements
+            while max_advertisements == -1 and max_tries > 0:
+                log.info(
+                    "Attempts left to determine max advertisements: {}".format(
+                        max_tries))
+                max_advertisements = determine_max_advertisements(a)
+                max_tries -= 1
             advertisements_to_devices[model] = max_advertisements
         if model in batch_scan_not_supported_list:
             batch_scan_supported = False
@@ -300,10 +309,12 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     adv_ad.droid.bleStartBleAdvertising(advertise_callback, advertise_data,
                                         advertise_settings)
     try:
-        adv_ad.ed.pop_event("BleAdvertise{}onSuccess".format(advertise_callback),
-                            default_timeout)
+        adv_ad.ed.pop_event(
+            "BleAdvertise{}onSuccess".format(advertise_callback),
+            default_timeout)
     except queue.Empty as err:
-        raise BtTestUtilsError("Advertiser did not start successfully {}".format(err))
+        raise BtTestUtilsError(
+            "Advertiser did not start successfully {}".format(err))
     filter_list = scan_ad.droid.bleGenFilterList()
     scan_settings = scan_ad.droid.bleBuildScanSetting()
     scan_callback = scan_ad.droid.bleGenScanCallback()
@@ -315,7 +326,8 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         event = scan_ad.ed.pop_event(
             "BleScan{}onScanResults".format(scan_callback), default_timeout)
     except queue.Empty:
-        raise BtTestUtilsError("Scanner did not find advertisement {}".format(err))
+        raise BtTestUtilsError("Scanner did not find advertisement {}".format(
+            err))
     mac_address = event['data']['Result']['deviceInfo']['address']
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
