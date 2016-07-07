@@ -17,7 +17,7 @@
 import random
 import pprint
 import string
-import queue
+from queue import Empty
 import threading
 import time
 from acts import utils
@@ -151,6 +151,24 @@ def setup_multiple_devices_for_bt_test(android_devices):
     return setup_result
 
 
+def bluetooth_enabled_check(ad):
+    if not ad.droid.bluetoothCheckState():
+        ad.droid.bluetoothToggleState(True)
+        expected_bluetooth_on_event_name = bluetooth_on
+        try:
+            ad.ed.pop_event(expected_bluetooth_on_event_name,
+                default_timeout)
+        except Empty:
+            log.info("Failed to toggle Bluetooth on (no broadcast received).")
+            # Try one more time to poke at the actual state.
+            if ad.droid.bluetoothCheckState():
+                log.info(".. actual state is ON")
+                return True
+            log.error(".. actual state is OFF")
+            return False
+    return True
+
+
 def reset_bluetooth(android_devices):
     """Resets bluetooth on the list of android devices passed into the function.
     :param android_devices: list of android devices
@@ -171,17 +189,7 @@ def reset_bluetooth(android_devices):
                 return False
         # temp sleep for b/17723234
         time.sleep(3)
-        droid.bluetoothToggleState(True)
-        expected_bluetooth_on_event_name = bluetooth_on
-        try:
-            ed.pop_event(expected_bluetooth_on_event_name, default_timeout)
-        except Exception:
-            log.info("Failed to toggle Bluetooth on (no broadcast received).")
-            # Try one more time to poke at the actual state.
-            if droid.bluetoothCheckState() is True:
-                log.info(".. actual state is ON")
-                return True
-            log.info(".. actual state is OFF")
+        if not bluetooth_enabled_check(a):
             return False
     return True
 
@@ -310,7 +318,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         adv_ad.ed.pop_event(
             "BleAdvertise{}onSuccess".format(advertise_callback),
             default_timeout)
-    except queue.Empty as err:
+    except Empty as err:
         raise BtTestUtilsError(
             "Advertiser did not start successfully {}".format(err))
     filter_list = scan_ad.droid.bleGenFilterList()
@@ -323,7 +331,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     try:
         event = scan_ad.ed.pop_event(
             "BleScan{}onScanResults".format(scan_callback), default_timeout)
-    except queue.Empty:
+    except Empty as err:
         raise BtTestUtilsError("Scanner did not find advertisement {}".format(
             err))
     mac_address = event['data']['Result']['deviceInfo']['address']
