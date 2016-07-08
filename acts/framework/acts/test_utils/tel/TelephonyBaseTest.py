@@ -122,8 +122,8 @@ class TelephonyBaseTest(BaseTestClass):
             sim_conf_file = os.path.join(
                 self.user_params[Config.key_config_path], sim_conf_file)
             if not os.path.isfile(sim_conf_file):
-                self.log.error("Unable to load user config \"sim_conf_file\" "
-                               "from test config file.")
+                self.log.error("Unable to load user config " + sim_conf_file +
+                               " from test config file.")
                 return False
 
         setattr(self, "diag_logger",
