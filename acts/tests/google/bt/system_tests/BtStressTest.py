@@ -27,6 +27,7 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 class BtStressTest(BaseTestClass):
     default_timeout = 10
+    iterations = 100
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
@@ -69,19 +70,12 @@ class BtStressTest(BaseTestClass):
         TAGS: Classic, Stress
         Priority: 1
         """
-        test_result = True
-        test_result_list = []
-        for n in range(100):
+        for n in range(self.iterations):
             self.log.info("Toggling bluetooth iteration {}.".format(n + 1))
-            test_result = reset_bluetooth([self.android_devices[0]])
-            test_result_list.append(test_result)
-            if not test_result:
-                self.log.debug("Failure to reset Bluetooth... continuing")
-        self.log.info("Toggling Bluetooth failed {}/100 times".format(len(
-            test_result_list)))
-        if False in test_result_list:
-            return False
-        return test_result
+            if not reset_bluetooth([self.android_devices[0]]):
+                self.log.error("Failure to reset Bluetooth")
+                return False
+        return True
 
     def test_pair_bluetooth_stress(self):
         """Stress test for pairing BT devices.
@@ -106,10 +100,10 @@ class BtStressTest(BaseTestClass):
         TAGS: Classic, Stress
         Priority: 1
         """
-        for n in range(100):
+        for n in range(self.iterations):
             self.log.info("Pair bluetooth iteration {}.".format(n + 1))
-            if (pair_pri_to_sec(self.android_devices[0].droid,
-                                self.android_devices[1].droid) == False):
+            if (not pair_pri_to_sec(self.android_devices[0].droid,
+                                self.android_devices[1].droid)):
                 self.log.error("Failed to bond devices.")
                 return False
             for ad in self.android_devices:
