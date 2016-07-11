@@ -162,7 +162,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                                         'Failed (re)transmission')
                     return
 
-    def exec_rtt(self, device, session_id, peer_id, rtt_param):
+    def exec_rtt(self, device, session_id, peer_id, rtt_param, label,
+                 repeat_count):
         """Executes an RTT operation.
 
         Args:
@@ -173,19 +174,48 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             peer_id: The peer ID to send the message to. Obtained through a
                 match or a received message.
             rtt_param: RTT session parameters.
+            msg: Message/tag describing RTT experiment.
+            repeat_count: Number of RTT measurements to execute.
         """
         rtt_param['bssid'] = peer_id
-        device.droid.wifiNanStartRanging(0, session_id, [rtt_param])
+        rtt_stats = {
+            'failure_codes': {},
+            'distance': {
+                'sum': 0,
+                'num_samples': 0
+            }
+        }
+        for i in range(repeat_count):
+            device.droid.wifiNanStartRanging(0, session_id, [rtt_param])
 
-        events_regex = '%s|%s|%s' % (ON_RANGING_SUCCESS, ON_RANGING_FAILURE,
-                                     ON_RANGING_ABORTED)
-        try:
-            events_pub_range = device.ed.pop_events(events_regex, 30)
-            for event in events_pub_range:
-                self.log.info('%s: %s', event['name'], event['data'])
-        except queue.Empty:
-            self.log.info('Timed out while waiting for RTT events %s',
-                          events_regex)
+            events_regex = '%s|%s|%s' % (ON_RANGING_SUCCESS, ON_RANGING_FAILURE,
+                                         ON_RANGING_ABORTED)
+            try:
+                events_pub_range = device.ed.pop_events(events_regex, 30)
+                for event in events_pub_range:
+                    self.log.debug('%s: %s: %s', label, event['name'],
+                                   event['data'])
+                    results = event['data']['Results']
+                    for rtt_result in results:
+                        rtt_status = rtt_result['status']
+                        if rtt_status == 0:
+                            distance = rtt_result['distance']
+                            self.log.info('%s: distance=%d', label, distance)
+                            rtt_stats['distance']['sum'] = (
+                                rtt_stats['distance']['sum'] + distance)
+                            rtt_stats['distance']['num_samples'] = (
+                                rtt_stats['distance']['num_samples'] + 1)
+                        else:
+                            self.log.info('%s: status=%d', label, rtt_status)
+                            if rtt_status not in rtt_stats['failure_codes']:
+                                rtt_stats['failure_codes'][rtt_status] = 0
+                            rtt_stats['failure_codes'][rtt_status] = (
+                                rtt_stats['failure_codes'][rtt_status] + 1)
+            except queue.Empty:
+                self.log.info('%s: Timed out while waiting for RTT events %s',
+                              label, events_regex)
+        self.log.info('%s:\n\tParam: %s\n\tRTT statistics: %s', label,
+                      rtt_param, rtt_stats)
 
     def test_nan_discovery_session(self):
         """Perform NAN configuration, discovery, and message exchange.
@@ -381,6 +411,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                            "publish_config", "subscribe_config", "rtt_24_20",
                            "rtt_50_40", "rtt_50_80")
         self.unpack_userparams(required_params)
+        rtt_iterations = 10
 
         # Start Test
         self.exec_connect(self.publisher, self.config_request1, "publisher")
@@ -398,12 +429,24 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                          ON_MATCH)
         self.log.debug(event_sub_match)
 
-        self.exec_rtt(self.subscriber, sub_id,
-                      event_sub_match['data']['peerId'], self.rtt_24_20)
-        self.exec_rtt(self.subscriber, sub_id,
-                      event_sub_match['data']['peerId'], self.rtt_50_40)
-        self.exec_rtt(self.subscriber, sub_id,
-                      event_sub_match['data']['peerId'], self.rtt_50_80)
+        self.exec_rtt(device=self.subscriber,
+                      session_id=sub_id,
+                      peer_id=event_sub_match['data']['peerId'],
+                      rtt_param=self.rtt_24_20,
+                      label="2.4GHz / 20MHz BW",
+                      repeat_count=rtt_iterations)
+        self.exec_rtt(device=self.subscriber,
+                      session_id=sub_id,
+                      peer_id=event_sub_match['data']['peerId'],
+                      rtt_param=self.rtt_50_40,
+                      label="5Hz / 40MHz BW",
+                      repeat_count=rtt_iterations)
+        self.exec_rtt(device=self.subscriber,
+                      session_id=sub_id,
+                      peer_id=event_sub_match['data']['peerId'],
+                      rtt_param=self.rtt_50_80,
+                      label="5GHz / 80MHz BW",
+                      repeat_count=rtt_iterations)
 
     def test_disable_wifi_during_connection(self):
         """Validate behavior when Wi-Fi is disabled during an active NAN
