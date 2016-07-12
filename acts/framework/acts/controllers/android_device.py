@@ -59,53 +59,45 @@ def create(configs, logger):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs, logger)
     connected_ads = list_adb_devices()
-    active_ads = []
 
     for ad in ads:
         if ad.serial not in connected_ads:
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
-
-    def _cleanup(msg, ad, active_ads):
-        # This exception is logged here to help with debugging under py2,
-        # because "exception raised while processing another exception" is
-        # only printed under py3.
-        logger.exception(msg)
-        # Incrementally clean up subprocesses in current ad
-        # before we continue
-        if ad.adb_logcat_process:
-            ad.stop_adb_logcat()
-        if ad.ed:
-            ad.ed.clean_up()
-        # Clean up all already-active ads before bombing out
-        destroy(active_ads)
-        raise AndroidDeviceError(msg)
-
-    for ad in ads:
-        try:
-            ad.start_adb_logcat()
-        except:
-            msg = "Failed to start logcat %s" % ad.serial
-            _cleanup(msg, ad, active_ads)
-
-        try:
-            ad.get_droid()
-            ad.ed.start()
-        except:
-            msg = "Failed to start sl4a on %s" % ad.serial
-            _cleanup(msg, ad, active_ads)
-
-        active_ads.append(ad)
+    _start_services_on_ads(ads)
     return ads
 
+
 def destroy(ads):
+    """Cleans up AndroidDevice objects.
+
+    Args:
+        ads: A list of AndroidDevice objects.
+    """
     for ad in ads:
         try:
-            ad.terminate_all_sessions()
+            ad.clean_up()
         except:
-            pass
-        if ad.adb_logcat_process:
-            ad.stop_adb_logcat()
+            ad.log.exception("Failed to clean up properly.")
+
+def _start_services_on_ads(ads):
+    """Starts long running services on multiple AndroidDevice objects.
+
+    If any one AndroidDevice object fails to start services, cleans up all
+    existing AndroidDevice objects and their services.
+
+    Args:
+        ads: A list of AndroidDevice objects whose services to start.
+    """
+    running_ads = []
+    for ad in ads:
+        running_ads.append(ad)
+        try:
+            ad.start_services(skip_sl4a=getattr(ad, "skip_sl4a", False))
+        except:
+            ad.log.exception("Failed to start some services, abort!")
+            destroy(running_ads)
+            raise
 
 def _parse_device_list(device_list_str, key):
     """Parses a byte string representing a list of devices. The string is
@@ -317,11 +309,46 @@ class AndroidDevice:
         if not self.is_bootloader:
             self.root_adb()
 
-    def __del__(self):
+    def clean_up(self):
+        """Cleans up the AndroidDevice object and releases any resources it
+        claimed.
+        """
+        self.stop_services()
         if self.h_port:
             self.adb.forward("--remove tcp:%d" % self.h_port)
+
+    # TODO(angli): This function shall be refactored to accommodate all services
+    # and not have hard coded switch for SL4A when b/29157104 is done.
+    def start_services(self, skip_sl4a=False):
+        """Starts long running services on the android device.
+
+        1. Start adb logcat capture.
+        2. Start SL4A if not skipped.
+
+        Args:
+            skip_sl4a: Does not attempt to start SL4A if True.
+        """
+        try:
+            self.start_adb_logcat()
+        except:
+            self.log.exception("Failed to start adb logcat!")
+            raise
+        if not skip_sl4a:
+            try:
+                self.get_droid()
+                self.ed.start()
+            except:
+                self.log.exception("Failed to start sl4a!")
+                raise
+
+    def stop_services(self):
+        """Stops long running services on the android device.
+
+        Stop adb logcat and terminate sl4a sessions if exist.
+        """
         if self.adb_logcat_process:
             self.stop_adb_logcat()
+        self.terminate_all_sessions()
 
     @property
     def is_bootloader(self):
