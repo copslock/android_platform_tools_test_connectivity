@@ -24,6 +24,7 @@ from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.GattEnum import GattCharacteristic
 from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattService
+from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.GattEnum import GattCbStrings
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
@@ -211,7 +212,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -249,7 +251,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -294,7 +297,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -340,7 +344,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -388,7 +393,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -428,7 +434,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -476,7 +483,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         """
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -523,7 +531,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             return False
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -570,7 +579,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             try:
                 bluetooth_gatt, gatt_callback, adv_callback = (
                     orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                                False,
+                                                GattTransport.TRANSPORT_BREDR,
                                                 self.per_droid_mac_address))
             except GattTestUtilsError:
                 return False
@@ -615,7 +624,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             return False
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False
@@ -741,7 +751,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             return False
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
-                orchestrate_gatt_connection(self.cen_ad, self.per_ad, False,
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad,
+                                            GattTransport.TRANSPORT_BREDR,
                                             self.per_droid_mac_address))
         except GattTestUtilsError:
             return False

@@ -15,7 +15,7 @@
 # the License.
 
 from enum import Enum
-
+from enum import IntEnum
 
 class GattCbErr(Enum):
     CHAR_WRITE_REQ_ERR = "Characteristic Write Request event not found. Expected {}"
@@ -155,3 +155,9 @@ class MtuSize(Enum):
 class BluetoothGatt(Enum):
     GATT_SUCCESS = 0
     GATT_FAILURE = 0x101
+
+
+class GattTransport(IntEnum):
+    TRANSPORT_AUTO = 0x00
+    TRANSPORT_BREDR = 0x01
+    TRANSPORT_LE = 0x02
