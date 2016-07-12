@@ -30,6 +30,7 @@ from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.GattEnum import GattCbErr
 from acts.test_utils.bt.GattEnum import GattCbStrings
 from acts.test_utils.bt.GattEnum import GattConnectionPriority
+from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import orchestrate_gatt_connection
@@ -261,7 +262,7 @@ class GattConnectTest(BluetoothBaseTest):
             return False
         autoconnect = True
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
-            gatt_callback, mac_address, autoconnect)
+            gatt_callback, mac_address, autoconnect, GattTransport.TRANSPORT_AUTO)
         expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(
             gatt_callback)
         try:
