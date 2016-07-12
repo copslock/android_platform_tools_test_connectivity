@@ -436,8 +436,6 @@ class AndroidDevice:
         if not self.is_adb_root:
             self.adb.root()
             self.adb.wait_for_device()
-            self.adb.remount()
-            self.adb.wait_for_device()
 
     def get_droid(self, handle_event=True):
         """Create an sl4a connection to the device.
