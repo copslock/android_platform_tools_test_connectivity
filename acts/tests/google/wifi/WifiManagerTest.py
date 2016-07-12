@@ -267,7 +267,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         actual_support = self.dut.droid.wifiIsEnhancedPowerReportingSupported()
         model = self.dut.model
         expected_support = model in self.energy_info_models
-        asserts.assert_equal(expected_support, actual_support, msg)
+        asserts.assert_equal(expected_support, actual_support)
         if not actual_support:
             asserts.skip(
                 ("Device %s does not support energy info reporting as "
