@@ -70,6 +70,61 @@ batch_scan_not_supported_list = ["Nexus 4", "Nexus 5", "Nexus 7", ]
 class BtTestUtilsError(Exception):
     pass
 
+def scan_and_verify_n_advertisements(scn_ad, max_advertisements):
+    test_result = False
+    address_list = []
+    filter_list = scn_ad.droid.bleGenFilterList()
+    scn_ad.droid.bleBuildScanFilter(filter_list)
+    scan_settings = scn_ad.droid.bleBuildScanSetting()
+    scan_callback = scn_ad.droid.bleGenScanCallback()
+    scn_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
+    start_time = time.time()
+    while (start_time + default_timeout) > time.time():
+        event = None
+        try:
+            event = scn_ad.ed.pop_event(
+                scan_result.format(scan_callback), default_timeout)
+        except Empty as error:
+            raise BtTestUtilsError("Failed to find scan event: {}".format(
+                error))
+        address = event['data']['Result']['deviceInfo']['address']
+        if address not in address_list:
+            address_list.append(address)
+        if len(address_list) == max_advertisements:
+            test_result = True
+            break
+    scn_ad.droid.bleStopBleScan(scan_callback)
+    return test_result
+
+
+def setup_n_advertisements(adv_ad, num_advertisements):
+    adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
+        AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+    advertise_data = adv_ad.droid.bleBuildAdvertiseData()
+    advertise_settings = adv_ad.droid.bleBuildAdvertiseSettings()
+    advertise_callback_list = []
+    for i in range(num_advertisements):
+        advertise_callback = adv_ad.droid.bleGenBleAdvertiseCallback()
+        advertise_callback_list.append(advertise_callback)
+        adv_ad.droid.bleStartBleAdvertising(advertise_callback, advertise_data,
+                                            advertise_settings)
+        try:
+            adv_ad.ed.pop_event(
+                adv_succ.format(advertise_callback), default_timeout)
+            log.info("Advertisement {} started.".format(i + 1))
+        except Empty as error:
+            log.error("Advertisement {} failed to start.".format(i + 1))
+            raise BtTestUtilsError("Test failed with Empty error: {}".format(
+                error))
+    return advertise_callback_list
+
+
+def teardown_n_advertisements(adv_ad, num_advertisements,
+                              advertise_callback_list):
+    for n in range(num_advertisements):
+        adv_ad.droid.bleStopBleAdvertising(advertise_callback_list[n])
+    return True
+
 
 def generate_ble_scan_objects(droid):
     filter_list = droid.bleGenFilterList()
