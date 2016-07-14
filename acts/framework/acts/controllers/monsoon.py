@@ -18,8 +18,6 @@
 Based on the original py2 script of kens@google.com
 """
 
-__author__ = 'angli@google.com (Ang Li)'
-
 import fcntl
 import logging
 import os
