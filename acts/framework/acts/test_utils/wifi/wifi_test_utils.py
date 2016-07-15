@@ -23,11 +23,8 @@ from queue import Empty
 
 from acts import asserts
 from acts import signals
+from acts import utils
 from acts.controllers import attenuator
-from acts.utils import exe_cmd
-from acts.utils import require_sl4a
-from acts.utils import sync_device_time
-from acts.utils import trim_model_name
 
 log = logging
 
@@ -400,21 +397,21 @@ class WifiChannelUS(WifiChannelBase):
                         5320, 5520, 5560, 5700, 5745, 5805]
 
     def __init__(self, model=None):
-        if model and trim_model_name(model) in K_DEVICES:
+        if model and utils.trim_model_name(model) in K_DEVICES:
             self.DFS_5G_FREQUENCIES = []
             self.ALL_5G_FREQUENCIES = self.NONE_DFS_5G_FREQUENCIES
             self.MIX_CHANNEL_SCAN = [2412, 2437, 2462, 5180, 5200, 5240, 5745,
                                      5765]
-        elif model and trim_model_name(model) in L_DEVICES:
+        elif model and utils.trim_model_name(model) in L_DEVICES:
             self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
                                        5540, 5560, 5580, 5660, 5680, 5700]
             self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
-        elif model and trim_model_name(model) in L_TAP_DEVICES:
+        elif model and utils.trim_model_name(model) in L_TAP_DEVICES:
             self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
                                        5540, 5560, 5580, 5660, 5680, 5700,
                                        5720]
             self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
-        elif model and trim_model_name(model) in M_DEVICES:
+        elif model and utils.trim_model_name(model) in M_DEVICES:
             self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
                                        5540, 5560, 5580, 5600, 5620, 5640,
                                        5660, 5680, 5700]
@@ -614,8 +611,9 @@ def wifi_test_device_init(ad):
     5. Enable WiFi verbose logging.
     6. Sync device time with computer time.
     7. Turn off cellular data.
+    8. Turn off ambient display.
     """
-    require_sl4a((ad, ))
+    utils.require_sl4a((ad, ))
     ad.droid.wifiScannerToggleAlwaysAvailable(False)
     msg = "Failed to turn off location service's scan."
     asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)
@@ -632,11 +630,12 @@ def wifi_test_device_init(ad):
     output = ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
                           "wlan0 log_level EXCESSIVE")
     ad.log.info("wpa_supplicant log change status: %s", output)
-    sync_device_time(ad)
+    utils.sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
     # TODO(angli): need to verify the country code was actually set. No generic
     # way to check right now.
     ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
+    utils.set_ambient_display(ad, False)
 
 
 def sort_wifi_scan_results(results, key="level"):
@@ -987,7 +986,7 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
         out_file.endswith(".der"), "Output file has to be .der.")
     cmd = ("openssl pkcs8 -inform PEM -in {} -outform DER -out {} -nocrypt"
            " -topk8").format(in_file, out_file)
-    exe_cmd(cmd)
+    utils.exe_cmd(cmd)
 
 
 def check_internet_connection(ad, ping_addr):
