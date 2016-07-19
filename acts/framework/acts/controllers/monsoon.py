@@ -55,7 +55,7 @@ class MonsoonError(acts.signals.ControllerError):
     """Raised for exceptions encountered in monsoon lib."""
 
 
-class MonsoonProxy:
+class MonsoonProxy(object):
     """Class that directly talks to monsoon over serial.
 
     Provides a simple class to use the power meter, e.g.
@@ -342,8 +342,8 @@ class MonsoonProxy:
         """
         data = struct.pack(fmt, *args)
         data_len = len(data) + 1
-        checksum = (data_len + sum(data)) % 256
-        out = bytes([data_len]) + data + bytes([checksum])
+        checksum = (data_len + sum(bytearray(data))) % 256
+        out = struct.pack("B", data_len) + data + struct.pack("B", checksum)
         self.ser.write(out)
 
     def _ReadPacket(self):
@@ -363,13 +363,13 @@ class MonsoonProxy:
                           data_len, len(result))
             return None
         body = result[:-1]
-        checksum = (sum(result[:-1]) + data_len) % 256
-        if result[-1] != checksum:
+        checksum = (sum(struct.unpack("B" * len(body), body)) + data_len) % 256
+        if result[-1] != struct.pack("B", checksum):
             logging.error(
                 "Invalid checksum from serial port! Expected %s, got %s",
                 hex(checksum), hex(result[-1]))
             return None
-        return result[:-1]
+        return bytearray(result[:-1])
 
     def _FlushInput(self):
         """ Flush all read data until no more available. """
@@ -391,7 +391,7 @@ class MonsoonProxy:
         #     logging.info("dropped >%d bytes" % flushed)
 
 
-class MonsoonData:
+class MonsoonData(object):
     """A class for reporting power measurement data from monsoon.
 
     Data means the measured current value in Amps.
@@ -609,7 +609,7 @@ class MonsoonData:
         return self._header()
 
 
-class Monsoon:
+class Monsoon(object):
     """The wrapper class for test scripts to interact with monsoon.
     """
 
@@ -933,5 +933,5 @@ class Monsoon:
             ed.start()
             # Release wake lock to put device into sleep.
             droid.goToSleepNow()
-            self.log.info("Dut reconncted.")
+            self.log.info("Dut reconnected.")
             return data
