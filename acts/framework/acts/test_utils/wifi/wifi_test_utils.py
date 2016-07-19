@@ -25,6 +25,7 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.test_utils.tel import tel_defines
 
 log = logging
 
@@ -695,18 +696,15 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         True if soft AP was started successfully, False otherwise.
     """
     droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
     config = {WifiEnums.SSID_KEY: ssid}
     if password:
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
-    if not droid.wifiSetApEnabled(True, config):
-        return False
-    ed.pop_event("WifiManagerApEnabled", 30)
-    ed.wait_for_event("TetherStateChanged",
-                      lambda x: x["data"]["ACTIVE_TETHER"], 30)
-    droid.wifiStopTrackingStateChange()
+    msg = "Failed to set WifiAp Configuration."
+    asserts.assert_true(droid.wifiSetWifiApConfiguration(config), msg)
+    droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
+    ed.pop_event("ConnectivityManagerOnTetheringStarted")
     return True
 
 
@@ -718,6 +716,7 @@ def stop_wifi_tethering(ad):
     """
     droid, ed = ad.droid, ad.ed
     droid.wifiStartTrackingStateChange()
+    droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
     droid.wifiSetApEnabled(False, None)
     ed.pop_event("WifiManagerApDisabled", 30)
     ed.wait_for_event("TetherStateChanged",
