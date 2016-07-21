@@ -77,14 +77,20 @@ class BaseTestClass(object):
                           req_param_names=[],
                           opt_param_names=[],
                           **kwargs):
-        """Unpacks user defined parameters in test config into individual
-        variables.
+        """An optional function that unpacks user defined parameters into
+        individual variables.
 
-        Instead of accessing the user param with self.user_params["xxx"], the
-        variable can be directly accessed with self.xxx.
+        After unpacking, the params can be directly accessed with self.xxx.
 
-        A missing required param will raise an exception. If an optional param
-        is missing, an INFO line will be logged.
+        If a required param is not provided, an exception is raised. If an
+        optional param is not provided, a warning line will be logged.
+
+        To provide a param, add it in the config file or pass it in as a kwarg.
+        If a param appears in both the config file and kwarg, the value in the
+        config file is used.
+
+        User params from the config file can also be directly accessed in
+        self.user_params.
 
         Args:
             req_param_names: A list of names of the required user params.
@@ -95,23 +101,28 @@ class BaseTestClass(object):
                      required_list or opt_list.
 
         Raises:
-            BaseTestError is raised if a required user params is missing from
-            test config.
+            BaseTestError is raised if a required user params is not provided.
         """
         for k, v in kwargs.items():
+            if k in self.user_params:
+                v = self.user_params[k]
             setattr(self, k, v)
         for name in req_param_names:
+            if hasattr(self, name):
+                continue
             if name not in self.user_params:
                 raise BaseTestError(("Missing required user param '%s' in test"
                                      " configuration.") % name)
             setattr(self, name, self.user_params[name])
         for name in opt_param_names:
-            if name not in self.user_params:
-                self.log.info(
+            if hasattr(self, name):
+                continue
+            if name in self.user_params:
+                setattr(self, name, self.user_params[name])
+            else:
+                self.log.warning(
                     ("Missing optional user param '%s' in "
                      "configuration, continue."), name)
-            else:
-                setattr(self, name, self.user_params[name])
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
