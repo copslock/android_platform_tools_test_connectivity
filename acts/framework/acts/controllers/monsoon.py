@@ -864,7 +864,7 @@ class Monsoon(object):
                     self.log.info("Skip taking samples for %s", step_name)
                     continue
                 time.sleep(1)
-                self.dut.terminate_all_sessions()
+                self.dut.stop_services()
                 time.sleep(1)
                 self.log.info("Taking samples for %s.", step_name)
                 data = self.take_samples(hz, num, sample_offset=oset)
@@ -883,10 +883,10 @@ class Monsoon(object):
                 self._wait_for_device(self.dut)
                 # Wait for device to come back online.
                 time.sleep(10)
-                droid, ed = self.dut.get_droid(True)
-                ed.start()
+                self.dut.start_services(skip_sl4a=getattr(self.dut,
+                                                          "skip_sl4a", False))
                 # Release wake lock to put device into sleep.
-                droid.goToSleepNow()
+                self.dut.droid.goToSleepNow()
         return results
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -915,7 +915,7 @@ class Monsoon(object):
         try:
             self.usb("auto")
             time.sleep(1)
-            self.dut.terminate_all_sessions()
+            self.dut.stop_services()
             time.sleep(1)
             data = self.take_samples(hz, num, sample_offset=oset)
             if not data:
@@ -930,9 +930,9 @@ class Monsoon(object):
             self._wait_for_device(self.dut)
             # Wait for device to come back online.
             time.sleep(10)
-            droid, ed = self.dut.get_droid(True)
-            ed.start()
+            self.dut.start_services(skip_sl4a=getattr(self.dut,
+                                                      "skip_sl4a", False))
             # Release wake lock to put device into sleep.
-            droid.goToSleepNow()
+            self.dut.droid.goToSleepNow()
             self.log.info("Dut reconnected.")
             return data
