@@ -586,6 +586,25 @@ class ActsBaseClassTest(unittest.TestCase):
         bc.unpack_userparams(optional_thing="whatever")
         self.assertEqual(bc.optional_thing, "whatever")
 
+    def test_unpack_userparams_default_overwrite_by_optional_param_list(self):
+        """If an optional param is specified in kwargs, and the param is in the
+        config, the value should be the one in the config.
+        """
+        bc = base_test.BaseTestClass(self.mock_test_cls_configs)
+        bc.unpack_userparams(some_param="whatever")
+        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        self.assertEqual(bc.some_param, expected_value)
+
+    def test_unpack_userparams_default_overwrite_by_required_param_list(self):
+        """If an optional param is specified in kwargs, the param is in the
+        required param list, and the param is not specified in the config, the
+        param's alue should be the default value and there should be no error
+        thrown.
+        """
+        bc = base_test.BaseTestClass(self.mock_test_cls_configs)
+        bc.unpack_userparams(req_param_names=['a_kwarg_param'], a_kwarg_param="whatever")
+        self.assertEqual(bc.a_kwarg_param, "whatever")
+
     def test_unpack_userparams_optional_missing(self):
         """Missing an optional param should not raise an error."""
         opt = ["something"]
