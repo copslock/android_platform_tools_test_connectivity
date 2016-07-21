@@ -34,6 +34,15 @@ class WifiScannerBssidError(Exception):
 
 
 class WifiScannerBssidTest(base_test.BaseTestClass):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        # A list of all test cases to be executed in this class.
+        self.tests = ("test_wifi_track_bssid_sanity",
+                      "test_wifi_track_bssid_found",
+                      "test_wifi_track_bssid_lost",
+                      "test_wifi_track_bssid_for_2g_while_scanning_5g_channels",
+                      "test_wifi_track_bssid_for_5g_while_scanning_2g_channels",)
+
     def setup_class(self):
         self.default_scan_setting = {
             "band": wutils.WifiEnums.WIFI_BAND_BOTH_WITH_DFS,
@@ -56,7 +65,7 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
         req_params = ("bssid_2g", "bssid_5g", "bssid_dfs", "attenuator_id",
                       "max_bugreports")
         self.wifi_chs = wutils.WifiChannelUS(self.dut.model)
-        self.unpack_userparams(req_params)
+        self.unpack_userparams(req_params, two_ap_testbed=False)
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
@@ -253,7 +262,7 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
         """
         bssids = [[self.bssid_2g], [self.bssid_5g],
                   [self.bssid_2g, self.bssid_5g]]
-        if self.dut.model != "hammerhead":
+        if self.dut.model != "hammerhead" or not self.two_ap_testbed:
             bssids.append([self.bssid_dfs])
         if isLost:
             apthreshold = (3, 5)
