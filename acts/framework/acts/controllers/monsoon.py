@@ -358,18 +358,19 @@ class MonsoonProxy(object):
         if not data_len:
             return ""
         result = self.ser.read(int(data_len))
+        result = bytearray(result)
         if len(result) != data_len:
             logging.error("Length mismatch, expected %d bytes, got %d bytes.",
                           data_len, len(result))
             return None
         body = result[:-1]
         checksum = (sum(struct.unpack("B" * len(body), body)) + data_len) % 256
-        if result[-1] != struct.pack("B", checksum):
+        if result[-1] != checksum:
             logging.error(
                 "Invalid checksum from serial port! Expected %s, got %s",
                 hex(checksum), hex(result[-1]))
             return None
-        return bytearray(result[:-1])
+        return result[:-1]
 
     def _FlushInput(self):
         """ Flush all read data until no more available. """
