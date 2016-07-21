@@ -69,7 +69,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             "network_2g",
             "network_5g",
             "iperf_server_address")
-        self.unpack_userparams(required_userparam_names, ("threshold", ))
+        self.unpack_userparams(required_userparam_names, threshold=None)
         wutils.wifi_test_device_init(self.dut)
         try:
             self.attn = self.attenuators[0]
@@ -98,7 +98,7 @@ class WifiPowerTest(base_test.BaseTestClass):
         # Default measurement time is 30min with an offset of 5min. Each test
         # can overwrite this by setting self.duration and self.offset.
         self.offset = 5 * 60
-        self.duration = 30 * 60 + self.offset
+        self.duration = 20 * 60 + self.offset
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
@@ -148,11 +148,9 @@ class WifiPowerTest(base_test.BaseTestClass):
                                 extras=result_extra)
             rate = "%.2fMB/s" % iperf_result.avg_rate
             result_extra["Average Rate"] = rate
-        if self.threshold:
-            model = utils.trim_model_name(self.dut.model)
-            asserts.assert_true(tag in self.threshold[model],
-                                "Acceptance threshold for %s is missing" % tag,
-                                extras=result_extra)
+        model = utils.trim_model_name(self.dut.model)
+        if self.threshold and (model in self.threshold) and (
+                tag in self.threshold[model]):
             acceptable_threshold = self.threshold[model][tag]
             asserts.assert_true(
                 actual_current < acceptable_threshold,
