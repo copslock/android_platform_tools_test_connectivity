@@ -615,13 +615,13 @@ def stop_wifi_tethering(ad):
         ad: android_device to stop wifi tethering on.
     """
     droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
+    droid.wifiStartTrackingTetherStateChange()
     droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
     droid.wifiSetApEnabled(False, None)
     ed.pop_event("WifiManagerApDisabled", 30)
     ed.wait_for_event("TetherStateChanged",
         lambda x : not x["data"]["ACTIVE_TETHER"], 30)
-    droid.wifiStopTrackingStateChange()
+    droid.wifiStopTrackingTetherStateChange()
 
 def wifi_connect(ad, network):
     """Connect an Android device to a wifi network.
