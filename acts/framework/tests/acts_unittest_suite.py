@@ -21,6 +21,7 @@ import acts_adb_test
 import acts_android_device_test
 import acts_asserts_test
 import acts_base_class_test
+import acts_logger_test
 import acts_records_test
 import acts_sl4a_client_test
 import acts_test_runner_test
@@ -36,7 +37,8 @@ def compile_suite():
         acts_android_device_test.ActsAndroidDeviceTest,
         acts_records_test.ActsRecordsTest,
         acts_sl4a_client_test.ActsSl4aClientTest,
-        acts_utils_test.ActsUtilsTest
+        acts_utils_test.ActsUtilsTest,
+        acts_logger_test.ActsLoggerTest
     ]
 
     loader = unittest.TestLoader()
