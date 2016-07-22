@@ -85,8 +85,19 @@ def _get_timestamp(time_format, delta=None):
 
 
 def epoch_to_log_line_timestamp(epoch_time):
-    d = datetime.datetime.fromtimestamp(epoch_time / 1000)
-    return d.strftime("%m-%d %H:%M:%S.%f")[:-3]
+    """Converts an epoch timestamp in ms to log line timestamp format, which
+    is readible for humans.
+
+    Args:
+        epoch_time: integer, an epoch timestamp in ms.
+
+    Returns:
+        A string that is the corresponding timestamp in log line timestamp
+        format.
+    """
+    s, ms = divmod(epoch_time, 1000)
+    d = datetime.datetime.fromtimestamp(s)
+    return d.strftime("%m-%d %H:%M:%S.") + str(ms)
 
 
 def get_log_line_timestamp(delta=None):
