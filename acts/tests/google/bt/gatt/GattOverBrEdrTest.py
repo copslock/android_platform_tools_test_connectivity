@@ -151,13 +151,13 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             characteristic_list[2], descriptor_list[1])
         gatt_service = self.per_ad.droid.gattServerCreateService(
             "00000000-0000-1000-8000-00805f9b34fb",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         gatt_service2 = self.per_ad.droid.gattServerCreateService(
             "FFFFFFFF-0000-1000-8000-00805f9b34fb",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         gatt_service3 = self.per_ad.droid.gattServerCreateService(
             "3846D7A0-69C8-11E4-BA00-0002A5D5C51B",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         for characteristic in characteristic_list:
             self.per_ad.droid.gattServerAddCharacteristicToService(
                 gatt_service, characteristic)
@@ -597,7 +597,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             test_uuid, GattCharacteristic.PROPERTY_WRITE.value,
             GattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM.value)
         gatt_service = self.per_ad.droid.gattServerCreateService(
-            service_uuid, GattService.SERVICE_TYPE_PRIMARY.value)
+            service_uuid, GattService.SERVICE_TYPE_PRIMARY)
         self.per_ad.droid.gattServerAddCharacteristicToService(gatt_service,
                                                                characteristic)
         self.per_ad.droid.gattServerAddService(gatt_server, gatt_service)
