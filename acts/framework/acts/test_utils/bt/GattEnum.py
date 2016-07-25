@@ -85,7 +85,7 @@ class GattEvent(Enum):
                         "err": GattCbErr.CHAR_CHANGE_ERR.value}
 
 
-class GattConnectionState(Enum):
+class GattConnectionState(IntEnum):
     STATE_DISCONNECTED = 0
     STATE_CONNECTING = 1
     STATE_CONNECTED = 2
@@ -136,18 +136,18 @@ class GattDescriptor(Enum):
     PERMISSION_WRITE_SIGNED_MITM = 0x100
 
 
-class GattService(Enum):
+class GattService(IntEnum):
     SERVICE_TYPE_PRIMARY = 0
     SERVICE_TYPE_SECONDARY = 1
 
 
-class GattConnectionPriority(Enum):
+class GattConnectionPriority(IntEnum):
     CONNECTION_PRIORITY_BALANCED = 0
     CONNECTION_PRIORITY_HIGH = 1
     CONNECTION_PRIORITY_LOW_POWER = 2
 
 
-class MtuSize(Enum):
+class MtuSize(IntEnum):
     MIN = 23
     MAX = 217
 
