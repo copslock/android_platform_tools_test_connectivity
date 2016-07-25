@@ -29,7 +29,6 @@ from acts.test_utils.bt.GattEnum import GattService
 from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.GattEnum import GattCbErr
 from acts.test_utils.bt.GattEnum import GattCbStrings
-from acts.test_utils.bt.GattEnum import GattConnectionPriority
 from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
@@ -153,13 +152,13 @@ class GattConnectTest(BluetoothBaseTest):
             characteristic_list[2], descriptor_list[1])
         gatt_service = self.per_ad.droid.gattServerCreateService(
             "00000000-0000-1000-8000-00805f9b34fb",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         gatt_service2 = self.per_ad.droid.gattServerCreateService(
             "FFFFFFFF-0000-1000-8000-00805f9b34fb",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         gatt_service3 = self.per_ad.droid.gattServerCreateService(
             "3846D7A0-69C8-11E4-BA00-0002A5D5C51B",
-            GattService.SERVICE_TYPE_PRIMARY.value)
+            GattService.SERVICE_TYPE_PRIMARY)
         for characteristic in characteristic_list:
             self.per_ad.droid.gattServerAddCharacteristicToService(
                 gatt_service, characteristic)
@@ -262,7 +261,8 @@ class GattConnectTest(BluetoothBaseTest):
             return False
         autoconnect = True
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
-            gatt_callback, mac_address, autoconnect, GattTransport.TRANSPORT_AUTO)
+            gatt_callback, mac_address, autoconnect,
+            GattTransport.TRANSPORT_AUTO)
         expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(
             gatt_callback)
         try:
@@ -309,7 +309,7 @@ class GattConnectTest(BluetoothBaseTest):
         except GattTestUtilsError:
             return False
         self.adv_instances.append(adv_callback)
-        expected_mtu = MtuSize.MIN.value
+        expected_mtu = MtuSize.MIN
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
         expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
@@ -362,7 +362,7 @@ class GattConnectTest(BluetoothBaseTest):
         except GattTestUtilsError:
             return False
         self.adv_instances.append(adv_callback)
-        expected_mtu = MtuSize.MAX.value
+        expected_mtu = MtuSize.MAX
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
         expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
@@ -416,8 +416,7 @@ class GattConnectTest(BluetoothBaseTest):
         except GattTestUtilsError:
             return False
         self.adv_instances.append(adv_callback)
-        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt,
-                                               MtuSize.MIN.value - 1)
+        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, MtuSize.MIN - 1)
         expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
         try:
             self.cen_ad.ed.pop_event(expected_event, self.default_timeout)
@@ -738,7 +737,7 @@ class GattConnectTest(BluetoothBaseTest):
         else:
             self.log.info("Failed to discover services.")
             return False
-        test_value = [1,2,3,4,5,6,7]
+        test_value = [1, 2, 3, 4, 5, 6, 7]
         services_count = self.cen_ad.droid.gattClientGetDiscoveredServicesCount(
             discovered_services_index)
         for i in range(services_count):
