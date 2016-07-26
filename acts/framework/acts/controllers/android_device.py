@@ -25,9 +25,9 @@ from acts import logger as acts_logger
 from acts import signals
 from acts import utils
 from acts.controllers import adb
-from acts.controllers import android
 from acts.controllers import event_dispatcher
 from acts.controllers import fastboot
+from acts.controllers import sl4a_client
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
@@ -522,11 +522,13 @@ class AndroidDevice:
         if not self.h_port or not adb.is_port_available(self.h_port):
             self.h_port = adb.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
+
         try:
             droid = self.start_new_session()
         except:
-            self.adb.start_sl4a()
+            sl4a_client.start_sl4a(self.adb)
             droid = self.start_new_session()
+
         if handle_event:
             ed = self.get_dispatcher(droid)
             return droid, ed
@@ -684,12 +686,13 @@ class AndroidDevice:
                 device.
 
         Raises:
-            SL4AException: Something is wrong with sl4a and it returned an
+            Sl4aException: Something is wrong with sl4a and it returned an
             existing uid to a new session.
         """
-        droid = android.Android(port=self.h_port)
+        droid = sl4a_client.Sl4aClient(port=self.h_port)
+        droid.open()
         if droid.uid in self._droid_sessions:
-            raise android.SL4AException(
+            raise sl4a_client.Sl4aException(
                 "SL4A returned an existing uid for a new session. Abort.")
         self._droid_sessions[droid.uid] = [droid]
         return droid
@@ -710,9 +713,8 @@ class AndroidDevice:
         """
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
-        droid = android.Android(cmd='continue',
-                                uid=session_id,
-                                port=self.h_port)
+        droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
+        droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
 
     def terminate_session(self, session_id):

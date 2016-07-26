@@ -22,15 +22,6 @@ import socket
 import subprocess
 import time
 
-SL4A_LAUNCH_CMD = (
-    "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
-    "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
-    "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher")
-
-
-class Sl4aError(Exception):
-    """Raised when sl4a operations fail."""
-
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -163,49 +154,6 @@ class AdbProxy():
             device_port: Port number to use on the android device.
         """
         self.forward("tcp:{} tcp:{}".format(host_port, device_port))
-
-    # TODO(b/26204549): Move all sl4a related functions out of adb module.
-    def start_sl4a(self, port=8080):
-        """Starts sl4a server on the android device.
-
-        Args:
-            port: Port number to use on the android device.
-        """
-        if not self.is_sl4a_installed():
-            raise Sl4aError("SL4A is not installed on %s" % self.serial)
-        MAX_SL4A_WAIT_TIME = 10
-        self.shell(SL4A_LAUNCH_CMD.format(port))
-        for _ in range(MAX_SL4A_WAIT_TIME):
-            time.sleep(1)
-            if self.is_sl4a_running():
-                return
-        raise Sl4aError("SL4A failed to start on %s." % self.serial)
-
-    def is_sl4a_installed(self):
-        """Checks if sl4a is installed by querying the package path of sl4a.
-
-        Returns:
-            True if sl4a is installed, False otherwise.
-        """
-        try:
-            self.shell("pm path com.googlecode.android_scripting")
-            return True
-        except AdbError as e:
-            if not e.stderr:
-                return False
-            raise
-
-    def is_sl4a_running(self):
-        """Checks if the sl4a app is running on an android device.
-
-        Returns:
-            True if the sl4a app is running, False otherwise.
-        """
-        #Grep for process with a preceding S which means it is truly started.
-        out = self.shell('ps | grep "S com.googlecode.android_scripting"')
-        if len(out) == 0:
-            return False
-        return True
 
     def __getattr__(self, name):
         def adb_call(*args):
