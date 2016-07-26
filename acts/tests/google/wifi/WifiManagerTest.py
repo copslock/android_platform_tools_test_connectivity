@@ -56,17 +56,20 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, True)
         self.iot_networks = self.iot_networks + [self.open_network]
         self.iperf_server = self.iperf_servers[0]
+        self.iot_test_prefix = "test_connection_to-"
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
-        self.iperf_server.start()
+        if self.iot_test_prefix in self.current_test_name:
+            self.iperf_server.start()
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        self.iperf_server.stop()
+        if self.iot_test_prefix in self.current_test_name:
+            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.cat_adb_log(test_name, begin_time)
@@ -135,8 +138,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
        """
         network, ad = params
         self.connect_to_wifi_network(params)
-        wutils.toggle_wifi_and_wait_for_reconnection(
-                ad, network, num_of_tries=5)
+        wutils.toggle_wifi_and_wait_for_reconnection(ad,
+                                                     network,
+                                                     num_of_tries=5)
         self.run_iperf_client(params)
 
     def run_iperf(self, iperf_args):
@@ -231,7 +235,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
     def test_config_store(self):
         params = list(itertools.product(self.config_store_networks,
                                         self.android_devices))
-        name_gen = lambda p: "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
+
+        def name_gen(p):
+            return "test_connection_to-%s-for_config_store" % p[0][
+                WifiEnums.SSID_KEY]
+
         failed = self.run_generated_testcases(
             self.connect_to_wifi_network_toggle_wifi_and_run_iperf,
             params,
