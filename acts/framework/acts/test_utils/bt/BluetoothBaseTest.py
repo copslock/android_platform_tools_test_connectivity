@@ -22,10 +22,11 @@ import time
 from acts import utils
 from acts.base_test import BaseTestClass
 from acts.controllers import android_device
-from acts.test_utils.bt.bt_test_utils import (log_energy_info,
-                                              reset_bluetooth,
-                                              setup_multiple_devices_for_bt_test,
-                                              take_btsnoop_logs)
+from acts.test_utils.bt.bt_test_utils import (
+    log_energy_info, reset_bluetooth, setup_multiple_devices_for_bt_test,
+    take_btsnoop_logs)
+from acts.utils import sync_device_time
+
 
 class BluetoothBaseTest(BaseTestClass):
 
@@ -46,6 +47,8 @@ class BluetoothBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+        for a in self.android_devices:
+            sync_device_time(a)
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):

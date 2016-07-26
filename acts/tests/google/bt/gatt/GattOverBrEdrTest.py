@@ -524,7 +524,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                             characteristic, descriptor)
                         event = self.per_ad.ed.pop_event(
                             GattCbStrings.DESC_WRITE_REQ.value.format(
-                                gatt_callback), self.default_timeout)
+                                gatt_server_callback), self.default_timeout)
                         self.log.info(
                             "onDescriptorWriteRequest event found: {}".format(
                                 event))
@@ -542,7 +542,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                             "onDescriptorWrite event found: {}".format(
                                 self.cen_ad.ed.pop_event(
                                     GattCbStrings.DESC_WRITE.value.format(
-                                        bluetooth_gatt),
+                                        gatt_callback),
                                     self.default_timeout)))
         return True
 
