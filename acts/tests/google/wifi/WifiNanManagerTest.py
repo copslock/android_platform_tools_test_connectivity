@@ -35,6 +35,8 @@ ON_RANGING_SUCCESS = "WifiNanRangingListenerOnSuccess"
 ON_RANGING_FAILURE = "WifiNanRangingListenerOnFailure"
 ON_RANGING_ABORTED = "WifiNanRangingListenerOnAborted"
 NETWORK_CALLBACK = "NetworkCallback"
+NETWORK_CALLBACK_EVENT = "networkCallbackEvent"
+NETWORK_CALLBACK_LINK_PROPS = "LinkPropertiesChanged"
 DATA_PATH_INITIATOR = 0
 DATA_PATH_RESPONDER = 1
 
@@ -519,11 +521,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
         required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config", "network_req",
-                           "nan_interface")
+                           "publish_config", "subscribe_config", "network_req")
         self.unpack_userparams(required_params)
 
-        nan0 = self.nan_interface["NanInterface"]
         sub2pub_msg = "Get ready!"
         pub2sub_msg = "Ready!"
         test_token = "Token / <some magic string>"
@@ -535,6 +535,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
         sub_id = self.subscriber.droid.wifiNanSubscribe(0,
                                                         self.subscribe_config)
+
+        def filter_callbacks(event, key, name):
+            return event['data'][key] == name
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(ON_MATCH, 30)
@@ -587,31 +590,38 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             self.network_req)
 
         try:
-            event_network = self.subscriber.ed.pop_event(NETWORK_CALLBACK, 30)
+            event_network = self.subscriber.ed.wait_for_event(NETWORK_CALLBACK,
+                    filter_callbacks, 30, key=NETWORK_CALLBACK_EVENT,
+                    name=NETWORK_CALLBACK_LINK_PROPS)
             self.log.info('Subscriber %s: %s', NETWORK_CALLBACK,
                           event_network['data'])
         except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on Subscriber' %
-                         NETWORK_CALLBACK)
+            asserts.fail('Timed out while waiting for %s/%s on Subscriber' %
+                         (NETWORK_CALLBACK, NETWORK_CALLBACK_LINK_PROPS))
         self.log.debug(event_network)
+        sub_nan_if = event_network['data']['interfaceName']
 
         try:
-            event_network = self.publisher.ed.pop_event(NETWORK_CALLBACK, 30)
+            event_network = self.publisher.ed.wait_for_event(NETWORK_CALLBACK,
+                     filter_callbacks, 30, key=NETWORK_CALLBACK_EVENT,
+                     name=NETWORK_CALLBACK_LINK_PROPS)
             self.log.info('Publisher %s: %s', NETWORK_CALLBACK,
                           event_network['data'])
         except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on Publisher' %
-                         NETWORK_CALLBACK)
+            asserts.fail('Timed out while waiting for %s/%s on Publisher' %
+                         (NETWORK_CALLBACK, NETWORK_CALLBACK_LINK_PROPS))
         self.log.debug(event_network)
+        pub_nan_if = event_network['data']['interfaceName']
 
-        pub_ipv6 = self.get_interface_ipv6_link_local(self.publisher, nan0)
+        pub_ipv6 = self.get_interface_ipv6_link_local(self.publisher,
+                                                      pub_nan_if)
         self.log.debug("Publisher IPv6 link-local %s", pub_ipv6)
 
         result, data = self.publisher.run_iperf_server("-D")
         asserts.assert_true(result, "Can't start iperf3 server")
 
         result, data = self.subscriber.run_iperf_client(
-            "%s%%%s" % (pub_ipv6, nan0), "-6 -J")
+            "%s%%%s" % (pub_ipv6, sub_nan_if), "-6 -J")
         self.log.debug(data)
         asserts.assert_true(result,
                             "Failure starting/running iperf3 in client mode")
