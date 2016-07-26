@@ -270,7 +270,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
 
         bt_device_id = 0
 
@@ -344,7 +344,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
 
         for i in range(100):
 
@@ -412,7 +412,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
 
         bt_device_id = 0
 
