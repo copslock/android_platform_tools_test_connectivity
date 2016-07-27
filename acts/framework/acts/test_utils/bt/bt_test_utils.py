@@ -606,6 +606,21 @@ def check_device_supported_profiles(droid):
     return profile_dict
 
 
+def log_energy_info(android_devices, state):
+    """Logs energy info of input Android devices.
+
+    Args:
+        android_devices: input Android device list to log energy info from.
+        state: the input state to log. Usually 'Start' or 'Stop' for logging.
+
+    Returns:
+        A logging string of the Bluetooth energy info reported.
+    """
+    return_string = "{} Energy info collection:\n".format(state)
+    # Bug: b/31966929
+    return return_string
+
+
 def pair_pri_to_sec(pri_droid, sec_droid):
     """Pairs pri droid to sec droid.
 
@@ -703,6 +718,55 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
         log.info("Profiles connected until now {}".format(profile_connected))
     # Failure happens inside the while loop. If we came here then we already
     # connected.
+    return True
+
+
+def disconnect_pri_from_sec(log, pri_droid, sec_droid, profiles_list):
+    """
+    Disconnect primary from secondary on a specific set of profiles
+    Args:
+        pri_droid - Primary android_device initiating disconnection
+        sec_droid - secondary device's droid (sl4a interface to keep the method signature the same
+                    connect_pri_to_sec above)
+        profiles_list - List of profiles we want to disconnect from
+
+    Returns:
+        True on Success
+        False on Failure
+    """
+    # Sanity check to see if all the profiles in the given set is supported
+    supported_profiles = [i.value for i in BluetoothProfile]
+    for profile in profiles_list:
+        if profile not in supported_profiles:
+            log.info("Profile {} is not in supported list {}".format(
+                profile, supported_profiles))
+            return False
+
+    #Disconnecting on a already disconnected profile is a nop, so not checking for the connection state
+    pri_droid.droid.bluetoothDisconnectConnectedProfile(
+        sec_droid.bluetoothGetLocalAddress(), profiles_list)
+    profile_disconnected = set()
+    log.info("Disconnecting from profiles: {}".format(profiles_list))
+
+    while not profile_disconnected.issuperset(profiles_list):
+        try:
+            profile_event = pri_droid.ed.pop_event(
+                bluetooth_profile_connection_state_changed, default_timeout)
+            log.info("Got event {}".format(profile_event))
+        except Exception:
+            log.error("Did not disconnect from Profiles")
+            return False
+
+        profile = profile_event['data']['profile']
+        state = profile_event['data']['state']
+        device_addr = profile_event['data']['addr']
+
+        if state == BluetoothProfileState.STATE_DISCONNECTED.value and \
+            device_addr == sec_droid.bluetoothGetLocalAddress():
+            profile_disconnected.add(profile)
+        log.info("Profiles disconnected so far {}".format(
+            profile_disconnected))
+
     return True
 
 

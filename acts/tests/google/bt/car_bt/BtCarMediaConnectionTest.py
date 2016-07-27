@@ -1,0 +1,183 @@
+#/usr/bin/env python3.4
+#
+# Copyright (C) 2016 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+"""
+Automated tests for the testing Connectivity of Avrcp/A2dp profile.
+"""
+
+import time
+
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.bt import BtEnum
+
+AUTO_CONNECT_ALLOWANCE_TIME = 15
+
+
+class BtCarMediaConnectionTest(BluetoothBaseTest):
+    def setup_class(self):
+        # AVRCP roles
+        self.CT = self.android_devices[0]
+        self.TG = self.android_devices[1]
+        # A2DP roles for the same devices
+        self.SNK = self.CT
+        self.SRC = self.TG
+        # Reset bluetooth
+        bt_test_utils.reset_bluetooth([self.CT, self.TG])
+
+        self.btAddrCT = self.CT.droid.bluetoothGetLocalAddress()
+        self.btAddrTG = self.TG.droid.bluetoothGetLocalAddress()
+
+        # Pair and connect the devices.
+        if not bt_test_utils.pair_pri_to_sec(self.CT.droid, self.TG.droid):
+            self.log.error("Failed to pair")
+            return False
+
+        # Allowing some time for the devices to Auto connect on all profiles
+        # We want to focus our testing on the A2dp/Avrcp profiles.
+        # When the Bluetooth Adapter is turned on, it tries to connect on
+        # all the available profiles.  We give it time to do that and disconnect
+        # only on the A2dp profile and stay connected on other profiles.
+        # So, whenever we connect/disconnect on A2dp, the adapter doesn't try to
+        # auto connect on other profiles, since it is already connected
+        time.sleep(AUTO_CONNECT_ALLOWANCE_TIME)
+
+        # Check if we are connected on A2DP
+        connected = self.isA2dpConnected(self.SRC, self.SNK)
+        # As explained above, Disconnect only on A2DP
+        if (connected):
+            result = bt_test_utils.disconnect_pri_from_sec(
+                self.log, self.SNK, self.SRC.droid,
+                [BtEnum.BluetoothProfile.A2DP_SINK.value])
+            return result
+        else:
+            # We did not connect.
+            self.log.error("Failed to connect on setup")
+            return False
+        # At the end of the setup, we have the 2 devices paired and connected on all profiles
+        # EXCEPT the A2dp profile. This helps with running the test cases in any sequence
+
+    def setup_test(self):
+        for d in self.android_devices:
+            d.ed.clear_all_events()
+
+    def on_fail(self, test_name, begin_time):
+        self.log.debug("Test {} failed.".format(test_name))
+
+    def isA2dpConnected(self, device1, device2):
+        """
+        Convenience Function to see if the 2 devices are connected on
+        A2dp.
+        ToDo: Move to bt_test_utils if used in more places.
+        Args:
+            device1:    Device 1
+            device2:    Device 2
+        Returns:
+            True if Connected
+            False if Not connected
+        """
+        devices = device1.droid.bluetoothA2dpGetConnectedDevices()
+        for device in devices:
+            self.log.info("A2dp Connected device {}".format(device["name"]))
+            if (device["address"] == device2.droid.bluetoothGetLocalAddress()):
+                return True
+        return False
+
+    def test_a2dp_connect_disconnect_from_src(self):
+        """
+        Test Connect/Disconnect on A2DP profile.
+
+        Pre-Condition:
+        1. Devices previously bonded and NOT connected on A2dp
+
+        Steps:
+        1. Initiate a connection on A2DP profile from SRC
+        2. Check if they connected.
+        3. Initiate a disconnect on A2DP profile from SRC
+        4. Ensure they disconnected on A2dp alone
+
+        Returns:
+        True    if we connected/disconnected successfully
+        False   if we did not connect/disconnect successfully
+
+        Priority: 0
+        """
+        if (self.isA2dpConnected(self.SRC, self.SNK)):
+            self.log.info("Already Connected")
+        else:
+            result = bt_test_utils.connect_pri_to_sec(
+                self.log, self.SRC, self.SNK.droid,
+                set([BtEnum.BluetoothProfile.A2DP.value]))
+            if (not result):
+                self.log.error("Failed to connect on A2dp")
+                return False
+
+        result = bt_test_utils.disconnect_pri_from_sec(
+            self.log, self.SRC, self.SNK.droid,
+            [BtEnum.BluetoothProfile.A2DP.value])
+        if not result:
+            self.log.error("Failed to disconnect on A2dp")
+            return False
+
+        # Logging if we connected right back, since that happens sometimes
+        # Not failing the test if it did though
+        if (self.isA2dpConnected(self.SRC, self.SNK)):
+            self.log.error("Still connected after a disconnect")
+
+        return True
+
+    def test_a2dp_connect_disconnect_from_snk(self):
+        """
+        Test Connect/Disconnect on A2DP Sink profile.
+
+        Pre-Condition:
+        1. Devices previously bonded and NOT connected on A2dp
+
+        Steps:
+        1. Initiate a connection on A2DP Sink profile from SNK
+        2. Check if they connected.
+        3. Initiate a disconnect on A2DP Sink profile from SNK
+        4. Ensure they disconnected on A2dp alone
+
+        Returns:
+        True    if we connected/disconnected successfully
+        False   if we did not connect/disconnect successfully
+
+        Priority: 0
+        """
+        # Connect
+        if (self.isA2dpConnected(self.SRC, self.SNK)):
+            self.log.info("Already Connected")
+        else:
+            result = bt_test_utils.connect_pri_to_sec(
+                self.log, self.SNK, self.SRC.droid,
+                set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
+            if (not result):
+                self.log.error("Failed to connect on A2dp Sink")
+                return False
+        # Disconnect
+        result = bt_test_utils.disconnect_pri_from_sec(
+            self.log, self.SNK, self.SRC.droid,
+            [BtEnum.BluetoothProfile.A2DP_SINK.value])
+        if not result:
+            self.log.error("Failed to disconnect on A2dp Sink")
+            return False
+
+        # Logging if we connected right back, since that happens sometimes
+        # Not failing the test if it did though
+        if (self.isA2dpConnected(self.SRC, self.SNK)):
+            self.log.error("Still connected after a disconnect")
+
+        return True
