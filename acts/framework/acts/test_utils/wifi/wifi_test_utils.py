@@ -520,13 +520,13 @@ def _wifi_toggle_state(ad, new_state=None):
         new_state: The state to set Wi-Fi to. If None, opposite of the current
                    state will be set.
     """
-    # Check if the new_state is already achieved, so we don't wait for the
-    # state change event by mistake.
-    if new_state == ad.droid.wifiCheckState():
-        return
-    ad.droid.wifiStartTrackingStateChange()
     if new_state is None:
         new_state = not ad.droid.wifiCheckState()
+    elif new_state == ad.droid.wifiCheckState():
+        # Check if the new_state is already achieved, so we don't wait for the
+        # state change event by mistake.
+        return
+    ad.droid.wifiStartTrackingStateChange()
     ad.log.info("Setting Wi-Fi state to %s.", new_state)
     # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
