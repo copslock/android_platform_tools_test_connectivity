@@ -95,9 +95,6 @@ def phone_setup_video_for_subscription(log, ad, sub_id):
         True if ad (sub_id) is setup correctly and idle for video call.
     """
 
-    # FIXME: temporarily disable selinux due to b/26953532
-    ad.adb.shell("setenforce", "0")
-
     toggle_airplane_mode(log, ad, False)
     if not set_wfc_mode(log, ad, WFC_MODE_DISABLED):
         log.error("{} Disable WFC failed.".format(ad.serial))
