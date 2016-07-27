@@ -108,7 +108,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         self.droid_ad.droid.bluetoothMakeDiscoverable()
         scan_mode = self.droid_ad.droid.bluetoothGetScanMode()
         if (scan_mode ==
-                BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
+                BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE):
             self.log.debug("Android device1 scan mode is "
                            "SCAN_MODE_CONNECTABLE_DISCOVERABLE")
         else:
@@ -168,9 +168,9 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         """
         self.droid_ad.droid.bluetoothMakeUndiscoverable()
         set_bt_scan_mode(self.droid1_ad,
-            BluetoothScanModeType.SCAN_MODE_NONE.value)
+                         BluetoothScanModeType.SCAN_MODE_NONE)
         scan_mode = self.droid1_ad.droid.bluetoothGetScanMode()
-        if scan_mode == BluetoothScanModeType.SCAN_MODE_NONE.value:
+        if scan_mode == BluetoothScanModeType.SCAN_MODE_NONE:
             self.log.debug("Android device1 scan mode is SCAN_MODE_NONE")
         else:
             self.log.debug("Android device1 scan mode is not SCAN_MODE_NONE")
@@ -248,7 +248,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         """
         self.log.debug("Test scan mode STATE_OFF.")
         return set_bt_scan_mode(self.droid_ad,
-                                BluetoothScanModeType.STATE_OFF.value)
+                                BluetoothScanModeType.STATE_OFF)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_scan_mode_none(self):
@@ -273,7 +273,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         """
         self.log.debug("Test scan mode SCAN_MODE_NONE.")
         return set_bt_scan_mode(self.droid_ad,
-                                BluetoothScanModeType.SCAN_MODE_NONE.value)
+                                BluetoothScanModeType.SCAN_MODE_NONE)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_scan_mode_connectable(self):
@@ -297,8 +297,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 2
         """
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE.")
-        return set_bt_scan_mode(self.droid_ad,
-            BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value)
+        return set_bt_scan_mode(
+            self.droid_ad, BluetoothScanModeType.SCAN_MODE_CONNECTABLE)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_scan_mode_connectable_discoverable(self):
@@ -322,8 +322,9 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 2
         """
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
-        return set_bt_scan_mode(self.droid_ad,
-            BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value)
+        return set_bt_scan_mode(
+            self.droid_ad,
+            BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_if_support_hid_profile(self):
