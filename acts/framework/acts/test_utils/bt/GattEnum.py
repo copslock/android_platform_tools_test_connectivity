@@ -152,6 +152,12 @@ class MtuSize(IntEnum):
     MAX = 217
 
 
+class GattCharacteristicAttrLength(IntEnum):
+   MTU_ATTR_1 = 1
+   MTU_ATTR_2 = 3
+   MTU_ATTR_3 = 15
+
+
 class BluetoothGatt(Enum):
     GATT_SUCCESS = 0
     GATT_FAILURE = 0x101
