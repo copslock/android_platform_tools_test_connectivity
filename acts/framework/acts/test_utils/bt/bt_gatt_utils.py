@@ -299,3 +299,35 @@ def setup_gatt_descriptors(droid, input):
         descriptor_list.append(index)
     log.info("setup descriptor list: {}".format(descriptor_list))
     return descriptor_list
+
+
+def setup_gatt_mtu(cen_ad, bluetooth_gatt, gatt_callback, mtu):
+    """utility function to set mtu for GATT connection.
+
+    Steps:
+    1. Request mtu change.
+    2. Check if the mtu is changed to the new value
+
+    Args:
+        cen_ad: test device for client to scan.
+        bluetooth_gatt: GATT object
+        mtu: new mtu value to be set
+
+    Returns:
+        If success, return True.
+        if fail, return False
+    """
+    cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, mtu)
+    expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
+    try:
+        mtu_event = cen_ad.ed.pop_event(expected_event, default_timeout)
+        mtu_size_found = mtu_event['data']['MTU']
+        if mtu_size_found != mtu:
+            log.error("MTU size found: {}, expected: {}".format(mtu_size_found,
+                                                                mtu))
+            return False
+    except Empty:
+        log.error(GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
+        return False
+    return True
+
