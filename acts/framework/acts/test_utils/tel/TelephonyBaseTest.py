@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
     set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import \
     set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
@@ -115,6 +116,11 @@ class TelephonyBaseTest(BaseTestClass):
         for ad in self.android_devices:
             setup_droid_properties(self.log, ad,
                                    self.user_params["sim_conf_file"])
+
+            # Ensure that a test class starts from a consistent state that
+            # improves chances of valid network selection and facilitates
+            # logging.
+            toggle_airplane_mode(self.log, ad, True)
             if not set_phone_screen_on(self.log, ad):
                 self.log.error("Failed to set phone screen-on time.")
                 return False
@@ -157,7 +163,7 @@ class TelephonyBaseTest(BaseTestClass):
         finally:
             for ad in self.android_devices:
                 try:
-                    ad.droid.connectivityToggleAirplaneMode(True)
+                    toggle_airplane_mode(self.log, ad, True)
                 except BrokenPipeError:
                     # Broken Pipe, can not call SL4A API to turn on Airplane Mode.
                     # Use adb command to turn on Airplane Mode.
