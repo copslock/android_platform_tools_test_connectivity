@@ -180,20 +180,27 @@ class TelephonyBaseTest(BaseTestClass):
         return ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
+        return True
+
+    def _cleanup_logger_sessions(self):
         for (logger, session) in self.logger_sessions:
             self.log.info("Resetting a diagnostic session {},{}".format(
                 logger, session))
             logger.reset()
         self.logger_sessions = []
-        return True
 
     def on_exception(self, test_name, begin_time):
         self._pull_diag_logs(test_name, begin_time)
-        return self._take_bug_report(test_name, begin_time)
+        self._take_bug_report(test_name, begin_time)
+        self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
         self._pull_diag_logs(test_name, begin_time)
-        return self._take_bug_report(test_name, begin_time)
+        self._take_bug_report(test_name, begin_time)
+        self._cleanup_logger_sessions()
+
+    def on_pass(self, test_name, begin_time):
+        self._cleanup_logger_sessions()
 
     def _pull_diag_logs(self, test_name, begin_time):
         for (logger, session) in self.logger_sessions:
