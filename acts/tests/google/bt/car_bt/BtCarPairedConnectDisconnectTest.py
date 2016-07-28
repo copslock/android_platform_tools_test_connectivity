@@ -84,8 +84,8 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
             self.log.info("Running test [" + str(i) + "/" + str(NUM_TEST_RUNS) + "]")
             success = bt_test_utils.connect_pri_to_sec(
                 self.log, self.car, self.ph.droid,
-                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value,
-                     BtEnum.BluetoothProfile.A2DP_SINK.value]))
+                set([BtEnum.BluetoothProfile.HEADSET_CLIENT,
+                     BtEnum.BluetoothProfile.A2DP_SINK]))
 
             # Check if we got connected.
             if not success:
