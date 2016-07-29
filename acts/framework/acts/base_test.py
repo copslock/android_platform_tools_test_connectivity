@@ -335,10 +335,10 @@ class BaseTestClass(object):
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
-            ret = self._setup_test(test_name)
-            asserts.assert_true(ret is not False,
-                                "Setup for %s failed." % test_name)
             try:
+                ret = self._setup_test(test_name)
+                asserts.assert_true(ret is not False,
+                                    "Setup for %s failed." % test_name)
                 if args or kwargs:
                     verdict = test_func(*args, **kwargs)
                 else:
@@ -351,6 +351,7 @@ class BaseTestClass(object):
                 except Exception as e:
                     self.log.error(traceback.format_exc())
                     tr_record.add_error("teardown_test", e)
+                    self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
             self.log.error(traceback.format_exc())
             tr_record.test_fail(e)
