@@ -232,6 +232,178 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
+        expected_extra_error = {"teardown_test": MSG_EXPECTED_EXCEPTION}
+        self.assertEqual(actual_record.extra_errors, expected_extra_error)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_teardown_test_executed_if_test_pass(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                my_mock("teardown_test")
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        my_mock.assert_called_once_with("teardown_test")
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertIsNone(actual_record.details)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 1, Requested 1, "
+                            "Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_teardown_test_executed_if_setup_test_fails(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def teardown_test(self):
+                my_mock("teardown_test")
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        my_mock.assert_called_once_with("teardown_test")
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_teardown_test_executed_if_test_fails(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                my_mock("teardown_test")
+            def test_something(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        my_mock.assert_called_once_with("teardown_test")
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_exception_executed_if_teardown_test_fails(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_exception(self, test_name, begin_time):
+                my_mock("on_exception")
+            def teardown_test(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_exception")
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertIsNone(actual_record.details)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_fail_executed_if_test_fails(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, test_name, begin_time):
+                my_mock("on_fail")
+            def test_something(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_fail")
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_fail_executed_if_test_setup_fails_by_exception(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+            def on_fail(self, test_name, begin_time):
+                my_mock("on_fail")
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_fail")
+        actual_record = bt_cls.results.unknown[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_fail_executed_if_test_setup_fails_by_return_False(self):
+        my_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                return False
+            def on_fail(self, test_name, begin_time):
+                my_mock("on_fail")
+            def test_something(self):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_fail")
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, 'Setup for test_something failed.')
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_failure_to_call_procedure_function_is_recorded(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self):
+                pass
+            def test_something(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        self.assertIn('_on_fail', actual_record.extra_errors)
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
+                            "Skipped 0, Unknown 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_failure_in_procedure_functions_is_recorded(self):
+        expected_msg = "Something failed in on_pass."
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_pass(self, test_name, begin_time):
+                raise Exception(expected_msg)
+            def test_something(self):
+                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION)
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.unknown[0]
+        expected_extra_error = {'_on_pass': expected_msg}
+        self.assertEqual(actual_record.extra_errors, expected_extra_error)
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
         expected_summary = ("Executed 1, Failed 0, Passed 0, Requested 1, "
                             "Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
