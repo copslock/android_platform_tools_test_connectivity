@@ -386,6 +386,7 @@ RAT_HSPAP = "HSPAP"
 RAT_GSM = "GSM"
 RAT_TD_SCDMA = "TD_SCDMA"
 RAT_GLOBAL = "GLOBAL"
+RAT_LTE_CA = "LTE_CA" # LTE Carrier Aggregation
 RAT_UNKNOWN = "UNKNOWN"
 
 # Constant for Phone Type
