@@ -616,7 +616,7 @@ class AndroidDevice:
                                       "logcat thread going on. Cannot start "
                                       "another one.").format(self.serial))
         # Disable adb log spam filter.
-        self.adb.shell("logpersist.start")
+        self.adb.shell("logpersist.start --clear")
         f_name = "adblog,{},{}.txt".format(self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
