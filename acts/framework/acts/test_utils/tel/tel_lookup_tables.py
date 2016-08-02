@@ -323,6 +323,13 @@ class _TelTables():
             'simultaneous_voice_data': False,
             'rat_family': tel_defines.RAT_FAMILY_IDEN
         },
+        tel_defines.RAT_LTE_CA: {
+            'is_voice_rat': True,
+            'is_data_rat': True,
+            'generation': tel_defines.GEN_4G,
+            'simultaneous_voice_data': True,
+            'rat_family': tel_defines.RAT_FAMILY_LTE
+        },
         tel_defines.RAT_LTE: {
             'is_voice_rat': True,
             'is_data_rat': True,
