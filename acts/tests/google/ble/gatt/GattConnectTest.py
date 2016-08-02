@@ -225,6 +225,56 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    def test_gatt_connect_stop_advertising(self):
+        """Test GATT connection over LE then stop advertising
+
+        A test case that verifies the GATT connection doesn't
+        disconnect when LE advertisement is stopped.
+
+        Steps:
+        1. Start a generic advertisement.
+        2. Start a generic scanner.
+        3. Find the advertisement and extract the mac address.
+        4. Stop the first scanner.
+        5. Create a GATT connection between the scanner and advertiser.
+        6. Stop the advertiser.
+        7. Verify no connection state changed happened.
+        8. Disconnect the GATT connection.
+
+        Expected Result:
+        Verify that a connection was established and not disconnected
+        when advertisement stops.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Filtering, Scanning, GATT
+        Priority: 0
+        """
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad))
+        except GattTestUtilsError:
+            return False
+        self.per_ad.droid.bleStopBleAdvertising(adv_callback)
+        try:
+            event = self.cen_ad.ed.pop_event(
+                GattCbStrings.GATT_CONN_CHANGE.value.format(gatt_callback,
+                                                            self.default_timeout))
+            self.log.error("Connection event found when not expected: {}".format(
+                event))
+            return False
+        except Empty:
+            self.log.info("No connection state change as expected")
+        try:
+            self._orchestrate_gatt_disconnection(bluetooth_gatt, gatt_callback)
+        except Exception as e:
+            self.log.info("Failed to orchestrate disconnect: {}".format(e))
+            return False
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
     def test_gatt_connect_autoconnect(self):
         """Test GATT connection over LE.
 
