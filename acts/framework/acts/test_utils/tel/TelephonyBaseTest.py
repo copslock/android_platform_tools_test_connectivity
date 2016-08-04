@@ -24,6 +24,7 @@ import traceback
 import acts.controllers.diag_logger
 
 from acts.base_test import BaseTestClass
+from acts.keys import Config
 from acts.signals import TestSignal
 from acts import utils
 
@@ -110,12 +111,27 @@ class TelephonyBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+
+        if not "sim_conf_file" in self.user_params.keys():
+            self.log.error("Missing mandatory user config \"sim_conf_file\"!")
+            return False
+
+        sim_conf_file = self.user_params["sim_conf_file"]
+        # If the sim_conf_file is not a full path, attempt to find it
+        # relative to the config file.
+        if not os.path.isfile(sim_conf_file):
+            sim_conf_file = os.path.join(
+                self.user_params[Config.key_config_path], sim_conf_file)
+            if not os.path.isfile(sim_conf_file):
+                self.log.error("Unable to load user config " + sim_conf_file +
+                               "from test config file.")
+                return False
+
         setattr(self, "diag_logger",
                 self.register_controller(acts.controllers.diag_logger,
                                          required=False))
         for ad in self.android_devices:
-            setup_droid_properties(self.log, ad,
-                                   self.user_params["sim_conf_file"])
+            setup_droid_properties(self.log, ad, sim_conf_file)
 
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
