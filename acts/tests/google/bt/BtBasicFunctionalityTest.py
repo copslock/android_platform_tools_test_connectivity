@@ -383,18 +383,3 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             self.log.debug("Android device do not support A2DP profile.")
             return False
         return True
-
-    @BluetoothBaseTest.bt_test_wrap
-    def test_if_support_avrcp_profile(self):
-        """ Test that a single device can support AVRCP profile.
-        Steps
-        1. Initialize one android devices
-        2. Check devices support profiles and return a dictionary
-        3. Check the value of key 'avrcp'
-        :return: test_result: bool
-        """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
-        if not profiles['avrcp']:
-            self.log.debug("Android device do not support AVRCP profile.")
-            return False
-        return True
