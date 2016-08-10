@@ -42,13 +42,17 @@ class TestSignalError(Exception):
 
 
 class TestSignal(Exception):
-    """Base class for all test result control signals."""
+    """Base class for all test result control signals. This is used to signal
+    the result of a test.
 
+    Attribute:
+        details: A string that describes the reason for raising this signal.
+        extras: A json-serializable data type to convey extra information about
+                a test result.
+    """
     def __init__(self, details, extras=None):
-        if not isinstance(details, str):
-            raise TestSignalError("Message has to be a string.")
         super(TestSignal, self).__init__(details)
-        self.details = details
+        self.details = str(details)
         try:
             json.dumps(extras)
             self.extras = extras
