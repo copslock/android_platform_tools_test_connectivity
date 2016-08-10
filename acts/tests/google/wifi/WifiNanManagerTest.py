@@ -22,8 +22,12 @@ import queue
 from acts import asserts
 from acts import base_test
 from acts.test_utils.net import connectivity_const as con_const
+from acts.test_utils.net import nsd_const as nsd_const
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_nan_const as nan_const
+
+# arbitrary timeout for events
+EVENT_TIMEOUT = 30
 
 class WifiNanManagerTest(base_test.BaseTestClass):
     def setup_test(self):
@@ -37,7 +41,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                 self.log.info('NAN not enabled. Waiting for %s',
                               nan_const.BROADCAST_WIFI_NAN_ENABLED)
                 try:
-                    ad.ed.pop_event(nan_const.BROADCAST_WIFI_NAN_ENABLED, 10)
+                    ad.ed.pop_event(nan_const.BROADCAST_WIFI_NAN_ENABLED,
+                                    EVENT_TIMEOUT)
                     self.log.info(nan_const.BROADCAST_WIFI_NAN_ENABLED)
                 except queue.Empty:
                     asserts.fail('Timed out while waiting for %s' %
@@ -104,7 +109,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         device.droid.wifiNanConnect(config_request)
         try:
             event = device.ed.pop_event(nan_const.EVENT_CB_ON_CONNECT_SUCCSSS,
-                                        30)
+                                        EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.EVENT_CB_ON_CONNECT_SUCCSSS,
                           event['data'])
         except queue.Empty:
@@ -138,7 +143,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                 device.droid.wifiNanSendMessage(session_id, peer, msg,
                                                 self.msg_id,
                                                 nan_const.MAX_TX_RETRIES)
-                events = device.ed.pop_events(events_regex, 30)
+                events = device.ed.pop_events(events_regex, EVENT_TIMEOUT)
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s', events_regex)
 
@@ -180,7 +185,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                                          nan_const.RTT_LISTENER_CB_ON_FAILURE,
                                          nan_const.RTT_LISTENER_CB_ON_ABORT)
             try:
-                events_pub_range = device.ed.pop_events(events_regex, 30)
+                events_pub_range = device.ed.pop_events(events_regex,
+                                                        EVENT_TIMEOUT)
                 for event in events_pub_range:
                     self.log.debug('%s: %s: %s', label, event['name'],
                                    event['data'])
@@ -243,7 +249,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MATCH, 30)
+                nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
                           event_sub_match['data'])
         except queue.Empty:
@@ -256,7 +262,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_pub_rx = self.publisher.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, 10)
+                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
                           event_pub_rx['data'])
             asserts.assert_equal(event_pub_rx['data']['messageAsString'],
@@ -271,7 +277,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_sub_rx = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, 10)
+                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
                           event_sub_rx['data'])
             asserts.assert_equal(event_sub_rx['data']['messageAsString'],
@@ -317,7 +323,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MATCH, 30)
+                nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
                           event_sub_match['data'])
         except queue.Empty:
@@ -339,7 +345,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                                   nan_const.SESSION_CB_ON_MESSAGE_SEND_SUCCESS)
         while (num_tx_ok + num_tx_fail) < num_async_messages:
             try:
-                events = self.subscriber.ed.pop_events(events_regex, 30)
+                events = self.subscriber.ed.pop_events(events_regex,
+                                                       EVENT_TIMEOUT)
 
                 for event in events:
                     if event[
@@ -365,7 +372,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         while num_unique_received != num_async_messages:
             try:
                 event = self.publisher.ed.pop_event(
-                    nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, 30)
+                    nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
                 msg = event['data']['messageAsString']
                 num_received = num_received + 1
                 if msg not in messages:
@@ -422,7 +429,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MATCH, 30)
+                nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
                           event_sub_match['data'])
         except queue.Empty:
@@ -472,7 +479,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event = self.dut.ed.pop_event(nan_const.EVENT_CB_ON_CONNECT_SUCCSSS,
-                                          30)
+                                          EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.EVENT_CB_ON_CONNECT_SUCCSSS,
                           event['data'])
         except queue.Empty:
@@ -488,7 +495,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event = self.dut.ed.pop_event(nan_const.BROADCAST_WIFI_NAN_DISABLED,
-                                          30)
+                                          EVENT_TIMEOUT)
             self.log.info(nan_const.BROADCAST_WIFI_NAN_DISABLED)
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on dut' %
@@ -515,7 +522,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
           * S waits for message
           * S creates a NAN network to P as INITIATOR (order important!)
           * Both P & S wait for events confirming network set up
-          * manually configure neighbor address for peer on P and S
+          * P registers NSD service
+          * S discovers NSD service and obtains P's IP address
           * run iperf3 between P (server) and S (client)
           * unregister network callback on S
         """
@@ -523,7 +531,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
         required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config", "network_req")
+                           "publish_config", "subscribe_config", "network_req",
+                           "nsd_service_info")
         self.unpack_userparams(required_params)
 
         sub2pub_msg = "Get ready!"
@@ -534,6 +543,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.exec_connect(self.publisher, self.config_request1, "publisher")
         self.exec_connect(self.subscriber, self.config_request2, "subscriber")
 
+        # Discovery: publish + subscribe + wait for match
         pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
         sub_id = self.subscriber.droid.wifiNanSubscribe(0,
                                                         self.subscribe_config)
@@ -543,7 +553,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MATCH, 30)
+                nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
                           event_sub_match['data'])
         except queue.Empty:
@@ -551,12 +561,13 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                          nan_const.SESSION_CB_ON_MATCH)
         self.log.debug(event_sub_match)
 
+        # S sends message to P
         self.reliable_tx(self.subscriber, sub_id,
                          event_sub_match['data']['peerId'], sub2pub_msg)
 
         try:
             event_pub_rx = self.publisher.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, 10)
+                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on publisher' %
                          nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
@@ -566,6 +577,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                              sub2pub_msg,
                              "Subscriber -> publisher message corrupted")
 
+        # P requests a NAN network as RESPONDER
         pub_ns = self.publisher.droid.wifiNanCreateNetworkSpecifier(
             nan_const.DATA_PATH_RESPONDER, pub_id,
             event_pub_rx['data']['peerId'], test_token)
@@ -574,12 +586,13 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         pub_req_key = self.publisher.droid.connectivityRequestNetwork(
             self.network_req)
 
+        # P sends message to S
         self.reliable_tx(self.publisher, pub_id, event_pub_rx['data']['peerId'],
                          pub2sub_msg)
 
         try:
             event_sub_rx = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, 10)
+                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
         except queue.Empty:
             asserts.fail('Timed out while waiting for %s on subscriber' %
                          nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
@@ -589,6 +602,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                              pub2sub_msg,
                              "Publisher -> subscriber message corrupted")
 
+        # S requests a NAN network as INITIATOR
         sub_ns = self.subscriber.droid.wifiNanCreateNetworkSpecifier(
             nan_const.DATA_PATH_INITIATOR, sub_id,
             event_sub_rx['data']['peerId'], test_token)
@@ -597,9 +611,11 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         sub_req_key = self.subscriber.droid.connectivityRequestNetwork(
             self.network_req)
 
+        # Wait until both S and P get confirmation that network formed
         try:
             event_network = self.subscriber.ed.wait_for_event(
-                con_const.EVENT_NETWORK_CALLBACK, filter_callbacks, 30,
+                con_const.EVENT_NETWORK_CALLBACK, filter_callbacks,
+                EVENT_TIMEOUT,
                 key=con_const.NETWORK_CB_KEY_EVENT,
                 name=con_const.NETWORK_CB_LINK_PROPERTIES_CHANGED)
             self.log.info('Subscriber %s: %s',
@@ -614,7 +630,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             event_network = self.publisher.ed.wait_for_event(
-                con_const.EVENT_NETWORK_CALLBACK, filter_callbacks, 30,
+                con_const.EVENT_NETWORK_CALLBACK, filter_callbacks,
+                EVENT_TIMEOUT,
                 key=con_const.NETWORK_CB_KEY_EVENT,
                 name=con_const.NETWORK_CB_LINK_PROPERTIES_CHANGED)
             self.log.info('Publisher %s: %s', con_const.EVENT_NETWORK_CALLBACK,
@@ -624,17 +641,70 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                 con_const.EVENT_NETWORK_CALLBACK,
                 con_const.NETWORK_CB_LINK_PROPERTIES_CHANGED))
         self.log.debug(event_network)
-        pub_nan_if = event_network['data']['interfaceName']
 
-        pub_ipv6 = self.get_interface_ipv6_link_local(self.publisher,
-                                                      pub_nan_if)
-        self.log.debug("Publisher IPv6 link-local %s", pub_ipv6)
+        try:
+            # P registers NSD service (i.e. starts publishing)
+            nsd_reg = self.publisher.droid.nsdRegisterService(self.nsd_service_info)
+            try:
+                event_nsd = self.publisher.ed.wait_for_event(
+                    nsd_const.REG_LISTENER_EVENT, filter_callbacks, EVENT_TIMEOUT,
+                    key=nsd_const.REG_LISTENER_CALLBACK,
+                    name=nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
+                self.log.info('Publisher %s: %s',
+                              nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
+                              event_nsd['data'])
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Publisher' %
+                             nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
 
+            # S starts NSD discovery
+            nsd_discovery = self.subscriber.droid.nsdDiscoverServices(
+                self.nsd_service_info[nsd_const.NSD_SERVICE_INFO_SERVICE_TYPE])
+            try:
+                event_nsd = self.subscriber.ed.wait_for_event(
+                    nsd_const.DISCOVERY_LISTENER_EVENT, filter_callbacks,
+                    EVENT_TIMEOUT,
+                    key=nsd_const.DISCOVERY_LISTENER_DATA_CALLBACK,
+                    name=nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
+                self.log.info('Subscriber %s: %s',
+                              nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
+                              event_nsd['data'])
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Subscriber' %
+                             nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
+
+            # S resolves IP address of P from NSD service discovery
+            self.subscriber.droid.nsdResolveService(event_nsd['data'])
+            try:
+                event_nsd = self.subscriber.ed.wait_for_event(
+                    nsd_const.RESOLVE_LISTENER_EVENT, filter_callbacks,
+                    EVENT_TIMEOUT,
+                    key=nsd_const.RESOLVE_LISTENER_DATA_CALLBACK,
+                    name=nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
+                self.log.info('Subscriber %s: %s',
+                              nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
+                              event_nsd['data'])
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Subscriber' %
+                             nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
+
+            # mDNS returns first character as '/' - strip out to obtain clean IPv6
+            pub_ipv6_from_nsd = event_nsd['data'][
+                                    nsd_const.NSD_SERVICE_INFO_HOST][1:]
+        finally:
+            # Stop NSD
+            if nsd_reg is not None:
+                self.publisher.droid.nsdUnregisterService(nsd_reg)
+            if nsd_discovery is not None:
+                self.subscriber.droid.nsdStopServiceDiscovery(nsd_discovery)
+
+        # P starts iPerf server
         result, data = self.publisher.run_iperf_server("-D")
         asserts.assert_true(result, "Can't start iperf3 server")
 
+        # S starts iPerf client
         result, data = self.subscriber.run_iperf_client(
-            "%s%%%s" % (pub_ipv6, sub_nan_if), "-6 -J")
+            "%s%%%s" % (pub_ipv6_from_nsd, sub_nan_if), "-6 -J")
         self.log.debug(data)
         asserts.assert_true(result,
                             "Failure starting/running iperf3 in client mode")
@@ -644,4 +714,5 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                       data_json['end']['sum_sent']['bits_per_second'],
                       data_json['end']['sum_received']['bits_per_second'])
 
+        # S terminates data-path (only have to do on one end)
         self.subscriber.droid.connectivityUnregisterNetworkCallback(sub_req_key)
