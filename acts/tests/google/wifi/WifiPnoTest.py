@@ -37,15 +37,13 @@ class WifiPnoTest(base_test.BaseTestClass):
 
     def setup_test(self):
         self.dut.droid.wifiStartTrackingStateChange()
-        self.dut.droid.wakeLockAcquireBright()
-        self.dut.droid.wakeUpNow()
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
     def teardown_test(self):
         self.dut.droid.wifiStopTrackingStateChange()
-        self.dut.droid.wakeLockRelease()
-        self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
         self.set_attns("default")
@@ -73,9 +71,8 @@ class WifiPnoTest(base_test.BaseTestClass):
             raise
 
     def trigger_pno_and_assert_connect(self, attn_val_name, expected_con):
-        """Sets attenuators to disconnect current connection and power-off the
-        screen to trigger PNO. Validate that the DUT connected to the new SSID
-        as expected after PNO.
+        """Sets attenuators to disconnect current connection to trigger PNO.
+        Validate that the DUT connected to the new SSID as expected after PNO.
 
         Args:
             attn_val_name: Name of the attenuation value pair to use.
@@ -86,21 +83,17 @@ class WifiPnoTest(base_test.BaseTestClass):
         self.log.info("Triggering PNO connect from %s to %s",
                       connection_info[WifiEnums.SSID_KEY],
                       expected_con[WifiEnums.SSID_KEY])
-        self.dut.droid.goToSleepNow()
         self.set_attns(attn_val_name)
         self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
         time.sleep(self.pno_interval)
         try:
-            self.dut.droid.wakeLockAcquireBright()
-            self.dut.droid.wakeUpNow()
             expected_ssid = expected_con[WifiEnums.SSID_KEY]
             verify_con = {WifiEnums.SSID_KEY: expected_ssid}
             wutils.verify_wifi_connection_info(self.dut, verify_con)
             self.log.info("Connected to %s successfully after PNO",
                           expected_ssid)
         finally:
-            self.dut.droid.wifiLockRelease()
-            self.dut.droid.goToSleepNow()
+            pass
 
     def add_dummy_networks(self, num_networks):
         """Add some dummy networks to the device.
@@ -123,14 +116,13 @@ class WifiPnoTest(base_test.BaseTestClass):
         """Test PNO triggered autoconnect to a network.
 
         Steps:
-        1. Save 2 valid network configurations (a & b) in the device.
-        2. Attenuate network b.
-        3. Connect the device to network a.
-        4. Switch off the screen on the device.
+        1. Switch off the screen on the device.
+        2. Save 2 valid network configurations (a & b) in the device.
+        3. Attenuate network b.
+        4. Connect the device to network a.
         5. Attenuate network a and remove attenuation on network b and wait for
            a few seconds to trigger PNO.
         6. Check the device connected to network b automatically.
-        7. Switch off the screen on the device.
         8. Attenuate network b and remove attenuation on network a and wait for
            a few seconds to trigger PNO.
         9. Check the device connected to network a automatically.
