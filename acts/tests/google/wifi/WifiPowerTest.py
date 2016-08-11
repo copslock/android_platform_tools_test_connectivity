@@ -28,7 +28,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 
 pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
-start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
+start_pmc_cmd = ("am start -S -n com.android.pmc/com.android.pmc."
                  "PMCMainActivity")
 pmc_interval_cmd = ("am broadcast -a com.android.pmc.action.SETPARAMS --es "
                     "Interval %s ")
@@ -77,7 +77,34 @@ class WifiPowerTest(base_test.BaseTestClass):
         except AttributeError:
             self.log.warning("No attenuator found, some tests will fail.")
             pass
-        # Start pmc app.
+
+    def teardown_class(self):
+        self.mon.usb("on")
+
+    def setup_test(self):
+        # Default measurement time is 30min with an offset of 5min. Each test
+        # can overwrite this by setting self.duration and self.offset.
+        self.offset = 5 * 60
+        self.duration = 20 * 60 + self.offset
+        self.start_pmc()
+        wutils.reset_wifi(self.dut)
+        self.dut.ed.clear_all_events()
+
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+
+    def on_pass(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+
+    def start_pmc(self):
+        """Starts a new instance of PMC app on the device and initializes it.
+
+        This function performs the following:
+        1. Starts a new instance of PMC (killing any existing instances).
+        2. Turns on PMC verbose logging.
+        3. Sets up the server IP address/port for download/iperf tests.
+        4. Removes an existing iperf json output files.
+        """
         self.dut.adb.shell(start_pmc_cmd)
         self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
         self.iperf_server = self.iperf_servers[0]
@@ -90,23 +117,6 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell("rm %s" % pmc_iperf_json_file)
         except adb.AdbError:
             pass
-
-    def teardown_class(self):
-        self.mon.usb("on")
-
-    def setup_test(self):
-        # Default measurement time is 30min with an offset of 5min. Each test
-        # can overwrite this by setting self.duration and self.offset.
-        self.offset = 5 * 60
-        self.duration = 20 * 60 + self.offset
-        wutils.reset_wifi(self.dut)
-        self.dut.ed.clear_all_events()
-
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-
-    def on_pass(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
 
     def get_iperf_result(self):
         """Pulls the iperf json output from device.
