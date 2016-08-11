@@ -604,8 +604,17 @@ def start_wifi_tethering(ad, ssid, password, band=None):
     if not droid.wifiSetWifiApConfiguration(config):
         log.error("Failed to update WifiAp Configuration")
         return False
+    droid.wifiStartTrackingTetherStateChange()
     droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
-    ed.pop_event("ConnectivityManagerOnTetheringStarted")
+    try:
+        ed.pop_event("ConnectivityManagerOnTetheringStarted")
+        ed.wait_for_event("TetherStateChanged",
+                          lambda x : x["data"]["ACTIVE_TETHER"], 30)
+    except Empty:
+        msg = "Failed to receive confirmation of wifi tethering starting"
+        asserts.fail(msg)
+    finally:
+        droid.wifiStopTrackingTetherStateChange()
     return True
 
 def stop_wifi_tethering(ad):
@@ -618,10 +627,15 @@ def stop_wifi_tethering(ad):
     droid.wifiStartTrackingTetherStateChange()
     droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
     droid.wifiSetApEnabled(False, None)
-    ed.pop_event("WifiManagerApDisabled", 30)
-    ed.wait_for_event("TetherStateChanged",
-        lambda x : not x["data"]["ACTIVE_TETHER"], 30)
-    droid.wifiStopTrackingTetherStateChange()
+    try:
+        ed.pop_event("WifiManagerApDisabled", 30)
+        ed.wait_for_event("TetherStateChanged",
+                          lambda x : not x["data"]["ACTIVE_TETHER"], 30)
+    except Empty:
+        msg = "Failed to receive confirmation of wifi tethering stopping"
+        asserts.fail(msg)
+    finally:
+        droid.wifiStopTrackingTetherStateChange()
 
 def wifi_connect(ad, network):
     """Connect an Android device to a wifi network.
