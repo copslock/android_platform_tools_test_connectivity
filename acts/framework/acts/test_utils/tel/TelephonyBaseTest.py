@@ -19,6 +19,7 @@
 
 import os
 import time
+import inspect
 import traceback
 
 import acts.controllers.diag_logger
@@ -53,10 +54,38 @@ from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
 
 
+class _TelephonyTraceLogger():
+    def __init__(self, logger):
+        self._logger = logger
+
+    @staticmethod
+    def _get_trace_info():
+        # we want the stack frame above this and above the error/warning/info
+        stack_frames = inspect.stack()[2]
+        info = inspect.getframeinfo(stack_frames[0])
+
+        return "{}:{}:{}".format(
+            os.path.basename(info.filename), info.function, info.lineno)
+
+    def error(self, msg, *args, **kwargs):
+        trace_info = _TelephonyTraceLogger._get_trace_info()
+        self._logger.error("{} - {}".format(trace_info, msg), *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        trace_info = _TelephonyTraceLogger._get_trace_info()
+        self._logger.error("{} - {}".format(trace_info, msg), *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._logger, name)
+
+
 class TelephonyBaseTest(BaseTestClass):
     def __init__(self, controllers):
+
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
+
+        self.log = _TelephonyTraceLogger(self.log)
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -127,7 +156,8 @@ class TelephonyBaseTest(BaseTestClass):
                                " from test config file.")
                 return False
 
-        setattr(self, "diag_logger",
+        setattr(self,
+                "diag_logger",
                 self.register_controller(acts.controllers.diag_logger,
                                          required=False))
         for ad in self.android_devices:
