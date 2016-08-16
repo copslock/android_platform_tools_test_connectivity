@@ -545,14 +545,19 @@ class BaseTestClass(object):
                 test_names = self._get_all_test_names()
         self.results.requested = test_names
         tests = self._get_test_funcs(test_names)
+        # A TestResultRecord used for when setup_class fails.
+        class_record = records.TestResultRecord("setup_class", self.TAG)
+        class_record.test_begin()
         # Setup for the class.
         try:
             if self._setup_class() is False:
-                raise signals.TestFailure("Failed to setup %s." % self.TAG)
+                asserts.fail("Failed to setup %s." % self.TAG)
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
-            self.results.fail_class(self.TAG, e)
+            class_record.test_fail(e)
+            self._exec_procedure_func(self._on_fail, class_record)
             self._exec_func(self.teardown_class)
+            self.results.fail_class(class_record)
             return self.results
         # Run tests in order.
         try:
