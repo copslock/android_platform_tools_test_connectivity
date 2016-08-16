@@ -254,19 +254,15 @@ class TestResult(object):
         else:
             self.unknown.append(record)
 
-    def fail_class(self, class_name, e):
+    def fail_class(self, test_record):
         """Add a record to indicate a test class setup has failed and no test
         in the class was executed.
 
         Args:
-            class_name: A string that is the name of the failed test class.
-            e: An exception object.
+            test_record: A TestResultRecord object for the test class.
         """
-        record = TestResultRecord("setup_class", class_name)
-        record.test_begin()
-        record.test_fail(e)
-        self.executed.append(record)
-        self.failed.append(record)
+        self.executed.append(test_record)
+        self.failed.append(test_record)
 
     @property
     def is_all_pass(self):
