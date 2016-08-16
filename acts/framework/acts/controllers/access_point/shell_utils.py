@@ -14,6 +14,11 @@
 
 import enum
 import os
+import string
+
+# safe characters for the shell (do not need quoting)
+SHELL_QUOTING_WHITELIST = frozenset(string.ascii_letters + string.digits +
+                                    '_-+=')
 
 
 class _SplitCommandState(enum.IntEnum):
@@ -31,6 +36,61 @@ class _SplitCommandState(enum.IntEnum):
     STATE_SINGLEQUOTE = 2
     STATE_DOUBLEQUOTE = 3
     STATE_WHITESPACE = 4
+
+
+def sh_escape(command):
+    """
+    Escape special characters from a command so that it can be passed
+    as a double quoted (" ") string in a (ba)sh command.
+
+    Args:
+        command: the command string to escape.
+
+    Returns:
+        The escaped command string. The required englobing double
+        quotes are NOT added and so should be added at some point by
+        the caller.
+
+    See also: http://www.tldp.org/LDP/abs/html/escapingsection.html
+    """
+    command = command.replace('\\', '\\\\')
+    command = command.replace("$", r'\$')
+    command = command.replace('"', r'\"')
+    command = command.replace('`', r'\`')
+    return command
+
+
+def sh_quote_word(text, whitelist=SHELL_QUOTING_WHITELIST):
+    r"""Quote a string to make it safe as a single word in a shell command.
+
+    POSIX shell syntax recognizes no escape characters inside a single-quoted
+    string.  So, single quotes can safely quote any string of characters except
+    a string with a single quote character.  A single quote character must be
+    quoted with the sequence '\'' which translates to:
+        '  -> close current quote
+        \' -> insert a literal single quote
+        '  -> reopen quoting again.
+
+    This is safe for all combinations of characters, including embedded and
+    trailing backslashes in odd or even numbers.
+
+    This is also safe for nesting, e.g. the following is a valid use:
+
+        adb_command = 'adb shell %s' % (
+                sh_quote_word('echo %s' % sh_quote_word('hello world')))
+
+    Args:
+        text: The string to be quoted into a single word for the shell.
+        whitelist: Optional list of characters that do not need quoting.
+                   Defaults to a known good list of characters.
+
+    Returns:
+        A string, possibly quoted, safe as a single word for a shell.
+    """
+    if all(c in whitelist for c in text):
+        return text
+
+    return "'%s'" % text.replace("'", r"'\''")
 
 
 def pid_is_alive(pid):
