@@ -182,7 +182,8 @@ class ActsRecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.add_record(record1)
         s = signals.TestFailure(self.details, self.float_extra)
-        tr.fail_class("SomeTest", s)
+        record2 = records.TestResultRecord("SomeTest", s)
+        tr.fail_class(record2)
         self.assertEqual(len(tr.passed), 1)
         self.assertEqual(len(tr.failed), 1)
         self.assertEqual(len(tr.executed), 2)
@@ -201,7 +202,8 @@ class ActsRecordsTest(unittest.TestCase):
             def __init__(self, arg1, arg2):
                 self.msg = "%s %s" % (arg1, arg2)
         se = SpecialError("haha", 42)
-        tr.fail_class("SomeTest", se)
+        record2 = records.TestResultRecord("SomeTest", se)
+        tr.fail_class(record2)
         self.assertEqual(len(tr.passed), 1)
         self.assertEqual(len(tr.failed), 1)
         self.assertEqual(len(tr.executed), 2)
@@ -241,8 +243,9 @@ class ActsRecordsTest(unittest.TestCase):
         """
         record1 = records.TestResultRecord(self.tn)
         record1.test_begin()
+        record1.test_fail(Exception("haha"))
         tr = records.TestResult()
-        tr.fail_class("SomeTest", Exception("Fail!"))
+        tr.fail_class(record1)
         self.assertFalse(tr.is_all_pass)
 
 if __name__ == "__main__":

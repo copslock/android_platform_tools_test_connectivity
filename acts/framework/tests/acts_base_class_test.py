@@ -136,14 +136,17 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "test_something")
 
     def test_setup_class_fail_by_exception(self):
+        call_check = mock.MagicMock()
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
             def test_something(self):
                 # This should not execute because setup_class failed.
                 never_call()
+            def on_fail(self, test_name, begin_time):
+                call_check("haha")
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_func"])
+        bt_cls.run()
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, "setup_class")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
@@ -151,6 +154,7 @@ class ActsBaseClassTest(unittest.TestCase):
         expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
                             "Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        call_check.assert_called_once_with("haha")
 
     def test_setup_test_fail_by_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
