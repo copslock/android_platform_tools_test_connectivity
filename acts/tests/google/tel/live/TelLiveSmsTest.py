@@ -46,10 +46,11 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_data_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
@@ -59,6 +60,7 @@ from acts.utils import rand_ascii_str
 class TelLiveSmsTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
+
         # The path for "sim config file" should be set
         # in "testbed.config" entry "sim_conf_file".
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
@@ -307,9 +309,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        # TODO: this is a temporary fix for this test case.
-        # A better fix will be introduced once pag/539845 is merged.
-        if not phone_setup_voice_general(self.log, ads[1]):
+        if (not phone_setup_data_general(self.log, ads[1]) and
+                not phone_setup_voice_general(self.log, ads[1])):
             self.log.error("Failed to setup PhoneB.")
             return False
         if not ensure_network_generation(self.log, ads[0], GEN_4G):
@@ -333,9 +334,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        # TODO: this is a temporary fix for this test case.
-        # A better fix will be introduced once pag/539845 is merged.
-        if not phone_setup_voice_general(self.log, ads[1]):
+        if (not phone_setup_data_general(self.log, ads[1]) and
+                not phone_setup_voice_general(self.log, ads[1])):
             self.log.error("Failed to setup PhoneB.")
             return False
         if not ensure_network_generation(self.log, ads[0], GEN_4G):
