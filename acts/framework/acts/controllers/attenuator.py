@@ -28,9 +28,7 @@ def create(configs):
     for c in configs:
         attn_model = c["Model"]
         # Default to telnet.
-        protocol = "telnet"
-        if "Protocol" in c:
-            protocol = c["Protocol"]
+        protocol = c.get("Protocol", "telnet")
         module_name = "acts.controllers.attenuator_lib.%s.%s" % (attn_model,
                                                                  protocol)
         module = importlib.import_module(module_name)
