@@ -22,13 +22,9 @@ import time
 import unittest
 import re
 
-# Allows the test to import from the parent modules
-sys.path.append('%s/..' % os.path.dirname(os.path.abspath(__file__)))
-
-import master_ssh_connection
-import ssh_connection
-import ssh_error
-import ssh_settings
+from acts.controllers.utils_lib.ssh import connection
+from acts.controllers.utils_lib.ssh import error
+from acts.controllers.utils_lib.ssh import settings
 
 SSH_HOST = None
 SSH_USER = None
@@ -36,16 +32,16 @@ SSH_USER = None
 
 class SshTestCases(unittest.TestCase):
     def setUp(self):
-        self.ssh_settings = ssh_settings.SshSettings(SSH_HOST, SSH_USER)
+        self.settings = settings.SshSettings(SSH_HOST, SSH_USER)
 
     def test_ssh_run(self):
         """Test running an ssh command.
 
         Test that running an ssh command works.
         """
-        connection = ssh_connection.SshConnection(self.ssh_settings)
+        conn = connection.SshConnection(self.settings)
 
-        result = connection.run('echo "Hello World"')
+        result = conn.run('echo "Hello World"')
         self.assertTrue(result.stdout.find('Hello World') > -1)
 
     def test_ssh_env(self):
@@ -54,9 +50,9 @@ class SshTestCases(unittest.TestCase):
         Test that given a dictonary of enviroment variables they will be sent
         to the remote host.
         """
-        conneciton = ssh_connection.SshConnection(self.ssh_settings)
+        conn = connection.SshConnection(self.settings)
 
-        result = conneciton.run('printenv', env={'MYSPECIALVAR': 20})
+        result = conn.run('printenv', env={'MYSPECIALVAR': 20})
         self.assertTrue(result.stdout.find('MYSPECIALVAR=20'))
 
     def test_ssh_permission_denied(self):
@@ -65,10 +61,10 @@ class SshTestCases(unittest.TestCase):
         Connect to a remote host using an invalid username and see if we are
         rejected.
         """
-        with self.assertRaises(ssh_error.SshPermissionDeniedError):
-            bad_settings = ssh_settings.SshSettings(SSH_HOST, SSH_USER + 'BAD')
-            connection = ssh_connection.SshConnection(bad_settings)
-            result = connection.run('echo "Hello World"')
+        with self.assertRaises(error.SshPermissionDeniedError):
+            bad_settings = settings.SshSettings(SSH_HOST, SSH_USER + 'BAD')
+            conn = connection.SshConnection(bad_settings)
+            result = conn.run('echo "Hello World"')
 
     def test_ssh_unknown_host(self):
         """Test that permission denied works.
@@ -76,21 +72,10 @@ class SshTestCases(unittest.TestCase):
         Connect to a remote host using an invalid username and see if we are
         rejected.
         """
-        with self.assertRaises(ssh_error.SshUnknownHost):
-            bad_settings = ssh_settings.SshSettings('BADHOSTNAME', SSH_USER)
-            connection = ssh_connection.SshConnection(bad_settings)
-            result = connection.run('echo "Hello World"')
-
-    def test_master_ssh(self):
-        """Test that master ssh works.
-
-        Test that creating a master ssh connection works.
-        """
-        connection = master_ssh_connection.MasterSshConnection(
-            self.ssh_settings)
-
-        result = connection.run('echo "Hello World"')
-        self.assertTrue(result.stdout.find('Hello World') > -1)
+        with self.assertRaises(error.SshUnknownHost):
+            bad_settings = settings.SshSettings('BADHOSTNAME', SSH_USER)
+            conn = connection.SshConnection(bad_settings)
+            result = conn.run('echo "Hello World"')
 
 
 if __name__ == '__main__':

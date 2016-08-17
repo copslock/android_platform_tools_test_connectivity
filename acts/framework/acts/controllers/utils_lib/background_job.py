@@ -29,7 +29,7 @@ import subprocess
 import sys
 import time
 
-import shell_utils
+from acts.controllers.utils_lib import shell_utils
 
 
 class CmdError(Exception):
