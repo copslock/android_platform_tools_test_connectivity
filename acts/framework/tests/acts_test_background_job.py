@@ -19,10 +19,7 @@ import os
 import sys
 import unittest
 
-# Allows the test to import from the parent modules
-sys.path.append('%s/..' % os.path.dirname(os.path.abspath(__file__)))
-
-import background_job
+from acts.controllers.utils_lib import background_job
 
 
 PY_ERR_CODE = "import sys\n" + \
