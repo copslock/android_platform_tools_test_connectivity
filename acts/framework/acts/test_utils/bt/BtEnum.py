@@ -55,6 +55,7 @@ class BluetoothProfile(IntEnum):
     AVRCP_CONTROLLER = 12
     HEADSET_CLIENT = 16
     PBAP_CLIENT = 17
+    MAP_MCE = 18
 
 
 class RfcommUuid(Enum):
