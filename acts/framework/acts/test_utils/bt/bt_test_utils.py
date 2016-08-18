@@ -419,25 +419,25 @@ def disable_bluetooth(droid, ed):
 
 def set_bt_scan_mode(ad, scan_mode_value):
     droid, ed = ad.droid, ad.ed
-    if scan_mode_value == BluetoothScanModeType.STATE_OFF.value:
+    if scan_mode_value == BluetoothScanModeType.STATE_OFF:
         disable_bluetooth(droid, ed)
         scan_mode = droid.bluetoothGetScanMode()
         reset_bluetooth([ad])
         if scan_mode != scan_mode_value:
             return False
-    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_NONE.value:
+    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_NONE:
         droid.bluetoothMakeUndiscoverable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
             return False
-    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value:
+    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_CONNECTABLE:
         droid.bluetoothMakeUndiscoverable()
         droid.bluetoothMakeConnectable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
             return False
     elif (scan_mode_value ==
-          BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
+          BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE):
         droid.bluetoothMakeDiscoverable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
@@ -564,7 +564,7 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
 
-        if state == BluetoothProfileState.STATE_CONNECTED.value and \
+        if state == BluetoothProfileState.STATE_CONNECTED and \
             device_addr == sec_droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
         log.info("Profiles connected until now {}".format(profile_connected))
