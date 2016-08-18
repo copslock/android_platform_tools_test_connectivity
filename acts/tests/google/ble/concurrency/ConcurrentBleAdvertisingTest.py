@@ -40,7 +40,6 @@ from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.bt.bt_test_utils import teardown_n_advertisements
 
 
-
 class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
     default_timeout = 10
     max_advertisements = -1
@@ -52,23 +51,23 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         self.adv_ad = self.android_devices[1]
         self.max_advertisements = self.droid_list[1]['max_advertisements']
 
-
     def setup_test(self):
         super().setup_test()
         return reset_bluetooth(self.android_devices)
 
     def _verify_n_advertisements(self, num_advertisements):
         try:
-            advertise_callback_list = setup_n_advertisements(self.adv_ad, num_advertisements)
+            advertise_callback_list = setup_n_advertisements(
+                self.adv_ad, num_advertisements)
         except BtTestUtilsError:
             return False
         try:
             scan_and_verify_n_advertisements(self.scn_ad, num_advertisements)
         except BtTestUtilsError:
             return False
-        teardown_n_advertisements(self.adv_ad, len(advertise_callback_list), advertise_callback_list)
+        teardown_n_advertisements(self.adv_ad, len(advertise_callback_list),
+                                  advertise_callback_list)
         return True
-
 
     @BluetoothBaseTest.bt_test_wrap
     def test_max_advertisements_defaults(self):
@@ -374,8 +373,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Concurrency
         Priority: 0
         """
-        return not self._verify_n_advertisements(
-            self.max_advertisements + 1)
+        return not self._verify_n_advertisements(self.max_advertisements + 1)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_start_two_advertisements_on_same_callback(self):
@@ -455,6 +453,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         Priority: 2
         """
         test_result = True
+        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         advertise_callback, advertise_data, advertise_settings = (
             generate_ble_advertise_objects(self.adv_ad.droid))
         self.adv_ad.droid.bleStartBleAdvertising(
@@ -469,8 +468,11 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             self.log.error(
                 "Test failed, filtering callback onSuccess never occurred: {}".format(
                     error))
+        self.scn_ad.droid.bleSetScanFilterDeviceName(
+            self.adv_ad.droid.bluetoothGetLocalName())
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
         try:
@@ -479,27 +481,24 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         except Empty as error:
             self.log.error("Test failed with: {}".format(error))
             return False
-        except concurrent.futures._base.TimeoutError as error:
-            self.log.error("Test failed with: {}".format(error))
-            return False
         self.scn_ad.droid.bleStopBleScan(scan_callback)
         test_result = reset_bluetooth([self.android_devices[1]])
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
         if not test_result:
-            return test_result
+            return False
         try:
             expected_event = scan_result.format(scan_callback)
-            self.scn_ad.ed.pop_event(expected_event, self.default_timeout)
-            self.log.error("Event {} not expected.".format(expected_event))
+            event = self.scn_ad.ed.pop_event(expected_event,
+                                             self.default_timeout)
+            self.log.error("Event {} not expected. Found: {}".format(
+                expected_event, event))
             return False
         except Empty as error:
             self.log.debug("Test passed with: {}".format(error))
-        except concurrent.futures._base.TimeoutError as error:
-            self.log.debug("Test passed with: {}".format(error))
         self.scn_ad.droid.bleStopBleScan(scan_callback)
         self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
-        return test_result
+        return True
 
     @BluetoothBaseTest.bt_test_wrap
     def test_restart_advertise_callback_after_bt_toggle(self):
