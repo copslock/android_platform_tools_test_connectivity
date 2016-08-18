@@ -23,6 +23,7 @@ import time
 from contextlib import suppress
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BtEnum import BluetoothProfile
 from acts.test_utils.bt.GattEnum import GattCharacteristic
 from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattService
@@ -765,5 +766,58 @@ class GattConnectTest(BluetoothBaseTest):
                                 bonded = True
                                 break
         self._cleanup_services(gatt_server)
+        return self._orchestrate_gatt_disconnection(bluetooth_gatt,
+                                                    gatt_callback)
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_gatt_connect_get_connected_devices(self):
+        """Test GATT connections show up in getConnectedDevices
+
+        Test establishing a gatt connection between a GATT server and GATT
+        client. Verify that active connections show up using
+        BluetoothManager.getConnectedDevices API.
+
+        Steps:
+        1. Start a generic advertisement.
+        2. Start a generic scanner.
+        3. Find the advertisement and extract the mac address.
+        4. Stop the first scanner.
+        5. Create a GATT connection between the scanner and advertiser.
+        7. Verify the GATT Client has an open connection to the GATT Server.
+        8. Verify the GATT Server has an open connection to the GATT Client.
+        9. Disconnect the GATT connection.
+
+        Expected Result:
+        Verify that a connection was established, connected devices are found
+        on both the central and peripheral devices, and then disconnected
+        successfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Scanning, GATT
+        Priority: 2
+        """
+        try:
+            bluetooth_gatt, gatt_callback, adv_callback = (
+                orchestrate_gatt_connection(self.cen_ad, self.per_ad))
+        except GattTestUtilsError:
+            return False
+        conn_cen_devices = self.cen_ad.droid.bluetoothGetConnectedLeDevices(
+            BluetoothProfile.GATT)
+        conn_per_devices = self.per_ad.droid.bluetoothGetConnectedLeDevices(
+            BluetoothProfile.GATT_SERVER)
+        target_name = self.per_ad.droid.bluetoothGetLocalName()
+        error_message = ("Connected device {} not found in list of connected "
+                         "devices {}")
+        if not any(d['name'] == target_name for d in conn_cen_devices):
+            self.log.error(error_message.format(target_name, conn_cen_devices))
+            return False
+        target_name = self.cen_ad.droid.bluetoothGetLocalName()
+        if not any(d['name'] == target_name for d in conn_per_devices):
+            self.log.error(error_message.format(target_name, conn_per_devices))
+            return False
+        self.adv_instances.append(adv_callback)
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
