@@ -39,7 +39,16 @@ class RfcommUuid(Enum):
 
 class BluetoothProfile(IntEnum):
     # Should be kept in sync with BluetoothProfile.java
-    # Add more profile types as necessary.
+    HEADSET = 1
+    A2DP = 2
+    HEALTH = 3
+    INPUT_DEVICE = 4
+    PAN = 5
+    PBAP = 6
+    GATT = 7
+    GATT_SERVER = 8
+    MAP = 9
+    SAP = 10
     A2DP_SINK = 11
     AVRCP_CONTROLLER = 12
     HEADSET_CLIENT = 16
