@@ -42,6 +42,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         self.btAddrTG = self.TG.droid.bluetoothGetLocalAddress()
 
         # Reset bluetooth
+        bt_test_utils.setup_multiple_devices_for_bt_test([self.CT, self.TG])
         bt_test_utils.reset_bluetooth([self.CT, self.TG])
 
         # Pair and connect the devices.
@@ -52,9 +53,10 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         # TODO - check for Avrcp Connection state as well.
         # For now, the passthrough tests will catch Avrcp Connection failures
         # But add an explicit test for it.
-        bt_test_utils.connect_pri_to_sec(
+        if not bt_test_utils.connect_pri_to_sec(
             self.log, self.SNK, self.SRC.droid,
-            set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
+            set([BtEnum.BluetoothProfile.A2DP_SINK.value])):
+            return False
 
         return True
 

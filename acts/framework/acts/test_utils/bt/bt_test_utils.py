@@ -603,6 +603,9 @@ def check_device_supported_profiles(droid):
     profile_dict['hsp'] = droid.bluetoothHspIsReady()
     profile_dict['a2dp'] = droid.bluetoothA2dpIsReady()
     profile_dict['avrcp'] = droid.bluetoothAvrcpIsReady()
+    profile_dict['a2dp_sink'] = droid.bluetoothA2dpSinkIsReady()
+    profile_dict['hfp_client'] = droid.bluetoothHfpClientIsReady()
+    profile_dict['pbap_client'] = droid.bluetoothPbapClientIsReady()
     return profile_dict
 
 
@@ -621,16 +624,27 @@ def log_energy_info(android_devices, state):
     return return_string
 
 
-def pair_pri_to_sec(pri_droid, sec_droid):
-    """Pairs pri droid to sec droid.
+def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
+    """Pairs pri droid to secondary droid.
 
     Args:
-        pri_droid: Droid initiating pairing.
-        sec_droid: Droid accepting pairing.
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        attempts: Number of attempts to try until failure.
 
     Returns:
-        True if pairing is successful, false if uncsuccsessful.
+        Pass if True
+        Fail if False
     """
+    curr_attempts = 0
+    while curr_attempts < attempts:
+        if _pair_pri_to_sec(pri_droid, sec_droid):
+            return True
+        curr_attempts += 1
+    log.error("pair_pri_to_sec failed to connect after " + attempts + " attempt")
+    return False
+
+def _pair_pri_to_sec(pri_droid, sec_droid):
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
@@ -658,8 +672,29 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     log.info("Failed to bond devices.")
     return False
 
+def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set, attempts=2):
+    """Connects pri droid to secondary droid.
 
-def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+    Args:
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        profiles_set: Set of profiles to be connected
+        attempts: Number of attempts to try until failure.
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    curr_attempts = 0
+    while curr_attempts < attempts:
+      log.info("connect_pri_to_sec curr attempt {} total {}".format(curr_attempts, attempts))
+      if _connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+          return True
+      curr_attempts += 1
+    log.error("connect_pri_to_sec failed to connect after {} attempts".format(attempts))
+    return False
+
+def _connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
     """Connects pri droid to secondary droid.
 
     Args:
