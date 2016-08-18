@@ -24,7 +24,6 @@ from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.GattEnum import GattEvent
 from acts.test_utils.bt.GattEnum import GattCbStrings
-from acts.test_utils.bt.GattEnum import GattConnectionPriority
 from math import ceil
 
 

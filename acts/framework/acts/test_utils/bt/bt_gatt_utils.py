@@ -25,7 +25,6 @@ from acts.test_utils.bt.GattEnum import GattCharacteristic
 from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattService
 from acts.test_utils.bt.GattEnum import GattTransport
-from acts.test_utils.bt.GattEnum import GattConnectionPriority
 import pprint
 from queue import Empty
 from contextlib import suppress
@@ -52,7 +51,7 @@ def setup_gatt_connection(cen_ad, mac_address, autoconnect,
         log.error(GattCbErr.GATT_CONN_CHANGE_ERR.value.format(expected_event))
         test_result = False
         return test_result, bluetooth_gatt, gatt_callback
-    if event['data']['State'] != GattConnectionState.STATE_CONNECTED.value:
+    if event['data']['State'] != GattConnectionState.STATE_CONNECTED:
         log.info("Could not establish a connection to peripheral. Event "
                  "Details:".format(pprint.pformat(event)))
         test_result = False
@@ -67,7 +66,7 @@ def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
     except Empty:
         log.error(GattCbErr.GATT_CONN_CHANGE_ERR.value.format(expected_event))
         return False
-    if event['data']['State'] != GattConnectionState.STATE_DISCONNECTED.value:
+    if event['data']['State'] != GattConnectionState.STATE_DISCONNECTED:
         return False
     return True
 
@@ -205,13 +204,13 @@ def setup_multiple_services(per_ad):
                                                     descriptor_list[1])
     gattService = per_droid.gattServerCreateService(
         "00000000-0000-1000-8000-00805f9b34fb",
-        GattService.SERVICE_TYPE_PRIMARY.value)
+        GattService.SERVICE_TYPE_PRIMARY)
     gattService2 = per_droid.gattServerCreateService(
         "FFFFFFFF-0000-1000-8000-00805f9b34fb",
-        GattService.SERVICE_TYPE_PRIMARY.value)
+        GattService.SERVICE_TYPE_PRIMARY)
     gattService3 = per_droid.gattServerCreateService(
         "3846D7A0-69C8-11E4-BA00-0002A5D5C51B",
-        GattService.SERVICE_TYPE_PRIMARY.value)
+        GattService.SERVICE_TYPE_PRIMARY)
     for characteristic in characteristic_list:
         per_droid.gattServerAddCharacteristicToService(gattService,
                                                        characteristic)
