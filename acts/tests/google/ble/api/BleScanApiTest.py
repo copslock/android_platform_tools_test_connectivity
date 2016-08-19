@@ -20,7 +20,7 @@ after you set all attributes of each object. If this test suite doesn't pass,
 then other test suites utilising Ble Scanner will also fail.
 """
 
-from acts.controllers.android import SL4AAPIError
+from acts.controllers import sl4a_client
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
@@ -86,13 +86,13 @@ class BleScanApiTest(BluetoothBaseTest):
                     'ScanSettings'][1])
                 droid.bleSetScanSettingsScanMode(input['ScanSettings'][2])
                 droid.bleSetScanSettingsResultType(input['ScanSettings'][3])
-            except SL4AAPIError as error:
+            except sl4a_client.Sl4aApiError as error:
                 self.log.debug("Set Scan Settings failed with: ".format(error))
                 return False
         if 'ScanFilterDeviceName' in input.keys():
             try:
                 droid.bleSetScanFilterDeviceName(input['ScanFilterDeviceName'])
-            except SL4AAPIError as error:
+            except sl4a_client.Sl4aApiError as error:
                 self.log.debug("Set Scan Filter Device Name failed with: {}"
                                .format(error))
                 return False
@@ -100,7 +100,7 @@ class BleScanApiTest(BluetoothBaseTest):
             try:
                 droid.bleSetScanFilterDeviceAddress(input[
                     'ScanFilterDeviceAddress'])
-            except SL4AAPIError as error:
+            except sl4a_client.Sl4aApiError as error:
                 self.log.debug("Set Scan Filter Device Address failed with: {}"
                                .format(error))
                 return False
@@ -111,7 +111,7 @@ class BleScanApiTest(BluetoothBaseTest):
                     input['ScanFilterManufacturerDataId'],
                     input['ScanFilterManufacturerData'],
                     input['ScanFilterManufacturerDataMask'])
-            except SL4AAPIError as error:
+            except sl4a_client.Sl4aApiError as error:
                 self.log.debug("Set Scan Filter Manufacturer info with data "
                                "mask failed with: {}".format(error))
                 return False
@@ -122,7 +122,7 @@ class BleScanApiTest(BluetoothBaseTest):
                 droid.bleSetScanFilterManufacturerData(
                     input['ScanFilterManufacturerDataId'],
                     input['ScanFilterManufacturerData'])
-            except SL4AAPIError as error:
+            except sl4a_client.Sl4aApiError as error:
                 self.log.debug(
                     "Set Scan Filter Manufacturer info failed with: "
                     "{}".format(error))

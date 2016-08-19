@@ -17,7 +17,7 @@
 Test script to exercise Gatt Apis.
 """
 
-from acts.controllers.android import SL4AAPIError
+from acts.controllers import sl4a_client
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
@@ -114,7 +114,7 @@ class GattApiTest(BluetoothBaseTest):
         invalid_callback_index = -1
         try:
             self.ad.droid.gattServerOpenGattServer(invalid_callback_index)
-        except SL4AAPIError as e:
+        except sl4a_client.Sl4aAPIError as e:
             self.log.info("Failed successfully with exception: {}.".format(e))
             return True
         return False

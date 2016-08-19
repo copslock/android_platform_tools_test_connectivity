@@ -21,7 +21,7 @@ import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 from acts import asserts
-from acts.controllers.android import SL4AAPIError
+from acts.controllers import sl4a_client
 
 WifiEnums = wutils.WifiEnums
 
@@ -118,7 +118,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
     def invalid_params_logic(self, rtt_params):
         try:
             self.dut.droid.wifiRttStartRanging([rtt_params])
-        except SL4AAPIError as e:
+        except sl4a_client.Sl4aAPIError as e:
             e_str = str(e)
             asserts.assert_true("IllegalArgumentException" in e_str,
                                 "Missing IllegalArgumentException in %s." %
