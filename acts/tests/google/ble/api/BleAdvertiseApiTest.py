@@ -20,7 +20,7 @@ after you set all attributes of each object. If this test suite doesn't pass,
 then other test suites utilising Ble Advertisements will also fail.
 """
 
-from acts.controllers.android import SL4AAPIError
+from acts.controllers import sl4a_client
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import adv_fail
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
@@ -1008,7 +1008,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         droid.bleStartBleAdvertising(advcallback, adv_data, adv_settings)
         try:
             ed.pop_event(adv_fail.format(advcallback))
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.info("{} event was not found.".format(adv_fail.format(
                 advcallback)))
             return False
@@ -1183,7 +1183,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
             self.log.debug("Set Advertise settings invalid filtering mode "
                            "passed with input as {}".format(exp_adv_mode))
             return False
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.debug("Set Advertise settings invalid filtering mode "
                            "failed successfully with input as {}".format(
                                exp_adv_mode))
@@ -1197,7 +1197,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
             self.log.debug("Set Advertise settings invalid tx power level " +
                            " with input as {}".format(exp_adv_tx_power))
             return False
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.debug("Set Advertise settings invalid tx power level "
                            "failed successfullywith input as {}".format(
                                exp_adv_tx_power))
@@ -1210,7 +1210,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
             self.log.debug("Set Advertise Data service uuids " +
                            " with input as {}".format(exp_service_uuids))
             return False
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.debug("Set Advertise Data invalid service uuids failed "
                            "successfully with input as {}".format(
                                exp_service_uuids))
@@ -1226,7 +1226,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
                            ", service data: {}".format(exp_service_data_uuid,
                                                        exp_service_data))
             return False
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.debug("Set Advertise Data service data uuid: " + str(
                 exp_service_data_uuid) + ", service data: " + str(
                     exp_service_data) + " failed successfully.")
@@ -1242,7 +1242,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
                            ", manu specific data: " + str(
                                exp_manu_specific_data))
             return False
-        except SL4AAPIError:
+        except sl4a_client.Sl4aApiError:
             self.log.debug("Set Advertise Data manu id: {},"
                            " manu specific data: {},".format(
                                exp_manu_id, exp_manu_specific_data))
