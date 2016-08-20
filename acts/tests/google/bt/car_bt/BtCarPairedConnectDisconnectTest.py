@@ -121,3 +121,4 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
                 continue
         self.log.info("Failure {} total tests {}".format(failure, NUM_TEST_RUNS))
         asserts.assert_equal(failure, 0, "")
+
