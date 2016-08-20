@@ -556,4 +556,3 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
                 "Test failed, filtering callback onSuccess never occurred: {}".format(
                     error))
         return test_result
-
