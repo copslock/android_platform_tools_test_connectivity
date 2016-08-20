@@ -59,3 +59,4 @@ class BluetoothProfileState(IntEnum):
     STATE_CONNECTING = 1
     STATE_CONNECTED = 2
     STATE_DISCONNECTING = 3
+
