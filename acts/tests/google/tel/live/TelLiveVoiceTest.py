@@ -192,7 +192,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "test_call_long_duration_wfc",
             "test_call_long_duration_3g")
 
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:
