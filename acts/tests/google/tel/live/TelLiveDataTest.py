@@ -1241,6 +1241,12 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
 
+        if (not wait_for_cell_data_connection(self.log,
+                                              self.android_devices[0], True) or
+                not verify_http_connection(self.log, self.android_devices[0])):
+            self.log.error("Failed cell data call for entitlement check.")
+            return False
+
         result = ad.droid.carrierConfigIsTetheringModeAllowed(
             TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK)
         self.log.info("{} tethering entitlement check result: {}.".format(
