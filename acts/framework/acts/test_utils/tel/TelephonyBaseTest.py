@@ -73,7 +73,7 @@ class _TelephonyTraceLogger():
 
     def warning(self, msg, *args, **kwargs):
         trace_info = _TelephonyTraceLogger._get_trace_info()
-        self._logger.error("{} - {}".format(trace_info, msg), *args, **kwargs)
+        self._logger.warning("{} - {}".format(trace_info, msg), *args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._logger, name)
@@ -283,3 +283,16 @@ class TelephonyBaseTest(BaseTestClass):
             except:
                 ad.log.error("Failed to take a bug report for {}, {}"
                              .format(ad.serial, test_name))
+
+    def get_stress_test_number(self):
+        """Gets the stress_test_number param from user params.
+
+        Gets the stress_test_number param. If absent, returns None
+        and logs a warning.
+        """
+
+        number = self.user_params.get("stress_test_number")
+        if number is None:
+            self.log.warning("stress_test_number is not set.")
+            return None
+        return int(number)
