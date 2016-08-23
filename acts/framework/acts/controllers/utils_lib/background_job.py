@@ -221,7 +221,7 @@ class BackgroundJob(object):
         if self.is_alive:
             return time.time() - self._start_time
         else:
-            return self.result.duration
+            return self._result.duration
 
     @property
     def result(self):
@@ -271,7 +271,8 @@ class BackgroundJob(object):
             command: Name of the command to execute along with all arguments.
                      The command can either be a string as would be input in
                      the shell, or a list starting with the command to execute
-                     and followed by all arguments.
+                     and followed by all arguments. All strings will be treated
+                     literally as if they were typed into the command line.
             stdout_tee: Optional additional stream that the process's stdout
                         stream output will be written to.
             stderr_tee: Same as stdout_tee, but for stderr.
@@ -301,6 +302,9 @@ class BackgroundJob(object):
 
         if isinstance(command, str):
             command = shell_utils.split_command_line(command)
+
+        # Use literal strings for all arguments.
+        command = [s.encode('unicode_escape') for s in command]
 
         self._command = command
         self._result = CmdResult(command, encoding=io_encoding)
@@ -469,41 +473,22 @@ class BackgroundJob(object):
         self._sp.stdin.close()
         self._has_closed_input = True
 
-    def force_close(self):
-        """Force kill the process.
-
-        Will attempt to kill the process normally, if that does not work
-        then the os is signaled to kill the process immedietly.
-        """
-        if self._sp.poll() is not None:
-            self._cleanup()
-            return self._sp.poll()
-
-        # the process has not terminated within timeout,
-        # kill it via an escalating series of signals.
-        signal_queue = [signal.SIGTERM, signal.SIGKILL]
-        for sig in signal_queue:
-            self._signal(sig)
-            if self._sp.poll() is not None:
-                self._cleanup()
-                return self._sp.poll()
-
     def close(self, timeout=10):
         """Closes the program safely and waits for it to die.
 
-        Will send a standard close signal to the process and wait for it
-        to stop running. If a timeout is encountered then the program will
-        be forced closed.
+        Signals the program with a set of different kill signals until it dies.
+        Each signal waits for the timeout time to pass until the next signal
+        is sent.
 
         Args:
-            timeout: How long to wait before forcing the program close.
+            timeout: How long to wait on each signal.
         """
-        if self.is_alive:
-            self._sp.kill()
-            try:
-                self.wait(timeout)
-            except CmdTimeoutError:
-                pass
+        kill_queue = [signal.SIGINT, signal.SIGTERM, signal.SIGKILL]
+        for sig in kill_queue:
+            self._signal(sig, timeout)
+            if not self.is_alive:
+                break
+
         self._cleanup()
 
     def wait(self, timeout=None):
@@ -547,9 +532,7 @@ class BackgroundJob(object):
         if status is None:
             logging.warning('run process timeout (%s) fired on: "%s"', timeout,
                             self._command)
-
-            if self.force_close() is None:
-                logging.warning(_read_file('/proc/%d/stack' % self._sp.pid))
+            self.close()
         else:
             was_timeout = False
 
@@ -582,10 +565,10 @@ class BackgroundJob(object):
             end_time = time.time() + timeout
 
         end_time = time.time() + timeout
-        while timeout <= 0 or (time.time() < end_time and self.is_alive):
+        while timeout <= 0 or (time.time() < end_time):
             processed_data = self.__process_data()
 
-            if (processed_data.new_stdin or processed_data.new_stderr or
+            if (processed_data.new_stdout or processed_data.new_stderr or
                     processed_data.new_stdin):
                 return EventData(EventType.NEW_DATA, processed_data)
             elif processed_data.did_close and not self.is_alive:
@@ -733,10 +716,12 @@ class BackgroundJob(object):
             # The process may have died before we could kill it.
             pass
 
-        for i in range(timeout):
-            if not shell_utils.pid_is_alive(self._sp.pid):
+        timeleft = timeout
+        while timeleft > 0:
+            if not self.is_alive:
                 return True
-            time.sleep(1)
+            time.sleep(0.1)
+            timeleft -= 0.1
 
         # The process is still alive
         return False
