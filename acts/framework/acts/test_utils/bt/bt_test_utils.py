@@ -614,33 +614,37 @@ def kill_bluetooth_process(ad):
     call(["adb -s " + ad.serial + " shell kill " + pid], shell=True)
 
 
-def rfcomm_connect(ad, device_address):
-    rf_client_ad = ad
-    log.debug("Performing RFCOMM connection to {}".format(device_address))
-    try:
-        ad.droid.bluetoothRfcommConnect(device_address)
-    except Exception as err:
-        log.error("Failed to connect: {}".format(err))
-        ad.droid.bluetoothRfcommCloseSocket()
-        return
-    finally:
-        return
-    return
+def orchestrate_rfcomm_connection(client_ad,
+                                  server_ad,
+                                  timeout=default_timeout):
+    """Sets up the RFCOMM connection between two Android devices.
 
-
-def rfcomm_accept(ad):
-    rf_server_ad = ad
-    log.debug("Performing RFCOMM accept")
-    try:
-        ad.droid.bluetoothRfcommAccept(RfcommUuid.DEFAULT_UUID.value,
-                                       default_timeout)
-    except Exception as err:
-        log.error("Failed to accept: {}".format(err))
-        ad.droid.bluetoothRfcommCloseSocket()
-        return
-    finally:
-        return
-    return
+    Args:
+        client_ad: the Android device performing the connection
+        server_ad: the Android device accepting the connection
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    server_ad.droid.bluetoothRfcommBeginAcceptThread(
+        RfcommUuid.DEFAULT_UUID.value, timeout)
+    client_ad.droid.bluetoothRfcommBeginConnectThread(
+        server_ad.droid.bluetoothGetLocalAddress())
+    end_time = time.time() + timeout
+    result = False
+    test_result = True
+    while time.time() < end_time:
+        if len(client_ad.droid.bluetoothRfcommActiveConnections()) > 0:
+            log.info("RFCOMM Client Connection Active")
+            break
+    end_time = time.time() + timeout
+    while time.time() < end_time:
+        if len(server_ad.droid.bluetoothRfcommActiveConnections()) > 0:
+            log.info("RFCOMM Server Connection Active")
+            break
+    if not test_result:
+        log.error("Failed to establish an RFCOMM connection")
+        return False
+    return True
 
 
 def write_read_verify_data(client_ad, server_ad, msg, binary=False):
@@ -667,5 +671,23 @@ def write_read_verify_data(client_ad, server_ad, msg, binary=False):
     if msg != read_msg:
         log.error("Mismatch! Read: {}, Expected: {}".format(read_msg, msg))
         return False
+    return True
+
+
+def clear_bonded_devices(ad):
+    """Clear bonded devices from the input Android device
+
+    Args:
+        ad: the Android device performing the connection
+    Returns:
+        True if clearing bonded devices was successful, false if unsuccessful.
+    """
+    bonded_device_list = ad.droid.bluetoothGetBondedDevices()
+    for device in bonded_device_list:
+        device_address = device['address']
+        if not ad.droid.bluetoothUnbond(device_address):
+            log.error("Failed to unbond {}".format(device_address))
+            return False
+        log.info("Successfully unbonded {}".format(device_address))
     return True
 
