@@ -250,7 +250,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             # RSSI monitoring
             "test_rssi_monitoring", )
 
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.stress_test_number = self.get_stress_test_number()
         self.live_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:

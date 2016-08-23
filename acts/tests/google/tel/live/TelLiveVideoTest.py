@@ -117,7 +117,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             # Disable Data, VT not available
             "test_disable_data_vt_unavailable", )
 
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:

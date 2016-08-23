@@ -141,7 +141,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                       "test_lte_multi_bearer_stress",
                       "test_wcdma_multi_bearer_stress",
                       "test_tethering_4g_to_2gwifi_stress",)
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:
