@@ -85,9 +85,9 @@ class ActsSl4aClientTest(unittest.TestCase):
         Test that a timeout exception will be raised if the socket gives a
         timeout.
         """
-        mock_create_connection.side_effect = TimeoutError
+        mock_create_connection.side_effect = socket.timeout
 
-        with self.assertRaises(TimeoutError):
+        with self.assertRaises(socket.timeout):
             client = sl4a_client.Sl4aClient()
             client.open(connection_timeout=0.1)
 
@@ -187,7 +187,7 @@ class ActsSl4aClientTest(unittest.TestCase):
         client = sl4a_client.Sl4aClient()
         client.open()
 
-        fake_file.resp = bytes((MOCK_RESP_TEMPLATE % 52), 'utf8')
+        fake_file.resp = (MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
         with self.assertRaises(
                 sl4a_client.Sl4aProtocolError,
@@ -229,7 +229,7 @@ class ActsSl4aClientTest(unittest.TestCase):
         self.assertEquals(result, 123)
 
         expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
-        actual = json.loads(str(fake_file.last_write, 'utf-8'))
+        actual = json.loads(fake_file.last_write.decode('utf-8'))
 
         self.assertEqual(expected, actual)
 
@@ -245,7 +245,7 @@ class ActsSl4aClientTest(unittest.TestCase):
         client.open()
 
         for i in range(0, 10):
-            fake_file.resp = bytes(MOCK_RESP_TEMPLATE % i, 'utf-8')
+            fake_file.resp = (MOCK_RESP_TEMPLATE % i).encode('utf-8')
             client.some_rpc()
 
         self.assertEquals(next(client._counter), 10)
