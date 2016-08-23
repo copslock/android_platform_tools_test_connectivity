@@ -19,6 +19,7 @@ Basic Bluetooth Classic stress tests.
 
 import time
 from acts.base_test import BaseTestClass
+from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
@@ -107,9 +108,8 @@ class BtStressTest(BaseTestClass):
                 self.log.error("Failed to bond devices.")
                 return False
             for ad in self.android_devices:
-                bonded_devices = ad.droid.bluetoothGetBondedDevices()
-                for b in bonded_devices:
-                    ad.droid.bluetoothUnbond(b['address'])
+                if not clear_bonded_devices(ad):
+                    return False
                 #Necessary sleep time for entries to update unbonded state
                 time.sleep(1)
                 bonded_devices = ad.droid.bluetoothGetBondedDevices()
