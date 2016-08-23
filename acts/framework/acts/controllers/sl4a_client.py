@@ -189,7 +189,7 @@ class Sl4aClient(object):
 
         Raises:
             IOError: Raised when the socket times out from io error
-            TimeoutError: Raised when the socket waits to long for connection.
+            socket.timeout: Raised when the socket waits to long for connection.
             Sl4aProtocolError: Raised when there is an error in the protocol.
         """
         if connection_timeout:
@@ -203,7 +203,7 @@ class Sl4aClient(object):
                     (self.addr, self.port), max(1, timeout_time - time.time()))
                 self.conn.settimeout(self._SOCKET_TIMEOUT)
                 break
-            except (TimeoutError, socket.timeout):
+            except (socket.timeout):
                 logging.exception("Failed to create socket connection!")
                 raise
             except (socket.error, IOError):
