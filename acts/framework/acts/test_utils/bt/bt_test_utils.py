@@ -236,6 +236,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
             d.bluetoothDisableBLE()
             bonded_devices = d.bluetoothGetBondedDevices()
             for b in bonded_devices:
+                log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
             setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
@@ -624,6 +625,28 @@ def log_energy_info(android_devices, state):
     return return_string
 
 
+def set_profile_priority(host_ad, client_ad, profiles, priority):
+    """Sets the priority of said profile(s) on host_ad for client_ad"""
+    for profile in profiles:
+        log.info("Profile {} on {} for {} set to priority {}".format(
+            profile, host_ad.droid.bluetoothGetLocalName(),
+            client_ad.droid.bluetoothGetLocalAddress(),
+            priority.value))
+        if BluetoothProfile.A2DP_SINK == profile:
+            host_ad.droid.bluetoothA2dpSinkSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        elif BluetoothProfile.HEADSET_CLIENT == profile:
+            host_ad.droid.bluetoothHfpClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        elif BluetoothProfile.PBAP_CLIENT == profile:
+            host_ad.droid.bluetoothPbapClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        else:
+            log.error("Profile {} not yet supported for priority settings".format(profile))
+
 def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
     """Pairs pri droid to secondary droid.
 
@@ -641,7 +664,8 @@ def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
         if _pair_pri_to_sec(pri_droid, sec_droid):
             return True
         curr_attempts += 1
-    log.error("pair_pri_to_sec failed to connect after " + attempts + " attempt")
+        time.sleep(default_timeout)
+    log.error("pair_pri_to_sec failed to connect after {} attempts".format(str(attempts)))
     return False
 
 def _pair_pri_to_sec(pri_droid, sec_droid):

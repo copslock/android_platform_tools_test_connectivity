@@ -26,6 +26,10 @@ from acts.test_utils.car import car_bt_utils
 from acts.test_utils.bt import BtEnum
 from acts import asserts
 
+# Timed wait between Bonding happens and Android actually gets the list of
+# supported services (and subsequently updates the priorities)
+BOND_TO_SDP_WAIT = 3
+
 class BtCarPairingTest(BaseTestClass):
     def setup_class(self):
         self.car = self.android_devices[0]
@@ -63,6 +67,9 @@ class BtCarPairingTest(BaseTestClass):
         if not bt_test_utils.pair_pri_to_sec(self.car.droid, self.ph.droid):
             self.log.error("cannot pair")
             return False
+
+        # Sleep because priorities are not event driven.
+        time.sleep(BOND_TO_SDP_WAIT)
 
         # Check that the default priority for HFP and A2DP is ON.
         ph_hfp_p = self.car.droid.bluetoothHfpClientGetPriority(
@@ -108,21 +115,31 @@ class BtCarPairingTest(BaseTestClass):
         Priority: 0
         """
         # Pair the devices.
+        self.log.info("Pairing the devices ...")
         if not bt_test_utils.pair_pri_to_sec(self.car.droid, self.ph.droid):
             self.log.error("cannot pair")
             return False
 
+        # Timed wait for the profile priorities to propagate.
+        time.sleep(BOND_TO_SDP_WAIT)
+
         # Set the priority to OFF for ALL car profiles.
+        self.log.info("Set priorities off ...")
         car_bt_utils.set_car_profile_priorities_off(self.car, self.ph)
 
         # Now unpair the devices.
+        self.log.info("Resetting the devices ...")
         bt_test_utils.setup_multiple_devices_for_bt_test([self.car, self.ph])
         bt_test_utils.reset_bluetooth([self.car, self.ph])
 
         # Pair them again!
+        self.log.info("Pairing them again ...")
         if not bt_test_utils.pair_pri_to_sec(self.car.droid, self.ph.droid):
             self.log.error("cannot re-pair")
             return False
+
+        # Timed wait for the profile priorities to propagate.
+        time.sleep(BOND_TO_SDP_WAIT)
 
         # Check the default priorities.
         ph_hfp_p = self.car.droid.bluetoothHfpClientGetPriority(

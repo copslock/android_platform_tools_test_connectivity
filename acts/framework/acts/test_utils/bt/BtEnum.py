@@ -73,3 +73,11 @@ class BluetoothAccessLevel(Enum):
     # Access Levels from BluetoothDevice.
     ACCESS_ALLOWED = 1
     ACCESS_DENIED = 2
+
+
+class BluetoothPriorityLevel(Enum):
+    # Priority levels as defined in BluetoothProfile.java.
+    PRIORITY_AUTO_CONNECT = 1000
+    PRIORITY_ON = 100
+    PRIORITY_OFF = 0
+    PRIORITY_UNDEFINED = -1

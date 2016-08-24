@@ -42,8 +42,8 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
 
     def setup_test(self):
         # Reset the devices in a clean state.
-        bt_test_utils.setup_multiple_devices_for_bt_test(self.android_devices)
-        bt_test_utils.reset_bluetooth(self.android_devices)
+        bt_test_utils.setup_multiple_devices_for_bt_test([self.car, self.ph])
+        bt_test_utils.reset_bluetooth([self.car, self.ph])
         for a in self.android_devices:
             a.ed.clear_all_events()
 
@@ -59,6 +59,19 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name)
+
+    def test_pairing(self):
+        # Set the priority to OFF for all profiles.
+        self.car.droid.bluetoothHfpClientSetPriority(
+            self.ph.droid.bluetoothGetLocalAddress(),
+            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
+        self.ph.droid.bluetoothHspSetPriority(
+            self.car.droid.bluetoothGetLocalAddress(),
+            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
+        return bt_test_utils.connect_pri_to_sec(
+            self.log, self.car, self.ph.droid,
+            set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
+        pass
 
     def test_connect_disconnect_paired(self):
         """
@@ -94,30 +107,15 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
                 continue
 
             # Disconnect the devices.
-            self.log.info("Attempt to disconnect.")
-            self.car.droid.bluetoothDisconnectConnected(self.ph_bt_addr)
+            success = bt_test_utils.disconnect_pri_from_sec(
+                self.log, self.car, self.ph.droid,
+                [BtEnum.BluetoothProfile.HEADSET_CLIENT.value,
+                 BtEnum.BluetoothProfile.A2DP_SINK.value])
 
-            end_time = time.time() + 10
-            disconnected = False
-            # Busy loop to check if we have successfully disconnected from the
-            # device
-            while time.time() < end_time:
-                connectedDevices = self.car.droid.bluetoothGetConnectedDevices()
-                exists = False
-                connected_devices = \
-                    self.car.droid.bluetoothGetConnectedDevices()
-                for d in connected_devices:
-                  if d['address'] == self.ph_bt_addr:
-                      exists = True
-                      break
-                if exists is False:
-                    disconnected = True
-                    break
-                time.sleep(1)
-
-            if disconnected is False:
-                self.log.info("Still connected devices.")
+            if success is False:
+                self.log.info("Disconnect failed.")
                 failure = failure + 1
                 continue
+
         self.log.info("Failure {} total tests {}".format(failure, NUM_TEST_RUNS))
         asserts.assert_equal(failure, 0, "")

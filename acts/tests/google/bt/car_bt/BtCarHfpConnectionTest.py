@@ -23,6 +23,7 @@ import time
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_bt_utils
 from acts.test_utils.car import car_telecom_utils
 from acts.test_utils.tel import tel_defines
 
@@ -55,6 +56,15 @@ class BtCarHfpConnectionTest(BluetoothBaseTest):
         if not bt_test_utils.pair_pri_to_sec(self.hf.droid, self.ag.droid):
             self.log.error("Failed to pair")
             return False
+
+        # Disable all
+        car_bt_utils.set_car_profile_priorities_off(self.hf, self.ag)
+
+        # Enable A2DP
+        bt_test_utils.set_profile_priority(
+            self.hf, self.ag, [BtEnum.BluetoothProfile.HEADSET_CLIENT],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
+
         return True
 
     def setup_test(self):

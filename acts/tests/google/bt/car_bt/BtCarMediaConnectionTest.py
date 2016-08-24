@@ -21,10 +21,8 @@ import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_bt_utils
 from acts.test_utils.bt import BtEnum
-
-AUTO_CONNECT_ALLOWANCE_TIME = 15
-
 
 class BtCarMediaConnectionTest(BluetoothBaseTest):
     def setup_class(self):
@@ -34,40 +32,26 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         # A2DP roles for the same devices
         self.SNK = self.CT
         self.SRC = self.TG
+
         # Reset bluetooth
+        bt_test_utils.setup_multiple_devices_for_bt_test([self.CT, self.TG])
         bt_test_utils.reset_bluetooth([self.CT, self.TG])
 
         self.btAddrCT = self.CT.droid.bluetoothGetLocalAddress()
         self.btAddrTG = self.TG.droid.bluetoothGetLocalAddress()
 
-        # Pair and connect the devices.
+        # Pair the devices.
         if not bt_test_utils.pair_pri_to_sec(self.CT.droid, self.TG.droid):
             self.log.error("Failed to pair")
             return False
 
-        # Allowing some time for the devices to Auto connect on all profiles
-        # We want to focus our testing on the A2dp/Avrcp profiles.
-        # When the Bluetooth Adapter is turned on, it tries to connect on
-        # all the available profiles.  We give it time to do that and disconnect
-        # only on the A2dp profile and stay connected on other profiles.
-        # So, whenever we connect/disconnect on A2dp, the adapter doesn't try to
-        # auto connect on other profiles, since it is already connected
-        time.sleep(AUTO_CONNECT_ALLOWANCE_TIME)
+        # Disable all
+        car_bt_utils.set_car_profile_priorities_off(self.SNK, self.SRC)
 
-        # Check if we are connected on A2DP
-        connected = self.isA2dpConnected(self.SRC, self.SNK)
-        # As explained above, Disconnect only on A2DP
-        if (connected):
-            result = bt_test_utils.disconnect_pri_from_sec(
-                self.log, self.SNK, self.SRC.droid,
-                [BtEnum.BluetoothProfile.A2DP_SINK.value])
-            return result
-        else:
-            # We did not connect.
-            self.log.error("Failed to connect on setup")
-            return False
-        # At the end of the setup, we have the 2 devices paired and connected on all profiles
-        # EXCEPT the A2dp profile. This helps with running the test cases in any sequence
+        # Enable A2DP
+        bt_test_utils.set_profile_priority(
+            self.SNK, self.SRC, [BtEnum.BluetoothProfile.A2DP_SINK],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
 
     def setup_test(self):
         for d in self.android_devices:
@@ -76,7 +60,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
 
-    def isA2dpConnected(self, device1, device2):
+    def is_a2dp_connected(self, device1, device2):
         """
         Convenience Function to see if the 2 devices are connected on
         A2dp.
@@ -88,7 +72,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
             True if Connected
             False if Not connected
         """
-        devices = device1.droid.bluetoothA2dpGetConnectedDevices()
+        devices = device1.droid.bluetoothA2dpSinkGetConnectedDevices()
         for device in devices:
             self.log.info("A2dp Connected device {}".format(device["name"]))
             if (device["address"] == device2.droid.bluetoothGetLocalAddress()):
@@ -114,7 +98,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         Priority: 0
         """
-        if (self.isA2dpConnected(self.SRC, self.SNK)):
+        if (self.is_a2dp_connected(self.SNK, self.SRC)):
             self.log.info("Already Connected")
         else:
             result = bt_test_utils.connect_pri_to_sec(
@@ -133,7 +117,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
-        if (self.isA2dpConnected(self.SRC, self.SNK)):
+        if (self.is_a2dp_connected(self.SNK, self.SRC)):
             self.log.error("Still connected after a disconnect")
 
         return True
@@ -158,7 +142,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         Priority: 0
         """
         # Connect
-        if (self.isA2dpConnected(self.SRC, self.SNK)):
+        if (self.is_a2dp_connected(self.SNK, self.SRC)):
             self.log.info("Already Connected")
         else:
             result = bt_test_utils.connect_pri_to_sec(
@@ -177,7 +161,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
-        if (self.isA2dpConnected(self.SRC, self.SNK)):
+        if (self.is_a2dp_connected(self.SNK, self.SRC)):
             self.log.error("Still connected after a disconnect")
 
         return True
