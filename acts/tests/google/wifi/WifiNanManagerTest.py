@@ -21,6 +21,7 @@ import queue
 
 from acts import asserts
 from acts import base_test
+from acts.signals import generated_test
 from acts.test_utils.net import connectivity_const as con_const
 from acts.test_utils.net import nsd_const as nsd_const
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -212,7 +213,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.log.info('%s:\n\tParam: %s\n\tRTT statistics: %s', label,
                       rtt_param, rtt_stats)
 
-    def test_nan_discovery_session(self):
+    def run_nan_discovery_session(self, discovery_config):
         """Perform NAN configuration, discovery, and message exchange.
 
         Configuration: 2 devices, one acting as Publisher (P) and the
@@ -228,12 +229,17 @@ class WifiNanManagerTest(base_test.BaseTestClass):
           * P waits for a message and confirms that received (uncorrupted)
           * P sends a message to S, confirming that sent successfully
           * S waits for a message and confirms that received (uncorrupted)
+
+        Args:
+            discovery_configs: Array of (publish_config, subscribe_config)
+
+        Returns:
+            True if discovery succeeds, else false.
         """
         # Configure Test
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config")
+        required_params = ("config_request1", "config_request2")
         self.unpack_userparams(required_params)
 
         sub2pub_msg = "How are you doing? 你好嗎？"
@@ -243,52 +249,83 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.exec_connect(self.publisher, self.config_request1, "publisher")
         self.exec_connect(self.subscriber, self.config_request2, "subscriber")
 
-        pub_id = self.publisher.droid.wifiNanPublish(0, self.publish_config)
-        sub_id = self.subscriber.droid.wifiNanSubscribe(0,
-                                                        self.subscribe_config)
-
         try:
-            event_sub_match = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
-            self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
-                          event_sub_match['data'])
-        except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on Subscriber' %
-                         nan_const.SESSION_CB_ON_MATCH)
-        self.log.debug(event_sub_match)
+            pub_id = self.publisher.droid.wifiNanPublish(0,
+                                                         discovery_config[0])
+            sub_id = self.subscriber.droid.wifiNanSubscribe(0,
+                                                            discovery_config[1])
 
-        self.reliable_tx(self.subscriber, sub_id,
-                         event_sub_match['data']['peerId'], sub2pub_msg)
+            try:
+                event_sub_match = self.subscriber.ed.pop_event(
+                    nan_const.SESSION_CB_ON_MATCH, EVENT_TIMEOUT)
+                self.log.info('%s: %s', nan_const.SESSION_CB_ON_MATCH,
+                              event_sub_match['data'])
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Subscriber' %
+                             nan_const.SESSION_CB_ON_MATCH)
+            self.log.debug(event_sub_match)
 
-        try:
-            event_pub_rx = self.publisher.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
-            self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
-                          event_pub_rx['data'])
-            asserts.assert_equal(event_pub_rx['data']['messageAsString'],
-                                 sub2pub_msg,
+            self.reliable_tx(self.subscriber, sub_id,
+                             event_sub_match['data']['peerId'], sub2pub_msg)
+
+            try:
+                event_pub_rx = self.publisher.ed.pop_event(
+                    nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
+                self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
+                              event_pub_rx['data'])
+                asserts.assert_equal(event_pub_rx['data']['messageAsString'],
+                                     sub2pub_msg,
                                  "Subscriber -> publisher message corrupted")
-        except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on publisher' %
-                         nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on publisher' %
+                             nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
 
-        self.reliable_tx(self.publisher, pub_id, event_pub_rx['data']['peerId'],
-                         pub2sub_msg)
+            self.reliable_tx(self.publisher, pub_id,
+                             event_pub_rx['data']['peerId'], pub2sub_msg)
 
-        try:
-            event_sub_rx = self.subscriber.ed.pop_event(
-                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
-            self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
-                          event_sub_rx['data'])
-            asserts.assert_equal(event_sub_rx['data']['messageAsString'],
-                                 pub2sub_msg,
+            try:
+                event_sub_rx = self.subscriber.ed.pop_event(
+                    nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
+                self.log.info('%s: %s',
+                              nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
+                              event_sub_rx['data'])
+                asserts.assert_equal(event_sub_rx['data']['messageAsString'],
+                                     pub2sub_msg,
                                  "Publisher -> subscriber message corrupted")
-        except queue.Empty:
-            asserts.fail('Timed out while waiting for %s on subscriber' %
-                         nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on subscriber' %
+                             nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
+        finally:
+            self.publisher.droid.wifiNanTerminateSession(pub_id)
+            self.subscriber.droid.wifiNanTerminateSession(sub_id)
+        asserts.assert_true(False, "some arbitrary failure")
 
-        self.publisher.droid.wifiNanTerminateSession(pub_id)
-        self.subscriber.droid.wifiNanTerminateSession(sub_id)
+    @generated_test
+    def test_nan_discovery_session(self):
+        """Perform NAN configuration, discovery, and message exchange.
+
+        Test multiple discovery types:
+        - Unsolicited publish + passive subscribe
+        - Solicited publish + active subscribe
+        """
+        required_params = ("publish_config", "publish_config_passive",
+                           "subscribe_config", "subscribe_config_active")
+        self.unpack_userparams(required_params)
+
+        discovery_configs = ([self.publish_config, self.subscribe_config],
+                             [self.publish_config_passive,
+                              self.subscribe_config_active])
+        name_func = lambda discovery_config : (
+            "test_nan_discovery_session_PT_%s_ST_%s") % (
+            discovery_config[0][nan_const.PUBLISH_KEY_TYPE],
+            discovery_config[1][nan_const.SUBSCRIBE_KEY_TYPE])
+        failed = self.run_generated_testcases(
+            self.run_nan_discovery_session,
+            discovery_configs,
+            name_func = name_func)
+        asserts.assert_true(not failed,
+                            "%s of test_nan_discovery_session failed: %s" %
+                            (len(failed), failed))
 
     def test_nan_messaging(self):
         """Perform NAN configuration, discovery, and large message exchange.

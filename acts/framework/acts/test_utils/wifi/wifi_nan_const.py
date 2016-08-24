@@ -21,6 +21,41 @@ BROADCAST_WIFI_NAN_ENABLED = "WifiNanEnabled"
 BROADCAST_WIFI_NAN_DISABLED = "WifiNanDisabled"
 
 ######################################################
+# ConfigRequest keys
+######################################################
+
+CONFIG_KEY_5G_BAND = "Support5gBand"
+CONFIG_KEY_MASTER_PREF = "MasterPreference"
+CONFIG_KEY_CLUSTER_LOW = "ClusterLow"
+CONFIG_KEY_CLUSTER_HIGH = "ClusterHigh"
+CONFIG_KEY_ENABLE_IDEN_CB = "EnableIdentityChangeCallback"
+
+######################################################
+# PublishConfig keys
+######################################################
+
+PUBLISH_KEY_SERVICE_NAME = "ServiceName"
+PUBLISH_KEY_SSI = "ServiceSpecificInfo"
+PUBLISH_KEY_MATCH_FILTER = "MatchFilter"
+PUBLISH_KEY_TYPE = "PublishType"
+PUBLISH_KEY_COUNT = "PublishCount"
+PUBLISH_KEY_TTL = "TtlSec"
+PUBLISH_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
+
+######################################################
+# SubscribeConfig keys
+######################################################
+
+SUBSCRIBE_KEY_SERVICE_NAME = "ServiceName"
+SUBSCRIBE_KEY_SSI = "ServiceSpecificInfo"
+SUBSCRIBE_KEY_MATCH_FILTER = "MatchFilter"
+SUBSCRIBE_KEY_TYPE = "SubscribeType"
+SUBSCRIBE_KEY_COUNT = "SubscribeCount"
+SUBSCRIBE_KEY_TTL = "TtlSec"
+SUBSCRIBE_KEY_STYLE = "MatchStyle"
+SUBSCRIBE_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
+
+######################################################
 # WifiNanEventCallback events
 ######################################################
 EVENT_CB_ON_CONNECT_SUCCSSS = "WifiNanOnConnectSuccess"
