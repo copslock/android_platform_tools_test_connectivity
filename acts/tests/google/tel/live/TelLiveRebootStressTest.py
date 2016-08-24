@@ -72,7 +72,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             "test_reboot_stress_without_clear_provisioning"
             )
 
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
         try:
