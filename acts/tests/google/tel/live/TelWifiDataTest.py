@@ -36,7 +36,8 @@ ATTEN_NAME_FOR_CELL = 'cell0'
 class TelWifiDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.stress_test_number = int(self.user_params["stress_test_number"])
+        self.tests = ("test_wifi_cell_switching_stress", )
+        self.stress_test_number = self.get_stress_test_number()
         self.live_network_ssid = self.user_params["wifi_network_ssid"]
         try:
             self.live_network_pwd = self.user_params["wifi_network_pass"]
