@@ -79,15 +79,16 @@ class MockAdbProxy():
         if (params == "getprop | grep ro.build.product" or
             params == "getprop | grep ro.product.name"):
             return b"[ro.build.product]: [FakeModel]"
+        elif params == "getprop sys.boot_completed":
+            return b"1"
+        elif params == "bugreportz":
+            return b'OK:/path/bugreport.zip\n'
 
     def bugreport(self, params):
-        expected = os.path.join(MOCK_LOG_PATH,
-                                "AndroidDevice%s" % self.serial,
-                                "BugReports",
-                                "test_something,sometime,%s.txt" % (
-                                    self.serial))
-        expected = " > %s" % expected
-        assert params == expected, "Expected '%s', got '%s'." % (expected,
+        expected = os.path.join(
+            logging.log_path, "AndroidDevice%s" % self.serial, "BugReports",
+            "test_something,sometime,%s" % (self.serial))
+        assert expected in params, "Expected '%s', got '%s'." % (expected,
                                                                  params)
 
     def __getattr__(self, name):
