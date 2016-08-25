@@ -298,7 +298,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         finally:
             self.publisher.droid.wifiNanTerminateSession(pub_id)
             self.subscriber.droid.wifiNanTerminateSession(sub_id)
-        asserts.assert_true(False, "some arbitrary failure")
 
     @generated_test
     def test_nan_discovery_session(self):
