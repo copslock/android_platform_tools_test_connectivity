@@ -68,8 +68,9 @@ def mock_list_adb_devices():
 class MockAdbProxy():
     """Mock class that swaps out calls to adb with mock calls."""
 
-    def __init__(self, serial):
+    def __init__(self, serial, fail_br=False):
         self.serial = serial
+        self.fail_br = fail_br
 
     def shell(self, params):
         if params == "id -u":
@@ -80,6 +81,8 @@ class MockAdbProxy():
         elif params == "getprop sys.boot_completed":
             return b"1"
         elif params == "bugreportz":
+            if self.fail_br:
+                return b"OMG I died!\n"
             return b'OK:/path/bugreport.zip\n'
 
     def bugreport(self, params):
@@ -231,6 +234,22 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_path = os.path.join(logging.log_path, "AndroidDevice%s" %
                                      ad.serial, "BugReports")
         create_dir_mock.assert_called_with(expected_path)
+
+    @mock.patch('acts.controllers.adb.AdbProxy',
+                return_value=MockAdbProxy(1, fail_br=True))
+    @mock.patch('acts.utils.create_dir')
+    @mock.patch('acts.utils.exe_cmd')
+    def test_AndroidDevice_take_bug_report_fail(self, exe_mock, create_dir_mock,
+                                                MockAdbProxy):
+        """Verifies AndroidDevice.take_bug_report calls the correct adb command
+        and writes the bugreport file to the correct path.
+        """
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        expected_msg = "Failed to take bugreport on 1: OMG I died!"
+        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
+                                     expected_msg):
+            ad.take_bug_report("test_something", "sometime")
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch('acts.utils.create_dir')
