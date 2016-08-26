@@ -204,7 +204,8 @@ class BaseTestClass(object):
                     case.
         """
         test_name = record.test_name
-        self.log.error(record.details)
+        if record.details:
+            self.log.error(record.details)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_fail(test_name, begin_time)
