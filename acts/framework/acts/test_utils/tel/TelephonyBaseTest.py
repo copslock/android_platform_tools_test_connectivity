@@ -57,48 +57,13 @@ from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
 
 
-class _TelephonyTraceLogger():
-    def __init__(self, logger):
-        self._logger = logger
-
-    @staticmethod
-    def _get_trace_info(level=1):
-        # we want the stack frame above this and above the error/warning/info
-        inspect_stack = inspect.stack()
-        trace_info = ""
-        for i in range(level):
-            stack_frames = inspect_stack[2 + i]
-            info = inspect.getframeinfo(stack_frames[0])
-            trace_info = "%s[%s:%s:%s]" % (trace_info,
-                                           os.path.basename(info.filename),
-                                           info.function, info.lineno)
-        return trace_info
-
-    def error(self, msg, *args, **kwargs):
-        trace_info = _TelephonyTraceLogger._get_trace_info(level=3)
-        self._logger.error("%s %s" % (msg, trace_info), *args, **kwargs)
-
-    def warning(self, msg, *args, **kwargs):
-        trace_info = _TelephonyTraceLogger._get_trace_info(level=1)
-        self._logger.warning("%s %s" % (msg, trace_info), *args, **kwargs)
-
-    def info(self, msg, *args, **kwargs):
-        trace_info = _TelephonyTraceLogger._get_trace_info(level=1)
-        self._logger.info("%s %s" % (msg, trace_info), *args, **kwargs)
-
-    def __getattr__(self, name):
-        return getattr(self._logger, name)
-
-
 class TelephonyBaseTest(BaseTestClass):
     def __init__(self, controllers):
 
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
 
-        self.log = _TelephonyTraceLogger(self.log)
         for ad in self.android_devices:
-            ad.log = _TelephonyTraceLogger(ad.log)
             #The puk and pin should be provided in testbed config file.
             #"AndroidDevice": [{"serial": "84B5T15A29018214",
             #                   "adb_logcat_param": "-b all",
@@ -202,9 +167,11 @@ class TelephonyBaseTest(BaseTestClass):
                                    sim_conf_file)
                     return False
 
-        setattr(self, "diag_logger",
-                self.register_controller(
-                    acts.controllers.diag_logger, required=False))
+        setattr(
+            self,
+            "diag_logger",
+            self.register_controller(
+                acts.controllers.diag_logger, required=False))
         is_mobility_setup = self.user_params.get("Attenuator")
         if not is_mobility_setup:
             ensure_phones_default_state(self.log, self.android_devices)
@@ -287,13 +254,6 @@ class TelephonyBaseTest(BaseTestClass):
     def teardown_test(self):
         return True
 
-    def _cleanup_logger_sessions(self):
-        for (logger, session) in self.logger_sessions:
-            self.log.info("Resetting a diagnostic session %s, %s", logger,
-                          session)
-            logger.reset()
-        self.logger_sessions = []
-
     def on_exception(self, test_name, begin_time):
         self._pull_diag_logs(test_name, begin_time)
         self._take_bug_report(test_name, begin_time)
@@ -306,34 +266,6 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_pass(self, test_name, begin_time):
         self._cleanup_logger_sessions()
-
-    def _pull_diag_logs(self, test_name, begin_time):
-        for (logger, session) in self.logger_sessions:
-            self.log.info("Pulling diagnostic session %s", logger)
-            logger.stop(session)
-            diag_path = os.path.join(self.log_path, begin_time)
-            utils.create_dir(diag_path)
-            logger.pull(session, diag_path)
-
-    def _take_bug_report(self, test_name, begin_time):
-        if "no_bug_report_on_fail" in self.user_params:
-            return
-
-        # magical sleep to ensure the runtime restart or reboot begins
-        time.sleep(1)
-        for ad in self.android_devices:
-            try:
-                ad.adb.wait_for_device()
-                ad.take_bug_report(test_name, begin_time)
-                tombstone_path = os.path.join(
-                    ad.log_path, "BugReports",
-                    "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
-                utils.create_dir(tombstone_path)
-                ad.adb.pull('/data/tombstones/', tombstone_path, timeout=1200)
-            except Exception as e:
-                ad.log.error(
-                    "Failed to take a bug report for %s with error %s",
-                    test_name, e)
 
     def get_stress_test_number(self):
         """Gets the stress_test_number param from user params.

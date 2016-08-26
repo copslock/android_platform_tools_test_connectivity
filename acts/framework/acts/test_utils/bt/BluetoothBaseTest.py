@@ -17,18 +17,18 @@
     Base Class for Defining Common Bluetooth Test Functionality
 """
 
-import os
+import threading
 import time
 import traceback
+import os
 from acts import utils
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
-from acts.utils import set_location_service
+
 from acts.controllers import android_device
-from acts.test_utils.bt.bt_test_utils import (
-    reset_bluetooth, setup_multiple_devices_for_bt_test, take_btsnoop_logs)
-from acts.utils import sync_device_time
-import threading
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
+from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 
 class BluetoothBaseTest(BaseTestClass):
@@ -85,10 +85,6 @@ class BluetoothBaseTest(BaseTestClass):
 
         return _safe_wrap_test_case
 
-    def _reboot_device(self, ad):
-        ad.log.info("Rebooting device.")
-        ad = ad.reboot()
-
     def setup_class(self):
         if "reboot_between_test_class" in self.user_params:
             threads = []
@@ -99,9 +95,6 @@ class BluetoothBaseTest(BaseTestClass):
                 thread.start()
             for t in threads:
                 t.join()
-        for a in self.android_devices:
-            set_location_service(a, False)
-            sync_device_time(a)
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
@@ -114,9 +107,8 @@ class BluetoothBaseTest(BaseTestClass):
         return True
 
     def on_fail(self, test_name, begin_time):
-        self.log.debug(
-            "Test {} failed. Gathering bugreport and btsnoop logs".format(
-                test_name))
+        self.log.debug("Test {} failed. Gathering bugreport and btsnoop logs".
+                       format(test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
         self._take_bug_report(test_name, begin_time)
         for _ in range(5):
@@ -125,25 +117,6 @@ class BluetoothBaseTest(BaseTestClass):
             else:
                 self.log.error("Failed to reset Bluetooth... retrying.")
         return
-
-    def _take_bug_report(self, test_name, begin_time):
-        if "no_bug_report_on_fail" in self.user_params:
-            return
-
-        # magical sleep to ensure the runtime restart or reboot begins
-        time.sleep(1)
-        for ad in self.android_devices:
-            try:
-                ad.adb.wait_for_device()
-                ad.take_bug_report(test_name, begin_time)
-                tombstone_path = os.path.join(
-                    ad.log_path, "BugReports",
-                    "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
-                utils.create_dir(tombstone_path)
-                ad.adb.pull('/data/tombstones/', tombstone_path)
-            except:
-                ad.log.error("Failed to take a bug report for {}"
-                               .format(test_name))
 
     def _get_time_in_milliseconds(self):
         return int(round(time.time() * 1000))
@@ -164,6 +137,6 @@ class BluetoothBaseTest(BaseTestClass):
                 sum(self.timer_list) / float(len(self.timer_list))))
             self.log.info("Maximum of list {}".format(max(self.timer_list)))
             self.log.info("Minimum of list {}".format(min(self.timer_list)))
-            self.log.info("Total items in list {}".format(len(
-                self.timer_list)))
+            self.log.info("Total items in list {}".format(
+                len(self.timer_list)))
         self.timer_list = []
