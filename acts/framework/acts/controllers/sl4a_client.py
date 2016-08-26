@@ -113,7 +113,7 @@ def is_sl4a_running(adb_proxy):
     Returns:
         True if the sl4a app is running, False otherwise.
     """
-    #Grep for process with a preceding S which means it is truly started.
+    # Grep for process with a preceding S which means it is truly started.
     out = adb_proxy.shell('ps | grep "S com.googlecode.android_scripting"')
     if len(out) == 0:
         return False
@@ -124,7 +124,7 @@ class Sl4aCommand(object):
     """Commands that can be invoked on the sl4a client.
 
     INIT: Initializes a new sessions in sl4a.
-    CONTINUE: Creates a connection
+    CONTINUE: Creates a connection.
     """
     INIT = 'initiate'
     CONTINUE = 'continue'
@@ -140,8 +140,9 @@ class Sl4aClient(object):
     used in this object as the port of communication.
 
     Attributes:
-        port: int, The port this is connected to.
-        addr: str, The address this client is connected to.
+        port: int, The host port to communicate through.
+        addr: str, The host address who is communicating to the device (usually
+                   localhost).
         client: file, The socket file used to communicate.
         uid: int, The sl4a uid of this session.
         conn: socket.Socket, The socket connection to the remote client.
@@ -178,7 +179,7 @@ class Sl4aClient(object):
 
         Opens a connection to a remote client with sl4a. The connection will
         error out if it takes longer than the connection_timeout time. Once
-        connected if the socket takes longer than _SOCKET_TIMEOUT to responde
+        connected if the socket takes longer than _SOCKET_TIMEOUT to respond
         the connection will be closed.
 
         Args:
@@ -188,7 +189,7 @@ class Sl4aClient(object):
 
         Raises:
             IOError: Raised when the socket times out from io error
-            TimeoutError: Raised when the socket waits to long for connection.
+            socket.timeout: Raised when the socket waits to long for connection.
             Sl4aProtocolError: Raised when there is an error in the protocol.
         """
         if connection_timeout:
@@ -202,7 +203,7 @@ class Sl4aClient(object):
                     (self.addr, self.port), max(1, timeout_time - time.time()))
                 self.conn.settimeout(self._SOCKET_TIMEOUT)
                 break
-            except (TimeoutError, socket.timeout):
+            except (socket.timeout):
                 logging.exception("Failed to create socket connection!")
                 raise
             except (socket.error, IOError):
@@ -227,7 +228,7 @@ class Sl4aClient(object):
             self.uid = UNKNOWN_UID
 
     def close(self):
-        """Cloes the connection to the remote client."""
+        """Close the connection to the remote client."""
         if self.conn is not None:
             self.conn.close()
             self.conn = None
