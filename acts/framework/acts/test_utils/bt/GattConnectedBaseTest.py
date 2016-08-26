@@ -122,8 +122,8 @@ class GattConnectedBaseTest(BluetoothBaseTest):
         characteristic_input = [
             {
                 'uuid': self.WRITABLE_CHAR_UUID,
-                'property': GattCharacteristic.PROPERTY_WRITE.value
-                | GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
+                'property': GattCharacteristic.PROPERTY_WRITE.value |
+                GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
                 'permission': GattCharacteristic.PERMISSION_WRITE.value
             },
             {
@@ -133,24 +133,24 @@ class GattConnectedBaseTest(BluetoothBaseTest):
             },
             {
                 'uuid': self.NOTIFIABLE_CHAR_UUID,
-                'property': GattCharacteristic.PROPERTY_NOTIFY.value
-                | GattCharacteristic.PROPERTY_INDICATE.value,
+                'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+                GattCharacteristic.PROPERTY_INDICATE.value,
                 'permission': GattCharacteristic.PERMISSION_READ.value
             },
         ]
         descriptor_input = [
             {
                 'uuid': self.WRITABLE_DESC_UUID,
-                'property': GattDescriptor.PERMISSION_READ.value
-                | GattCharacteristic.PERMISSION_WRITE.value,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattCharacteristic.PERMISSION_WRITE.value,
             }, {
                 'uuid': self.READABLE_DESC_UUID,
-                'property': GattDescriptor.PERMISSION_READ.value
-                | GattDescriptor.PERMISSION_WRITE.value,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattDescriptor.PERMISSION_WRITE.value,
             }, {
                 'uuid': self.CCC_DESC_UUID,
-                'property': GattDescriptor.PERMISSION_READ.value
-                | GattDescriptor.PERMISSION_WRITE.value,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattDescriptor.PERMISSION_WRITE.value,
             }
         ]
         characteristic_list = setup_gatt_characteristics(droid,
@@ -161,12 +161,13 @@ class GattConnectedBaseTest(BluetoothBaseTest):
 
     def _orchestrate_gatt_disconnection(self, bluetooth_gatt, gatt_callback):
         self.log.info("Disconnecting from peripheral device.")
-        test_result = disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
-                                                 gatt_callback)
-        self.cen_ad.droid.gattClientClose(bluetooth_gatt)
-        if not test_result:
-            self.log.info("Failed to disconnect from peripheral device.")
+        try:
+            disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
+                                       gatt_callback)
+        except GattTestUtilsError as err:
+            log.error(err)
             return False
+        self.cen_ad.droid.gattClientClose(bluetooth_gatt)
         return True
 
     def _find_service_added_event(self, gatt_server_callback, uuid):
@@ -176,8 +177,8 @@ class GattConnectedBaseTest(BluetoothBaseTest):
             event = self.per_ad.ed.pop_event(expected_event,
                                              self.DEFAULT_TIMEOUT)
         except Empty:
-            self.log.error(GattCbErr.SERV_ADDED_ERR.value.format(
-                expected_event))
+            self.log.error(
+                GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
             return False
         if event['data']['serviceUuid'].lower() != uuid.lower():
             self.log.error("Uuid mismatch. Found: {}, Expected {}.".format(
