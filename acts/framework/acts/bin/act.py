@@ -151,6 +151,7 @@ def parse_test_list(test_list):
         result.append(_parse_one_test_specifier(elem))
     return result
 
+
 def load_test_config_file(test_config_path, tb_filters=None):
     """Processes the test configuration file provied by user.
 
@@ -222,6 +223,7 @@ def load_test_config_file(test_config_path, tb_filters=None):
         config_jsons.append(new_test_config)
     return config_jsons
 
+
 def _run_test(parsed_config, test_identifiers, repeat=1):
     """Instantiate and runs TestRunner.
 
@@ -258,6 +260,7 @@ def _gen_term_signal_handler(test_runners):
 
     return termination_sig_handler
 
+
 def _create_test_runner(parsed_config, test_identifiers):
     """Instantiates one TestRunner object and register termination signal
     handlers that properly shut down the TestRunner run.
@@ -281,6 +284,7 @@ def _create_test_runner(parsed_config, test_identifiers):
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
     return t
+
 
 def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
     """Executes requested tests in parallel.
@@ -309,6 +313,7 @@ def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
     for r in results:
         if r.get() is False or isinstance(r, Exception):
             return False
+
 
 def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
     """Executes requested tests sequentially.
@@ -434,9 +439,11 @@ def main(argv):
     test_identifiers = parse_test_list(test_list)
     # Execute test runners.
     if args.parallel and len(parsed_configs) > 1:
-        exec_result = _run_tests_parallel(parsed_configs, test_identifiers, repeat)
+        exec_result = _run_tests_parallel(parsed_configs, test_identifiers,
+                                          repeat)
     else:
-        exec_result = _run_tests_sequential(parsed_configs, test_identifiers, repeat)
+        exec_result = _run_tests_sequential(parsed_configs, test_identifiers,
+                                            repeat)
     if exec_result is False:
         sys.exit(1)
     sys.exit(0)
