@@ -667,8 +667,8 @@ class AndroidDevice:
         if new_br:
             out = self.adb.shell("bugreportz").decode("utf-8")
             if not out.startswith("OK"):
-                raise AndroidDeviceError("Failed to take bugreport on %s" %
-                                         self.serial)
+                raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
+                                         (self.serial, out))
             br_out_path = out.split(':')[1].strip()
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
