@@ -66,32 +66,32 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         characteristic_input = [
             {
                 'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-                'property': GattCharacteristic.PROPERTY_WRITE.value
-                | GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
+                'property': GattCharacteristic.PROPERTY_WRITE.value |
+                GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
                 'permission': GattCharacteristic.PROPERTY_WRITE.value
             },
             {
                 'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-                'property': GattCharacteristic.PROPERTY_NOTIFY.value
-                | GattCharacteristic.PROPERTY_READ.value,
+                'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+                GattCharacteristic.PROPERTY_READ.value,
                 'permission': GattCharacteristic.PERMISSION_READ.value
             },
             {
                 'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-                'property': GattCharacteristic.PROPERTY_NOTIFY.value
-                | GattCharacteristic.PROPERTY_READ.value,
+                'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+                GattCharacteristic.PROPERTY_READ.value,
                 'permission': GattCharacteristic.PERMISSION_READ.value
             },
         ]
         descriptor_input = [
             {
                 'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-                'property': GattDescriptor.PERMISSION_READ.value
-                | GattDescriptor.PERMISSION_WRITE.value,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattDescriptor.PERMISSION_WRITE.value,
             }, {
                 'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-                'property': GattDescriptor.PERMISSION_READ.value
-                | GattCharacteristic.PERMISSION_WRITE.value,
+                'property': GattDescriptor.PERMISSION_READ.value |
+                GattCharacteristic.PERMISSION_WRITE.value,
             }
         ]
         characteristic_list = setup_gatt_characteristics(droid,
@@ -101,10 +101,11 @@ class GattOverBrEdrTest(BluetoothBaseTest):
 
     def _orchestrate_gatt_disconnection(self, bluetooth_gatt, gatt_callback):
         self.log.info("Disconnecting from peripheral device.")
-        test_result = disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
-                                                 gatt_callback)
-        if not test_result:
-            self.log.info("Failed to disconnect from peripheral device.")
+        try:
+            disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
+                                       gatt_callback)
+        except GattTestUtilsError as err:
+            self.log.error(err)
             return False
         return True
 
@@ -542,8 +543,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                             "onDescriptorWrite event found: {}".format(
                                 self.cen_ad.ed.pop_event(
                                     GattCbStrings.DESC_WRITE.value.format(
-                                        gatt_callback),
-                                    self.default_timeout)))
+                                        gatt_callback), self.default_timeout)))
         return True
 
     @BluetoothBaseTest.bt_test_wrap
