@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
 from acts.test_utils.tel.tel_defines import \
     MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
@@ -1848,7 +1849,8 @@ def is_phone_not_in_call(log, ad):
         log: log object.
         ad:  android device.
     """
-    return not ad.droid.telecomIsInCall()
+    return ((not ad.droid.telecomIsInCall()) and
+            (ad.droid.telephonyGetCallState() == TELEPHONY_STATE_IDLE))
 
 
 def wait_for_droid_in_call(log, ad, max_time):
@@ -1883,7 +1885,7 @@ def wait_for_telecom_ringing(log, ad, max_time=MAX_WAIT_TIME_TELECOM_RINGING):
         log, ad, max_time, lambda log, ad: ad.droid.telecomIsRinging())
 
 
-def wait_for_droid_not_in_call(log, ad, max_time):
+def wait_for_droid_not_in_call(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP):
     """Wait for android to be not in call state.
 
     Args:
@@ -2970,6 +2972,12 @@ def ensure_phone_default_state(log, ad):
     result = True
     if ad.droid.telecomIsInCall():
         ad.droid.telecomEndCall()
+
+    if not wait_for_droid_not_in_call(log, ad):
+        log.error("Failed to end call on {} "
+            "while ensuring phone in default state.".format(ad.serial))
+        result = False
+
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
     if not wait_for_not_network_rat(log,
@@ -2980,10 +2988,12 @@ def ensure_phone_default_state(log, ad):
             "ensure_phones_default_state: wait_for_droid_not_in iwlan fail {}.".format(
                 ad.serial))
         result = False
+
     if (not WifiUtils.wifi_reset(log, ad)):
         log.error("ensure_phones_default_state:reset WiFi fail {}.".format(
             ad.serial))
         result = False
+
     if not toggle_airplane_mode(log, ad, False):
         log.error(
             "ensure_phones_default_state:turn off airplane mode fail {}.".format(
@@ -3002,6 +3012,10 @@ def ensure_phones_default_state(log, ads):
     Phone not in call.
     Phone have no stored WiFi network and WiFi disconnected.
     Phone not in airplane mode.
+
+    Returns:
+        True if all steps of restoring default state succeed.
+        False if any of the steps to restore default state fails.
     """
     tasks = []
     for ad in ads:
