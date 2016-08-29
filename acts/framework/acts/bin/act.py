@@ -151,8 +151,7 @@ def parse_test_list(test_list):
         result.append(_parse_one_test_specifier(elem))
     return result
 
-
-def load_test_config_file(test_config_path, tb_filters=None):
+def load_test_config_file(test_config_path, tb_filters, test_paths, log_path):
     """Processes the test configuration file provied by user.
 
     Loads the configuration file into a json object, unpacks each testbed
@@ -161,12 +160,22 @@ def load_test_config_file(test_config_path, tb_filters=None):
 
     Args:
         test_config_path: Path to the test configuration file.
+        tb_filters: A subset of test bed names to be pulled from the
+            config file. If None, then all test beds will be selected.
+        test_paths: A list of command-line default for the test path.
+            If None, then the paths must be specified within the config file.
+        log_path: A command-line default for the log path. If None, then the
+            log path must be specified in the config file.
 
     Returns:
         A list of test configuration json objects to be passed to TestRunner.
     """
     try:
         configs = load_config(test_config_path)
+        if test_paths:
+            configs[Config.key_test_paths.value] = test_paths
+        if log_path:
+            configs[Config.key_log_path.value] = log_path
         if tb_filters:
             tbs = []
             for tb in configs[Config.key_testbed.value]:
@@ -403,6 +412,20 @@ def main(argv):
         type=str,
         metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
         help="Specify which test beds to run tests on.")
+    parser.add_argument(
+        '-lp',
+        '--logpath',
+        type=str,
+        metavar="<PATH>",
+        help=("Root path under which all logs will be placed."))
+    parser.add_argument(
+        '-tp',
+        '--testpaths',
+        nargs='*',
+        type=str,
+        metavar="<PATH> <PATH>",
+        help=("One or more non-recursive test class search paths."))
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '-tc',
@@ -429,7 +452,8 @@ def main(argv):
         test_list = args.testclass
     if args.repeat:
         repeat = args.repeat
-    parsed_configs = load_test_config_file(args.config[0], args.testbed)
+    parsed_configs = load_test_config_file(args.config[0], args.testbed,
+            args.testpaths, args.logpath)
     if not parsed_configs:
         print("Encountered error when parsing the config file, abort!")
         sys.exit(1)
