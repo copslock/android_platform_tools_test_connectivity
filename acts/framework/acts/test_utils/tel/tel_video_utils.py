@@ -59,6 +59,7 @@ from acts.test_utils.tel.tel_test_utils import is_event_match
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_video_calling
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
@@ -105,6 +106,8 @@ def phone_setup_video_for_subscription(log, ad, sub_id, wfc_mode=WFC_MODE_DISABL
         log.error("{} WFC mode failed to be set to {}.".format(ad.serial, wfc_mode))
         return False
     toggle_volte(log, ad, True)
+
+    toggle_video_calling(log, ad, True)
 
     if not ensure_network_generation(log,
                                      ad,
