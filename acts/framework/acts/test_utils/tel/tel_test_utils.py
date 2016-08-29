@@ -1789,6 +1789,30 @@ def set_wfc_mode(log, ad, wfc_mode):
 
     return True
 
+def toggle_video_calling(log, ad, new_state=None):
+    """Toggle enable/disable Video calling for default voice subscription.
+
+    Args:
+        ad: Android device object.
+        new_state: Video mode state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
+
+    Raises:
+        TelTestUtilsError if platform does not support Video calling.
+    """
+    if not ad.droid.imsIsVtEnabledByPlatform():
+        if new_state is not False:
+            raise TelTestUtilsError("VT not supported by platform.")
+        # if the user sets VT false and it's unavailable we just let it go
+        return False
+
+    current_state = ad.droid.imsIsVtEnabledByUser()
+    if new_state is None:
+        new_state = not current_state
+    if new_state != current_state:
+        ad.droid.imsSetVtSetting(new_state)
+    return True
 
 def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
                              **kwargs):
@@ -2982,6 +3006,8 @@ def ensure_phone_default_state(log, ad):
         result = False
 
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
+
+    toggle_video_calling(log, ad, False)
 
     if not wait_for_not_network_rat(log,
                                     ad,
