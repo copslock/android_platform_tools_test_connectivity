@@ -32,6 +32,7 @@ from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 
 from acts.test_utils.bt.BtEnum import RfcommUuid
 
@@ -74,11 +75,9 @@ class RfcommTest(BluetoothBaseTest):
         reset_bluetooth(self.android_devices)
 
     def teardown_test(self):
-        with suppress(Exception):
+        if verify_server_and_client_connected(self.client_ad, self.server_ad):
             self.client_ad.droid.bluetoothRfcommStop()
             self.server_ad.droid.bluetoothRfcommStop()
-            self.client_ad.droid.bluetoothRfcommCloseSocket()
-            self.server_ad.droid.bluetoothRfcommCloseSocket()
 
     @BluetoothBaseTest.bt_test_wrap
     def test_rfcomm_connection(self):
@@ -139,11 +138,8 @@ class RfcommTest(BluetoothBaseTest):
         if not write_read_verify_data(self.client_ad, self.server_ad,
                                       self.message, False):
             return False
-        if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-            self.log.info("No rfcomm connections found on server.")
-            return False
-        if len(self.client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-            self.log.info("no rfcomm connections found on client.")
+        if not verify_server_and_client_connected(self.client_ad,
+                                                  self.server_ad):
             return False
 
         self.client_ad.droid.bluetoothRfcommStop()
@@ -181,13 +177,58 @@ class RfcommTest(BluetoothBaseTest):
         if not write_read_verify_data(self.client_ad, self.server_ad,
                                       binary_message, True):
             return False
-        if len(self.server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-            self.log.info("No rfcomm connections found on server.")
-            return False
-        if len(self.client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-            self.log.info("no rfcomm connections found on client.")
+
+        if not verify_server_and_client_connected(self.client_ad,
+                                                  self.server_ad):
             return False
 
         self.client_ad.droid.bluetoothRfcommStop()
         self.server_ad.droid.bluetoothRfcommStop()
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_rfcomm_accept_timeout(self):
+        """Test bluetooth RFCOMM accept socket timeout
+
+        Verify that RFCOMM connections are unsuccessful if
+        the socket timeout is exceeded.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish an RFCOMM connection from the client to the server AD.
+        3. Verify that the RFCOMM connection is active from both the client and
+        server.
+
+        Expected Result:
+        RFCOMM connection is established then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: Classic, RFCOMM
+        Priority: 1
+        """
+        # Socket timeout set to 999ms
+        short_socket_timeout = 999
+        # Wait time in seconds before attempting a connection
+        wait_time_before_connect_attempt = 1
+        self.server_ad.droid.bluetoothStartPairingHelper()
+        self.client_ad.droid.bluetoothStartPairingHelper()
+        self.server_ad.droid.bluetoothRfcommBeginAcceptThread(
+            RfcommUuid.DEFAULT_UUID.value, short_socket_timeout)
+        time.sleep(wait_time_before_connect_attempt)
+
+        # Try to connect
+        self.client_ad.droid.bluetoothRfcommBeginConnectThread(
+            self.server_ad.droid.bluetoothGetLocalAddress())
+        # Give the connection time to fail
+        #time.sleep(self.default_timeout)
+        time.sleep(2)
+        if verify_server_and_client_connected(self.client_ad, self.server_ad):
+            return False
+        self.log.info("No active connections found as expected")
+        # AcceptThread has finished, kill hanging ConnectThread
+        self.client_ad.droid.bluetoothRfcommKillConnThread()
+        reset_bluetooth(self.android_devices)
         return True
