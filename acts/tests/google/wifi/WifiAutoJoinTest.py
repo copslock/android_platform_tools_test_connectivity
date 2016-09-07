@@ -115,8 +115,6 @@ class WifiAutoJoinTest(base_test.BaseTestClass):
                                     NETWORK_ID_ERROR)
                 asserts.assert_true(current_network['network_id'] >= 0,
                                     NETWORK_ERROR)
-                self.ip_address = self.dut.droid.wifiGetConfigFile()
-                self.log.info("IP info: {}".format(self.ip_address))
             finally:
                 self.dut.droid.wifiLockRelease()
                 self.dut.droid.goToSleepNow()
