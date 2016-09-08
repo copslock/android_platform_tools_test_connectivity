@@ -27,7 +27,7 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class BtStressTest(BaseTestClass):
-    default_timeout = 10
+    default_timeout = 20
     iterations = 100
 
     def __init__(self, controllers):
