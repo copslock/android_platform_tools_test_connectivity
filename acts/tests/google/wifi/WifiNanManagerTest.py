@@ -31,6 +31,56 @@ from acts.test_utils.wifi import wifi_nan_const as nan_const
 EVENT_TIMEOUT = 30
 
 class WifiNanManagerTest(base_test.BaseTestClass):
+    # configuration parameters used by tests
+    config_request1 = {"Support5gBand": False, "MasterPreference": 10,
+                       "ClusterLow": 5, "ClusterHigh": 5,
+                       "EnableIdentityChangeCallback": True};
+    config_request2 = {"Support5gBand": False, "MasterPreference": 0,
+                       "ClusterLow": 5, "ClusterHigh": 5,
+                       "EnableIdentityChangeCallback": True};
+    publish_config = {"ServiceName": "GoogleTestServiceX",
+                      "ServiceSpecificInfo": "Data XYZ",
+                      "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
+                      "PublishType": 0, "PublishCount": 0, "TtlSec": 0};
+    publish_config_passive = {"ServiceName": "GoogleTestServiceX",
+                              "ServiceSpecificInfo": "Data XYZ",
+                              "MatchFilter": {"int0": 14,
+                                              "data0": "MESSAGE_ALL"},
+                              "PublishType": 1, "PublishCount": 0, "TtlSec": 0};
+    subscribe_config = {"ServiceName": "GoogleTestServiceX",
+                        "ServiceSpecificInfo": "Data ABC",
+                        "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
+                        "SubscribeType": 0, "SubscribeCount": 0, "TtlSec": 0,
+                        "MatchStyle": 0};
+    subscribe_config_active = {"ServiceName": "GoogleTestServiceX",
+                               "ServiceSpecificInfo": "Data ABC",
+                               "MatchFilter": {"int0": 14,
+                                               "data0": "MESSAGE_ALL"},
+                               "SubscribeType": 1, "SubscribeCount": 0,
+                               "TtlSec": 0, "MatchStyle": 0};
+    rtt_24_20 = {"deviceType": 5, "requestType": 2, "frequency": 2437,
+                 "channelWidth": 0, "centerFreq0": 2437, "centerFreq1": 0,
+                 "numberBurst": 0, "numSamplesPerBurst": 5,
+                 "numRetriesPerMeasurementFrame": 3, "numRetriesPerFTMR": 3,
+                 "LCIRequest": False, "LCRRequest": False, "burstTimeout": 15,
+                 "preamble": 2, "bandwidth": 4};
+    rtt_50_40 = {"deviceType": 5, "requestType": 2, "frequency": 5200,
+                 "channelWidth": 1, "centerFreq0": 5190, "centerFreq1": 0,
+                 "numberBurst": 0, "numSamplesPerBurst": 5,
+                 "numRetriesPerMeasurementFrame": 3, "numRetriesPerFTMR": 3,
+                 "LCIRequest": False, "LCRRequest": False, "burstTimeout": 15,
+                 "preamble": 2, "bandwidth": 8};
+    rtt_50_80 = {"deviceType": 5, "requestType": 2, "frequency": 5200,
+                 "channelWidth": 2, "centerFreq0": 5210, "centerFreq1": 0,
+                 "numberBurst": 0, "numSamplesPerBurst": 5,
+                 "numRetriesPerMeasurementFrame": 3, "numRetriesPerFTMR": 3,
+                 "LCIRequest": False, "LCRRequest": False, "burstTimeout": 15,
+                 "preamble": 4, "bandwidth": 16};
+    network_req = {"TransportType": 5};
+    nsd_service_info = {"serviceInfoServiceName": "sl4aTestNanIperf",
+                        "serviceInfoServiceType": "_simple-tx-rx._tcp.",
+                        "serviceInfoPort": 2257};
+
     def setup_test(self):
         self.msg_id = 10
         for ad in self.android_devices:
@@ -239,8 +289,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # Configure Test
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        required_params = ("config_request1", "config_request2")
-        self.unpack_userparams(required_params)
 
         sub2pub_msg = "How are you doing? 你好嗎？"
         pub2sub_msg = "Doing ok - thanks! 做的不錯 - 謝謝！"
@@ -271,7 +319,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             try:
                 event_pub_rx = self.publisher.ed.pop_event(
                     nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
-                self.log.info('%s: %s', nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
+                self.log.info('%s: %s',
+                              nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
                               event_pub_rx['data'])
                 asserts.assert_equal(event_pub_rx['data']['messageAsString'],
                                      sub2pub_msg,
@@ -307,9 +356,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         - Unsolicited publish + passive subscribe
         - Solicited publish + active subscribe
         """
-        required_params = ("publish_config", "publish_config_passive",
-                           "subscribe_config", "subscribe_config_active")
-        self.unpack_userparams(required_params)
 
         discovery_configs = ([self.publish_config, self.subscribe_config],
                              [self.publish_config_passive,
@@ -344,9 +390,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         """
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config")
-        self.unpack_userparams(required_params)
         num_async_messages = 100
 
         # Start Test
@@ -449,10 +492,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # Configure Test
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config", "rtt_24_20",
-                           "rtt_50_40", "rtt_50_80")
-        self.unpack_userparams(required_params)
         rtt_iterations = 10
 
         # Start Test
@@ -507,8 +546,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         """
         # Configure Test
         self.dut = self.android_devices[0]
-        required_params = ("config_request1", "publish_config")
-        self.unpack_userparams(required_params)
 
         # Start Test
         self.dut.droid.wifiNanConnect(self.config_request1)
@@ -566,10 +603,6 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # Configure Test
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        required_params = ("config_request1", "config_request2",
-                           "publish_config", "subscribe_config", "network_req",
-                           "nsd_service_info")
-        self.unpack_userparams(required_params)
 
         sub2pub_msg = "Get ready!"
         pub2sub_msg = "Ready!"
@@ -680,15 +713,16 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             # P registers NSD service (i.e. starts publishing)
-            nsd_reg = self.publisher.droid.nsdRegisterService(self.nsd_service_info)
+            nsd_reg = self.publisher.droid.nsdRegisterService(
+                self.nsd_service_info)
             try:
                 event_nsd = self.publisher.ed.wait_for_event(
-                    nsd_const.REG_LISTENER_EVENT, filter_callbacks, EVENT_TIMEOUT,
-                    key=nsd_const.REG_LISTENER_CALLBACK,
+                    nsd_const.REG_LISTENER_EVENT, filter_callbacks,
+                    EVENT_TIMEOUT, key=nsd_const.REG_LISTENER_CALLBACK,
                     name=nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
                 self.log.info('Publisher %s: %s',
-                              nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
-                              event_nsd['data'])
+                            nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
+                            event_nsd['data'])
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on Publisher' %
                              nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
@@ -703,11 +737,11 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                     key=nsd_const.DISCOVERY_LISTENER_DATA_CALLBACK,
                     name=nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
                 self.log.info('Subscriber %s: %s',
-                              nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
-                              event_nsd['data'])
+                          nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
+                          event_nsd['data'])
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on Subscriber' %
-                             nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
+                         nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
 
             # S resolves IP address of P from NSD service discovery
             self.subscriber.droid.nsdResolveService(event_nsd['data'])
@@ -718,13 +752,13 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                     key=nsd_const.RESOLVE_LISTENER_DATA_CALLBACK,
                     name=nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
                 self.log.info('Subscriber %s: %s',
-                              nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
-                              event_nsd['data'])
+                          nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
+                          event_nsd['data'])
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on Subscriber' %
-                             nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
+                         nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
 
-            # mDNS returns first character as '/' - strip out to obtain clean IPv6
+            # mDNS returns first character as '/' - strip out to get clean IPv6
             pub_ipv6_from_nsd = event_nsd['data'][
                                     nsd_const.NSD_SERVICE_INFO_HOST][1:]
         finally:
