@@ -69,8 +69,8 @@ class BtCarHfpTest(BluetoothBaseTest):
         # Disable the A2DP profile.
         bt_test_utils.set_profile_priority(
             self.hf, self.ag, [BtEnum.BluetoothProfile.PBAP_CLIENT.value,
-                               BtEnum.BluetoothProfile.HEADSET_CLIENT.value],
-            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
+                               BtEnum.BluetoothProfile.A2DP_SINK.value],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF)
 
         if not bt_test_utils.connect_pri_to_sec(
                 self.log, self.hf, self.ag.droid,
