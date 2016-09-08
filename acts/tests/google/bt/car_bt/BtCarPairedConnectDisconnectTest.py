@@ -60,7 +60,23 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
     def on_fail(self, test_name, begin_time):
         bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name)
 
+    #@BluetoothTest(UUID=b0babf3b-8049-4b64-9125-408efb1bbcd2)
     def test_pairing(self):
+        """
+        Tests if we can connect two devices over A2dp and then disconnect
+
+        Precondition:
+        1. Devices are paired.
+
+        Steps:
+        1. Set the priority to OFF for all profiles.
+        2. Initiate connection over A2dp Sink client profile.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        """
         # Set the priority to OFF for all profiles.
         self.car.droid.bluetoothHfpClientSetPriority(
             self.ph.droid.bluetoothGetLocalAddress(),
@@ -73,6 +89,7 @@ class BtCarPairedConnectDisconnectTest(BaseTestClass):
             set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
         pass
 
+    #@BluetoothTest(UUID=a44f13e2-c012-4292-8dd5-9f32a023e297)
     def test_connect_disconnect_paired(self):
         """
         Tests if we can connect two devices over Headset, A2dp and then disconnect them with success

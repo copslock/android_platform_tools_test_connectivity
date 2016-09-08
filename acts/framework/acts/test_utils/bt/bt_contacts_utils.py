@@ -25,6 +25,7 @@ import random
 import string
 
 from acts.utils import exe_cmd
+from acts.utils import exe_cmdr
 import queue
 
 # CallLog types
@@ -88,11 +89,11 @@ def parse_contacts(file_name):
         return contacts
 
 
-def phone_number_count(file_name):
+def phone_number_count(destination_path, file_name):
     """Counts number of phone numbers in a VCF.
     """
     tel_regex = re.compile(b"^TEL;(.*):(.*)", re.MULTILINE)
-    with open(file_name, "r") as contacts_file:
+    with open("{}{}".format(destination_path, file_name), "r") as contacts_file:
         contacts_map = mmap(contacts_file.fileno(),
                             length=0,
                             access=ACCESS_READ)
@@ -100,15 +101,15 @@ def phone_number_count(file_name):
         return len(numbers)
 
 
-def count_contacts_with_differences(pce_contacts_vcf_file_name, pse_contacts_vcf_file_name):
+def count_contacts_with_differences(destination_path, pce_contacts_vcf_file_name, pse_contacts_vcf_file_name):
     """Compare two contact files and report the number of differences.
 
     Difference count is returned, and the differences are logged, this is order
     independent.
     """
 
-    pce_contacts = parse_contacts(pce_contacts_vcf_file_name)
-    pse_contacts = parse_contacts(pse_contacts_vcf_file_name)
+    pce_contacts = parse_contacts("{}{}".format(destination_path, pce_contacts_vcf_file_name))
+    pse_contacts = parse_contacts("{}{}".format(destination_path, pse_contacts_vcf_file_name))
 
     differences = set(pce_contacts).symmetric_difference(set(pse_contacts))
     if not differences:
@@ -216,7 +217,7 @@ def generate_random_string(length=8,
     return "".join(name)
 
 
-def generate_contact_list(file_name, contact_count, phone_number_count=1):
+def generate_contact_list(destination_path, file_name, contact_count, phone_number_count=1):
     """Generate a simple VCF file for count contacts with basic content.
 
     An example with count = 1 and local_number = 2]
@@ -244,13 +245,13 @@ def generate_contact_list(file_name, contact_count, phone_number_count=1):
         for number in range(phone_number_count):
             current_contact.add_phone_number(generate_random_phone_number())
         vcards.append(current_contact)
-    create_new_contacts_vcf_from_vcards(file_name, vcards)
+    create_new_contacts_vcf_from_vcards(destination_path, file_name, vcards)
 
 
-def create_new_contacts_vcf_from_vcards(vcf_file_name, vcards):
+def create_new_contacts_vcf_from_vcards(destination_path, vcf_file_name, vcards):
     """Create a new file with filename
     """
-    contact_file = open(vcf_file_name, "w+")
+    contact_file = open("{}{}".format(destination_path, vcf_file_name), "w+")
     for card in vcards:
         contact_file.write(str(card))
     contact_file.close()
@@ -264,13 +265,17 @@ def get_contact_count(device):
     return len(contact_list)
 
 
-def import_device_contacts_from_vcf(device, vcf_file):
+def import_device_contacts_from_vcf(device, destination_path, vcf_file):
     """Uploads and import vcf file to device.
     """
-    number_count = phone_number_count(vcf_file)
+    number_count = phone_number_count(destination_path, vcf_file)
     log.info("Trying to add {} phone numbers.".format(number_count))
-    exe_cmd("adb -s {} push {} {}{}"
-            .format(device.serial, vcf_file, STORAGE_PATH, vcf_file))
+    cmd = ("adb -s {} push {}{} {}{}"
+           .format(device.serial, destination_path, vcf_file, STORAGE_PATH, vcf_file))
+    log.info(cmd)
+    return_code = exe_cmdr(cmd)
+    if return_code != 0:
+      raise OSError()
     device.droid.importVcf("file://{}{}".format(STORAGE_PATH, vcf_file))
     if wait_for_phone_number_update_complete(device, number_count):
         return number_count
@@ -278,14 +283,17 @@ def import_device_contacts_from_vcf(device, vcf_file):
         return 0
 
 
-def export_device_contacts_to_vcf(device, vcf_file):
+def export_device_contacts_to_vcf(device, destination_path, vcf_file):
     """Export and download vcf file from device.
     """
     device.droid.exportVcf("{}{}".format(STORAGE_PATH, vcf_file))
     try:
         # Download and then remove file from device
-        exe_cmd("adb -s {} pull {}{}".format(device.serial, STORAGE_PATH,
-                                             vcf_file))
+
+        cmd = ("adb -s {} pull {}{} {}".format(device.serial, STORAGE_PATH,
+                                               vcf_file, destination_path))
+        log.info(cmd)
+        exe_cmdr(cmd)
         exe_cmd("adb -s {} shell rm {}{}"
                 .format(device.serial, STORAGE_PATH, vcf_file))
     except OSError:

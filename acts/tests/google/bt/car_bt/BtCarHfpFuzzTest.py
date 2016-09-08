@@ -81,6 +81,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
 
+    #@BluetoothTest(UUID=32022c74-fdf3-44c4-9e82-e518bdcce667)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_outgoing_hf(self):
         """
@@ -121,6 +122,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=bc6d52b2-4acc-461e-ad55-fad5a5ecb091)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_outgoing_ag(self):
         """
@@ -161,6 +163,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=d834384a-38d5-4260-bfd5-98f8207c04f5)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_dial_hf_hangup_ag(self):
         """
@@ -201,6 +204,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=6de1a8ab-3cb0-4594-a9bb-d882a3414836)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_dial_ag_hangup_hf(self):
         """

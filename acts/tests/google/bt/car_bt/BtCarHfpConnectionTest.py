@@ -73,9 +73,7 @@ class BtCarHfpConnectionTest(BluetoothBaseTest):
         self.hf.droid.bluetoothDisconnectConnected(
             self.ag.droid.bluetoothGetLocalAddress())
 
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
-
+    #@BluetoothTest(UUID=a6669f9b-fb49-4bd8-aa9c-9d6369e34442)
     @BluetoothBaseTest.bt_test_wrap
     def test_call_transfer_disconnect_connect(self):
         """
@@ -150,6 +148,7 @@ class BtCarHfpConnectionTest(BluetoothBaseTest):
 
         return ret
 
+    #@BluetoothTest(UUID=97727b64-a590-4d84-a257-1facd8aafd16)
     @BluetoothBaseTest.bt_test_wrap
     def test_call_transfer_off_on(self):
         """
@@ -246,6 +245,7 @@ class BtCarHfpConnectionTest(BluetoothBaseTest):
 
         return ret
 
+    #@BluetoothTest(UUID=95f76e2c-1cdd-4a7c-8e26-863b4c4242be)
     @BluetoothBaseTest.bt_test_wrap
     def test_call_transfer_connect_disconnect_connect(self):
         """

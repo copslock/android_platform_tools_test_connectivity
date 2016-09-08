@@ -311,6 +311,25 @@ def exe_cmd(*cmds):
         return out
     raise OSError(err)
 
+def exe_cmdr(*cmds):
+    """Executes commands in a new shell.
+
+    Args:
+        cmds: A sequence of commands and arguments.
+
+    Returns:
+        The returncode of the command run.
+
+    Raises:
+        None
+    """
+    cmd = ' '.join(cmds)
+    proc = subprocess.Popen(cmd,
+                            None,
+                            None,
+                            shell=True)
+    proc.wait()
+    return proc.returncode
 
 def require_sl4a(android_devices):
     """Makes sure sl4a connection is established on the given AndroidDevice

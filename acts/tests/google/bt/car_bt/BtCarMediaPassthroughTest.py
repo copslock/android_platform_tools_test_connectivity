@@ -122,6 +122,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         self.log.debug(
             bt_test_utils.log_energy_info(self.android_devices, "End"))
 
+    #@BluetoothTest(UUID=cf4fae08-f4f6-4e0d-b00a-4f6c41d69ff9)
     def test_play_pause(self):
         """
         Test the Play and Pause passthrough commands
@@ -151,6 +152,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             return False
         return True
 
+    #@BluetoothTest(UUID=15615b26-3a49-4fa0-b369-41962e8de192)
     def test_passthrough(self):
         """
         Test the Skip Next & Skip Previous passthrough commands

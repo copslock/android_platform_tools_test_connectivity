@@ -48,9 +48,10 @@ class BtCarPairingTest(BaseTestClass):
     def on_fail(self, test_name, begin_time):
         bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name)
 
+    #@BluetoothTest(UUID=bf56e915-eef7-45cd-b5a6-771f6ef72602)
     def test_simple_pairing(self):
         """
-        Tests if after first pairing the remote device has the default 
+        Tests if after first pairing the remote device has the default
         priorities for A2DP and HFP.
 
         Steps:
@@ -97,6 +98,7 @@ class BtCarPairingTest(BaseTestClass):
             return False
         return True
 
+    #@BluetoothTest(UUID=be4db211-10a0-479a-8958-dff0ccadca1a)
     def test_repairing(self):
         """
         Tests that even if we modify the priorities, on unpair and pair

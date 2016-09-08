@@ -66,20 +66,7 @@ class BtCarHfpConferenceTest(BluetoothBaseTest):
             attempts -= 1
         return connected
 
-    def setup_test(self):
-        # Reset the devices.
-        self.log.debug(
-            bt_test_utils.log_energy_info(self.android_devices, "Start"))
-        for d in self.android_devices:
-            d.ed.clear_all_events()
-
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
-
-    def teardown_test(self):
-        self.log.debug(
-            bt_test_utils.log_energy_info(self.android_devices, "End"))
-
+    #@BluetoothTest(UUID=a9657693-b534-4625-bf91-69a1d1b9a943)
     @BluetoothBaseTest.bt_test_wrap
     def test_multi_way_call_accept(self):
         """

@@ -85,11 +85,14 @@ class BtCarHfpTest(BluetoothBaseTest):
 
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
+        bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name, begin_time)
+        bt_test_utils.take_bugreport_logs(self.android_devices, self, test_name, begin_time)
 
     def teardown_test(self):
         self.log.debug(bt_test_utils.log_energy_info(self.android_devices,
                                                      "End"))
 
+    #@BluetoothTest(UUID=4ce2195a-b70a-4584-912e-cbd20d20e19d)
     @BluetoothBaseTest.bt_test_wrap
     def test_default_calling_account(self):
         """
@@ -127,6 +130,7 @@ class BtCarHfpTest(BluetoothBaseTest):
                           format(selected_acc))
             return False
 
+    #@BluetoothTest(UUID=e579009d-05f3-4236-a698-5de8c11d73a9)
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_call_hf(self):
         """
@@ -150,6 +154,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         """
         return self.dial_a_hangup_b(self.hf, self.hf)
 
+    #@BluetoothTest(UUID=c9d5f9cd-f275-4adf-b212-c2e9a70d4cac)
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_call_ag(self):
         """
@@ -173,6 +178,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         """
         return self.dial_a_hangup_b(self.ag, self.ag)
 
+    #@BluetoothTest(UUID=908c199b-ca65-4694-821d-1b864ee3fe69)
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_dial_ag_hangup_hf(self):
         """
@@ -196,6 +202,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         """
         return self.dial_a_hangup_b(self.ag, self.hf)
 
+    #@BluetoothTest(UUID=5d1d52c7-51d8-4c82-b437-2e91a6220db3)
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_dial_hf_hangup_ag(self):
         """
@@ -219,6 +226,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         """
         return self.dial_a_hangup_b(self.hf, self.ag)
 
+    #@BluetoothTest(UUID=a718e238-7e31-40c9-a45b-72081210cc73)
     @BluetoothBaseTest.bt_test_wrap
     def test_incoming_dial_re_hangup_re(self):
         """

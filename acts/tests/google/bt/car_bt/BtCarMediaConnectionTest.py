@@ -54,13 +54,26 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
             self.SNK, self.SRC, [BtEnum.BluetoothProfile.A2DP_SINK],
             BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
 
-    def setup_test(self):
-        for d in self.android_devices:
-            d.ed.clear_all_events()
+    def is_a2dp_connected(self, device1, device2):
+        """
+        Convenience Function to see if the 2 devices are connected on
+        A2dp.
+        ToDo: Move to bt_test_utils if used in more places.
+        Args:
+            device1:    Device 1
+            device2:    Device 2
+        Returns:
+            True if Connected
+            False if Not connected
+        """
+        devices = device1.droid.bluetoothA2dpSinkGetConnectedDevices()
+        for device in devices:
+            self.log.info("A2dp Connected device {}".format(device["name"]))
+            if (device["address"] == device2.droid.bluetoothGetLocalAddress()):
+                return True
+        return False
 
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
-
+    #@BluetoothTest(UUID=1934c0d5-3fa3-43e5-a91f-2c8a4424f5cd)
     def test_a2dp_connect_disconnect_from_src(self):
         """
         Test Connect/Disconnect on A2DP profile.
@@ -104,6 +117,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         return True
 
+    #@BluetoothTest(UUID=70d30007-540a-4e86-bd75-ab218774350e)
     def test_a2dp_connect_disconnect_from_snk(self):
         """
         Test Connect/Disconnect on A2DP Sink profile.
