@@ -314,7 +314,7 @@ class GattConnectTest(BluetoothBaseTest):
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
-        self.cen_ad.gattClientClose(bluetooth_gatt)
+        self.cen_ad.droid.gattClientClose(bluetooth_gatt)
         autoconnect = True
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
             gatt_callback, mac_address, autoconnect,
