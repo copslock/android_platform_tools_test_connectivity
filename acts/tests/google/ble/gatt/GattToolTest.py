@@ -28,20 +28,24 @@ from queue import Empty
 import time
 from contextlib import suppress
 
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.GattEnum import GattCbErr
 from acts.test_utils.bt.GattEnum import GattCbStrings
 from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
+from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
+from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class GattToolTest(BluetoothBaseTest):
     AUTOCONNECT = False
     DEFAULT_TIMEOUT = 10
+    PAIRING_TIMEOUT = 20
     adv_instances = []
     timer_list = []
 
@@ -55,22 +59,10 @@ class GattToolTest(BluetoothBaseTest):
         # CCC == Client Characteristic Configuration
         self.CCC_DESC_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 
-    def _get_time_in_milliseconds(self):
-        return int(round(time.time() * 1000))
-
-    def _log_stats(self):
-        if self.timer_list:
-            self.log.info("Overall list {}".format(self.timer_list))
-            self.log.info("Average of list {}".format(
-                sum(self.timer_list) / float(len(self.timer_list))))
-            self.log.info("Maximum of list {}".format(max(self.timer_list)))
-            self.log.info("Minimum of list {}".format(min(self.timer_list)))
-            self.log.info("Total items in list {}".format(len(
-                self.timer_list)))
-
     def setup_test(self):
         super().setup_test()
-        input("Press enter when peripheral is advertising.")
+        if not self._is_peripheral_advertising():
+            input("Press enter when peripheral is advertising...")
         return True
 
     def teardown_test(self):
@@ -99,9 +91,9 @@ class GattToolTest(BluetoothBaseTest):
                     self.log.info("Discovered descriptor uuid {}".format(
                         descriptor))
 
-    def _pair_non_encrypted_device(self):
+    def _pair_with_peripheral(self):
         self.cen_ad.droid.bluetoothDiscoverAndBond(self.ble_mac_address)
-        end_time = time.time() + self.DEFAULT_TIMEOUT + 20
+        end_time = time.time() + self.PAIRING_TIMEOUT
         self.log.info("Verifying devices are bonded")
         while time.time() < end_time:
             bonded_devices = self.cen_ad.droid.bluetoothGetBondedDevices()
@@ -110,6 +102,41 @@ class GattToolTest(BluetoothBaseTest):
                 return True
             time.sleep(1)
         return False
+
+    def _get_time_in_milliseconds(self):
+        return int(round(time.time() * 1000))
+
+    def _log_stats(self):
+        if self.timer_list:
+            self.log.info("Overall list {}".format(self.timer_list))
+            self.log.info("Average of list {}".format(
+                sum(self.timer_list) / float(len(self.timer_list))))
+            self.log.info("Maximum of list {}".format(max(self.timer_list)))
+            self.log.info("Minimum of list {}".format(min(self.timer_list)))
+            self.log.info("Total items in list {}".format(len(
+                self.timer_list)))
+
+    def _is_peripheral_advertising(self):
+        self.cen_ad.droid.bleSetScanFilterDeviceAddress(self.ble_mac_address)
+        self.cen_ad.droid.bleSetScanSettingsScanMode(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
+        filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
+            self.cen_ad.droid)
+
+        self.cen_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
+        expected_event_name = scan_result.format(scan_callback)
+        test_result = True
+        try:
+            self.cen_ad.ed.pop_event(expected_event_name, self.DEFAULT_TIMEOUT)
+            self.log.info("Peripheral found with event: {}".format(
+                expected_event_name))
+        except Empty:
+            self.log.info("Peripheral not advertising or not found: {}".format(
+                self.ble_mac_address))
+            test_result = False
+        self.cen_ad.droid.bleStopBleScan(scan_callback)
+        return test_result
 
     def _unbond_device(self):
         self.cen_ad.droid.bluetoothUnbond(self.ble_mac_address)
@@ -196,7 +223,7 @@ class GattToolTest(BluetoothBaseTest):
           Fail if False
 
         TAGS: LE, GATT
-        Priority: 1
+        Priority: 2
         """
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.cen_ad.droid)
@@ -255,7 +282,7 @@ class GattToolTest(BluetoothBaseTest):
           Fail if False
 
         TAGS: LE, GATT
-        Priority: 1
+        Priority: 2
         """
         try:
             test_result, bluetooth_gatt, gatt_callback = (
@@ -288,13 +315,13 @@ class GattToolTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
-    def test_classic_pairing(self):
-        """Test pairing to a GATT mac address through classic methods
+    def test_pairing(self):
+        """Test pairing to a GATT mac address
 
         This test will prompt the user to press "Enter" when the
         peripheral is in a connecable advertisement state. Once
         the user presses enter, this script will bond the Android device
-        to the peripheral through classic pairing methods.
+        to the peripheral.
 
         Steps:
         1. Wait for user input to confirm peripheral is advertising.
@@ -313,20 +340,19 @@ class GattToolTest(BluetoothBaseTest):
         TAGS: LE, GATT
         Priority: 1
         """
-        if not self._pair_non_encrypted_device():
+        if not self._pair_with_peripheral():
             return False
         self.cen_ad.droid.bluetoothUnbond(self.ble_mac_address)
         return self._unbond_device()
 
     @BluetoothBaseTest.bt_test_wrap
-    def test_classic_pairing_stress(self):
+    def test_pairing_stress(self):
         """Test the round trip speed of pairing to a peripheral many times
 
         This test will prompt the user to press "Enter" when the
         peripheral is in a connecable advertisement state. Once
         the user presses enter, this script will measure the amount
-        of time it takes to establish a pairing with a BLE device through
-        classic pairing methods.
+        of time it takes to establish a pairing with a BLE device.
 
         Steps:
         1. Wait for user input to confirm peripheral is advertising.
@@ -344,12 +370,12 @@ class GattToolTest(BluetoothBaseTest):
           Fail if False
 
         TAGS: LE, GATT
-        Priority: 1
+        Priority: 3
         """
         iterations = 100
         for _ in range(iterations):
             start_time = self._get_time_in_milliseconds()
-            if not self._pair_non_encrypted_device():
+            if not self._pair_with_peripheral():
                 return False
             end_time = self._get_time_in_milliseconds()
             total_time = end_time - start_time
@@ -357,7 +383,7 @@ class GattToolTest(BluetoothBaseTest):
             self.log.info("Total time (ms): {}".format(total_time))
             if not self._unbond_device():
                 return False
-        return False
+        return True
 
     @BluetoothBaseTest.bt_test_wrap
     def test_gatt_notification_longev(self):
@@ -395,7 +421,7 @@ class GattToolTest(BluetoothBaseTest):
         Priority: 1
         """
         #pair devices
-        if not self._pair_non_encrypted_device():
+        if not self._pair_with_peripheral():
             return False
         try:
             test_result, bluetooth_gatt, gatt_callback = (
