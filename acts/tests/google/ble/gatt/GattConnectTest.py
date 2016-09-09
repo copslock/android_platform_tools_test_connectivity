@@ -96,6 +96,38 @@ class GattConnectTest(BluetoothBaseTest):
             return False
         return True
 
+    def _verify_mtu_changed_on_client_and_server(
+            self, expected_mtu, gatt_callback, gatt_server_callback):
+        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
+        try:
+            mtu_event = self.cen_ad.ed.pop_event(expected_event,
+                                                 self.default_timeout)
+            mtu_size_found = mtu_event['data']['MTU']
+            if mtu_size_found != expected_mtu:
+                self.log.error("MTU size found: {}, expected: {}".format(
+                    mtu_size_found, expected_mtu))
+                return False
+        except Empty:
+            self.log.error(
+                GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
+            return False
+
+        expected_event = GattCbStrings.MTU_SERV_CHANGED.value.format(
+            gatt_server_callback)
+        try:
+            mtu_event = self.per_ad.ed.pop_event(expected_event,
+                                                 self.default_timeout)
+            mtu_size_found = mtu_event['data']['MTU']
+            if mtu_size_found != expected_mtu:
+                self.log.error("MTU size found: {}, expected: {}".format(
+                    mtu_size_found, expected_mtu))
+                return False
+        except Empty:
+            self.log.error(
+                GattCbErr.MTU_SERV_CHANGED_ERR.value.format(expected_event))
+            return False
+        return True
+
     @BluetoothBaseTest.bt_test_wrap
     def test_gatt_connect(self):
         """Test GATT connection over LE.
@@ -302,18 +334,8 @@ class GattConnectTest(BluetoothBaseTest):
         self.adv_instances.append(adv_callback)
         expected_mtu = MtuSize.MIN
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
-        try:
-            mtu_event = self.cen_ad.ed.pop_event(expected_event,
-                                                 self.default_timeout)
-            mtu_size_found = mtu_event['data']['MTU']
-            if mtu_size_found != expected_mtu:
-                self.log.error("MTU size found: {}, expected: {}".format(
-                    mtu_size_found, expected_mtu))
-                return False
-        except Empty:
-            self.log.error(
-                GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
+        if not self._verify_mtu_changed_on_client_and_server(
+                expected_mtu, gatt_callback, gatt_server_cb):
             return False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
@@ -361,18 +383,8 @@ class GattConnectTest(BluetoothBaseTest):
         self.adv_instances.append(adv_callback)
         expected_mtu = MtuSize.MAX
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
-        try:
-            mtu_event = self.cen_ad.ed.pop_event(expected_event,
-                                                 self.default_timeout)
-            mtu_size_found = mtu_event['data']['MTU']
-            if mtu_size_found != expected_mtu:
-                self.log.error("MTU size found: {}, expected: {}".format(
-                    mtu_size_found, expected_mtu))
-                return False
-        except Empty:
-            self.log.error(
-                GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
+        if not self._verify_mtu_changed_on_client_and_server(
+                expected_mtu, gatt_callback, gatt_server_cb):
             return False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
@@ -419,16 +431,11 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(err)
             return False
         self.adv_instances.append(adv_callback)
-        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, MtuSize.MIN - 1)
-        expected_event = GattCbStrings.MTU_CHANGED.value.format(gatt_callback)
-        try:
-            self.cen_ad.ed.pop_event(expected_event, self.default_timeout)
-            self.log.error("Found {} event when it wasn't expected".format(
-                expected_event))
+        unexpected_mtu = MtuSize.MIN - 1
+        self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, unexpected_mtu)
+        if self._verify_mtu_changed_on_client_and_server(
+                unexpected_mtu, gatt_callback, gatt_server_cb):
             return False
-        except Empty:
-            self.log.debug("Successfully didn't find {} event".format(
-                expected_event))
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
 
