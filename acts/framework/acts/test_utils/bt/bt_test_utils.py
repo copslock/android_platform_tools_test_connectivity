@@ -43,6 +43,7 @@ from acts.test_utils.bt.BtEnum import RfcommUuid
 from acts.utils import exe_cmd
 
 default_timeout = 15
+default_rfcomm_timeout = 10000
 # bt discovery timeout
 default_discovery_timeout = 3
 log = logging
@@ -616,7 +617,7 @@ def kill_bluetooth_process(ad):
 
 def orchestrate_rfcomm_connection(client_ad,
                                   server_ad,
-                                  timeout=default_timeout):
+                                  accept_timeout_ms=default_rfcomm_timeout):
     """Sets up the RFCOMM connection between two Android devices.
 
     Args:
@@ -625,22 +626,23 @@ def orchestrate_rfcomm_connection(client_ad,
     Returns:
         True if connection was successful, false if unsuccessful.
     """
+    server_ad.droid.bluetoothStartPairingHelper()
+    client_ad.droid.bluetoothStartPairingHelper()
     server_ad.droid.bluetoothRfcommBeginAcceptThread(
-        RfcommUuid.DEFAULT_UUID.value, timeout)
+        RfcommUuid.DEFAULT_UUID.value, accept_timeout_ms)
     client_ad.droid.bluetoothRfcommBeginConnectThread(
         server_ad.droid.bluetoothGetLocalAddress())
-    end_time = time.time() + timeout
+    end_time = time.time() + default_timeout
     result = False
     test_result = True
     while time.time() < end_time:
         if len(client_ad.droid.bluetoothRfcommActiveConnections()) > 0:
+            test_result = True
             log.info("RFCOMM Client Connection Active")
             break
-    end_time = time.time() + timeout
-    while time.time() < end_time:
-        if len(server_ad.droid.bluetoothRfcommActiveConnections()) > 0:
-            log.info("RFCOMM Server Connection Active")
-            break
+        else:
+            test_result = False
+        time.sleep(1)
     if not test_result:
         log.error("Failed to establish an RFCOMM connection")
         return False
@@ -691,3 +693,12 @@ def clear_bonded_devices(ad):
         log.info("Successfully unbonded {}".format(device_address))
     return True
 
+def verify_server_and_client_connected(client_ad, server_ad):
+    test_result = True
+    if len(server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+        log.error("No rfcomm connections found on server.")
+        test_result = False
+    if len(client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+        log.error("No rfcomm connections found on client.")
+        test_result = False
+    return test_result
