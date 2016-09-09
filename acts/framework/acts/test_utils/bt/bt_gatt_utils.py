@@ -41,7 +41,6 @@ def setup_gatt_connection(cen_ad,
                           mac_address,
                           autoconnect,
                           transport=GattTransport.TRANSPORT_AUTO):
-    test_result = True
     gatt_callback = cen_ad.droid.gattCreateGattCallback()
     log.info("Gatt Connect to mac address {}.".format(mac_address))
     bluetooth_gatt = cen_ad.droid.gattClientConnectGatt(
@@ -50,14 +49,16 @@ def setup_gatt_connection(cen_ad,
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
     except Empty:
+        cen_ad.droid.gattClientClose(bluetooth_gatt)
         raise GattTestUtilsError("Could not establish a connection to "
                                  "peripheral. Expected event:".format(
                                      expected_event))
     if event['data']['State'] != GattConnectionState.STATE_CONNECTED:
+        cen_ad.droid.gattClientClose(bluetooth_gatt)
         raise GattTestUtilsError("Could not establish a connection to "
                                  "peripheral. Event Details:".format(
                                      pprint.pformat(event)))
-    return test_result, bluetooth_gatt, gatt_callback
+    return bluetooth_gatt, gatt_callback
 
 
 def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
@@ -94,10 +95,8 @@ def orchestrate_gatt_connection(cen_ad,
         else:
             mac_address = per_ad.droid.bluetoothGetLocalAddress()
             adv_callback = None
-    test_result, bluetooth_gatt, gatt_callback = setup_gatt_connection(
-        cen_ad, mac_address, autoconnect, transport)
-    if not test_result:
-        raise GattTestUtilsError("Could not connect to peripheral.")
+    bluetooth_gatt, gatt_callback = setup_gatt_connection(
+            cen_ad, mac_address, autoconnect, transport)
     return bluetooth_gatt, gatt_callback, adv_callback
 
 
@@ -228,8 +227,8 @@ def setup_multiple_services(per_ad):
     try:
         per_ed.pop_event(expected_event, default_timeout)
     except Empty:
-        log.error(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
-        return False
+        per_ad.droid.gattServerClose(gatt_server)
+        raise GattTestUtilsError(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
     for characteristic in characteristic_list:
         per_droid.gattServerAddCharacteristicToService(gattService2,
                                                        characteristic)
@@ -237,8 +236,8 @@ def setup_multiple_services(per_ad):
     try:
         per_ed.pop_event(expected_event, default_timeout)
     except Empty:
-        log.error(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
-        return False
+        per_ad.droid.gattServerClose(gatt_server)
+        raise GattTestUtilsError(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
     for characteristic in characteristic_list:
         per_droid.gattServerAddCharacteristicToService(gattService3,
                                                        characteristic)
@@ -246,8 +245,8 @@ def setup_multiple_services(per_ad):
     try:
         per_ed.pop_event(expected_event, default_timeout)
     except Empty:
-        log.error(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
-        return False
+        per_ad.droid.gattServerClose(gatt_server)
+        raise GattTestUtilsError(GattCbErr.SERV_ADDED_ERR.value.format(expected_event))
     return gatt_server_callback, gatt_server
 
 
@@ -338,3 +337,24 @@ def setup_gatt_mtu(cen_ad, bluetooth_gatt, gatt_callback, mtu):
         log.error(GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
         return False
     return True
+
+
+def log_gatt_server_uuids(cen_ad, discovered_services_index):
+    services_count = cen_ad.droid.gattClientGetDiscoveredServicesCount(
+        discovered_services_index)
+    for i in range(services_count):
+        service = cen_ad.droid.gattClientGetDiscoveredServiceUuid(
+            discovered_services_index, i)
+        log.info("Discovered service uuid {}".format(service))
+        characteristic_uuids = (
+            cen_ad.droid.gattClientGetDiscoveredCharacteristicUuids(
+                discovered_services_index, i))
+        for characteristic in characteristic_uuids:
+            log.info("Discovered characteristic uuid {}".format(
+                characteristic))
+            descriptor_uuids = (
+                cen_ad.droid.gattClientGetDiscoveredDescriptorUuids(
+                    discovered_services_index, i, characteristic))
+            for descriptor in descriptor_uuids:
+                log.info("Discovered descriptor uuid {}".format(
+                    descriptor))
