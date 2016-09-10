@@ -135,6 +135,15 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_something")
 
+    def test_missing_requested_test_func(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        expected_msg = ".* does not have test case test_something"
+        with self.assertRaisesRegexp(test_runner.USERError, expected_msg):
+            bt_cls.run(test_names=["test_something"])
+        self.assertFalse(bt_cls.results.executed)
+
     def test_setup_class_fail_by_exception(self):
         call_check = mock.MagicMock()
         class MockBaseTest(base_test.BaseTestClass):
