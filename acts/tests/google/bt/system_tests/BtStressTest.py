@@ -19,6 +19,7 @@ Basic Bluetooth Classic stress tests.
 
 import time
 from acts.base_test import BaseTestClass
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
@@ -26,28 +27,17 @@ from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
-class BtStressTest(BaseTestClass):
+class BtStressTest(BluetoothBaseTest):
     default_timeout = 20
     iterations = 100
 
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        BluetoothBaseTest.__init__(self, controllers)
 
-    def setup_class(self):
-        return setup_multiple_devices_for_bt_test(self.android_devices)
-
-    def setup_test(self):
-        return reset_bluetooth(self.android_devices)
-
-    def setup_test(self):
-        setup_result = reset_bluetooth(self.android_devices)
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
-        for a in self.android_devices:
-            a.ed.clear_all_events()
-        return setup_result
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
+        super().teardown_test()
+        self.log_stats()
         return True
 
     def test_toggle_bluetooth(self):
@@ -103,14 +93,16 @@ class BtStressTest(BaseTestClass):
         """
         for n in range(self.iterations):
             self.log.info("Pair bluetooth iteration {}.".format(n + 1))
+            self.start_timer()
             if (not pair_pri_to_sec(self.android_devices[0].droid,
                                 self.android_devices[1].droid)):
                 self.log.error("Failed to bond devices.")
                 return False
+            self.log.info("Total time (ms): {}".format(self.end_timer()))
             for ad in self.android_devices:
                 if not clear_bonded_devices(ad):
                     return False
-                #Necessary sleep time for entries to update unbonded state
+                # Necessary sleep time for entries to update unbonded state
                 time.sleep(1)
                 bonded_devices = ad.droid.bluetoothGetBondedDevices()
                 if len(bonded_devices) > 0:
