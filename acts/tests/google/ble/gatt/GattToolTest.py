@@ -68,7 +68,7 @@ class GattToolTest(BluetoothBaseTest):
 
     def teardown_test(self):
         super().teardown_test()
-        self._log_stats()
+        self.log_stats()
         self.timer_list = []
         return True
 
@@ -81,21 +81,7 @@ class GattToolTest(BluetoothBaseTest):
             if self.ble_mac_address in {d['address'] for d in bonded_devices}:
                 self.log.info("Successfully bonded to device")
                 return True
-            time.sleep(1)
         return False
-
-    def _get_time_in_milliseconds(self):
-        return int(round(time.time() * 1000))
-
-    def _log_stats(self):
-        if self.timer_list:
-            self.log.info("Overall list {}".format(self.timer_list))
-            self.log.info("Average of list {}".format(
-                sum(self.timer_list) / float(len(self.timer_list))))
-            self.log.info("Maximum of list {}".format(max(self.timer_list)))
-            self.log.info("Minimum of list {}".format(min(self.timer_list)))
-            self.log.info("Total items in list {}".format(len(
-                self.timer_list)))
 
     def _is_peripheral_advertising(self):
         self.cen_ad.droid.bleSetScanFilterDeviceAddress(self.ble_mac_address)
@@ -213,7 +199,7 @@ class GattToolTest(BluetoothBaseTest):
         iterations = 1000
         n = 0
         while n < iterations:
-            start_time = self._get_time_in_milliseconds()
+            self.start_timer()
             try:
                 bluetooth_gatt, gatt_callback = (setup_gatt_connection(
                     self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
@@ -221,10 +207,7 @@ class GattToolTest(BluetoothBaseTest):
             except GattTestUtilsError as err:
                 self.log.error(err)
                 return False
-            end_time = self._get_time_in_milliseconds()
-            total_time = end_time - start_time
-            self.timer_list.append(total_time)
-            self.log.info("Total time (ms): {}".format(total_time))
+            self.log.info("Total time (ms): {}".format(self.end_timer()))
             try:
                 disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                            gatt_callback)
@@ -352,13 +335,10 @@ class GattToolTest(BluetoothBaseTest):
         """
         iterations = 100
         for _ in range(iterations):
-            start_time = self._get_time_in_milliseconds()
+            start_time = self.start_timer()
             if not self._pair_with_peripheral():
                 return False
-            end_time = self._get_time_in_milliseconds()
-            total_time = end_time - start_time
-            self.timer_list.append(total_time)
-            self.log.info("Total time (ms): {}".format(total_time))
+            self.log.info("Total time (ms): {}".format(self.end_timer()))
             if not self._unbond_device():
                 return False
         return True
