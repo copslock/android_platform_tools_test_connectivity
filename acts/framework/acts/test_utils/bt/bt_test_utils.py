@@ -635,7 +635,6 @@ def pair_pri_to_sec(pri_droid, sec_droid):
             if d['address'] == target_address:
                 log.info("Successfully bonded to device")
                 return True
-        time.sleep(1)
     # Timed out trying to bond.
     log.info("Failed to bond devices.")
     return False
