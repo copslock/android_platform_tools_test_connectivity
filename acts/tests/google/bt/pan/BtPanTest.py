@@ -22,11 +22,12 @@ tethering allowed.
 
 This device was not intended to run in a sheild box.
 """
-
+import time
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 
 
@@ -61,7 +62,9 @@ class BtPanTest(BluetoothBaseTest):
         TAGS: Classic, PAN, tethering
         Priority: 1
         """
-        self.panu_dut.droid.connectivityToggleAirplaneMode(True)
+        if not toggle_airplane_mode(self.log, self.panu_dut, True):
+            self.log.error("Failed to toggle airplane mode on")
+            return False
         if not bluetooth_enabled_check(self.panu_dut):
             return False
         self.pan_dut.droid.bluetoothPanSetBluetoothTethering(True)
@@ -80,3 +83,4 @@ class BtPanTest(BluetoothBaseTest):
             return False
         self.pan_dut.droid.bluetoothPanSetBluetoothTethering(False)
         return True
+
