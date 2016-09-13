@@ -32,6 +32,8 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 
 
 class BtPanTest(BluetoothBaseTest):
+    self.magic_connect_sleep = 5
+
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.pan_dut = self.android_devices[0]
@@ -73,6 +75,10 @@ class BtPanTest(BluetoothBaseTest):
         if not self.pan_dut.droid.bluetoothPanIsTetheringOn():
             self.log.error("Failed to enable Bluetooth tethering.")
             return False
+        # Magic sleep needed to give the stack time in between bonding and
+        # connecting the PAN profile.
+        magic_connect_sleep = 5
+        time.sleep(self.magic_connect_sleep)
         self.panu_dut.droid.bluetoothConnectBonded(
             self.pan_dut.droid.bluetoothGetLocalAddress())
         if not verify_http_connection(self.log, self.panu_dut):
@@ -83,4 +89,3 @@ class BtPanTest(BluetoothBaseTest):
             return False
         self.pan_dut.droid.bluetoothPanSetBluetoothTethering(False)
         return True
-
