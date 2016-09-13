@@ -68,9 +68,10 @@ def mock_list_adb_devices():
 class MockAdbProxy():
     """Mock class that swaps out calls to adb with mock calls."""
 
-    def __init__(self, serial, fail_br=False):
+    def __init__(self, serial, fail_br=False, fail_br_before_N=False):
         self.serial = serial
         self.fail_br = fail_br
+        self.fail_br_before_N = fail_br_before_N
 
     def shell(self, params):
         if params == "id -u":
@@ -84,6 +85,10 @@ class MockAdbProxy():
             if self.fail_br:
                 return b"OMG I died!\n"
             return b'OK:/path/bugreport.zip\n'
+        elif params == "bugreportz -v":
+            if self.fail_br_before_N:
+                return b"/system/bin/sh: bugreportz: not found"
+            return b'1.1'
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
@@ -241,8 +246,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.utils.exe_cmd')
     def test_AndroidDevice_take_bug_report_fail(self, exe_mock, create_dir_mock,
                                                 MockAdbProxy):
-        """Verifies AndroidDevice.take_bug_report calls the correct adb command
-        and writes the bugreport file to the correct path.
+        """Verifies AndroidDevice.take_bug_report writes out the correct message
+        when taking bugreport fails.
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
@@ -250,6 +255,22 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegexp(android_device.AndroidDeviceError,
                                      expected_msg):
             ad.take_bug_report("test_something", "sometime")
+
+    @mock.patch('acts.controllers.adb.AdbProxy',
+                return_value=MockAdbProxy(1, fail_br_before_N=True))
+    @mock.patch('acts.utils.create_dir')
+    @mock.patch('acts.utils.exe_cmd')
+    def test_AndroidDevice_take_bug_report_fallback(self, exe_mock,
+        create_dir_mock, MockAdbProxy):
+        """Verifies AndroidDevice.take_bug_report falls back to traditional
+        bugreport on builds that do not have bugreportz.
+        """
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad.take_bug_report("test_something", "sometime")
+        expected_path = os.path.join(logging.log_path, "AndroidDevice%s" %
+                                     ad.serial, "BugReports")
+        create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch('acts.utils.create_dir')
