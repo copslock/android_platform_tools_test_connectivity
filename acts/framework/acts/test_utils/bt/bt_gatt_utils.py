@@ -37,7 +37,9 @@ class GattTestUtilsError(Exception):
     pass
 
 
-def setup_gatt_connection(cen_ad, mac_address, autoconnect,
+def setup_gatt_connection(cen_ad,
+                          mac_address,
+                          autoconnect,
                           transport=GattTransport.TRANSPORT_AUTO):
     test_result = True
     gatt_callback = cen_ad.droid.gattCreateGattCallback()
@@ -48,13 +50,13 @@ def setup_gatt_connection(cen_ad, mac_address, autoconnect,
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
     except Empty:
-        log.error(GattCbErr.GATT_CONN_CHANGE_ERR.value.format(expected_event))
-        test_result = False
-        return test_result, bluetooth_gatt, gatt_callback
+        raise GattTestUtilsError("Could not establish a connection to "
+                                 "peripheral. Expected event:".format(
+                                     expected_event))
     if event['data']['State'] != GattConnectionState.STATE_CONNECTED:
-        log.info("Could not establish a connection to peripheral. Event "
-                 "Details:".format(pprint.pformat(event)))
-        test_result = False
+        raise GattTestUtilsError("Could not establish a connection to "
+                                 "peripheral. Event Details:".format(
+                                     pprint.pformat(event)))
     return test_result, bluetooth_gatt, gatt_callback
 
 
@@ -64,11 +66,15 @@ def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
     except Empty:
-        log.error(GattCbErr.GATT_CONN_CHANGE_ERR.value.format(expected_event))
-        return False
-    if event['data']['State'] != GattConnectionState.STATE_DISCONNECTED:
-        return False
-    return True
+        raise GattTestUtilsError(
+            GattCbErr.GATT_CONN_CHANGE_ERR.value.format(expected_event))
+    found_state = event['data']['State']
+    expected_state = GattConnectionState.STATE_DISCONNECTED
+    if found_state != expected_state:
+        raise GattTestUtilsError(
+            "GATT connection state change expected {}, found {}".format(
+                expected_event, found_state))
+    return
 
 
 def orchestrate_gatt_connection(cen_ad,
@@ -83,7 +89,8 @@ def orchestrate_gatt_connection(cen_ad,
                 mac_address, adv_callback = (
                     get_mac_address_of_generic_advertisement(cen_ad, per_ad))
             except BtTestUtilsError as err:
-                raise GattTestUtilsError("Error in getting mac address: {}".format(err))
+                raise GattTestUtilsError(
+                    "Error in getting mac address: {}".format(err))
         else:
             mac_address = per_ad.droid.bluetoothGetLocalAddress()
             adv_callback = None
@@ -149,8 +156,9 @@ def run_continuous_write_descriptor(cen_droid, cen_ed, per_droid, per_ed,
                         try:
                             cen_ed.pop_event(expected_event, default_timeout)
                         except Empty:
-                            log.error(GattCbErr.DESC_WRITE_ERR.value.format(
-                                expected_event))
+                            log.error(
+                                GattCbErr.DESC_WRITE_ERR.value.format(
+                                    expected_event))
                             return False
 
 
@@ -158,32 +166,32 @@ def setup_characteristics_and_descriptors(droid):
     characteristic_input = [
         {
             'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': GattCharacteristic.PROPERTY_WRITE.value
-            | GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
+            'property': GattCharacteristic.PROPERTY_WRITE.value |
+            GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
             'permission': GattCharacteristic.PROPERTY_WRITE.value
         },
         {
             'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property': GattCharacteristic.PROPERTY_NOTIFY.value
-            | GattCharacteristic.PROPERTY_READ.value,
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+            GattCharacteristic.PROPERTY_READ.value,
             'permission': GattCharacteristic.PERMISSION_READ.value
         },
         {
             'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property': GattCharacteristic.PROPERTY_NOTIFY.value
-            | GattCharacteristic.PROPERTY_READ.value,
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+            GattCharacteristic.PROPERTY_READ.value,
             'permission': GattCharacteristic.PERMISSION_READ.value
         },
     ]
     descriptor_input = [
         {
             'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': GattDescriptor.PERMISSION_READ.value
-            | GattDescriptor.PERMISSION_WRITE.value,
+            'property': GattDescriptor.PERMISSION_READ.value |
+            GattDescriptor.PERMISSION_WRITE.value,
         }, {
             'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-            'property': GattDescriptor.PERMISSION_READ.value
-            | GattCharacteristic.PERMISSION_WRITE.value,
+            'property': GattDescriptor.PERMISSION_READ.value |
+            GattCharacteristic.PERMISSION_WRITE.value,
         }
     ]
     characteristic_list = setup_gatt_characteristics(droid,
@@ -247,32 +255,32 @@ def setup_characteristics_and_descriptors(droid):
     characteristic_input = [
         {
             'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': GattCharacteristic.PROPERTY_WRITE.value
-            | GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
+            'property': GattCharacteristic.PROPERTY_WRITE.value |
+            GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
             'permission': GattCharacteristic.PROPERTY_WRITE.value
         },
         {
             'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property': GattCharacteristic.PROPERTY_NOTIFY.value
-            | GattCharacteristic.PROPERTY_READ.value,
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+            GattCharacteristic.PROPERTY_READ.value,
             'permission': GattCharacteristic.PERMISSION_READ.value
         },
         {
             'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property': GattCharacteristic.PROPERTY_NOTIFY.value
-            | GattCharacteristic.PROPERTY_READ.value,
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
+            GattCharacteristic.PROPERTY_READ.value,
             'permission': GattCharacteristic.PERMISSION_READ.value
         },
     ]
     descriptor_input = [
         {
             'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property': GattDescriptor.PERMISSION_READ.value
-            | GattDescriptor.PERMISSION_WRITE.value,
+            'property': GattDescriptor.PERMISSION_READ.value |
+            GattDescriptor.PERMISSION_WRITE.value,
         }, {
             'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-            'property': GattDescriptor.PERMISSION_READ.value
-            | GattCharacteristic.PERMISSION_WRITE.value,
+            'property': GattDescriptor.PERMISSION_READ.value |
+            GattCharacteristic.PERMISSION_WRITE.value,
         }
     ]
     characteristic_list = setup_gatt_characteristics(droid,
@@ -293,9 +301,9 @@ def setup_gatt_characteristics(droid, input):
 def setup_gatt_descriptors(droid, input):
     descriptor_list = []
     for item in input:
-        index = droid.gattServerCreateBluetoothGattDescriptor(
-            item['uuid'],
-            item['property'], )
+        index = droid.gattServerCreateBluetoothGattDescriptor(item['uuid'],
+                                                              item['property'],
+                                                              )
         descriptor_list.append(index)
     log.info("setup descriptor list: {}".format(descriptor_list))
     return descriptor_list
@@ -330,4 +338,3 @@ def setup_gatt_mtu(cen_ad, bluetooth_gatt, gatt_callback, mtu):
         log.error(GattCbErr.MTU_CHANGED_ERR.value.format(expected_event))
         return False
     return True
-
