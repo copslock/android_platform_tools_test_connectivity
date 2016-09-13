@@ -96,3 +96,4 @@ class BtPanTest(BluetoothBaseTest):
             return False
         self.log.info("PANU device has no internet access as expected.")
         return True
+
