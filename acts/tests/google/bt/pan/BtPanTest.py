@@ -22,18 +22,14 @@ tethering allowed.
 
 This device was not intended to run in a sheild box.
 """
-import time
-from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
-from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.bt.bt_test_utils import orchestrate_and_verify_pan_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
-
+from queue import Empty
+import time
 
 class BtPanTest(BluetoothBaseTest):
-    self.magic_connect_sleep = 5
-
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.pan_dut = self.android_devices[0]
@@ -52,10 +48,9 @@ class BtPanTest(BluetoothBaseTest):
         4. Verify that Bluetooth tethering is enabled on PAN Service device.
         5. Enable PAN profile from PANU device to PAN Service device.
         6. Verify HTTP connection on PANU device.
-        7. Disable Bluetooth tethering on PAN Service device.
 
         Expected Result:
-        PAN profile connected and HTTP
+        PANU device has internet access.
 
         Returns:
           Pass if True
@@ -64,28 +59,40 @@ class BtPanTest(BluetoothBaseTest):
         TAGS: Classic, PAN, tethering
         Priority: 1
         """
-        if not toggle_airplane_mode(self.log, self.panu_dut, True):
-            self.log.error("Failed to toggle airplane mode on")
-            return False
-        if not bluetooth_enabled_check(self.panu_dut):
-            return False
-        self.pan_dut.droid.bluetoothPanSetBluetoothTethering(True)
-        if not (pair_pri_to_sec(self.pan_dut.droid, self.panu_dut.droid)):
-            return False
-        if not self.pan_dut.droid.bluetoothPanIsTetheringOn():
-            self.log.error("Failed to enable Bluetooth tethering.")
-            return False
-        # Magic sleep needed to give the stack time in between bonding and
-        # connecting the PAN profile.
-        magic_connect_sleep = 5
-        time.sleep(self.magic_connect_sleep)
-        self.panu_dut.droid.bluetoothConnectBonded(
-            self.pan_dut.droid.bluetoothGetLocalAddress())
-        if not verify_http_connection(self.log, self.panu_dut):
-            self.log.error("Can't verify http connection on PANU device.")
-            if not verify_http_connection(self.log, self.pan_dut):
-                self.log.info(
-                    "Can't verify http connection on PAN service device")
-            return False
+        return orchestrate_and_verify_pan_connection(self.pan_dut,
+                                                     self.panu_dut)
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_pan_connection_then_disconnect(self):
+        """Test bluetooth PAN connection then disconnect service
+
+        Test basic PAN connection between two devices then disconnect
+        service.
+
+        Steps:
+        1. Enable Airplane mode on PANU device. Enable Bluetooth only.
+        2. Enable Bluetooth tethering on PAN Service device.
+        3. Pair the PAN Service device to the PANU device.
+        4. Verify that Bluetooth tethering is enabled on PAN Service device.
+        5. Enable PAN profile from PANU device to PAN Service device.
+        6. Verify HTTP connection on PANU device.
+        7. Disable Bluetooth tethering on PAN Service device.
+        8. Verify no HTTP connection on PANU device.
+
+        Expected Result:
+        PANU device does not have internet access.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: Classic, PAN, tethering
+        Priority: 1
+        """
+        orchestrate_and_verify_pan_connection(self.pan_dut, self.panu_dut)
         self.pan_dut.droid.bluetoothPanSetBluetoothTethering(False)
+        if verify_http_connection(self.log, self.panu_dut):
+            self.log.error("PANU device still has internet access.")
+            return False
+        self.log.info("PANU device has no internet access as expected.")
         return True
