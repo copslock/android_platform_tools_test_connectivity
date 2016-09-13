@@ -38,6 +38,7 @@ from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
+from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import scan_result
 
@@ -70,26 +71,6 @@ class GattToolTest(BluetoothBaseTest):
         self._log_stats()
         self.timer_list = []
         return True
-
-    def _log_uuids(self, discovered_services_index):
-        services_count = self.cen_ad.droid.gattClientGetDiscoveredServicesCount(
-            discovered_services_index)
-        for i in range(services_count):
-            service = self.cen_ad.droid.gattClientGetDiscoveredServiceUuid(
-                discovered_services_index, i)
-            self.log.info("Discovered service uuid {}".format(service))
-            characteristic_uuids = (
-                self.cen_ad.droid.gattClientGetDiscoveredCharacteristicUuids(
-                    discovered_services_index, i))
-            for characteristic in characteristic_uuids:
-                self.log.info("Discovered characteristic uuid {}".format(
-                    characteristic))
-                descriptor_uuids = (
-                    self.cen_ad.droid.gattClientGetDiscoveredDescriptorUuids(
-                        discovered_services_index, i, characteristic))
-                for descriptor in descriptor_uuids:
-                    self.log.info("Discovered descriptor uuid {}".format(
-                        descriptor))
 
     def _pair_with_peripheral(self):
         self.cen_ad.droid.bluetoothDiscoverAndBond(self.ble_mac_address)
@@ -178,10 +159,9 @@ class GattToolTest(BluetoothBaseTest):
         self.AUTOCONNECT = False
         start_time = self._get_time_in_milliseconds()
         try:
-            test_result, bluetooth_gatt, gatt_callback = (
-                setup_gatt_connection(self.cen_ad, self.ble_mac_address,
-                                      self.AUTOCONNECT,
-                                      GattTransport.TRANSPORT_LE))
+            bluetooth_gatt, gatt_callback = (setup_gatt_connection(
+                self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
+                GattTransport.TRANSPORT_LE))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -235,10 +215,9 @@ class GattToolTest(BluetoothBaseTest):
         while n < iterations:
             start_time = self._get_time_in_milliseconds()
             try:
-                test_result, bluetooth_gatt, gatt_callback = (
-                    setup_gatt_connection(self.cen_ad, self.ble_mac_address,
-                                          self.AUTOCONNECT,
-                                          GattTransport.TRANSPORT_LE))
+                bluetooth_gatt, gatt_callback = (setup_gatt_connection(
+                    self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
+                    GattTransport.TRANSPORT_LE))
             except GattTestUtilsError as err:
                 self.log.error(err)
                 return False
@@ -285,10 +264,9 @@ class GattToolTest(BluetoothBaseTest):
         Priority: 2
         """
         try:
-            test_result, bluetooth_gatt, gatt_callback = (
-                setup_gatt_connection(self.cen_ad, self.ble_mac_address,
-                                      self.AUTOCONNECT,
-                                      GattTransport.TRANSPORT_LE))
+            bluetooth_gatt, gatt_callback = (setup_gatt_connection(
+                self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
+                GattTransport.TRANSPORT_LE))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -303,7 +281,7 @@ class GattToolTest(BluetoothBaseTest):
                 self.log.error(
                     GattCbErr.GATT_SERV_DISC_ERR.value.format(expected_event))
                 return False
-            self._log_uuids(discovered_services_index)
+            log_gatt_server_uuids(self.cen_ad, discovered_services_index)
         try:
             disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                        gatt_callback)
@@ -424,10 +402,9 @@ class GattToolTest(BluetoothBaseTest):
         if not self._pair_with_peripheral():
             return False
         try:
-            test_result, bluetooth_gatt, gatt_callback = (
-                setup_gatt_connection(self.cen_ad, self.ble_mac_address,
-                                      self.AUTOCONNECT,
-                                      GattTransport.TRANSPORT_LE))
+            bluetooth_gatt, gatt_callback = (setup_gatt_connection(
+                self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
+                GattTransport.TRANSPORT_LE))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -474,13 +451,14 @@ class GattToolTest(BluetoothBaseTest):
         # set 15 minute notification test time
         notification_test_time = 900
         end_time = time.time() + notification_test_time
-        expected_event = GattCbStrings.CHAR_CHANGE.value.format(bluetooth_gatt)
+        expected_event = GattCbStrings.CHAR_CHANGE.value.format(gatt_callback)
         while time.time() < end_time:
             try:
-                self.log.info(
-                    self.cen_ad.ed.pop_event(expected_event,
-                                             self.DEFAULT_TIMEOUT))
+                event = self.cen_ad.ed.pop_event(expected_event,
+                    self.DEFAULT_TIMEOUT)
+                self.log.info(event)
             except Empty as err:
+                print(err)
                 self.log.error(
                     GattCbStrings.CHAR_CHANGE_ERR.value.format(expected_event))
                 return False
