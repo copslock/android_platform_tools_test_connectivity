@@ -29,6 +29,10 @@ from acts.utils import sync_device_time
 
 
 class BluetoothBaseTest(BaseTestClass):
+    DEFAULT_TIMEOUT = 10
+    start_time = 0
+    timer_list = []
+
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
 
@@ -50,6 +54,7 @@ class BluetoothBaseTest(BaseTestClass):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
+        self.timer_list = []
         self.log.debug(log_energy_info(self.android_devices, "Start"))
         for a in self.android_devices:
             a.ed.clear_all_events()
@@ -89,3 +94,26 @@ class BluetoothBaseTest(BaseTestClass):
             except:
                 self.log.error("Failed to take a bug report for {}, {}"
                              .format(ad.serial, test_name))
+
+    def _get_time_in_milliseconds(self):
+        return int(round(time.time() * 1000))
+
+    def start_timer(self):
+        self.start_time = self._get_time_in_milliseconds()
+
+    def end_timer(self):
+        total_time = self._get_time_in_milliseconds() - self.start_time
+        self.timer_list.append(total_time)
+        self.start_time = 0
+        return total_time
+
+    def log_stats(self):
+        if self.timer_list:
+            self.log.info("Overall list {}".format(self.timer_list))
+            self.log.info("Average of list {}".format(
+                sum(self.timer_list) / float(len(self.timer_list))))
+            self.log.info("Maximum of list {}".format(max(self.timer_list)))
+            self.log.info("Minimum of list {}".format(min(self.timer_list)))
+            self.log.info("Total items in list {}".format(len(
+                self.timer_list)))
+        self.timer_list = []
