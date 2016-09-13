@@ -507,7 +507,7 @@ def pair_pri_to_sec(pri_droid, sec_droid):
                 return True
         time.sleep(1)
     # Timed out trying to bond.
-    log.debug("Failed to bond devices.")
+    log.info("Failed to bond devices.")
     return False
 
 
