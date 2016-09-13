@@ -40,13 +40,15 @@ from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
 
-default_timeout = 15
-default_rfcomm_timeout = 10000
-# bt discovery timeout
-default_discovery_timeout = 3
-log = LoggerProxy()
+DEFAULT_TIMEOUT = 15
+DEFAULT_RFCOMM_TIMEOUT = 10000
+MAGIC_PAN_CONNECT_TIMEOUT = 5
+DEFAULT_DISCOVERY_TIMEOUT = 3
+
 
 # Callback strings
 scan_result = "BleScan{}onScanResults"
@@ -63,11 +65,14 @@ rfcomm_insecure_uuid = "8ce255c0-200a-11e0-ac64-0800200c9a66"
 
 advertisements_to_devices = {}
 
-batch_scan_not_supported_list = ["Nexus 4", "Nexus 5", "Nexus 7", ]
+batch_scan_not_supported_list = ["Nexus 4",
+                                 "Nexus 5",
+                                 "Nexus 7", ]
 
 
 class BtTestUtilsError(Exception):
     pass
+
 
 def scan_and_verify_n_advertisements(scn_ad, max_advertisements):
     test_result = False
@@ -78,11 +83,11 @@ def scan_and_verify_n_advertisements(scn_ad, max_advertisements):
     scan_callback = scn_ad.droid.bleGenScanCallback()
     scn_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
     start_time = time.time()
-    while (start_time + default_timeout) > time.time():
+    while (start_time + DEFAULT_TIMEOUT) > time.time():
         event = None
         try:
             event = scn_ad.ed.pop_event(
-                scan_result.format(scan_callback), default_timeout)
+                scan_result.format(scan_callback), DEFAULT_TIMEOUT)
         except Empty as error:
             raise BtTestUtilsError("Failed to find scan event: {}".format(
                 error))
@@ -109,7 +114,7 @@ def setup_n_advertisements(adv_ad, num_advertisements):
                                             advertise_settings)
         try:
             adv_ad.ed.pop_event(
-                adv_succ.format(advertise_callback), default_timeout)
+                adv_succ.format(advertise_callback), DEFAULT_TIMEOUT)
             log.info("Advertisement {} started.".format(i + 1))
         except Empty as error:
             log.error("Advertisement {} failed to start.".format(i + 1))
@@ -212,8 +217,7 @@ def bluetooth_enabled_check(ad):
         ad.droid.bluetoothToggleState(True)
         expected_bluetooth_on_event_name = bluetooth_on
         try:
-            ad.ed.pop_event(expected_bluetooth_on_event_name,
-                default_timeout)
+            ad.ed.pop_event(expected_bluetooth_on_event_name, DEFAULT_TIMEOUT)
         except Empty:
             log.info("Failed to toggle Bluetooth on (no broadcast received).")
             # Try one more time to poke at the actual state.
@@ -239,7 +243,7 @@ def reset_bluetooth(android_devices):
             expected_bluetooth_off_event_name = bluetooth_off
             try:
                 ed.pop_event(expected_bluetooth_off_event_name,
-                             default_timeout)
+                             DEFAULT_TIMEOUT)
             except Exception:
                 log.error("Failed to toggle Bluetooth off.")
                 return False
@@ -258,7 +262,7 @@ def determine_max_advertisements(android_device):
         android_device.droid.bluetoothToggleState(True)
     try:
         android_device.ed.pop_event(expected_bluetooth_on_event_name,
-                                    default_timeout)
+                                    DEFAULT_TIMEOUT)
     except Exception:
         log.info("Failed to toggle Bluetooth on (no broadcast received).")
         # Try one more time to poke at the actual state.
@@ -280,14 +284,14 @@ def determine_max_advertisements(android_device):
             advertise_callback, advertise_data, advertise_settings)
         try:
             android_device.ed.pop_event(
-                adv_succ.format(advertise_callback), default_timeout)
+                adv_succ.format(advertise_callback), DEFAULT_TIMEOUT)
             log.info("Advertisement {} started.".format(advertisement_count +
                                                         1))
             advertisement_count += 1
         except Exception as err:
             log.info(
-                "Advertisement failed to start. Reached max advertisements at {}".format(
-                    advertisement_count))
+                "Advertisement failed to start. Reached max advertisements at {}".
+                format(advertisement_count))
             break
     with suppress(Exception):
         for adv in advertise_callback_list:
@@ -309,9 +313,8 @@ def get_advanced_droid_list(android_devices):
             max_tries = 3
             #Retry to calculate max advertisements
             while max_advertisements == -1 and max_tries > 0:
-                log.info(
-                    "Attempts left to determine max advertisements: {}".format(
-                        max_tries))
+                log.info("Attempts left to determine max advertisements: {}".
+                         format(max_tries))
                 max_advertisements = determine_max_advertisements(a)
                 max_tries -= 1
             advertisements_to_devices[model] = max_advertisements
@@ -345,17 +348,16 @@ def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
         for scan_callback in scan_callback_list:
             scan_droid.bleStopBleScan(scan_callback)
     except Exception as err:
-        log.debug(
-            "Failed to stop LE scan... reseting Bluetooth. Error {}".format(
-                err))
+        log.debug("Failed to stop LE scan... reseting Bluetooth. Error {}".
+                  format(err))
         reset_bluetooth([scn_android_device])
     try:
         for adv_callback in adv_callback_list:
             adv_droid.bleStopBleAdvertising(adv_callback)
     except Exception as err:
         log.debug(
-            "Failed to stop LE advertisement... reseting Bluetooth. Error {}".format(
-                err))
+            "Failed to stop LE advertisement... reseting Bluetooth. Error {}".
+            format(err))
         reset_bluetooth([adv_android_device])
 
 
@@ -373,7 +375,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     try:
         adv_ad.ed.pop_event(
             "BleAdvertise{}onSuccess".format(advertise_callback),
-            default_timeout)
+            DEFAULT_TIMEOUT)
     except Empty as err:
         raise BtTestUtilsError(
             "Advertiser did not start successfully {}".format(err))
@@ -386,7 +388,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
     try:
         event = scan_ad.ed.pop_event(
-            "BleScan{}onScanResults".format(scan_callback), default_timeout)
+            "BleScan{}onScanResults".format(scan_callback), DEFAULT_TIMEOUT)
     except Empty as err:
         raise BtTestUtilsError("Scanner did not find advertisement {}".format(
             err))
@@ -488,7 +490,7 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     log.info(
         "Bonding device {} to {}".format(pri_droid.bluetoothGetLocalAddress(),
                                          sec_droid.bluetoothGetLocalAddress()))
-    sec_droid.bluetoothMakeDiscoverable(default_timeout)
+    sec_droid.bluetoothMakeDiscoverable(DEFAULT_TIMEOUT)
     target_address = sec_droid.bluetoothGetLocalAddress()
     log.debug("Starting paring helper on each device")
     pri_droid.bluetoothStartPairingHelper()
@@ -496,7 +498,7 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     log.info("Primary device starting discovery and executing bond")
     result = pri_droid.bluetoothDiscoverAndBond(target_address)
     # Loop until we have bonded successfully or timeout.
-    end_time = time.time() + default_timeout
+    end_time = time.time() + DEFAULT_TIMEOUT
     log.info("Verifying devices are bonded")
     while time.time() < end_time:
         bonded_devices = pri_droid.bluetoothGetBondedDevices()
@@ -554,7 +556,7 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
     while not profile_connected.issuperset(profiles_set):
         try:
             profile_event = pri_droid.ed.pop_event(
-                bluetooth_profile_connection_state_changed, default_timeout)
+                bluetooth_profile_connection_state_changed, DEFAULT_TIMEOUT)
             log.info("Got event {}".format(profile_event))
         except Exception:
             log.error("Did not get {} profiles left {}".format(
@@ -615,7 +617,7 @@ def kill_bluetooth_process(ad):
 
 def orchestrate_rfcomm_connection(client_ad,
                                   server_ad,
-                                  accept_timeout_ms=default_rfcomm_timeout):
+                                  accept_timeout_ms=DEFAULT_RFCOMM_TIMEOUT):
     """Sets up the RFCOMM connection between two Android devices.
 
     Args:
@@ -630,7 +632,7 @@ def orchestrate_rfcomm_connection(client_ad,
         RfcommUuid.DEFAULT_UUID.value, accept_timeout_ms)
     client_ad.droid.bluetoothRfcommBeginConnectThread(
         server_ad.droid.bluetoothGetLocalAddress())
-    end_time = time.time() + default_timeout
+    end_time = time.time() + DEFAULT_TIMEOUT
     result = False
     test_result = True
     while time.time() < end_time:
@@ -691,6 +693,7 @@ def clear_bonded_devices(ad):
         log.info("Successfully unbonded {}".format(device_address))
     return True
 
+
 def verify_server_and_client_connected(client_ad, server_ad):
     test_result = True
     if len(server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
@@ -700,3 +703,38 @@ def verify_server_and_client_connected(client_ad, server_ad):
         log.error("No rfcomm connections found on client.")
         test_result = False
     return test_result
+
+
+def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
+    """Setups up a PAN conenction between two android devices.
+
+    Args:
+        pan_dut: the Android device providing tethering services
+        panu_dut: the Android device using the internet connection from the
+            pan_dut
+    Returns:
+        True if PAN connection and verification is successful,
+        false if unsuccessful.
+    """
+    if not toggle_airplane_mode(log, panu_dut, True):
+        log.error("Failed to toggle airplane mode on")
+        return False
+    if not bluetooth_enabled_check(panu_dut):
+        return False
+    pan_dut.droid.bluetoothPanSetBluetoothTethering(True)
+    if not (pair_pri_to_sec(pan_dut.droid, panu_dut.droid)):
+        return False
+    if not pan_dut.droid.bluetoothPanIsTetheringOn():
+        log.error("Failed to enable Bluetooth tethering.")
+        return False
+    # Magic sleep needed to give the stack time in between bonding and
+    # connecting the PAN profile.
+    time.sleep(MAGIC_PAN_CONNECT_TIMEOUT)
+    panu_dut.droid.bluetoothConnectBonded(
+        pan_dut.droid.bluetoothGetLocalAddress())
+    if not verify_http_connection(log, panu_dut):
+        log.error("Can't verify http connection on PANU device.")
+        if not verify_http_connection(log, pan_dut):
+            log.info("Can't verify http connection on PAN service device")
+        return False
+    return True
