@@ -650,7 +650,11 @@ class AndroidDevice:
         """
         new_br = True
         try:
-            self.adb.shell("bugreportz -v")
+            stdout = self.adb.shell("bugreportz -v").decode("utf-8")
+            # This check is necessary for builds before N, where adb shell's ret
+            # code and stderr are not propagated properly.
+            if "not found" in stdout:
+                new_br = False
         except adb.AdbError:
             new_br = False
         br_path = os.path.join(self.log_path, "BugReports")
@@ -804,7 +808,7 @@ class AndroidDevice:
         while time.time() < timeout_start + timeout:
             try:
                 out = self.adb.shell("getprop sys.boot_completed")
-                completed = out.decode('utf-8').strip()
+                completed = out.decode("utf-8").strip()
                 if completed == '1':
                     return
             except adb.AdbError:
