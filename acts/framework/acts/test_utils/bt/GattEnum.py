@@ -31,6 +31,7 @@ class GattCbErr(Enum):
     GATT_SERV_DISC_ERR = "GATT Services Discovered event not found. Expected {}"
     SERV_ADDED_ERR = "Service Added event not found. Expected {}"
     MTU_CHANGED_ERR = "MTU Changed event not found. Expected {}"
+    MTU_SERV_CHANGED_ERR = "MTU Server Changed event not found. Expected {}"
     GATT_CONN_CHANGE_ERR = "GATT Connection Changed event not found. Expected {}"
     CHAR_CHANGE_ERR = "GATT Characteristic Changed event not fond. Expected {}"
 
@@ -48,6 +49,7 @@ class GattCbStrings(Enum):
     GATT_SERV_DISC = "GattConnect{}onServicesDiscovered"
     SERV_ADDED = "GattServer{}onServiceAdded"
     MTU_CHANGED = "GattConnect{}onMtuChanged"
+    MTU_SERV_CHANGED = "GattServer{}onMtuChanged"
     GATT_CONN_CHANGE = "GattConnect{}onConnectionStateChange"
     CHAR_CHANGE = "GattConnect{}onCharacteristicChanged"
 
