@@ -166,12 +166,8 @@ class FilteringTest(BluetoothBaseTest):
         self.log.info("Advertiser device model: {}".format(
             self.adv_ad.droid.getBuildModel()))
 
-    def blescan_verify_onfailure_event_handler(self, event):
-        self.log.debug("Verifying {} event".format(adv_fail))
-        self.log.debug(pprint.pformat(event))
-        return event
 
-    def blescan_verify_onscanresult_event_handler(self, event, filters):
+    def _blescan_verify_onscanresult_event(self, event, filters):
         test_result = True
         self.log.debug("Verifying onScanResult event: {}".format(event))
         callback_type = event['data']['CallbackType']
@@ -213,7 +209,7 @@ class FilteringTest(BluetoothBaseTest):
             test_result = False
         return test_result
 
-    def bleadvertise_verify_onsuccess_handler(self, event, settings_in_effect):
+    def _bleadvertise_verify_onsuccess(self, event, settings_in_effect):
         self.log.debug("Verifying {} event".format(adv_succ))
         test_result = True
         if 'is_connectable' in settings_in_effect.keys():
@@ -367,40 +363,30 @@ class FilteringTest(BluetoothBaseTest):
             advertise_callback, advertise_data, advertise_settings)
         expected_advertise_event_name = adv_succ.format(advertise_callback)
         self.log.debug(expected_advertise_event_name)
-        advertise_worker = self.adv_ad.ed.handle_event(
-            self.bleadvertise_verify_onsuccess_handler,
-            expected_advertise_event_name, ([settings_in_effect]),
-            self.default_timeout)
         try:
-            test_result = advertise_worker.result(self.default_timeout)
-        except Empty as error:
-            self.log.error("Test failed with Empty error: {}".format(error))
+            event = self.adv_ad.ed.pop_event(expected_advertise_event_name, self.default_timeout)
+        except Empty:
+            self.log.error("Failed to start advertisement.")
+            return False
+        if not self._bleadvertise_verify_onsuccess(event, settings_in_effect):
             return False
         expected_scan_event_name = scan_result.format(scan_callback)
-        worker = self.scn_ad.ed.handle_event(
-            self.blescan_verify_onscanresult_event_handler,
-            expected_scan_event_name, ([filters]), self.default_timeout)
         try:
-            finished = False
-            start_time = time.time()
-            while (time.time() < start_time + self.default_timeout and
-                   not finished):
-
-                test_result = worker.result(self.default_timeout)
-                if test_result:
-                    finished = True
-        except Empty as error:
-            test_result = False
-            self.log.error("No scan result found: {}".format(error))
+            event = self.scn_ad.ed.pop_event(expected_scan_event_name, self.default_timeout)
+        except Empty:
+            self.log.error("Scan event not found: {}".format(expected_scan_event_name))
+            return False
+        if not self._blescan_verify_onscanresult_event(event, filters):
+            return False
         if opportunistic:
             expected_scan_event_name = scan_result.format(scan_callback2)
-            worker = self.scn_ad.ed.handle_event(
-                self.blescan_verify_onscanresult_event_handler,
-                expected_scan_event_name, ([filters]), self.default_timeout)
             try:
-                worker.result(self.default_timeout)
+                event = self.scn_ad.ed.pop_event(expected_scan_event_name, self.default_timeout)
             except Empty:
-                self.log.error("Failure to find event on opportunistic scan.")
+                self.log.error("Opportunistic scan event not found: {}".format(expected_scan_event_name))
+                return False
+            if not self._blescan_verify_onscanresult_event(event, filters):
+                return False
             self.scn_ad.droid.bleStopBleScan(scan_callback2)
         self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
         self.scn_ad.droid.bleStopBleScan(scan_callback)
