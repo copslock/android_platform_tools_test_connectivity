@@ -75,6 +75,17 @@ class BtTestUtilsError(Exception):
 
 
 def scan_and_verify_n_advertisements(scn_ad, max_advertisements):
+    """Verify that input number of advertisements can be found from the scanning
+    Android device.
+
+    Args:
+        scn_ad: The Android device to start LE scanning on.
+        max_advertisements: The number of advertisements the scanner expects to
+        find.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     test_result = False
     address_list = []
     filter_list = scn_ad.droid.bleGenFilterList()
@@ -102,6 +113,15 @@ def scan_and_verify_n_advertisements(scn_ad, max_advertisements):
 
 
 def setup_n_advertisements(adv_ad, num_advertisements):
+    """Setup input number of advertisements on input Android device.
+
+    Args:
+        adv_ad: The Android device to start LE advertisements on.
+        num_advertisements: The number of advertisements to start.
+
+    Returns:
+        advertise_callback_list: List of advertisement callback ids.
+    """
     adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
         AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
     advertise_data = adv_ad.droid.bleBuildAdvertiseData()
@@ -125,12 +145,32 @@ def setup_n_advertisements(adv_ad, num_advertisements):
 
 def teardown_n_advertisements(adv_ad, num_advertisements,
                               advertise_callback_list):
+    """Stop input number of advertisements on input Android device.
+
+    Args:
+        adv_ad: The Android device to stop LE advertisements on.
+        num_advertisements: The number of advertisements to stop.
+        advertise_callback_list: The list of advertisement callbacks to stop.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     for n in range(num_advertisements):
         adv_ad.droid.bleStopBleAdvertising(advertise_callback_list[n])
     return True
 
 
 def generate_ble_scan_objects(droid):
+    """Generate generic LE scan objects.
+
+    Args:
+        droid: The droid object to generate LE scan objects from.
+
+    Returns:
+        filter_list: The generated scan filter list id.
+        scan_settings: The generated scan settings id.
+        scan_callback: The generated scan callback id.
+    """
     filter_list = droid.bleGenFilterList()
     scan_settings = droid.bleBuildScanSetting()
     scan_callback = droid.bleGenScanCallback()
@@ -138,46 +178,37 @@ def generate_ble_scan_objects(droid):
 
 
 def generate_ble_advertise_objects(droid):
+    """Generate generic LE advertise objects.
+
+    Args:
+        droid: The droid object to generate advertise LE objects from.
+
+    Returns:
+        advertise_callback: The generated advertise callback id.
+        advertise_data: The generated advertise data id.
+        advertise_settings: The generated advertise settings id.
+    """
     advertise_callback = droid.bleGenBleAdvertiseCallback()
     advertise_data = droid.bleBuildAdvertiseData()
     advertise_settings = droid.bleBuildAdvertiseSettings()
     return advertise_callback, advertise_data, advertise_settings
 
 
-def extract_string_from_byte_array(string_list):
-    """Extract the string from array of string list
-    """
-    start = 1
-    end = len(string_list) - 1
-    extract_string = string_list[start:end]
-    return extract_string
-
-
-def extract_uuidlist_from_record(uuid_string_list):
-    """Extract uuid from Service UUID List
-    """
-    start = 1
-    end = len(uuid_string_list) - 1
-    uuid_length = 36
-    uuidlist = []
-    while start < end:
-        uuid = uuid_string_list[start:(start + uuid_length)]
-        start += uuid_length + 1
-        uuidlist.append(uuid)
-    return uuidlist
-
-
-def build_advertise_settings(droid, mode, txpower, type):
-    """Build Advertise Settings
-    """
-    droid.bleSetAdvertiseSettingsAdvertiseMode(mode)
-    droid.bleSetAdvertiseSettingsTxPowerLevel(txpower)
-    droid.bleSetAdvertiseSettingsIsConnectable(type)
-    settings = droid.bleBuildAdvertiseSettings()
-    return settings
-
-
 def setup_multiple_devices_for_bt_test(android_devices):
+    """A common setup routine for Bluetooth on input Android device list.
+
+    Things this function sets up:
+    1. Resets Bluetooth
+    2. Set Bluetooth local name to random string of size 4
+    3. Disable BLE background scanning.
+    4. Enable Bluetooth snoop logging.
+
+    Args:
+        android_devices: Android device list to setup Bluetooth on.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     log.info("Setting up Android Devices")
     # TODO: Temp fix for an selinux error.
     for ad in android_devices:
@@ -213,6 +244,15 @@ def setup_multiple_devices_for_bt_test(android_devices):
 
 
 def bluetooth_enabled_check(ad):
+    """Checks if the Bluetooth state is enabled, if not it will attempt to
+    enable it.
+
+    Args:
+        ad: The Android device list to enable Bluetooth on.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     if not ad.droid.bluetoothCheckState():
         ad.droid.bluetoothToggleState(True)
         expected_bluetooth_on_event_name = bluetooth_on
@@ -230,9 +270,13 @@ def bluetooth_enabled_check(ad):
 
 
 def reset_bluetooth(android_devices):
-    """Resets bluetooth on the list of android devices passed into the function.
-    :param android_devices: list of android devices
-    :return: bool
+    """Resets Bluetooth state of input Android device list.
+
+    Args:
+        android_devices: The Android device list to reset Bluetooth state on.
+
+    Returns:
+        True if successful, false if unsuccessful.
     """
     for a in android_devices:
         droid, ed = a.droid, a.ed
@@ -255,6 +299,15 @@ def reset_bluetooth(android_devices):
 
 
 def determine_max_advertisements(android_device):
+    """Determines programatically how many advertisements the Android device
+    supports.
+
+    Args:
+        android_device: The Android device to determine max advertisements of.
+
+    Returns:
+        The maximum advertisement count.
+    """
     log.info("Determining number of maximum concurrent advertisements...")
     advertisement_count = 0
     bt_enabled = False
@@ -300,6 +353,18 @@ def determine_max_advertisements(android_device):
 
 
 def get_advanced_droid_list(android_devices):
+    """Add max_advertisement and batch_scan_supported attributes to input
+    Android devices
+
+    This will programatically determine maximum LE advertisements of each
+    input Android device.
+
+    Args:
+        android_devices: The Android devices to setup.
+
+    Returns:
+        List of Android devices with new attribtues.
+    """
     droid_list = []
     for a in android_devices:
         d, e = a.droid, a.ed
@@ -334,18 +399,33 @@ def generate_id_by_size(
         size,
         chars=(
             string.ascii_lowercase + string.ascii_uppercase + string.digits)):
+    """Generate random ascii characters of input size and input char types
+
+    Args:
+        size: Input size of string.
+        chars: (Optional) Chars to use in generating a random string.
+
+    Returns:
+        String of random input chars at the input size.
+    """
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
+def cleanup_scanners_and_advertisers(scn_android_device, scn_callback_list,
                                      adv_android_device, adv_callback_list):
-    """
-    Try to gracefully stop all scanning and advertising instances.
+    """Try to gracefully stop all scanning and advertising instances.
+
+    Args:
+        scn_android_device: The Android device that is actively scanning.
+        scn_callback_list: The scan callback id list that needs to be stopped.
+        adv_android_device: The Android device that is actively advertising.
+        adv_callback_list: The advertise callback id list that needs to be
+            stopped.
     """
     scan_droid, scan_ed = scn_android_device.droid, scn_android_device.ed
     adv_droid = adv_android_device.droid
     try:
-        for scan_callback in scan_callback_list:
+        for scan_callback in scn_callback_list:
             scan_droid.bleStopBleScan(scan_callback)
     except Exception as err:
         log.debug("Failed to stop LE scan... reseting Bluetooth. Error {}".
@@ -362,6 +442,17 @@ def cleanup_scanners_and_advertisers(scn_android_device, scan_callback_list,
 
 
 def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
+    """Start generic advertisement and get it's mac address by LE scanning.
+
+    Args:
+        scan_ad: The Android device to use as the scanner.
+        adv_ad: The Android device to use as the advertiser.
+
+    Returns:
+        mac_address: The mac address of the advertisement.
+        advertise_callback: The advertise callback id of the active
+            advertisement.
+    """
     adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
     adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
         AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
@@ -397,22 +488,15 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     return mac_address, advertise_callback
 
 
-def get_device_local_info(droid):
-    local_info_dict = {}
-    local_info_dict['name'] = droid.bluetoothGetLocalName()
-    local_info_dict['uuids'] = droid.bluetoothGetLocalUuids()
-    return local_info_dict
+def disable_bluetooth(droid):
+    """Disable Bluetooth on input Droid object.
 
+    Args:
+        droid: The droid object to disable Bluetooth on.
 
-def enable_bluetooth(droid, ed):
-    if droid.bluetoothCheckState() is False:
-        droid.bluetoothToggleState(True)
-        if droid.bluetoothCheckState() is False:
-            return False
-    return True
-
-
-def disable_bluetooth(droid, ed):
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     if droid.bluetoothCheckState() is True:
         droid.bluetoothToggleState(False)
         if droid.bluetoothCheckState() is True:
@@ -421,9 +505,18 @@ def disable_bluetooth(droid, ed):
 
 
 def set_bt_scan_mode(ad, scan_mode_value):
+    """Set Android device's Bluetooth scan mode.
+
+    Args:
+        ad: The Android device to set the scan mode on.
+        scan_mode_value: The value to set the scan mode to.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     droid, ed = ad.droid, ad.ed
     if scan_mode_value == BluetoothScanModeType.STATE_OFF:
-        disable_bluetooth(droid, ed)
+        disable_bluetooth(droid)
         scan_mode = droid.bluetoothGetScanMode()
         reset_bluetooth([ad])
         if scan_mode != scan_mode_value:
@@ -452,6 +545,15 @@ def set_bt_scan_mode(ad, scan_mode_value):
 
 
 def set_device_name(droid, name):
+    """Set and check Bluetooth local name on input droid object.
+
+    Args:
+        droid: Droid object to set local name on.
+        name: the Bluetooth local name to set.
+
+    Returns:
+        True if successful, false if unsuccessful.
+    """
     droid.bluetoothSetLocalName(name)
     time.sleep(2)
     droid_name = droid.bluetoothGetLocalName()
@@ -461,6 +563,14 @@ def set_device_name(droid, name):
 
 
 def check_device_supported_profiles(droid):
+    """Checks for Android device supported profiles.
+
+    Args:
+        droid: The droid object to query.
+
+    Returns:
+        A dictionary of supported profiles.
+    """
     profile_dict = {}
     profile_dict['hid'] = droid.bluetoothHidIsReady()
     profile_dict['hsp'] = droid.bluetoothHspIsReady()
@@ -469,9 +579,18 @@ def check_device_supported_profiles(droid):
     return profile_dict
 
 
-def log_energy_info(droids, state):
+def log_energy_info(android_devices, state):
+    """Logs energy info of input Android devices.
+
+    Args:
+        android_devices: input Android device list to log energy info from.
+        state: the input state to log. Usually 'Start' or 'Stop' for logging.
+
+    Returns:
+        A logging string of the Bluetooth energy info reported.
+    """
     return_string = "{} Energy info collection:\n".format(state)
-    for d in droids:
+    for d in android_devices:
         with suppress(Exception):
             if (d.getBuildModel() != "Nexus 5" or
                     d.getBuildModel() != "Nexus 4"):
@@ -484,6 +603,15 @@ def log_energy_info(droids, state):
 
 
 def pair_pri_to_sec(pri_droid, sec_droid):
+    """Pairs pri droid to sec droid.
+
+    Args:
+        pri_droid: Droid initiating pairing.
+        sec_droid: Droid accepting pairing.
+
+    Returns:
+        True if pairing is successful, false if uncsuccsessful.
+    """
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
@@ -517,13 +645,12 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
     """Connects pri droid to secondary droid.
 
     Args:
-        pri_droid: Droid initiating connection
-        sec_droid: Droid accepting connection
-        profiles_set: Set of profiles to be connected
+        pri_droid: Droid initiating connection.
+        sec_droid: Droid accepting connection.
+        profiles_set: Set of profiles to be connected.
 
     Returns:
-        Pass if True
-        Fail if False
+        True of connection is successful, false if unsuccessful.
     """
     # Check if we support all profiles.
     supported_profiles = [i.value for i in BluetoothProfile]
@@ -577,11 +704,18 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
 
 
 def take_btsnoop_logs(android_devices, testcase, testname):
+    """Pull btsnoop logs from an input list of android devices.
+
+    Args:
+        android_devices: the list of Android devices to pull btsnoop logs from.
+        testcase: Name of the test calss that triggered this snoop log.
+        testname: Name of the test case that triggered this bug report.
+    """
     for a in android_devices:
         take_btsnoop_log(a, testcase, testname)
 
 
-def take_btsnoop_log(ad, testcase, test_name):
+def take_btsnoop_log(ad, testcase, testname):
     """Grabs the btsnoop_hci log on a device and stores it in the log directory
     of the test class.
 
@@ -589,16 +723,17 @@ def take_btsnoop_log(ad, testcase, test_name):
     objects in on_fail. Bug report takes a relative long time to take, so use
     this cautiously.
 
-    Params:
-      test_name: Name of the test case that triggered this bug report.
-      android_device: The android_device instance to take bugreport on.
+    Args:
+        ad: The android_device instance to take bugreport on.
+        testcase: Name of the test calss that triggered this snoop log.
+        testname: Name of the test case that triggered this bug report.
     """
-    test_name = "".join(x for x in test_name if x.isalnum())
+    testname = "".join(x for x in testname if x.isalnum())
     with suppress(Exception):
         serial = ad.droid.getBuildSerial()
         device_model = ad.droid.getBuildModel()
         device_model = device_model.replace(" ", "")
-        out_name = ','.join((test_name, device_model, serial))
+        out_name = ','.join((testname, device_model, serial))
         snoop_path = ad.log_path + "/BluetoothSnoopLogs"
         utils.create_dir(snoop_path)
         cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
@@ -609,6 +744,11 @@ def take_btsnoop_log(ad, testcase, test_name):
 
 
 def kill_bluetooth_process(ad):
+    """Kill Bluetooth process on Android device.
+
+    Args:
+        ad: Android device to kill BT process on.
+    """
     log.info("Killing Bluetooth process.")
     pid = ad.adb.shell(
         "ps | grep com.android.bluetooth | awk '{print $2}'").decode('ascii')
@@ -621,8 +761,8 @@ def orchestrate_rfcomm_connection(client_ad,
     """Sets up the RFCOMM connection between two Android devices.
 
     Args:
-        client_ad: the Android device performing the connection
-        server_ad: the Android device accepting the connection
+        client_ad: the Android device performing the connection.
+        server_ad: the Android device accepting the connection.
     Returns:
         True if connection was successful, false if unsuccessful.
     """
@@ -650,6 +790,17 @@ def orchestrate_rfcomm_connection(client_ad,
 
 
 def write_read_verify_data(client_ad, server_ad, msg, binary=False):
+    """Verify that the client wrote data to the server Android device correctly.
+
+    Args:
+        client_ad: the Android device to perform the write.
+        server_ad: the Android device to read the data written.
+        msg: the message to write.
+        binary: if the msg arg is binary or not.
+
+    Returns:
+        True if the data written matches the data read, false if not.
+    """
     log.info("Write message.")
     try:
         if binary:
@@ -677,10 +828,10 @@ def write_read_verify_data(client_ad, server_ad, msg, binary=False):
 
 
 def clear_bonded_devices(ad):
-    """Clear bonded devices from the input Android device
+    """Clear bonded devices from the input Android device.
 
     Args:
-        ad: the Android device performing the connection
+        ad: the Android device performing the connection.
     Returns:
         True if clearing bonded devices was successful, false if unsuccessful.
     """
@@ -695,6 +846,19 @@ def clear_bonded_devices(ad):
 
 
 def verify_server_and_client_connected(client_ad, server_ad):
+    """Verify that input server and client Android devices are connected.
+
+    This code is under the assumption that there will only be
+    a single connection.
+
+    Args:
+        client_ad: the Android device to check number of active connections.
+        server_ad: the Android device to check number of active connections.
+
+    Returns:
+        True both server and client have at least 1 active connection,
+        false if unsuccessful.
+    """
     test_result = True
     if len(server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
         log.error("No rfcomm connections found on server.")
