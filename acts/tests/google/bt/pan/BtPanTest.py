@@ -29,6 +29,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from queue import Empty
 import time
 
+
 class BtPanTest(BluetoothBaseTest):
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
@@ -89,7 +90,10 @@ class BtPanTest(BluetoothBaseTest):
         TAGS: Classic, PAN, tethering
         Priority: 1
         """
-        orchestrate_and_verify_pan_connection(self.pan_dut, self.panu_dut)
+        if not orchestrate_and_verify_pan_connection(self.pan_dut,
+                                                     self.panu_dut):
+            self.log.error("Could not establish a PAN connection.")
+            return False
         self.pan_dut.droid.bluetoothPanSetBluetoothTethering(False)
         if verify_http_connection(self.log, self.panu_dut):
             self.log.error("PANU device still has internet access.")
