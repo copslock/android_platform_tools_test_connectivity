@@ -30,8 +30,6 @@ from queue import Empty
 import time
 
 class BtPanTest(BluetoothBaseTest):
-    self.magic_connect_sleep = 5
-
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         self.pan_dut = self.android_devices[0]
