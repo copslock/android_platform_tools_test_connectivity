@@ -695,7 +695,6 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         True if soft AP was started successfully, False otherwise.
     """
     droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
     config = {WifiEnums.SSID_KEY: ssid}
     if password:
         config[WifiEnums.PWD_KEY] = password
@@ -703,10 +702,17 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.APBAND_KEY] = band
     if not droid.wifiSetApEnabled(True, config):
         return False
-    ed.pop_event("WifiManagerApEnabled", 30)
-    ed.wait_for_event("TetherStateChanged",
-                      lambda x: x["data"]["ACTIVE_TETHER"], 30)
-    droid.wifiStopTrackingStateChange()
+    droid.wifiStartTrackingTetherStateChange()
+    droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
+    try:
+        ed.pop_event("ConnectivityManagerOnTetheringStarted")
+        ed.wait_for_event("TetherStateChanged",
+                          lambda x : x["data"]["ACTIVE_TETHER"], 30)
+    except Empty:
+        msg = "Failed to receive confirmation of wifi tethering starting"
+        asserts.fail(msg)
+    finally:
+        droid.wifiStopTrackingTetherStateChange()
     return True
 
 
@@ -717,13 +723,18 @@ def stop_wifi_tethering(ad):
         ad: android_device to stop wifi tethering on.
     """
     droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
+    droid.wifiStartTrackingTetherStateChange()
+    droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
     droid.wifiSetApEnabled(False, None)
-    ed.pop_event("WifiManagerApDisabled", 30)
-    ed.wait_for_event("TetherStateChanged",
-                      lambda x: not x["data"]["ACTIVE_TETHER"], 30)
-    droid.wifiStopTrackingStateChange()
-
+    try:
+        ed.pop_event("WifiManagerApDisabled", 30)
+        ed.wait_for_event("TetherStateChanged",
+                          lambda x : not x["data"]["ACTIVE_TETHER"], 30)
+    except Empty:
+        msg = "Failed to receive confirmation of wifi tethering stopping"
+        asserts.fail(msg)
+    finally:
+        droid.wifiStopTrackingTetherStateChange()
 
 def toggle_wifi_and_wait_for_reconnection(ad,
                                           network,
