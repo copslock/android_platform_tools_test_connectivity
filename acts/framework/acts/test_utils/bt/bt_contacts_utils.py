@@ -35,6 +35,7 @@ MISSED_CALL_TYPE = "3"
 # Callback strings.
 CONTACTS_CHANGED_CALLBACK = "ContactsChanged"
 CALL_LOG_CHANGED = "CallLogChanged"
+CONTACTS_ERASED_CALLBACK = "ContactsErased"
 
 # URI for contacts database on Nexus.
 CONTACTS_URI = "content://com.android.contacts/data/phones"
@@ -299,7 +300,9 @@ def erase_contacts(device):
     log.info("Erasing contacts.")
     if get_contact_count(device) > 0:
         device.droid.contactsEraseAll()
-        if not wait_for_phone_number_update_complete(device, 0):
+        try :
+            device.ed.pop_event(CONTACTS_ERASED_CALLBACK, PBAP_SYNC_TIME)
+        except queue.Empty:
             log.error("Phone book not empty.")
             return False
     return True
