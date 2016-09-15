@@ -93,30 +93,6 @@ def sh_quote_word(text, whitelist=SHELL_QUOTING_WHITELIST):
     return "'%s'" % text.replace("'", r"'\''")
 
 
-def pid_is_alive(pid):
-    """
-    Args:
-        pid: The process id to check.
-
-    Returns:
-        True if process pid exists and is not yet stuck in Zombie state.
-        Zombies are impossible to move between cgroups, etc.
-        pid can be integer, or text of integer.
-    """
-    path = '/proc/%s/stat' % pid
-
-    try:
-        with open(path, 'r') as fd:
-            stat = fd.readline().rstrip('\n')
-    except IOError:
-        if not os.path.exists(path):
-            # file went away
-            return False
-        raise
-
-    return stat.split()[2] != 'Z'
-
-
 def split_command_line(command_line):
     """Splits a command line into an array.
 
