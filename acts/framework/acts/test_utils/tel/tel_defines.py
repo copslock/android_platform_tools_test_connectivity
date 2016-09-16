@@ -190,7 +190,10 @@ CELL_STRONG_RSSI_VALUE = -70
 WIFI_WEAK_RSSI_VALUE = -80
 
 # Emergency call number
-EMERGENCY_CALL_NUMBER = "911"
+DEFAULT_EMERGENCY_CALL_NUMBER = "911"
+
+EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911",
+                          "999", "*911", "#911"]
 
 AOSP_PREFIX = "aosp_"
 
@@ -392,7 +395,7 @@ RAT_HSPAP = "HSPAP"
 RAT_GSM = "GSM"
 RAT_TD_SCDMA = "TD_SCDMA"
 RAT_GLOBAL = "GLOBAL"
-RAT_LTE_CA = "LTE_CA" # LTE Carrier Aggregation
+RAT_LTE_CA = "LTE_CA"  # LTE Carrier Aggregation
 RAT_UNKNOWN = "UNKNOWN"
 
 # Constant for Phone Type
