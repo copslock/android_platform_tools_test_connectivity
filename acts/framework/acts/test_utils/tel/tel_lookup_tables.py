@@ -218,7 +218,7 @@ class _TelTables():
         '23430': tel_defines.CARRIER_EEUK,  #T-Mobile UK
         '23431': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
         '23432': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
-        '23415': tel_defines.CARRIER_VFUK
+        '23415': tel_defines.CARRIER_VFUK,
 
         #Vodafone (Germany)
         '26202': tel_defines.CARRIER_GMBH,
