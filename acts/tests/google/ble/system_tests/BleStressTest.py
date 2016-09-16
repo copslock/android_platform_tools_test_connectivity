@@ -52,6 +52,16 @@ class BleStressTest(BluetoothBaseTest):
         self.log.debug(pprint.pformat(event))
         return test_result
 
+    def _verify_successful_bond(self, target_address):
+        end_time = time.time() + self.PAIRING_TIMEOUT
+        self.log.info("Verifying devices are bonded")
+        while time.time() < end_time:
+            bonded_devices = self.scn_ad.droid.bluetoothGetBondedDevices()
+            if target_address in {d['address'] for d in bonded_devices}:
+                self.log.info("Successfully bonded to device")
+                return True
+        return False
+
     @BluetoothBaseTest.bt_test_wrap
     def test_loop_scanning_1000(self):
         """Stress start/stop scan instances.
@@ -270,19 +280,6 @@ class BleStressTest(BluetoothBaseTest):
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
         return test_result
-
-    def _verify_successful_bond(self, target_address):
-        end_time = time.time() + self.PAIRING_TIMEOUT
-        self.log.info("Verifying devices are bonded")
-        while time.time() < end_time:
-            bonded_devices = self.scn_ad.droid.bluetoothGetBondedDevices()
-            if target_address in {d['address'] for d in bonded_devices}:
-                self.log.info("Successfully bonded to device")
-                return True
-        return False
-
-    def _get_time_in_milliseconds(self):
-        return int(round(time.time() * 1000))
 
     @BluetoothBaseTest.bt_test_wrap
     def test_le_pairing(self):
