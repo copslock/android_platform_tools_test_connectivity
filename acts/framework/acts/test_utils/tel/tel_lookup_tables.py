@@ -219,6 +219,33 @@ class _TelTables():
         '23431': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
         '23432': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
         '23415': tel_defines.CARRIER_VFUK
+
+        #Vodafone (Germany)
+        '26202': tel_defines.CARRIER_GMBH,
+        '26204': tel_defines.CARRIER_GMBH,
+        '26209': tel_defines.CARRIER_GMBH,
+        '26242': tel_defines.CARRIER_GMBH,
+        '26243': tel_defines.CARRIER_GMBH,
+
+        #Vodafone (Italy)
+        '22206': tel_defines.CARRIER_ITA,
+        '22210': tel_defines.CARRIER_ITA,
+
+        #Vodafone (Spain)
+        '21401': tel_defines.CARRIER_ESP,
+        '20406': tel_defines.CARRIER_ESP,
+
+        #Orange (France)
+        '20801': tel_defines.CARRIER_ORG,
+        '20802': tel_defines.CARRIER_ORG,
+        '20891': tel_defines.CARRIER_ORG,
+
+        #Telenor (Norway)
+        '24201': tel_defines.CARRIER_TEL,
+        '24212': tel_defines.CARRIER_TEL,
+
+        #Telstra (Australia)
+        '50501': tel_defines.CARRIER_TSA
     }
 
     technology_gen_tbl = [tel_defines.GEN_2G, tel_defines.GEN_3G,
@@ -517,7 +544,13 @@ class _TelTables():
         tel_defines.CARRIER_VZW: default_cdma_operator_network_tbl,
         tel_defines.CARRIER_SPT: default_cdma_operator_network_tbl,
         tel_defines.CARRIER_EEUK: default_umts_operator_network_tbl,
-        tel_defines.CARRIER_VFUK: default_umts_operator_network_tbl
+        tel_defines.CARRIER_VFUK: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_GMBH: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_ITA: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_ESP: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_ORG: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_TEL: default_umts_operator_network_tbl,
+        tel_defines.CARRIER_TSA: default_umts_operator_network_tbl
     }
 
     umts_allowable_network_preference_tbl = \
