@@ -67,7 +67,7 @@ EVENT_CB_KEY_REASON = "reason"
 EVENT_CB_KEY_MAC = "mac"
 
 ######################################################
-# WifiNanSessionCallback events
+# WifiNanDiscoverySessionCallback events
 ######################################################
 SESSION_CB_ON_PUBLISH_STARTED = "WifiNanSessionOnPublishStarted"
 SESSION_CB_ON_SUBSCRIBE_STARTED = "WifiNanSessionOnSubscribeStarted"
@@ -79,7 +79,7 @@ SESSION_CB_ON_MESSAGE_SEND_SUCCESS = "WifiNanSessionOnMessageSendSuccess"
 SESSION_CB_ON_MESSAGE_SEND_FAIL = "WifiNanSessionOnMessageSendFail"
 SESSION_CB_ON_MESSAGE_RECEIVED = "WifiNanSessionOnMessageReceived"
 
-# WifiNanSessionCallback events keys
+# WifiNanDiscoverySessionCallback events keys
 SESSION_CB_KEY_CB_ID = "callbackId"
 SESSION_CB_KEY_SESSION_ID = "sessionId"
 SESSION_CB_KEY_REASON = "reason"
