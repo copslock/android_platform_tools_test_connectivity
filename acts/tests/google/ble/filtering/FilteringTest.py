@@ -44,57 +44,57 @@ class FilteringTest(BluetoothBaseTest):
         },
         {
             'manufacturer_specific_data_id': 1,
-            'manufacturer_specific_data': "1"
+            'manufacturer_specific_data': [1]
         },
         {
             'manufacturer_specific_data_id': 1,
-            'manufacturer_specific_data': "14,0,54,0,0,0,0,0"
+            'manufacturer_specific_data': [14,0,54,0,0,0,0,0]
         },
         {
             'manufacturer_specific_data_id': 1,
-            'manufacturer_specific_data': "1",
-            'manufacturer_specific_data_mask': "1"
+            'manufacturer_specific_data': [1],
+            'manufacturer_specific_data_mask': [1]
         },
         {
             'service_data_uuid': "0000110A-0000-1000-8000-00805F9B34FB",
-            'service_data': "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,17,18,19,"
-                            "20,21,22,23,24"
+            'service_data': [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,17,18,19,
+                            20,21,22,23,24]
         },
         {
             'service_data_uuid': "0000110B-0000-1000-8000-00805F9B34FB",
-            'service_data': "13"
+            'service_data': [13]
         },
         {
             'service_data_uuid': "0000110C-0000-1000-8000-00805F9B34FB",
-            'service_data': "11,14,50"
+            'service_data': [11,14,50]
         },
         {
             'service_data_uuid': "0000110D-0000-1000-8000-00805F9B34FB",
-            'service_data': "16,22,11"
+            'service_data': [16,22,11]
         },
         {
             'service_data_uuid': "0000110E-0000-1000-8000-00805F9B34FB",
-            'service_data': "2,9,54"
+            'service_data': [2,9,54]
         },
         {
             'service_data_uuid': "0000110F-0000-1000-8000-00805F9B34FB",
-            'service_data': "69,11,50"
+            'service_data': [69,11,50]
         },
         {
             'service_data_uuid': "00001101-0000-1000-8000-00805F9B34FB",
-            'service_data': "12,11,21"
+            'service_data': [12,11,21]
         },
         {
             'service_data_uuid': "00001102-0000-1000-8000-00805F9B34FB",
-            'service_data': "12,12,44"
+            'service_data': [12,12,44]
         },
         {
             'service_data_uuid': "00001103-0000-1000-8000-00805F9B34FB",
-            'service_data': "4,54,1"
+            'service_data': [4,54,1]
         },
         {
             'service_data_uuid': "00001104-0000-1000-8000-00805F9B34FB",
-            'service_data': "33,22,44"
+            'service_data': [33,22,44]
         },
         {
             'service_uuid': "00000000-0000-1000-8000-00805f9b34fb",
@@ -116,15 +116,15 @@ class FilteringTest(BluetoothBaseTest):
     valid_filter_variants = {
         'include_tx_power_level': [True, False],
         'manufacturer_specific_data_id': [1, 2, 65535],
-        'manufacturer_specific_data': ["1", "1,2", "127"],
+        'manufacturer_specific_data': [[1], [1,2], [127]],
         'service_data_uuid': ["00000000-0000-1000-8000-00805f9b34fb"],
-        'service_data': ["1,2,3", "1", "127"],
+        'service_data': [[1,2,3], [1], [127]],
         'include_device_name': [False, True],
     }
 
     multi_manufacturer_specific_data_suite = {
-        'manufacturer_specific_data_list': [[(1, "1"), (2, "2"),
-                                             (65535, "127")]],
+        'manufacturer_specific_data_list': [[(1, [1]), (2, [2]),
+                                             (65535, [127])]],
     }
 
     settings_in_effect_variants = {
@@ -622,8 +622,8 @@ class FilteringTest(BluetoothBaseTest):
         settings = {'is_connectable': False}
         filters = {
             'service_data_uuid': "0000110A-0000-1000-8000-00805F9B34FB",
-            'service_data': "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,17,18,19,"
-                            "20,21,22,23,24,25,26,27",
+            'service_data': [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,17,18,19,
+                            20,21,22,23,24,25,26,27],
         }
         params = (filters, settings)
         return self._magic(params)
