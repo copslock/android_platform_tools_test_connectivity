@@ -68,7 +68,7 @@ class BleScanApiTest(BluetoothBaseTest):
         if 'ScanFilterDeviceAddress' not in input.keys():
             input['ScanFilterDeviceAddress'] = None
         if 'ScanFilterManufacturerData' not in input.keys():
-            input['ScanFilterManufacturerData'] = ""
+            input['ScanFilterManufacturerData'] = None
         return input
 
     def validate_scan_settings_helper(self, input, droid):
@@ -919,7 +919,7 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 1
         """
         expected_manufacturer_id = 0
-        expected_manufacturer_data = "1,2,1,3,4,5,6"
+        expected_manufacturer_data = [1,2,1,3,4,5,6]
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data
@@ -946,8 +946,8 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 1
         """
         expected_manufacturer_id = 1
-        expected_manufacturer_data = "1"
-        expected_manufacturer_data_mask = "1,2,1,3,4,5,6"
+        expected_manufacturer_data = [1]
+        expected_manufacturer_data_mask = [1,2,1,3,4,5,6]
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data
@@ -976,7 +976,7 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 2
         """
         expected_manufacturer_id = 2147483647
-        expected_manufacturer_data = "1,2,1,3,4,5,6"
+        expected_manufacturer_data = [1,2,1,3,4,5,6]
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data
@@ -1003,7 +1003,7 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 2
         """
         expected_manufacturer_id = 1
-        expected_manufacturer_data = ""
+        expected_manufacturer_data = []
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data
@@ -1030,8 +1030,8 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 1
         """
         expected_manufacturer_id = 1
-        expected_manufacturer_data = "1,2,1,3,4,5,6"
-        expected_manufacturer_data_mask = ""
+        expected_manufacturer_data = [1,2,1,3,4,5,6]
+        expected_manufacturer_data_mask = []
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data
@@ -1060,7 +1060,7 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 2
         """
         expected_manufacturer_id = -1
-        expected_manufacturer_data = "1,2,1,3,4,5,6"
+        expected_manufacturer_data = [1,2,1,3,4,5,6]
         input = {}
         input['ScanFilterManufacturerDataId'] = expected_manufacturer_id
         input['ScanFilterManufacturerData'] = expected_manufacturer_data

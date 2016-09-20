@@ -636,7 +636,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.log.debug("Step 1: Setup environment.")
         droid = self.droid
         exp_service_data_uuid = "00000000-0000-1000-8000-00805f9b34fb"
-        exp_service_data = "1,2,3"
+        exp_service_data = [1,2,3]
         self.log.debug(
             "Step 2: Set the filtering data object's service data uuid to: {}, "
             "service data: {}".format(exp_service_data_uuid, exp_service_data))
@@ -735,7 +735,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.log.debug("Step 1: Setup environment.")
         droid = self.droid
         exp_manu_id = 0
-        exp_manu_specific_data = "1,2,3"
+        exp_manu_specific_data = [1,2,3]
         self.log.debug(
             "Step 2: Set the filtering data object's service data manu id: {}"
             ", manu specific data: {}".format(exp_manu_id,
@@ -768,7 +768,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.log.debug("Step 1: Setup environment.")
         droid = self.droid
         exp_manu_id = -1
-        exp_manu_specific_data = "1,2,3"
+        exp_manu_specific_data = [1,2,3]
         self.log.debug(
             "Step 2: Set the filtering data object's service data manu id: {}"
             ", manu specific data: {}".format(exp_manu_id,
@@ -801,7 +801,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.log.debug("Step 1: Setup environment.")
         droid = self.droid
         exp_manu_id = 0
-        exp_manu_specific_data = "helloworld"
+        exp_manu_specific_data = ['helloworld']
         self.log.debug(
             "Step 2: Set the filtering data object's service data manu id: {}"
             ", manu specific data: {}".format(exp_manu_id,
@@ -835,7 +835,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
         self.log.debug("Step 1: Setup environment.")
         droid = self.droid
         exp_manu_id = JavaInteger.MAX.value
-        exp_manu_specific_data = "1,2,3"
+        exp_manu_specific_data = [1,2,3]
         self.log.debug(
             "Step 2: Set the filtering data object's service data manu id: {}"
             ", manu specific data: {}".format(exp_manu_id,
@@ -1002,7 +1002,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
             service_data.append(i)
         droid.bleAddAdvertiseDataServiceData(
             "0000110D-0000-1000-8000-00805F9B34FB",
-            ','.join(map(str, service_data)))
+            service_data)
         advcallback, adv_data, adv_settings = generate_ble_advertise_objects(
             droid)
         droid.bleStartBleAdvertising(advcallback, adv_data, adv_settings)
