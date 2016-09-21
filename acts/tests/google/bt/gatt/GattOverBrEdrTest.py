@@ -54,7 +54,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         self.per_ad = self.android_devices[1]
 
     def setup_class(self):
-        super().setup_class()
+        super(BluetoothBaseTest, self).setup_class()
         self.per_droid_mac_address = self.per_ad.droid.bluetoothGetLocalAddress(
         )
         if not self.per_droid_mac_address:
@@ -62,7 +62,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         return True
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         bluetooth_gatt_list = []
         self.gatt_server_list = []
         self.adv_instances = []
@@ -557,7 +557,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             test_uuid, GattCharacteristic.PROPERTY_WRITE.value,
             GattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM.value)
         gatt_service = self.per_ad.droid.gattServerCreateService(
-            service_uuid, GattService.SERVICE_TYPE_PRIMARY)
+            service_uuid, GattService.SERVICE_TYPE_PRIMARY.value)
         self.per_ad.droid.gattServerAddCharacteristicToService(gatt_service,
                                                                characteristic)
         self.per_ad.droid.gattServerAddService(gatt_server, gatt_service)
