@@ -56,7 +56,7 @@ class ConcurrentBleAdvertisementDiscoveryTest(BluetoothBaseTest):
         return reset_bluetooth(self.android_devices)
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         self.log.info("Setting up advertisements")
         try:
             self.advertise_callback_list = setup_n_advertisements(
@@ -66,7 +66,7 @@ class ConcurrentBleAdvertisementDiscoveryTest(BluetoothBaseTest):
         return True
 
     def teardown_test(self):
-        super().teardown_test()
+        super(BluetoothBaseTest, self).teardown_test()
         self.log.info("Tearing down advertisements")
         teardown_n_advertisements(self.adv_ad,
                                   len(self.advertise_callback_list),
