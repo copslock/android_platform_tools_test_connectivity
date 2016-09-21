@@ -183,8 +183,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Concurrency
         Priority: 2
         """
-        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, "1")
-        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, "1")
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, [1])
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, [1])
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -213,8 +213,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         TAGS: LE, Advertising, Concurrency
         Priority: 2
         """
-        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, "1", "1")
-        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, "1")
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, [1], [1])
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, [1])
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -246,9 +246,9 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         test_result = True
         filter_list = self.scn_ad.droid.bleGenFilterList()
         self.scn_ad.droid.bleSetScanFilterServiceData(
-            "0000110A-0000-1000-8000-00805F9B34FB", "11,17,80")
+            "0000110A-0000-1000-8000-00805F9B34FB", [11,17,80])
         self.adv_ad.droid.bleAddAdvertiseDataServiceData(
-            "0000110A-0000-1000-8000-00805F9B34FB", "11,17,80")
+            "0000110A-0000-1000-8000-00805F9B34FB", [11,17,80])
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -281,8 +281,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
-        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, "1", "1")
-        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, "1")
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(1, [1], [1])
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(1, [1])
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
