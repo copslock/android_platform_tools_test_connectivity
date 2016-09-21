@@ -52,7 +52,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         self.max_advertisements = self.droid_list[1]['max_advertisements']
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         return reset_bluetooth(self.android_devices)
 
     def _verify_n_advertisements(self, num_advertisements):

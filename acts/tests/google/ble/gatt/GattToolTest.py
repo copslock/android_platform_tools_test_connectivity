@@ -61,13 +61,13 @@ class GattToolTest(BluetoothBaseTest):
         self.CCC_DESC_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         if not self._is_peripheral_advertising():
             input("Press enter when peripheral is advertising...")
         return True
 
     def teardown_test(self):
-        super().teardown_test()
+        super(BluetoothBaseTest, self).teardown_test()
         self.log_stats()
         self.timer_list = []
         return True
