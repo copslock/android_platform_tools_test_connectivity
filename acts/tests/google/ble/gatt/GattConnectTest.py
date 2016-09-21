@@ -20,7 +20,6 @@ This test script exercises different GATT connection tests.
 import pprint
 from queue import Empty
 import time
-from contextlib import suppress
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BtEnum import BluetoothProfile
@@ -56,7 +55,7 @@ class GattConnectTest(BluetoothBaseTest):
         self.per_ad = self.android_devices[1]
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         bluetooth_gatt_list = []
         self.gatt_server_list = []
         self.adv_instances = []
@@ -278,7 +277,7 @@ class GattConnectTest(BluetoothBaseTest):
         autoconnect = True
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
             gatt_callback, mac_address, autoconnect,
-            GattTransport.TRANSPORT_AUTO)
+            GattTransport.TRANSPORT_AUTO.value)
         self.bluetooth_gatt_list.append(bluetooth_gatt)
         expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(
             gatt_callback)
@@ -332,7 +331,7 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(err)
             return False
         self.adv_instances.append(adv_callback)
-        expected_mtu = MtuSize.MIN
+        expected_mtu = MtuSize.MIN.value
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
         if not self._verify_mtu_changed_on_client_and_server(
                 expected_mtu, gatt_callback, gatt_server_cb):
@@ -381,7 +380,7 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(err)
             return False
         self.adv_instances.append(adv_callback)
-        expected_mtu = MtuSize.MAX
+        expected_mtu = MtuSize.MAX.value
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, expected_mtu)
         if not self._verify_mtu_changed_on_client_and_server(
                 expected_mtu, gatt_callback, gatt_server_cb):
@@ -431,7 +430,7 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(err)
             return False
         self.adv_instances.append(adv_callback)
-        unexpected_mtu = MtuSize.MIN - 1
+        unexpected_mtu = MtuSize.MIN.value - 1
         self.cen_ad.droid.gattClientRequestMtu(bluetooth_gatt, unexpected_mtu)
         if self._verify_mtu_changed_on_client_and_server(
                 unexpected_mtu, gatt_callback, gatt_server_cb):
@@ -858,9 +857,9 @@ class GattConnectTest(BluetoothBaseTest):
             self.log.error(err)
             return False
         conn_cen_devices = self.cen_ad.droid.bluetoothGetConnectedLeDevices(
-            BluetoothProfile.GATT)
+            BluetoothProfile.GATT.value)
         conn_per_devices = self.per_ad.droid.bluetoothGetConnectedLeDevices(
-            BluetoothProfile.GATT_SERVER)
+            BluetoothProfile.GATT_SERVER.value)
         target_name = self.per_ad.droid.bluetoothGetLocalName()
         error_message = ("Connected device {} not found in list of connected "
                          "devices {}")
