@@ -200,7 +200,7 @@ class GattConnectedBaseTest(BluetoothBaseTest):
         self.per_ad.droid.gattServerCharacteristicAddDescriptor(
             characteristic_list[2], descriptor_list[2])
         gatt_service3 = self.per_ad.droid.gattServerCreateService(
-            self.TEST_SERVICE_UUID, GattService.SERVICE_TYPE_PRIMARY)
+            self.TEST_SERVICE_UUID, GattService.SERVICE_TYPE_PRIMARY.value)
         for characteristic in characteristic_list:
             self.per_ad.droid.gattServerAddCharacteristicToService(
                 gatt_service3, characteristic)
