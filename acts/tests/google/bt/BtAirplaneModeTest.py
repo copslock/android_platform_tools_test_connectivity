@@ -34,7 +34,7 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         self.dut = self.android_devices[0]
 
     def setup_test(self):
-        super().setup_test()
+        super(BluetoothBaseTest, self).setup_test()
         # Ensure testcase starts with Airplane mode off
         if not toggle_airplane_mode(self.log, self.dut, False):
             return False

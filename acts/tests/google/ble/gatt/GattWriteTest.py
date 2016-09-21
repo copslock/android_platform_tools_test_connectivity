@@ -285,7 +285,7 @@ class GattWriteTest(GattConnectedBaseTest):
         TAGS: LE, GATT, Characteristic, MTU
         Priority: 2
         """
-        self.mtu = MtuSize.MAX
+        self.mtu = MtuSize.MAX.value
         self.log.info("Set mtu to max MTU: {}".format(self.mtu))
         # set new MTU to the middle point of min and max of MTU
         if not setup_gatt_mtu(self.cen_ad, self.bluetooth_gatt,
@@ -294,7 +294,7 @@ class GattWriteTest(GattConnectedBaseTest):
 
         # create a characteristic with max MTU (217) bytes
         char_value = []
-        for i in range(MtuSize.MAX):
+        for i in range(MtuSize.MAX.value):
             char_value.append(i)
 
         self.cen_ad.droid.gattClientCharacteristicSetValue(
@@ -324,7 +324,7 @@ class GattWriteTest(GattConnectedBaseTest):
             "Received value should have {} bytes".format(data_length))
 
         # set the mtu to max MTU-1
-        self.mtu = MtuSize.MAX - 1
+        self.mtu = MtuSize.MAX.value - 1
         self.log.info("Set mtu to max MTU - 1 : {}".format(self.mtu))
         data_length = self.mtu - GattCharacteristicAttrLength.MTU_ATTR_2
         if not setup_gatt_mtu(self.cen_ad, self.bluetooth_gatt,
@@ -374,7 +374,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         bt_device_id = 0
 
@@ -448,7 +448,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         for i in range(100):
 
@@ -516,7 +516,7 @@ class GattWriteTest(GattConnectedBaseTest):
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
             self.bluetooth_gatt,
-            GattConnectionPriority.CONNECTION_PRIORITY_HIGH)
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         bt_device_id = 0
 
