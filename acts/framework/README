@@ -6,7 +6,6 @@ System dependencies:
   - python3.4-setuptools
 
 Python dependencies (installed automatically by setup.py):
-  - contextlib2
   - future
   - pyserial
 
