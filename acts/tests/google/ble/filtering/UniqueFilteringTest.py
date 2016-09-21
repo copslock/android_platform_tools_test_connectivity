@@ -358,15 +358,15 @@ class UniqueFilteringTest(BluetoothBaseTest):
         the full manufacturer data in the second advertisement.
 
         Steps:
-        1. Setup up an advertisement with manufacturer data "1,2,3".
+        1. Setup up an advertisement with manufacturer data [1,2,3].
         2. Setup a second advertisement with manufacturer data
-        "1,2,3,4,5,6,7,8".
+        [1,2,3,4,5,6,7,8].
         3. Start advertising on each advertisement.
-        4. Create a scan filter that includes manufacturer data "1,2,3".
+        4. Create a scan filter that includes manufacturer data [1,2,3].
 
         Expected Result:
         TBD. Right now Shamu finds only the first advertisement with
-        manufacturer data "1,2,3".
+        manufacturer data [1,2,3].
 
         Returns:
           Pass if True
@@ -378,13 +378,13 @@ class UniqueFilteringTest(BluetoothBaseTest):
         test_result = True
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
-        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(117, "1,2,3")
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(117, [1,2,3])
         advertise_callback, advertise_data, advertise_settings = (
             generate_ble_advertise_objects(self.adv_ad.droid))
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(117,
-                                                            "1,2,3,4,5,6,7,8")
+                                                            [1,2,3,4,5,6,7,8])
         advertise_callback1, advertise_data1, advertise_settings1 = (
             generate_ble_advertise_objects(self.adv_ad.droid))
         self.adv_ad.droid.bleStartBleAdvertising(
@@ -397,8 +397,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
-        self.scn_ad.droid.bleSetScanFilterManufacturerData(117, "1,2,3",
-                                                           "127,127,127")
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(117, [1,2,3],
+                                                           [127,127,127])
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
