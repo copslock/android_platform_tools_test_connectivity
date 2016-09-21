@@ -49,6 +49,7 @@ DEFAULT_RFCOMM_TIMEOUT = 10000
 MAGIC_PAN_CONNECT_TIMEOUT = 5
 DEFAULT_DISCOVERY_TIMEOUT = 3
 
+log = LoggerProxy()
 
 # Callback strings
 scan_result = "BleScan{}onScanResults"
