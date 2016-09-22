@@ -701,8 +701,8 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
-    if not droid.wifiSetApEnabled(True, config):
-        return False
+    msg = "Failed to set WifiAp Configuration."
+    asserts.assert_true(droid.wifiSetWifiApConfiguration(config), msg)
     droid.wifiStartTrackingTetherStateChange()
     droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
     try:
