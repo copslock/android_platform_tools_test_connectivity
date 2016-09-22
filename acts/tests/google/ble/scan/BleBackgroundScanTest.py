@@ -47,7 +47,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
     def setup_test(self):
         self.log.debug(log_energy_info(self.android_devices, "Start"))
         if (self.scn_ad.droid.bluetoothGetLeState() ==
-                BluetoothAdapterState.STATE_OFF):
+                BluetoothAdapterState.STATE_OFF.value):
             self.scn_ad.droid.bluetoothEnableBLE()
             self.scn_ad.ed.pop_event("BleStateChangedOn")
         for a in self.android_devices:

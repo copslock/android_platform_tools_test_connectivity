@@ -22,7 +22,6 @@ import threading
 import time
 from acts import utils
 
-from contextlib2 import suppress
 from subprocess import call
 
 from acts.logger import LoggerProxy
@@ -347,9 +346,12 @@ def determine_max_advertisements(android_device):
                 "Advertisement failed to start. Reached max advertisements at {}".
                 format(advertisement_count))
             break
-    with suppress(Exception):
+    try:
         for adv in advertise_callback_list:
             android_device.droid.bleStopBleAdvertising(adv)
+    except Exception:
+        log.error("Failed to stop advertisingment, resetting Bluetooth.")
+        reset_bluetooth([android_device])
     return advertisement_count
 
 
@@ -516,25 +518,25 @@ def set_bt_scan_mode(ad, scan_mode_value):
         True if successful, false if unsuccessful.
     """
     droid, ed = ad.droid, ad.ed
-    if scan_mode_value == BluetoothScanModeType.STATE_OFF:
+    if scan_mode_value == BluetoothScanModeType.STATE_OFF.value:
         disable_bluetooth(droid)
         scan_mode = droid.bluetoothGetScanMode()
         reset_bluetooth([ad])
         if scan_mode != scan_mode_value:
             return False
-    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_NONE:
+    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_NONE.value:
         droid.bluetoothMakeUndiscoverable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
             return False
-    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_CONNECTABLE:
+    elif scan_mode_value == BluetoothScanModeType.SCAN_MODE_CONNECTABLE.value:
         droid.bluetoothMakeUndiscoverable()
         droid.bluetoothMakeConnectable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
             return False
     elif (scan_mode_value ==
-          BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE):
+          BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE.value):
         droid.bluetoothMakeDiscoverable()
         scan_mode = droid.bluetoothGetScanMode()
         if scan_mode != scan_mode_value:
@@ -592,14 +594,12 @@ def log_energy_info(android_devices, state):
     """
     return_string = "{} Energy info collection:\n".format(state)
     for d in android_devices:
-        with suppress(Exception):
-            if (d.getBuildModel() != "Nexus 5" or
-                    d.getBuildModel() != "Nexus 4"):
+        if (d.droid.getBuildModel() != "Nexus 5" or d.droid.getBuildModel() != "Nexus 4"):
 
-                description = ("Device: {}\tEnergyStatus: {}\n".format(
-                    d.getBuildSerial(),
-                    d.bluetoothGetControllerActivityEnergyInfo(1)))
-                return_string = return_string + description
+            description = ("Device: {}\tEnergyStatus: {}\n".format(
+                d.droid.getBuildSerial(),
+                d.droid.bluetoothGetControllerActivityEnergyInfo(1)))
+            return_string = return_string + description
     return return_string
 
 
@@ -694,7 +694,7 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
 
-        if state == BluetoothProfileState.STATE_CONNECTED and \
+        if state == BluetoothProfileState.STATE_CONNECTED.value and \
             device_addr == sec_droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
         log.info("Profiles connected until now {}".format(profile_connected))
@@ -729,18 +729,17 @@ def take_btsnoop_log(ad, testcase, testname):
         testname: Name of the test case that triggered this bug report.
     """
     testname = "".join(x for x in testname if x.isalnum())
-    with suppress(Exception):
-        serial = ad.droid.getBuildSerial()
-        device_model = ad.droid.getBuildModel()
-        device_model = device_model.replace(" ", "")
-        out_name = ','.join((testname, device_model, serial))
-        snoop_path = ad.log_path + "/BluetoothSnoopLogs"
-        utils.create_dir(snoop_path)
-        cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
-                       snoop_path + '/' + out_name, ".btsnoop_hci.log"))
-        testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
-                          .format(device_model, serial))
-        exe_cmd(cmd)
+    serial = ad.droid.getBuildSerial()
+    device_model = ad.droid.getBuildModel()
+    device_model = device_model.replace(" ", "")
+    out_name = ','.join((testname, device_model, serial))
+    snoop_path = ad.log_path + "/BluetoothSnoopLogs"
+    utils.create_dir(snoop_path)
+    cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
+                   snoop_path + '/' + out_name, ".btsnoop_hci.log"))
+    testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
+                      .format(device_model, serial))
+    exe_cmd(cmd)
 
 
 def kill_bluetooth_process(ad):

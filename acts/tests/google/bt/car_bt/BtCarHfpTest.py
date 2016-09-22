@@ -58,7 +58,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         while attempts > 0 and not connected:
             connected = bt_test_utils.connect_pri_to_sec(
                 self.log, self.hf, self.ag.droid,
-                set([BtEnum.BluetoothProfile.HEADSET_CLIENT]))
+                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value]))
             self.log.info("Connected {}".format(connected))
             attempts -= 1
         return connected
