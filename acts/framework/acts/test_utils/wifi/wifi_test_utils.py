@@ -25,6 +25,7 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.test_utils.tel import tel_defines
 
 log = logging
 
@@ -700,7 +701,8 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
-    if not droid.wifiSetApEnabled(True, config):
+    if not droid.wifiSetWifiApConfiguration(config):
+        log.error("Failed to update WifiAp Configuration")
         return False
     droid.wifiStartTrackingTetherStateChange()
     droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
@@ -723,7 +725,7 @@ def stop_wifi_tethering(ad):
         ad: android_device to stop wifi tethering on.
     """
     droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingTetherStateChange()
+    droid.wifiStopTrackingTetherStateChange()
     droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
     droid.wifiSetApEnabled(False, None)
     try:
