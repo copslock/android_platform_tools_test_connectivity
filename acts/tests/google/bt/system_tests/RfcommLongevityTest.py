@@ -20,7 +20,6 @@ This test was designed to be run in a shield box.
 
 import threading
 import time
-from contextlib import suppress
 from random import randint
 
 from queue import Empty
@@ -56,9 +55,11 @@ class RfcommLongevityTest(BluetoothBaseTest):
                 self.log.info("Failed to reset bluetooth state, retrying...")
 
     def teardown_test(self):
-        with suppress(Exception):
+        try:
             for thread in self.thread_list:
                 thread.join()
+        except Exception:
+            self.log.error("Failed to join threads.")
         for _ in range(5):
             if reset_bluetooth(self.android_devices):
                 break
