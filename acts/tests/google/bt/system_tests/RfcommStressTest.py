@@ -23,10 +23,8 @@ import time
 
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
-from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
 
 
@@ -47,10 +45,6 @@ class RfcommStressTest(BluetoothBaseTest):
             "test_rfcomm_connection_stress",
             "test_rfcomm_read_write_stress",
         )
-
-    def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.android_devices, self, test_name)
-        reset_bluetooth(self.android_devices)
 
     def test_rfcomm_connection_stress(self):
         """Stress test an RFCOMM connection
