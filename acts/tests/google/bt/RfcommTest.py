@@ -18,7 +18,6 @@ Test script to execute Bluetooth basic functionality test cases.
 This test was designed to be run in a shield box.
 """
 
-from contextlib import suppress
 import threading
 import time
 
