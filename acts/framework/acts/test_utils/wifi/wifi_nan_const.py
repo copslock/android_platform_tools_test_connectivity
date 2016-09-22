@@ -17,8 +17,8 @@
 ######################################################
 # Broadcast events
 ######################################################
-BROADCAST_WIFI_NAN_ENABLED = "WifiNanEnabled"
-BROADCAST_WIFI_NAN_DISABLED = "WifiNanDisabled"
+BROADCAST_WIFI_NAN_AVAILABLE = "WifiNanAvailable"
+BROADCAST_WIFI_NAN_NOT_AVAILABLE = "WifiNanNotAvailable"
 
 ######################################################
 # ConfigRequest keys
@@ -58,8 +58,8 @@ SUBSCRIBE_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
 ######################################################
 # WifiNanEventCallback events
 ######################################################
-EVENT_CB_ON_CONNECT_SUCCSSS = "WifiNanOnConnectSuccess"
-EVENT_CB_ON_CONNECT_FAIL = "WifiNanOnConnectFail"
+EVENT_CB_ON_ATTACHED = "WifiNanOnAttached"
+EVENT_CB_ON_ATTACH_FAILED = "WifiNanOnAttachFailed"
 EVENT_CB_ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 
 # WifiNanEventCallback events keys
@@ -71,12 +71,12 @@ EVENT_CB_KEY_MAC = "mac"
 ######################################################
 SESSION_CB_ON_PUBLISH_STARTED = "WifiNanSessionOnPublishStarted"
 SESSION_CB_ON_SUBSCRIBE_STARTED = "WifiNanSessionOnSubscribeStarted"
-SESSION_CB_ON_SESSION_CONFIG_SUCCESS = "WifiNanSessionOnSessionConfigSuccess"
-SESSION_CB_ON_SESSION_CONFIG_FAIL = "WifiNanSessionOnSessionConfigFail"
+SESSION_CB_ON_SESSION_CONFIG_UPDATED = "WifiNanSessionOnSessionConfigUpdated"
+SESSION_CB_ON_SESSION_CONFIG_FAILED = "WifiNanSessionOnSessionConfigFailed"
 SESSION_CB_ON_SESSION_TERMINATED = "WifiNanSessionOnSessionTerminated"
-SESSION_CB_ON_MATCH = "WifiNanSessionOnMatch"
-SESSION_CB_ON_MESSAGE_SEND_SUCCESS = "WifiNanSessionOnMessageSendSuccess"
-SESSION_CB_ON_MESSAGE_SEND_FAIL = "WifiNanSessionOnMessageSendFail"
+SESSION_CB_ON_SERVICE_DISCOVERED = "WifiNanSessionOnServiceDiscovered"
+SESSION_CB_ON_MESSAGE_SENT = "WifiNanSessionOnMessageSent"
+SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiNanSessionOnMessageSendFailed"
 SESSION_CB_ON_MESSAGE_RECEIVED = "WifiNanSessionOnMessageReceived"
 
 # WifiNanDiscoverySessionCallback events keys
