@@ -36,7 +36,7 @@ class BtStressTest(BluetoothBaseTest):
 
 
     def teardown_test(self):
-        super().teardown_test()
+        super(BluetoothBaseTest, self).teardown_test()
         self.log_stats()
         return True
 
