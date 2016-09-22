@@ -26,7 +26,6 @@ This script requires these custom parameters in the config file:
 import pprint
 from queue import Empty
 import time
-from contextlib import suppress
 
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
