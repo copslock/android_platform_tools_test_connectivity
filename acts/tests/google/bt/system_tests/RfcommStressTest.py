@@ -20,7 +20,6 @@ This test was designed to be run in a shield box.
 
 import threading
 import time
-from contextlib import suppress
 
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
