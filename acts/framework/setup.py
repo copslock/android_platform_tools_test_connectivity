@@ -20,7 +20,6 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 install_requires = [
-    'contextlib2',
     'future',
     # mock-1.0.1 is the last version compatible with setuptools <17.1,
     # which is what comes with Ubuntu 14.04 LTS.
@@ -30,6 +29,8 @@ install_requires = [
 
 if sys.version_info < (3, ):
     install_requires.append('enum34')
+    # "futures" is needed for py2 compatibility and it only works in 2.7
+    install_requires.append('futures')
 
 
 class PyTest(TestCommand):
