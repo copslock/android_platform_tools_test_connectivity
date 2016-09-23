@@ -103,11 +103,26 @@ class MockAdbProxy():
         """
 
         def adb_call(*args):
-            clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
 
         return adb_call
+
+
+class MockFastbootProxy():
+    """Mock class that swaps out calls to adb with mock calls."""
+
+    def __init__(self, serial):
+        self.serial = serial
+
+    def devices(self):
+        return b"xxxx device\nyyyy device"
+
+    def __getattr__(self, name):
+        def fastboot_call(*args):
+            arg_str = ' '.join(str(elem) for elem in args)
+            return arg_str
+        return fastboot_call
 
 
 class ActsAndroidDeviceTest(unittest.TestCase):
@@ -211,7 +226,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     # in AndroidDeivce.
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
-    def test_AndroidDevice_instantiation(self, MockAdbProxy):
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
+    def test_AndroidDevice_instantiation(self, MockFastboot, MockAdbProxy):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
         """
@@ -226,10 +243,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.log_path, expected_lp)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
     def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,
-                                           MockAdbProxy):
+                                           FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report calls the correct adb command
         and writes the bugreport file to the correct path.
         """
@@ -242,10 +261,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     @mock.patch('acts.controllers.adb.AdbProxy',
                 return_value=MockAdbProxy(1, fail_br=True))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
     def test_AndroidDevice_take_bug_report_fail(self, exe_mock, create_dir_mock,
-                                                MockAdbProxy):
+                                                FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report writes out the correct message
         when taking bugreport fails.
         """
@@ -258,10 +279,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     @mock.patch('acts.controllers.adb.AdbProxy',
                 return_value=MockAdbProxy(1, fail_br_before_N=True))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
     def test_AndroidDevice_take_bug_report_fallback(self, exe_mock,
-        create_dir_mock, MockAdbProxy):
+        create_dir_mock, FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report falls back to traditional
         bugreport on builds that do not have bugreportz.
         """
@@ -273,11 +296,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
     def test_AndroidDevice_take_logcat(self, stop_proc_mock, start_proc_mock,
-                                       creat_dir_mock, MockAdbProxy):
+                                       creat_dir_mock, FastbootProxy,
+                                       MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -314,12 +340,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
     def test_AndroidDevice_take_logcat_with_user_param(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
-            MockAdbProxy):
+            FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -346,13 +374,15 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
     @mock.patch('acts.logger.get_log_line_timestamp',
                 return_value=MOCK_ADB_LOGCAT_END_TIME)
     def test_AndroidDevice_cat_adb_log(self, mock_timestamp_getter,
                                        stop_proc_mock, start_proc_mock,
-                                       MockAdbProxy):
+                                       FastbootProxy, MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
         and writes the lines to the correct output file.

@@ -167,11 +167,14 @@ class ActsTestRunnerTest(unittest.TestCase):
 
     @mock.patch('acts.controllers.adb.AdbProxy',
                 return_value=acts_android_device_test.MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=acts_android_device_test.MockFastbootProxy(1))
     @mock.patch('acts.controllers.android_device.list_adb_devices',
                 return_value=["1"])
     @mock.patch('acts.controllers.android_device.get_all_instances',
                 return_value=acts_android_device_test.get_mock_ads(1))
-    def test_run_two_test_classes(self, mock_adb, mock_list_adb, mock_get_all):
+    def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
+                                  mock_fastboot, mock_adb,):
         """Verifies that runing more than one test class in one test run works
         proerly.
 
