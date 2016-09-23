@@ -33,11 +33,9 @@ EVENT_TIMEOUT = 30
 class WifiNanManagerTest(base_test.BaseTestClass):
     # configuration parameters used by tests
     config_request1 = {"Support5gBand": False, "MasterPreference": 10,
-                       "ClusterLow": 5, "ClusterHigh": 5,
-                       "EnableIdentityChangeCallback": True};
+                       "ClusterLow": 5, "ClusterHigh": 5};
     config_request2 = {"Support5gBand": False, "MasterPreference": 0,
-                       "ClusterLow": 5, "ClusterHigh": 5,
-                       "EnableIdentityChangeCallback": True};
+                       "ClusterLow": 5, "ClusterHigh": 5};
     publish_config = {"ServiceName": "GoogleTestServiceX",
                       "ServiceSpecificInfo": "Data XYZ",
                       "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
