@@ -56,13 +56,17 @@ SUBSCRIBE_KEY_STYLE = "MatchStyle"
 SUBSCRIBE_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
 
 ######################################################
-# WifiNanEventCallback events
+# WifiNanAttachCallback events
 ######################################################
 EVENT_CB_ON_ATTACHED = "WifiNanOnAttached"
 EVENT_CB_ON_ATTACH_FAILED = "WifiNanOnAttachFailed"
+
+######################################################
+# WifiNanIdentityChangedListener events
+######################################################
 EVENT_CB_ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 
-# WifiNanEventCallback events keys
+# WifiNanAttachCallback & WifiNanIdentityChangedListener events keys
 EVENT_CB_KEY_REASON = "reason"
 EVENT_CB_KEY_MAC = "mac"
 
