@@ -19,6 +19,7 @@ Test script to automate the Bluetooth Audio Funhaus.
 from acts.keys import Config
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts.utils import bypass_setup_wizard
 from acts.utils import create_dir
 from acts.utils import exe_cmd
 from acts.utils import sync_device_time
@@ -44,6 +45,9 @@ class BtFunhausTest(BluetoothBaseTest):
             sync_device_time(ad)
             # Disable Bluetooth HCI Snoop Logs for audio tests
             ad.droid.bluetoothConfigHciSnoopLog(False)
+            if not bypass_setup_wizard(ad):
+                self.log.debug(
+                    "Failed to bypass setup wizard, continuing test.")
         if not "bt_config" in self.user_params.keys():
             self.log.error("Missing mandatory user config \"bt_config\"!")
             return False
@@ -67,16 +71,25 @@ class BtFunhausTest(BluetoothBaseTest):
         except FileNotFoundError:
             self.log.error("File not found: {}.".format(bt_config_map_file))
             return False
+        # Connected devices return all upper case mac addresses.
+        # Make the peripheral_info address attribute upper case
+        # in order to ensure the BT mac addresses match.
+        for serial in bt_config_map.keys():
+            mac_address = bt_config_map[serial]["peripheral_info"][
+                "address"].upper()
+            bt_config_map[serial]["peripheral_info"]["address"] = mac_address
         for ad in self.android_devices:
             serial = ad.serial
 
             # Verify serial number in bt_config_map
+            self.log.info("Verify serial number of Android device in config.")
             if serial not in bt_config_map.keys():
                 self.log.error(
                     "Missing android device serial {} in bt_config.".format(
                         serial))
                 return False
             # Push the bt_config.conf file to Android device
+            self.log.info("Pushing bt_config.conf file to Android device.")
             config_path = bt_config_map[serial]["config_path"]
             if not os.path.isfile(config_path):
                 config_path = os.path.join(
@@ -88,6 +101,7 @@ class BtFunhausTest(BluetoothBaseTest):
             ad.adb.push("{} {}".format(config_path, bt_conf_path))
 
             # Add music to the Android device
+            self.log.info("Pushing music to the Android device.")
             music_path_str = "music_path"
             android_music_path = "/sdcard/Music/"
             if music_path_str not in self.user_params:
@@ -107,6 +121,7 @@ class BtFunhausTest(BluetoothBaseTest):
             ad.reboot()
 
             # Verify Bluetooth is enabled
+            self.log.info("Verifying Bluetooth is enabled on Android Device.")
             if not bluetooth_enabled_check(ad):
                 self.log.error("Failed to toggle on Bluetooth on device {}".
                                format(serial))
@@ -128,7 +143,18 @@ class BtFunhausTest(BluetoothBaseTest):
                     }:
                         result = True
                         break
+                else:
+                    try:
+                        ad.droid.bluetoothConnectBonded(bt_config_map[serial][
+                            "peripheral_info"]["address"])
+                    except Exception as err:
+                        self.log.error(
+                            "Failed to connect bonded. Err: {}".format(err))
             if not result:
+                self.log.info("Connected Devices: {}".format(
+                    connected_devices))
+                self.log.info("Bonded Devices: {}".format(
+                    ad.droid.bluetoothGetBondedDevices()))
                 self.log.error(
                     "Failed to connect to peripheral name: {}, address: {}".
                     format(bt_config_map[serial]["peripheral_info"]["name"],
@@ -197,7 +223,6 @@ class BtFunhausTest(BluetoothBaseTest):
 
         sleep_interval = 120
         twelve_hours_in_seconds = 43200
-        twelve_hours_in_seconds = 500
         end_time = time.time() + twelve_hours_in_seconds
         test_result = True
         bluetooth_off_list = []
