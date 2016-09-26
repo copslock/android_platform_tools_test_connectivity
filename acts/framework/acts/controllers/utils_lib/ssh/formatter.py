@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from acts.controllers.utils_lib import shell_utils
-
 
 class SshFormatter(object):
     """Handles formatting ssh commands.
@@ -160,7 +158,7 @@ class SshFormatter(object):
         local_command = self.format_ssh_local_command(settings, extra_flags,
                                                       extra_options)
 
-        local_command.append(shell_utils.sh_escape(remote_command))
+        local_command.append(remote_command)
         return local_command
 
     def format_remote_command(self, command, env):
@@ -169,18 +167,14 @@ class SshFormatter(object):
         Formatts the command that will run on the remote machine.
 
         Args:
-            command: The command to be executed. This can either be a list
-                     or a string.
+            command: string, The command to be executed.
             env: Enviroment variables to add to the remote envirment.
 
         Returns:
             A string that represents the command line to execute on the remote
             machine.
         """
-        if isinstance(command, str):
-            command = shell_utils.split_command_line(command)
-
-        if env is None:
+        if not env:
             env_str = ''
         else:
             env_str = 'export '
@@ -189,11 +183,7 @@ class SshFormatter(object):
                 env_str += '%s=%s ' % (name, str(value))
             env_str += ';'
 
-        command_str = command[0]
-        for arg in command[1:]:
-            command_str += ' "%s"' % shell_utils.sh_escape(arg)
-
-        execution_line = '%s %s;' % (env_str, command_str)
+        execution_line = '%s %s;' % (env_str, command)
         return execution_line
 
     def format_command(self,

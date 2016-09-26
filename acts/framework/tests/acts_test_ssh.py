@@ -23,7 +23,6 @@ import unittest
 import re
 
 from acts.controllers.utils_lib.ssh import connection
-from acts.controllers.utils_lib.ssh import error
 from acts.controllers.utils_lib.ssh import settings
 
 SSH_HOST = None
@@ -61,7 +60,7 @@ class SshTestCases(unittest.TestCase):
         Connect to a remote host using an invalid username and see if we are
         rejected.
         """
-        with self.assertRaises(error.SshPermissionDeniedError):
+        with self.assertRaises(connection.Error):
             bad_settings = settings.SshSettings(SSH_HOST, SSH_USER + 'BAD')
             conn = connection.SshConnection(bad_settings)
             result = conn.run('echo "Hello World"')
@@ -72,7 +71,7 @@ class SshTestCases(unittest.TestCase):
         Connect to a remote host using an invalid username and see if we are
         rejected.
         """
-        with self.assertRaises(error.SshUnknownHost):
+        with self.assertRaises(connection.Error):
             bad_settings = settings.SshSettings('BADHOSTNAME', SSH_USER)
             conn = connection.SshConnection(bad_settings)
             result = conn.run('echo "Hello World"')
