@@ -188,8 +188,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         while True:
             try:
-                device.droid.wifiNanSendMessage(session_id, peer, msg,
-                                                self.msg_id,
+                device.droid.wifiNanSendMessage(session_id, peer, self.msg_id, msg,
                                                 nan_const.MAX_TX_RETRIES)
                 events = device.ed.pop_events(events_regex, EVENT_TIMEOUT)
             except queue.Empty:
@@ -407,8 +406,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         for i in range(num_async_messages):
             self.msg_id = self.msg_id + 1
             self.subscriber.droid.wifiNanSendMessage(sub_id,
-                 event_sub_match['data']['peerId'], "msg %s" % i,
-                 self.msg_id, nan_const.MAX_TX_RETRIES)
+                 event_sub_match['data']['peerId'], self.msg_id, "msg %s" % i,
+                 nan_const.MAX_TX_RETRIES)
 
         # wait for all messages to be transmitted correctly
         num_tx_ok = 0
