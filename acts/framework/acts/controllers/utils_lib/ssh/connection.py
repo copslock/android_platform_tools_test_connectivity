@@ -19,10 +19,14 @@ import shutil
 import tempfile
 import threading
 import time
+import uuid
 
 from acts.controllers.utils_lib import background_job
-from acts.controllers.utils_lib.ssh import error
 from acts.controllers.utils_lib.ssh import formatter
+
+
+class Error(Exception):
+    """An error occured during an ssh operation."""
 
 
 class SshConnection(object):
@@ -39,7 +43,7 @@ class SshConnection(object):
         """Returns: The os path to the master socket file."""
         return os.path.join(self._master_ssh_tempdir, 'socket')
 
-    def __init__(self, settings, formatter=formatter.SshFormatter()):
+    def __init__(self, settings):
         """
         Args:
             settings: The ssh settings to use for this conneciton.
@@ -47,7 +51,7 @@ class SshConnection(object):
                        for use with the background job.
         """
         self._settings = settings
-        self._formatter = formatter
+        self._formatter = formatter.SshFormatter()
         self._lock = threading.Lock()
         self._background_job = None
         self._master_ssh_tempdir = None
@@ -65,16 +69,15 @@ class SshConnection(object):
             timeout_seconds: The time to wait for the master ssh connection to be made.
 
         Raises:
-            SshTimeoutError: If the master ssh connection takes to long to
-                             start then a timeout error will be thrown.
+            Error: When setting up the master ssh connection fails.
         """
         with self._lock:
             if self._background_job is not None:
                 socket_path = self.socket_path
                 if (not os.path.exists(socket_path) or
-                        self._background_jobsp.poll() is not None):
+                        not self._background_job.is_alive):
                     logging.info('Master ssh connection to %s is down.',
-                                 self.connection.construct_host_name())
+                                 self._settings.hostname)
                     self._cleanup_master_ssh()
 
             if self._background_job is None:
@@ -105,8 +108,9 @@ class SshConnection(object):
                         break
                     time.sleep(.2)
                 else:
-                    raise error.SshTimeoutError(
-                        'Master ssh connection timed out.')
+                    self._background_job.close()
+                    self._background_job = None
+                    raise Error('Master ssh connection timed out.')
 
     def run(self,
             command,
@@ -115,15 +119,15 @@ class SshConnection(object):
             stdout=None,
             stderr=None,
             stdin=None,
-            master_connection_timeout=5):
-        """Run a remote command over ssh.
+            connect_timeout=15):
+        """Runs a remote command over ssh.
 
-        Runs a remote command over ssh.
+        Will ssh to a remote host and run a command. This method will
+        block until the remote command is finished.
 
         Args:
             command: The command to execute over ssh. Can be either a string
                      or a list.
-            timeout_seconds: How long to wait on the command before timing out.
             env: A dictonary of enviroment variables to setup on the remote
                  host.
             stdout: A stream to send stdout to.
@@ -131,28 +135,31 @@ class SshConnection(object):
             stdin: A string that contains the contents of stdin. A string may
                    also be used, however its contents are not gurenteed to
                    be sent to the ssh process.
-            master_connection_timeout: The amount of time to wait for the
-                                       master ssh connection to come up.
+            connect_timeout: How long to wait for the connection confirmation.
 
         Returns:
-            The results of the ssh background job.
+            A CmdResult containing the results of the ssh command.
 
         Raises:
             CmdTimeoutError: When the remote command took to long to execute.
-            SshTimeoutError: When the connection took to long to established.
-            SshPermissionDeniedError: When permission is not allowed on the
-                                      remote host.
+            Error: When the ssh connection failed to be created.
         """
         try:
-            self.setup_master_ssh(master_connection_timeout)
-        except error.SshError:
+            self.setup_master_ssh(connect_timeout)
+        except Error:
             logging.warning('Failed to create master ssh connection, using '
                             'normal ssh connection.')
 
         extra_options = {'BatchMode': True}
+        if self._background_job:
+            extra_options['ControlPath'] = self.socket_path
+
+        identifier = str(uuid.uuid4())
+        full_command = 'echo "CONNECTED: %s"; %s' % (identifier, command)
+
         terminal_command = self._formatter.format_command(
-            command, env,
-            self._settings,
+            full_command,
+            env, self._settings,
             extra_options=extra_options)
 
         dns_retry_count = 2
@@ -162,40 +169,51 @@ class SshConnection(object):
                                                stderr_tee=stderr,
                                                verbose=False,
                                                stdin=stdin)
-            job.wait(timeout_seconds)
+
+            job.wait(timeout=timeout_seconds)
             result = job.result
+            output = job.result.stdout
             error_string = result.stderr
 
-            dns_retry_count -= 1
-            if (result and result.exit_status == 255 and re.search(
-                    r'^ssh: .*: Name or service not known', error_string)):
-                if dns_retry_count:
-                    logging.debug('Retrying because of DNS failure')
-                    continue
-                logging.debug('Retry failed.')
-            elif not dns_retry_count:
-                logging.debug('Retry succeeded.')
-            break
+            # Check for a connected message to prevent false negatives.
+            valid_connection = re.search('^CONNECTED: %s' % identifier,
+                                         output,
+                                         flags=re.MULTILINE)
+            if valid_connection:
+                logging.debug('Connected to host.')
+                return result
 
-        # The error messages will show up in band (indistinguishable
-        # from stuff sent through the SSH connection), so we have the
-        # remote computer echo the message "Connected." before running
-        # any command.  Since the following 2 errors have to do with
-        # connecting, it's safe to do these checks.
+            had_dns_failure = (result.exit_status == 255 and re.search(
+                r'^ssh: .*: Name or service not known',
+                error_string,
+                flags=re.MULTILINE))
+            if had_dns_failure:
+                dns_retry_count -= 1
+                if not dns_retry_count:
+                    raise Error('DNS failed to find host.', result)
+                logging.debug('Failed to connecto to host, retrying...')
+            else:
+                break
 
-        # This may not be true in acts?
-        if result.exit_status == 255:
-            if re.search(r'^ssh: connect to host .* port .*: '
-                         r'Connection timed out\r$', error_string):
-                raise error.SshTimeoutError('ssh timed out', result)
-            if 'Permission denied' in error_string:
-                msg = 'ssh permission denied'
-                raise error.SshPermissionDeniedError(msg, result)
-            if re.search(r'ssh: Could not resolve hostname .*: '
-                         r'Name or service not known', error_string):
-                raise error.SshUnknownHost('unknown host', result)
+        had_timeout = re.search(r'^ssh: connect to host .* port .*: '
+                                r'Connection timed out\r$',
+                                error_string,
+                                flags=re.MULTILINE)
+        if had_timeout:
+            raise Error('Ssh timed out.', result)
 
-        return result
+        permission_denied = 'Permission denied' in error_string
+        if permission_denied:
+            raise Error('Permission denied.', result)
+
+        unknown_host = re.search(r'ssh: Could not resolve hostname .*: '
+                                 r'Name or service not known',
+                                 error_string,
+                                 flags=re.MULTILINE)
+        if unknown_host:
+            raise Error('Unknown host.', result)
+
+        raise Error('The job failed for unkown reasons.', result)
 
     def _cleanup_master_ssh(self):
         """
