@@ -32,10 +32,6 @@ EVENT_TIMEOUT = 30
 
 class WifiNanManagerTest(base_test.BaseTestClass):
     # configuration parameters used by tests
-    config_request1 = {"Support5gBand": False, "MasterPreference": 10,
-                       "ClusterLow": 5, "ClusterHigh": 5};
-    config_request2 = {"Support5gBand": False, "MasterPreference": 0,
-                       "ClusterLow": 5, "ClusterHigh": 5};
     publish_config = {"ServiceName": "GoogleTestServiceX",
                       "ServiceSpecificInfo": "Data XYZ",
                       "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
@@ -144,7 +140,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                             % interface)
         return res.group(1)
 
-    def exec_connect(self, device, config_request, name):
+    def exec_connect(self, device, name):
         """Executes the NAN connection creation operation.
 
         Creates a NAN connection (client) and waits for a confirmation event
@@ -152,10 +148,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         Args:
             device: The 'AndroidDevice' on which to set up the connection.
-            config_request: The configuration of the connection.
             name: An arbitary name used for logging.
         """
-        session_id = device.droid.wifiNanAttach(config_request)
+        session_id = device.droid.wifiNanAttach()
         try:
             event = device.ed.pop_event(nan_const.EVENT_CB_ON_ATTACHED, EVENT_TIMEOUT)
             self.log.info('%s: %s', nan_const.EVENT_CB_ON_ATTACHED, event['data'])
@@ -290,8 +285,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             # Start Test
-            pub_connect_id = self.exec_connect(self.publisher, self.config_request1, "publisher")
-            sub_connect_id = self.exec_connect(self.subscriber, self.config_request2, "subscriber")
+            pub_connect_id = self.exec_connect(self.publisher, "publisher")
+            sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
 
             pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, discovery_config[0])
             sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, discovery_config[1])
@@ -389,8 +384,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             # Start Test
-            pub_connect_id = self.exec_connect(self.publisher, self.config_request1, "publisher")
-            sub_connect_id = self.exec_connect(self.subscriber, self.config_request2, "subscriber")
+            pub_connect_id = self.exec_connect(self.publisher, "publisher")
+            sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
 
             pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, self.publish_config)
             sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, self.subscribe_config)
@@ -491,8 +486,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             # Start Test
-            pub_connect_id = self.exec_connect(self.publisher, self.config_request1, "publisher")
-            sub_connect_id = self.exec_connect(self.subscriber, self.config_request2, "subscriber")
+            pub_connect_id = self.exec_connect(self.publisher, "publisher")
+            sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
 
             pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, self.publish_config)
             sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, self.subscribe_config)
@@ -548,7 +543,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.dut = self.android_devices[0]
 
         # Start Test
-        connect_id = self.dut.droid.wifiNanAttach(self.config_request1)
+        connect_id = self.dut.droid.wifiNanAttach()
 
         try:
             event = self.dut.ed.pop_event(nan_const.EVENT_CB_ON_ATTACHED, EVENT_TIMEOUT)
@@ -607,8 +602,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
 
         try:
             # Start Test
-            pub_connect_id = self.exec_connect(self.publisher, self.config_request1, "publisher")
-            sub_connect_id = self.exec_connect(self.subscriber, self.config_request2, "subscriber")
+            pub_connect_id = self.exec_connect(self.publisher, "publisher")
+            sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
 
             # Discovery: publish + subscribe + wait for match
             pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, self.publish_config)
