@@ -305,10 +305,8 @@ def exe_cmd(*cmds):
         OSError is raised if an error occurred during the command execution.
     """
     cmd = ' '.join(cmds)
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True)
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     if not err:
         return out
@@ -367,11 +365,12 @@ def start_standing_subprocess(cmd, check_health_delay=0):
     Returns:
         The subprocess that got started.
     """
-    proc = subprocess.Popen(cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            preexec_fn=os.setpgrp)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        preexec_fn=os.setpgrp)
     logging.debug("Start standing subprocess with cmd: %s", cmd)
     if check_health_delay > 0:
         time.sleep(check_health_delay)
@@ -693,3 +692,25 @@ def set_mobile_data_always_on(ad, new_state):
     """
     ad.adb.shell("settings put global mobile_data_always_on {}".format(
         1 if new_state else 0))
+
+
+def bypass_setup_wizard(ad):
+    """Bypass the setup wizard on an input Android device
+
+    Args:
+        ad: android device object.
+
+    Returns:
+        True if Andorid device successfully bypassed the setup wizard.
+        False if failed.
+    """
+    ad.adb.shell(
+        "am start -n \"com.google.android.setupwizard/.SetupWizardExitActivity\"")
+    # magical sleep to wait for the gservices override broadcast to complete
+    time.sleep(3)
+    provisioned_state = int(
+        ad.adb.shell("settings get global device_provisioned"))
+    if (provisioned_state != 1):
+        logging.error("Failed to bypass setup wizard.")
+        return False
+    return True
