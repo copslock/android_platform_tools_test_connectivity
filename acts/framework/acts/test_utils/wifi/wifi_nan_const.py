@@ -40,7 +40,7 @@ PUBLISH_KEY_MATCH_FILTER = "MatchFilter"
 PUBLISH_KEY_TYPE = "PublishType"
 PUBLISH_KEY_COUNT = "PublishCount"
 PUBLISH_KEY_TTL = "TtlSec"
-PUBLISH_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
+PUBLISH_KEY_TERM_CB_ENABLED = "TerminateNotificationEnabled"
 
 ######################################################
 # SubscribeConfig keys
