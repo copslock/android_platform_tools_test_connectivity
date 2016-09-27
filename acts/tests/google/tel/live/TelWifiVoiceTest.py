@@ -121,6 +121,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
+            atten.set_atten(atten.get_max_atten()) # Default all attens to max
 
     def setup_class(self):
 
