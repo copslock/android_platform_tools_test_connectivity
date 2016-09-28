@@ -11,12 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Classes and functions for running background jobs.
-
-This module contains all needed functions and classes for running a
-background job. The main class is BackgroundJob, which is a wrapper for running
-a child process in the background.
-"""
 
 import enum
 import io
@@ -29,10 +23,9 @@ import subprocess
 import sys
 import time
 
-from acts.controllers.utils_lib import shell_utils
+from acts.libs import shell_utils
 
-
-class CmdError(Exception):
+class Error(Exception):
     """Indicates that a command failed, is fatal to the test unless caught."""
 
     def __init__(self, command, result_obj, additional_text=None):
@@ -54,7 +47,7 @@ class CmdError(Exception):
         return msg
 
 
-class CmdTimeoutError(CmdError):
+class TimeoutError(Error):
     """Thrown when a BackgroundJob times out on wait."""
 
 
@@ -103,36 +96,7 @@ class EventData(object):
             EventType.to_str(self.event_type), str(self.data))
 
 
-class ProcessedData(object):
-    """Container for new data processed by the job.
-
-    IO data that is processed by a process will be stored in an object of this
-    type.
-
-    Attributes:
-        new_stdout: Any new data that came from stdout. None if no data came.
-        new_stderr: Any new data that came from stderr. None if no data came.
-        new_stdin: Any new data that was written into stdin. None if no data
-                   was written.
-        did_close: True if the program has closed all input.
-    """
-
-    def __init__(self,
-                 did_close,
-                 new_stdout=None,
-                 new_stderr=None,
-                 new_stdin=None):
-        self.new_stdout = new_stdout
-        self.new_stderr = new_stderr
-        self.new_stdin = new_stdin
-        self.did_close = did_close
-
-    def __str__(self):
-        return 'stdout: %s\nstdin: %s\nstderr: %s\nclosed?: %s' % (
-            self.new_stdout, self.new_stdin, self.new_stderr, self.did_close)
-
-
-class CmdResult(object):
+class Result(object):
     """Command execution result.
 
     Contains information on a BackgroundJob once that BackgroundJob has closed.
@@ -189,15 +153,17 @@ class CmdResult(object):
         self.duration = duration
         self.did_timeout = did_timeout
 
-
 class BackgroundJob(object):
     """A job to be executed in the background.
 
-    Represents another command being executed on the background.
+    Represents a child process running in the background. Unlike POpen,
+    BackgroundJob adds in the ability to run jobs in the background without
+    having the jobs block due to pipe limitations. It also adds the ability to
+    have a timeout on jobs if they take to long to finish executing.
     """
 
     @property
-    def command(self):
+    def identity(self):
         """The command that this BackgroundJob is executing.
 
         An array containing the command and arguments of this BackgroundJob.
@@ -307,7 +273,7 @@ class BackgroundJob(object):
         command = [s.encode('unicode_escape') for s in command]
 
         self._command = command
-        self._result = CmdResult(command, encoding=io_encoding)
+        self._result = Result(command, encoding=io_encoding)
         self._keep_input_alive = allow_send
         self._start_time = time.time()
 
@@ -393,7 +359,7 @@ class BackgroundJob(object):
             logging.warning(
                 "Running command '%s' was deleted before shutting down." %
                 self._command)
-            self.force_close()
+            self.close()
 
         # Ensures that the program is removed from the os.
         self._cleanup()
@@ -498,7 +464,7 @@ class BackgroundJob(object):
                      never timeout.
 
         Raises:
-            CmdTimeoutError: When the command times out.
+            TimeoutError: When the command times out.
         """
         if self._cleanup_called:
             return
@@ -540,7 +506,7 @@ class BackgroundJob(object):
         self._result.did_timeout = was_timeout
 
         if was_timeout:
-            raise CmdTimeoutError(self._command, self._result)
+            raise TimeoutError(self._command, self._result)
 
     def next_event(self, timeout=None):
         """Waits for the next event on the process to occur.
@@ -586,20 +552,20 @@ class BackgroundJob(object):
         of that.
 
         Returns:
-            A ProcessedData structure describing the new data processed.
+            A _ProcessedData structure describing the new data processed.
         """
 
         # All pipes have closed, so no need to process.
         if (self._has_closed_input and self._has_closed_stdout and
                 self._has_closed_stderr):
-            return ProcessedData(True)
+            return _ProcessedData(True)
 
         # If the process is dead and output has been fully read then consider
         # everything closed. No need to write input to a dead process.
         if (not self.is_alive and self._has_closed_stdout and
                 self._has_closed_stderr):
             self._has_closed_input = True
-            return ProcessedData(True)
+            return _ProcessedData(True)
 
         read_list = []
         if not self._has_closed_stdout:
@@ -669,7 +635,7 @@ class BackgroundJob(object):
                     write_output.close()
                     self._has_closed_input = True
 
-        return ProcessedData(False, processed_out, processed_err, processed_in)
+        return _ProcessedData(False, processed_out, processed_err, processed_in)
 
     def _cleanup(self):
         """Clean up after BackgroundJob.
@@ -805,3 +771,32 @@ class _MultiStream(object):
         """Flushes all stream."""
         for stream in self.streams:
             stream.flush()
+
+
+class _ProcessedData(object):
+    """Container for new data processed by the job.
+
+    IO data that is processed by a process will be stored in an object of this
+    type.
+
+    Attributes:
+        new_stdout: Any new data that came from stdout. None if no data came.
+        new_stderr: Any new data that came from stderr. None if no data came.
+        new_stdin: Any new data that was written into stdin. None if no data
+                   was written.
+        did_close: True if the program has closed all input.
+    """
+
+    def __init__(self,
+                 did_close,
+                 new_stdout=None,
+                 new_stderr=None,
+                 new_stdin=None):
+        self.new_stdout = new_stdout
+        self.new_stderr = new_stderr
+        self.new_stdin = new_stdin
+        self.did_close = did_close
+
+    def __str__(self):
+        return 'stdout: %s\nstdin: %s\nstderr: %s\nclosed?: %s' % (
+            self.new_stdout, self.new_stdin, self.new_stderr, self.did_close)

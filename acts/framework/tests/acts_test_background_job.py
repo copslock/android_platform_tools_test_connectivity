@@ -19,7 +19,7 @@ import os
 import sys
 import unittest
 
-from acts.controllers.utils_lib import background_job
+from acts.libs.proc import job
 
 
 PY_ERR_CODE = "import sys\n" + \
@@ -33,9 +33,9 @@ class BackgroundJobTestCases(unittest.TestCase):
         Runs a simple BackgroundJob to and checks its standard output to see
         if it ran.
         """
-        job = background_job.BackgroundJob('echo TEST')
+        my_job = job.BackgroundJob('echo TEST')
 
-        self.assertTrue(job.result.stdout.startswith('TEST'))
+        self.assertTrue(my_job.result.stdout.startswith('TEST'))
 
     def test_background_job_in(self):
         """Test if a background job can send through standard input.
@@ -43,11 +43,11 @@ class BackgroundJobTestCases(unittest.TestCase):
         Sends a line through standard input to see if the BackgroundJob can
         pick it up.
         """
-        job = background_job.BackgroundJob('grep "TEST"', allow_send=True)
+        my_job = job.BackgroundJob('grep "TEST"', allow_send=True)
 
-        job.sendline('TEST')
+        my_job.sendline('TEST')
 
-        self.assertTrue(job.result.stdout.startswith('TEST'))
+        self.assertTrue(my_job.result.stdout.startswith('TEST'))
 
     def test_background_job_instream(self):
         """Test if a background job can pipe its stdin.
@@ -57,14 +57,14 @@ class BackgroundJobTestCases(unittest.TestCase):
         """
         stream = io.BytesIO()
 
-        job = background_job.BackgroundJob('grep "TEST"', stdin=stream)
+        my_job = job.BackgroundJob('grep "TEST"', stdin=stream)
 
         # In a real situation a pipe would probably be used, however writing
         # and then seeking is simpiler for the sake of testing.
         stream.write('TEST'.encode())
         stream.seek(0)
 
-        self.assertTrue(job.result.stdout.startswith('TEST'))
+        self.assertTrue(my_job.result.stdout.startswith('TEST'))
 
     def test_background_job_err(self):
         """Test reading standard err.
@@ -72,9 +72,9 @@ class BackgroundJobTestCases(unittest.TestCase):
         Launches a BackgroundJob that writes to standard error to see if
         it gets captured.
         """
-        job = background_job.BackgroundJob('python', stdin=PY_ERR_CODE)
+        my_job = job.BackgroundJob('python', stdin=PY_ERR_CODE)
 
-        self.assertTrue(job.result.stderr.startswith('TEST'))
+        self.assertTrue(my_job.result.stderr.startswith('TEST'))
 
     def test_background_job_pipe(self):
         """Test piping on a BackgroundJob.
@@ -82,9 +82,9 @@ class BackgroundJobTestCases(unittest.TestCase):
         Tests that the standard output of a job can be piped to another stream.
         """
         mem_buffer = io.StringIO()
-        job = background_job.BackgroundJob('echo TEST', stdout_tee=mem_buffer)
+        my_job = job.BackgroundJob('echo TEST', stdout_tee=mem_buffer)
 
-        job.wait()
+        my_job.wait()
 
         self.assertTrue(mem_buffer.getvalue().startswith('TEST'))
 
@@ -94,23 +94,23 @@ class BackgroundJobTestCases(unittest.TestCase):
         Tests that the standard output of a job can be piped to another stream.
         """
         mem_buffer = io.StringIO()
-        job = background_job.BackgroundJob("python",
-                                           stdin=PY_ERR_CODE,
-                                           stderr_tee=mem_buffer)
+        my_job = job.BackgroundJob("python",
+                                   stdin=PY_ERR_CODE,
+                                   stderr_tee=mem_buffer)
 
-        job.wait()
+        my_job.wait()
 
         self.assertTrue(mem_buffer.getvalue().startswith('TEST'))
 
     def test_background_job_timeout(self):
-        with self.assertRaises(background_job.CmdTimeoutError):
-            job = background_job.BackgroundJob('sleep 5')
-            job.wait(timeout=0.1)
+        with self.assertRaises(job.TimeoutError):
+            my_job = job.BackgroundJob('sleep 5')
+            my_job.wait(timeout=0.1)
 
     def test_background_job_env(self):
-        job = background_job.BackgroundJob('printenv', env={'MYTESTVAR': '20'})
+        my_job = job.BackgroundJob('printenv', env={'MYTESTVAR': '20'})
 
-        self.assertNotEqual(job.result.stdout.find('MYTESTVAR=20'), -1)
+        self.assertNotEqual(my_job.result.stdout.find('MYTESTVAR=20'), -1)
 
 
 if __name__ == '__main__':
