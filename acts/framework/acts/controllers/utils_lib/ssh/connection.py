@@ -21,7 +21,7 @@ import threading
 import time
 import uuid
 
-from acts.controllers.utils_lib import background_job
+from acts.libs.proc import job
 from acts.controllers.utils_lib.ssh import formatter
 
 
@@ -98,8 +98,8 @@ class SshConnection(object):
                 master_cmd = self._formatter.format_ssh_local_command(
                     self._settings, extra_flags, extra_options)
                 logging.info('Starting master ssh connection %s', master_cmd)
-                self._background_job = background_job.BackgroundJob(
-                    master_cmd, no_pipes=True)
+                self._background_job = job.BackgroundJob(master_cmd,
+                                                         no_pipes=True)
 
                 end_time = time.time() + timeout_seconds
 
@@ -138,10 +138,10 @@ class SshConnection(object):
             connect_timeout: How long to wait for the connection confirmation.
 
         Returns:
-            A CmdResult containing the results of the ssh command.
+            A job.Result containing the results of the ssh command.
 
         Raises:
-            CmdTimeoutError: When the remote command took to long to execute.
+            job.TimeoutError: When the remote command took to long to execute.
             Error: When the ssh connection failed to be created.
         """
         try:
@@ -164,15 +164,15 @@ class SshConnection(object):
 
         dns_retry_count = 2
         while True:
-            job = background_job.BackgroundJob(terminal_command,
-                                               stdout_tee=stdout,
-                                               stderr_tee=stderr,
-                                               verbose=False,
-                                               stdin=stdin)
+            ssh_job = job.BackgroundJob(terminal_command,
+                                        stdout_tee=stdout,
+                                        stderr_tee=stderr,
+                                        verbose=False,
+                                        stdin=stdin)
 
-            job.wait(timeout=timeout_seconds)
-            result = job.result
-            output = job.result.stdout
+            ssh_job.wait(timeout=timeout_seconds)
+            result = ssh_job.result
+            output = ssh_job.result.stdout
             error_string = result.stderr
 
             # Check for a connected message to prevent false negatives.
@@ -223,7 +223,7 @@ class SshConnection(object):
         # If a master SSH connection is running, kill it.
         if self._background_job is not None:
             logging.debug('Nuking master_ssh_job.')
-            self._background_job.force_close()
+            self._background_job.close()
             self._background_job = None
 
         # Remove the temporary directory for the master SSH socket.
