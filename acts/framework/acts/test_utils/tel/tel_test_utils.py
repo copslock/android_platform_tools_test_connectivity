@@ -448,32 +448,23 @@ def _wait_for_ringing_event(log, ad, wait_time):
     """
     log.info("Wait for ringing.")
     start_time = time.time()
-    remaining_time = wait_time
-    event_iter_timeout = 4
     event_ringing = None
 
-    while remaining_time > 0:
-        try:
-            event_ringing = ad.ed.wait_for_event(
-                EventCallStateChanged,
-                is_event_match,
-                timeout=event_iter_timeout,
-                field=CallStateContainer.CALL_STATE,
-                value=TELEPHONY_STATE_RINGING)
-        except Empty:
-            if ad.droid.telecomIsRinging():
-                log.error("No Ringing event. But Callee in Ringing state.")
-                log.error("Test framework dropped event.")
-                return None
-        remaining_time = start_time + wait_time - time.time()
-        if event_ringing is not None:
-            break
-    if event_ringing is None:
-        log.error("No Ringing Event, Callee not in ringing state.")
-        log.error("No incoming call.")
-        return None
-
-    return event_ringing
+    try:
+        event_ringing = ad.ed.wait_for_event(
+            EventCallStateChanged,
+            is_event_match,
+            timeout=wait_time,
+            field=CallStateContainer.CALL_STATE,
+            value=TELEPHONY_STATE_RINGING)
+    except Empty:
+        if ad.droid.telecomIsRinging():
+            log.error("No Ringing event. But Callee in Ringing state.")
+            log.error("Event may have been dropped.")
+        else:
+            log.error("No Ringing Event, Callee not in ringing state.")
+    finally:
+        return event_ringing
 
 
 def wait_for_ringing_call(log, ad, incoming_number=None):
@@ -1776,7 +1767,7 @@ def set_wfc_mode(log, ad, wfc_mode):
 
 def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
                              **kwargs):
-    while max_time > 0:
+    while max_time >= 0:
         if state_check_func(log, ad, *args, **kwargs):
             return True
 
@@ -1788,7 +1779,7 @@ def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
 
 def _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_time, state_check_func, *args, **kwargs):
-    while max_time > 0:
+    while max_time >= 0:
         if state_check_func(log, ad, sub_id, *args, **kwargs):
             return True
 
