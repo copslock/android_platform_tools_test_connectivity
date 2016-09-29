@@ -380,7 +380,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         """
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        num_async_messages = 100
+        num_non_empty_messages = 100
+        num_null_and_empty_messages = 10 # one of each in sequence until reach count
 
         try:
             # Start Test
@@ -401,18 +402,27 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             self.log.debug(event_sub_match)
 
             # send all messages at once
-            for i in range(num_async_messages):
+            for i in range(num_non_empty_messages):
                 self.msg_id = self.msg_id + 1
                 self.subscriber.droid.wifiNanSendMessage(sub_id,
                      event_sub_match['data']['peerId'], self.msg_id, "msg %s" % i,
                      nan_const.MAX_TX_RETRIES)
+
+            # send all empty & null messages
+            for i in range(num_null_and_empty_messages):
+                self.msg_id = self.msg_id + 1
+                msg_to_send = None if (i % 2) else "" # flip between null and ""
+                self.subscriber.droid.wifiNanSendMessage(sub_id, event_sub_match['data']['peerId'],
+                                                         self.msg_id, msg_to_send,
+                                                         nan_const.MAX_TX_RETRIES)
 
             # wait for all messages to be transmitted correctly
             num_tx_ok = 0
             num_tx_fail = 0
             events_regex = '%s|%s' % (nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED,
                                       nan_const.SESSION_CB_ON_MESSAGE_SENT)
-            while (num_tx_ok + num_tx_fail) < num_async_messages:
+            while (num_tx_ok + num_tx_fail) < (
+                num_non_empty_messages + num_null_and_empty_messages):
                 try:
                     events = self.subscriber.ed.pop_events(events_regex,
                                                            EVENT_TIMEOUT)
@@ -431,34 +441,42 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                           num_tx_ok, num_tx_fail)
 
             # validate that all messages are received (not just the correct
-            # number of messages - since on occassion there may be duplicates
+            # number of messages - since on occasion there may be duplicates
             # received).
-            num_received = 0
+            num_non_empty_received = 0
             num_unique_received = 0
+            num_empty_received = 0
             messages = {}
-            while num_unique_received != num_async_messages:
+            while (num_unique_received != num_non_empty_messages) or (
+                num_empty_received != num_null_and_empty_messages):
                 try:
                     event = self.publisher.ed.pop_event(
                         nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
                     msg = event['data']['messageAsString']
-                    num_received = num_received + 1
-                    if msg not in messages:
-                        num_unique_received = num_unique_received + 1
-                        messages[msg] = 0
-                    messages[msg] = messages[msg] + 1
+                    if msg:
+                        num_non_empty_received = num_non_empty_received + 1
+                        if msg not in messages:
+                            num_unique_received = num_unique_received + 1
+                            messages[msg] = 0
+                        messages[msg] = messages[msg] + 1
+                    else:
+                        num_empty_received = num_empty_received + 1
                     self.log.debug('%s: %s',
                                    nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, msg)
                 except queue.Empty:
-                    asserts.fail('Timed out while waiting for %s on Publisher: %d '
-                                 'messages received, %d unique message' % (
-                                     nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
-                                     num_received, num_unique_received))
-            self.log.info('Reception stats: %d received (%d unique)', num_received,
-                          num_unique_received)
-            if num_received > num_unique_received:
+                    asserts.fail('Timed out while waiting for %s on Publisher: %d non-empty '
+                                 'messages received, %d unique messages, %d empty messages' % (
+                                 nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, num_non_empty_received,
+                                 num_unique_received, num_empty_received))
+            self.log.info('Reception stats: %d non-empty received (%d unique), %d empty',
+                          num_non_empty_received, num_unique_received, num_empty_received)
+            if num_non_empty_received != num_unique_received:
                 self.log.info('%d duplicate receptions of %d messages: %s',
-                              num_received - num_unique_received,
-                              num_received, messages)
+                              num_non_empty_received - num_unique_received,
+                              num_non_empty_received, messages)
+            if num_empty_received != num_null_and_empty_messages:
+                self.log.info('%d extra empty/null message reception',
+                              num_empty_received - num_null_and_empty_messages)
         finally:
             self.publisher.droid.wifiNanDestroyDiscoverySession(pub_id)
             self.subscriber.droid.wifiNanDestroyDiscoverySession(sub_id)
