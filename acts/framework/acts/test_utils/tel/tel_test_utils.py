@@ -1767,7 +1767,7 @@ def set_wfc_mode(log, ad, wfc_mode):
 
 def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
                              **kwargs):
-    while max_time > 0:
+    while max_time >= 0:
         if state_check_func(log, ad, *args, **kwargs):
             return True
 
@@ -1779,7 +1779,7 @@ def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
 
 def _wait_for_droid_in_state_for_subscription(
         log, ad, sub_id, max_time, state_check_func, *args, **kwargs):
-    while max_time > 0:
+    while max_time >= 0:
         if state_check_func(log, ad, sub_id, *args, **kwargs):
             return True
 
