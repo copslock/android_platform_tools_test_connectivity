@@ -18,16 +18,15 @@ import logging
 import queue
 import time
 
-import acts.test_utils.wifi.wifi_test_utils as wutils
-
 from acts import asserts
-from acts import signals
 from acts import utils
-from acts.base_test import BaseTestClass
+from acts import base_test
 from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel.tel_test_utils import is_sim_ready
+from acts.test_utils.tel import tel_test_utils as tel_utils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
-class WifiSoftApTest(BaseTestClass):
+
+class WifiSoftApTest(base_test.BaseTestClass):
 
     def setup_class(self):
         """It will setup the required dependencies from config file and configure
@@ -49,15 +48,18 @@ class WifiSoftApTest(BaseTestClass):
 
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
-        msg = "Failed to enable WiFi verbose logging on the softap dut."
-        asserts.assert_true(self.dut.droid.wifiGetVerboseLoggingLevel() == 1, msg)
+        asserts.assert_equal(self.dut.droid.wifiGetVerboseLoggingLevel(), 1,
+            "Failed to enable WiFi verbose logging on the softap dut.")
         self.dut_client.droid.wifiEnableVerboseLogging(1)
-        msg = "Failed to enable WiFi verbose logging on the client dut."
-        asserts.assert_true(self.dut_client.droid.wifiGetVerboseLoggingLevel() == 1, msg)
+        asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
+            "Failed to enable WiFi verbose logging on the client dut.")
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
 
     """ Helper Functions """
     def verify_return_to_wifi_enabled(self):
@@ -101,7 +103,7 @@ class WifiSoftApTest(BaseTestClass):
         """Create a softap config with ssid and password."""
         ap_ssid = "softap_" + utils.rand_ascii_str(8)
         ap_password = utils.rand_ascii_str(8)
-        self.log.info("softap setup: %s %s", ap_ssid, ap_password)
+        self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
         config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
         config[wutils.WifiEnums.PWD_KEY] = ap_password
         return config
@@ -118,11 +120,9 @@ class WifiSoftApTest(BaseTestClass):
         wutils.start_wifi_connection_scan(self.dut_client)
         client_scan_results = self.dut_client.droid.wifiGetScanResults()
         for result in client_scan_results:
-            self.log.debug("scan found: %s", result[wutils.WifiEnums.SSID_KEY])
-
-        asserts.assert_true(wutils.match_networks(
-                {wutils.WifiEnums.SSID_KEY: ap_ssid}, client_scan_results),
-                "Did not find SSID in scan results")
+            self.dut.log.debug("scan found: %s", result[wutils.WifiEnums.SSID_KEY])
+        wutils.match_networks({wutils.WifiEnums.SSID_KEY: ap_ssid},
+                              client_scan_results)
 
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.
@@ -134,7 +134,7 @@ class WifiSoftApTest(BaseTestClass):
         """
         # We do have a sim.  Make sure data is enabled so we can tether.
         if not self.dut.droid.telephonyIsDataEnabled():
-            self.log.info("need to enable data")
+            self.dut.log.info("need to enable data")
             self.dut.droid.telephonyToggleDataConnection(True)
             asserts.assert_true(self.dut.droid.telephonyIsDataEnabled(),
                                 "Failed to enable cell data for softap dut.")
@@ -150,11 +150,11 @@ class WifiSoftApTest(BaseTestClass):
         """
         success = True
         initial_wifi_state = self.dut.droid.wifiCheckState()
-        initial_cell_state = is_sim_ready(self.log, self.dut)
-        self.log.info("current state: %s", initial_wifi_state)
-        self.log.info("is sim ready? %s", initial_cell_state)
+        initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
+        self.dut.log.info("current state: %s", initial_wifi_state)
+        self.dut.log.info("is sim ready? %s", initial_cell_state)
         if initial_cell_state:
-            self.log.info("cell is on")
+            self.dut.log.info("cell is on")
             self.check_cell_data_and_enable()
 
         config = self.create_softap_config()
@@ -167,8 +167,8 @@ class WifiSoftApTest(BaseTestClass):
             self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
             success = self.dut.droid.wifiSetApEnabled(False, None)
             asserts.assert_true(success, "turn off softap mode failed")
-            asserts.assert_true(not self.dut.droid.wifiIsApEnabled(),
-                                "SoftAp is still reported as running")
+            asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
+                                 "SoftAp is still reported as running")
             curr_state = "waiting for WifiManagerApDisabled"
             event = self.dut.ed.pop_event("WifiManagerApDisabled", 5)
             if initial_wifi_state:
@@ -192,15 +192,14 @@ class WifiSoftApTest(BaseTestClass):
         """
         # TODO(silberst): wifiIsPortableHotspotSupported() is currently failing.
         # Remove the extra check and logging when b/30800811 is resolved
-        portable_hotspot_supported = self.dut.droid.wifiIsPortableHotspotSupported()
+        hotspot_supported = self.dut.droid.wifiIsPortableHotspotSupported()
         tethering_supported = self.dut.droid.connectivityIsTetheringSupported()
-        if not portable_hotspot_supported:
-            self.log.info("DUT should support wifi tethering but is reporting false.")
-        if not tethering_supported:
-            self.log.info("DUT should also support wifi tethering when called from ConnectivityManager")
-        asserts.assert_true(self.dut.droid.wifiIsPortableHotspotSupported(),
+        self.log.info(
+            "IsPortableHotspotSupported: %s, IsTetheringSupported %s." % (
+            hotspot_supported, tethering_supported))
+        asserts.assert_true(hotspot_supported,
                             "DUT should support wifi tethering but is reporting false.")
-        asserts.assert_true(self.dut.droid.connectivityIsTetheringSupported(),
+        asserts.assert_true(tethering_supported,
                             "DUT should also support wifi tethering when called from ConnectivityManager")
 
     def test_full_tether_startup(self):
@@ -212,30 +211,27 @@ class WifiSoftApTest(BaseTestClass):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
-        success = True
         initial_wifi_state = self.dut.droid.wifiCheckState()
-        initial_cell_state = is_sim_ready(self.log, self.dut)
-        self.log.info("current state: %s", initial_wifi_state)
-        self.log.info("is sim ready? %s", initial_cell_state)
-
+        initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
+        self.dut.log.info("current state: %s", initial_wifi_state)
+        self.dut.log.info("is sim ready? %s", initial_cell_state)
         if initial_cell_state:
             self.check_cell_data_and_enable()
-
         config = self.create_softap_config()
-
-        success = wutils.start_wifi_tethering(self.dut,
-                                              config[wutils.WifiEnums.SSID_KEY],
-                                              config[wutils.WifiEnums.PWD_KEY])
-        asserts.assert_true(success, "call to start_wifi_tethering returned false.  Check config")
+        wutils.start_wifi_tethering(self.dut,
+                                    config[wutils.WifiEnums.SSID_KEY],
+                                    config[wutils.WifiEnums.PWD_KEY])
         self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
         wutils.stop_wifi_tethering(self.dut)
-        asserts.assert_true(not self.dut.droid.wifiIsApEnabled(),
-                            "SoftAp is still reported as running")
+        asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
+                             "SoftAp is still reported as running")
         if initial_wifi_state:
             self.verify_return_to_wifi_enabled()
         elif not self.dut.droid.wifiCheckState():
             asserts.fail("Wifi was disabled before softap and now it is enabled")
 
     """ Tests End """
+
+
 if __name__ == "__main__":
     pass
