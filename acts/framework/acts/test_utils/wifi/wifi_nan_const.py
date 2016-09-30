@@ -91,6 +91,7 @@ SESSION_CB_KEY_PEER_ID = "peerId"
 SESSION_CB_KEY_SERVICE_SPECIFIC_INFO = "serviceSpecificInfo"
 SESSION_CB_KEY_MATCH_FILTER = "matchFilter"
 SESSION_CB_KEY_MESSAGE = "message"
+SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 
 ######################################################
