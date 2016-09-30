@@ -20,12 +20,14 @@
 import os
 import time
 from acts import utils
+from acts.utils import set_location_service
 from acts.base_test import BaseTestClass
 from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import (
     log_energy_info, reset_bluetooth, setup_multiple_devices_for_bt_test,
     take_btsnoop_logs)
 from acts.utils import sync_device_time
+import threading
 
 
 class BluetoothBaseTest(BaseTestClass):
@@ -50,8 +52,21 @@ class BluetoothBaseTest(BaseTestClass):
             return fn(self, *args, **kwargs)
         return _safe_wrap_test_case
 
+    def _reboot_device(self, ad):
+        self.log.info("Rebooting device {}.".format(ad.serial))
+        ad.reboot()
+
     def setup_class(self):
+        if "reboot_between_test_class" in self.user_params:
+            threads = []
+            for a in self.android_devices:
+                thread = threading.Thread(target=self._reboot_device, args=([a]))
+                threads.append(thread)
+                thread.start()
+            for t in threads:
+                t.join()
         for a in self.android_devices:
+            set_location_service(a, False)
             sync_device_time(a)
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
