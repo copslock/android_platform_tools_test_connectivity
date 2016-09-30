@@ -114,7 +114,7 @@ class GattApiTest(BluetoothBaseTest):
         invalid_callback_index = -1
         try:
             self.ad.droid.gattServerOpenGattServer(invalid_callback_index)
-        except sl4a_client.Sl4aAPIError as e:
+        except sl4a_client.Sl4aApiError as e:
             self.log.info("Failed successfully with exception: {}.".format(e))
             return True
         return False
