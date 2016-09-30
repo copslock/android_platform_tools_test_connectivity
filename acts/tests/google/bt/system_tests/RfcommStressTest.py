@@ -70,7 +70,7 @@ class RfcommStressTest(BluetoothBaseTest):
         TAGS: Classic, Stress, RFCOMM
         Priority: 1
         """
-        iterations = 10000
+        iterations = 1000
         for n in range(iterations):
             if not orchestrate_rfcomm_connection(self.client_ad,
                                                  self.server_ad):
