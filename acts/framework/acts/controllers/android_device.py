@@ -388,7 +388,12 @@ class AndroidDevice:
     def is_adb_root(self):
         """True if adb is running as root for this device.
         """
-        return "root" in self.adb.shell("id -u").decode("utf-8")
+        try:
+            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+        except adb.AdbError:
+            # Wait a bit and retry to work around adb flakiness for this cmd.
+            time.sleep(0.2)
+            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
 
     @property
     def model(self):
@@ -487,11 +492,13 @@ class AndroidDevice:
             setattr(self, k, v)
 
     def root_adb(self):
-        """Change adb to root mode for this device.
+        """Change adb to root mode for this device if allowed.
+
+        If executed on a production build, adb will not be switched to root
+        mode per security restrictions.
         """
-        if not self.is_adb_root:
-            self.adb.root()
-            self.adb.wait_for_device()
+        self.adb.root()
+        self.adb.wait_for_device()
 
     def get_droid(self, handle_event=True):
         """Create an sl4a connection to the device.
