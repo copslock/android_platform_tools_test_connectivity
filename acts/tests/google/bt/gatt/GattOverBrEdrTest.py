@@ -22,7 +22,6 @@ import time
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.GattEnum import GattCharacteristic
-from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattService
 from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.GattEnum import MtuSize
@@ -84,6 +83,8 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                        gatt_callback)
+            if bluetooth_gatt in self.bluetooth_gatt_list:
+                self.bluetooth_gatt_list.remove(bluetooth_gatt)
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -132,7 +133,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
@@ -175,7 +176,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
@@ -222,7 +223,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
@@ -277,7 +278,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
@@ -335,7 +336,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
@@ -388,7 +389,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
             try:
                 bluetooth_gatt, gatt_callback, adv_callback = (
                     orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                                GattTransport.TRANSPORT_BREDR,
+                                                GattTransport.TRANSPORT_BREDR.value,
                                                 self.per_droid_mac_address))
                 self.bluetooth_gatt_list.append(bluetooth_gatt)
             except GattTestUtilsError as err:
@@ -439,16 +440,20 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback, adv_callback = (
                 orchestrate_gatt_connection(self.cen_ad, self.per_ad,
-                                            GattTransport.TRANSPORT_BREDR,
+                                            GattTransport.TRANSPORT_BREDR.value,
                                             self.per_droid_mac_address))
             self.bluetooth_gatt_list.append(bluetooth_gatt)
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
         if self.cen_ad.droid.gattClientDiscoverServices(bluetooth_gatt):
-            event = self.cen_ad.ed.pop_event(
-                GattCbStrings.GATT_SERV_DISC.value.format(gatt_callback),
-                self.default_timeout)
+            try:
+                event = self.cen_ad.ed.pop_event(
+                    GattCbStrings.GATT_SERV_DISC.value.format(gatt_callback),
+                    self.default_timeout)
+            except Empty as err:
+                self.log.error("Event not found: {}".format(err))
+                return False
             discovered_services_index = event['data']['ServicesIndex']
         else:
             self.log.info("Failed to discover services.")
@@ -504,3 +509,4 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                     GattCbStrings.DESC_WRITE.value.format(
                                         gatt_callback), self.default_timeout)))
         return True
+

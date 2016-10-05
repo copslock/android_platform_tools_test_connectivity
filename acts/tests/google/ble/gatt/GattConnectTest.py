@@ -75,6 +75,8 @@ class GattConnectTest(BluetoothBaseTest):
         try:
             disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                        gatt_callback)
+            if bluetooth_gatt in self.bluetooth_gatt_list:
+                self.bluetooth_gatt_list.remove(bluetooth_gatt)
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -269,11 +271,11 @@ class GattConnectTest(BluetoothBaseTest):
         try:
             disconnect_gatt_connection(self.cen_ad, bluetooth_gatt,
                                        gatt_callback)
+            if bluetooth_gatt in self.bluetooth_gatt_list:
+                self.bluetooth_gatt_list.remove(bluetooth_gatt)
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
-        # Test, not sure if we should remove or not
-        #self.cen_ad.droid.gattClientClose(bluetooth_gatt)
         autoconnect = True
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
             gatt_callback, mac_address, autoconnect,
