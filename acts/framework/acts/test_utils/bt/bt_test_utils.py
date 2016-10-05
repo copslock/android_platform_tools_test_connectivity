@@ -470,7 +470,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
                                         advertise_settings)
     try:
         adv_ad.ed.pop_event(
-            "BleAdvertise{}onSuccess".format(advertise_callback),
+            adv_succ.format(advertise_callback),
             DEFAULT_TIMEOUT)
     except Empty as err:
         raise BtTestUtilsError(
@@ -595,6 +595,8 @@ def log_energy_info(android_devices, state):
         A logging string of the Bluetooth energy info reported.
     """
     return_string = "{} Energy info collection:\n".format(state)
+    # Bug: b/31966929
+    return return_string
     for d in android_devices:
         if (d.droid.getBuildModel() != "Nexus 5" or d.droid.getBuildModel() != "Nexus 4"):
 
