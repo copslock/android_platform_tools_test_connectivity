@@ -19,9 +19,11 @@
 
 import os
 import time
+import traceback
 from acts import utils
-from acts.utils import set_location_service
 from acts.base_test import BaseTestClass
+from acts.signals import TestSignal
+from acts.utils import set_location_service
 from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import (
     log_energy_info, reset_bluetooth, setup_multiple_devices_for_bt_test,
@@ -49,12 +51,45 @@ class BluetoothBaseTest(BaseTestClass):
                 time.time())
             log_string = "[Test ID] {}".format(test_id)
             self.log.info(log_string)
+            try:
+                for ad in self.android_devices:
+                    ad.droid.logI("Started " + log_string)
+                result = fn(self, *args, **kwargs)
+                for ad in self.android_devices:
+                    ad.droid.logI("Finished " + log_string)
+                if result is not True and "bt_auto_rerun" in self.user_params:
+                    self.teardown_test()
+                    log_string = "[Rerun Test ID] {}. 1st run failed.".format(
+                        test_id)
+                    self.log.info(log_string)
+                    self.setup_test()
+                    for ad in self.android_devices:
+                        ad.droid.logI("Rerun Started " + log_string)
+                    result = fn(self, *args, **kwargs)
+                    if result is True:
+                        self.log.info("Rerun passed.")
+                    elif result is False:
+                        self.log.info("Rerun failed.")
+                    else:
+                        # In the event that we have a non-bool or null
+                        # retval, we want to clearly distinguish this in the
+                        # logs from an explicit failure, though the test will
+                        # still be considered a failure for reporting purposes.
+                        self.log.info("Rerun indeterminate.")
+                        result = False
+                return result
+            except TestSignal:
+                raise
+            except Exception as e:
+                self.log.error(traceback.format_exc())
+                self.log.error(str(e))
+                return False
             return fn(self, *args, **kwargs)
         return _safe_wrap_test_case
 
     def _reboot_device(self, ad):
         self.log.info("Rebooting device {}.".format(ad.serial))
-        ad.reboot()
+        ad = ad.reboot()
 
     def setup_class(self):
         if "reboot_between_test_class" in self.user_params:
