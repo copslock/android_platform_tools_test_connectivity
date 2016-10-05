@@ -94,6 +94,10 @@ SESSION_CB_KEY_MESSAGE = "message"
 SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 
+# WifiNanDiscoverySessionCallback#SessionTerminateCodes
+TERMINATE_REASON_DONE = 100
+TERMINATE_REASON_FAIL = 101
+
 ######################################################
 # WifiNanRangingListener events (RttManager.RttListener)
 ######################################################
