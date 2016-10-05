@@ -549,6 +549,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         self.scn_ad.droid.bleSetScanFilterDeviceName("opp_test")
         filter_list2, scan_settings2, scan_callback2 = (
             generate_ble_scan_objects(self.scn_ad.droid))
+        self.scn_ad.droid.bleBuildScanFilter(filter_list2)
         self.scn_ad.droid.bleStartBleScan(filter_list2, scan_settings2,
                                           scan_callback2)
         self.active_scan_callback_list.append(scan_callback2)
@@ -600,6 +601,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         self.scn_ad.droid.bleSetScanFilterDeviceName("opp_test")
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
+        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
         self.active_scan_callback_list.append(scan_callback)
