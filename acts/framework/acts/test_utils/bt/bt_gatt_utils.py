@@ -48,12 +48,18 @@ def setup_gatt_connection(cen_ad,
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
     except Empty:
-        cen_ad.droid.gattClientClose(bluetooth_gatt)
+        try:
+            cen_ad.droid.gattClientClose(bluetooth_gatt)
+        except Exception:
+            self.log.debug("Failed to close gatt client.")
         raise GattTestUtilsError("Could not establish a connection to "
                                  "peripheral. Expected event:".format(
                                      expected_event))
     if event['data']['State'] != GattConnectionState.STATE_CONNECTED.value:
-        cen_ad.droid.gattClientClose(bluetooth_gatt)
+        try:
+            cen_ad.droid.gattClientClose(bluetooth_gatt)
+        except Exception:
+            self.log.debug("Failed to close gatt client.")
         raise GattTestUtilsError("Could not establish a connection to "
                                  "peripheral. Event Details:".format(
                                      pprint.pformat(event)))
