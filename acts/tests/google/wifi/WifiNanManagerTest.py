@@ -36,22 +36,11 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                       "ServiceSpecificInfo": "Data XYZ",
                       "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
                       "PublishType": 0, "PublishCount": 0, "TtlSec": 0};
-    publish_config_passive = {"ServiceName": "GoogleTestServiceX",
-                              "ServiceSpecificInfo": "Data XYZ",
-                              "MatchFilter": {"int0": 14,
-                                              "data0": "MESSAGE_ALL"},
-                              "PublishType": 1, "PublishCount": 0, "TtlSec": 0};
     subscribe_config = {"ServiceName": "GoogleTestServiceX",
                         "ServiceSpecificInfo": "Data ABC",
                         "MatchFilter": {"int0": 14, "data0": "MESSAGE_ALL"},
                         "SubscribeType": 0, "SubscribeCount": 0, "TtlSec": 0,
                         "MatchStyle": 0};
-    subscribe_config_active = {"ServiceName": "GoogleTestServiceX",
-                               "ServiceSpecificInfo": "Data ABC",
-                               "MatchFilter": {"int0": 14,
-                                               "data0": "MESSAGE_ALL"},
-                               "SubscribeType": 1, "SubscribeCount": 0,
-                               "TtlSec": 0, "MatchStyle": 0};
     rtt_24_20 = {"deviceType": 5, "requestType": 2, "frequency": 2437,
                  "channelWidth": 0, "centerFreq0": 2437, "centerFreq1": 0,
                  "numberBurst": 0, "numSamplesPerBurst": 5,
@@ -271,7 +260,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
           * S waits for a message and confirms that received (uncorrupted)
 
         Args:
-            discovery_configs: Array of (publish_config, subscribe_config)
+            discovery_configs: {'Title': description,
+                'PublishConfig': publish_config,
+                'SubscribeConfig': subscribe_config}
 
         Returns:
             True if discovery succeeds, else false.
@@ -287,8 +278,13 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         pub_connect_id = self.exec_connect(self.publisher, "publisher")
         sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
 
-        pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, discovery_config[0])
-        sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, discovery_config[1])
+        # Configuration
+        publish_config = discovery_config['PublishConfig']
+        subscribe_config = discovery_config['SubscribeConfig']
+        self.log.debug('Publish config=%s, Subscribe config=%s', publish_config, subscribe_config)
+
+        pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, publish_config)
+        sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, subscribe_config)
 
         try:
             event_sub_match = self.subscriber.ed.pop_event(
@@ -341,13 +337,15 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         - Solicited publish + active subscribe
         """
 
-        discovery_configs = ([self.publish_config, self.subscribe_config],
-                             [self.publish_config_passive,
-                              self.subscribe_config_active])
-        name_func = lambda discovery_config : (
-            "test_nan_discovery_session_PT_%s_ST_%s") % (
-            discovery_config[0][nan_const.PUBLISH_KEY_TYPE],
-            discovery_config[1][nan_const.SUBSCRIBE_KEY_TYPE])
+        discovery_configs = ({'Title': 'ActivePub',
+                              'PublishConfig': self.publish_config,
+                              'SubscribeConfig': self.subscribe_config},
+                             {'Title': 'ActiveSub',
+                              'PublishConfig': dict(self.publish_config, **{'PublishType': 1}),
+                              'SubscribeConfig': dict(self.subscribe_config,
+                                                      **{'SubscribeType': 1})})
+        name_func = lambda discovery_config : ("test_nan_discovery_session__%s"
+                                               ) % discovery_config['Title']
         failed = self.run_generated_testcases(
             self.run_nan_discovery_session,
             discovery_configs,
