@@ -21,7 +21,6 @@ import time
 from acts.base_test import BaseTestClass
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
