@@ -24,7 +24,6 @@ import time
 from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
 from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
@@ -58,7 +57,6 @@ class RfcommTest(BluetoothBaseTest):
         for a in self.android_devices:
             if not clear_bonded_devices(a):
                 return False
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
         for a in self.android_devices:
             a.ed.clear_all_events()
         return True
@@ -66,7 +64,6 @@ class RfcommTest(BluetoothBaseTest):
     def teardown_test(self):
         self.client_ad.droid.bluetoothRfcommCloseClientSocket()
         self.server_ad.droid.bluetoothRfcommCloseServerSocket()
-        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
