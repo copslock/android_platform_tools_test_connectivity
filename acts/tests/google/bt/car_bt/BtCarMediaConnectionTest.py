@@ -22,6 +22,7 @@ import time
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt import bt_test_utils
 from acts.test_utils.car import car_bt_utils
+from acts.test_utils.car import car_media_utils
 from acts.test_utils.bt import BtEnum
 
 class BtCarMediaConnectionTest(BluetoothBaseTest):
@@ -60,25 +61,6 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
 
-    def is_a2dp_connected(self, device1, device2):
-        """
-        Convenience Function to see if the 2 devices are connected on
-        A2dp.
-        ToDo: Move to bt_test_utils if used in more places.
-        Args:
-            device1:    Device 1
-            device2:    Device 2
-        Returns:
-            True if Connected
-            False if Not connected
-        """
-        devices = device1.droid.bluetoothA2dpSinkGetConnectedDevices()
-        for device in devices:
-            self.log.info("A2dp Connected device {}".format(device["name"]))
-            if (device["address"] == device2.droid.bluetoothGetLocalAddress()):
-                return True
-        return False
-
     def test_a2dp_connect_disconnect_from_src(self):
         """
         Test Connect/Disconnect on A2DP profile.
@@ -98,7 +80,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         Priority: 0
         """
-        if (self.is_a2dp_connected(self.SNK, self.SRC)):
+        if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
             self.log.info("Already Connected")
         else:
             result = bt_test_utils.connect_pri_to_sec(
@@ -117,7 +99,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
-        if (self.is_a2dp_connected(self.SNK, self.SRC)):
+        if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
             self.log.error("Still connected after a disconnect")
 
         return True
@@ -142,7 +124,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         Priority: 0
         """
         # Connect
-        if (self.is_a2dp_connected(self.SNK, self.SRC)):
+        if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
             self.log.info("Already Connected")
         else:
             result = bt_test_utils.connect_pri_to_sec(
@@ -161,7 +143,7 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
 
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
-        if (self.is_a2dp_connected(self.SNK, self.SRC)):
+        if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
             self.log.error("Still connected after a disconnect")
 
         return True

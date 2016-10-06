@@ -19,14 +19,21 @@
 # Events dispatched from the RPC Server
 EVENT_PLAY_RECEIVED = "playReceived"
 EVENT_PAUSE_RECEIVED = "pauseReceived"
-EVENT_SKIPNEXT_RECEIVED = "skipNextReceived"
-EVENT_SKIPPREV_RECEIVED = "skipPrevReceived"
+EVENT_SKIP_NEXT_RECEIVED = "skipNextReceived"
+EVENT_SKIP_PREV_RECEIVED = "skipPrevReceived"
 
 # Passthrough Commands sent to the RPC Server
 CMD_MEDIA_PLAY = "play"
 CMD_MEDIA_PAUSE = "pause"
 CMD_MEDIA_SKIP_NEXT = "skipNext"
 CMD_MEDIA_SKIP_PREV = "skipPrev"
+
+# MediaMetaData keys. Keep them the same as in BluetoothMediaFacade.
+MEDIA_KEY_TITLE = "keyTitle"
+MEDIA_KEY_ALBUM = "keyAlbum"
+MEDIA_KEY_ARTIST = "keyArtist"
+MEDIA_KEY_DURATION = "keyDuration"
+MEDIA_KEY_NUM_TRACKS = "keyNumTracks"
 
 
 def verifyEventReceived(log, device, event, timeout):
@@ -74,6 +81,125 @@ def send_media_passthrough_cmd(log,
     """
     log.info("Sending passthru : {}".format(cmd))
     fromDevice.droid.bluetoothMediaPassthrough(cmd)
-    if not verifyEventReceived(log, toDevice, expctEvent, timeout):
+    return verifyEventReceived(log, toDevice, expctEvent, timeout)
+
+
+def is_a2dp_connected(log, sink, source):
+    """
+    Convenience Function to see if the 2 devices are connected on
+    A2dp.
+    ToDo: Move to bt_test_utils if used in more places.
+    Args:
+        sink:       Audio Sink
+        source:     Audio Source
+    Returns:
+        True if Connected
+        False if Not connected
+    """
+    devices = sink.droid.bluetoothA2dpSinkGetConnectedDevices()
+    for device in devices:
+        log.info("A2dp Connected device {}".format(device["name"]))
+        if (device["address"] == source.droid.bluetoothGetLocalAddress()):
+            return True
+    return False
+
+
+def log_metadata(log, metadata):
+    """
+    Log the Metadata to the console.
+    Args:
+        log:        The logging object
+        metadata:   Dictionary of the song's metadata
+    """
+    title = metadata[MEDIA_KEY_TITLE]
+    album = metadata[MEDIA_KEY_ALBUM]
+    artist = metadata[MEDIA_KEY_ARTIST]
+    duration = metadata[MEDIA_KEY_DURATION]
+    numTracks = metadata[MEDIA_KEY_NUM_TRACKS]
+    log.info("Playing Artist: {}, Album: {}, Title: {}".format(artist, album,
+                                                               title))
+    log.info("Duration: {}, NumTracks: {}".format(duration, numTracks))
+
+
+def compare_metadata(log, metadata1, metadata2):
+    """
+    Compares the Metadata between the two devices
+    Args:
+        log:        The logging object
+        metadata1    Media Metadata of device1
+        metadata2    Media Metadata of device2
+    Returns:
+        True        if the Metadata matches
+        False       if the Metadata do not match
+    """
+    log.info("Device1 metadata:")
+    log_metadata(log, metadata1)
+    log.info("Device2 metadata:")
+    log_metadata(log, metadata2)
+
+    if not (metadata1[MEDIA_KEY_TITLE] == metadata2[MEDIA_KEY_TITLE]):
+        log.info("Song Titles do not match")
         return False
+
+    if not (metadata1[MEDIA_KEY_ALBUM] == metadata2[MEDIA_KEY_ALBUM]):
+        log.info("Song Albums do not match")
+        return False
+
+    if not (metadata1[MEDIA_KEY_ARTIST] == metadata2[MEDIA_KEY_ARTIST]):
+        log.info("Song Artists do not match")
+        return False
+
+    if not (metadata1[MEDIA_KEY_DURATION] == metadata2[MEDIA_KEY_DURATION]):
+        log.info("Song Duration do not match")
+        return False
+
+    if not (metadata1[MEDIA_KEY_NUM_TRACKS] == metadata2[MEDIA_KEY_NUM_TRACKS]
+            ):
+        log.info("Song Num Tracks do not match")
+        return False
+
     return True
+
+
+def check_metadata(log, device1, device2):
+    """
+    Gets the now playing metadata from 2 devices and checks if they are the same
+    Args:
+        log:        The logging object
+        device1     Device 1
+        device2     Device 2
+    Returns:
+        True        if the Metadata matches
+        False       if the Metadata do not match
+    """
+    metadata1 = device1.droid.bluetoothMediaGetCurrentMediaMetaData()
+    if metadata1 is None:
+        return False
+
+    metadata2 = device2.droid.bluetoothMediaGetCurrentMediaMetaData()
+    if metadata2 is None:
+        return False
+    return compare_metadata(log, metadata1, metadata2)
+
+
+def isMediaSessionActive(log, device, mediaSession):
+    """
+    Checks if the passed mediaSession is active.
+    Used to see if the device is playing music.
+    Args:
+        log:            The logging object
+        device          Device to check
+        mediaSession    MediaSession to check if it is active
+    Returns:
+        True            if the given mediaSession is active
+        False           if the given mediaSession is not active
+    """
+    # Get a list of MediaSession tags (String) that is currently active
+    activeSessions = device.droid.bluetoothMediaGetActiveMediaSessions()
+    if len(activeSessions) > 0:
+        for session in activeSessions:
+            log.info(session)
+            if (session == mediaSession):
+                return True
+    log.info("No Media Sessions")
+    return False
