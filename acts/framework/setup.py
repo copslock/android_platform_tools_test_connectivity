@@ -15,6 +15,7 @@ install_requires = [
 ]
 if sys.version_info < (3,):
     install_requires.append('enum34')
+    install_requires.append('statistics')
 
 setup(
     name='acts',
