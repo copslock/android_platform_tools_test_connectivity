@@ -582,29 +582,6 @@ def check_device_supported_profiles(droid):
     return profile_dict
 
 
-def log_energy_info(android_devices, state):
-    """Logs energy info of input Android devices.
-
-    Args:
-        android_devices: input Android device list to log energy info from.
-        state: the input state to log. Usually 'Start' or 'Stop' for logging.
-
-    Returns:
-        A logging string of the Bluetooth energy info reported.
-    """
-    return_string = "{} Energy info collection:\n".format(state)
-    # Bug: b/31966929
-    return return_string
-    for d in android_devices:
-        if (d.droid.getBuildModel() != "Nexus 5" or d.droid.getBuildModel() != "Nexus 4"):
-
-            description = ("Device: {}\tEnergyStatus: {}\n".format(
-                d.droid.getBuildSerial(),
-                d.droid.bluetoothGetControllerActivityEnergyInfo(1)))
-            return_string = return_string + description
-    return return_string
-
-
 def pair_pri_to_sec(pri_droid, sec_droid):
     """Pairs pri droid to sec droid.
 

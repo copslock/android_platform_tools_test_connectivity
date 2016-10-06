@@ -26,8 +26,7 @@ from acts.signals import TestSignal
 from acts.utils import set_location_service
 from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import (
-    log_energy_info, reset_bluetooth, setup_multiple_devices_for_bt_test,
-    take_btsnoop_logs)
+    reset_bluetooth, setup_multiple_devices_for_bt_test, take_btsnoop_logs)
 from acts.utils import sync_device_time
 import threading
 
@@ -94,7 +93,8 @@ class BluetoothBaseTest(BaseTestClass):
         if "reboot_between_test_class" in self.user_params:
             threads = []
             for a in self.android_devices:
-                thread = threading.Thread(target=self._reboot_device, args=([a]))
+                thread = threading.Thread(
+                    target=self._reboot_device, args=([a]))
                 threads.append(thread)
                 thread.start()
             for t in threads:
@@ -106,13 +106,11 @@ class BluetoothBaseTest(BaseTestClass):
 
     def setup_test(self):
         self.timer_list = []
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
         for a in self.android_devices:
             a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
@@ -138,13 +136,14 @@ class BluetoothBaseTest(BaseTestClass):
             try:
                 ad.adb.wait_for_device()
                 ad.take_bug_report(test_name, begin_time)
-                tombstone_path = os.path.join(ad.log_path, "BugReports",
-                        "{},{}".format(begin_time, ad.serial).replace(' ','_'))
+                tombstone_path = os.path.join(
+                    ad.log_path, "BugReports",
+                    "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path)
             except:
-                ad.log.error("Failed to take a bug report for {}, {}"
-                             .format(ad.serial, test_name))
+                self.log.error("Failed to take a bug report for {}, {}"
+                               .format(ad.serial, test_name))
 
     def _get_time_in_milliseconds(self):
         return int(round(time.time() * 1000))
