@@ -146,7 +146,7 @@ class GattToolTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback = (setup_gatt_connection(
                 self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
-                GattTransport.TRANSPORT_LE))
+                GattTransport.TRANSPORT_LE.value))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -202,7 +202,7 @@ class GattToolTest(BluetoothBaseTest):
             try:
                 bluetooth_gatt, gatt_callback = (setup_gatt_connection(
                     self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
-                    GattTransport.TRANSPORT_LE))
+                    GattTransport.TRANSPORT_LE.value))
             except GattTestUtilsError as err:
                 self.log.error(err)
                 return False
@@ -248,7 +248,7 @@ class GattToolTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback = (setup_gatt_connection(
                 self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
-                GattTransport.TRANSPORT_LE))
+                GattTransport.TRANSPORT_LE.value))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
@@ -383,7 +383,7 @@ class GattToolTest(BluetoothBaseTest):
         try:
             bluetooth_gatt, gatt_callback = (setup_gatt_connection(
                 self.cen_ad, self.ble_mac_address, self.AUTOCONNECT,
-                GattTransport.TRANSPORT_LE))
+                GattTransport.TRANSPORT_LE.value))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
