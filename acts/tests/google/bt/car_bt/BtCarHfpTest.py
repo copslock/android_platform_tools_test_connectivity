@@ -65,17 +65,11 @@ class BtCarHfpTest(BluetoothBaseTest):
 
     def setup_test(self):
         # Reset the devices.
-        self.log.debug(
-            bt_test_utils.log_energy_info(self.android_devices, "Start"))
         for d in self.android_devices:
             d.ed.clear_all_events()
 
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
-
-    def teardown_test(self):
-        self.log.debug(
-            bt_test_utils.log_energy_info(self.android_devices, "End"))
 
     @BluetoothBaseTest.bt_test_wrap
     def test_default_calling_account(self):

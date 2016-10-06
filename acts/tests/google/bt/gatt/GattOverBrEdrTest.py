@@ -34,7 +34,6 @@ from acts.test_utils.bt.bt_gatt_utils import setup_gatt_characteristics
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_descriptors
 from acts.test_utils.bt.bt_gatt_utils import setup_multiple_services
-from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
@@ -67,7 +66,6 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         self.adv_instances = []
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
         for bluetooth_gatt in self.bluetooth_gatt_list:
             self.cen_ad.droid.gattClientClose(bluetooth_gatt)
         for gatt_server in self.gatt_server_list:
