@@ -328,6 +328,33 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             asserts.fail('Timed out while waiting for %s on subscriber' %
                          nan_const.SESSION_CB_ON_MESSAGE_RECEIVED)
 
+        if publish_config['TtlSec'] != 0:
+            try:
+                event_pub_term = self.publisher.ed.pop_event(
+                    nan_const.SESSION_CB_ON_SESSION_TERMINATED, publish_config['TtlSec'] + 5)
+                self.log.info('%s: %s',
+                              nan_const.SESSION_CB_ON_SESSION_TERMINATED,
+                              event_pub_term['data'])
+                asserts.assert_equal(event_pub_term['data'][nan_const.SESSION_CB_KEY_REASON],
+                                     nan_const.TERMINATE_REASON_DONE,
+                                     "Publisher terminate reason is not DONE")
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on publisher' %
+                             nan_const.SESSION_CB_ON_SESSION_TERMINATED)
+        if subscribe_config['TtlSec'] != 0:
+            try:
+                event_sub_term = self.subscriber.ed.pop_event(
+                    nan_const.SESSION_CB_ON_SESSION_TERMINATED, subscribe_config['TtlSec'] + 5)
+                self.log.info('%s: %s',
+                              nan_const.SESSION_CB_ON_SESSION_TERMINATED,
+                              event_sub_term['data'])
+                asserts.assert_equal(event_sub_term['data'][nan_const.SESSION_CB_KEY_REASON],
+                                     nan_const.TERMINATE_REASON_DONE,
+                                     "Subscriber terminate reason is not DONE")
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on subscriber' %
+                             nan_const.SESSION_CB_ON_SESSION_TERMINATED)
+
     @generated_test
     def test_nan_discovery_session(self):
         """Perform NAN configuration, discovery, and message exchange.
@@ -343,7 +370,10 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                              {'Title': 'ActiveSub',
                               'PublishConfig': dict(self.publish_config, **{'PublishType': 1}),
                               'SubscribeConfig': dict(self.subscribe_config,
-                                                      **{'SubscribeType': 1})})
+                                                      **{'SubscribeType': 1})},
+                             {'Title': 'ActivePub-LimitedTtl',
+                              'PublishConfig': dict(self.publish_config, **{"TtlSec": 20}),
+                              'SubscribeConfig': dict(self.subscribe_config, **{"TtlSec": 20})})
         name_func = lambda discovery_config : ("test_nan_discovery_session__%s"
                                                ) % discovery_config['Title']
         failed = self.run_generated_testcases(
