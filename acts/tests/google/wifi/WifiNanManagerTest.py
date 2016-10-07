@@ -377,16 +377,16 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                               'SubscribeConfig': dict(self.subscribe_config, **{"TtlSec": 20})})
         name_func = lambda discovery_config : ("test_nan_discovery_session__%s"
                                                ) % discovery_config['Title']
-        failed = self.run_generated_testcases(
+        self.run_generated_testcases(
             self.run_nan_discovery_session,
             discovery_configs,
             name_func = name_func)
-        asserts.assert_true(not failed,
-                            "%s of test_nan_discovery_session failed: %s" %
-                            (len(failed), failed))
 
-    def test_nan_messaging(self):
+    def run_nan_messaging(self, retry_count):
         """Perform NAN configuration, discovery, and large message exchange.
+
+        Args:
+            retry_count: retransmission count - from 0 to nan_const.MAX_TX_RETRIES
 
         Configuration: 2 devices, one acting as Publisher (P) and the
         other as Subscriber (S)
@@ -435,8 +435,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             self.msg_id = self.msg_id + 1
             msg_to_send = None if (i % 2) else "" # flip between null and ""
             self.subscriber.droid.wifiNanSendMessage(sub_id, event_sub_match['data']['peerId'],
-                                                     self.msg_id, msg_to_send,
-                                                     nan_const.MAX_TX_RETRIES)
+                                                     self.msg_id, msg_to_send, retry_count)
 
         # wait for all messages to be transmitted correctly
         num_tx_ok = 0
@@ -512,6 +511,18 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         if num_empty_received != num_null_and_empty_messages:
             self.log.info('%d extra empty/null message reception',
                           num_empty_received - num_null_and_empty_messages)
+
+    @generated_test
+    def test_nan_messaging(self):
+        """Perform NAN configuration, discovery, and large message exchange.
+
+        Test multiple message send retry counts.
+        """
+        name_func = lambda retry_count : "test_nan_messaging__retries_%d" % retry_count
+        self.run_generated_testcases(
+            self.run_nan_messaging,
+            [0, nan_const.MAX_TX_RETRIES],
+            name_func = name_func)
 
     def test_nan_rtt(self):
         """Perform NAN configuration, discovery, and RTT.
