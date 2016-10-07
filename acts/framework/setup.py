@@ -33,6 +33,7 @@ install_requires = [
 
 if sys.version_info < (3, ):
     install_requires.append('enum34')
+    install_requires.append('statistics')
     # "futures" is needed for py2 compatibility and it only works in 2.7
     install_requires.append('futures')
 

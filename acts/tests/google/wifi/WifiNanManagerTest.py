@@ -18,6 +18,7 @@ import json
 import pprint
 import re
 import queue
+import statistics
 
 from acts import asserts
 from acts import base_test
@@ -440,6 +441,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # wait for all messages to be transmitted correctly
         num_tx_ok = 0
         num_tx_fail = 0
+        tx_ok_stats = []
+        tx_fail_stats = []
         events_regex = '%s|%s' % (nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED,
                                   nan_const.SESSION_CB_ON_MESSAGE_SENT)
         while (num_tx_ok + num_tx_fail) < (
@@ -451,15 +454,26 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                 for event in events:
                     if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SENT:
                         num_tx_ok = num_tx_ok + 1
+                        if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
+                            tx_ok_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
                     if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED:
                         num_tx_fail = num_tx_fail + 1
+                        if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
+                            tx_fail_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
             except queue.Empty:
                 self.log.warning('Timed out while waiting for %s on Subscriber'
                                  ' - %d events received', events_regex,
                                  num_tx_ok + num_tx_fail)
                 break
-        self.log.info('Transmission stats: %d success, %d fail',
-                      num_tx_ok, num_tx_fail)
+        self.log.info('Transmission stats: %d success, %d fail', num_tx_ok, num_tx_fail)
+        if tx_ok_stats:
+            self.log.info('Successful tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                          min(tx_ok_stats), max(tx_ok_stats),
+                          statistics.mean(tx_ok_stats), statistics.stdev(tx_ok_stats))
+        if tx_fail_stats:
+            self.log.info('Fail tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                          min(tx_fail_stats), max(tx_fail_stats),
+                          statistics.mean(tx_fail_stats), statistics.stdev(tx_fail_stats))
 
         # validate that all messages are received (not just the correct
         # number of messages - since on occasion there may be duplicates
