@@ -93,6 +93,7 @@ SESSION_CB_KEY_MATCH_FILTER = "matchFilter"
 SESSION_CB_KEY_MESSAGE = "message"
 SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
+SESSION_CB_KEY_LATENCY_MS = "latencyMs"
 
 # WifiNanDiscoverySessionCallback#SessionTerminateCodes
 TERMINATE_REASON_DONE = 100
