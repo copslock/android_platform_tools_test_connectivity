@@ -19,6 +19,7 @@ from builtins import open
 
 import logging
 import os
+import re
 import time
 
 from acts import logger as acts_logger
@@ -91,6 +92,23 @@ def destroy(ads):
             ad.clean_up()
         except:
             ad.log.exception("Failed to clean up properly.")
+
+
+def get_info(ads):
+    """Get information on a list of AndroidDevice objects.
+
+    Args:
+        ads: A list of AndroidDevice objects.
+
+    Returns:
+        A list of dict, each representing info for an AndroidDevice objects.
+    """
+    device_info = []
+    for ad in ads:
+        info = {"serial": ad.serial, "model": ad.model}
+        info.update(ad.build_info)
+        device_info.append(info)
+    return device_info
 
 
 def _start_services_on_ads(ads):
@@ -326,8 +344,9 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {"serial": self.serial})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            "serial": self.serial
+        })
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -377,6 +396,26 @@ class AndroidDevice:
         if self.adb_logcat_process:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
+
+    @property
+    def build_info(self):
+        """Get the build info of this Android device, including build id and
+        build type.
+
+        This is not available if the device is in bootloader mode.
+
+        Returns:
+            A dict with the build info of this Android device, or None if the
+            device is in bootloader mode.
+        """
+        if self.is_bootloader:
+            return
+        info = {}
+        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
+            "utf-8").strip()
+        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
+            "utf-8").strip()
+        return info
 
     @property
     def is_bootloader(self):

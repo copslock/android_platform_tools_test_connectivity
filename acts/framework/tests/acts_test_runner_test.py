@@ -127,6 +127,22 @@ class ActsTestRunnerTest(unittest.TestCase):
         finally:
             delattr(mock_controller, "ACTS_CONTROLLER_REFERENCE_NAME")
 
+    def test_register_controller_no_get_info(self):
+        mock_test_config = dict(self.base_mock_test_config)
+        tb_key = keys.Config.key_testbed.value
+        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ref_name = "haha"
+        get_info = getattr(mock_controller, "get_info")
+        delattr(mock_controller, "get_info")
+        try:
+            mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1",
+                                                                "magic2"]
+            tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
+            tr.register_controller(mock_controller)
+            self.assertEqual(tr.results.controller_info, {})
+        finally:
+            setattr(mock_controller, "get_info", get_info)
+
     def test_register_controller_return_value(self):
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value
@@ -164,6 +180,9 @@ class ActsTestRunnerTest(unittest.TestCase):
         self.assertEqual(results["Requested"], 2)
         self.assertEqual(results["Executed"], 2)
         self.assertEqual(results["Passed"], 2)
+        expected_info = {'MagicDevice': [{'MyMagic': {'magic': 'Magic1'}},
+                                         {'MyMagic': {'magic': 'Magic2'}}]}
+        self.assertEqual(tr.results.controller_info, expected_info)
 
     @mock.patch('acts.controllers.adb.AdbProxy',
                 return_value=acts_android_device_test.MockAdbProxy(1))
