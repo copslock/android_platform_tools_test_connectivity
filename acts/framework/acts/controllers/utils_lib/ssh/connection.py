@@ -115,7 +115,7 @@ class SshConnection(object):
     def run(self,
             command,
             timeout_seconds=3600,
-            env={},
+            env=None,
             stdout=None,
             stderr=None,
             stdin=None,
@@ -144,6 +144,9 @@ class SshConnection(object):
             job.TimeoutError: When the remote command took to long to execute.
             Error: When the ssh connection failed to be created.
         """
+        if env is None:
+            env = {}
+
         try:
             self.setup_master_ssh(connect_timeout)
         except Error:
@@ -214,6 +217,33 @@ class SshConnection(object):
             raise Error('Unknown host.', result)
 
         raise Error('The job failed for unkown reasons.', result)
+
+    def run_async(self, command, env=None, connect_timeout=5):
+        """Starts up a background command over ssh.
+
+        Will ssh to a remote host and startup a command. This method will
+        block until there is confirmation that the remote command has started.
+
+        Args:
+            command: The command to execute over ssh. Can be either a string
+                     or a list.
+            env: A dictonary of enviroment variables to setup on the remote
+                 host.
+            connect_timeout: How long to wait for the connection confirmation.
+
+        Returns:
+            The result of the command to launch the background job.
+
+        Raises:
+            CmdTimeoutError: When the remote command took to long to execute.
+            SshTimeoutError: When the connection took to long to established.
+            SshPermissionDeniedError: When permission is not allowed on the
+                                      remote host.
+        """
+        command = '(%s) < /dev/null > /dev/null 2>&1 & echo -n $!' % command
+        result = self.run(command, env=env, connect_timeout=connect_timeout)
+
+        return result
 
     def _cleanup_master_ssh(self):
         """
