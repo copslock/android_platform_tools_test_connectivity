@@ -427,9 +427,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # send all messages at once
         for i in range(results['num_non_empty_messages']):
             self.msg_id = self.msg_id + 1
-            self.subscriber.droid.wifiNanSendMessage(sub_id,
-                 event_sub_match['data']['peerId'], self.msg_id, "msg %s" % i,
-                 nan_const.MAX_TX_RETRIES)
+            self.subscriber.droid.wifiNanSendMessage(sub_id, event_sub_match['data']['peerId'],
+                                                     self.msg_id, "msg %s" % i, retry_count)
 
         # send all empty & null messages
         for i in range(results['num_null_and_empty_messages']):
