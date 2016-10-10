@@ -54,7 +54,6 @@ class TelLiveSettingsTest(TelephonyBaseTest):
     _TEAR_DOWN_OPERATION_DISCONNECT_WIFI = "disconnect_wifi"
     _TEAR_DOWN_OPERATION_RESET_WIFI = "reset_wifi"
     _TEAR_DOWN_OPERATION_DISABLE_WFC = "disable_wfc"
-    _DEFAULT_STRESS_NUMBER = 5
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
@@ -65,10 +64,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
         except KeyError:
             self.wifi_network_pass = None
-        try:
-            self.stress_test_number = int(self.user_params["stress_test_number"])
-        except KeyError:
-            self.stress_test_number = self._DEFAULT_STRESS_NUMBER
+
+        self.stress_test_number = self.get_stress_test_number()
 
     def _wifi_connected_enable_wfc_teardown_wfc(self,
         tear_down_operation, initial_setup_wifi=True,
