@@ -18,33 +18,15 @@ import logging
 import os
 import re
 import select
+import shlex
 import signal
 import subprocess
 import sys
 import time
 
-from acts.libs import shell_utils
 
 class Error(Exception):
     """Indicates that a command failed, is fatal to the test unless caught."""
-
-    def __init__(self, command, result_obj, additional_text=None):
-        self._command = command
-        self.result_obj = result_obj
-        self.additional_text = additional_text
-
-    def __str__(self):
-        if self.result_obj.exit_status is None:
-            msg = ('Command <%s> failed and is not responding to signals' %
-                   self._command)
-        else:
-            msg = 'Command <%s> failed, rc=%d'
-            msg %= (self._command, self.result_obj.exit_status)
-
-        if self.additional_text:
-            msg += ", %s" % self.additional_text
-        msg += '\n' + repr(self.result_obj)
-        return msg
 
 
 class TimeoutError(Error):
@@ -153,8 +135,9 @@ class Result(object):
         self.duration = duration
         self.did_timeout = did_timeout
 
+
 class BackgroundJob(object):
-    """A job to be executed in the background.
+    """Deprecated: Will be replaced with subprocess in the future. b/31863868
 
     Represents a child process running in the background. Unlike POpen,
     BackgroundJob adds in the ability to run jobs in the background without
@@ -267,7 +250,7 @@ class BackgroundJob(object):
                 'Extra i/o streams cannot be given when no_pipes is true.')
 
         if isinstance(command, str):
-            command = shell_utils.split_command_line(command)
+            command = shlex.split(command)
 
         # Use literal strings for all arguments.
         command = [s.encode('unicode_escape') for s in command]
@@ -375,24 +358,20 @@ class BackgroundJob(object):
             timeout: The amount of time to wait on the input sending. <= 0 or
                      None will wait indefinetly.
 
-        Returns:
-            True if the data could send, otherwise false.
+        Raise:
+            Error: When unable to send to program.
         """
         if self._no_pipes:
-            logging.error('Trying to write to process %d '
-                          "while no pipes have been activated." % self._sp.pid)
-            return False
+            raise Error('Trying to write to process %d '
+                        'while no pipes have been activated.' % self._sp.pid)
         if self._has_closed_input:
-            logging.error('Trying to write to process %d '
-                          'after its input pipe has been closed.' %
-                          self._sp.pid)
-            return False
+            raise Error('Trying to write to process %d '
+                        'after its input pipe has been closed.' % self._sp.pid)
 
         if self._string_stdin is None:
-            logging.error(
+            raise Error(
                 'Cannot write to process %d '
                 'the process is reading from another input stream source')
-            return False
 
         if not self._keep_input_alive:
             logging.warning(
@@ -407,7 +386,7 @@ class BackgroundJob(object):
         self._string_stdin += data
         while (time.time() < end_time or
                timeout <= 0) and len(self._string_stdin) > 0:
-            self.__process_data()
+            self._process_data()
 
         return True
 
@@ -506,7 +485,7 @@ class BackgroundJob(object):
         self._result.did_timeout = was_timeout
 
         if was_timeout:
-            raise TimeoutError(self._command, self._result)
+            raise TimeoutError(self._result)
 
     def next_event(self, timeout=None):
         """Waits for the next event on the process to occur.
@@ -532,7 +511,7 @@ class BackgroundJob(object):
 
         end_time = time.time() + timeout
         while timeout <= 0 or (time.time() < end_time):
-            processed_data = self.__process_data()
+            processed_data = self._process_data()
 
             if (processed_data.new_stdout or processed_data.new_stderr or
                     processed_data.new_stdin):
@@ -542,7 +521,7 @@ class BackgroundJob(object):
 
         return EventData(EventType.TIMEOUT, None)
 
-    def __process_data(self):
+    def _process_data(self):
         """ Processes data for this process.
 
         In order to control a processes various pieces of IO, the buffers must
@@ -635,7 +614,8 @@ class BackgroundJob(object):
                     write_output.close()
                     self._has_closed_input = True
 
-        return _ProcessedData(False, processed_out, processed_err, processed_in)
+        return _ProcessedData(False, processed_out, processed_err,
+                              processed_in)
 
     def _cleanup(self):
         """Clean up after BackgroundJob.
