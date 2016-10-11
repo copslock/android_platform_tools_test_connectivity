@@ -537,6 +537,87 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             [0, nan_const.MAX_TX_RETRIES],
             name_func = name_func)
 
+    def test_nan_messaging_latency(self):
+        """Measure the latency of NAN message transmission which are not queued. Unqueued
+        message transmission data is a function of raw protocol and firmware behavior.
+
+        Configuration: 2 devices, one acting as Publisher (P) and the
+        other as Subscriber (S)
+
+        Logical steps:
+          * P & S initiate NAN clustering (if not already up)
+          * P & S wait for NAN connection confirmation
+          * P starts publishing
+          * S starts subscribing
+          * S waits for a match (discovery) notification
+          * Loop:
+          *    S sends 1 message to P
+          *    S confirms that message transmitted and measures latency
+        """
+        self.publisher = self.android_devices[0]
+        self.subscriber = self.android_devices[1]
+        results = {}
+        results['num_messages'] = 100
+
+        # Start Test
+        pub_connect_id = self.exec_connect(self.publisher, "publisher")
+        sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
+
+        pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id, self.publish_config)
+        sub_id = self.subscriber.droid.wifiNanSubscribe(sub_connect_id, self.subscribe_config)
+
+        try:
+            event_sub_match = self.subscriber.ed.pop_event(
+                nan_const.SESSION_CB_ON_SERVICE_DISCOVERED, EVENT_TIMEOUT)
+            self.log.info('%s: %s', nan_const.SESSION_CB_ON_SERVICE_DISCOVERED,
+                          event_sub_match['data'])
+        except queue.Empty:
+            asserts.fail('Timed out while waiting for %s on Subscriber' %
+                         nan_const.SESSION_CB_ON_SERVICE_DISCOVERED)
+        self.log.debug(event_sub_match)
+
+        results['num_tx_ok'] = 0
+        results['num_tx_fail'] = 0
+        tx_ok_stats = []
+        tx_fail_stats = []
+        events_regex = '%s|%s' % (nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED,
+                                  nan_const.SESSION_CB_ON_MESSAGE_SENT)
+        for i in range(results['num_messages']):
+            self.msg_id = self.msg_id + 1
+            self.subscriber.droid.wifiNanSendMessage(sub_id, event_sub_match['data']['peerId'],
+                                                     self.msg_id, "msg %s" % i, 0)
+            try:
+                events = self.subscriber.ed.pop_events(events_regex, EVENT_TIMEOUT)
+                for event in events:
+                    if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SENT:
+                        results['num_tx_ok'] = results['num_tx_ok'] + 1
+                        if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
+                            tx_ok_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
+                    if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED:
+                        results['num_tx_fail'] = results['num_tx_fail'] + 1
+                        if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
+                            tx_fail_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
+            except queue.Empty:
+                asserts.fail('Timed out while waiting for %s on Subscriber', events_regex,
+                             extras=results)
+        if tx_ok_stats:
+            results['tx_ok_latency_min'] = min(tx_ok_stats)
+            results['tx_ok_latency_max'] = max(tx_ok_stats)
+            results['tx_ok_latency_mean'] = statistics.mean(tx_ok_stats)
+            results['tx_ok_latency_stdev'] = statistics.stdev(tx_ok_stats)
+            self.log.info('Successful tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                          results['tx_ok_latency_min'], results['tx_ok_latency_max'],
+                          results['tx_ok_latency_mean'], results['tx_ok_latency_stdev'])
+        if tx_fail_stats:
+            results['tx_fail_latency_min'] = min(tx_fail_stats)
+            results['tx_fail_latency_max'] = max(tx_fail_stats)
+            results['tx_fail_latency_mean'] = statistics.mean(tx_fail_stats)
+            results['tx_fail_latency_stdev'] = statistics.stdev(tx_fail_stats)
+            self.log.info('Fail tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                          results['tx_fail_latency_min'], results['tx_fail_latency_max'],
+                          results['tx_fail_latency_mean'], results['tx_fail_latency_stdev'])
+        asserts.explicit_pass('test_nan_messaging_no_queue finished successfully', extras=results)
+
     def test_nan_rtt(self):
         """Perform NAN configuration, discovery, and RTT.
 
