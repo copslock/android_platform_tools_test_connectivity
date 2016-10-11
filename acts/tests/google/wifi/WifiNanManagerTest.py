@@ -663,6 +663,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         # Configure Test
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
+        results = {}
 
         sub2pub_msg = "Get ready!"
         pub2sub_msg = "Ready!"
@@ -839,6 +840,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                             "Failure starting/running iperf3 in client mode")
         self.log.debug(pprint.pformat(data))
         data_json = json.loads(''.join(data))
-        self.log.info('iPerf3: Sent = %d bps Received = %d bps',
-                      data_json['end']['sum_sent']['bits_per_second'],
-                      data_json['end']['sum_received']['bits_per_second'])
+        results['tx_rate'] = data_json['end']['sum_sent']['bits_per_second']
+        results['rx_rate'] = data_json['end']['sum_received']['bits_per_second']
+        self.log.info('iPerf3: Sent = %d bps Received = %d bps', results['tx_rate'],
+                      results['rx_rate'])
+        asserts.explicit_pass('NAN data-path test passes', extras=results)
