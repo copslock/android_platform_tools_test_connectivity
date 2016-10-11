@@ -19,6 +19,7 @@ import pprint
 import re
 import queue
 import statistics
+import time
 
 from acts import asserts
 from acts import base_test
@@ -421,6 +422,87 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             self.run_nan_discovery_session,
             discovery_configs,
             name_func = name_func)
+
+    def test_nan_discovery_latency(self):
+        """Measure the latency of NAN discovery on the subscriber.
+
+        Configuration: 2 devices, one acting as Publisher (P) and the
+        other as Subscriber (S)
+
+        Logical steps:
+          * P & S if not new_session initiate NAN clustering (if not already up)
+          * P & S if not new session wait for NAN connection confirmation
+          * P starts publishing
+          * Wait for a few seconds to make sure everyone is ready (measuring
+          * discovery - not clustering).
+          * Loop:
+          *   S start subscribing
+          *   Measure latency to S registering a discovery
+          *   S terminates subscribe
+        """
+        self.publisher = self.android_devices[0]
+        self.subscriber = self.android_devices[1]
+        results = {}
+        results['num_iterations'] = 100
+
+        # Start Test
+        pub_connect_id = self.exec_connect(self.publisher, "publisher")
+        sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
+
+        pub_id = self.publisher.droid.wifiNanPublish(pub_connect_id,
+                                                     self.publish_config)
+        try:
+            self.publisher.ed.pop_event(
+                nan_const.SESSION_CB_ON_PUBLISH_STARTED, EVENT_TIMEOUT)
+        except:
+            asserts.fail('Timed out while waiting for %s on Publisher' %
+                         nan_const.SESSION_CB_ON_PUBLISH_STARTED)
+
+        # another arbitrary long sleep time to make sure that publisher is
+        # on-the-air
+        time.sleep(10)
+
+        sub_session_setup_latency = []
+        sub_session_discovery_latency = []
+        results['num_failed_discovery'] = 0
+        for i in range(results['num_iterations']):
+            sub_id = self.subscriber.droid.wifiNanSubscribe(
+                sub_connect_id, self.subscribe_config)
+            try:
+                event_sub = self.subscriber.ed.pop_event(
+                    nan_const.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                    EVENT_TIMEOUT)
+                sub_session_setup_latency.append(event_sub['data'][
+                    nan_const.SESSION_CB_KEY_LATENCY_MS])
+                self.log.debug('%s: %s',
+                               nan_const.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                               event_sub['data'])
+
+                event_discovery = self.subscriber.ed.pop_event(
+                    nan_const.SESSION_CB_ON_SERVICE_DISCOVERED,
+                    EVENT_TIMEOUT)
+                sub_session_discovery_latency.append(event_discovery['data'][
+                     nan_const.SESSION_CB_KEY_TIMESTAMP_MS] -
+                     event_sub['data'][nan_const.SESSION_CB_KEY_TIMESTAMP_MS])
+                self.log.debug('%s: %s',
+                               nan_const.SESSION_CB_ON_SERVICE_DISCOVERED,
+                               event_discovery['data'])
+            except queue.Empty:
+                results['num_failed_discovery'] += 1
+                self.log.debug(
+                    'Timed out while waiting for %s|%s on Subscriber',
+                    nan_const.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                    nan_const.SESSION_CB_ON_SERVICE_DISCOVERED)
+            self.subscriber.droid.wifiNanDestroyDiscoverySession(sub_id)
+
+        self.extract_stats(sub_session_setup_latency, results,
+                           'sub_session_setup_latency',
+                           'Subscribe Session Setup')
+        self.extract_stats(sub_session_discovery_latency, results,
+                           'sub_session_discovery_latency',
+                           'Subscribe Session Discovery')
+        asserts.explicit_pass('test_nan_discovery_latency finished',
+                              extras=results)
 
     def run_nan_messaging(self, retry_count):
         """Perform NAN configuration, discovery, and large message exchange.
