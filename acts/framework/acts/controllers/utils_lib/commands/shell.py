@@ -141,8 +141,16 @@ class ShellCommand(object):
             file_name: The name of the file to write to.
             data: The string of data to write.
         """
-        return self.run('echo "%s" > %s' %
+        return self.run('echo %s > %s' %
                         (shlex.quote(data), file_name))
+
+    def touch_file(self, file_name):
+        """Creates a file through the shell.
+
+        Args:
+            file_name: The name of the file to create.
+        """
+        self.write_file(file_name, '')
 
     def delete_file(self, file_name):
         """Deletes a file through the shell.
