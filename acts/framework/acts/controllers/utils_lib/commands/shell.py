@@ -118,7 +118,7 @@ class ShellCommand(object):
             True if the string or pattern was found, False otherwise.
         """
 
-        result = self.run('grep "%s" %s' %
+        result = self.run('grep %s %s' %
                           (shlex.quote(search_string), file_name))
 
         return result.exit_status == 0
