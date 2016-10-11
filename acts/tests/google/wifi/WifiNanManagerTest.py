@@ -403,8 +403,9 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         """
         self.publisher = self.android_devices[0]
         self.subscriber = self.android_devices[1]
-        num_non_empty_messages = 100
-        num_null_and_empty_messages = 10 # one of each in sequence until reach count
+        results = {}
+        results['num_non_empty_messages'] = 100
+        results['num_null_and_empty_messages'] = 10 # one of each in sequence until reach count
 
         # Start Test
         pub_connect_id = self.exec_connect(self.publisher, "publisher")
@@ -424,93 +425,106 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.log.debug(event_sub_match)
 
         # send all messages at once
-        for i in range(num_non_empty_messages):
+        for i in range(results['num_non_empty_messages']):
             self.msg_id = self.msg_id + 1
             self.subscriber.droid.wifiNanSendMessage(sub_id,
                  event_sub_match['data']['peerId'], self.msg_id, "msg %s" % i,
                  nan_const.MAX_TX_RETRIES)
 
         # send all empty & null messages
-        for i in range(num_null_and_empty_messages):
+        for i in range(results['num_null_and_empty_messages']):
             self.msg_id = self.msg_id + 1
             msg_to_send = None if (i % 2) else "" # flip between null and ""
             self.subscriber.droid.wifiNanSendMessage(sub_id, event_sub_match['data']['peerId'],
                                                      self.msg_id, msg_to_send, retry_count)
 
         # wait for all messages to be transmitted correctly
-        num_tx_ok = 0
-        num_tx_fail = 0
+        results['num_tx_ok'] = 0
+        results['num_tx_fail'] = 0
         tx_ok_stats = []
         tx_fail_stats = []
         events_regex = '%s|%s' % (nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED,
                                   nan_const.SESSION_CB_ON_MESSAGE_SENT)
-        while (num_tx_ok + num_tx_fail) < (
-            num_non_empty_messages + num_null_and_empty_messages):
+        while (results['num_tx_ok'] + results['num_tx_fail']) < (
+                    results['num_non_empty_messages'] + results['num_null_and_empty_messages']):
             try:
                 events = self.subscriber.ed.pop_events(events_regex,
                                                        EVENT_TIMEOUT)
 
                 for event in events:
                     if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SENT:
-                        num_tx_ok = num_tx_ok + 1
+                        results['num_tx_ok'] = results['num_tx_ok'] + 1
                         if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
                             tx_ok_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
                     if event['name'] == nan_const.SESSION_CB_ON_MESSAGE_SEND_FAILED:
-                        num_tx_fail = num_tx_fail + 1
+                        results['num_tx_fail'] = results['num_tx_fail'] + 1
                         if nan_const.SESSION_CB_KEY_LATENCY_MS in event['data']:
                             tx_fail_stats.append(event['data'][nan_const.SESSION_CB_KEY_LATENCY_MS])
             except queue.Empty:
                 self.log.warning('Timed out while waiting for %s on Subscriber'
                                  ' - %d events received', events_regex,
-                                 num_tx_ok + num_tx_fail)
+                                 results['num_tx_ok'] + results['num_tx_fail'])
                 break
-        self.log.info('Transmission stats: %d success, %d fail', num_tx_ok, num_tx_fail)
+        self.log.info('Transmission stats: %d success, %d fail', results['num_tx_ok'],
+                      results['num_tx_fail'])
         if tx_ok_stats:
+            results['tx_ok_latency_min'] = min(tx_ok_stats)
+            results['tx_ok_latency_max'] = max(tx_ok_stats)
+            results['tx_ok_latency_mean'] = statistics.mean(tx_ok_stats)
+            results['tx_ok_latency_stdev'] = statistics.stdev(tx_ok_stats)
             self.log.info('Successful tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          min(tx_ok_stats), max(tx_ok_stats),
-                          statistics.mean(tx_ok_stats), statistics.stdev(tx_ok_stats))
+                          results['tx_ok_latency_min'], results['tx_ok_latency_max'],
+                          results['tx_ok_latency_mean'], results['tx_ok_latency_stdev'])
         if tx_fail_stats:
+            results['tx_fail_latency_min'] = min(tx_fail_stats)
+            results['tx_fail_latency_max'] = max(tx_fail_stats)
+            results['tx_fail_latency_mean'] = statistics.mean(tx_fail_stats)
+            results['tx_fail_latency_stdev'] = statistics.stdev(tx_fail_stats)
             self.log.info('Fail tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          min(tx_fail_stats), max(tx_fail_stats),
-                          statistics.mean(tx_fail_stats), statistics.stdev(tx_fail_stats))
+                          results['tx_fail_latency_min'], results['tx_fail_latency_max'],
+                          results['tx_fail_latency_mean'], results['tx_fail_latency_stdev'])
 
         # validate that all messages are received (not just the correct
         # number of messages - since on occasion there may be duplicates
         # received).
-        num_non_empty_received = 0
-        num_unique_received = 0
-        num_empty_received = 0
+        results['num_non_empty_received'] = 0
+        results['num_unique_received'] = 0
+        results['num_empty_received'] = 0
         messages = {}
-        while (num_unique_received != num_non_empty_messages) or (
-            num_empty_received != num_null_and_empty_messages):
+        while (results['num_unique_received'] != results['num_non_empty_messages']) or (
+        results['num_empty_received'] != results['num_null_and_empty_messages']):
             try:
                 event = self.publisher.ed.pop_event(
                     nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
                 msg = event['data']['messageAsString']
                 if msg:
-                    num_non_empty_received = num_non_empty_received + 1
+                    results['num_non_empty_received'] = results['num_non_empty_received'] + 1
                     if msg not in messages:
-                        num_unique_received = num_unique_received + 1
+                        results['num_unique_received'] = results['num_unique_received'] + 1
                         messages[msg] = 0
                     messages[msg] = messages[msg] + 1
                 else:
-                    num_empty_received = num_empty_received + 1
+                    results['num_empty_received'] = results['num_empty_received'] + 1
                 self.log.debug('%s: %s',
                                nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, msg)
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on Publisher: %d non-empty '
                              'messages received, %d unique messages, %d empty messages' % (
-                             nan_const.SESSION_CB_ON_MESSAGE_RECEIVED, num_non_empty_received,
-                             num_unique_received, num_empty_received))
+                             nan_const.SESSION_CB_ON_MESSAGE_RECEIVED,
+                             results['num_non_empty_received'],
+                             results['num_unique_received'],
+                             results['num_empty_received']), extras=results)
         self.log.info('Reception stats: %d non-empty received (%d unique), %d empty',
-                      num_non_empty_received, num_unique_received, num_empty_received)
-        if num_non_empty_received != num_unique_received:
+                      results['num_non_empty_received'], results['num_unique_received'],
+                      results['num_empty_received'])
+        if results['num_non_empty_received'] != results['num_unique_received']:
             self.log.info('%d duplicate receptions of %d messages: %s',
-                          num_non_empty_received - num_unique_received,
-                          num_non_empty_received, messages)
-        if num_empty_received != num_null_and_empty_messages:
+                          results['num_non_empty_received'] - results['num_unique_received'],
+                          results['num_non_empty_received'], messages)
+        if results['num_empty_received'] != results['num_null_and_empty_messages']:
             self.log.info('%d extra empty/null message reception',
-                          num_empty_received - num_null_and_empty_messages)
+                          results['num_empty_received'] - results['num_null_and_empty_messages'])
+        asserts.explicit_pass("run_nan_messaging pass finished successfully", extras=results)
 
     @generated_test
     def test_nan_messaging(self):
