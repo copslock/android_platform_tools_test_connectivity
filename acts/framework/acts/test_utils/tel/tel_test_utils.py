@@ -329,8 +329,8 @@ def _wait_for_bluetooth_in_state(log, ad, state, max_wait):
         if bt_state == state:
             return True
         if max_wait <= 0:
-            log.error("Time out: bluetooth state still {}, expecting {}".format(
-                bt_state, state))
+            log.error("Time out: bluetooth state still {}, expecting {}".
+                      format(bt_state, state))
             return False
 
         event = {False: _BLUETOOTH_STATE_OFF_EVENT,
@@ -433,8 +433,8 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         return False
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
-    if new_state and not _wait_for_wifi_in_state(
-            log, ad, False, timeout_time - time.time()):
+    if new_state and not _wait_for_wifi_in_state(log, ad, False,
+                                                 timeout_time - time.time()):
         log.error("Failed waiting for wifi during airplane mode toggle")
         return False
 
