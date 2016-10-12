@@ -90,6 +90,46 @@ class WifiNanManagerTest(base_test.BaseTestClass):
     #             wutils.wifi_toggle_state(ad, False),
     #             "Failed disabling Wi-Fi interface")
 
+    def extract_stats(self, data, results, key_prefix, log_prefix):
+        """Extract statistics from the data, store in the dict dictionary, and
+        output to the info log.
+
+        Args:
+            data: A list containing the data to be analyzed.
+            results: A dictionary into which to place the statistics.
+            key_prefix: A string prefix to use for the dict keys storing the
+                        extracted stats.
+            log_prefix: A string prefix to use for the info log.
+            include_data: If True includes the raw data in the dictionary,
+                          otherwise just the stats.
+        """
+        num_samples = len(data)
+        results['%s_num_samples' % key_prefix] = num_samples
+
+        if not data:
+            return
+
+        data_min = min(data)
+        data_max = max(data)
+        data_mean = statistics.mean(data)
+
+        results['%s_min' % key_prefix] = data_min
+        results['%s_max' % key_prefix] = data_max
+        results['%s_mean' % key_prefix] = data_mean
+        results['%s_raw_data' % key_prefix] = data
+
+        if num_samples > 1:
+            data_stdev = statistics.stdev(data)
+            results['%s_stdev' % key_prefix] = data_stdev
+            self.log.info(
+                '%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                log_prefix, num_samples, data_min, data_max, data_mean,
+                data_stdev)
+        else:
+            self.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f',
+                          log_prefix, num_samples, data_min, data_max,
+                          data_mean)
+
     def get_interface_mac(self, device, interface):
         """Get the HW MAC address of the specified interface.
 
@@ -466,22 +506,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
                 break
         self.log.info('Transmission stats: %d success, %d fail', results['num_tx_ok'],
                       results['num_tx_fail'])
-        if tx_ok_stats:
-            results['tx_ok_latency_min'] = min(tx_ok_stats)
-            results['tx_ok_latency_max'] = max(tx_ok_stats)
-            results['tx_ok_latency_mean'] = statistics.mean(tx_ok_stats)
-            results['tx_ok_latency_stdev'] = statistics.stdev(tx_ok_stats)
-            self.log.info('Successful tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          results['tx_ok_latency_min'], results['tx_ok_latency_max'],
-                          results['tx_ok_latency_mean'], results['tx_ok_latency_stdev'])
-        if tx_fail_stats:
-            results['tx_fail_latency_min'] = min(tx_fail_stats)
-            results['tx_fail_latency_max'] = max(tx_fail_stats)
-            results['tx_fail_latency_mean'] = statistics.mean(tx_fail_stats)
-            results['tx_fail_latency_stdev'] = statistics.stdev(tx_fail_stats)
-            self.log.info('Fail tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          results['tx_fail_latency_min'], results['tx_fail_latency_max'],
-                          results['tx_fail_latency_mean'], results['tx_fail_latency_stdev'])
+        self.extract_stats(tx_ok_stats, results, 'tx_ok_latency', 'Successful tx')
+        self.extract_stats(tx_ok_stats, results, 'tx_fail_latency', 'Fail tx')
 
         # validate that all messages are received (not just the correct
         # number of messages - since on occasion there may be duplicates
@@ -600,22 +626,8 @@ class WifiNanManagerTest(base_test.BaseTestClass):
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on Subscriber', events_regex,
                              extras=results)
-        if tx_ok_stats:
-            results['tx_ok_latency_min'] = min(tx_ok_stats)
-            results['tx_ok_latency_max'] = max(tx_ok_stats)
-            results['tx_ok_latency_mean'] = statistics.mean(tx_ok_stats)
-            results['tx_ok_latency_stdev'] = statistics.stdev(tx_ok_stats)
-            self.log.info('Successful tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          results['tx_ok_latency_min'], results['tx_ok_latency_max'],
-                          results['tx_ok_latency_mean'], results['tx_ok_latency_stdev'])
-        if tx_fail_stats:
-            results['tx_fail_latency_min'] = min(tx_fail_stats)
-            results['tx_fail_latency_max'] = max(tx_fail_stats)
-            results['tx_fail_latency_mean'] = statistics.mean(tx_fail_stats)
-            results['tx_fail_latency_stdev'] = statistics.stdev(tx_fail_stats)
-            self.log.info('Fail tx: min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
-                          results['tx_fail_latency_min'], results['tx_fail_latency_max'],
-                          results['tx_fail_latency_mean'], results['tx_fail_latency_stdev'])
+        self.extract_stats(tx_ok_stats, results, 'tx_ok_latency', 'Successful tx')
+        self.extract_stats(tx_fail_stats, results, 'tx_fail_latency', 'Fail tx')
         asserts.explicit_pass('test_nan_messaging_no_queue finished successfully', extras=results)
 
     def test_nan_rtt(self):
