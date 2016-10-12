@@ -69,6 +69,8 @@ EVENT_CB_ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
 # WifiNanAttachCallback & WifiNanIdentityChangedListener events keys
 EVENT_CB_KEY_REASON = "reason"
 EVENT_CB_KEY_MAC = "mac"
+EVENT_CB_KEY_LATENCY_MS = "latencyMs"
+EVENT_CB_KEY_TIMESTAMP_MS = "timestampMs"
 
 ######################################################
 # WifiNanDiscoverySessionCallback events
@@ -94,6 +96,7 @@ SESSION_CB_KEY_MESSAGE = "message"
 SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 SESSION_CB_KEY_LATENCY_MS = "latencyMs"
+SESSION_CB_KEY_TIMESTAMP_MS = "timestampMs"
 
 # WifiNanDiscoverySessionCallback#SessionTerminateCodes
 TERMINATE_REASON_DONE = 100
