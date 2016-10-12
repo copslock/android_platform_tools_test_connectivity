@@ -1656,7 +1656,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         self.log.info(
             "Merge - Step2: End call on PhoneB and verify call continues.")
-        ads[1].droid.telecomEndCall()
+        if not hangup_call(self.log, ads[1]):
+            self.log.error("Failed to end the call on PhoneB")
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -1665,8 +1667,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[1]], False):
             return False
 
-        ads[1].droid.telecomEndCall()
-        ads[0].droid.telecomEndCall()
+        if not (hangup_call(self.log, ads[2]) and
+                hangup_call(self.log, ads[0])):
+            self.log.error("Failed to clean up remaining calls")
+            return False
         return True
 
     def _test_vt_conference_merge_drop_cep(self, ads, call_ab_id, call_ac_id):
@@ -1731,8 +1735,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
                                0].droid.telecomCallGetCallState(call_conf_id)))
             return False
 
-        self.log.info("End call on PhoneB and verify call continues.")
-        ads[1].droid.telecomEndCall()
+        if not hangup_call(self.log, ads[1]):
+            self.log.error("Failed to end call on PhoneB")
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -1741,8 +1746,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[1]], False):
             return False
 
-        ads[1].droid.telecomEndCall()
-        ads[0].droid.telecomEndCall()
+        if not (hangup_call(self.log, ads[2]) and
+                hangup_call(self.log, ads[0])):
+            self.log.error("Failed to clean up remaining calls")
+            return False
 
         return True
 
