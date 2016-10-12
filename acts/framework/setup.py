@@ -17,6 +17,7 @@
 from distutils import cmd
 from distutils import log
 import os
+import pip
 import shutil
 import setuptools
 from setuptools.command import test
@@ -51,6 +52,33 @@ class PyTest(test.test):
         import pytest
         errno = pytest.main(self.test_args)
         sys.exit(errno)
+
+
+class ActsInstallDependencies(cmd.Command):
+    """Installs only required packages
+
+    Installs all required packages for acts to work. Rather than using the
+    normal install system which creates links with the python egg, pip is
+    used to install the packages.
+    """
+
+    description = 'Install dependencies needed for acts to run on this machine.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        required_packages = self.distribution.install_requires
+
+        for package in required_packages:
+            self.announce('Installing %s...' % package, log.INFO)
+            pip.main(['install', package])
+
+        self.announce('Dependencies installed.')
 
 
 class ActsUninstall(cmd.Command):
@@ -107,15 +135,21 @@ class ActsUninstall(cmd.Command):
         self.announce('Finished uninstalling acts.')
 
 
-setuptools.setup(name='acts',
-                 version='0.9',
-                 description='Android Comms Test Suite',
-                 license='Apache2.0',
-                 packages=setuptools.find_packages(),
-                 include_package_data=False,
-                 tests_require=['pytest'],
-                 install_requires=install_requires,
-                 scripts=['acts/bin/act.py', 'acts/bin/monsoon.py'],
-                 cmdclass={'test': PyTest,
-                           'uninstall': ActsUninstall},
-                 url="http://www.android.com/")
+def main():
+    setuptools.setup(name='acts',
+                     version='0.9',
+                     description='Android Comms Test Suite',
+                     license='Apache2.0',
+                     packages=setuptools.find_packages(),
+                     include_package_data=False,
+                     tests_require=['pytest'],
+                     install_requires=install_requires,
+                     scripts=['acts/bin/act.py', 'acts/bin/monsoon.py'],
+                     cmdclass={'test': PyTest,
+                               'install_deps': ActsInstallDependencies,
+                               'uninstall': ActsUninstall},
+                     url="http://www.android.com/")
+
+
+if __name__ == '__main__':
+    main()
