@@ -22,16 +22,14 @@ from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
-from acts import test_runner
 from acts import utils
-
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
 
-class BaseTestError(Exception):
+class Error(Exception):
     """Raised for exceptions that occured in BaseTestClass."""
 
 
@@ -102,7 +100,7 @@ class BaseTestClass(object):
                      required_list or opt_list.
 
         Raises:
-            BaseTestError is raised if a required user params is not provided.
+            Error is raised if a required user params is not provided.
         """
         for k, v in kwargs.items():
             if k in self.user_params:
@@ -112,8 +110,8 @@ class BaseTestClass(object):
             if hasattr(self, name):
                 continue
             if name not in self.user_params:
-                raise BaseTestError(("Missing required user param '%s' in test"
-                                     " configuration.") % name)
+                raise Error(("Missing required user param '%s' in test "
+                             "configuration.") % name)
             setattr(self, name, self.user_params[name])
         for name in opt_param_names:
             if hasattr(self, name):
@@ -121,9 +119,8 @@ class BaseTestClass(object):
             if name in self.user_params:
                 setattr(self, name, self.user_params[name])
             else:
-                self.log.warning(
-                    ("Missing optional user param '%s' in "
-                     "configuration, continue."), name)
+                self.log.warning(("Missing optional user param '%s' in "
+                                  "configuration, continue."), name)
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -436,15 +433,15 @@ class BaseTestClass(object):
                 try:
                     test_name = name_func(s, *args, **kwargs)
                 except:
-                    self.log.exception(
-                        ("Failed to get test name from "
-                         "test_func. Fall back to default %s"), test_name)
+                    self.log.exception(("Failed to get test name from "
+                                        "test_func. Fall back to default %s"),
+                                       test_name)
             self.results.requested.append(test_name)
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
             previous_success_cnt = len(self.results.passed)
-            self.exec_one_testcase(test_name, test_func,
-                                   (s, ) + args, **kwargs)
+            self.exec_one_testcase(test_name, test_func, (s, ) + args,
+                                   **kwargs)
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(s)
         return failed_settings
@@ -496,23 +493,20 @@ class BaseTestClass(object):
             name, function is the actual test case function.
 
         Raises:
-            test_runner.USERError is raised if the test name does not follow
+            Error is raised if the test name does not follow
             naming convention "test_*". This can only be caused by user input
             here.
         """
         test_funcs = []
         for test_name in test_names:
             if not test_name.startswith("test_"):
-                msg = ("Test case name %s does not follow naming convention "
-                       "test_*, abort.") % test_name
-                raise test_runner.USERError(msg)
+                raise Error(("Test case name %s does not follow naming "
+                             "convention test_*, abort.") % test_name)
             try:
                 test_funcs.append((test_name, getattr(self, test_name)))
             except AttributeError:
-                raise test_runner.USERError("%s does not have test case %s." %
-                                            (self.TAG, test_name))
-            except BaseTestError as e:
-                self.log.warning(str(e))
+                raise Error("%s does not have test case %s." % (self.TAG,
+                                                                test_name))
         return test_funcs
 
     def run(self, test_names=None):
