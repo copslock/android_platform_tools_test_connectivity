@@ -23,273 +23,63 @@ import signal
 import sys
 import traceback
 
-from acts.keys import Config
-from acts.signals import TestAbortAll
-from acts.test_runner import TestRunner
-from acts.test_runner import USERError
-from acts.utils import abs_path
-from acts.utils import load_config
-from acts.utils import valid_filename_chars
-
-# An environment variable defining the base location for ACTS logs.
-_ENV_ACTS_LOGPATH = 'ACTS_LOGPATH'
-
-# An environment variable defining the test search paths for ACTS.
-_ENV_ACTS_TESTPATHS = 'ACTS_TESTPATHS'
-_PATH_SEPARATOR = ':'
-
-
-def _validate_test_config(test_config):
-    """Validates the raw configuration loaded from the config file.
-
-    Making sure all the required fields exist.
-    """
-    for k in Config.reserved_keys.value:
-        if k not in test_config:
-            raise USERError(("Required key {} missing in test "
-                             "config.").format(k))
-
-
-def _validate_testbed_name(name):
-    """Validates the name of a test bed.
-
-    Since test bed names are used as part of the test run id, it needs to meet
-    certain requirements.
-
-    Args:
-        name: The test bed's name specified in config file.
-
-    Raises:
-        If the name does not meet any criteria, USERError is raised.
-    """
-    if not name:
-        raise USERError("Test bed names can't be empty.")
-    if not isinstance(name, str):
-        raise USERError("Test bed names have to be string.")
-    for l in name:
-        if l not in valid_filename_chars:
-            raise USERError("Char '%s' is not allowed in test bed names." % l)
-
-
-def _validate_testbed_configs(testbed_configs):
-    """Validates the testbed configurations.
-
-    Args:
-        testbed_configs: A list of testbed configuration json objects.
-
-    Raises:
-        If any part of the configuration is invalid, USERError is raised.
-    """
-    seen_names = set()
-    # Cross checks testbed configs for resource conflicts.
-    for config in testbed_configs:
-        # Check for conflicts between multiple concurrent testbed configs.
-        # No need to call it if there's only one testbed config.
-        name = config[Config.key_testbed_name.value]
-        _validate_testbed_name(name)
-        # Test bed names should be unique.
-        if name in seen_names:
-            raise USERError("Duplicate testbed name {} found.".format(name))
-        seen_names.add(name)
-
-
-def _verify_test_class_name(test_cls_name):
-    if not test_cls_name.endswith("Test"):
-        raise USERError(("Requested test class '%s' does not follow the test "
-                         "class naming convention *Test.") % test_cls_name)
-
-
-def _parse_one_test_specifier(item):
-    """Parse one test specifier from command line input.
-
-    This also verifies that the test class name and test case names follow
-    ACTS's naming conventions. A test class name has to end with "Test"; a test
-    case name has to start with "test".
-
-    Args:
-        item: A string that specifies a test class or test cases in one test
-            class to run.
-
-    Returns:
-        A tuple of a string and a list of strings. The string is the test class
-        name, the list of strings is a list of test case names. The list can be
-        None.
-    """
-    tokens = item.split(':')
-    if len(tokens) > 2:
-        raise USERError("Syntax error in test specifier %s" % item)
-    if len(tokens) == 1:
-        # This should be considered a test class name
-        test_cls_name = tokens[0]
-        _verify_test_class_name(test_cls_name)
-        return (test_cls_name, None)
-    elif len(tokens) == 2:
-        # This should be considered a test class name followed by
-        # a list of test case names.
-        test_cls_name, test_case_names = tokens
-        clean_names = []
-        _verify_test_class_name(test_cls_name)
-        for elem in test_case_names.split(','):
-            test_case_name = elem.strip()
-            if not test_case_name.startswith("test_"):
-                raise USERError(("Requested test case '%s' in test class "
-                                 "'%s' does not follow the test case "
-                                 "naming convention test_*.") %
-                                (test_case_name, test_cls_name))
-            clean_names.append(test_case_name)
-        return (test_cls_name, clean_names)
-
-
-def parse_test_list(test_list):
-    """Parse user provided test list into internal format for test_runner.
-
-    Args:
-        test_list: A list of test classes/cases.
-    """
-    result = []
-    for elem in test_list:
-        result.append(_parse_one_test_specifier(elem))
-    return result
-
-def load_test_config_file(test_config_path, tb_filters, test_paths, log_path):
-    """Processes the test configuration file provied by user.
-
-    Loads the configuration file into a json object, unpacks each testbed
-    config into its own json object, and validate the configuration in the
-    process.
-
-    Args:
-        test_config_path: Path to the test configuration file.
-        tb_filters: A subset of test bed names to be pulled from the
-            config file. If None, then all test beds will be selected.
-        test_paths: A list of command-line default for the test path.
-            If None, then the paths must be specified within the config file.
-        log_path: A command-line default for the log path. If None, then the
-            log path must be specified in the config file.
-
-    Returns:
-        A list of test configuration json objects to be passed to TestRunner.
-    """
-    try:
-        configs = load_config(test_config_path)
-        if test_paths:
-            configs[Config.key_test_paths.value] = test_paths
-        if log_path:
-            configs[Config.key_log_path.value] = log_path
-        if tb_filters:
-            tbs = []
-            for tb in configs[Config.key_testbed.value]:
-                if tb[Config.key_testbed_name.value] in tb_filters:
-                    tbs.append(tb)
-            if len(tbs) != len(tb_filters):
-                print("Expect to find %d test bed configs, found %d." %
-                      (len(tb_filters), len(tbs)))
-                print("Check if you have the correct test bed names.")
-                return None
-            configs[Config.key_testbed.value] = tbs
-
-        if (not Config.key_log_path.value in configs and
-                _ENV_ACTS_LOGPATH in os.environ):
-            print('Using environment log path: %s' %
-                  (os.environ[_ENV_ACTS_LOGPATH]))
-            configs[Config.key_log_path.value] = os.environ[_ENV_ACTS_LOGPATH]
-        if (not Config.key_test_paths.value in configs and
-                _ENV_ACTS_TESTPATHS in os.environ):
-            print('Using environment test paths: %s' %
-                  (os.environ[_ENV_ACTS_TESTPATHS]))
-            configs[Config.key_test_paths.value] = os.environ[
-                _ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
-
-        _validate_test_config(configs)
-        _validate_testbed_configs(configs[Config.key_testbed.value])
-        k_log_path = Config.key_log_path.value
-        configs[k_log_path] = abs_path(configs[k_log_path])
-        config_path, _ = os.path.split(abs_path(test_config_path))
-        configs[Config.key_config_path] = config_path
-        tps = configs[Config.key_test_paths.value]
-    except USERError as e:
-        print("Something is wrong in the test configurations.")
-        print(str(e))
-        return None
-    except Exception as e:
-        print("Error loading test config {}".format(test_config_path))
-        print(traceback.format_exc())
-        return None
-    # Unpack testbeds into separate json objects.
-    beds = configs.pop(Config.key_testbed.value)
-    config_jsons = []
-    # TODO: See if there is a better way to do this: b/29836695
-    config_path, _ = os.path.split(abs_path(test_config_path))
-    configs[Config.key_config_path] = config_path
-    for original_bed_config in beds:
-        new_test_config = dict(configs)
-        new_test_config[Config.key_testbed.value] = original_bed_config
-        # Keys in each test bed config will be copied to a level up to be
-        # picked up for user_params. If the key already exists in the upper
-        # level, the local one defined in test bed config overwrites the
-        # general one.
-        new_test_config.update(original_bed_config)
-        config_jsons.append(new_test_config)
-    return config_jsons
+from acts import config_parser
+from acts import keys
+from acts import signals
+from acts import test_runner
 
 
 def _run_test(parsed_config, test_identifiers, repeat=1):
-    """Instantiate and runs TestRunner.
+    """Instantiate and runs test_runner.TestRunner.
 
     This is the function to start separate processes with.
 
     Args:
-        parsed_config: A dict that is a set of configs for one TestRunner.
+        parsed_config: A dict that is a set of configs for one
+                       test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
+
+    Returns:
+        True if all tests passed without any error, False otherwise.
     """
-    test_runner = _create_test_runner(parsed_config, test_identifiers)
-    ok = True
+    runner = _create_test_runner(parsed_config, test_identifiers)
     try:
         for i in range(repeat):
-            test_runner.run()
-    except TestAbortAll:
-        return
+            runner.run()
+        return runner.results.is_all_pass
+    except signals.TestAbortAll:
+        return True
     except:
-        print("Exception when executing {}, iteration {}.".format(
-            test_runner.testbed_name, i))
+        print("Exception when executing %s, iteration %s." %
+              (runner.testbed_name, i))
         print(traceback.format_exc())
-        ok = False
     finally:
-        test_runner.stop()
-        return ok and test_runner.results.is_all_pass
-
-
-def _gen_term_signal_handler(test_runners):
-    def termination_sig_handler(signal_num, frame):
-        for t in test_runners:
-            t.stop()
-        sys.exit(1)
-
-    return termination_sig_handler
+        runner.stop()
 
 
 def _create_test_runner(parsed_config, test_identifiers):
-    """Instantiates one TestRunner object and register termination signal
-    handlers that properly shut down the TestRunner run.
+    """Instantiates one test_runner.TestRunner object and register termination
+    signal handlers that properly shut down the test_runner.TestRunner run.
 
     Args:
-        parsed_config: A dict that is a set of configs for one TestRunner.
+        parsed_config: A dict that is a set of configs for one
+                       test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
 
     Returns:
-        A TestRunner object.
+        A test_runner.TestRunner object.
     """
     try:
-        t = TestRunner(parsed_config, test_identifiers)
+        t = test_runner.TestRunner(parsed_config, test_identifiers)
     except:
         print("Failed to instantiate test runner, abort.")
         print(traceback.format_exc())
         sys.exit(1)
     # Register handler for termination signals.
-    handler = _gen_term_signal_handler([t])
+    handler = config_parser.gen_term_signal_handler([t])
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
     return t
@@ -302,7 +92,7 @@ def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
 
     Args:
         parsed_config: A list of dicts, each is a set of configs for one
-                       TestRunner.
+                       test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -332,7 +122,7 @@ def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
 
     Args:
         parsed_config: A list of dicts, each is a set of configs for one
-                       TestRunner.
+                       test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -342,39 +132,27 @@ def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
     """
     ok = True
     for c in parsed_configs:
-        ret = _run_test(c, test_identifiers, repeat)
-        if ret is False:
-            ok = False
+        try:
+            ret = _run_test(c, test_identifiers, repeat)
+            ok = ok and ret
+        except:
+            print("Exception occurred when executing test bed %s" %
+                  c[keys.Config.key_testbed.value])
     return ok
 
 
-def _parse_test_file(fpath):
-    """Parses a test file that contains test specifiers.
-
-    Args:
-        fpath: A string that is the path to the test file to parse.
-
-    Returns:
-        A list of strings, each is a test specifier.
-    """
-    try:
-        with open(fpath, 'r') as f:
-            tf = []
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                if len(tf) and (tf[-1].endswith(':') or tf[-1].endswith(',')):
-                    tf[-1] += line
-                else:
-                    tf.append(line)
-            return tf
-    except:
-        print("Error loading test file.")
-        raise
-
-
 def main(argv):
+    """This is a sample implementation of a cli entry point for ACTS test
+    execution.
+
+    Alternatively, you could directly invoke an ACTS test script:
+
+        python3 MyTest.py -c my_config.json
+
+    See acts.test_runner.main for more details.
+    Or you could implement your own cli entry point using acts.config_parser
+    functions and acts.test_runner.execute_one_test_class.
+    """
     parser = argparse.ArgumentParser(description=(
         "Specify tests to run. If "
         "nothing specified, run all test cases found."))
@@ -447,20 +225,20 @@ def main(argv):
     test_list = None
     repeat = 1
     if args.testfile:
-        test_list = _parse_test_file(args.testfile[0])
+        test_list = config_parser.parse_test_file(args.testfile[0])
     elif args.testclass:
         test_list = args.testclass
     if args.repeat:
         repeat = args.repeat
-    parsed_configs = load_test_config_file(args.config[0], args.testbed,
-            args.testpaths, args.logpath)
-    if not parsed_configs:
-        print("Encountered error when parsing the config file, abort!")
-        sys.exit(1)
+    parsed_configs = config_parser.load_test_config_file(args.config[0],
+                                                         args.testbed)
     for c in parsed_configs:
-        c[Config.ikey_cli_args.value] = args.test_args
+        c[keys.Config.key_testbed] = args.testbed,
+        c[keys.Config.key_test_paths] = args.testpaths,
+        c[keys.Config.key_log_path] = args.logpath
+        c[keys.Config.ikey_cli_args.value] = args.test_args
     # Prepare args for test runs
-    test_identifiers = parse_test_list(test_list)
+    test_identifiers = config_parser.parse_test_list(test_list)
     # Execute test runners.
     if args.parallel and len(parsed_configs) > 1:
         exec_result = _run_tests_parallel(parsed_configs, test_identifiers,
