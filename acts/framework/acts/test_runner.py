@@ -17,6 +17,7 @@
 from future import standard_library
 standard_library.install_aliases()
 
+import argparse
 import copy
 import importlib
 import inspect
@@ -25,6 +26,8 @@ import os
 import pkgutil
 import sys
 
+from acts import base_test
+from acts import config_parser
 from acts import keys
 from acts import logger
 from acts import records
@@ -32,10 +35,125 @@ from acts import signals
 from acts import utils
 
 
-class USERError(Exception):
-    """Raised when a problem is caused by user mistake, e.g. wrong command,
-    misformatted config, test info, wrong test paths etc.
+def main():
+    """Execute the test class in a test module.
+
+    This is the default entry point for running a test script file directly.
+    In this case, only one test class in a test script is allowed.
+
+    To make your test script executable, add the following to your file:
+
+        from acts import test_runner
+        ...
+        if __name__ == "__main__":
+            test_runner.main()
+
+    If you want to implement your own cli entry point, you could use function
+    execute_one_test_class(test_class, test_config, test_identifier)
     """
+    # Parse cli args.
+    parser = argparse.ArgumentParser(description="ACTS Test Executable.")
+    parser.add_argument(
+        '-c',
+        '--config',
+        nargs=1,
+        type=str,
+        required=True,
+        metavar="<PATH>",
+        help="Path to the test configuration file.")
+    parser.add_argument(
+        '--test_case',
+        nargs='+',
+        type=str,
+        metavar="[test_a test_b...]",
+        help="A list of test case names in the test script.")
+    parser.add_argument(
+        '-tb',
+        '--test_bed',
+        nargs='+',
+        type=str,
+        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
+        help="Specify which test beds to run tests on.")
+    args = parser.parse_args(sys.argv[1:])
+    # Load test config file.
+    test_configs = config_parser.load_test_config_file(args.config[0],
+                                                       args.test_bed)
+    # Find the test class in the test script.
+    test_class = _find_test_class()
+    test_class_name = test_class.__name__
+    # Parse test case specifiers if exist.
+    test_case_names = None
+    if args.test_case:
+        test_case_names = args.test_case
+    test_identifier = [(test_class_name, test_case_names)]
+    # Execute the test class with configs.
+    ok = True
+    for config in test_configs:
+        try:
+            result = execute_one_test_class(test_class, config,
+                                            test_identifier)
+            ok = result and ok
+        except signals.TestAbortAll:
+            pass
+        except:
+            logging.exception("Error occurred when executing test bed %s",
+                              config[keys.Config.key_testbed.value])
+            ok = False
+    if not ok:
+        sys.exit(1)
+
+
+def _find_test_class():
+    """Finds the test class in a test script.
+
+    Walk through module memebers and find the subclass of BaseTestClass. Only
+    one subclass is allowed in a test script.
+
+    Returns:
+        The test class in the test module.
+    """
+    test_classes = []
+    main_module_members = sys.modules["__main__"]
+    for _, module_member in main_module_members.__dict__.items():
+        if inspect.isclass(module_member):
+            if issubclass(module_member, base_test.BaseTestClass):
+                test_classes.append(module_member)
+    if len(test_classes) != 1:
+        logging.error("Expected 1 test class per file, found %s.",
+                      [t.__name__ for t in test_classes])
+        sys.exit(1)
+    return test_classes[0]
+
+
+def execute_one_test_class(test_class, test_config, test_identifier):
+    """Executes one specific test class.
+
+    You could call this function in your own cli test entry point if you choose
+    not to use act.py or test_runner.main.
+
+    Args:
+        test_class: A subclass of acts.base_test.BaseTestClass that has the test
+                    logic to be executed.
+        test_config: A dict representing one set of configs for a test run.
+        test_identifier: A list of tuples specifying which test cases to run in
+                         the test class.
+
+    Returns:
+        True if all tests passed without any error, False otherwise.
+
+    Raises:
+        If signals.TestAbortAll is raised by a test run, pipe it through.
+    """
+    tr = TestRunner(test_config, test_identifier)
+    try:
+        tr.run(test_class)
+        return tr.results.is_all_pass
+    except signals.TestAbortAll:
+        raise
+    except:
+        logging.exception("Exception when executing %s.", tr.testbed_name)
+    finally:
+        tr.stop()
 
 
 class TestRunner(object):
@@ -183,9 +301,9 @@ class TestRunner(object):
                      "controller module attribute %s.") % (module.__name__,
                                                            attr))
             if not getattr(module, attr):
-                raise signals.ControllerError(("Controller interface %s in %s "
-                                               "cannot be null.") %
-                                              (attr, module.__name__))
+                raise signals.ControllerError(
+                    ("Controller interface %s in %s "
+                     "cannot be null.") % (attr, module.__name__))
 
     def register_controller(self, module, required=True):
         """Registers a controller module for a test run.
@@ -290,7 +408,7 @@ class TestRunner(object):
         self.test_run_info["register_controller"] = self.register_controller
         self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
         self.test_run_info[keys.Config.ikey_logger.value] = self.log
-        cli_args = test_configs[keys.Config.ikey_cli_args.value]
+        cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
         self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
         for item in test_configs.items():
@@ -334,16 +452,15 @@ class TestRunner(object):
             test_cls_name: Name of the test class to execute.
             test_cases: List of test case names to execute within the class.
 
-        Returns:
-            A tuple, with the number of cases passed at index 0, and the total
-            number of test cases at index 1.
+        Raises:
+            USERError is raised if the requested test class could not be found
+            in the test_paths directories.
         """
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
             raise USERError(("Unable to locate class %s in any of the test "
                              "paths specified.") % test_cls_name)
-
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
@@ -352,7 +469,7 @@ class TestRunner(object):
                 self.results += e.results
                 raise e
 
-    def run(self):
+    def run(self, test_class=None):
         """Executes test cases.
 
         This will instantiate controller and test classes, and execute test
@@ -361,14 +478,22 @@ class TestRunner(object):
 
         A call to TestRunner.stop should eventually happen to conclude the life
         cycle of a TestRunner.
+
+        Args:
+            test_class: The python module of a test class. If provided, run this
+                        class; otherwise, import modules in under test_paths
+                        based on run_list.
         """
         if not self.running:
             self.running = True
         # Initialize controller objects and pack appropriate objects/params
         # to be passed to test class.
         self.parse_config(self.test_configs)
-        t_configs = self.test_configs[keys.Config.key_test_paths.value]
-        self.test_classes = self.import_test_modules(t_configs)
+        if test_class:
+            self.test_classes = {test_class.__name__: test_class}
+        else:
+            t_paths = self.test_configs[keys.Config.key_test_paths.value]
+            self.test_classes = self.import_test_modules(t_paths)
         self.log.debug("Executing run list %s.", self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
