@@ -43,11 +43,11 @@ def get_active_sim_list(verbose_warnings=False):
         droid = droid_device.get_droid(False)
 
         sub_info_list = droid.subscriptionGetActiveSubInfoList()
-        if not len(sub_info_list):
+        if not sub_info_list:
             if verbose_warnings:
-                print('No Valid Sim in {}! {}'.format(
-                    droid.serial, droid.telephonyGetSimState()))
-            return False
+                print('No Valid Sim in {} {}! SimState = {}'.format(
+                    droid_device.model, droid_device.serial, droid.telephonyGetSimState()))
+            continue
 
         for sub_info in sub_info_list:
             print(sub_info)
