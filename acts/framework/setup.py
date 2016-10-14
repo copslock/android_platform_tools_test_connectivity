@@ -115,6 +115,10 @@ class ActsUninstall(cmd.Command):
         """Entry point for the uninstaller."""
         # Remove the working directory from the python path. This ensures that
         # Source code is not accidently tarageted.
+        our_dir = os.path.abspath(os.path.dirname(__file__))
+        if our_dir in sys.path:
+            sys.path.remove(our_dir)
+
         if os.getcwd() in sys.path:
             sys.path.remove(os.getcwd())
 
