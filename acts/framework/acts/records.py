@@ -17,6 +17,7 @@
 """
 
 import json
+import logging
 import pprint
 
 from acts import signals
@@ -213,6 +214,7 @@ class TestResult(object):
         self.passed = []
         self.skipped = []
         self.unknown = []
+        self.controller_info = {}
 
     def __add__(self, r):
         """Overrides '+' operator for TestResult class.
@@ -231,9 +233,16 @@ class TestResult(object):
                             (r, type(r)))
         sum_result = TestResult()
         for name in sum_result.__dict__:
-            l_value = list(getattr(self, name))
-            r_value = list(getattr(r, name))
-            setattr(sum_result, name, l_value + r_value)
+            r_value = getattr(r, name)
+            l_value = getattr(self, name)
+            if isinstance(r_value, list):
+                setattr(sum_result, name, l_value + r_value)
+            elif isinstance(r_value, dict):
+                # '+' operator for TestResult is only valid when multiple
+                # TestResult objs were created in the same test run, which means
+                # the controller info would be the same across all of them.
+                # TODO(angli): have a better way to validate this situation.
+                setattr(sum_result, name, l_value)
         return sum_result
 
     def add_record(self, record):
@@ -253,6 +262,16 @@ class TestResult(object):
             self.passed.append(record)
         else:
             self.unknown.append(record)
+
+    def add_controller_info(self, name, info):
+        try:
+            json.dumps(info)
+        except TypeError:
+            logging.warning(("Controller info for %s is not JSON serializable!"
+                             " Coercing it to string.") % name)
+            self.controller_info[name] = str(info)
+            return
+        self.controller_info[name] = info
 
     def fail_class(self, test_record):
         """Add a record to indicate a test class setup has failed and no test
@@ -289,8 +308,8 @@ class TestResult(object):
             A json-format string representing the test results.
         """
         d = {}
-        executed = [record.to_dict() for record in self.executed]
-        d["Results"] = executed
+        d["ControllerInfo"] = self.controller_info
+        d["Results"] = [record.to_dict() for record in self.executed]
         d["Summary"] = self.summary_dict()
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
