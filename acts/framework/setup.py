@@ -17,7 +17,6 @@
 from distutils import cmd
 from distutils import log
 import os
-import pip
 import shutil
 import setuptools
 from setuptools.command import test
@@ -72,6 +71,8 @@ class ActsInstallDependencies(cmd.Command):
         pass
 
     def run(self):
+        import pip
+
         required_packages = self.distribution.install_requires
 
         for package in required_packages:
