@@ -89,6 +89,10 @@ class MockAdbProxy():
             if self.fail_br_before_N:
                 return b"/system/bin/sh: bugreportz: not found"
             return b'1.1'
+        elif params == "getprop ro.build.id":
+            return b"AB42"
+        elif params == "getprop ro.build.type":
+            return b"userdebug"
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
@@ -241,6 +245,18 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_lp = os.path.join(logging.log_path,
                                    "AndroidDevice%s" % mock_serial)
         self.assertEqual(ad.log_path, expected_lp)
+
+    @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=MockFastbootProxy(1))
+    def test_AndroidDevice_build_info(self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's basic attributes are correctly
+        set after instantiation.
+        """
+        ad = android_device.AndroidDevice(serial=1)
+        build_info = ad.build_info
+        self.assertEqual(build_info["build_id"], "AB42")
+        self.assertEqual(build_info["build_type"], "userdebug")
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch('acts.controllers.fastboot.FastbootProxy',
