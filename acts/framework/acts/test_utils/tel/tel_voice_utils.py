@@ -328,8 +328,10 @@ def phone_setup_iwlan_for_subscription(log,
         True if success. False if fail.
     """
 
+    # VoLTE settings are unavailable in airplane mode
     toggle_airplane_mode(log, ad, False)
 
+    # Now that we are out of APM, toggle VoLTE if necessary
     if ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         toggle_volte(log, ad, True)
 
@@ -345,7 +347,9 @@ def phone_setup_iwlan_for_subscription(log,
         log.error("{} set WFC mode failed.".format(ad.serial))
         return False
 
-    toggle_airplane_mode(log, ad, is_airplane_mode)
+    if not toggle_airplane_mode(log, ad, is_airplane_mode):
+        log.error("Failed to enable airplane mode on {}".format(ad.serial))
+        return False
 
     if wifi_ssid is not None:
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
