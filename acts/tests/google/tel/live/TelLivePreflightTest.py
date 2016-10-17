@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_MSIM
 from acts.test_utils.tel.tel_defines import CAPABILITY_OMADM
+from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -71,10 +72,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
         try:
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
-                self._preflight_fail("WiFi connect fail.")
+                self._preflight_fail("{}: WiFi connect fail.".format(
+                    ad.serial))
             if (not wait_for_wifi_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
-                self._preflight_fail("Data not available on WiFi.")
+                self._preflight_fail("{}: Data not available on WiFi.".format(
+                    ad.serial))
         finally:
             WifiUtils.wifi_toggle_state(self.log, ad, False)
         # TODO: add more environment check here.
@@ -86,13 +89,21 @@ class TelLivePreflightTest(TelephonyBaseTest):
             #check for sim and service
             subInfo = ad.droid.subscriptionGetAllSubInfoList()
             if not subInfo or len(subInfo) < 1:
-                self._preflight_fail("Unable to find A valid subscription!")
+                self._preflight_fail(
+                    "{}: Unable to find A valid subscription!".format(
+                        ad.serial))
             toggle_airplane_mode(self.log, ad, False)
+            if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
+                self._preflight_fail("{}: No Default Data Sub ID".format(
+                    ad.serial))
+            elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
+                self._preflight_fail("{}: No Valid Voice Sub ID".format(
+                    ad.serial))
             sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
             if not wait_for_voice_attach_for_subscription(
                     self.log, ad, sub_id, MAX_WAIT_TIME_NW_SELECTION):
-                self._preflight_fail("{} didn't find a cell network".format(
-                    ad.serial))
+                self._preflight_fail(
+                    "{}: Did Not Attach For Voice Services".format(ad.serial))
         return True
 
     def _preflight_fail(self, message):
