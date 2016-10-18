@@ -727,9 +727,12 @@ def hangup_call(log, ad):
         ad: android device object.
 
     Returns:
-        True: if incoming call is received and reject successfully.
+        True: if all calls are cleared
         False: for errors
     """
+    # short circuit in case no calls are active
+    if not ad.droid.telecomIsInCall():
+        return True
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallState()
     log.info("Hangup call.")
