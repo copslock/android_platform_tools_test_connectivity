@@ -22,6 +22,7 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -182,7 +183,7 @@ class TelPowerTest(TelephonyBaseTest):
                 return False
             return (average_current <= pass_criteria)
         finally:
-            self.android_devices[1].droid.telecomEndCall()
+            hangup_call(self.log, self.android_devices[1])
             self.log.info("Result: {} mA, pass criteria: {} mA".format(
                 average_current, pass_criteria))
 
