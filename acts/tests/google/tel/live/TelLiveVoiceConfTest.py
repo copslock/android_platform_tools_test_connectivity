@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_call_uri
 from acts.test_utils.tel.tel_test_utils import get_phone_number
+from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import is_uri_equivalent
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
@@ -82,6 +83,13 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
     """ Private Test Utils """
+
+    def _hangup_call(self, ad, device_description='Device'):
+        if not hangup_call(self.log, ad):
+            self.log.error("Failed to hang up on {}: {}".format(
+                device_description, ad.serial))
+            return False
+        return True
 
     def _three_phone_call_mo_add_mo(self, ads, phone_setups, verify_funcs):
         """Use 3 phones to make MO calls.
@@ -512,7 +520,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             True if no error happened. Otherwise False.
         """
         self.log.info("Drop 1st call.")
-        first_drop_ad.droid.telecomEndCall()
+        if not self._hangup_call(first_drop_ad):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = host.droid.telecomCallGetCallIds()
         self.log.info("Calls in Host{}".format(calls))
@@ -524,7 +533,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Drop 2nd call.")
-        second_drop_ad.droid.telecomEndCall()
+        if not self._hangup_call(second_drop_ad):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(
                 self.log, [host, second_drop_ad, first_drop_ad], False):
@@ -550,8 +560,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         Returns:
             True if no error happened. Otherwise False.
         """
-        self.log.info("Drop current call on DUT.")
-        host.droid.telecomEndCall()
+        self.log.info("Drop current call on Host.")
+        if not self._hangup_call(host, "Host"):
+            return False
         if not wait_and_answer_call(self.log, host, get_phone_number(
                 self.log, held_participant_ad)):
             self.log.error("Did not receive call back.")
@@ -563,8 +574,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [active_participant_ad], False):
             return False
 
-        self.log.info("Drop current call on DUT.")
-        host.droid.telecomEndCall()
+        self.log.info("Drop current call on Host.")
+        if not self._hangup_call(host, "Host"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [host, held_participant_ad,
                                               active_participant_ad], False):
@@ -585,8 +597,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         Returns:
             True if no error happened. Otherwise False.
         """
-        self.log.info("Drop conference call on host.")
-        host.droid.telecomEndCall()
+        self.log.info("Drop conference call on Host.")
+        if not self._hangup_call(host, "Host"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [host], False):
             return False
@@ -1372,7 +1385,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -1386,7 +1400,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # providing such information to DUT.
         # So this test probably will fail on the last step for VZW.
         self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
@@ -1483,7 +1498,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -1493,7 +1509,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
@@ -1525,7 +1542,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneB and verify call continues.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[2]], True):
             return False
@@ -1533,7 +1551,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step6: End call on PhoneC and verify PhoneA end.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
@@ -1720,7 +1739,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -1732,7 +1752,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
@@ -1762,7 +1783,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         self.log.info("Hangup at {}, verify call continues.".format(
             ad_hangup.serial))
-        ad_hangup.droid.telecomEndCall()
+        if not self._hangup_call(ad_hangup):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
 
         if ad_verify.droid.telecomCallGetCallState(call_id) != call_state:
@@ -2418,7 +2440,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -2428,7 +2451,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
@@ -9416,7 +9440,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: End call on PhoneC and verify call continues.")
-        ads[2].droid.telecomEndCall()
+        if not self._hangup_call(ads[2], "PhoneC"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         self.log.info("Calls in PhoneA{}".format(calls))
@@ -9428,7 +9453,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        ads[1].droid.telecomEndCall()
+        if not self._hangup_call(ads[1], "PhoneB"):
+            return False
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
             return False
