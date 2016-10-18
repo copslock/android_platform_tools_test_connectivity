@@ -323,14 +323,17 @@ def _wait_for_bluetooth_in_state(log, ad, state, max_wait):
     # FIXME: These event names should be defined in a common location
     _BLUETOOTH_STATE_ON_EVENT = 'BluetoothStateChangedOn'
     _BLUETOOTH_STATE_OFF_EVENT = 'BluetoothStateChangedOff'
+    ad.ed.clear_events(_BLUETOOTH_STATE_ON_EVENT)
+    ad.ed.clear_events(_BLUETOOTH_STATE_OFF_EVENT)
+
     ad.droid.bluetoothStartListeningForAdapterStateChange()
     try:
         bt_state = ad.droid.bluetoothCheckState()
         if bt_state == state:
             return True
         if max_wait <= 0:
-            log.error("Time out: bluetooth state still {}, expecting {}".format(
-                bt_state, state))
+            log.error("Time out: bluetooth state still {}, expecting {}".
+                      format(bt_state, state))
             return False
 
         event = {False: _BLUETOOTH_STATE_OFF_EVENT,
@@ -364,7 +367,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     Returns:
         result: True if operation succeed. False if error happens.
     """
-    serial_number = ad.serial
 
     ad.ed.clear_all_events()
     sub_id_list = []
@@ -376,7 +378,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     cur_state = ad.droid.connectivityCheckAirplaneMode()
     if cur_state == new_state:
         log.info("Airplane mode already <{}> on {}".format(new_state,
-                                                           serial_number))
+                                                           ad.serial))
         return True
     elif new_state is None:
         log.info("Current State {} New state {}".format(cur_state, new_state))
@@ -387,7 +389,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     service_state_list = []
     if new_state:
         service_state_list.append(SERVICE_STATE_POWER_OFF)
-        log.info("Turn on airplane mode: " + serial_number)
+        log.info("Turn on airplane mode on {}".format(ad.serial))
 
     else:
         # If either one of these 3 events show up, it should be OK.
@@ -396,7 +398,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         # NO SIM, or Dead SIM, or no Roaming coverage.
         service_state_list.append(SERVICE_STATE_OUT_OF_SERVICE)
         service_state_list.append(SERVICE_STATE_EMERGENCY_ONLY)
-        log.info("Turn off airplane mode: " + serial_number)
+        log.info("Turn off airplane mode on {}.".format(ad.serial))
 
     for sub_id in sub_id_list:
         ad.droid.telephonyStartTrackingServiceStateChangeForSubscription(
@@ -418,9 +420,11 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         except Empty:
             pass
         if event is None:
-            log.error("Did not get expected service state {}".format(
-                service_state_list))
-        log.info("Received event: {}".format(event))
+            log.error("Did not get expected service state {} on {}".format(
+                service_state_list, ad.serial))
+            return False
+        else:
+            log.info("Received event: {} on {}".format(event, ad.serial))
     finally:
         for sub_id in sub_id_list:
             ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
@@ -429,13 +433,16 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
     if new_state and not _wait_for_bluetooth_in_state(
             log, ad, False, timeout_time - time.time()):
-        log.error("Failed waiting for bluetooth during airplane mode toggle")
+        log.error(
+            "Failed waiting for bluetooth during airplane mode toggle on {}".
+            format(ad.serial))
         return False
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
-    if new_state and not _wait_for_wifi_in_state(
-            log, ad, False, timeout_time - time.time()):
-        log.error("Failed waiting for wifi during airplane mode toggle")
+    if new_state and not _wait_for_wifi_in_state(log, ad, False,
+                                                 timeout_time - time.time()):
+        log.error("Failed waiting for wifi during airplane mode toggle on {}.".
+                  format(ad.serial))
         return False
 
     if ad.droid.connectivityCheckAirplaneMode() != new_state:
@@ -726,9 +733,12 @@ def hangup_call(log, ad):
         ad: android device object.
 
     Returns:
-        True: if incoming call is received and reject successfully.
+        True: if all calls are cleared
         False: for errors
     """
+    # short circuit in case no calls are active
+    if not ad.droid.telecomIsInCall():
+        return True
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallState()
     log.info("Hangup call.")
@@ -3468,7 +3478,7 @@ class WifiUtils():
     from acts.test_utils.wifi.wifi_test_utils \
         import WifiEnums as _WifiEnums
     from acts.test_utils.wifi.wifi_test_utils \
-        import WifiEventNames
+        import WifiEventNames as _WifiEventNames
 
     WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
     WIFI_CONFIG_APBAND_5G = _WifiEnums.WIFI_CONFIG_APBAND_5G
@@ -3511,12 +3521,12 @@ class WifiUtils():
         for network in networks:
             ad.droid.wifiForgetNetwork(network['networkId'])
             try:
-                event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
-                                        SHORT_TIMEOUT)
+                event = ad.ed.pop_event(
+                    WifiUtils._WifiEventNames.WIFI_FORGET_NW_SUCCESS)
             except Empty:
                 log.warning("Could not confirm the removal of network {}.".
                             format(network))
-        networks = ad.droid.ad.droid.wifiGetConfiguredNetworks()
+        networks = ad.droid.wifiGetConfiguredNetworks()
         if len(networks):
             log.error("Failed to forget all networks {}.".format(networks))
             return False
