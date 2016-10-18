@@ -3449,7 +3449,7 @@ class WifiUtils():
     from acts.test_utils.wifi.wifi_test_utils \
         import WifiEnums as _WifiEnums
     from acts.test_utils.wifi.wifi_test_utils \
-        import WifiEventNames
+        import WifiEventNames as _WifiEventNames
 
     WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
     WIFI_CONFIG_APBAND_5G = _WifiEnums.WIFI_CONFIG_APBAND_5G
@@ -3492,12 +3492,12 @@ class WifiUtils():
         for network in networks:
             ad.droid.wifiForgetNetwork(network['networkId'])
             try:
-                event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
-                                        SHORT_TIMEOUT)
+                event = ad.ed.pop_event(
+                    WifiUtils._WifiEventNames.WIFI_FORGET_NW_SUCCESS)
             except Empty:
                 log.warning("Could not confirm the removal of network {}.".
                             format(network))
-        networks = ad.droid.ad.droid.wifiGetConfiguredNetworks()
+        networks = ad.droid.wifiGetConfiguredNetworks()
         if len(networks):
             log.error("Failed to forget all networks {}.".format(networks))
             return False
