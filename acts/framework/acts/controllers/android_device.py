@@ -410,12 +410,12 @@ class AndroidDevice:
             device is in bootloader mode.
         """
         if self.is_bootloader:
+            self.log.error("Device is in fastboot mode, could not get build "
+                           "info.")
             return
         info = {}
-        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
-            "utf-8").strip()
-        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
-            "utf-8").strip()
+        info["build_id"] = self.adb.getprop("ro.build.id")
+        info["build_type"] = self.adb.getprop("ro.build.type")
         return info
 
     @property
@@ -450,14 +450,11 @@ class AndroidDevice:
                 if len(tokens) > 1:
                     return tokens[1].lower()
             return None
-        out = self.adb.shell('getprop | grep ro.build.product')
-        model = out.decode("utf-8").strip().split('[')[-1][:-1].lower()
+        model = self.adb.getprop("ro.build.product").lower()
         if model == "sprout":
             return model
         else:
-            out = self.adb.shell('getprop | grep ro.product.name')
-            model = out.decode("utf-8").strip().split('[')[-1][:-1].lower()
-            return model
+            return self.adb.getprop("ro.product.name").lower()
 
     @property
     def droid(self):
@@ -838,8 +835,7 @@ class AndroidDevice:
         self.adb.wait_for_device()
         while time.time() < timeout_start + timeout:
             try:
-                out = self.adb.shell("getprop sys.boot_completed")
-                completed = out.decode("utf-8").strip()
+                completed = self.adb.getprop("sys.boot_completed")
                 if completed == '1':
                     return
             except adb.AdbError:

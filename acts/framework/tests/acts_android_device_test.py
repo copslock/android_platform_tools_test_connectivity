@@ -76,11 +76,6 @@ class MockAdbProxy():
     def shell(self, params):
         if params == "id -u":
             return b"root"
-        elif (params == "getprop | grep ro.build.product" or
-              params == "getprop | grep ro.product.name"):
-            return b"[ro.build.product]: [FakeModel]"
-        elif params == "getprop sys.boot_completed":
-            return b"1"
         elif params == "bugreportz":
             if self.fail_br:
                 return b"OMG I died!\n"
@@ -89,10 +84,16 @@ class MockAdbProxy():
             if self.fail_br_before_N:
                 return b"/system/bin/sh: bugreportz: not found"
             return b'1.1'
-        elif params == "getprop ro.build.id":
-            return b"AB42"
-        elif params == "getprop ro.build.type":
-            return b"userdebug"
+
+    def getprop(self, params):
+        if params == "ro.build.id":
+            return "AB42"
+        elif params == "ro.build.type":
+            return "userdebug"
+        elif params == "ro.build.product" or params == "ro.product.name":
+            return "FakeModel"
+        elif params == "sys.boot_completed":
+            return "1"
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
@@ -105,7 +106,6 @@ class MockAdbProxy():
         """All calls to the none-existent functions in adb proxy would
         simply return the adb command string.
         """
-
         def adb_call(*args):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
