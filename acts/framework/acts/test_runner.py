@@ -306,12 +306,47 @@ class TestRunner(object):
                      attr, module.__name__))
 
     def register_controller(self, module, required=True):
-        """Registers a controller module for a test run.
+        """Registers an ACTS controller module for a test run.
 
-        This declares a controller dependency of this test class. If the target
-        module exists and matches the controller interface, the controller
-        module will be instantiated with corresponding configs in the test
-        config file. The module should be imported first.
+        An ACTS controller module is a Python lib that can be used to control
+        a device, service, or equipment. To be ACTS compatible, a controller
+        module needs to have the following members:
+
+            def create(configs):
+                [Required] Creates controller objects from configurations.
+                Args:
+                    configs: A list of serialized data like string/dict. Each
+                             element of the list is a configuration for a
+                             controller object.
+                Returns:
+                    A list of objects.
+
+            def destroy(objects):
+                [Required] Destroys controller objects created by the create
+                function. Each controller object shall be properly cleaned up
+                and all the resources held should be released, e.g. memory
+                allocation, sockets, file handlers etc.
+                Args:
+                    A list of controller objects created by the create function.
+
+            def get_info(objects):
+                [Optional] Gets info from the controller objects used in a test
+                run. The info will be included in test_result_summary.json under
+                the key "ControllerInfo". Such information could include unique
+                ID, version, or anything that could be useful for describing the
+                test bed and debugging.
+                Args:
+                    objects: A list of controller objects created by the create
+                             function.
+                Returns:
+                    A list of json serializable objects, each represents the
+                    info of a controller object. The order of the info object
+                    should follow that of the input objects.
+
+        Registering a controller module declares a test class's dependency the
+        controller. If the module config exists and the module matches the
+        controller interface, controller objects will be instantiated with
+        corresponding configs. The module should be imported first.
 
         Args:
             module: A module that follows the controller module interface.
