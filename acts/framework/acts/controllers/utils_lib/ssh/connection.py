@@ -29,6 +29,25 @@ class Error(Exception):
     """An error occured during an ssh operation."""
 
 
+class CommandError(Exception):
+    """An error occured with the command.
+
+    Attributes:
+        result: The results of the ssh command that had the error.
+    """
+
+    def __init__(self, result):
+        """
+        Args:
+            result: The result of the ssh command that created the problem.
+        """
+        self.result = result
+
+    def __str__(self):
+        return 'cmd: %s\nstdout: %s\nstderr: %s' % (
+            self.result.command, self.result.stdout, self.result.stderr)
+
+
 class SshConnection(object):
     """Provides a connection to a remote machine through ssh.
 
@@ -143,6 +162,7 @@ class SshConnection(object):
         Raises:
             job.TimeoutError: When the remote command took to long to execute.
             Error: When the ssh connection failed to be created.
+            CommandError: Ssh worked, but the command had an error executing.
         """
         if env is None:
             env = {}
@@ -183,7 +203,10 @@ class SshConnection(object):
                                          output,
                                          flags=re.MULTILINE)
             if valid_connection:
-                logging.debug('Connected to host.')
+                if result.exit_status:
+                    # Error out if the remote ssh command had a problem.
+                    raise CommandError(result)
+
                 return result
 
             had_dns_failure = (result.exit_status == 255 and re.search(
