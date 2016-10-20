@@ -30,7 +30,6 @@ from acts.test_utils.bt.bt_test_utils import set_device_name
 from acts.test_utils.bt.bt_test_utils import set_bt_scan_mode
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts.test_utils.bt.bt_test_utils import take_bugreport_logs
 
 
 class BtBasicFunctionalityTest(BluetoothBaseTest):

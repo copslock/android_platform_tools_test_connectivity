@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to execute Bluetooth basic functionality test cases relevant to car.
 """
@@ -30,7 +29,6 @@ from acts.test_utils.bt.bt_test_utils import set_device_name
 from acts.test_utils.bt.bt_test_utils import set_bt_scan_mode
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
-from acts.test_utils.bt.bt_test_utils import take_bugreport_logs
 
 
 class BtCarBasicFunctionalityTest(BluetoothBaseTest):
@@ -39,25 +37,10 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_ad = self.android_devices[0]
+        self.car_ad = self.android_devices[0]
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
-
-    def setup_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
-        for a in self.android_devices:
-            a.ed.clear_all_events()
-        return True
-
-    def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
-        return True
-
-    def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.android_devices, self, test_name, begin_time)
-        take_bugreport_logs(self.android_devices, self, test_name, begin_time)
-        reset_bluetooth(self.android_devices)
 
     #@BluetoothTest(UUID=b52a032a-3438-4b84-863f-c46a969882a4)
     @BluetoothBaseTest.bt_test_wrap
@@ -69,7 +52,7 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'a2dp_sink'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['a2dp_sink']:
             self.log.debug("Android device do not support A2DP SNK profile.")
             return False
@@ -85,7 +68,7 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'hfp_client'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['hfp_client']:
             self.log.debug("Android device do not support HFP Client profile.")
             return False
@@ -101,8 +84,9 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'pbap_client'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['pbap_client']:
-            self.log.debug("Android device do not support PBAP Client profile.")
+            self.log.debug(
+                "Android device do not support PBAP Client profile.")
             return False
         return True

@@ -20,12 +20,12 @@ the two files.
 
 from mmap import ACCESS_READ
 from mmap import mmap
+import logging
 import re
 import random
 import string
 
 from acts.utils import exe_cmd
-from acts.utils import exe_cmdr
 import queue
 
 # CallLog types
@@ -46,6 +46,7 @@ STORAGE_PATH = "/sdcard/Download/"
 
 PBAP_SYNC_TIME = 30
 
+log = logging
 
 def parse_contacts(file_name):
     """Read vcf file and generate a list of contacts.
@@ -270,12 +271,9 @@ def import_device_contacts_from_vcf(device, destination_path, vcf_file):
     """
     number_count = phone_number_count(destination_path, vcf_file)
     log.info("Trying to add {} phone numbers.".format(number_count))
-    cmd = ("adb -s {} push {}{} {}{}"
-           .format(device.serial, destination_path, vcf_file, STORAGE_PATH, vcf_file))
-    log.info(cmd)
-    return_code = exe_cmdr(cmd)
-    if return_code != 0:
-      raise OSError()
+    local_phonebook_path = "{}{}".format(destination_path, vcf_file)
+    phone_phonebook_path = "{}{}".format(STORAGE_PATH, vcf_file)
+    device.adb.push("{} {}".format(local_phonebook_path, phone_phonebook_path))
     device.droid.importVcf("file://{}{}".format(STORAGE_PATH, vcf_file))
     if wait_for_phone_number_update_complete(device, number_count):
         return number_count
@@ -286,19 +284,10 @@ def import_device_contacts_from_vcf(device, destination_path, vcf_file):
 def export_device_contacts_to_vcf(device, destination_path, vcf_file):
     """Export and download vcf file from device.
     """
-    device.droid.exportVcf("{}{}".format(STORAGE_PATH, vcf_file))
-    try:
+    path_on_phone = "{}{}".format(STORAGE_PATH, vcf_file)
+    device.droid.exportVcf("{}".format(path_on_phone))
         # Download and then remove file from device
-
-        cmd = ("adb -s {} pull {}{} {}".format(device.serial, STORAGE_PATH,
-                                               vcf_file, destination_path))
-        log.info(cmd)
-        exe_cmdr(cmd)
-        exe_cmd("adb -s {} shell rm {}{}"
-                .format(device.serial, STORAGE_PATH, vcf_file))
-    except OSError:
-        log.error("Unable to pull or remove {}".format(vcf_file))
-        return False
+    device.adb.pull("{} {}".format(path_on_phone, destination_path))
     return True
 
 
@@ -410,11 +399,3 @@ def compare_call_logs(pse_call_log, pce_call_log):
         log.info(pce_call_log)
 
     return call_logs_match
-
-
-def set_logger(logger):
-    """Provide a logger for utils to use.
-    """
-    global log
-    log = logger
-    log.info("Logger Set")

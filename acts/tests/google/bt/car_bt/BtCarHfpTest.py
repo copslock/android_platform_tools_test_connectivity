@@ -17,80 +17,46 @@
 Test the HFP profile for basic calling functionality.
 """
 
-import os
 import time
-
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_telecom_utils
 from acts.test_utils.car import tel_telecom_utils
 from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel.tel_test_utils import get_phone_number
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 
 BLUETOOTH_PKG_NAME = "com.android.bluetooth"
 CALL_TYPE_OUTGOING = "CALL_TYPE_OUTGOING"
 CALL_TYPE_INCOMING = "CALL_TYPE_INCOMING"
-default_timeout = 20
+SHORT_TIMEOUT = 5
 
 
-class BtCarHfpTest(BluetoothBaseTest):
+class BtCarHfpTest(BluetoothCarHfpBaseTest):
     def setup_class(self):
-        self.hf = self.android_devices[0]
-        self.ag = self.android_devices[1]
-        self.re = self.android_devices[2]
-        if not "sim_conf_file" in self.user_params.keys():
-            self.log.error("Missing mandatory user config \"sim_conf_file\"!")
+        if not super(BtCarHfpTest, self).setup_class():
             return False
-        sim_conf_file = self.user_params["sim_conf_file"]
-        if not os.path.isfile(sim_conf_file):
-            sim_conf_file = os.path.join(
-                self.user_params[Config.key_config_path], sim_conf_file)
-            if not os.path.isfile(sim_conf_file):
-                self.log.error("Unable to load user config " + sim_conf_file +
-                               " from test config file.")
-                return False
-        setup_droid_properties(self.log, self.ag, sim_conf_file)
-        setup_droid_properties(self.log, self.re, sim_conf_file)
-        self.ag_phone_number = get_phone_number(self.log, self.ag)
-        self.re_phone_number = get_phone_number(self.log, self.re)
-        self.log.info("ag tel: {} re tel: {}".format(self.ag_phone_number,
-                                                     self.re_phone_number))
-
-        # Setup includes pairing and connecting the devices.
-        bt_test_utils.setup_multiple_devices_for_bt_test([self.hf, self.ag])
-        bt_test_utils.reset_bluetooth([self.hf, self.ag])
-
-        # Pair and connect the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.hf.droid, self.ag.droid):
-            self.log.error("Failed to pair")
-            return False
-
         # Disable the A2DP profile.
         bt_test_utils.set_profile_priority(
             self.hf, self.ag, [BtEnum.BluetoothProfile.PBAP_CLIENT.value,
                                BtEnum.BluetoothProfile.A2DP_SINK.value],
             BtEnum.BluetoothPriorityLevel.PRIORITY_OFF)
+        bt_test_utils.set_profile_priority(
+            self.hf, self.ag, [BtEnum.BluetoothProfile.HEADSET_CLIENT.value],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
 
-        if not bt_test_utils.connect_pri_to_sec(
-                self.log, self.hf, self.ag.droid,
-                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
+        if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
+            [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Failed to connect")
-            return False
-
-    def setup_test(self):
-        # Reset the devices.
-        for d in self.android_devices:
-            d.ed.clear_all_events()
-
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
-        bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name, begin_time)
-        bt_test_utils.take_bugreport_logs(self.android_devices, self, test_name, begin_time)
-
-    def teardown_test(self):
-        self.log.debug(bt_test_utils.log_energy_info(self.android_devices,
-                                                     "End"))
+            # Additional profile connection check
+            if bt_test_utils.is_hfp_client_device_connected(
+                    self.hf, self.ag.droid.bluetoothGetLocalAddress()):
+                self.log.info(
+                    "HFP Client connected even though connection state changed "
+                    + " event not found")
+            else:
+                return False
+        return True
 
     #@BluetoothTest(UUID=4ce2195a-b70a-4584-912e-cbd20d20e19d)
     @BluetoothBaseTest.bt_test_wrap
@@ -129,6 +95,7 @@ class BtCarHfpTest(BluetoothBaseTest):
             self.log.info("Component name does not start with pkg name {}".
                           format(selected_acc))
             return False
+        return True
 
     #@BluetoothTest(UUID=e579009d-05f3-4236-a698-5de8c11d73a9)
     @BluetoothBaseTest.bt_test_wrap
@@ -250,7 +217,7 @@ class BtCarHfpTest(BluetoothBaseTest):
         """
         return self.dial_a_hangup_b(self.re, self.re, self.ag_phone_number)
 
-    def dial_a_hangup_b(self, a, b, ph=""):
+    def dial_a_hangup_b(self, caller, callee, ph=""):
         """
         a, b and c can be either of AG, HF or Remote.
         1. Make a call from 'a' on a fixed number.
@@ -265,23 +232,25 @@ class BtCarHfpTest(BluetoothBaseTest):
 
         # Determine if this is outgoing or incoming call.
         call_type = None
-        if a == self.ag or a == self.hf:
+        if caller == self.ag or caller == self.hf:
             call_type = CALL_TYPE_OUTGOING
-            if b != self.ag and b != self.hf:
+            if callee != self.ag and callee != self.hf:
                 self.log.info("outgoing call should terminate at AG or HF")
                 return False
-        elif a == self.re:
+        elif caller == self.re:
             call_type = CALL_TYPE_INCOMING
-            if b != self.re:
+            if callee != self.re:
                 self.log.info("Incoming call should terminate at Re")
                 return False
 
         self.log.info("Call type is {}".format(call_type))
 
         # make a call on 'a'
-        if not tel_telecom_utils.dial_number(self.log, a, ph):
+        if not tel_telecom_utils.dial_number(self.log, caller, ph):
             return False
 
+        # Give time for state to update due to carrier limitations
+        time.sleep(SHORT_TIMEOUT)
         # Check that everyone is in dialing/ringing state.
         ret = True
         if call_type == CALL_TYPE_OUTGOING:
@@ -295,6 +264,8 @@ class BtCarHfpTest(BluetoothBaseTest):
         if not ret:
             return False
 
+        # Give time for state to update due to carrier limitations
+        time.sleep(SHORT_TIMEOUT)
         # Check if we have any calls with dialing or active state on 'b'.
         # We assume we never disconnect from 'ringing' state since it will lead
         # to voicemail.
@@ -304,7 +275,7 @@ class BtCarHfpTest(BluetoothBaseTest):
              tel_defines.CALL_STATE_ACTIVE]
 
         calls_in_dialing_or_active = tel_telecom_utils.get_calls_in_states(
-            self.log, b, call_state_dialing_or_active)
+            self.log, callee, call_state_dialing_or_active)
 
         # Make sure there is only one!
         if len(calls_in_dialing_or_active) != 1:
@@ -313,7 +284,7 @@ class BtCarHfpTest(BluetoothBaseTest):
             return False
 
         # Hangup the *only* call on 'b'
-        if not car_telecom_utils.hangup_call(self.log, b,
+        if not car_telecom_utils.hangup_call(self.log, caller,
                                              calls_in_dialing_or_active[0]):
             return False
 

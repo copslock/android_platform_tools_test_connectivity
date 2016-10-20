@@ -14,17 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-# Defines utilities that can be used for making calls indenpendent of
+# Defines utilities that can be used for making calls independent of
 # subscription IDs. This can be useful when making calls over mediums not SIM
 # based.
-
-# Make a phone call to the specified URI. It is assumed that we are making the
-# call to the user selected default account.
-#
-# We usually want to make sure that the call has ended up in a good state.
-#
-# NOTE: This util is applicable to only non-conference type calls. It is best
-# suited to test cases where only one call is in action at any point of time.
 
 import queue
 import time
@@ -33,23 +25,20 @@ from acts import logger
 from acts.test_utils.tel import tel_defines
 
 def dial_number(log, ad, uri):
-    """Dial a number
+    """Dial a Tel: URI
 
     Args:
         log: log object
         ad: android device object
-        uri: Tel number to dial
+        uri: Tel uri dial
 
     Returns:
         True if success, False if fail.
     """
+    if "tel:" not in uri:
+        uri = "tel:" + uri
     log.info("Dialing up droid {} call uri {}".format(
         ad.droid.getBuildSerial(), uri))
-
-    # First check that we are not in call.
-    if ad.droid.telecomIsInCall():
-        log.info("We're still in call {}".format(ad.droid.getBuildSerial()))
-        return False
 
     # Start tracking updates.
     ad.droid.telecomStartListeningForCallAdded()
@@ -173,17 +162,23 @@ def wait_for_not_in_call(log, ad):
     ad.droid.telecomStartListeningForCallRemoved()
 
     calls = ad.droid.telecomCallGetCallIds()
-    if len(calls) > 1:
-        log.info("More than one call {} {}".format(calls, ad.droid.getBuildSerial()))
-        return False
 
-    if len(calls) > 0:
+    timeout = time.time() + tel_defines.MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+    remaining_time = tel_defines.MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
+
+    if len(calls) == 0:
         log.info("Got calls {} for {}".format(
             calls, ad.droid.getBuildSerial()))
         try:
-            event = ad.ed.pop_event(
-                tel_defines.EventTelecomCallRemoved,
-                tel_defines.MAX_WAIT_TIME_CONNECTION_STATE_UPDATE)
+            while len(calls) > 0:
+                event = ad.ed.pop_event(
+                    tel_defines.EventTelecomCallRemoved,
+                    remaining_time)
+                remaining_time = timeout - time.time()
+                if (remaining_time <= 0
+                        or len(ad.droid.telecomCallGetCallIds() == 0)):
+                    break
+
         except queue.Empty:
             log.info("wait_for_not_in_call Did not get {} droid {}".format(
                 tel_defines.EventTelecomCallRemoved,
@@ -208,11 +203,6 @@ def wait_for_dialing(log, ad):
     """
     # Start listening for events before anything else happens.
     ad.droid.telecomStartListeningForCallAdded()
-
-    # First check if we re in call, then simply return.
-    if ad.droid.telecomIsInCall():
-        ad.droid.telecomStopListeningForCallAdded()
-        return True
 
     call_id = None
     # Now check if we already have calls matching the state.
@@ -280,7 +270,7 @@ def wait_for_ringing(log, ad):
 
     call_id = None
     # Now check if we already have calls matching the state.
-    calls_in_state = ad.droid.telecomGetCalls()
+    calls_in_state = ad.droid.telecomCallGetCallIds()
 
     if len(calls_in_state) == 0:
         event = None
@@ -323,7 +313,7 @@ def get_calls_in_states(log, ad, call_states):
         List containing call_ids.
     """
     # Get the list of calls.
-    call_ids = ad.droid.telecomGetCalls()
+    call_ids = ad.droid.telecomCallGetCallIds()
     call_in_state = []
     for call_id in call_ids:
         call = ad.droid.telecomCallGetCallById(call_id)

@@ -46,7 +46,7 @@ class BluetoothProfile(IntEnum):
     HEALTH = 3
     INPUT_DEVICE = 4
     PAN = 5
-    PBAP = 6
+    PBAP_SERVER = 6
     GATT = 7
     GATT_SERVER = 8
     MAP = 9

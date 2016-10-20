@@ -17,6 +17,7 @@
 Automated tests for the testing passthrough commands in Avrcp/A2dp profile.
 """
 
+import os
 import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
@@ -32,15 +33,18 @@ PHONE_MEDIA_BROWSER_SERVICE_NAME = 'BluetoothSL4AAudioSrcMBS'
 CAR_MEDIA_BROWSER_SERVICE_NAME = 'A2dpMediaBrowserService'
 # This test requires some media files to play, skip and compare metadata.
 # The setup part of BtCarMediaPassthroughTest pushes media files from
-# the LOCAL_MEDIA_PATH defined below to ANDROID_MEDIA_PATH via adb.
-# Before running these tests, place some media files in your host and
-# update LOCAL_MEDIA_PATH with the path if it is different from ~/test.
-LOCAL_MEDIA_PATH = '~/test'
+# the local_media_path in user params defined below to ANDROID_MEDIA_PATH
+# via adb. Before running these tests, place some media files in your host
+# location.
 ANDROID_MEDIA_PATH = '/sdcard/Music/test'
 
 
 class BtCarMediaPassthroughTest(BluetoothBaseTest):
+    local_media_path = ""
+
     def setup_class(self):
+        if not super(BtCarMediaPassthroughTest, self).setup_class():
+            return False
         # AVRCP roles
         self.CT = self.android_devices[0]
         self.TG = self.android_devices[1]
@@ -53,8 +57,19 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         self.btAddrTG = self.TG.droid.bluetoothGetLocalAddress()
         self.android_music_path = ANDROID_MEDIA_PATH
 
-        # Reset bluetooth
-        bt_test_utils.reset_bluetooth([self.CT, self.TG])
+        if not "local_media_path" in self.user_params.keys():
+            self.log.error(
+                "Missing mandatory user config \"local_media_path\"!")
+            return False
+        self.local_media_path = self.user_params["local_media_path"]
+        if not os.path.isdir(self.local_media_path):
+            self.local_media_path = os.path.join(
+                self.user_params[Config.key_config_path],
+                self.local_media_path)
+            if not os.path.isdir(self.local_media_path):
+                self.log.error("Unable to load user config " + self.
+                               local_media_path + " from test config file.")
+                return False
 
         # Pair and connect the devices.
         if not bt_test_utils.pair_pri_to_sec(self.CT.droid, self.TG.droid):
@@ -65,17 +80,16 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         # For now, the passthrough tests will catch Avrcp Connection failures
         # But add an explicit test for it.
         bt_test_utils.connect_pri_to_sec(
-            self.log, self.SNK, self.SRC.droid,
-            set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
+            self.SNK, self.SRC, set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
 
-        # Push media files from LOCAL_MEDIA_PATH to ANDROID_MEDIA_PATH
+        # Push media files from self.local_media_path to ANDROID_MEDIA_PATH
         # Refer to note in the beginning of file
-        self.TG.adb.push("{} {}".format(LOCAL_MEDIA_PATH,
+        self.TG.adb.push("{} {}".format(self.local_media_path,
                                         self.android_music_path))
 
         return True
 
-    def initMBS(self):
+    def _init_mbs(self):
         """
         This is required to be done before running any of the passthrough
         commands.
@@ -93,36 +107,28 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         #TODO - Wait for an event back instead of sleep
         time.sleep(DEFAULT_WAIT_TIME)
 
-    def setup_test(self):
-        for d in self.android_devices:
-            d.ed.clear_all_events()
-
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
-
     def teardown_test(self):
-        def cleanup():
-            """
-            Stop the browser service if it is running to clean up the slate.
-            """
-            if (self.mediaBrowserServiceRunning):
-                self.log.info("Stopping MBS")
-                self.TG.droid.bluetoothMediaPhoneSL4AMBSStop()
-                self.mediaBrowserServiceRunning = False
-        cleanup()
+        # Stop the browser service if it is running to clean up the slate.
+        if self.mediaBrowserServiceRunning:
+            self.log.info("Stopping MBS")
+            self.TG.droid.bluetoothMediaPhoneSL4AMBSStop()
+            self.mediaBrowserServiceRunning = False
+        if not super(BtCarMediaPassthroughTest, self).teardown_test():
+            return False
         # If A2dp connection was disconnected as part of the test, connect it back
         if not (car_media_utils.is_a2dp_connected(self.log, self.SNK,
                                                   self.SRC)):
             result = bt_test_utils.connect_pri_to_sec(
-                self.log, self.SRC, self.SNK.droid,
-                set([BtEnum.BluetoothProfile.A2DP.value]))
+                self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))
             if not result:
-                self.log.error("Failed to connect back on A2dp")
-                return False
-        self.log.debug(
-            bt_test_utils.log_energy_info(self.android_devices, "End"))
+                if not bt_test_utils.is_a2dp_src_device_connected(
+                        self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
+                    self.log.error("Failed to connect on A2dp")
+                    return False
+        return True
 
     #@BluetoothTest(UUID=cf4fae08-f4f6-4e0d-b00a-4f6c41d69ff9)
+    @BluetoothBaseTest.bt_test_wrap
     def test_play_pause(self):
         """
         Test the Play and Pause passthrough commands
@@ -141,7 +147,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         Priority: 0
         """
         # Set up the MediaBrowserService
-        self.initMBS()
+        self._init_mbs()
         if not car_media_utils.send_media_passthrough_cmd(
                 self.log, self.CT, self.TG, car_media_utils.CMD_MEDIA_PLAY,
                 car_media_utils.EVENT_PLAY_RECEIVED, DEFAULT_EVENT_TIMEOUT):
@@ -153,6 +159,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         return True
 
     #@BluetoothTest(UUID=15615b26-3a49-4fa0-b369-41962e8de192)
+    @BluetoothBaseTest.bt_test_wrap
     def test_passthrough(self):
         """
         Test the Skip Next & Skip Previous passthrough commands
@@ -171,7 +178,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         Priority: 0
         """
         # Set up the MediaBrowserService
-        self.initMBS()
+        self._init_mbs()
         if not car_media_utils.send_media_passthrough_cmd(
                 self.log, self.CT, self.TG,
                 car_media_utils.CMD_MEDIA_SKIP_NEXT,
@@ -193,6 +200,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
     def test_media_metadata(self):
         """
         Test if the metadata matches between the two ends.
@@ -220,7 +228,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                                                   self.SRC)):
             self.log.error('No A2dp Connection')
 
-        self.initMBS()
+        self._init_mbs()
         if not car_media_utils.send_media_passthrough_cmd(
                 self.log, self.CT, self.TG, car_media_utils.CMD_MEDIA_PLAY,
                 car_media_utils.EVENT_PLAY_RECEIVED, DEFAULT_EVENT_TIMEOUT):
@@ -259,6 +267,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         if not car_media_utils.check_metadata(self.log, self.TG, self.CT):
             return False
 
+    @BluetoothBaseTest.bt_test_wrap
     def test_disconnect_while_media_playing(self):
         """
         Disconnect BT between CT and TG in the middle of a audio streaming session and check
@@ -285,7 +294,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         Priority: 0
         """
-        self.initMBS()
+        self._init_mbs()
         self.log.info("Sending Play command from Car")
         if not car_media_utils.send_media_passthrough_cmd(
                 self.log, self.CT, self.TG, car_media_utils.CMD_MEDIA_PLAY,
@@ -308,11 +317,12 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         self.log.info("Bluetooth Disconnect the car and phone")
         result = bt_test_utils.disconnect_pri_from_sec(
-            self.log, self.SRC, self.SNK.droid,
-            [BtEnum.BluetoothProfile.A2DP.value])
+            self.SRC, self.SNK, [BtEnum.BluetoothProfile.A2DP.value])
         if not result:
-            self.log.error("Failed to disconnect on A2DP")
-            return False
+            if bt_test_utils.is_a2dp_src_device_connected(
+                    self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
+                self.log.error("Failed to disconnect on A2dp")
+                return False
 
         self.log.info("Phone Media Sessions:")
         if not car_media_utils.isMediaSessionActive(
@@ -329,6 +339,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
     def test_connect_while_media_playing(self):
         """
         BT connect SRC and SNK when the SRC is already playing music and verify SNK strarts streaming
@@ -357,13 +368,16 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         """
         self.log.info("Bluetooth Disconnect the car and phone")
         result = bt_test_utils.disconnect_pri_from_sec(
-            self.log, self.SRC, self.SNK.droid,
-            [BtEnum.BluetoothProfile.A2DP.value])
+            self.SRC, self.SNK, [BtEnum.BluetoothProfile.A2DP.value])
         if not result:
-            self.log.error("Failed to disconnect on A2DP")
-            return False
+            # Temporary timeout
+            time.sleep(3)
+            if bt_test_utils.is_a2dp_src_device_connected(
+                    self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
+                self.log.error("Failed to disconnect on A2dp")
+                return False
 
-        self.initMBS()
+        self._init_mbs()
 
         # Play Media on Phone
         self.TG.droid.bluetoothMediaHandleMediaCommandOnPhone(
@@ -384,11 +398,12 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         # Now connect to Car on Bluetooth
         result = bt_test_utils.connect_pri_to_sec(
-            self.log, self.SRC, self.SNK.droid,
-            set([BtEnum.BluetoothProfile.A2DP.value]))
+            self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))
         if not result:
-            self.log.error("Failed to connect back on A2dp")
-            return False
+            if not bt_test_utils.is_a2dp_src_device_connected(
+                    self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
+                self.log.error("Failed to connect on A2dp")
+                return False
 
         # Wait for a bit for the information to show up in the car side
         time.sleep(2)

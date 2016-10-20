@@ -16,9 +16,11 @@
 """Test script to test PBAP contact download between two devices which can run SL4A.
 """
 
+import os
 from time import sleep
 from time import time
 
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.base_test import BaseTestClass
 from acts.test_utils.bt import bt_contacts_utils
 from acts.test_utils.bt import bt_test_utils
@@ -28,27 +30,22 @@ import acts.test_utils.bt.BtEnum as BtEnum
 
 # Offset call logs by 1 minute
 CALL_LOG_TIME_OFFSET_IN_MSEC = 60000
+PSE_CONTACTS_FILE = "psecontacts.vcf"
+PCE_CONTACTS_FILE = "pcecontacts.vcf"
 
-class BtCarPbapTest(BaseTestClass):
+
+class BtCarPbapTest(BluetoothBaseTest):
+    contacts_destination_path = ""
+
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         self.pce = self.android_devices[0]
         self.pse = self.android_devices[1]
-        # Names for temporary files for contacts cards for import and export from PSE and PCE
-        global PSE_CONTACTS_FILE
-        global PCE_CONTACTS_FILE
-        global CONTACTS_DESTINATION_PATH
-        CONTACTS_DESTINATION_PATH = self.log_path + "/"
-        PSE_CONTACTS_FILE = "psecontacts.vcf"
-        PCE_CONTACTS_FILE = "pcecontacts.vcf"
+        self.contacts_destination_path = self.log_path + "/"
 
     def setup_class(self):
-        # Reset the devices in a clean state.
-        bt_test_utils.setup_multiple_devices_for_bt_test([self.pce, self.pse])
-        bt_test_utils.reset_bluetooth(self.android_devices)
-
-        for a in self.android_devices:
-            a.ed.clear_all_events()
+        if not super(BtCarPbapTest, self).setup_class():
+            return False
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
@@ -73,7 +70,8 @@ class BtCarPbapTest(BaseTestClass):
         return True
 
     def setup_test(self):
-        bt_contacts_utils.set_logger(self.log)
+        if not super(BtCarPbapTest, self).setup_test():
+            return False
         self.pse.droid.callLogsEraseAll()
         if not (bt_contacts_utils.erase_contacts(self.pse) and
                 bt_contacts_utils.erase_contacts(self.pce)):
@@ -83,25 +81,23 @@ class BtCarPbapTest(BaseTestClass):
         return True
 
     def teardown_test(self):
+        if not super(BtCarPbapTest, self).teardown_test():
+            return False
         self.pce.droid.bluetoothPbapClientDisconnect(
             self.pse.droid.bluetoothGetLocalAddress())
         bt_contacts_utils.erase_contacts(self.pse)
         return True
 
-    def on_fail(self, test_name, begin_time):
-        bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name, begin_time)
-        bt_test_utils.take_bugreport_logs(self.android_devices, self, test_name, begin_time)
-
     def verify_contacts_match(self):
-        bt_contacts_utils.export_device_contacts_to_vcf(self.pce,
-                                                        CONTACTS_DESTINATION_PATH,
-                                                        PCE_CONTACTS_FILE)
+        bt_contacts_utils.export_device_contacts_to_vcf(
+            self.pce, self.contacts_destination_path, PCE_CONTACTS_FILE)
         return bt_contacts_utils.count_contacts_with_differences(
-             CONTACTS_DESTINATION_PATH, PCE_CONTACTS_FILE, PSE_CONTACTS_FILE) == 0
+            self.contacts_destination_path, PCE_CONTACTS_FILE,
+            PSE_CONTACTS_FILE) == 0
 
     def connect_and_verify(self, count):
         bt_test_utils.connect_pri_to_sec(
-            self.log, self.pce, self.pse.droid,
+            self.pce, self.pse,
             set([BtEnum.BluetoothProfile.PBAP_CLIENT.value]))
         bt_contacts_utils.wait_for_phone_number_update_complete(self.pce,
                                                                 count)
@@ -113,6 +109,7 @@ class BtCarPbapTest(BaseTestClass):
         return contacts_added and contacts_removed
 
     #@BluetoothTest(UUID=7dcdecfc-42d1-4f41-b66e-823c8f161356)
+    @BluetoothBaseTest.bt_test_wrap
     def test_pbap_connect_and_disconnect(self):
         """Test Connectivity
 
@@ -138,7 +135,7 @@ class BtCarPbapTest(BaseTestClass):
             BtEnum.BluetoothProfile.PBAP_SERVER.value,
             BtEnum.BluetoothAccessLevel.ACCESS_DENIED.value)
         if bt_test_utils.connect_pri_to_sec(
-                self.log, self.pce, self.pse.droid,
+                self.pce, self.pse,
                 set([BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
             self.log.error("Client connected and shouldn't be.")
             return False
@@ -151,15 +148,15 @@ class BtCarPbapTest(BaseTestClass):
             BtEnum.BluetoothProfile.PBAP_SERVER.value,
             BtEnum.BluetoothAccessLevel.ACCESS_ALLOWED.value)
 
-        if not bt_test_utils.connect_pri_to_sec(
-                self.log, self.pce, self.pse.droid,
-                set([BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
+        if not bt_test_utils.connect_pri_to_sec(self.pce, self.pse, set(
+            [BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
             self.log.error("No client connected and should be.")
             return False
 
         return True
 
     #@BluetoothTest(UUID=1733efb9-71af-4956-bd3a-0d3167d94d0c)
+    @BluetoothBaseTest.bt_test_wrap
     def test_contact_download(self):
         """Test Contact Download
 
@@ -180,11 +177,12 @@ class BtCarPbapTest(BaseTestClass):
             Pass if True
             Fail if False
         """
-        bt_contacts_utils.generate_contact_list(CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE, 100)
+        bt_contacts_utils.generate_contact_list(self.contacts_destination_path,
+                                                PSE_CONTACTS_FILE, 100)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse, CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE)
+            self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
         bt_test_utils.connect_pri_to_sec(
-            self.log, self.pce, self.pse.droid,
+            self.pce, self.pse,
             set([BtEnum.BluetoothProfile.PBAP_CLIENT.value]))
         bt_contacts_utils.wait_for_phone_number_update_complete(
             self.pce, phone_numbers_added)
@@ -193,6 +191,7 @@ class BtCarPbapTest(BaseTestClass):
         return bt_contacts_utils.erase_contacts(self.pce)
 
     #@BluetoothTest(UUID=99dc6ac6-b7cf-45ce-927b-8c4ebf8ab664)
+    @BluetoothBaseTest.bt_test_wrap
     def test_modify_phonebook(self):
         """Test Modify Phonebook
 
@@ -213,19 +212,22 @@ class BtCarPbapTest(BaseTestClass):
             Pass if True
             Fail if False
         """
-        bt_contacts_utils.generate_contact_list(CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE, 100)
+        bt_contacts_utils.generate_contact_list(self.contacts_destination_path,
+                                                PSE_CONTACTS_FILE, 100)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse, CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE)
+            self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
         if not self.connect_and_verify(phone_numbers_added):
             return False
 
         bt_contacts_utils.erase_contacts(self.pse)
-        bt_contacts_utils.generate_contact_list(CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE, 110, 2)
+        bt_contacts_utils.generate_contact_list(self.contacts_destination_path,
+                                                PSE_CONTACTS_FILE, 110, 2)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse, CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE)
+            self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
         return self.connect_and_verify(phone_numbers_added)
 
     #@BluetoothTest(UUID=bbe31bf5-51e8-4175-b266-1c7750e44f5b)
+    @BluetoothBaseTest.bt_test_wrap
     def test_special_contacts(self):
         """Test Special Contacts
 
@@ -291,14 +293,15 @@ class BtCarPbapTest(BaseTestClass):
         vcards.append(current_contact)
 
         bt_contacts_utils.create_new_contacts_vcf_from_vcards(
-            CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE, vcards)
+            self.contacts_destination_path, PSE_CONTACTS_FILE, vcards)
 
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse, CONTACTS_DESTINATION_PATH, PSE_CONTACTS_FILE)
+            self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
 
         return self.connect_and_verify(phone_numbers_added)
 
     #@BluetoothTest(UUID=2aa2bd00-86cc-4f39-a06a-90b17ea5b320)
+    @BluetoothBaseTest.bt_test_wrap
     def test_call_log(self):
         """Test Call Log
 
@@ -339,7 +342,7 @@ class BtCarPbapTest(BaseTestClass):
             int(time()) * 1000 - 2 * CALL_LOG_TIME_OFFSET_IN_MSEC)
 
         bt_test_utils.connect_pri_to_sec(
-            self.log, self.pce, self.pse.droid,
+            self.pce, self.pse,
             set([BtEnum.BluetoothProfile.PBAP_CLIENT.value]))
         pse_call_log_count = self.pse.droid.callLogGetCount()
         self.log.info("Waiting for {} call logs to be transfered".format(
