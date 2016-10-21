@@ -217,7 +217,7 @@ class TelPowerTest(TelephonyBaseTest):
                 average_current, pass_criteria))
 
     def _start_alarm(self):
-        alarm_id = self.ad.droid.phoneStartRecurringAlarm(
+        alarm_id = self.ad.droid.telephonyStartRecurringAlarm(
             WAKEUP_PING_TEST_NUMBER_OF_ALARM,
             1000 * WAKEUP_PING_TEST_WAKEUP_FREQ, "PING_GOOGLE", None)
         if alarm_id is None:
