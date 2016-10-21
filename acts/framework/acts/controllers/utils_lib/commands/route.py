@@ -60,7 +60,7 @@ class LinuxRouteCommand(object):
         try:
             self._runner.run('ip route add %s dev %s' %
                              (address, net_interface))
-        except connection.CommandError, e:
+        except connection.CommandError as e:
             if 'File exists' in e.result.stderr:
                 raise Error('Route already exists.')
             if 'Network is down' in e.result.stderr:
@@ -171,7 +171,7 @@ class LinuxRouteCommand(object):
                                  (address, net_interface))
             else:
                 self._runner.run('ip route del %s' % address)
-        except connection.CommandError, e:
+        except connection.CommandError as e:
             if 'No such process' in e.result.stderr:
                 # The route didn't exist.
                 return
