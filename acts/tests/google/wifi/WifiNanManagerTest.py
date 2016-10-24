@@ -589,7 +589,7 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.log.info('Transmission stats: %d success, %d fail', results['num_tx_ok'],
                       results['num_tx_fail'])
         self.extract_stats(tx_ok_stats, results, 'tx_ok_latency', 'Successful tx')
-        self.extract_stats(tx_ok_stats, results, 'tx_fail_latency', 'Fail tx')
+        self.extract_stats(tx_fail_stats, results, 'tx_fail_latency', 'Fail tx')
 
         # validate that all messages are received (not just the correct
         # number of messages - since on occasion there may be duplicates
