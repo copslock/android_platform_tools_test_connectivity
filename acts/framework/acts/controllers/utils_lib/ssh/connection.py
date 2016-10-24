@@ -196,18 +196,31 @@ class SshConnection(object):
             ssh_job.wait(timeout=timeout_seconds)
             result = ssh_job.result
             output = ssh_job.result.stdout
-            error_string = result.stderr
 
             # Check for a connected message to prevent false negatives.
             valid_connection = re.search('^CONNECTED: %s' % identifier,
                                          output,
                                          flags=re.MULTILINE)
             if valid_connection:
+                # Remove the first line that contains the connect message.
+                line_index = output.find('\n')
+                real_output = output[line_index + 1:].encode(
+                    encoding=result._encoding)
+                result = job.Result(command=result.command,
+                                    stdout=real_output,
+                                    stderr=result.raw_stderr,
+                                    exit_status=result.exit_status,
+                                    duration=result.duration,
+                                    did_timeout=result.did_timeout,
+                                    encoding=result._encoding)
+
                 if result.exit_status:
                     # Error out if the remote ssh command had a problem.
                     raise CommandError(result)
 
                 return result
+
+            error_string = result.stderr
 
             had_dns_failure = (result.exit_status == 255 and re.search(
                 r'^ssh: .*: Name or service not known',
