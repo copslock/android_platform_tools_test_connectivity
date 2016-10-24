@@ -16,6 +16,8 @@ import shlex
 import signal
 import time
 
+from acts.controllers.utils_lib.ssh import connection
+
 
 class ShellCommand(object):
     """Wraps basic commands that tend to be tied very closely to a shell.
@@ -23,6 +25,8 @@ class ShellCommand(object):
     This class is a wrapper for running basic shell commands through
     any object that has a run command. Basic shell functionality for managing
     the system, programs, and files in wrapped within this class.
+
+    Note: At the moment this only works with the ssh runner.
     """
 
     def __init__(self, runner, working_dir=None):
@@ -48,6 +52,9 @@ class ShellCommand(object):
 
         Returns:
             A CmdResult object containing the results of the shell command.
+
+        Raises:
+            connection.CommandError: When the command executed but had an error.
         """
         if self._working_dir:
             command_str = 'cd %s; %s' % (self._working_dir, command)
@@ -71,15 +78,17 @@ class ShellCommand(object):
         Returns:
             True if a process was found running, false otherwise.
         """
-        if isinstance(identifier, str):
-            result = self.run('ps aux | grep -v grep | grep %s' %
-                              identifier).exit_status == 0
-        elif isinstance(identifier, int):
-            result = self.signal(identifier, 0)
-        else:
-            raise ValueError('Bad type was given for identifier')
+        try:
+            if isinstance(identifier, str):
+                self.run('ps aux | grep -v grep | grep %s' % identifier)
+            elif isinstance(identifier, int):
+                self.signal(identifier, 0)
+            else:
+                raise ValueError('Bad type was given for identifier')
 
-        return result
+            return True
+        except connection.CommandError:
+            return False
 
     def get_pids(self, identifier):
         """Gets the pids of a program.
@@ -90,22 +99,24 @@ class ShellCommand(object):
         Args:
             identifier: A search term that identifies the program.
 
-        Resturns: An array of all pids that matched the identifier, or None
+        Returns: An array of all pids that matched the identifier, or None
                   if no pids were found.
         """
-        result = self.run('ps aux | grep -v grep | grep %s' % identifier)
-        if result.exit_status != 0:
-            return None
+        try:
+            result = self.run('ps aux | grep -v grep | grep %s' % identifier)
+        except connection.CommandError:
+            raise StopIteration
 
         lines = result.stdout.splitlines()
-        last_line = lines[-1]
 
-        pids = []
-        for line in lines[1:]:
+        # The expected output of the above command is like so:
+        # bob    14349  0.0  0.0  34788  5552 pts/2    Ss   Oct10   0:03 bash
+        # bob    52967  0.0  0.0  34972  5152 pts/4    Ss   Oct10   0:00 bash
+        # Where the format is:
+        # USER    PID  ...
+        for line in lines:
             pieces = line.split()
-            pids.append(int(pieces[1]))
-
-        return pids
+            yield int(pieces[1])
 
     def search_file(self, search_string, file_name):
         """Searches through a file for a string.
@@ -117,11 +128,11 @@ class ShellCommand(object):
         Returns:
             True if the string or pattern was found, False otherwise.
         """
-
-        result = self.run('grep %s %s' %
-                          (shlex.quote(search_string), file_name))
-
-        return result.exit_status == 0
+        try:
+            self.run('grep %s %s' % (shlex.quote(search_string), file_name))
+            return True
+        except connection.CommandError:
+            return False
 
     def read_file(self, file_name):
         """Reads a file through the shell.
@@ -141,8 +152,7 @@ class ShellCommand(object):
             file_name: The name of the file to write to.
             data: The string of data to write.
         """
-        return self.run('echo %s > %s' %
-                        (shlex.quote(data), file_name))
+        return self.run('echo %s > %s' % (shlex.quote(data), file_name))
 
     def touch_file(self, file_name):
         """Creates a file through the shell.
@@ -158,7 +168,13 @@ class ShellCommand(object):
         Args:
             file_name: The name of the file to delete.
         """
-        self.run('rm %s' % file_name)
+        try:
+            self.run('rm %s' % file_name)
+        except connection.CommandError as e:
+            if 'No such file or directory' in e.result.stderr:
+                return
+
+            raise
 
     def kill(self, identifier, timeout=10):
         """Kills a program or group of programs through the shell.
@@ -178,17 +194,19 @@ class ShellCommand(object):
         if isinstance(identifier, int):
             pids = [identifier]
         else:
-            pids = self.get_pids(identifier)
+            pids = list(self.get_pids(identifier))
 
         signal_queue = [signal.SIGINT, signal.SIGTERM, signal.SIGKILL]
 
         signal_duration = timeout / len(signal_queue)
         for sig in signal_queue:
-            start_time = time.time()
-
             for pid in pids:
-                self.signal(pid, sig)
+                try:
+                    self.signal(pid, sig)
+                except connection.CommandError:
+                    pass
 
+            start_time = time.time()
             while pids and time.time() - start_time < signal_duration:
                 time.sleep(0.1)
                 pids = [pid for pid in pids if self.is_alive(pid)]
@@ -203,7 +221,8 @@ class ShellCommand(object):
             pid: The process id of the program to kill.
             sig: The singal to send.
 
-        Returns:
-            True if the command ran with no errors and the program was signaled.
+        Raises:
+            connection.CommandError: Raised when the signal fail to reach
+                                     the specified program.
         """
-        return self.run('kill -%d %d' % (sig, pid)).exit_status == 0
+        self.run('kill -%d %d' % (sig, pid))
