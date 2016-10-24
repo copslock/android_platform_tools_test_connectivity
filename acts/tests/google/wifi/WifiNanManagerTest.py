@@ -284,6 +284,56 @@ class WifiNanManagerTest(base_test.BaseTestClass):
         self.log.info('%s:\n\tParam: %s\n\tRTT statistics: %s', label,
                       rtt_param, rtt_stats)
 
+    def test_cluster_latency(self):
+        """Measure the time it takes to make NAN available to an app from
+        the time a request is made.
+
+        Configuration: 1 device
+
+        Logical steps:
+          * DUT initiate NAN clustering
+          * DUT wait for attach event (measure time)
+          * DUT wait for identity change event (measure time)
+          * DUT destroy NAN session
+        """
+        results = {}
+        results['num_iterations'] = 100
+
+        self.dut = self.android_devices[0]
+
+        attach_latency = []
+        identity_change_latency = []
+        results['num_failed_attaches'] = 0
+        for i in range(results['num_iterations']):
+            session_id = self.dut.droid.wifiNanAttach()
+            try:
+                event_attached = self.dut.ed.pop_event(
+                    nan_const.EVENT_CB_ON_ATTACHED, EVENT_TIMEOUT)
+                attach_latency.append(
+                    event_attached['data'][nan_const.EVENT_CB_KEY_LATENCY_MS])
+                self.log.debug('%s: %s', nan_const.EVENT_CB_ON_ATTACHED,
+                               event_attached['data'])
+
+                event_identity_change = self.dut.ed.pop_event(
+                    nan_const.EVENT_CB_ON_IDENTITY_CHANGED, EVENT_TIMEOUT)
+                identity_change_latency.append(event_identity_change['data'][
+                   nan_const.EVENT_CB_KEY_TIMESTAMP_MS] - event_attached['data'][
+                   nan_const.SESSION_CB_KEY_TIMESTAMP_MS])
+            except queue.Empty:
+                results['num_failed_attaches'] += 1
+                self.log.debug('Timed out while waiting for %s|%s on DUT',
+                    nan_const.EVENT_CB_ON_ATTACHED,
+                    nan_const.EVENT_CB_ON_IDENTITY_CHANGED)
+            self.dut.droid.wifiNanDestroy(session_id)
+
+        self.extract_stats(attach_latency, results,
+                           'attach_latency',
+                           'Attach')
+        self.extract_stats(identity_change_latency, results,
+                           'identity_change_latency',
+                           'Identity Change')
+        asserts.explicit_pass('test_cluster_latency finished', extras=results)
+
     def run_nan_discovery_session(self, discovery_config):
         """Perform NAN configuration, discovery, and message exchange.
 
