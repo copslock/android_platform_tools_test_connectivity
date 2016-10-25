@@ -28,6 +28,7 @@ install_requires = [
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
     'pyserial',
+    'shellescape'
 ]
 
 if sys.version_info < (3, ):
