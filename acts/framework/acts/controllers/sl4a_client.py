@@ -119,6 +119,18 @@ def is_sl4a_running(adb_proxy):
         return False
     return True
 
+def kill_sl4a(adb_proxy):
+    """Kills any running instance of sl4a.
+
+    Kills any running instance of sl4a. If no instance is running then nothing
+    is done.
+
+    Args:
+        adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
+    """
+    if is_sl4a_running(adb_proxy):
+        adb_proxy.shell('am force-stop com.googlecode.android_scripting')
+
 
 class Sl4aCommand(object):
     """Commands that can be invoked on the sl4a client.
