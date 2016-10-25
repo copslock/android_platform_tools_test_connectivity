@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shlex
+import shellescape
 import signal
 import time
 
@@ -129,7 +129,7 @@ class ShellCommand(object):
             True if the string or pattern was found, False otherwise.
         """
         try:
-            self.run('grep %s %s' % (shlex.quote(search_string), file_name))
+            self.run('grep %s %s' % (shellescape.quote(search_string), file_name))
             return True
         except connection.CommandError:
             return False
@@ -152,7 +152,7 @@ class ShellCommand(object):
             file_name: The name of the file to write to.
             data: The string of data to write.
         """
-        return self.run('echo %s > %s' % (shlex.quote(data), file_name))
+        return self.run('echo %s > %s' % (shellescape.quote(data), file_name))
 
     def touch_file(self, file_name):
         """Creates a file through the shell.
