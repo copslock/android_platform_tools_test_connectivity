@@ -16,13 +16,22 @@ import logging
 import os
 import re
 import shutil
+import socket
+import subprocess
 import tempfile
 import threading
 import time
 import uuid
 
-from acts.libs.proc import job
+from acts.controllers.utils_lib import host_utils
 from acts.controllers.utils_lib.ssh import formatter
+from acts.libs.proc import job
+
+try:
+    # Only exists in python3
+    from subprocess import DEVNULL
+except ImportError:
+    DEVNULL = open(os.devnull, 'wb')
 
 
 class Error(Exception):
@@ -74,6 +83,7 @@ class SshConnection(object):
         self._lock = threading.Lock()
         self._background_job = None
         self._master_ssh_tempdir = None
+        self._tunnels = list()
 
     def __del__(self):
         self.close()
@@ -95,7 +105,7 @@ class SshConnection(object):
                 socket_path = self.socket_path
                 if (not os.path.exists(socket_path) or
                         not self._background_job.is_alive):
-                    logging.info('Master ssh connection to %s is down.',
+                    logging.debug('Master ssh connection to %s is down.',
                                  self._settings.hostname)
                     self._cleanup_master_ssh()
 
@@ -115,8 +125,9 @@ class SshConnection(object):
 
                 # Construct the command and start it.
                 master_cmd = self._formatter.format_ssh_local_command(
-                    self._settings, extra_flags, extra_options)
-                logging.info('Starting master ssh connection %s', master_cmd)
+                    self._settings, extra_flags=extra_flags,
+                    extra_options=extra_options)
+                logging.debug('Starting master ssh connection %s', master_cmd)
                 self._background_job = job.BackgroundJob(master_cmd,
                                                          no_pipes=True)
 
@@ -282,7 +293,12 @@ class SshConnection(object):
         return result
 
     def close(self):
+        """Clean up open connections to remote host."""
         self._cleanup_master_ssh()
+        for proc in self._tunnels:
+            proc.kill()
+            proc.wait()
+        self._tunnels = list()
 
     def _cleanup_master_ssh(self):
         """
@@ -300,3 +316,45 @@ class SshConnection(object):
             logging.debug('Cleaning master_ssh_tempdir.')
             shutil.rmtree(self._master_ssh_tempdir)
             self._master_ssh_tempdir = None
+
+    def create_ssh_tunnel(self, port, local_port=None):
+        """Create an ssh tunnel from local_port to port.
+
+        This securely forwards traffic from local_port on this machine to the
+        remote SSH host at port.
+
+        Args:
+            port: remote port on the host.
+            local_port: local forwarding port, or None to pick an available
+                        port.
+
+        Returns:
+            the created tunnel process.
+        """
+        if port in self._tunnels:
+            return self._tunnels[port].local_port
+
+        if local_port is None:
+            local_port = host_utils.get_available_host_port()
+        extra_flags = {
+                '-n': None,  # Read from /dev/null for stdin
+                '-N': None,  # Do not execute a remote command
+                '-q': None,  # Suppress warnings and diagnostic commands
+                '-L': '%d:localhost:%d' % (local_port, port),
+        }
+        extra_options = dict()
+        if self._background_job:
+            extra_options['ControlPath'] = self.socket_path
+        tunnel_cmd = self._formatter.format_ssh_local_command(
+                self._settings, extra_flags=extra_flags,
+                extra_options=extra_options)
+        logging.debug('Full tunnel command: %s', tunnel_cmd)
+        # Exec the ssh process directly so that when we deliver signals, we
+        # deliver them straight to the child process.
+        tunnel_proc = subprocess.Popen(tunnel_cmd, close_fds=True,
+                                       stdout=DEVNULL, stderr=subprocess.STDOUT)
+        logging.debug('Started ssh tunnel, local = %d'
+                      ' remote = %d, pid = %d',
+                      local_port, port, tunnel_proc.pid)
+        self._tunnels.append(tunnel_proc)
+        return local_port
