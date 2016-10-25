@@ -25,6 +25,10 @@ class Error(Exception):
     """An error caused by the dhcp server."""
 
 
+class NoInterfaceError(Exception):
+    """Error thrown when the dhcp server has no interfaces on any subnet."""
+
+
 class DhcpServer(object):
     """Manages the dhcp server program.
 
@@ -152,13 +156,18 @@ class DhcpServer(object):
         Raises:
             Error: Raised when a dhcp server error is found.
         """
-        # Store this so that all other errors have priority.
+        # If this is checked last we can run into a race condition where while
+        # scanning the log the process has not died, but after scanning it
+        # has. If this were checked last in that condition then the wrong
+        # error will be thrown. To prevent this we gather the alive state first
+        # so that if it is dead it will definitely give the right error before
+        # just giving a generic one.
         is_dead = not self.is_alive()
 
         no_interface = self._shell.search_file(
             'Not configured to listen on any interfaces', self._log_file)
         if no_interface:
-            raise Error(
+            raise NoInterfaceError(
                 'Dhcp does not contain a subnet for any of the networks the'
                 ' current interfaces are on.')
 
