@@ -76,7 +76,7 @@ class SshConnection(object):
         self._master_ssh_tempdir = None
 
     def __del__(self):
-        self._cleanup_master_ssh()
+        self.close()
 
     def setup_master_ssh(self, timeout_seconds=5):
         """Sets up the master ssh connection.
@@ -280,6 +280,9 @@ class SshConnection(object):
         result = self.run(command, env=env, connect_timeout=connect_timeout)
 
         return result
+
+    def close(self):
+        self._cleanup_master_ssh()
 
     def _cleanup_master_ssh(self):
         """
