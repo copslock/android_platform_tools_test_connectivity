@@ -13,6 +13,28 @@
 # limitations under the License.
 
 
+"""Create a SshSettings from a dictionary from an ACTS config
+
+Args:
+    config dict instance from an ACTS config
+
+Returns:
+    An instance of SshSettings or None
+"""
+def from_config(config):
+    if config is None:
+        return None  # Having no settings is not an error
+
+    user = config.get('user', None)
+    host = config.get('host', None)
+    port = config.get('port', 22)
+    if user is None or host is None:
+        raise ValueError('Malformed SSH config did not include user and '
+                         'host keys: %s' % config)
+
+    return SshSettings(host, user, port=port)
+
+
 class SshSettings(object):
     """Contains settings for ssh.
 

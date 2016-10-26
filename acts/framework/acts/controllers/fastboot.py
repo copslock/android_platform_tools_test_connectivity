@@ -53,15 +53,19 @@ class FastbootProxy():
     >> fb.devices() # will return the console output of "fastboot devices".
     """
 
-    def __init__(self, serial=""):
+    def __init__(self, serial="", ssh_connection=None):
         self.serial = serial
         if serial:
             self.fastboot_str = "fastboot -s {}".format(serial)
         else:
             self.fastboot_str = "fastboot"
+        self.ssh_connection = ssh_connection
 
     def _exec_fastboot_cmd(self, name, arg_str):
-        return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
+        command = ' '.join((self.fastboot_str, name, arg_str))
+        if self.ssh_connection:
+            return self.connection.run(command).raw_stdout
+        return exe_cmd(command)
 
     def args(self, *args):
         return exe_cmd(' '.join((self.fastboot_str, ) + args))

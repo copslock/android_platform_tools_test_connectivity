@@ -333,3 +333,14 @@ class SshConnection(object):
                       local_port, port, tunnel_proc.pid)
         self._tunnels.append(tunnel_proc)
         return local_port
+
+    def send_file(self, local_path, remote_path):
+        """Send a file from the local host to the remote host.
+
+        Args:
+            local_path: string path of file to send on local host.
+            remote_path: string path to copy file to on remote host.
+        """
+        # TODO: This may belong somewhere else: b/32572515
+        user_host = self._formatter.format_host_name(self._settings)
+        job.run('scp %s %s:%s' % (local_path, user_host, remote_path))
