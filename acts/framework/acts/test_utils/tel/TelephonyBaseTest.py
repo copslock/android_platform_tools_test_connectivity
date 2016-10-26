@@ -52,6 +52,7 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACK
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
+from acts.utils import get_current_human_time
 
 
 class _TelephonyTraceLogger():
@@ -92,8 +93,13 @@ class TelephonyBaseTest(BaseTestClass):
     @staticmethod
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
-            test_id = "{}:{}:{}".format(self.__class__.__name__, fn.__name__,
-                                        time.time())
+            current_time = get_current_human_time()
+            func_name = fn.__name__
+            test_id = "{}:{}:{}".format(self.__class__.__name__, func_name,
+                                        current_time.replace(" ", "-"))
+            self.test_id = test_id
+            self.begin_time = current_time
+            self.test_name = func_name
             log_string = "[Test ID] {}".format(test_id)
             self.log.info(log_string)
             try:
