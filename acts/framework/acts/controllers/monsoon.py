@@ -894,7 +894,7 @@ class Monsoon(object):
 
         Because it takes some time for the device to calm down after the usb
         connection is cut, an offset is set for each measurement. The default
-        is 20s.
+        is 30s. The total time taken to measure will be (duration + offset).
 
         Args:
             hz: Number of samples to take per second.
@@ -905,10 +905,6 @@ class Monsoon(object):
         Returns:
             A MonsoonData object with the measured power data.
         """
-        if offset >= duration:
-            raise MonsoonError(("Measurement duration (%ds) should be larger "
-                                "than offset (%ds) for measurement %s.") %
-                               (duration, offset, tag))
         num = duration * hz
         oset = offset * hz
         data = None
