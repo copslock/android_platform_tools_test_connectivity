@@ -17,8 +17,8 @@
 ######################################################
 # Broadcast events
 ######################################################
-BROADCAST_WIFI_NAN_AVAILABLE = "WifiNanAvailable"
-BROADCAST_WIFI_NAN_NOT_AVAILABLE = "WifiNanNotAvailable"
+BROADCAST_WIFI_AWARE_AVAILABLE = "WifiAwareAvailable"
+BROADCAST_WIFI_AWARE_NOT_AVAILABLE = "WifiAwareNotAvailable"
 
 ######################################################
 # ConfigRequest keys
@@ -56,36 +56,36 @@ SUBSCRIBE_KEY_STYLE = "MatchStyle"
 SUBSCRIBE_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
 
 ######################################################
-# WifiNanAttachCallback events
+# WifiAwareAttachCallback events
 ######################################################
-EVENT_CB_ON_ATTACHED = "WifiNanOnAttached"
-EVENT_CB_ON_ATTACH_FAILED = "WifiNanOnAttachFailed"
+EVENT_CB_ON_ATTACHED = "WifiAwareOnAttached"
+EVENT_CB_ON_ATTACH_FAILED = "WifiAwareOnAttachFailed"
 
 ######################################################
-# WifiNanIdentityChangedListener events
+# WifiAwareIdentityChangedListener events
 ######################################################
-EVENT_CB_ON_IDENTITY_CHANGED = "WifiNanOnIdentityChanged"
+EVENT_CB_ON_IDENTITY_CHANGED = "WifiAwareOnIdentityChanged"
 
-# WifiNanAttachCallback & WifiNanIdentityChangedListener events keys
+# WifiAwareAttachCallback & WifiAwareIdentityChangedListener events keys
 EVENT_CB_KEY_REASON = "reason"
 EVENT_CB_KEY_MAC = "mac"
 EVENT_CB_KEY_LATENCY_MS = "latencyMs"
 EVENT_CB_KEY_TIMESTAMP_MS = "timestampMs"
 
 ######################################################
-# WifiNanDiscoverySessionCallback events
+# WifiAwareDiscoverySessionCallback events
 ######################################################
-SESSION_CB_ON_PUBLISH_STARTED = "WifiNanSessionOnPublishStarted"
-SESSION_CB_ON_SUBSCRIBE_STARTED = "WifiNanSessionOnSubscribeStarted"
-SESSION_CB_ON_SESSION_CONFIG_UPDATED = "WifiNanSessionOnSessionConfigUpdated"
-SESSION_CB_ON_SESSION_CONFIG_FAILED = "WifiNanSessionOnSessionConfigFailed"
-SESSION_CB_ON_SESSION_TERMINATED = "WifiNanSessionOnSessionTerminated"
-SESSION_CB_ON_SERVICE_DISCOVERED = "WifiNanSessionOnServiceDiscovered"
-SESSION_CB_ON_MESSAGE_SENT = "WifiNanSessionOnMessageSent"
-SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiNanSessionOnMessageSendFailed"
-SESSION_CB_ON_MESSAGE_RECEIVED = "WifiNanSessionOnMessageReceived"
+SESSION_CB_ON_PUBLISH_STARTED = "WifiAwareSessionOnPublishStarted"
+SESSION_CB_ON_SUBSCRIBE_STARTED = "WifiAwareSessionOnSubscribeStarted"
+SESSION_CB_ON_SESSION_CONFIG_UPDATED = "WifiAwareSessionOnSessionConfigUpdated"
+SESSION_CB_ON_SESSION_CONFIG_FAILED = "WifiAwareSessionOnSessionConfigFailed"
+SESSION_CB_ON_SESSION_TERMINATED = "WifiAwareSessionOnSessionTerminated"
+SESSION_CB_ON_SERVICE_DISCOVERED = "WifiAwareSessionOnServiceDiscovered"
+SESSION_CB_ON_MESSAGE_SENT = "WifiAwareSessionOnMessageSent"
+SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiAwareSessionOnMessageSendFailed"
+SESSION_CB_ON_MESSAGE_RECEIVED = "WifiAwareSessionOnMessageReceived"
 
-# WifiNanDiscoverySessionCallback events keys
+# WifiAwareDiscoverySessionCallback events keys
 SESSION_CB_KEY_CB_ID = "callbackId"
 SESSION_CB_KEY_SESSION_ID = "sessionId"
 SESSION_CB_KEY_REASON = "reason"
@@ -98,18 +98,18 @@ SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 SESSION_CB_KEY_LATENCY_MS = "latencyMs"
 SESSION_CB_KEY_TIMESTAMP_MS = "timestampMs"
 
-# WifiNanDiscoverySessionCallback#SessionTerminateCodes
+# WifiAwareDiscoverySessionCallback#SessionTerminateCodes
 TERMINATE_REASON_DONE = 100
 TERMINATE_REASON_FAIL = 101
 
 ######################################################
-# WifiNanRangingListener events (RttManager.RttListener)
+# WifiAwareRangingListener events (RttManager.RttListener)
 ######################################################
-RTT_LISTENER_CB_ON_SUCCESS = "WifiNanRangingListenerOnSuccess"
-RTT_LISTENER_CB_ON_FAILURE = "WifiNanRangingListenerOnFailure"
-RTT_LISTENER_CB_ON_ABORT = "WifiNanRangingListenerOnAborted"
+RTT_LISTENER_CB_ON_SUCCESS = "WifiAwareRangingListenerOnSuccess"
+RTT_LISTENER_CB_ON_FAILURE = "WifiAwareRangingListenerOnFailure"
+RTT_LISTENER_CB_ON_ABORT = "WifiAwareRangingListenerOnAborted"
 
-# WifiNanRangingListener events (RttManager.RttListener) keys
+# WifiAwareRangingListener events (RttManager.RttListener) keys
 RTT_LISTENER_CB_KEY_CB_ID = "callbackId"
 RTT_LISTENER_CB_KEY_SESSION_ID = "sessionId"
 RTT_LISTENER_CB_KEY_RESULTS = "Results"
@@ -118,7 +118,7 @@ RTT_LISTENER_CB_KEY_DESCRIPTION = "description"
 
 ######################################################
 
-# NAN Data-Path Constants
+# Aware Data-Path Constants
 DATA_PATH_INITIATOR = 0
 DATA_PATH_RESPONDER = 1
 
