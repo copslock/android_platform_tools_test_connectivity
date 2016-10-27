@@ -37,7 +37,7 @@ class SshSettings(object):
                  host_file='/dev/null',
                  connect_timeout=30,
                  alive_interval=300,
-                 executable='ssh'):
+                 executable='/usr/bin/ssh'):
         self.username = username
         self.hostname = hostname
         self.executable = executable
