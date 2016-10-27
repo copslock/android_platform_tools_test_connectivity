@@ -22,6 +22,7 @@ import socket
 import subprocess
 import time
 
+from acts.controllers.utils_lib import host_utils
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -38,42 +39,13 @@ class AdbError(Exception):
 
 
 def get_available_host_port():
-    """Gets a host port number available for adb forward.
-
-    Returns:
-        An integer representing a port number on the host available for adb
-        forward.
-    """
-    while True:
-        port = random.randint(1024, 9900)
-        if is_port_available(port):
-            return port
+    """Deprecated, call host_utils.get_available_host_port() instead."""
+    return host_utils.get_available_host_port()
 
 
 def is_port_available(port):
-    """Checks if a given port number is available on the system.
-
-    Args:
-        port: An integer which is the port number to check.
-
-    Returns:
-        True if the port is available; False otherwise.
-    """
-    # Make sure adb is not using this port so we don't accidentally interrupt
-    # ongoing runs by trying to bind to the port.
-    if port in list_occupied_adb_ports():
-        return False
-    s = None
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('localhost', port))
-        return True
-    except socket.error:
-        return False
-    finally:
-        if s:
-            s.close()
+    """Deprecated, call host_utils.is_port_available() instead."""
+    return host_utils.is_port_available(port)
 
 
 def list_occupied_adb_ports():

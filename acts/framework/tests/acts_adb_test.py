@@ -24,16 +24,14 @@ class ActsAdbTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under acts.controllers.adb.
     """
-    @mock.patch('acts.controllers.adb.list_occupied_adb_ports')
-    def test_is_port_available_positive(self, mock_list_occupied_adb_ports):
+    def test_is_port_available_positive(self):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         test_s.close()
         self.assertTrue(adb.is_port_available(port))
 
-    @mock.patch('acts.controllers.adb.list_occupied_adb_ports')
-    def test_is_port_available_negative(self, mock_list_occupied_adb_ports):
+    def test_is_port_available_negative(self):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
