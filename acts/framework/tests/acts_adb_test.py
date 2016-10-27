@@ -18,7 +18,7 @@ import mock
 import socket
 import unittest
 
-from acts.controllers import adb
+from acts.controllers.utils_lib import host_utils
 
 class ActsAdbTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
@@ -29,14 +29,14 @@ class ActsAdbTest(unittest.TestCase):
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         test_s.close()
-        self.assertTrue(adb.is_port_available(port))
+        self.assertTrue(host_utils.is_port_available(port))
 
     def test_is_port_available_negative(self):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         try:
-            self.assertFalse(adb.is_port_available(port))
+            self.assertFalse(host_utils.is_port_available(port))
         finally:
             test_s.close()
 
