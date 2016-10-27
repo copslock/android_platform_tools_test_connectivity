@@ -95,6 +95,20 @@ class AdbProxy():
         """
         self.forward("tcp:{} tcp:{}".format(host_port, device_port))
 
+    def getprop(self, prop_name):
+        """Get a property of the device.
+
+        This is a convenience wrapper for "adb shell getprop xxx".
+
+        Args:
+            prop_name: A string that is the name of the property to get.
+
+        Returns:
+            A string that is the value of the property, or None if the property
+            doesn't exist.
+        """
+        return self.shell("getprop %s" % prop_name).decode("utf-8").strip()
+
     def __getattr__(self, name):
         def adb_call(*args):
             clean_name = name.replace('_', '-')
