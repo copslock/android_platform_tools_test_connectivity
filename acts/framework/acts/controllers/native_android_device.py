@@ -15,8 +15,7 @@
 #   limitations under the License.
 
 from acts.controllers.android_device import AndroidDevice
-from acts.controllers.adb import is_port_available
-from acts.controllers.adb import get_available_host_port
+from acts.controllers.utils_lib  import host_utils
 import acts.controllers.native as native
 from subprocess import call
 
@@ -95,8 +94,8 @@ class NativeAndroidDevice(AndroidDevice):
             >>> ad = NativeAndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        if not self.h_port or not is_port_available(self.h_port):
-            self.h_port = get_available_host_port()
+        if not self.h_port or not host_utils.is_port_available(self.h_port):
+            self.h_port = host_utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
         pid = self.adb.shell("ps | grep sl4n | awk '{print $2}'").decode(
             'ascii')
