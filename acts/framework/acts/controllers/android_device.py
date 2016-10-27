@@ -29,6 +29,7 @@ from acts.controllers import adb
 from acts.controllers import event_dispatcher
 from acts.controllers import fastboot
 from acts.controllers import sl4a_client
+from acts.controllers.utils_lib import host_utils
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
@@ -565,8 +566,8 @@ class AndroidDevice:
             >>> ad = AndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        if not self.h_port or not adb.is_port_available(self.h_port):
-            self.h_port = adb.get_available_host_port()
+        if not self.h_port or not host_utils.is_port_available(self.h_port):
+            self.h_port = host_utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
 
         try:
