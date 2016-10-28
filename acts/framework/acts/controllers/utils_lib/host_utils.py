@@ -51,7 +51,6 @@ def _try_bind(port, socket_type, socket_proto):
     s = socket.socket(socket.AF_INET, socket_type, socket_proto)
     try:
         try:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', port))
             # The result of getsockname() is protocol dependent, but for both
             # IPv4 and IPv6 the second field is a port number.
