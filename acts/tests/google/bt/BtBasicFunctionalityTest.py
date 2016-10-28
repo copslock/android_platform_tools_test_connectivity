@@ -24,7 +24,6 @@ from queue import Empty
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.bt_test_utils import check_device_supported_profiles
-from acts.test_utils.bt.bt_test_utils import log_energy_info
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import set_device_name
 from acts.test_utils.bt.bt_test_utils import set_bt_scan_mode
@@ -45,13 +44,11 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
         for a in self.android_devices:
             a.ed.clear_all_events()
         return True
 
     def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
         return True
 
     def on_fail(self, test_name, begin_time):
