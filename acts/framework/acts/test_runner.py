@@ -247,7 +247,7 @@ class TestRunner(object):
                         # under py2, because "raise X from Y" syntax is only
                         # supported under py3.
                         self.log.exception(msg)
-                        raise USERError(msg)
+                        raise ValueError(msg)
                 continue
             for member_name in dir(module):
                 if not member_name.startswith("__"):
@@ -402,7 +402,7 @@ class TestRunner(object):
                 module_config_name)
             raise
         if not isinstance(objects, list):
-            raise ControllerError(
+            raise signals.ControllerError(
                 "Controller module %s did not return a list of objects, abort."
                 % module_ref_name)
         self.controller_registry[module_ref_name] = objects
@@ -499,14 +499,14 @@ class TestRunner(object):
             test_cases: List of test case names to execute within the class.
 
         Raises:
-            USERError is raised if the requested test class could not be found
+            ValueError is raised if the requested test class could not be found
             in the test_paths directories.
         """
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise USERError(("Unable to locate class %s in any of the test "
-                             "paths specified.") % test_cls_name)
+            raise ValueError(("Unable to locate class %s in any of the test "
+                              "paths specified.") % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
