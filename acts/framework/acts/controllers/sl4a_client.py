@@ -86,6 +86,19 @@ def start_sl4a(adb_proxy,
     raise Sl4aStartError("SL4A failed to start on %s." % adb_proxy.serial)
 
 
+def stop_sl4a(adb_proxy):
+    """Kills any running instance of sl4a.
+
+    Kills any running instance of sl4a. If no instance is running then nothing
+    is done.
+
+    Args:
+        adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
+    """
+    if is_sl4a_running(adb_proxy):
+        adb_proxy.shell('am force-stop com.googlecode.android_scripting')
+
+
 def is_sl4a_installed(adb_proxy):
     """Checks if sl4a is installed by querying the package path of sl4a.
 
@@ -118,18 +131,6 @@ def is_sl4a_running(adb_proxy):
     if len(out) == 0:
         return False
     return True
-
-def kill_sl4a(adb_proxy):
-    """Kills any running instance of sl4a.
-
-    Kills any running instance of sl4a. If no instance is running then nothing
-    is done.
-
-    Args:
-        adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
-    """
-    if is_sl4a_running(adb_proxy):
-        adb_proxy.shell('am force-stop com.googlecode.android_scripting')
 
 
 class Sl4aCommand(object):
