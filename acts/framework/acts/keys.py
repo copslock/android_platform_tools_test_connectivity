@@ -36,7 +36,7 @@ class Config(enum.Enum):
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
-    key_access_point = "AP"
+    key_access_point = "AccessPoint"
     key_attenuator = "Attenuator"
     key_iperf_server = "IPerfServer"
     key_monsoon = "Monsoon"
