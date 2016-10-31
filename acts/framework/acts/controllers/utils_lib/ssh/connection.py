@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import logging
 import os
 import re
@@ -47,6 +48,10 @@ class CommandError(Exception):
     def __str__(self):
         return 'cmd: %s\nstdout: %s\nstderr: %s' % (
             self.result.command, self.result.stdout, self.result.stderr)
+
+
+_Tunnel = collections.namedtuple('_Tunnel',
+                                 ['local_port', 'remote_port', 'proc'])
 
 
 class SshConnection(object):
@@ -119,7 +124,8 @@ class SshConnection(object):
                 master_cmd = self._formatter.format_ssh_local_command(
                     self._settings, extra_flags=extra_flags,
                     extra_options=extra_options)
-                logging.debug('Starting master ssh connection %s', master_cmd)
+                logging.info('Starting master ssh connection to %s',
+                             self._settings.hostname)
                 self._master_ssh_proc = job.run_async(master_cmd)
 
                 end_time = time.time() + timeout_seconds
@@ -270,10 +276,8 @@ class SshConnection(object):
     def close(self):
         """Clean up open connections to remote host."""
         self._cleanup_master_ssh()
-        for proc in self._tunnels:
-            proc.kill()
-            proc.wait()
-        self._tunnels = list()
+        while self._tunnels:
+            self.close_ssh_tunnel(self._tunnels[0].local_port)
 
     def _cleanup_master_ssh(self):
         """
@@ -307,11 +311,13 @@ class SshConnection(object):
         Returns:
             the created tunnel process.
         """
-        if port in self._tunnels:
-            return self._tunnels[port].local_port
-
         if local_port is None:
             local_port = host_utils.get_available_host_port()
+        else:
+            for tunnel in self._tunnels:
+                if tunnel.remote_port == port:
+                    return tunnel.local_port
+
         extra_flags = {
                 '-n': None,  # Read from /dev/null for stdin
                 '-N': None,  # Do not execute a remote command
@@ -331,8 +337,31 @@ class SshConnection(object):
         logging.debug('Started ssh tunnel, local = %d'
                       ' remote = %d, pid = %d',
                       local_port, port, tunnel_proc.pid)
-        self._tunnels.append(tunnel_proc)
+        self._tunnels.append(_Tunnel(local_port, port, tunnel_proc))
         return local_port
+
+    def close_ssh_tunnel(self, local_port):
+        """Close a previously created ssh tunnel of a TCP port.
+
+        Args:
+            local_port: int port on localhost previously forwarded to the remote
+                        host.
+
+        Returns:
+            integer port number this port was forwarded to on the remote host or
+            None if no tunnel was found.
+        """
+        idx = None
+        for i, tunnel in enumerate(self._tunnels):
+            if tunnel.local_port == local_port:
+                idx = i
+                break
+        if idx is not None:
+            tunnel = self._tunnels.pop(idx)
+            tunnel.proc.kill()
+            tunnel.proc.wait()
+            return tunnel.remote_port
+        return None
 
     def send_file(self, local_path, remote_path):
         """Send a file from the local host to the remote host.
@@ -344,3 +373,23 @@ class SshConnection(object):
         # TODO: This may belong somewhere else: b/32572515
         user_host = self._formatter.format_host_name(self._settings)
         job.run('scp %s %s:%s' % (local_path, user_host, remote_path))
+
+    def find_free_port(self, interface_name='localhost'):
+        """Find a unused port on the remote host.
+
+        Note that this method is inherently racy, since it is impossible
+        to promise that the remote port will remain free.
+
+        Args:
+            interface_name: string name of interface to check whether a
+                            port is used against.
+
+        Returns:
+            integer port number on remote interface that was free.
+        """
+        # TODO: This may belong somewhere else: b/3257251
+        free_port_cmd = (
+            'python -c "import socket; s=socket.socket(); '
+            's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
+        ) % interface_name
+        return int(self.run(free_port_cmd).stdout)

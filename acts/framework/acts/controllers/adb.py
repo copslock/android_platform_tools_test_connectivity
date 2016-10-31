@@ -114,17 +114,38 @@ class AdbProxy(object):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)))
 
     def tcp_forward(self, host_port, device_port):
-        """Starts tcp forwarding.
+        """Starts tcp forwarding from localhost to this android device.
 
         Args:
-            host_port: Port number to use on the computer.
+            host_port: Port number to use on localhost
             device_port: Port number to use on the android device.
         """
         if self._ssh_connection:
-            # TODO(wiley): We need to actually pick a free port on the
-            #              intermediate host
-            self._ssh_connection.create_ssh_tunnel(host_port, local_port=host_port)
-        self.forward("tcp:{} tcp:{}".format(host_port, device_port))
+            # We have to hop through a remote host first.
+            #  1) Find some free port on the remote host's localhost
+            #  2) Setup forwarding between that remote port and the requested
+            #     device port
+            remote_port = self._ssh_connection.find_free_port()
+            self._ssh_connection.create_ssh_tunnel(
+                remote_port, local_port=host_port)
+            host_port = remote_port
+        self.forward("tcp:%d tcp:%d" % (host_port, device_port))
+
+    def remove_tcp_forward(self, host_port):
+        """Stop tcp forwarding a port from localhost to this android device.
+
+        Args:
+            host_port: Port number to use on localhost
+        """
+        if self._ssh_connection:
+            remote_port = self._ssh_connection.close_ssh_tunnel(host_port)
+            if remote_port is None:
+                logging.warning("Cannot close unknown forwarded tcp port: %d",
+                                host_port)
+                return
+            # The actual port we need to disable via adb is on the remote host.
+            host_port = remote_port
+        self.forward("--remove tcp:%d" % host_port)
 
     def getprop(self, prop_name):
         """Get a property of the device.
