@@ -27,6 +27,7 @@ from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 
 ACTS_CONTROLLER_CONFIG_NAME = 'AccessPoint'
+ACTS_CONTROLLER_REFERENCE_NAME = 'access_points'
 
 HOSTNAME_KEY = 'hostname'
 USERNAME_KEY = 'user'
