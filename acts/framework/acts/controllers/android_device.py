@@ -397,6 +397,7 @@ class AndroidDevice:
         if self.adb_logcat_process:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
+        sl4a_client.stop_sl4a(self.adb)
 
     @property
     def build_info(self):
