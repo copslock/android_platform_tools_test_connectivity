@@ -17,6 +17,7 @@ import signal
 import time
 
 from acts.controllers.utils_lib.ssh import connection
+from acts.libs.proc import job
 
 
 class ShellCommand(object):
@@ -54,14 +55,14 @@ class ShellCommand(object):
             A CmdResult object containing the results of the shell command.
 
         Raises:
-            connection.CommandError: When the command executed but had an error.
+            job.Error: When the command executed but had an error.
         """
         if self._working_dir:
             command_str = 'cd %s; %s' % (self._working_dir, command)
         else:
             command_str = command
 
-        return self._runner.run(command_str, timeout_seconds=timeout)
+        return self._runner.run(command_str, timeout=timeout)
 
     def is_alive(self, identifier):
         """Checks to see if a program is alive.
@@ -87,7 +88,7 @@ class ShellCommand(object):
                 raise ValueError('Bad type was given for identifier')
 
             return True
-        except connection.CommandError:
+        except job.Error:
             return False
 
     def get_pids(self, identifier):
@@ -104,7 +105,7 @@ class ShellCommand(object):
         """
         try:
             result = self.run('ps aux | grep -v grep | grep %s' % identifier)
-        except connection.CommandError:
+        except job.Error:
             raise StopIteration
 
         lines = result.stdout.splitlines()
@@ -131,7 +132,7 @@ class ShellCommand(object):
         try:
             self.run('grep %s %s' % (shellescape.quote(search_string), file_name))
             return True
-        except connection.CommandError:
+        except job.Error:
             return False
 
     def read_file(self, file_name):
@@ -170,7 +171,7 @@ class ShellCommand(object):
         """
         try:
             self.run('rm %s' % file_name)
-        except connection.CommandError as e:
+        except job.Error as e:
             if 'No such file or directory' in e.result.stderr:
                 return
 
@@ -203,7 +204,7 @@ class ShellCommand(object):
             for pid in pids:
                 try:
                     self.signal(pid, sig)
-                except connection.CommandError:
+                except job.Error:
                     pass
 
             start_time = time.time()
@@ -222,7 +223,7 @@ class ShellCommand(object):
             sig: The singal to send.
 
         Raises:
-            connection.CommandError: Raised when the signal fail to reach
-                                     the specified program.
+            job.Error: Raised when the signal fail to reach
+                       the specified program.
         """
         self.run('kill -%d %d' % (sig, pid))
