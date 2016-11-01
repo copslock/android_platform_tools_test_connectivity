@@ -95,6 +95,9 @@ class MockAdbProxy():
         elif params == "sys.boot_completed":
             return "1"
 
+    def devices(self):
+        return bytearray("\t".join([str(self.serial), "device"]), "utf-8")
+
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
                                 "AndroidDevice%s" % self.serial, "BugReports",

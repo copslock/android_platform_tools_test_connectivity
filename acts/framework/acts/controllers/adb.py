@@ -19,10 +19,11 @@ from builtins import str
 import logging
 import random
 import socket
-import subprocess
 import time
 
 from acts.controllers.utils_lib import host_utils
+from acts.controllers.utils_lib.ssh import connection
+from acts.libs.proc import job
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -38,7 +39,7 @@ class AdbError(Exception):
                 ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
 
 
-class AdbProxy():
+class AdbProxy(object):
     """Proxy class for ADB.
 
     For syntactic reasons, the '-' in adb commands need to be replaced with
@@ -48,12 +49,41 @@ class AdbProxy():
     >> adb.devices() # will return the console output of "adb devices".
     """
 
-    def __init__(self, serial=""):
+    _SERVER_LOCAL_PORT = None
+
+    def __init__(self, serial="", ssh_connection=None):
+        """Construct an instance of AdbProxy.
+
+        Args:
+            serial: str serial number of Android device from `adb devices`
+            ssh_connection: SshConnection instance if the Android device is
+                            conected to a remote host that we can reach via SSH.
+        """
         self.serial = serial
+        adb_path = str(self._exec_cmd("which adb"), "utf-8").strip()
+        adb_cmd = [adb_path]
         if serial:
-            self.adb_str = "adb -s {}".format(serial)
-        else:
-            self.adb_str = "adb"
+            adb_cmd.append("-s %s" % serial)
+        if ssh_connection is not None and not AdbProxy._SERVER_LOCAL_PORT:
+            # Kill all existing adb processes on the remote host (if any)
+            # Note that if there are none, then pkill exits with non-zero status
+            ssh_connection.run("pkill adb", ignore_status=True)
+            # Copy over the adb binary to a temp dir
+            temp_dir = ssh_connection.run("mktemp -d").stdout.strip()
+            ssh_connection.send_file(adb_path, temp_dir)
+            # Start up a new adb server running as root from the copied binary.
+            remote_adb_cmd = "%s/adb %s root" % (
+                temp_dir,
+                "-s %s" % serial if serial else "")
+            ssh_connection.run(remote_adb_cmd)
+            # Proxy a local port to the adb server port
+            local_port = ssh_connection.create_ssh_tunnel(5037)
+            AdbProxy._SERVER_LOCAL_PORT = local_port
+
+        if AdbProxy._SERVER_LOCAL_PORT:
+            adb_cmd.append("-P %d" % local_port)
+        self.adb_cmd = " ".join(adb_cmd)
+        self._ssh_connection = ssh_connection
 
     def _exec_cmd(self, cmd):
         """Executes adb commands in a new shell.
@@ -70,12 +100,9 @@ class AdbProxy():
         Raises:
             AdbError is raised if the adb command exit code is not 0.
         """
-        proc = subprocess.Popen(cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                shell=True)
-        (out, err) = proc.communicate()
-        ret = proc.returncode
+        result = job.run(cmd, ignore_status=True)
+        ret, out, err = result.exit_status, result.raw_stdout, result.raw_stderr
+
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
         if ret == 0:
@@ -93,6 +120,10 @@ class AdbProxy():
             host_port: Port number to use on the computer.
             device_port: Port number to use on the android device.
         """
+        if self._ssh_connection:
+            # TODO(wiley): We need to actually pick a free port on the
+            #              intermediate host
+            self._ssh_connection.create_ssh_tunnel(host_port, local_port=host_port)
         self.forward("tcp:{} tcp:{}".format(host_port, device_port))
 
     def getprop(self, prop_name):

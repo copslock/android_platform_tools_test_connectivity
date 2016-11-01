@@ -30,6 +30,8 @@ from acts.controllers import event_dispatcher
 from acts.controllers import fastboot
 from acts.controllers import sl4a_client
 from acts.controllers.utils_lib import host_utils
+from acts.controllers.utils_lib.ssh import connection
+from acts.controllers.utils_lib.ssh import settings
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
@@ -72,10 +74,9 @@ def create(configs):
     else:
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
-    connected_ads = list_adb_devices()
 
     for ad in ads:
-        if ad.serial not in connected_ads:
+        if not ad.is_connected():
             raise DoesNotExistError(("Android device %s is specified in config"
                                      " but is not attached.") % ad.serial)
     _start_services_on_ads(ads)
@@ -209,7 +210,12 @@ def get_instances_with_configs(configs):
             raise AndroidDeviceError(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
-        ad = AndroidDevice(serial)
+        ssh_config = c.pop("ssh_config", None)
+        ssh_connection = None
+        if ssh_config is not None:
+            ssh_settings = settings.from_config(ssh_config)
+            ssh_connection = connection.SshConnection(ssh_settings)
+        ad = AndroidDevice(serial, ssh_connection=ssh_connection)
         ad.load_config(c)
         results.append(ad)
     return results
@@ -338,7 +344,8 @@ class AndroidDevice:
                   via fastboot.
     """
 
-    def __init__(self, serial="", host_port=None, device_port=8080):
+    def __init__(self, serial="", host_port=None, device_port=8080,
+                 ssh_connection=None):
         self.serial = serial
         self.h_port = host_port
         self.d_port = device_port
@@ -352,10 +359,12 @@ class AndroidDevice:
         self._event_dispatchers = {}
         self.adb_logcat_process = None
         self.adb_logcat_file_path = None
-        self.adb = adb.AdbProxy(serial)
-        self.fastboot = fastboot.FastbootProxy(serial)
+        self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
+        self.fastboot = fastboot.FastbootProxy(
+                serial, ssh_connection=ssh_connection)
         if not self.is_bootloader:
             self.root_adb()
+        self._ssh_connection = ssh_connection
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -364,6 +373,9 @@ class AndroidDevice:
         self.stop_services()
         if self.h_port:
             self.adb.forward("--remove tcp:%d" % self.h_port)
+        if self._ssh_connection:
+            self._ssh_connection.close()
+
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -398,6 +410,11 @@ class AndroidDevice:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
         sl4a_client.stop_sl4a(self.adb)
+
+    def is_connected(self):
+        out = self.adb.devices()
+        devices = _parse_device_list(out, "device")
+        return self.serial in devices
 
     @property
     def build_info(self):
