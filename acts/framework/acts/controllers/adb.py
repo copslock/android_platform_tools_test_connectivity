@@ -82,7 +82,7 @@ class AdbProxy(object):
 
         if AdbProxy._SERVER_LOCAL_PORT:
             adb_cmd.append("-P %d" % local_port)
-        self.adb_cmd = " ".join(adb_cmd)
+        self.adb_str = " ".join(adb_cmd)
         self._ssh_connection = ssh_connection
 
     def _exec_cmd(self, cmd):
