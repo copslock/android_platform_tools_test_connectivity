@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections
 import ipaddress
 import logging
 
@@ -72,6 +73,18 @@ class Error(Exception):
     """Error raised when there is a problem with the access point."""
 
 
+_ApInstance = collections.namedtuple('_ApInstance',
+                                     ['hostapd', 'subnet'])
+
+# We use these today as part of a hardcoded mapping of interface name to
+# capabilities.  However, medium term we need to start inspecting
+# interfaces to determine their capabilities.
+_AP_2GHZ_INTERFACE = 'wlan0'
+_AP_5GHZ_INTERFACE = 'wlan1'
+_AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.1.0/24'))
+_AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.2.0/24'))
+
+
 class AccessPoint(object):
     """An access point controller.
 
@@ -81,12 +94,6 @@ class AccessPoint(object):
         dhcp_settings: The dhcp server settings being used.
     """
 
-    AP_2GHZ_INTERFACE = 'wlan0'
-    AP_5GHZ_INTERFACE = 'wlan1'
-
-    AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.1.0/24'))
-    AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.2.0/24'))
-
     def __init__(self, ssh_settings):
         """
         Args:
@@ -95,17 +102,14 @@ class AccessPoint(object):
         self.ssh_settings = ssh_settings
         self.ssh = connection.SshConnection(self.ssh_settings)
 
-        # Spawn interface for dhcp server.
-        self.dhcp_settings = dhcp_config.DhcpConfig(
-            [self.AP_2GHZ_SUBNET, self.AP_5GHZ_SUBNET])
+        # Singleton utilities for running various commands.
         self._dhcp = dhcp_server.DhcpServer(self.ssh)
-
-        # Spawn interfaces for hostapd on both of the interfaces.
-        self._hostapd_2ghz = hostapd.Hostapd(self.ssh, self.AP_2GHZ_INTERFACE)
-        self._hostapd_5ghz = hostapd.Hostapd(self.ssh, self.AP_5GHZ_SUBNET)
-
         self._ip_cmd = ip.LinuxIpCommand(self.ssh)
         self._route_cmd = route.LinuxRouteCommand(self.ssh)
+
+        # A map from network interface name to _ApInstance objects representing
+        # the hostapd instance running against the interface.
+        self._aps = dict()
 
     def __del__(self):
         self.close()
@@ -130,37 +134,42 @@ class AccessPoint(object):
         Raises:
             Error: When the ap can't be brought up.
         """
+        # Right now, we hardcode that a frequency maps to a particular
+        # network interface.  This is true of the hardware we're running
+        # against right now, but in general, we'll want to do some
+        # dynamic discovery of interface capabilities.  See b/32582843
         if hostapd_config.frequency < 5000:
-            if self._hostapd_2ghz.is_alive():
-                raise Error('2GHz ap already up.')
-            identifier = self.AP_2GHZ_INTERFACE
-            subnet = self.AP_2GHZ_SUBNET
-            apd = self._hostapd_2ghz
+            interface = _AP_2GHZ_INTERFACE
+            subnet = _AP_2GHZ_SUBNET
         else:
-            if self._hostapd_5ghz.is_alive():
-                raise Error('5GHz ap already up.')
-            identifier = self.AP_5GHZ_INTERFACE
-            subnet = self.AP_5GHZ_SUBNET
-            apd = self._hostapd_5ghz
+            interface = _AP_5GHZ_INTERFACE
+            subnet = _AP_5GHZ_SUBNET
+
+        if interface in self._aps:
+            raise ValueError('No WiFi interface available for AP on '
+                             'channel %d' % hostapd_config.channel)
+
+        apd = hostapd.Hostapd(self.ssh, interface)
+        new_instance = _ApInstance(hostapd=apd,
+                                   subnet=subnet)
+        self._aps[interface] = new_instance
+
+        # Turn off the DHCP server, we're going to change its settings.
+        self._dhcp.stop()
+        # Clear all routes to prevent old routes from interfering.
+        self._route_cmd.clear_routes(net_interface=interface)
+
+        # DHCP requires interfaces to have ips and routes before coming up.
+        interface_ip = ipaddress.ip_interface(
+            '%s/%s' % (subnet.router, subnet.network.netmask))
+        self._ip_cmd.set_ipv4_address(interface, interface_ip)
 
         apd.start(hostapd_config)
+        # Restart the DHCP server with our updated list of subnets.
+        configured_subnets = [x.subnet for x in self._aps.itervalues()]
+        self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
-        # Clear all routes to prevent old routes from interfering.
-        self._route_cmd.clear_routes(net_interface=identifier)
-
-        # dhcp server requires interfaces to have ips and routes before coming
-        # up.
-        router_address = subnet.router
-        network = subnet.network
-        router_interface = ipaddress.ip_interface('%s/%s' % (router_address,
-                                                             network.netmask))
-        self._ip_cmd.set_ipv4_address(identifier, router_interface)
-
-        # DHCP server needs to restart to take into account any Interface
-        # change.
-        self._dhcp.start(self.dhcp_settings)
-
-        return identifier
+        return interface
 
     def stop_ap(self, identifier):
         """Stops a running ap on this controller.
@@ -168,31 +177,27 @@ class AccessPoint(object):
         Args:
             identifier: The identify of the ap that should be taken down.
         """
-        if identifier == self.AP_5GHZ_INTERFACE:
-            apd = self._hostapd_5ghz
-        elif identifier == self.AP_2GHZ_INTERFACE:
-            apd = self._hostapd_2ghz
-        else:
+        if identifier not in self._aps:
             raise ValueError('Invalid identifer %s given' % identifier)
 
-        apd.stop()
+        instance = self._aps.pop(identifier)
 
+        instance.hostapd.stop()
+        self._dhcp.stop()
         self._ip_cmd.clear_ipv4_addresses(identifier)
 
         # DHCP server needs to refresh in order to tear down the subnet no
         # longer being used. In the event that all interfaces are torn down
         # then an exception gets thrown. We need to catch this exception and
         # check that all interfaces should actually be down.
-        try:
-            self._dhcp.start(self.dhcp_settings)
-        except dhcp_server.NoInterfaceError:
-            if self._hostapd_2ghz.is_alive() or self._hostapd_5ghz.is_alive():
-                raise
+        configured_subnets = [x.subnet for x in self._aps.itervalues()]
+        if configured_subnets:
+            self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
     def stop_all_aps(self):
         """Stops all running aps on this device."""
-        self.stop_ap(self.AP_2GHZ_INTERFACE)
-        self.stop_ap(self.AP_5GHZ_INTERFACE)
+        while self._aps:
+            self.stop_ap(self._aps.iterkeys().next())
 
     def close(self):
         """Called to take down the entire access point.
