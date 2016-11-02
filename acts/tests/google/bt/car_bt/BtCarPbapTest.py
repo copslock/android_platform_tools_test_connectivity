@@ -49,7 +49,7 @@ class BtCarPbapTest(BluetoothBaseTest):
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
-        if not bt_test_utils.pair_pri_to_sec(self.pce.droid, self.pse.droid):
+        if not bt_test_utils.pair_pri_to_sec(self.pce, self.pse):
             self.log.error("Failed to pair.")
             return False
 

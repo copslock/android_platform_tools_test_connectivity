@@ -52,6 +52,8 @@ DEFAULT_RFCOMM_TIMEOUT = 10000
 MAGIC_PAN_CONNECT_TIMEOUT = 5
 DEFAULT_DISCOVERY_TIMEOUT = 3
 
+PAIRING_VARIANT_PASSKEY_CONFIRMATION = 2
+
 BTSNOOP_LOG_PATH_ON_DEVICE = "/data/misc/bluetooth/logs/btsnoop_hci.log"
 
 log = logging
@@ -612,7 +614,6 @@ def check_device_supported_profiles(droid):
     profile_dict['pbap_client'] = droid.bluetoothPbapClientIsReady()
     return profile_dict
 
-
 def log_energy_info(android_devices, state):
     """Logs energy info of input Android devices.
 
@@ -647,14 +648,14 @@ def set_profile_priority(host_ad, client_ad, profiles, priority):
             log.error("Profile {} not yet supported for priority settings".
                       format(profile))
 
-
-def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
+def pair_pri_to_sec(pri_ad, sec_ad, attempts=2, auto_confirm=True):
     """Pairs pri droid to secondary droid.
 
     Args:
-        pri_droid: Droid initiating connection
-        sec_droid: Droid accepting connection
+        pri_ad: Android device initiating connection
+        sec_ad: Android device accepting connection
         attempts: Number of attempts to try until failure.
+        auto_confirm: Auto confirm passkey match for both devices
 
     Returns:
         Pass if True
@@ -662,7 +663,7 @@ def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
     """
     curr_attempts = 0
     while curr_attempts < attempts:
-        if _pair_pri_to_sec(pri_droid, sec_droid):
+        if _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
             return True
         curr_attempts += 1
         time.sleep(DEFAULT_TIMEOUT)
@@ -670,21 +671,68 @@ def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
         str(attempts)))
     return False
 
+def _wait_for_passkey_match(pri_ad, sec_ad):
+    pri_pin, sec_pin = -1, 1
+    pri_variant, sec_variant = -1, 1
+    pri_pairing_req, sec_pairing_req = None, None
+    try:
+        pri_pairing_req = pri_ad.ed.pop_event(
+            event_name="BluetoothActionPairingRequest",
+            timeout=DEFAULT_TIMEOUT)
+        pri_variant = pri_pairing_req["data"]["PairingVariant"]
+        pri_pin = pri_pairing_req["data"]["Pin"]
+        log.info("Primary device received Pin: {}, Variant: {}"
+            .format(pri_pin, pri_variant))
+        sec_pairing_req = sec_ad.ed.pop_event(
+            event_name="BluetoothActionPairingRequest",
+            timeout=DEFAULT_TIMEOUT)
+        sec_variant = sec_pairing_req["data"]["PairingVariant"]
+        sec_pin = sec_pairing_req["data"]["Pin"]
+        log.info("Secondary device received Pin: {}, Variant: {}"
+            .format(sec_pin, sec_variant))
+    except Empty as err:
+        log.error("Wait for pin error: {}".format(err))
+        log.error("Pairing request state, Primary: {}, Secondary: {}"
+            .format(pri_pairing_req, sec_pairing_req))
+        return False
+    if pri_variant == sec_variant == PAIRING_VARIANT_PASSKEY_CONFIRMATION:
+        confirmation = pri_pin == sec_pin
+        if confirmation:
+            log.info("Pairing code matched, accepting connection")
+        else:
+            log.info("Pairing code mismatched, rejecting connection")
+        pri_ad.droid.eventPost(
+            "BluetoothActionPairingRequestUserConfirm", str(confirmation))
+        sec_ad.droid.eventPost(
+            "BluetoothActionPairingRequestUserConfirm", str(confirmation))
+        if not confirmation:
+            return False
+    elif pri_variant != sec_variant:
+        log.debug("Pairing variant mismatched, abort connection")
+        return False
+    return True
 
-def _pair_pri_to_sec(pri_droid, sec_droid):
-    # Enable discovery on sec_droid so that pri_droid can find it.
+def _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
+    # Enable discovery on sec_ad so that pri_ad can find it.
     # The timeout here is based on how much time it would take for two devices
-    # to pair with each other once pri_droid starts seeing devices.
+    # to pair with each other once pri_ad starts seeing devices.
+    pri_droid = pri_ad.droid
+    sec_droid = sec_ad.droid
+    pri_ad.ed.clear_all_events()
+    sec_ad.ed.clear_all_events()
     log.info(
         "Bonding device {} to {}".format(pri_droid.bluetoothGetLocalAddress(),
                                          sec_droid.bluetoothGetLocalAddress()))
     sec_droid.bluetoothMakeDiscoverable(DEFAULT_TIMEOUT)
     target_address = sec_droid.bluetoothGetLocalAddress()
     log.debug("Starting paring helper on each device")
-    pri_droid.bluetoothStartPairingHelper()
-    sec_droid.bluetoothStartPairingHelper()
+    pri_droid.bluetoothStartPairingHelper(auto_confirm)
+    sec_droid.bluetoothStartPairingHelper(auto_confirm)
     log.info("Primary device starting discovery and executing bond")
     result = pri_droid.bluetoothDiscoverAndBond(target_address)
+    if not auto_confirm:
+        if not _wait_for_passkey_match(pri_ad, sec_ad):
+            return False
     # Loop until we have bonded successfully or timeout.
     end_time = time.time() + DEFAULT_TIMEOUT
     log.info("Verifying devices are bonded")
@@ -695,10 +743,10 @@ def _pair_pri_to_sec(pri_droid, sec_droid):
             if d['address'] == target_address:
                 log.info("Successfully bonded to device")
                 return True
+        time.sleep(0.1)
     # Timed out trying to bond.
     log.info("Failed to bond devices.")
     return False
-
 
 def connect_pri_to_sec(pri_ad, sec_ad, profiles_set, attempts=2):
     """Connects pri droid to secondary droid.
@@ -1027,7 +1075,7 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
     if not bluetooth_enabled_check(panu_dut):
         return False
     pan_dut.droid.bluetoothPanSetBluetoothTethering(True)
-    if not (pair_pri_to_sec(pan_dut.droid, panu_dut.droid)):
+    if not (pair_pri_to_sec(pan_dut, panu_dut)):
         return False
     if not pan_dut.droid.bluetoothPanIsTetheringOn():
         log.error("Failed to enable Bluetooth tethering.")
