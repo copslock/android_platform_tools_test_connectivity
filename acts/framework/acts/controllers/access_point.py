@@ -29,10 +29,6 @@ from acts.controllers.utils_lib.ssh import settings
 ACTS_CONTROLLER_CONFIG_NAME = 'AccessPoint'
 ACTS_CONTROLLER_REFERENCE_NAME = 'access_points'
 
-HOSTNAME_KEY = 'hostname'
-USERNAME_KEY = 'user'
-PORT_KEY = 'port'
-
 
 def create(configs):
     """Creates ap controllers from a json config.
@@ -47,13 +43,7 @@ def create(configs):
     Returns:
         A new AccessPoint.
     """
-    results = []
-    for c in configs:
-        return AccessPoint(configuration[HOSTNAME_KEY],
-                           configuration.get(USERNAME_KEY),
-                           configuration.get(PORT_KEY))
-
-    return results
+    return [AccessPoint(settings.from_config(c['ssh_config'])) for c in configs]
 
 
 def destroy(aps):
@@ -75,7 +65,7 @@ def get_info(aps):
     Returns:
         A list of all aps hostname.
     """
-    return [ap.hostname for ap in aps]
+    return [ap.ssh_settings.hostname for ap in aps]
 
 
 class Error(Exception):
@@ -86,7 +76,6 @@ class AccessPoint(object):
     """An access point controller.
 
     Attributes:
-        hostname: The hostname of the ap.
         ssh: The ssh connection to this ap.
         ssh_settings: The ssh settings being used by the ssh conneciton.
         dhcp_settings: The dhcp server settings being used.
@@ -98,22 +87,12 @@ class AccessPoint(object):
     AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.1.0/24'))
     AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network('192.168.2.0/24'))
 
-    def __init__(self, hostname, username=None, port=None):
+    def __init__(self, ssh_settings):
         """
         Args:
-            hostname: The hostname of the access point.
-            username: The username to connect with.
-            port: The port to connect with.
+            ssh_settings: acts.controllers.utils_lib.ssh.SshSettings instance.
         """
-        if port is None:
-            # TODO: Change settings to do this.
-            port = 22
-
-        if username is None:
-            username = 'root'
-
-        self.hostname = hostname
-        self.ssh_settings = settings.SshSettings(hostname, username, port=port)
+        self.ssh_settings = ssh_settings
         self.ssh = connection.SshConnection(self.ssh_settings)
 
         # Spawn interface for dhcp server.
