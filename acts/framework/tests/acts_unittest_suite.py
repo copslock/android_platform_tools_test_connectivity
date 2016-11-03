@@ -17,10 +17,10 @@
 import sys
 import unittest
 
-import acts_adb_test
 import acts_android_device_test
 import acts_asserts_test
 import acts_base_class_test
+import acts_host_utils_test
 import acts_logger_test
 import acts_records_test
 import acts_sl4a_client_test
@@ -30,7 +30,6 @@ import acts_utils_test
 
 def compile_suite():
     test_classes_to_run = [
-        acts_adb_test.ActsAdbTest,
         acts_asserts_test.ActsAssertsTest,
         acts_base_class_test.ActsBaseClassTest,
         acts_test_runner_test.ActsTestRunnerTest,
@@ -38,7 +37,8 @@ def compile_suite():
         acts_records_test.ActsRecordsTest,
         acts_sl4a_client_test.ActsSl4aClientTest,
         acts_utils_test.ActsUtilsTest,
-        acts_logger_test.ActsLoggerTest
+        acts_logger_test.ActsLoggerTest,
+        acts_host_utils_test.ActsHostUtilsTest
     ]
 
     loader = unittest.TestLoader()
