@@ -372,7 +372,8 @@ class AndroidDevice:
         """
         self.stop_services()
         if self.h_port:
-            self.adb.forward("--remove tcp:%d" % self.h_port)
+            self.adb.remove_tcp_forward(self.h_port)
+            self.h_port = None
         if self._ssh_connection:
             self._ssh_connection.close()
 
@@ -818,7 +819,7 @@ class AndroidDevice:
                     self.log.exception("Failed to terminate session %d.",
                                        session_id)
             if self.h_port:
-                self.adb.forward("--remove tcp:%d" % self.h_port)
+                self.adb.remove_tcp_forward(self.h_port)
                 self.h_port = None
 
     def run_iperf_client(self, server_host, extra_args=""):
