@@ -240,6 +240,8 @@ class Sl4aClient(object):
         else:
             self.uid = UNKNOWN_UID
 
+        return self  # Allow the idiom Sl4aClient(...).open()
+
     def close(self):
         """Close the connection to the remote client."""
         if self.conn is not None:
