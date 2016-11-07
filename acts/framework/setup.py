@@ -29,7 +29,7 @@ install_requires = [
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
     'pyserial',
-    'shellescape'
+    'shellescape',
 ]
 
 if sys.version_info < (3, ):
@@ -38,6 +38,7 @@ if sys.version_info < (3, ):
     # "futures" is needed for py2 compatibility and it only works in 2.7
     install_requires.append('futures')
     install_requires.append('py2-ipaddress')
+    install_requires.append('subprocess32')
 
 
 class PyTest(test.test):
