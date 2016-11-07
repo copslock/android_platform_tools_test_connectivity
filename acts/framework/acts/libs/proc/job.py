@@ -146,9 +146,11 @@ def run(command,
                             shell=not isinstance(command, list))
     # Wait on the process terminating
     timed_out = False
+    out = bytes()
+    err = bytes()
     try:
         (out, err) = proc.communicate(timeout=timeout)
-    except TimeoutExpired:
+    except subprocess.TimeoutExpired:
         timed_out = True
         proc.kill()
         proc.wait()
