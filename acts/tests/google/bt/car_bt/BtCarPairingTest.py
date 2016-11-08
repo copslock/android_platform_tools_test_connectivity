@@ -13,44 +13,34 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to test the pairing scenarios and setting priorities.
 """
 
 import time
 
+from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.base_test import BaseTestClass
 from acts.test_utils.bt import bt_test_utils
 from acts.test_utils.car import car_bt_utils
 from acts.test_utils.bt import BtEnum
-from acts import asserts
 
 # Timed wait between Bonding happens and Android actually gets the list of
 # supported services (and subsequently updates the priorities)
 BOND_TO_SDP_WAIT = 3
 
-class BtCarPairingTest(BaseTestClass):
-    def setup_class(self):
+
+class BtCarPairingTest(BluetoothBaseTest):
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.car = self.android_devices[0]
         self.ph = self.android_devices[1]
-        self.car_bt_addr = self.car.droid.bluetoothGetLocalAddress()
-        self.ph_bt_addr = self.ph.droid.bluetoothGetLocalAddress()
 
-    def setup_test(self):
-        # Reset the devices in a clean state.
-        bt_test_utils.setup_multiple_devices_for_bt_test([self.car, self.ph])
-        bt_test_utils.reset_bluetooth([self.car, self.ph])
-        for a in self.android_devices:
-            a.ed.clear_all_events()
-
-
-    def on_fail(self, test_name, begin_time):
-        bt_test_utils.take_btsnoop_logs(self.android_devices, self, test_name)
-
+    #@BluetoothTest(UUID=bf56e915-eef7-45cd-b5a6-771f6ef72602)
+    @BluetoothBaseTest.bt_test_wrap
     def test_simple_pairing(self):
         """
-        Tests if after first pairing the remote device has the default 
+        Tests if after first pairing the remote device has the default
         priorities for A2DP and HFP.
 
         Steps:
@@ -76,27 +66,29 @@ class BtCarPairingTest(BaseTestClass):
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_hfp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("hfp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(),
-                ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.droid.getBuildSerial(
+                ), ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_a2dp_p = self.car.droid.bluetoothA2dpSinkGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_a2dp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("a2dp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(),
-                ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.droid.getBuildSerial(
+                ), ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_pbap_p = self.car.droid.bluetoothPbapClientGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_pbap_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("pbap {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(),
-                ph_pbap_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.droid.getBuildSerial(
+                ), ph_pbap_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
         return True
 
+    #@BluetoothTest(UUID=be4db211-10a0-479a-8958-dff0ccadca1a)
+    @BluetoothBaseTest.bt_test_wrap
     def test_repairing(self):
         """
         Tests that even if we modify the priorities, on unpair and pair
@@ -146,16 +138,16 @@ class BtCarPairingTest(BaseTestClass):
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_hfp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("hfp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(),
-                ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.droid.getBuildSerial(
+                ), ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_a2dp_p = self.car.droid.bluetoothA2dpSinkGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_a2dp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("a2dp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(),
-                ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.droid.getBuildSerial(
+                ), ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         return True
