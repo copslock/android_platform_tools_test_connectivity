@@ -13,13 +13,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 This test is used to test basic functionality of bluetooth adapter by turning it ON/OFF.
 """
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt import bt_test_utils
+
 
 class BtCarToggleTest(BluetoothBaseTest):
     def setup_class(self):
@@ -45,4 +45,4 @@ class BtCarToggleTest(BluetoothBaseTest):
           Pass if True
           Fail if False
         """
-        asserts.assert_true(bt_test_utils.reset_bluetooth([self.droid_ad]), "")
+        return bt_test_utils.reset_bluetooth([self.droid_ad])

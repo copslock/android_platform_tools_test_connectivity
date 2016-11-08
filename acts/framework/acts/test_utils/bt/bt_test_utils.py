@@ -19,6 +19,7 @@ import random
 import pprint
 import string
 from queue import Empty
+import queue
 import threading
 import time
 from acts import utils
@@ -37,11 +38,14 @@ from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
 from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BtEnum import BluetoothProfile
+from acts.test_utils.bt.BtEnum import BluetoothProfileState
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
+from acts.utils import create_dir
 
 DEFAULT_TIMEOUT = 15
 DEFAULT_RFCOMM_TIMEOUT = 10000
@@ -58,6 +62,7 @@ adv_fail = "BleAdvertise{}onFailure"
 adv_succ = "BleAdvertise{}onSuccess"
 bluetooth_off = "BluetoothStateChangedOff"
 bluetooth_on = "BluetoothStateChangedOn"
+mtu_changed = "GattConnect{}onMtuChanged"
 bluetooth_profile_connection_state_changed = \
     "BluetoothProfileConnectionStateChanged"
 
@@ -233,6 +238,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
             d.bluetoothDisableBLE()
             bonded_devices = d.bluetoothGetBondedDevices()
             for b in bonded_devices:
+                log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
             setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
@@ -470,8 +476,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
                                         advertise_settings)
     try:
         adv_ad.ed.pop_event(
-            adv_succ.format(advertise_callback),
-            DEFAULT_TIMEOUT)
+            adv_succ.format(advertise_callback), DEFAULT_TIMEOUT)
     except Empty as err:
         raise BtTestUtilsError(
             "Advertiser did not start successfully {}".format(err))
@@ -491,6 +496,25 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     mac_address = event['data']['Result']['deviceInfo']['address']
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
+
+
+def enable_bluetooth(droid, ed):
+    if droid.bluetoothCheckState() is True:
+        return True
+
+    droid.bluetoothToggleState(True)
+    expected_bluetooth_on_event_name = bluetooth_on
+    try:
+        ed.pop_event(expected_bluetooth_on_event_name, DEFAULT_TIMEOUT)
+    except Exception:
+        log.info("Failed to toggle Bluetooth on (no broadcast received)")
+        if droid.bluetoothCheckState() is True:
+            log.info(".. actual state is ON")
+            return True
+        log.info(".. actual state is OFF")
+        return False
+
+    return True
 
 
 def disable_bluetooth(droid):
@@ -581,19 +605,71 @@ def check_device_supported_profiles(droid):
     profile_dict['hsp'] = droid.bluetoothHspIsReady()
     profile_dict['a2dp'] = droid.bluetoothA2dpIsReady()
     profile_dict['avrcp'] = droid.bluetoothAvrcpIsReady()
+    profile_dict['a2dp_sink'] = droid.bluetoothA2dpSinkIsReady()
+    profile_dict['hfp_client'] = droid.bluetoothHfpClientIsReady()
+    profile_dict['pbap_client'] = droid.bluetoothPbapClientIsReady()
     return profile_dict
 
 
-def pair_pri_to_sec(pri_droid, sec_droid):
-    """Pairs pri droid to sec droid.
+def log_energy_info(android_devices, state):
+    """Logs energy info of input Android devices.
 
     Args:
-        pri_droid: Droid initiating pairing.
-        sec_droid: Droid accepting pairing.
+        android_devices: input Android device list to log energy info from.
+        state: the input state to log. Usually 'Start' or 'Stop' for logging.
 
     Returns:
-        True if pairing is successful, false if uncsuccsessful.
+        A logging string of the Bluetooth energy info reported.
     """
+    return_string = "{} Energy info collection:\n".format(state)
+    # Bug: b/31966929
+    return return_string
+
+
+def set_profile_priority(host_ad, client_ad, profiles, priority):
+    """Sets the priority of said profile(s) on host_ad for client_ad"""
+    for profile in profiles:
+        log.info("Profile {} on {} for {} set to priority {}".format(
+            profile, host_ad.droid.bluetoothGetLocalName(
+            ), client_ad.droid.bluetoothGetLocalAddress(), priority.value))
+        if BluetoothProfile.A2DP_SINK.value == profile:
+            host_ad.droid.bluetoothA2dpSinkSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(), priority.value)
+        elif BluetoothProfile.HEADSET_CLIENT.value == profile:
+            host_ad.droid.bluetoothHfpClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(), priority.value)
+        elif BluetoothProfile.PBAP_CLIENT.value == profile:
+            host_ad.droid.bluetoothPbapClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(), priority.value)
+        else:
+            log.error("Profile {} not yet supported for priority settings".
+                      format(profile))
+
+
+def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
+    """Pairs pri droid to secondary droid.
+
+    Args:
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        attempts: Number of attempts to try until failure.
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    curr_attempts = 0
+    while curr_attempts < attempts:
+        if _pair_pri_to_sec(pri_droid, sec_droid):
+            return True
+        curr_attempts += 1
+        time.sleep(DEFAULT_TIMEOUT)
+    log.error("pair_pri_to_sec failed to connect after {} attempts".format(
+        str(attempts)))
+    return False
+
+
+def _pair_pri_to_sec(pri_droid, sec_droid):
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
@@ -622,12 +698,40 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     return False
 
 
-def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+def connect_pri_to_sec(pri_ad, sec_ad, profiles_set, attempts=2):
     """Connects pri droid to secondary droid.
 
     Args:
-        pri_droid: Droid initiating connection.
-        sec_droid: Droid accepting connection.
+        pri_ad: AndroidDroid initiating connection
+        sec_ad: AndroidDroid accepting connection
+        profiles_set: Set of profiles to be connected
+        attempts: Number of attempts to try until failure.
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    device_addr = sec_ad.droid.bluetoothGetLocalAddress()
+    # Allows extra time for the SDP records to be updated.
+    time.sleep(2)
+    curr_attempts = 0
+    while curr_attempts < attempts:
+        log.info("connect_pri_to_sec curr attempt {} total {}".format(
+            curr_attempts, attempts))
+        if _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
+            return True
+        curr_attempts += 1
+    log.error("connect_pri_to_sec failed to connect after {} attempts".format(
+        attempts))
+    return False
+
+
+def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
+    """Connects pri droid to secondary droid.
+
+    Args:
+        pri_ad: AndroidDroid initiating connection.
+        sec_ad: AndroidDroid accepting connection.
         profiles_set: Set of profiles to be connected.
 
     Returns:
@@ -643,27 +747,27 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
 
     # First check that devices are bonded.
     paired = False
-    for paired_device in pri_droid.droid.bluetoothGetBondedDevices():
+    for paired_device in pri_ad.droid.bluetoothGetBondedDevices():
         if paired_device['address'] == \
-            sec_droid.bluetoothGetLocalAddress():
+            sec_ad.droid.bluetoothGetLocalAddress():
             paired = True
             break
 
     if not paired:
-        log.info("{} not paired to {}".format(pri_droid.droid.getBuildSerial(),
-                                              sec_droid.getBuildSerial()))
+        log.info("{} not paired to {}".format(pri_ad.droid.getBuildSerial(),
+                                              sec_ad.droid.getBuildSerial()))
         return False
 
     # Now try to connect them, the following call will try to initiate all
     # connections.
-    pri_droid.droid.bluetoothConnectBonded(sec_droid.bluetoothGetLocalAddress(
+    pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress(
     ))
 
     profile_connected = set()
     log.info("Profiles to be connected {}".format(profiles_set))
     while not profile_connected.issuperset(profiles_set):
         try:
-            profile_event = pri_droid.ed.pop_event(
+            profile_event = pri_ad.ed.pop_event(
                 bluetooth_profile_connection_state_changed, DEFAULT_TIMEOUT)
             log.info("Got event {}".format(profile_event))
         except Exception:
@@ -676,11 +780,68 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
         device_addr = profile_event['data']['addr']
 
         if state == BluetoothProfileState.STATE_CONNECTED.value and \
-            device_addr == sec_droid.bluetoothGetLocalAddress():
+            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
         log.info("Profiles connected until now {}".format(profile_connected))
     # Failure happens inside the while loop. If we came here then we already
     # connected.
+    return True
+
+
+def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
+    """
+    Disconnect primary from secondary on a specific set of profiles
+    Args:
+        pri_ad - Primary android_device initiating disconnection
+        sec_ad - Secondary android droid (sl4a interface to keep the
+          method signature the same connect_pri_to_sec above)
+        profiles_list - List of profiles we want to disconnect from
+
+    Returns:
+        True on Success
+        False on Failure
+    """
+    # Sanity check to see if all the profiles in the given set is supported
+    supported_profiles = [i.value for i in BluetoothProfile]
+    for profile in profiles_list:
+        if profile not in supported_profiles:
+            log.info("Profile {} is not in supported list {}".format(
+                profile, supported_profiles))
+            return False
+
+    log.info(pri_ad.droid.bluetoothGetBondedDevices())
+    # Disconnecting on a already disconnected profile is a nop,
+    # so not checking for the connection state
+    try:
+        pri_ad.droid.bluetoothDisconnectConnectedProfile(
+            sec_ad.droid.bluetoothGetLocalAddress(), profiles_list)
+    except Exception as err:
+        log.error("Exception while trying to disconnect profile(s) {}: {}".
+                  format(profiles_list, err))
+        return False
+
+    profile_disconnected = set()
+    log.info("Disconnecting from profiles: {}".format(profiles_list))
+
+    while not profile_disconnected.issuperset(profiles_list):
+        try:
+            profile_event = pri_ad.ed.pop_event(
+                bluetooth_profile_connection_state_changed, default_timeout)
+            log.info("Got event {}".format(profile_event))
+        except Exception:
+            log.error("Did not disconnect from Profiles")
+            return False
+
+        profile = profile_event['data']['profile']
+        state = profile_event['data']['state']
+        device_addr = profile_event['data']['addr']
+
+        if state == BluetoothProfileState.STATE_DISCONNECTED.value and \
+            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
+            profile_disconnected.add(profile)
+        log.info("Profiles disconnected so far {}".format(
+            profile_disconnected))
+
     return True
 
 
@@ -882,3 +1043,83 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
             log.info("Can't verify http connection on PAN service device")
         return False
     return True
+
+
+def is_hfp_client_device_connected(ad, addr):
+    """Determines if an AndroidDevice has HFP connectivity to input address
+
+    Args:
+        ad: the Android device
+        addr: the address that's expected
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    devices = ad.droid.bluetoothHfpClientGetConnectedDevices()
+    log.info("Connected HFP Client devices: {}".format(devices))
+    if addr in {d['address'] for d in devices}:
+        return True
+    return False
+
+
+def is_a2dp_src_device_connected(ad, addr):
+    """Determines if an AndroidDevice has A2DP connectivity to input address
+
+    Args:
+        ad: the Android device
+        addr: the address that's expected
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    devices = ad.droid.bluetoothA2dpGetConnectedDevices()
+    log.info("Connected A2DP Source devices: {}".format(devices))
+    if addr in {d['address'] for d in devices}:
+        return True
+    return False
+
+
+def is_a2dp_snk_device_connected(ad, addr):
+    """Determines if an AndroidDevice has A2DP snk connectivity to input address
+
+    Args:
+        ad: the Android device
+        addr: the address that's expected
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    devices = ad.droid.bluetoothA2dpSinkGetConnectedDevices()
+    log.info("Connected A2DP Sink devices: {}".format(devices))
+    if addr in {d['address'] for d in devices}:
+        return True
+    return False
+
+
+def is_map_mce_device_connected(ad, addr):
+    """Determines if an AndroidDevice has MAP MCE connectivity to input address
+
+    Args:
+        ad: the Android device
+        addr: the address that's expected
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    devices = ad.droid.bluetoothMapClientGetConnectedDevices()
+    log.info("Connected MAP MCE devices: {}".format(devices))
+    if addr in {d['address'] for d in devices}:
+        return True
+    return False
+
+
+def is_map_mse_device_connected(ad, addr):
+    """Determines if an AndroidDevice has MAP MSE connectivity to input address
+
+    Args:
+        ad: the Android device
+        addr: the address that's expected
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
+    devices = ad.droid.bluetoothMapGetConnectedDevices()
+    log.info("Connected MAP MSE devices: {}".format(devices))
+    if addr in {d['address'] for d in devices}:
+        return True
+    return False
