@@ -46,7 +46,7 @@ class BluetoothProfile(IntEnum):
     HEALTH = 3
     INPUT_DEVICE = 4
     PAN = 5
-    PBAP = 6
+    PBAP_SERVER = 6
     GATT = 7
     GATT_SERVER = 8
     MAP = 9
@@ -55,6 +55,7 @@ class BluetoothProfile(IntEnum):
     AVRCP_CONTROLLER = 12
     HEADSET_CLIENT = 16
     PBAP_CLIENT = 17
+    MAP_MCE = 18
 
 
 class RfcommUuid(Enum):

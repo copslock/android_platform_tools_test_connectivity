@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test the HFP profile for advanced functionality and try to create race
 conditions by executing actions quickly.
@@ -22,6 +21,7 @@ conditions by executing actions quickly.
 import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt import bt_test_utils
 from acts.test_utils.car import car_telecom_utils
@@ -29,28 +29,10 @@ from acts.test_utils.tel import tel_defines
 
 STABILIZATION_DELAY_SEC = 5
 
-class BtCarHfpFuzzTest(BluetoothBaseTest):
+
+class BtCarHfpFuzzTest(BluetoothCarHfpBaseTest):
     def setup_class(self):
-        # HF role
-        self.hf = self.android_devices[0]
-        # AG role
-        self.ag = self.android_devices[1]
-        # Remote role (external phone to which call is made)
-        self.re = self.android_devices[2]
-        self.ag_phone_number = "tel:{}".format(
-            self.ag.droid.telephonyGetLine1Number())
-        self.re_phone_number = "tel:{}".format(
-            self.re.droid.telephonyGetLine1Number())
-        self.log.info("ag tel: {} re tel: {}".format(self.ag_phone_number,
-                                                     self.re_phone_number))
-
-        # Setup includes pairing and connecting the devices.
-        bt_test_utils.setup_multiple_devices_for_bt_test([self.hf, self.ag])
-        bt_test_utils.reset_bluetooth([self.hf, self.ag])
-
-        # Pair and connect the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.hf.droid, self.ag.droid):
-            self.log.error("Failed to pair")
+        if not super(BtCarHfpFuzzTest, self).setup_class():
             return False
 
         # Connect the devices now, try twice.
@@ -58,10 +40,17 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         connected = False
         while attempts > 0 and not connected:
             connected = bt_test_utils.connect_pri_to_sec(
-                self.log, self.hf, self.ag.droid,
+                self.hf, self.ag,
                 set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value]))
             self.log.info("Connected {}".format(connected))
             attempts -= 1
+        # Additional profile connection check for b/
+        if bt_test_utils.is_hfp_client_device_connected(
+                self.hf, self.ag.droid.bluetoothGetLocalAddress()):
+            connected = True
+            self.log.info(
+                "HFP Client connected even though connection state changed " +
+                " event not found")
 
         if not connected:
             self.log.error("Failed to connect")
@@ -70,17 +59,75 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # Delay set contains the delay between dial and hangup for a call.
         # We keep very small delays to significantly large ones to stress test
         # various kind of timing issues.
-        self.delay_set = [0.1, 0.2, 0.3, 0.4, 0.5, # Very short delays
-                          1.0, 2.0, 3.0, 4.0, 5.0, # Med delays
-                          10.0] # Large delays
+        self.delay_set = [0.1,
+                          0.2,
+                          0.3,
+                          0.4,
+                          0.5,  # Very short delays
+                          1.0,
+                          2.0,
+                          3.0,
+                          4.0,
+                          5.0,  # Med delays
+                          10.0]  # Large delays
 
-    def setup_test(self):
+    def dial_a_hangup_b_quick(self, a, b, delay=0, ph=""):
+        """
+        This test does a quick succession of dial and hangup. We make the test
+        case sleep for delay amount between each dial and hangup. This is
+        different from other test cases where we give enough time for devices
+        to get into a calling state before trying to tear down connection.
+        """
+        if ph == "": ph = self.re_phone_number
+
+        # Dial from A now.
+        self.log.info("Dialing at droid {}".format(a.droid.getBuildDisplay()))
+        a.droid.telecomCallTelUri(ph)
+
+        # Wait for delay millis.
+        time.sleep(delay)
+
+        # Cancel the call at B. Use end call in this scenario so that we do not
+        # wait for looking up the call!
+        self.log.info("Hanging up at droid {}".format(b.droid.getBuildDisplay(
+        )))
+        b.droid.telecomEndCall()
+
+        # Check/Wait that we are clear before executing the test.
         for d in self.android_devices:
-            d.ed.clear_all_events()
+            if not car_telecom_utils.wait_for_not_in_call(self.log, d):
+                self.log.warn(
+                    "dial_a_hangup_quick wait_for_not_in_call failed {}".
+                    format(d.droid.getBuildSerial()))
+                return False
 
-    def on_fail(self, test_name, begin_time):
-        self.log.debug("Test {} failed.".format(test_name))
+        return True
 
+    def stabilize_and_check_sanity(self):
+        # Since we dial and hangup very very quickly we may end up in a state
+        # where we need to wait to see the results. For instance if the delay is
+        # 0.1 sec it may take upto 2 seconds for the platform to respond to a
+        # dial() and hence even if we hangup 0.1 sec later we will not see its
+        # result immidiately (this may be a false positive on test).
+        time.sleep(STABILIZATION_DELAY_SEC)
+
+        # First check if HF is in dialing state, we can send an actual hangup if
+        # that is the case and then wait for devices to come back to normal.
+        if self.hf.droid.telecomIsInCall():
+            self.log.info("HF still in call, send hangup")
+            self.hf.droid.telecomEndCall()
+
+        # Wait for devices to go back to normal.
+        for d in self.android_devices:
+            if not car_telecom_utils.wait_for_not_in_call(self.log, d):
+                self.log.warning(
+                    "stabilize_and_check_sanity wait_for_not_in_call failed {}".
+                    format(d.droid.getBuildSerial()))
+                return False
+
+        return True
+
+    #@BluetoothTest(UUID=32022c74-fdf3-44c4-9e82-e518bdcce667)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_outgoing_hf(self):
         """
@@ -121,6 +168,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=bc6d52b2-4acc-461e-ad55-fad5a5ecb091)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_outgoing_ag(self):
         """
@@ -161,6 +209,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=d834384a-38d5-4260-bfd5-98f8207c04f5)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_dial_hf_hangup_ag(self):
         """
@@ -201,6 +250,7 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # above).
         return self.stabilize_and_check_sanity()
 
+    #@BluetoothTest(UUID=6de1a8ab-3cb0-4594-a9bb-d882a3414836)
     @BluetoothBaseTest.bt_test_wrap
     def test_fuzz_dial_ag_hangup_hf(self):
         """
@@ -240,59 +290,3 @@ class BtCarHfpFuzzTest(BluetoothBaseTest):
         # Final sanity check (if we never called stabilize_and_check_sanity
         # above).
         return self.stabilize_and_check_sanity()
-
-    def dial_a_hangup_b_quick(self, a, b, delay=0, ph=""):
-        """
-        This test does a quick succession of dial and hangup. We make the test
-        case sleep for delay amount between each dial and hangup. This is
-        different from other test cases where we give enough time for devices
-        to get into a calling state before trying to tear down connection.
-        """
-        if ph == "": ph = self.re_phone_number
-
-        # Dial from A now.
-        self.log.info("Dialing at droid {}".format(a.droid.getBuildDisplay()))
-        a.droid.telecomCallTelUri(ph)
-
-        # Wait for delay millis.
-        time.sleep(delay)
-
-        # Cancel the call at B. Use end call in this scenario so that we do not
-        # wait for looking up the call!
-        self.log.info(
-            "Hanging up at droid {}".format(b.droid.getBuildDisplay()))
-        b.droid.telecomEndCall()
-
-        # Check/Wait that we are clear before executing the test.
-        for d in self.android_devices:
-            if not car_telecom_utils.wait_for_not_in_call(self.log, d):
-                self.log.warn(
-                    "dial_a_hangup_quick wait_for_not_in_call failed {}".format(
-                    d.droid.getBuildSerial()))
-                return False
-
-        return True
-
-    def stabilize_and_check_sanity(self):
-        # Since we dial and hangup very very quickly we may end up in a state
-        # where we need to wait to see the results. For instance if the delay is
-        # 0.1 sec it may take upto 2 seconds for the platform to respond to a
-        # dial() and hence even if we hangup 0.1 sec later we will not see its
-        # result immidiately (this may be a false positive on test).
-        time.sleep(STABILIZATION_DELAY_SEC)
-
-        # First check if HF is in dialing state, we can send an actual hangup if
-        # that is the case and then wait for devices to come back to normal.
-        if self.hf.droid.telecomIsInCall():
-            self.log.info("HF still in call, send hangup")
-            self.hf.droid.telecomEndCall()
-
-        # Wait for devices to go back to normal.
-        for d in self.android_devices:
-            if not car_telecom_utils.wait_for_not_in_call(self.log, d):
-                self.log.warning(
-                    "stabilize_and_check_sanity wait_for_not_in_call failed {}".format(
-                    d.droid.getBuildSerial()))
-                return False
-
-        return True

@@ -53,7 +53,9 @@ def dial_number(log, ad, uri):
 
     # Start tracking updates.
     ad.droid.telecomStartListeningForCallAdded()
-
+    #If a phone number is passed in
+    if "tel:" not in uri:
+        uri = "tel:" + uri
     ad.droid.telecomCallTelUri(uri)
 
     event = None
@@ -109,7 +111,8 @@ def wait_for_call_state(log, ad, call_id, state):
     # If not then we need to poll for the event.
     # We return if we have found a match or we timeout for further updates of
     # the call
-    while True:
+    end_time = time.time() + 10
+    while True and time.time() < end_time:
         try:
             event = ad.ed.pop_event(
                 tel_defines.EventTelecomCallStateChanged,
@@ -129,6 +132,7 @@ def wait_for_call_state(log, ad, call_id, state):
             ad.droid.telecomCallStopListeningForEvent(call_id,
                 tel_defines.EventTelecomCallStateChanged)
             return False
+    return False
 
 def hangup_call(log, ad, call_id):
     """Hangup a number
@@ -358,7 +362,7 @@ def wait_for_ringing(log, ad):
 
     call_id = None
     # Now check if we already have calls matching the state.
-    calls_in_state = ad.droid.telecomGetCalls()
+    calls_in_state = ad.droid.telecomCallGetCallIds()
 
     for c_id in calls_in_state:
         if ad.droid.telecomCallGetCallState(c_id) == tel_defines.CALL_STATE_RINGING:
@@ -532,7 +536,7 @@ def get_calls_in_states(log, ad, call_states):
         List containing call_ids.
     """
     # Get the list of calls.
-    call_ids = ad.droid.telecomGetCalls()
+    call_ids = ad.droid.telecomCallGetCallIds()
     call_in_state = []
     for call_id in call_ids:
         call = ad.droid.telecomCallGetCallById(call_id)

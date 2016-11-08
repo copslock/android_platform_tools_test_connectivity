@@ -13,7 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 Test script to execute Bluetooth basic functionality test cases relevant to car.
 """
@@ -38,25 +37,12 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.droid_ad = self.android_devices[0]
+        self.car_ad = self.android_devices[0]
 
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
-    def setup_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "Start"))
-        for a in self.android_devices:
-            a.ed.clear_all_events()
-        return True
-
-    def teardown_test(self):
-        self.log.debug(log_energy_info(self.android_devices, "End"))
-        return True
-
-    def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.android_devices, self, test_name)
-        reset_bluetooth(self.android_devices)
-
+    #@BluetoothTest(UUID=b52a032a-3438-4b84-863f-c46a969882a4)
     @BluetoothBaseTest.bt_test_wrap
     def test_if_support_a2dp_sink_profile(self):
         """ Test that a single device can support A2DP SNK profile.
@@ -66,12 +52,13 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'a2dp_sink'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['a2dp_sink']:
             self.log.debug("Android device do not support A2DP SNK profile.")
             return False
         return True
 
+    #@BluetoothTest(UUID=3c2cb613-6c8a-4ed7-8783-37fb47bff5f2)
     @BluetoothBaseTest.bt_test_wrap
     def test_if_support_hfp_client_profile(self):
         """ Test that a single device can support HFP HF profile.
@@ -81,12 +68,13 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'hfp_client'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['hfp_client']:
             self.log.debug("Android device do not support HFP Client profile.")
             return False
         return True
 
+    #@BluetoothTest(UUID=c3854e74-33da-4e4d-a9cb-4f5170ef7d10)
     @BluetoothBaseTest.bt_test_wrap
     def test_if_support_pbap_client_profile(self):
         """ Test that a single device can support PBAP PCE profile.
@@ -96,8 +84,9 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         3. Check the value of key 'pbap_client'
         :return: test_result: bool
         """
-        profiles = check_device_supported_profiles(self.droid_ad.droid)
+        profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['pbap_client']:
-            self.log.debug("Android device do not support PBAP Client profile.")
+            self.log.debug(
+                "Android device do not support PBAP Client profile.")
             return False
         return True
