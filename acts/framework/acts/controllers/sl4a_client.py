@@ -174,6 +174,7 @@ class Sl4aClient(object):
         self.port = port
         self.addr = addr
         self._lock = threading.Lock()
+        self._counter = self._id_counter()
         self.client = None  # prevent close errors on connect failure
         self.uid = uid
         self.conn = None
@@ -187,7 +188,7 @@ class Sl4aClient(object):
             yield i
             i += 1
 
-    def open(self, connection_timeout=None, cmd=Sl4aCommand.INIT):
+    def open(self, connection_timeout=60, cmd=Sl4aCommand.INIT):
         """Opens a connection to the remote client.
 
         Opens a connection to a remote client with sl4a. The connection will
@@ -206,14 +207,22 @@ class Sl4aClient(object):
             Sl4aProtocolError: Raised when there is an error in the protocol.
         """
         if connection_timeout:
-            timeout_time = time.time() + connection_timeout
+            time_left = connection_timeout
         else:
-            timeout_time = sys.maxsize
-        self._counter = self._id_counter()
+            time_left = None
+
+        start_time = time.time()
+
+        def get_time_left():
+            if connection_timeout:
+                return connection_timeout - (time.time() - start_time)
+            # Assume system default if none is given.
+            return socket.getdefaulttimeout()
+
         while True:
             try:
-                self.conn = socket.create_connection(
-                    (self.addr, self.port), max(1, timeout_time - time.time()))
+                self.conn = socket.create_connection((self.addr, self.port),
+                                                     max(1, get_time_left()))
                 self.conn.settimeout(self._SOCKET_TIMEOUT)
                 break
             except (socket.timeout):
@@ -223,7 +232,8 @@ class Sl4aClient(object):
                 # TODO: optimize to only forgive some errors here
                 # error values are OS-specific so this will require
                 # additional tuning to fail faster
-                if time.time() + 1 >= timeout_time:
+                time_left = get_time_left()
+                if time_left <= 0:
                     logging.exception("Failed to create socket connection!")
                     raise
                 time.sleep(1)
