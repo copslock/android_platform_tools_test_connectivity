@@ -94,7 +94,7 @@ class BtStressTest(BluetoothBaseTest):
             self.log.info("Pair bluetooth iteration {}.".format(n + 1))
             self.start_timer()
             if (not pair_pri_to_sec(self.android_devices[0].droid,
-                                self.android_devices[1].droid)):
+                                self.android_devices[1].droid, attempts=1)):
                 self.log.error("Failed to bond devices.")
                 return False
             self.log.info("Total time (ms): {}".format(self.end_timer()))

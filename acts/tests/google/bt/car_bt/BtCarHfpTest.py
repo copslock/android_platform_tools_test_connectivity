@@ -66,16 +66,17 @@ class BtCarHfpTest(BluetoothBaseTest):
             self.log.error("Failed to pair")
             return False
 
-        # Connect the devices now, try twice.
-        attempts = 2
-        connected = False
-        while attempts > 0 and not connected:
-            connected = bt_test_utils.connect_pri_to_sec(
+        # Disable the A2DP profile.
+        bt_test_utils.set_profile_priority(
+            self.hf, self.ag, [BtEnum.BluetoothProfile.PBAP_CLIENT.value,
+                               BtEnum.BluetoothProfile.HEADSET_CLIENT.value],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF.value)
+
+        if not bt_test_utils.connect_pri_to_sec(
                 self.log, self.hf, self.ag.droid,
-                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value]))
-            self.log.info("Connected {}".format(connected))
-            attempts -= 1
-        return connected
+                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
+            self.log.error("Failed to connect")
+            return False
 
     def setup_test(self):
         # Reset the devices.
@@ -84,6 +85,10 @@ class BtCarHfpTest(BluetoothBaseTest):
 
     def on_fail(self, test_name, begin_time):
         self.log.debug("Test {} failed.".format(test_name))
+
+    def teardown_test(self):
+        self.log.debug(bt_test_utils.log_energy_info(self.android_devices,
+                                                     "End"))
 
     @BluetoothBaseTest.bt_test_wrap
     def test_default_calling_account(self):
@@ -300,7 +305,7 @@ class BtCarHfpTest(BluetoothBaseTest):
             return False
 
         # Hangup the *only* call on 'b'
-        if not tel_telecom_utils.hangup_call(self.log, b,
+        if not car_telecom_utils.hangup_call(self.log, b,
                                              calls_in_dialing_or_active[0]):
             return False
 
