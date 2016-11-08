@@ -20,9 +20,10 @@ from time import sleep
 from time import time
 
 from acts.base_test import BaseTestClass
+from acts.test_utils.bt import bt_contacts_utils
 from acts.test_utils.bt import bt_test_utils
+from acts.test_utils.car import car_bt_utils
 from acts.utils import exe_cmd
-import acts.test_utils.bt.bt_contacts_utils as bt_contacts_utils
 import acts.test_utils.bt.BtEnum as BtEnum
 
 # Names for temporary files for contacts cards for import and export from PSE and PCE
@@ -41,6 +42,7 @@ class BtCarPbapTest(BaseTestClass):
 
     def setup_class(self):
         # Reset the devices in a clean state.
+        bt_test_utils.setup_multiple_devices_for_bt_test([self.pce, self.pse])
         bt_test_utils.reset_bluetooth(self.android_devices)
 
         for a in self.android_devices:
@@ -52,20 +54,20 @@ class BtCarPbapTest(BaseTestClass):
             self.log.error("Failed to pair.")
             return False
 
+        # Disable the HFP and A2DP profiles. This will ensure only PBAP
+        # gets connected. Also, this will eliminate the auto-connect loop.
+        car_bt_utils.set_car_profile_priorities_off(self.pce, self.pse)
+
+        # Enable PBAP on PSE & PCE.
+        bt_test_utils.set_profile_priority(
+            self.pce, self.pse, [BtEnum.BluetoothProfile.PBAP_CLIENT],
+            BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
+
         self.pse.droid.bluetoothChangeProfileAccessPermission(
             self.pce.droid.bluetoothGetLocalAddress(),
             BtEnum.BluetoothProfile.PBAP_SERVER.value,
             BtEnum.BluetoothAccessLevel.ACCESS_ALLOWED.value)
 
-        # Allow Autoconnect to process so we can start disconnected.
-        sleep(15)
-
-        self.pce.droid.bluetoothPbapClientDisconnect(
-            self.pse.droid.bluetoothGetLocalAddress())
-        if self.pce.droid.bluetoothGetConnectedDevicesOnProfile(
-            BtEnum.BluetoothProfile.PBAP_CLIENT.value):
-            self.log.error("Client connected and shouldn't be.")
-            return False
         return True
 
     def setup_test(self):
@@ -135,6 +137,7 @@ class BtCarPbapTest(BaseTestClass):
                 set([BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
             self.log.error("Client connected and shouldn't be.")
             return False
+
         self.pce.droid.bluetoothPbapClientDisconnect(
             self.pse.droid.bluetoothGetLocalAddress())
 
@@ -142,6 +145,7 @@ class BtCarPbapTest(BaseTestClass):
             self.pce.droid.bluetoothGetLocalAddress(),
             BtEnum.BluetoothProfile.PBAP_SERVER.value,
             BtEnum.BluetoothAccessLevel.ACCESS_ALLOWED.value)
+
         if not bt_test_utils.connect_pri_to_sec(
                 self.log, self.pce, self.pse.droid,
                 set([BtEnum.BluetoothProfile.PBAP_CLIENT.value])):

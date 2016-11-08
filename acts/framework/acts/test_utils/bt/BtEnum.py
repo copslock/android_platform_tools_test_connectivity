@@ -57,7 +57,11 @@ class BluetoothProfile(IntEnum):
     PBAP_CLIENT = 17
 
 
-class BluetoothProfileState(IntEnum):
+class RfcommUuid(Enum):
+    DEFAULT_UUID = "457807c0-4897-11df-9879-0800200c9a66"
+
+
+class BluetoothProfileState(Enum):
     # Should be kept in sync with BluetoothProfile#STATE_* constants.
     STATE_DISCONNECTED = 0
     STATE_CONNECTING = 1
@@ -69,4 +73,12 @@ class BluetoothAccessLevel(Enum):
     # Access Levels from BluetoothDevice.
     ACCESS_ALLOWED = 1
     ACCESS_DENIED = 2
+
+
+class BluetoothPriorityLevel(Enum):
+    # Priority levels as defined in BluetoothProfile.java.
+    PRIORITY_AUTO_CONNECT = 1000
+    PRIORITY_ON = 100
+    PRIORITY_OFF = 0
+    PRIORITY_UNDEFINED = -1
 
