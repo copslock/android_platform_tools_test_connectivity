@@ -37,6 +37,8 @@ from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
 from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BtEnum import BluetoothProfile
+from acts.test_utils.bt.BtEnum import BluetoothProfileState
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -58,6 +60,7 @@ adv_fail = "BleAdvertise{}onFailure"
 adv_succ = "BleAdvertise{}onSuccess"
 bluetooth_off = "BluetoothStateChangedOff"
 bluetooth_on = "BluetoothStateChangedOn"
+mtu_changed = "GattConnect{}onMtuChanged"
 bluetooth_profile_connection_state_changed = \
     "BluetoothProfileConnectionStateChanged"
 
@@ -491,6 +494,25 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     mac_address = event['data']['Result']['deviceInfo']['address']
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
+
+
+def enable_bluetooth(droid, ed):
+    if droid.bluetoothCheckState() is True:
+        return True
+
+    droid.bluetoothToggleState(True)
+    expected_bluetooth_on_event_name = bluetooth_on
+    try:
+        ed.pop_event(expected_bluetooth_on_event_name, default_timeout)
+    except Exception:
+        log.info("Failed to toggle Bluetooth on (no broadcast received)")
+        if droid.bluetoothCheckState() is True:
+            log.info(".. actual state is ON")
+            return True
+        log.info(".. actual state is OFF")
+        return False
+
+    return True
 
 
 def disable_bluetooth(droid):
