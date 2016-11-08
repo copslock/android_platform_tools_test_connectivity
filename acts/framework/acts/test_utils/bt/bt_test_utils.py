@@ -236,6 +236,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
             d.bluetoothDisableBLE()
             bonded_devices = d.bluetoothGetBondedDevices()
             for b in bonded_devices:
+                log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
             setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
@@ -603,19 +604,71 @@ def check_device_supported_profiles(droid):
     profile_dict['hsp'] = droid.bluetoothHspIsReady()
     profile_dict['a2dp'] = droid.bluetoothA2dpIsReady()
     profile_dict['avrcp'] = droid.bluetoothAvrcpIsReady()
+    profile_dict['a2dp_sink'] = droid.bluetoothA2dpSinkIsReady()
+    profile_dict['hfp_client'] = droid.bluetoothHfpClientIsReady()
+    profile_dict['pbap_client'] = droid.bluetoothPbapClientIsReady()
     return profile_dict
 
 
-def pair_pri_to_sec(pri_droid, sec_droid):
-    """Pairs pri droid to sec droid.
+def log_energy_info(android_devices, state):
+    """Logs energy info of input Android devices.
 
     Args:
-        pri_droid: Droid initiating pairing.
-        sec_droid: Droid accepting pairing.
+        android_devices: input Android device list to log energy info from.
+        state: the input state to log. Usually 'Start' or 'Stop' for logging.
 
     Returns:
-        True if pairing is successful, false if uncsuccsessful.
+        A logging string of the Bluetooth energy info reported.
     """
+    return_string = "{} Energy info collection:\n".format(state)
+    # Bug: b/31966929
+    return return_string
+
+
+def set_profile_priority(host_ad, client_ad, profiles, priority):
+    """Sets the priority of said profile(s) on host_ad for client_ad"""
+    for profile in profiles:
+        log.info("Profile {} on {} for {} set to priority {}".format(
+            profile, host_ad.droid.bluetoothGetLocalName(),
+            client_ad.droid.bluetoothGetLocalAddress(),
+            priority.value))
+        if BluetoothProfile.A2DP_SINK == profile:
+            host_ad.droid.bluetoothA2dpSinkSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        elif BluetoothProfile.HEADSET_CLIENT == profile:
+            host_ad.droid.bluetoothHfpClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        elif BluetoothProfile.PBAP_CLIENT == profile:
+            host_ad.droid.bluetoothPbapClientSetPriority(
+                client_ad.droid.bluetoothGetLocalAddress(),
+                priority.value)
+        else:
+            log.error("Profile {} not yet supported for priority settings".format(profile))
+
+def pair_pri_to_sec(pri_droid, sec_droid, attempts=2):
+    """Pairs pri droid to secondary droid.
+
+    Args:
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        attempts: Number of attempts to try until failure.
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    curr_attempts = 0
+    while curr_attempts < attempts:
+        if _pair_pri_to_sec(pri_droid, sec_droid):
+            return True
+        curr_attempts += 1
+        time.sleep(default_timeout)
+    log.error("pair_pri_to_sec failed to connect after {} attempts".format(str(attempts)))
+    return False
+
+def _pair_pri_to_sec(pri_droid, sec_droid):
     # Enable discovery on sec_droid so that pri_droid can find it.
     # The timeout here is based on how much time it would take for two devices
     # to pair with each other once pri_droid starts seeing devices.
@@ -643,8 +696,29 @@ def pair_pri_to_sec(pri_droid, sec_droid):
     log.info("Failed to bond devices.")
     return False
 
+def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set, attempts=2):
+    """Connects pri droid to secondary droid.
 
-def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+    Args:
+        pri_droid: Droid initiating connection
+        sec_droid: Droid accepting connection
+        profiles_set: Set of profiles to be connected
+        attempts: Number of attempts to try until failure.
+
+    Returns:
+        Pass if True
+        Fail if False
+    """
+    curr_attempts = 0
+    while curr_attempts < attempts:
+      log.info("connect_pri_to_sec curr attempt {} total {}".format(curr_attempts, attempts))
+      if _connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
+          return True
+      curr_attempts += 1
+    log.error("connect_pri_to_sec failed to connect after {} attempts".format(attempts))
+    return False
+
+def _connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
     """Connects pri droid to secondary droid.
 
     Args:
@@ -703,6 +777,55 @@ def connect_pri_to_sec(log, pri_droid, sec_droid, profiles_set):
         log.info("Profiles connected until now {}".format(profile_connected))
     # Failure happens inside the while loop. If we came here then we already
     # connected.
+    return True
+
+
+def disconnect_pri_from_sec(log, pri_droid, sec_droid, profiles_list):
+    """
+    Disconnect primary from secondary on a specific set of profiles
+    Args:
+        pri_droid - Primary android_device initiating disconnection
+        sec_droid - secondary device's droid (sl4a interface to keep the method signature the same
+                    connect_pri_to_sec above)
+        profiles_list - List of profiles we want to disconnect from
+
+    Returns:
+        True on Success
+        False on Failure
+    """
+    # Sanity check to see if all the profiles in the given set is supported
+    supported_profiles = [i.value for i in BluetoothProfile]
+    for profile in profiles_list:
+        if profile not in supported_profiles:
+            log.info("Profile {} is not in supported list {}".format(
+                profile, supported_profiles))
+            return False
+
+    #Disconnecting on a already disconnected profile is a nop, so not checking for the connection state
+    pri_droid.droid.bluetoothDisconnectConnectedProfile(
+        sec_droid.bluetoothGetLocalAddress(), profiles_list)
+    profile_disconnected = set()
+    log.info("Disconnecting from profiles: {}".format(profiles_list))
+
+    while not profile_disconnected.issuperset(profiles_list):
+        try:
+            profile_event = pri_droid.ed.pop_event(
+                bluetooth_profile_connection_state_changed, default_timeout)
+            log.info("Got event {}".format(profile_event))
+        except Exception:
+            log.error("Did not disconnect from Profiles")
+            return False
+
+        profile = profile_event['data']['profile']
+        state = profile_event['data']['state']
+        device_addr = profile_event['data']['addr']
+
+        if state == BluetoothProfileState.STATE_DISCONNECTED.value and \
+            device_addr == sec_droid.bluetoothGetLocalAddress():
+            profile_disconnected.add(profile)
+        log.info("Profiles disconnected so far {}".format(
+            profile_disconnected))
+
     return True
 
 

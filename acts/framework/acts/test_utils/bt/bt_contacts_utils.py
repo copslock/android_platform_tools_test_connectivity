@@ -385,7 +385,7 @@ def compare_call_logs(pse_call_log, pce_call_log):
             if int(pse_call_log[i]["date"]) // 1000 != int(pce_call_log[i][
                     "date"]) // 1000:
                 log.warning("Call log times don't match, check timezone.")
-                call_logs_match = Falsei
+                call_logs_match = False
 
     else:
         log.warning("Call Log lengths differ {}:{}".format(
