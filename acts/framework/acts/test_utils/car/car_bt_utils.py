@@ -33,6 +33,7 @@ from acts import logger
 from acts.test_utils.bt import bt_test_utils
 from acts.test_utils.bt.BtEnum import *
 
+
 def set_car_profile_priorities_off(car_droid, ph_droid):
     """Sets priority of car related profiles to OFF. This avoids
     autoconnect being triggered randomly. The use of this function
@@ -46,7 +47,9 @@ def set_car_profile_priorities_off(car_droid, ph_droid):
     Returns:
         True if success, False if fail.
     """
-    car_profiles = [BluetoothProfile.A2DP_SINK, BluetoothProfile.HEADSET_CLIENT,
-                    BluetoothProfile.PBAP_CLIENT]
+    # TODO investigate MCE
+    car_profiles = [BluetoothProfile.A2DP_SINK,
+                    BluetoothProfile.HEADSET_CLIENT,
+                    BluetoothProfile.PBAP_CLIENT, BluetoothProfile.MAP_MCE]
     bt_test_utils.set_profile_priority(car_droid, ph_droid, car_profiles,
                                        BluetoothPriorityLevel.PRIORITY_OFF)
