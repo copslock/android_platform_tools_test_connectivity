@@ -109,10 +109,9 @@ class ActsUninstall(cmd.Command):
         Args:
             acts_module: The acts module to uninstall.
         """
-        acts_install_dir = os.path.dirname(acts_module.__file__)
-
-        self.announce('Deleting acts from: %s' % acts_install_dir, log.INFO)
-        shutil.rmtree(acts_install_dir)
+        for acts_install_dir in acts_module.__path__:
+            self.announce('Deleting acts from: %s' % acts_install_dir, log.INFO)
+            shutil.rmtree(acts_install_dir)
 
     def run(self):
         """Entry point for the uninstaller."""
