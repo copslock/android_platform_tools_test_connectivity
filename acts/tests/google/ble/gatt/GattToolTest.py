@@ -88,6 +88,7 @@ class GattToolTest(BluetoothBaseTest):
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.cen_ad.droid)
+        self.cen_ad.droid.bleBuildScanFilter(filter_list)
 
         self.cen_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                           scan_callback)
