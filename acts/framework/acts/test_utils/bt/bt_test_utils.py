@@ -52,6 +52,8 @@ DEFAULT_RFCOMM_TIMEOUT = 10000
 MAGIC_PAN_CONNECT_TIMEOUT = 5
 DEFAULT_DISCOVERY_TIMEOUT = 3
 
+BTSNOOP_LOG_PATH_ON_DEVICE = "/data/misc/bluetooth/logs/btsnoop_hci.log"
+
 log = logging
 
 # Callback strings
@@ -856,7 +858,6 @@ def take_btsnoop_logs(android_devices, testcase, testname):
     for a in android_devices:
         take_btsnoop_log(a, testcase, testname)
 
-
 def take_btsnoop_log(ad, testcase, testname):
     """Grabs the btsnoop_hci log on a device and stores it in the log directory
     of the test class.
@@ -877,12 +878,11 @@ def take_btsnoop_log(ad, testcase, testname):
     out_name = ','.join((testname, device_model, serial))
     snoop_path = ad.log_path + "/BluetoothSnoopLogs"
     utils.create_dir(snoop_path)
-    cmd = ''.join(("adb -s ", serial, " pull /sdcard/btsnoop_hci.log ",
+    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE, " ",
                    snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                       .format(device_model, serial))
     exe_cmd(cmd)
-
 
 def kill_bluetooth_process(ad):
     """Kill Bluetooth process on Android device.
