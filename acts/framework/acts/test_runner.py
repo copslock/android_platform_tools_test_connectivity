@@ -178,8 +178,9 @@ class TestRunner(object):
                     "controller module attribute %s.") % (module.__name__,
                                                           attr))
             if not getattr(module, attr):
-                raise signals.ControllerError(("Controller interface %s in %s "
-                    "cannot be null.") % (attr, module.__name__))
+                raise signals.ControllerError(
+                    "Controller interface %s in %s cannot be null." % (
+                     attr, module.__name__))
 
     def register_controller(self, module, required=True):
         """Registers a controller module for a test run.
@@ -246,6 +247,17 @@ class TestRunner(object):
             raise ControllerError(("Controller module %s did not return a list"
                                    " of objects, abort.") % module_ref_name)
         self.controller_registry[module_ref_name] = objects
+        # Collect controller information and write to test result.
+        # Implementation of "get_info" is optional for a controller module.
+        if hasattr(module, "get_info"):
+            controller_info = module.get_info(objects)
+            logging.debug("Controller %s: %s", module_config_name,
+                          controller_info)
+            self.results.add_controller_info(module_config_name,
+                                             controller_info)
+        else:
+            self.log.warning("No controller info obtained for %s",
+                             module_config_name)
         # TODO(angli): After all tests move to register_controller, stop
         # tracking controller objs in test_run_info.
         if builtin:

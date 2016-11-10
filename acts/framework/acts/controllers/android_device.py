@@ -80,6 +80,24 @@ def destroy(ads):
         except:
             ad.log.exception("Failed to clean up properly.")
 
+
+def get_info(ads):
+    """Get information on a list of AndroidDevice objects.
+
+    Args:
+        ads: A list of AndroidDevice objects.
+
+    Returns:
+        A list of dict, each representing info for an AndroidDevice objects.
+    """
+    device_info = []
+    for ad in ads:
+        info = {"serial": ad.serial, "model": ad.model}
+        info.update(ad.build_info)
+        device_info.append(info)
+    return device_info
+
+
 def _start_services_on_ads(ads):
     """Starts long running services on multiple AndroidDevice objects.
 
@@ -349,6 +367,26 @@ class AndroidDevice:
         if self.adb_logcat_process:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
+
+    @property
+    def build_info(self):
+        """Get the build info of this Android device, including build id and
+        build type.
+
+        This is not available if the device is in bootloader mode.
+
+        Returns:
+            A dict with the build info of this Android device, or None if the
+            device is in bootloader mode.
+        """
+        if self.is_bootloader:
+            return
+        info = {}
+        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
+            "utf-8").strip()
+        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
+            "utf-8").strip()
+        return info
 
     @property
     def is_bootloader(self):
