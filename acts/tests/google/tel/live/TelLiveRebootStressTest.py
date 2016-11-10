@@ -17,6 +17,7 @@
     Test Script for Telephony Pre Check In Sanity
 """
 
+import collections
 import time
 from acts.controllers.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -85,114 +86,135 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
 
-    def _check_provisioning(self, ad):
+    def _check_provisioning(self):
         if (CAPABILITY_OMADM in device_capabilities[self.dut_model] and
                 CAPABILITY_OMADM in operator_capabilities[self.dut_operator]):
             self.log.info("Check Provisioning bit")
-            if not ad.droid.imsIsVolteProvisionedOnDevice():
+            if not self.dut.droid.imsIsVolteProvisionedOnDevice():
                 self.log.error("{}: VoLTE Not Provisioned on the Platform".
-                               format(ad.serial))
+                               format(self.dut.serial))
                 return False
         return True
 
-    def _clear_provisioning(self, ad):
+    def _check_provision(self):
+        elapsed_time = 0
+        while (elapsed_time < MAX_WAIT_TIME_PROVISIONING):
+            if self._check_provisioning(self.dut):
+                return True
+            else:
+                time.sleep(CHECK_INTERVAL)
+                elapsed_time += CHECK_INTERVAL
+        self.log.error("Provisioning fail.")
+        return False
+
+    def _clear_provisioning(self):
         if (CAPABILITY_OMADM in device_capabilities[self.dut_model] and
                 CAPABILITY_OMADM in operator_capabilities[self.dut_operator]):
             self.log.info("Clear Provisioning bit")
-            ad.droid.imsSetVolteProvisioning(False)
+            self.dut.droid.imsSetVolteProvisioning(False)
         return True
 
-    def _check_lte_data(self, ad):
+    def _check_call_setup_teardown(self):
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference):
+            self.log.error("Phone Call Failed.")
+            return False
+        return True
+
+    def _check_lte_data(self):
         self.log.info("Check LTE data.")
-        if not phone_setup_csfb(self.log, ad):
+        if not phone_setup_csfb(self.log, self.dut):
             self.log.error("Failed to setup LTE data.")
             return False
-        if not verify_http_connection(self.log, ad):
+        if not verify_http_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
         return True
 
-    def _check_volte(self, ad, ad_reference):
+    def _check_volte(self):
         if (CAPABILITY_VOLTE in device_capabilities[self.dut_model] and
                 CAPABILITY_VOLTE in operator_capabilities[self.dut_operator]):
             self.log.info("Check VoLTE")
-            if not phone_setup_volte(self.log, ad):
+            if not phone_setup_volte(self.log, self.dut):
                 self.log.error("Failed to setup VoLTE.")
                 return False
-            if not call_setup_teardown(self.log, ad, ad_reference, ad,
-                                       is_phone_in_call_volte):
+            if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                       self.dut, is_phone_in_call_volte):
                 self.log.error("VoLTE Call Failed.")
                 return False
-            if not sms_send_receive_verify(self.log, ad, ad_reference,
+            if not sms_send_receive_verify(self.log, self.dut,
+                                           self.ad_reference,
                                            [rand_ascii_str(50)]):
                 self.log.error("SMS failed")
                 return False
         return True
 
-    def _check_wfc(self, ad, ad_reference):
+    def _check_wfc(self):
         if (CAPABILITY_WFC in device_capabilities[self.dut_model] and
                 CAPABILITY_WFC in operator_capabilities[self.dut_operator]):
             self.log.info("Check WFC")
             if not phone_setup_iwlan(
-                    self.log, ad, True, WFC_MODE_WIFI_PREFERRED,
+                    self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
                     self.wifi_network_ssid, self.wifi_network_pass):
                 self.log.error("Failed to setup WFC.")
                 return False
-            if not call_setup_teardown(self.log, ad, ad_reference, ad,
-                                       is_phone_in_call_iwlan):
+            if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                       self.dut, is_phone_in_call_iwlan):
                 self.log.error("WFC Call Failed.")
                 return False
-            if not sms_send_receive_verify(self.log, ad, ad_reference,
+            if not sms_send_receive_verify(self.log, self.dut,
+                                           self.ad_reference,
                                            [rand_ascii_str(50)]):
                 self.log.error("SMS failed")
                 return False
         return True
 
-    def _check_3g(self, ad, ad_reference):
+    def _check_3g(self):
         self.log.info("Check 3G data and CS call")
-        if not phone_setup_voice_3g(self.log, ad):
+        if not phone_setup_voice_3g(self.log, self.dut):
             self.log.error("Failed to setup 3G")
             return False
-        if not verify_http_connection(self.log, ad):
+        if not verify_http_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
-        if not call_setup_teardown(self.log, ad, ad_reference, ad,
-                                   is_phone_in_call_3g):
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_3g):
             self.log.error("WFC Call Failed.")
             return False
-        if not sms_send_receive_verify(self.log, ad, ad_reference,
+        if not sms_send_receive_verify(self.log, self.dut, self.ad_reference,
                                        [rand_ascii_str(50)]):
             self.log.error("SMS failed")
             return False
         return True
 
-    def _check_tethering(self, ad, ad_reference):
+    def _check_tethering(self):
         self.log.info("Check tethering")
-        if not ad.droid.carrierConfigIsTetheringModeAllowed(
+        if not self.dut.droid.carrierConfigIsTetheringModeAllowed(
                 TETHERING_MODE_WIFI,
                 MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
             self.log.error("Tethering Entitlement check failed.")
             return False
         if not wifi_tethering_setup_teardown(
-                self.log, ad, [ad_reference], check_interval=5,
+                self.log,
+                self.dut, [self.ad_reference],
+                check_interval=5,
                 check_iteration=1):
             self.log.error("Tethering Failed.")
             return False
         return True
 
-    def _check_data_roaming_status(self, ad):
-        if not ad.droid.telephonyIsDataEnabled():
+    def _check_data_roaming_status(self):
+        if not self.dut.droid.telephonyIsDataEnabled():
             self.log.info("Enabling Cellular Data")
             telephonyToggleDataConnection(True)
         else:
             self.log.info("Cell Data is Enabled")
         self.log.info("Waiting for cellular data to be connected")
-        if not wait_for_cell_data_connection(self.log, ad, state=True):
+        if not wait_for_cell_data_connection(self.log, self.dut, state=True):
             self.log.error("Failed to enable cell data")
             return False
         self.log.info("Cellular data connected, checking NetworkInfos")
-        roaming_state = ad.droid.telephonyCheckNetworkRoaming()
-        for network_info in ad.droid.connectivityNetworkGetAllInfo():
+        roaming_state = self.dut.droid.telephonyCheckNetworkRoaming()
+        for network_info in self.dut.droid.connectivityNetworkGetAllInfo():
             sl4a_network_info = Sl4aNetworkInfo.from_dict(network_info)
             if sl4a_network_info.isRoaming:
                 self.log.warning("We don't expect to be roaming")
@@ -203,6 +225,80 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 self.log.error(network_info)
                 return False
         return True
+
+    def _reboot_stress_test(self, **kwargs):
+        """Reboot Reliability Test
+
+        Arguments:
+            check_provision: whether to check provisioning after reboot.
+            check_call_setup_teardown: whether to check setup and teardown a call.
+            check_lte_data: whether to check the LTE data.
+            check_volte: whether to check Voice over LTE.
+            check_wfc: whether to check Wifi Calling.
+            check_3g: whether to check 3G.
+            check_tethering: whether to check Tethering.
+            check_data_roaming: whether to check Data Roaming.
+            clear_provision: whether to clear provisioning before reboot.
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        CHECK_INTERVAL = 10
+
+        toggle_airplane_mode(self.log, self.dut, False)
+        phone_setup_voice_general(self.log, self.ad_reference)
+        fail_count = collections.defaultdict(int)
+        test_result = True
+        test_method_mapping = {
+            "check_provision": self._check_provision,
+            "check_call_setup_teardown": self._check_call_setup_teardown,
+            "check_lte_data": self._check_lte_data,
+            "check_volte": self._check_volte,
+            "check_wfc": self._check_wfc,
+            "check_3g": self._check_3g,
+            "check_tethering": self._check_tethering,
+            "check_data_roaming": self._check_data_roaming_status,
+            "clear_provision": self._clear_provisioning
+        }
+        for kwarg in kwargs:
+            if kwarg not in test_method_mapping:
+                self.log.error("method %s is not supported" % method)
+
+        required_methods = []
+        for method in ("check_provistion", "check_call_setup_teardown",
+                       "check_lte_data", "check_volte", "check_wfc",
+                       "check_3g", "check_tethering", "check_data_roaming",
+                       "clear_provion"):
+            if method in kwargs: required_methods.append(method)
+
+        for i in range(1, self.stress_test_number + 1):
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".format(
+                self.test_name, i, self.stress_test_number))
+
+            self.log.info("{} reboot!".format(self.dut.serial))
+            self.dut.reboot()
+            self.log.info("{} wait {}s for radio up.".format(
+                self.dut.serial, WAIT_TIME_AFTER_REBOOT))
+            time.sleep(WAIT_TIME_AFTER_REBOOT)
+            iteration_result = "pass"
+            for check in required_methods:
+                if not test_method_mapping[check]():
+                    fail_count[check] += 1
+                    iteration_result = "fail"
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".format(
+                self.test_name, i, self.stress_test_number, iteration_result))
+
+            # TODO: Check if crash happens.
+
+        for failure, count in fail_count.items():
+            if count:
+                self.log.error("{} {} failures in {} iterations".format(
+                    count, failure, self.stress_test_number))
+                test_result = False
+        return test_result
 
     """ Tests Begin """
 
@@ -233,62 +329,16 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        CHECK_INTERVAL = 10
-
-        toggle_airplane_mode(self.log, self.dut, False)
-        phone_setup_voice_general(self.log, self.ad_reference)
-
-        for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test Iteration: <{}> / <{}>".format(
-                i, self.stress_test_number))
-
-            self.log.info("{} reboot!".format(self.dut.serial))
-            self.dut.reboot()
-            self.log.info("{} wait {}s for radio up.".format(
-                self.dut.serial, WAIT_TIME_AFTER_REBOOT))
-            time.sleep(WAIT_TIME_AFTER_REBOOT)
-
-            elapsed_time = 0
-            provisioned = False
-            while (elapsed_time < MAX_WAIT_TIME_PROVISIONING):
-                if self._check_provisioning(self.dut):
-                    provisioned = True
-                    break
-                else:
-                    time.sleep(CHECK_INTERVAL)
-                    elapsed_time += CHECK_INTERVAL
-            if not provisioned:
-                self.log.error("Provisioning fail.")
-                return False
-
-            if not self._check_lte_data(self.dut):
-                self.log.error("LTE Data fail.")
-                return False
-
-            if not self._check_volte(self.dut, self.ad_reference):
-                self.log.error("VoLTE fail.")
-                return False
-
-            if not self._check_wfc(self.dut, self.ad_reference):
-                self.log.error("WFC fail.")
-                return False
-
-            if not self._check_3g(self.dut, self.ad_reference):
-                self.log.error("3G fail.")
-                return False
-
-            if not self._check_tethering(self.dut, self.ad_reference):
-                self.log.error("Tethering fail.")
-                return False
-
-            self._clear_provisioning(self.dut)
-
-            # TODO: Check if crash happens.
-
-            self.log.info("Iteration: <{}> / <{}> Pass".format(
-                i, self.stress_test_number))
-
-        return True
+        return self._reboot_stress_test(
+            check_provision=True,
+            check_call_setup_teardown=True,
+            check_lte_data=True,
+            check_volte=True,
+            check_wfc=True,
+            check_3g=True,
+            check_tethering=True,
+            check_data_roaming=False,
+            clear_provision=True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_without_clear_provisioning(self):
@@ -316,53 +366,38 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-
-        toggle_airplane_mode(self.log, self.dut, False)
-        phone_setup_voice_general(self.log, self.ad_reference)
-
-        for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test Iteration: <{}> / <{}>".format(
-                i, self.stress_test_number))
-
-            self.log.info("{} reboot!".format(self.dut.serial))
-            self.dut.reboot()
-            self.log.info("{} wait {}s for radio up.".format(
-                self.dut.serial, WAIT_TIME_AFTER_REBOOT))
-            time.sleep(WAIT_TIME_AFTER_REBOOT)
-
-            if not self._check_provisioning(self.dut):
-                self.log.error("Provisioning fail.")
-                return False
-
-            if not self._check_lte_data(self.dut):
-                self.log.error("LTE Data fail.")
-                return False
-
-            if not self._check_volte(self.dut, self.ad_reference):
-                self.log.error("VoLTE fail.")
-                return False
-
-            if not self._check_wfc(self.dut, self.ad_reference):
-                self.log.error("WFC fail.")
-                return False
-
-            if not self._check_3g(self.dut, self.ad_reference):
-                self.log.error("3G fail.")
-                return False
-
-            if not self._check_tethering(self.dut, self.ad_reference):
-                self.log.error("Tethering fail.")
-                return False
-
-            # TODO: Check if crash happens.
-
-            self.log.info("Iteration: <{}> / <{}> Pass".format(
-                i, self.stress_test_number))
-
-        return True
+        return self._reboot_stress_test(
+            check_provision=True,
+            check_call_setup_teardown=True,
+            check_lte_data=True,
+            check_volte=True,
+            check_wfc=True,
+            check_3g=True,
+            check_tethering=True,
+            check_data_roaming=False,
+            clear_provision=False)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_data_roaming_stress(self):
+    def test_reboot_stress_check_phone_call_only(self):
+        """Reboot Reliability Test
+
+        Steps:
+            1. Reboot DUT.
+            2. Check phone call .
+            3. Check crashes.
+            4. Repeat Step 1~9 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._stress_test(check_provision=True, check_call_setup_teardown=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_data_roaming(self):
         """Reboot Reliability Test
 
         Steps:
@@ -378,24 +413,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test Iteration: <{}> / <{}>".format(
-                i, self.stress_test_number))
-
-            self.log.info("{} reboot!".format(self.dut.serial))
-            self.dut.reboot()
-            self.log.info("{} wait {}s for radio up.".format(
-                self.dut.serial, WAIT_TIME_AFTER_REBOOT))
-            time.sleep(WAIT_TIME_AFTER_REBOOT)
-
-            if not self._check_data_roaming_status(self.dut):
-                self.log.error("Something wrong with the data connection!")
-                return False
-
-            self.log.info("Iteration: <{}> / <{}> Pass".format(
-                i, self.stress_test_number))
-
-        return True
+        return self._reboot_stress_test(check_data_roaming=True)
 
 
 """ Tests End """
+
