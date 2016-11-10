@@ -72,12 +72,14 @@ class BtStressTest(BluetoothBaseTest):
 
         Test the integrity of Bluetooth pairing.
 
-        Steps:
-        1. Pair two Android devices
-        2. Verify both devices are paired
-        3. Unpair devices.
-        4. Verify devices unpaired.
-        5. Repeat steps 1-4 100 times.
+        1. Primary device discover the secondary device
+        2. Primary device tries to pair to secondary device
+        3. Pair two devices after verifying pin number on both devices are equal
+        4. Verify both devices are paired
+        5. Unpair devices.
+        6. Verify devices unpaired.
+        7. Repeat steps 1-6 100 times.
+
 
         Expected Result:
         Each iteration of toggling Bluetooth pairing and unpairing
@@ -93,16 +95,19 @@ class BtStressTest(BluetoothBaseTest):
         for n in range(self.iterations):
             self.log.info("Pair bluetooth iteration {}.".format(n + 1))
             self.start_timer()
-            if (not pair_pri_to_sec(self.android_devices[0].droid,
-                                self.android_devices[1].droid, attempts=1)):
+            if (not pair_pri_to_sec(self.android_devices[0],
+                                self.android_devices[1], auto_confirm=False)):
                 self.log.error("Failed to bond devices.")
                 return False
             self.log.info("Total time (ms): {}".format(self.end_timer()))
+            # A device bond will trigger a number of system routines that need
+            # to settle before unbond
+            time.sleep(2)
             for ad in self.android_devices:
                 if not clear_bonded_devices(ad):
                     return False
                 # Necessary sleep time for entries to update unbonded state
-                time.sleep(1)
+                time.sleep(2)
                 bonded_devices = ad.droid.bluetoothGetBondedDevices()
                 if len(bonded_devices) > 0:
                     self.log.error("Failed to unbond devices: {}".format(
