@@ -72,7 +72,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                 return False
 
         # Pair and connect the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.CT.droid, self.TG.droid):
+        if not bt_test_utils.pair_pri_to_sec(self.CT, self.TG):
             self.log.error("Failed to pair")
             return False
 
