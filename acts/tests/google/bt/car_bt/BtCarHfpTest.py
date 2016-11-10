@@ -245,7 +245,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
 
         self.log.info("Call type is {}".format(call_type))
 
-        # make a call on 'a'
+        # make a call on 'caller'
         if not tel_telecom_utils.dial_number(self.log, caller, ph):
             return False
 
@@ -283,11 +283,12 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
                 calls_in_dialing_or_active))
             return False
 
-        # Hangup the *only* call on 'b'
-        if not car_telecom_utils.hangup_call(self.log, caller,
+        # Hangup the *only* call on 'callee'
+        if not car_telecom_utils.hangup_call(self.log, callee,
                                              calls_in_dialing_or_active[0]):
             return False
 
+        time.sleep(SHORT_TIMEOUT)
         # Make sure everyone got out of in call state.
         for d in self.android_devices:
             ret &= tel_telecom_utils.wait_for_not_in_call(self.log, d)
