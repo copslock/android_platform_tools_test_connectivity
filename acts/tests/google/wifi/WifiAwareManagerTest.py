@@ -103,9 +103,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
     def setup_test(self):
         self.msg_id = 10
         for ad in self.android_devices:
-            asserts.assert_true(
-                wutils.wifi_toggle_state(ad, True),
-                "Failed enabling Wi-Fi interface")
+            wutils.wifi_toggle_state(ad, True)
             aware_usage_enabled = ad.droid.wifiIsAwareAvailable()
             if not aware_usage_enabled:
                 self.log.info('Aware not enabled. Waiting for %s',
