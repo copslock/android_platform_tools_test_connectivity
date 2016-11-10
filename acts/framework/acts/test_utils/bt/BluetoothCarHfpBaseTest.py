@@ -75,7 +75,7 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
             self.re2_phone_number = get_phone_number(self.log, self.re2)
             self.log.info("re2 tel: {}".format(self.re2_phone_number))
         # Pair and connect the devices.
-        if not pair_pri_to_sec(self.hf.droid, self.ag.droid):
+        if not pair_pri_to_sec(self.hf, self.ag):
             self.log.error("Failed to pair")
             return False
         return True

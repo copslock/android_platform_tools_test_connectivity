@@ -53,7 +53,7 @@ class BtFactoryResetTest(BluetoothBaseTest):
         Priority: 2
         """
         if not pair_pri_to_sec(
-                self.pri_dut.droid, self.sec_dut.droid, attemps=1):
+                self.pri_dut, self.sec_dut, attemps=1):
             self.log.error("Failed to bond devices.")
             return False
         if not self.pri_dut.droid.bluetoothFactoryReset():
