@@ -225,14 +225,22 @@ class TestResult(object):
         Returns:
             A TestResult instance that's the sum of two TestResult instances.
         """
-        assert isinstance(r, TestResult)
+        if not isinstance(r, TestResult):
+            raise TypeError("Operand %s of type %s is not a TestResult." %
+                            (r, type(r)))
         sum_result = TestResult()
         for name in sum_result.__dict__:
-            l_value = list(getattr(self, name))
-            r_value = list(getattr(r, name))
-            setattr(sum_result, name, l_value + r_value)
+            r_value = getattr(r, name)
+            l_value = getattr(self, name)
+            if isinstance(r_value, list):
+                setattr(sum_result, name, l_value + r_value)
+            elif isinstance(r_value, dict):
+                # '+' operator for TestResult is only valid when multiple
+                # TestResult objs were created in the same test run, which means
+                # the controller info would be the same across all of them.
+                # TODO(angli): have a better way to validate this situation.
+                setattr(sum_result, name, l_value)
         return sum_result
-
 
     def add_controller_info(self, name, info):
         try:
@@ -317,7 +325,7 @@ class TestResult(object):
         Returns:
             A summary string of this test result.
         """
-        l = ["%s %d" % (k, v) for k, v in self.summary_dict().items()]
+        l = ["%s %s" % (k, v) for k, v in self.summary_dict().items()]
         # Sort the list so the order is the same every time.
         msg = ", ".join(sorted(l))
         return msg
