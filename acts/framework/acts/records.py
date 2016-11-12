@@ -245,7 +245,6 @@ class TestResult(object):
                 setattr(sum_result, name, l_value)
         return sum_result
 
-
     def add_controller_info(self, name, info):
         try:
             json.dumps(info)
@@ -337,7 +336,7 @@ class TestResult(object):
         Returns:
             A summary string of this test result.
         """
-        l = ["%s %d" % (k, v) for k, v in self.summary_dict().items()]
+        l = ["%s %s" % (k, v) for k, v in self.summary_dict().items()]
         # Sort the list so the order is the same every time.
         msg = ", ".join(sorted(l))
         return msg
