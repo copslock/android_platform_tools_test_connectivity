@@ -410,7 +410,7 @@ class TestRunner(object):
         # Implementation of "get_info" is optional for a controller module.
         if hasattr(module, "get_info"):
             controller_info = module.get_info(objects)
-            logging.debug("Controller %s: %s", module_config_name,
+            self.log.info("Controller %s: %s", module_config_name,
                           controller_info)
             self.results.add_controller_info(module_config_name,
                                              controller_info)
