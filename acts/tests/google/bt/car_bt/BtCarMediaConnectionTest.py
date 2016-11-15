@@ -41,8 +41,11 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         self.btAddrCT = self.CT.droid.bluetoothGetLocalAddress()
         self.btAddrTG = self.TG.droid.bluetoothGetLocalAddress()
 
+        # Additional time from the stack reset in setup.
+        time.sleep(4)
         # Pair the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.CT, self.TG):
+        if not bt_test_utils.pair_pri_to_sec(
+                self.CT, self.TG, attempts=4, auto_confirm=False):
             self.log.error("Failed to pair")
             return False
 
@@ -97,14 +100,9 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
             self.log.info("Already Connected")
         else:
-            result = bt_test_utils.connect_pri_to_sec(
-                self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))
-            if not result:
-                # Additional profile connection check for b/
-                if not bt_test_utils.is_a2dp_src_device_connected(
-                        self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                    self.log.error("Failed to connect on A2dp")
-                    return False
+            if (not bt_test_utils.connect_pri_to_sec(self.SRC, self.SNK, set(
+                [BtEnum.BluetoothProfile.A2DP.value]))):
+                return False
 
         result = bt_test_utils.disconnect_pri_from_sec(
             self.SRC, self.SNK, [BtEnum.BluetoothProfile.A2DP.value])
@@ -148,15 +146,9 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         if car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC):
             self.log.info("Already Connected")
         else:
-            result = bt_test_utils.connect_pri_to_sec(
-                self.SNK, self.SRC,
-                set([BtEnum.BluetoothProfile.A2DP_SINK.value]))
-            if not result:
-                # Additional profile connection check for b/
-                if not bt_test_utils.is_a2dp_snk_device_connected(
-                        self.SNK, self.SRC.droid.bluetoothGetLocalAddress()):
-                    self.log.error("Failed to connect on A2dp Sink")
-                    return False
+            if (not bt_test_utils.connect_pri_to_sec(self.SNK, self.SRC, set(
+                [BtEnum.BluetoothProfile.A2DP_SINK.value]))):
+                return False
         # Disconnect
         result = bt_test_utils.disconnect_pri_from_sec(
             self.SNK, self.SRC, [BtEnum.BluetoothProfile.A2DP_SINK.value])
