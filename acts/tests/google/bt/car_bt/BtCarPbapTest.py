@@ -17,8 +17,7 @@
 """
 
 import os
-from time import sleep
-from time import time
+import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.base_test import BaseTestClass
@@ -49,7 +48,11 @@ class BtCarPbapTest(BluetoothBaseTest):
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
-        if not bt_test_utils.pair_pri_to_sec(self.pce, self.pse):
+        # Grace time inbetween stack state changes
+
+        time.sleep(5)
+        if not bt_test_utils.pair_pri_to_sec(
+                self.pce, self.pse, attempts=4, auto_confirm=False):
             self.log.error("Failed to pair.")
             return False
 
@@ -77,7 +80,7 @@ class BtCarPbapTest(BluetoothBaseTest):
                 bt_contacts_utils.erase_contacts(self.pce)):
             return False
         # Allow all content providers to synchronize.
-        sleep(1)
+        time.sleep(1)
         return True
 
     def teardown_test(self):
@@ -323,23 +326,23 @@ class BtCarPbapTest(BluetoothBaseTest):
         bt_contacts_utils.add_call_log(
             self.pse, bt_contacts_utils.INCOMMING_CALL_TYPE,
             bt_contacts_utils.generate_random_phone_number().phone_number,
-            int(time()) * 1000)
+            int(time.time() * 1000))
         bt_contacts_utils.add_call_log(
             self.pse, bt_contacts_utils.INCOMMING_CALL_TYPE,
             bt_contacts_utils.generate_random_phone_number().phone_number,
-            int(time()) * 1000 - 4 * CALL_LOG_TIME_OFFSET_IN_MSEC)
+            int(time.time()) * 1000 - 4 * CALL_LOG_TIME_OFFSET_IN_MSEC)
         bt_contacts_utils.add_call_log(
             self.pse, bt_contacts_utils.OUTGOING_CALL_TYPE,
             bt_contacts_utils.generate_random_phone_number().phone_number,
-            int(time()) * 1000 - CALL_LOG_TIME_OFFSET_IN_MSEC)
+            int(time.time()) * 1000 - CALL_LOG_TIME_OFFSET_IN_MSEC)
         bt_contacts_utils.add_call_log(
             self.pse, bt_contacts_utils.MISSED_CALL_TYPE,
             bt_contacts_utils.generate_random_phone_number().phone_number,
-            int(time()) * 1000 - 2 * CALL_LOG_TIME_OFFSET_IN_MSEC)
+            int(time.time()) * 1000 - 2 * CALL_LOG_TIME_OFFSET_IN_MSEC)
         bt_contacts_utils.add_call_log(
             self.pse, bt_contacts_utils.MISSED_CALL_TYPE,
             bt_contacts_utils.generate_random_phone_number().phone_number,
-            int(time()) * 1000 - 2 * CALL_LOG_TIME_OFFSET_IN_MSEC)
+            int(time.time()) * 1000 - 2 * CALL_LOG_TIME_OFFSET_IN_MSEC)
 
         bt_test_utils.connect_pri_to_sec(
             self.pce, self.pse,

@@ -103,13 +103,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
             self.log.error("Could not connect HF and AG {} {}".format(
                 self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial(
                 )))
-            # Additional profile connection check
-            if not bt_test_utils.is_hfp_client_device_connected(
-                    self.hf, self.ag.droid.bluetoothGetLocalAddress()):
-                self.log.info(
-                    "HFP Client connected even though connection state changed "
-                    + " event not found")
-                return False
+            return False
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
