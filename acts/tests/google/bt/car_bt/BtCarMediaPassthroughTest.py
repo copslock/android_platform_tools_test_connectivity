@@ -71,8 +71,11 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                                local_media_path + " from test config file.")
                 return False
 
+        # Additional time from the stack reset in setup.
+        time.sleep(4)
         # Pair and connect the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.CT, self.TG):
+        if not bt_test_utils.pair_pri_to_sec(
+                self.CT, self.TG, attempts=4, auto_confirm=False):
             self.log.error("Failed to pair")
             return False
 
@@ -397,13 +400,9 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             return False
 
         # Now connect to Car on Bluetooth
-        result = bt_test_utils.connect_pri_to_sec(
-            self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))
-        if not result:
-            if not bt_test_utils.is_a2dp_src_device_connected(
-                    self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                self.log.error("Failed to connect on A2dp")
-                return False
+        if (not bt_test_utils.connect_pri_to_sec(
+            self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))):
+            return False
 
         # Wait for a bit for the information to show up in the car side
         time.sleep(2)

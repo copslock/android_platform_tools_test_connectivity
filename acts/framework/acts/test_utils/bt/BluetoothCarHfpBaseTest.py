@@ -19,6 +19,7 @@ Setup/Teardown methods take care of establishing connection, and doing GATT DB i
 """
 
 import os
+import time
 from queue import Empty
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
@@ -75,7 +76,10 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
             self.re2_phone_number = get_phone_number(self.log, self.re2)
             self.log.info("re2 tel: {}".format(self.re2_phone_number))
         # Pair and connect the devices.
-        if not pair_pri_to_sec(self.hf, self.ag):
+        # Grace time inbetween stack state changes
+        time.sleep(5)
+        if not pair_pri_to_sec(
+                self.hf, self.ag, attempts=4, auto_confirm=False):
             self.log.error("Failed to pair")
             return False
         return True
