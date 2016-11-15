@@ -31,7 +31,6 @@ from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
-
 EVENT_MAP_MESSAGE_RECEIVED = "MapMessageReceived"
 TIMEOUT = 2000
 MESSAGE_TO_SEND = "Don't text and Drive!"
@@ -49,6 +48,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         self.MCE = self.hf
         # Phone device
         self.MSE = self.ag
+        # Remote device
         self.REMOTE = self.re
         time.sleep(4)
         return True
@@ -160,8 +160,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @BluetoothBaseTest.bt_test_wrap
     def manual_test_send_message_to_contact(self):
         bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE,
-            set([BtEnum.BluetoothProfile.MAP_MCE.value]))
+            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         contacts = self.MCE.droid.contactsGetContactIds()
         self.log.info(contacts)
         selected_contact = self.MCE.droid.contactsDisplayContactPickList()
@@ -174,6 +173,5 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message_to_multiple_phones(self):
         bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE,
-            set([BtEnum.BluetoothProfile.MAP_MCE.value]))
+            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         return self.send_message([self.REMOTE, self.REMOTE])

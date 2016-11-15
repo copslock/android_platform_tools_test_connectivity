@@ -45,7 +45,8 @@ class BtCarPairedConnectDisconnectTest(BluetoothBaseTest):
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
-        result = bt_test_utils.pair_pri_to_sec(self.car, self.ph)
+        result = bt_test_utils.pair_pri_to_sec(
+            self.car, self.ph, auto_confirm=False)
 
         asserts.assert_true(result, "pair_pri_to_sec returned false.")
 

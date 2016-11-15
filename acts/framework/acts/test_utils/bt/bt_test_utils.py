@@ -614,6 +614,7 @@ def check_device_supported_profiles(droid):
     profile_dict['pbap_client'] = droid.bluetoothPbapClientIsReady()
     return profile_dict
 
+
 def log_energy_info(android_devices, state):
     """Logs energy info of input Android devices.
 
@@ -648,6 +649,7 @@ def set_profile_priority(host_ad, client_ad, profiles, priority):
             log.error("Profile {} not yet supported for priority settings".
                       format(profile))
 
+
 def pair_pri_to_sec(pri_ad, sec_ad, attempts=2, auto_confirm=True):
     """Pairs pri droid to secondary droid.
 
@@ -661,15 +663,17 @@ def pair_pri_to_sec(pri_ad, sec_ad, attempts=2, auto_confirm=True):
         Pass if True
         Fail if False
     """
+    pri_ad.droid.bluetoothStartConnectionStateChangeMonitor(
+        sec_ad.droid.bluetoothGetLocalAddress())
     curr_attempts = 0
     while curr_attempts < attempts:
         if _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
             return True
         curr_attempts += 1
-        time.sleep(DEFAULT_TIMEOUT)
     log.error("pair_pri_to_sec failed to connect after {} attempts".format(
         str(attempts)))
     return False
+
 
 def _wait_for_passkey_match(pri_ad, sec_ad):
     pri_pin, sec_pin = -1, 1
@@ -682,18 +686,18 @@ def _wait_for_passkey_match(pri_ad, sec_ad):
         pri_variant = pri_pairing_req["data"]["PairingVariant"]
         pri_pin = pri_pairing_req["data"]["Pin"]
         log.info("Primary device received Pin: {}, Variant: {}"
-            .format(pri_pin, pri_variant))
+                 .format(pri_pin, pri_variant))
         sec_pairing_req = sec_ad.ed.pop_event(
             event_name="BluetoothActionPairingRequest",
             timeout=DEFAULT_TIMEOUT)
         sec_variant = sec_pairing_req["data"]["PairingVariant"]
         sec_pin = sec_pairing_req["data"]["Pin"]
         log.info("Secondary device received Pin: {}, Variant: {}"
-            .format(sec_pin, sec_variant))
+                 .format(sec_pin, sec_variant))
     except Empty as err:
         log.error("Wait for pin error: {}".format(err))
         log.error("Pairing request state, Primary: {}, Secondary: {}"
-            .format(pri_pairing_req, sec_pairing_req))
+                  .format(pri_pairing_req, sec_pairing_req))
         return False
     if pri_variant == sec_variant == PAIRING_VARIANT_PASSKEY_CONFIRMATION:
         confirmation = pri_pin == sec_pin
@@ -701,16 +705,17 @@ def _wait_for_passkey_match(pri_ad, sec_ad):
             log.info("Pairing code matched, accepting connection")
         else:
             log.info("Pairing code mismatched, rejecting connection")
-        pri_ad.droid.eventPost(
-            "BluetoothActionPairingRequestUserConfirm", str(confirmation))
-        sec_ad.droid.eventPost(
-            "BluetoothActionPairingRequestUserConfirm", str(confirmation))
+        pri_ad.droid.eventPost("BluetoothActionPairingRequestUserConfirm",
+                               str(confirmation))
+        sec_ad.droid.eventPost("BluetoothActionPairingRequestUserConfirm",
+                               str(confirmation))
         if not confirmation:
             return False
     elif pri_variant != sec_variant:
         log.debug("Pairing variant mismatched, abort connection")
         return False
     return True
+
 
 def _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
     # Enable discovery on sec_ad so that pri_ad can find it.
@@ -747,6 +752,7 @@ def _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
     # Timed out trying to bond.
     log.info("Failed to bond devices.")
     return False
+
 
 def connect_pri_to_sec(pri_ad, sec_ad, profiles_set, attempts=2):
     """Connects pri droid to secondary droid.
@@ -813,12 +819,40 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
     pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress(
     ))
 
+    end_time = time.time() + 10
     profile_connected = set()
+    sec_addr = sec_ad.droid.bluetoothGetLocalAddress()
     log.info("Profiles to be connected {}".format(profiles_set))
+    # First use APIs to check profile connection state
+    while (time.time() < end_time and
+           not profile_connected.issuperset(profiles_set)):
+        if (BluetoothProfile.HEADSET_CLIENT.value not in profile_connected and
+                BluetoothProfile.HEADSET_CLIENT.value in profiles_set):
+            if is_hfp_client_device_connected(pri_ad, sec_addr):
+                profile_connected.add(BluetoothProfile.HEADSET_CLIENT.value)
+        if (BluetoothProfile.A2DP.value not in profile_connected and
+                BluetoothProfile.A2DP.value in profiles_set):
+            if is_a2dp_src_device_connected(pri_ad, sec_addr):
+                profile_connected.add(BluetoothProfile.A2DP.value)
+        if (BluetoothProfile.A2DP_SINK.value not in profile_connected and
+                BluetoothProfile.A2DP_SINK.value in profiles_set):
+            if is_a2dp_snk_device_connected(pri_ad, sec_addr):
+                profile_connected.add(BluetoothProfile.A2DP_SINK.value)
+        if (BluetoothProfile.MAP_MCE.value not in profile_connected and
+                BluetoothProfile.MAP_MCE.value in profiles_set):
+            if is_map_mce_device_connected(pri_ad, sec_addr):
+                profile_connected.add(BluetoothProfile.MAP_MCE.value)
+        if (BluetoothProfile.MAP.value not in profile_connected and
+                BluetoothProfile.MAP.value in profiles_set):
+            if is_map_mse_device_connected(pri_ad, sec_addr):
+                profile_connected.add(BluetoothProfile.MAP.value)
+        time.sleep(0.1)
+    # If APIs fail, try to find the connection broadcast receiver.
     while not profile_connected.issuperset(profiles_set):
         try:
             profile_event = pri_ad.ed.pop_event(
-                bluetooth_profile_connection_state_changed, DEFAULT_TIMEOUT)
+                bluetooth_profile_connection_state_changed,
+                DEFAULT_TIMEOUT + 10)
             log.info("Got event {}".format(profile_event))
         except Exception:
             log.error("Did not get {} profiles left {}".format(
@@ -906,6 +940,7 @@ def take_btsnoop_logs(android_devices, testcase, testname):
     for a in android_devices:
         take_btsnoop_log(a, testcase, testname)
 
+
 def take_btsnoop_log(ad, testcase, testname):
     """Grabs the btsnoop_hci log on a device and stores it in the log directory
     of the test class.
@@ -926,11 +961,12 @@ def take_btsnoop_log(ad, testcase, testname):
     out_name = ','.join((testname, device_model, serial))
     snoop_path = ad.log_path + "/BluetoothSnoopLogs"
     utils.create_dir(snoop_path)
-    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE, " ",
-                   snoop_path + '/' + out_name, ".btsnoop_hci.log"))
+    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE,
+                   " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                       .format(device_model, serial))
     exe_cmd(cmd)
+
 
 def kill_bluetooth_process(ad):
     """Kill Bluetooth process on Android device.
