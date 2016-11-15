@@ -50,13 +50,6 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
                 set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value]))
             self.log.info("Connected {}".format(connected))
             attempts -= 1
-        # Additional profile connection check for b/
-        if bt_test_utils.is_hfp_client_device_connected(
-                self.hf, self.ag.droid.bluetoothGetLocalAddress()):
-            connected = True
-            self.log.info(
-                "HFP Client connected even though connection state changed " +
-                " event not found")
         return connected
 
     #@BluetoothTest(UUID=a9657693-b534-4625-bf91-69a1d1b9a943)

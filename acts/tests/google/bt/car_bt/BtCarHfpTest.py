@@ -48,14 +48,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Failed to connect")
-            # Additional profile connection check
-            if bt_test_utils.is_hfp_client_device_connected(
-                    self.hf, self.ag.droid.bluetoothGetLocalAddress()):
-                self.log.info(
-                    "HFP Client connected even though connection state changed "
-                    + " event not found")
-            else:
-                return False
+            return False
         return True
 
     #@BluetoothTest(UUID=4ce2195a-b70a-4584-912e-cbd20d20e19d)

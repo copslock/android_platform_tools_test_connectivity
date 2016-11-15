@@ -54,7 +54,8 @@ class BtCarPairingTest(BluetoothBaseTest):
         Priority: 0
         """
         # Pair the devices.
-        if not bt_test_utils.pair_pri_to_sec(self.car, self.ph):
+        if not bt_test_utils.pair_pri_to_sec(
+                self.car, self.ph, attempts=1, auto_confirm=False):
             self.log.error("cannot pair")
             return False
 
@@ -108,7 +109,8 @@ class BtCarPairingTest(BluetoothBaseTest):
         """
         # Pair the devices.
         self.log.info("Pairing the devices ...")
-        if not bt_test_utils.pair_pri_to_sec(self.car, self.ph):
+        if not bt_test_utils.pair_pri_to_sec(
+                self.car, self.ph, attempts=1, auto_confirm=False):
             self.log.error("cannot pair")
             return False
 
@@ -126,7 +128,8 @@ class BtCarPairingTest(BluetoothBaseTest):
 
         # Pair them again!
         self.log.info("Pairing them again ...")
-        if not bt_test_utils.pair_pri_to_sec(self.car, self.ph):
+        if not bt_test_utils.pair_pri_to_sec(
+                self.car, self.ph, attempts=1, auto_confirm=False):
             self.log.error("cannot re-pair")
             return False
 
