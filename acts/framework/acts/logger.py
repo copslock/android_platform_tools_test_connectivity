@@ -164,8 +164,16 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
     fh.setFormatter(f_formatter)
     fh.setLevel(logging.DEBUG)
+    fh_info = logging.FileHandler(os.path.join(log_path, 'test_run_info.txt'))
+    fh_info.setFormatter(f_formatter)
+    fh_info.setLevel(logging.INFO)
+    fh_error = logging.FileHandler(os.path.join(log_path, 'test_run_error.txt'))
+    fh_error.setFormatter(f_formatter)
+    fh_error.setLevel(logging.WARNING)
     log.addHandler(ch)
     log.addHandler(fh)
+    log.addHandler(fh_info)
+    log.addHandler(fh_error)
     log.log_path = log_path
     logging.log_path = log_path
 
