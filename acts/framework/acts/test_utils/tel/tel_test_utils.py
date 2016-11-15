@@ -3605,10 +3605,11 @@ class WifiUtils():
             boolean success (True) or failure (False)
         """
         try:
-            return WifiUtils._start_wifi_tethering(ad, ssid, password, ap_band)
+            WifiUtils._start_wifi_tethering(ad, ssid, password, ap_band)
         except Exception as e:
             log.error("WifiUtils.start_wifi_tethering exception: {}".format(e))
             return False
+        return True
 
     @staticmethod
     def stop_wifi_tethering(log, ad):
