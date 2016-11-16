@@ -1012,8 +1012,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                              "Subscriber -> publisher message corrupted")
 
         # P requests an Aware network as RESPONDER
-        pub_ns = self.publisher.droid.wifiAwareCreateNetworkSpecifier(
-            aware_const.DATA_PATH_RESPONDER, pub_id,
+        pub_ns = self.publisher.droid.wifiAwareCreateNetworkSpecifier(pub_id,
             event_pub_rx['data']['peerId'], test_token)
         self.log.info("Publisher network specifier - '%s'", pub_ns)
         self.network_req['NetworkSpecifier'] = pub_ns
@@ -1037,8 +1036,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                              "Publisher -> subscriber message corrupted")
 
         # S requests an Aware network as INITIATOR
-        sub_ns = self.subscriber.droid.wifiAwareCreateNetworkSpecifier(
-            aware_const.DATA_PATH_INITIATOR, sub_id,
+        sub_ns = self.subscriber.droid.wifiAwareCreateNetworkSpecifier(sub_id,
             event_sub_rx['data']['peerId'], test_token)
         self.log.info("Subscriber network specifier - '%s'", sub_ns)
         self.network_req['NetworkSpecifier'] = sub_ns
