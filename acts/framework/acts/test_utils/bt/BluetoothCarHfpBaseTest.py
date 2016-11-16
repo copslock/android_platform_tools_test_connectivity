@@ -37,17 +37,21 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        # HF : HandsFree (CarKitt role)
+        # HF : HandsFree (CarKit role)
         self.hf = self.android_devices[0]
+        self.hf.log.info("Role set to HF (HandsFree Carkit role).")
         # AG : Audio Gateway (Phone role)
         self.ag = self.android_devices[1]
+        self.ag.log.info("Role set to AG (Audio Gateway Phone role).")
         # RE : Remote Device (Phone being talked to role)
         if len(self.android_devices) > 2:
             self.re = self.android_devices[2]
+            self.re.log.info("Role set to RE (Remote device).")
         else:
             self.re = None
         if len(self.android_devices) > 3:
             self.re2 = self.android_devices[3]
+            self.re2.log.info("Role set to RE2 (Remote device 2).")
         else:
             self.re2 = None
 
@@ -66,15 +70,15 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
                 return False
         setup_droid_properties(self.log, self.ag, sim_conf_file)
         self.ag_phone_number = get_phone_number(self.log, self.ag)
-        self.log.info("ag tel: {}".format(self.ag_phone_number))
+        self.ag.log.info("ag tel: {}".format(self.ag_phone_number))
         if self.re:
             setup_droid_properties(self.log, self.re, sim_conf_file)
             self.re_phone_number = get_phone_number(self.log, self.re)
-            self.log.info("re tel: {}".format(self.re_phone_number))
+            self.re.log.info("re tel: {}".format(self.re_phone_number))
         if self.re2:
             setup_droid_properties(self.log, self.re2, sim_conf_file)
             self.re2_phone_number = get_phone_number(self.log, self.re2)
-            self.log.info("re2 tel: {}".format(self.re2_phone_number))
+            self.re2.log.info("re2 tel: {}".format(self.re2_phone_number))
         # Pair and connect the devices.
         # Grace time inbetween stack state changes
         time.sleep(5)

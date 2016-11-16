@@ -29,6 +29,9 @@ from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
+from acts.test_utils.tel.tel_voice_utils import get_audio_route
+from acts.test_utils.tel.tel_voice_utils import set_audio_route
+from acts.test_utils.tel.tel_voice_utils import swap_calls
 
 BLUETOOTH_PKG_NAME = "com.android.bluetooth"
 CALL_TYPE_OUTGOING = "CALL_TYPE_OUTGOING"
@@ -101,18 +104,18 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         call_1 = car_telecom_utils.get_calls_in_states(
             self.log, self.hf, [tel_defines.CALL_STATE_RINGING])
         if len(call_1) != 1:
-            self.log.info("Call State in ringing failed {}".format(call_1))
+            self.hf.log.error("Call State in ringing failed {}".format(call_1))
             return False
 
         # Accept the call on HF
         if not car_telecom_utils.accept_call(self.log, self.hf, call_1[0]):
-            self.log.info("Accepting call failed {}".format(
+            self.hf.log.error("Accepting call failed {}".format(
                 self.hf.serial))
             return False
 
         # Dial another call from RE2
         if not initiate_call(self.log, self.re2, self.ag_phone_number):
-            self.log.error("Failed to initiate call from re.")
+            self.re2.log.error("Failed to initiate call from re.")
             return False
 
         # Wait for dialing/ringing
@@ -130,13 +133,13 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         call_2 = car_telecom_utils.get_calls_in_states(
             self.log, self.hf, [tel_defines.CALL_STATE_RINGING])
         if len(call_2) != 1:
-            self.log.info("Call State in ringing failed {}".format(call_2))
+            self.hf.log.info("Call State in ringing failed {}".format(call_2))
             return False
 
         # Accept the call on HF
         if not car_telecom_utils.accept_call(self.log, self.hf, call_2[0]):
-            self.log.info("Accepting call failed {} {}".format(
-                calls_in_ringing, self.hf.serial))
+            self.hf.log.info("Accepting call failed {}".format(
+                calls_in_ringing))
             return False
 
         # Merge the calls now.
@@ -146,14 +149,13 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         conf_call_id = car_telecom_utils.wait_for_conference(
             self.log, self.hf, [call_1[0], call_2[0]])
         if conf_call_id == None:
-            self.log.error("Did not get the conference setup correctly")
+            self.hf.log.error("Did not get the conference setup correctly")
             return False
 
         # Now hangup the conference call.
         if not car_telecom_utils.hangup_conf(self.log, self.hf, conf_call_id):
-            self.log.error(
-                "Could not hangup conference call {} droid {}!".format(
-                    conf_call_id, self.hf.serial))
+            self.hf.log.error("Could not hangup conference call {}!".format(
+                conf_call_id))
             return False
 
         return True

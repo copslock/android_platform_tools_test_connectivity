@@ -28,6 +28,7 @@ from acts.test_utils.bt import BtEnum
 # Timed wait between Bonding happens and Android actually gets the list of
 # supported services (and subsequently updates the priorities)
 BOND_TO_SDP_WAIT = 3
+UNBOND_TIMEOUT = 3
 
 
 class BtCarPairingTest(BluetoothBaseTest):
@@ -111,26 +112,28 @@ class BtCarPairingTest(BluetoothBaseTest):
         self.log.info("Pairing the devices ...")
         if not bt_test_utils.pair_pri_to_sec(
                 self.car, self.ph, attempts=1, auto_confirm=False):
-            self.log.error("cannot pair")
+            self.log.error("Failed to pair devices.")
             return False
 
         # Timed wait for the profile priorities to propagate.
         time.sleep(BOND_TO_SDP_WAIT)
 
         # Set the priority to OFF for ALL car profiles.
-        self.log.info("Set priorities off ...")
+        self.car.log.info("Set priorities off ...")
         car_bt_utils.set_car_profile_priorities_off(self.car, self.ph)
 
         # Now unpair the devices.
         self.log.info("Resetting the devices ...")
-        bt_test_utils.setup_multiple_devices_for_bt_test([self.car, self.ph])
-        bt_test_utils.reset_bluetooth([self.car, self.ph])
+        for ad in self.android_devices:
+            bt_test_utils.clear_bonded_devices(ad)
+        # Give the stack time to unbond.
+        time.sleep(UNBOND_TIMEOUT)
 
         # Pair them again!
         self.log.info("Pairing them again ...")
         if not bt_test_utils.pair_pri_to_sec(
                 self.car, self.ph, attempts=1, auto_confirm=False):
-            self.log.error("cannot re-pair")
+            self.log.error("Faild to pair devices.")
             return False
 
         # Timed wait for the profile priorities to propagate.
@@ -140,17 +143,15 @@ class BtCarPairingTest(BluetoothBaseTest):
         ph_hfp_p = self.car.droid.bluetoothHfpClientGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_hfp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
-            self.log.error("hfp {} priority {} expected {}".format(
-                self.ph.serial, ph_hfp_p,
-                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+            self.hf.log.error("HFP priority found: {}, expected: {}.".format(
+                ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_a2dp_p = self.car.droid.bluetoothA2dpSinkGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_a2dp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
-            self.log.error("a2dp {} priority {} expected {}".format(
-                self.ph.serial, ph_a2dp_p,
-                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+            self.ph.log.error("A2DP priority found: {}, expected {}.".format(
+                ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         return True

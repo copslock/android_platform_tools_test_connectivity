@@ -101,7 +101,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         2. Connects a MediaBrowser to the Carkitt's A2dpMediaBrowserService
         """
         if (not self.mediaBrowserServiceRunning):
-            self.log.info("Starting MBS")
+            self.TG.log.info("Starting AvrcpMediaBrowserService")
             self.TG.droid.bluetoothMediaPhoneSL4AMBSStart()
             time.sleep(DEFAULT_WAIT_TIME)
             self.mediaBrowserServiceRunning = True
@@ -113,7 +113,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
     def teardown_test(self):
         # Stop the browser service if it is running to clean up the slate.
         if self.mediaBrowserServiceRunning:
-            self.log.info("Stopping MBS")
+            self.TG.log.info("Stopping AvrcpMediaBrowserService")
             self.TG.droid.bluetoothMediaPhoneSL4AMBSStop()
             self.mediaBrowserServiceRunning = False
         if not super(BtCarMediaPassthroughTest, self).teardown_test():
@@ -126,7 +126,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             if not result:
                 if not bt_test_utils.is_a2dp_src_device_connected(
                         self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                    self.log.error("Failed to connect on A2dp")
+                    self.SRC.log.error("Failed to connect on A2dp")
                     return False
         return True
 
@@ -229,7 +229,8 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         """
         if not (car_media_utils.is_a2dp_connected(self.log, self.SNK,
                                                   self.SRC)):
-            self.log.error('No A2dp Connection')
+            self.SNK.log.error('No A2dp Connection')
+            return False
 
         self._init_mbs()
         if not car_media_utils.send_media_passthrough_cmd(
@@ -306,16 +307,16 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         time.sleep(DEFAULT_WAIT_TIME)
 
-        self.log.info("Phone Media Sessions:")
+        self.TG.log.info("Phone Media Sessions:")
         if not car_media_utils.isMediaSessionActive(
                 self.log, self.TG, PHONE_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.error("Media not playing in connected Phone")
+            self.TG.log.error("Media not playing in connected Phone")
             return False
 
-        self.log.info("Car Media Sessions:")
+        self.CT.log.info("Car Media Sessions:")
         if not car_media_utils.isMediaSessionActive(
                 self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.error("Media not playing in connected Car")
+            self.CT.log.error("Media not playing in connected Car")
             return False
 
         self.log.info("Bluetooth Disconnect the car and phone")
@@ -324,20 +325,21 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         if not result:
             if bt_test_utils.is_a2dp_src_device_connected(
                     self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                self.log.error("Failed to disconnect on A2dp")
+                self.SRC.log.error("Failed to disconnect on A2dp")
                 return False
 
-        self.log.info("Phone Media Sessions:")
+        self.TG.log.info("Phone Media Sessions:")
         if not car_media_utils.isMediaSessionActive(
                 self.log, self.TG, PHONE_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.error(
+            self.TG.log.error(
                 "Media stopped playing in phone after BT disconnect")
             return False
 
-        self.log.info("Car Media Sessions:")
+        self.CT.log.info("Car Media Sessions:")
         if car_media_utils.isMediaSessionActive(
                 self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.error("Media still playing in a Car after BT disconnect")
+            self.CT.log.error(
+                "Media still playing in a Car after BT disconnect")
             return False
 
         return True
@@ -377,7 +379,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             time.sleep(3)
             if bt_test_utils.is_a2dp_src_device_connected(
                     self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                self.log.error("Failed to disconnect on A2dp")
+                self.SRC.log.error("Failed to disconnect on A2dp")
                 return False
 
         self._init_mbs()
@@ -390,18 +392,18 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                 self.log, self.TG,
                 PHONE_MEDIA_BROWSER_SERVICE_NAME) or car_media_utils.isMediaSessionActive(
                     self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.info("Media playing in wrong end")
+            self.log.error("Media playing in wrong end")
             return False
 
         # Get the metadata of the song that the phone is playing
         metadata_TG = self.TG.droid.bluetoothMediaGetCurrentMediaMetaData()
         if metadata_TG is None:
-            self.log.info("No Media Metadata available from Phone")
+            self.TG.log.error("No Media Metadata available from Phone")
             return False
 
         # Now connect to Car on Bluetooth
-        if (not bt_test_utils.connect_pri_to_sec(
-            self.SRC, self.SNK, set([BtEnum.BluetoothProfile.A2DP.value]))):
+        if (not bt_test_utils.connect_pri_to_sec(self.SRC, self.SNK, set(
+            [BtEnum.BluetoothProfile.A2DP.value]))):
             return False
 
         # Wait for a bit for the information to show up in the car side
@@ -411,15 +413,16 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         # should automatically play.  Both devices should have their respective MediaSessions active
         if not car_media_utils.isMediaSessionActive(
                 self.log, self.TG, PHONE_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.info("Media not playing in Phone")
+            self.TG.log.error("Media not playing in Phone")
             return False
         if not car_media_utils.isMediaSessionActive(
                 self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
-            self.log.info("Media not playing in Car")
+            self.CT.log.error("Media not playing in Car")
             return False
 
         # Get the metadata from Car and compare it with the Phone's media metadata before the connection happened.
         metadata_CT = self.CT.droid.bluetoothMediaGetCurrentMediaMetaData()
         if metadata_CT is None:
-            self.log.info("No Media Metadata available from car")
-        car_media_utils.compare_metadata(self.log, metadata_TG, metadata_CT)
+            self.CT.log.info("No Media Metadata available from car")
+        return car_media_utils.compare_metadata(self.log, metadata_TG,
+                                                metadata_CT)

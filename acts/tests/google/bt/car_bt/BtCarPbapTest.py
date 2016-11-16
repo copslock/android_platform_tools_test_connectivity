@@ -63,7 +63,7 @@ class BtCarPbapTest(BluetoothBaseTest):
         time.sleep(5)
         if not bt_test_utils.pair_pri_to_sec(
                 self.pce, self.pse, attempts=4, auto_confirm=False):
-            self.log.error("Failed to pair.")
+            self.log.error("Failed to pair devices.")
             return False
 
         # Disable the HFP and A2DP profiles. This will ensure only PBAP
@@ -150,7 +150,8 @@ class BtCarPbapTest(BluetoothBaseTest):
         if bt_test_utils.connect_pri_to_sec(
                 self.pce, self.pse,
                 set([BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
-            self.log.error("Client connected and shouldn't be.")
+            self.pce.log.error(
+                "Client connected. Expected to not be connected.")
             return False
 
         self.pce.droid.bluetoothPbapClientDisconnect(
@@ -163,7 +164,8 @@ class BtCarPbapTest(BluetoothBaseTest):
 
         if not bt_test_utils.connect_pri_to_sec(self.pce, self.pse, set(
             [BtEnum.BluetoothProfile.PBAP_CLIENT.value])):
-            self.log.error("No client connected and should be.")
+            self.pce.log.error(
+                "No PBAP client connected. Expected to be connected.")
             return False
 
         return True
@@ -358,7 +360,7 @@ class BtCarPbapTest(BluetoothBaseTest):
             self.pce, self.pse,
             set([BtEnum.BluetoothProfile.PBAP_CLIENT.value]))
         pse_call_log_count = self.pse.droid.callLogGetCount()
-        self.log.info("Waiting for {} call logs to be transfered".format(
+        self.pse.log.info("Waiting for {} call logs to be transfered".format(
             pse_call_log_count))
         bt_contacts_utils.wait_for_call_log_update_complete(self.pce,
                                                             pse_call_log_count)

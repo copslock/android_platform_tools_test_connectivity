@@ -86,7 +86,7 @@ class BluetoothBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def _reboot_device(self, ad):
-        self.log.info("Rebooting device {}.".format(ad.serial))
+        ad.log.info("Rebooting device.")
         ad = ad.reboot()
 
     def setup_class(self):
@@ -141,8 +141,8 @@ class BluetoothBaseTest(BaseTestClass):
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path)
             except:
-                self.log.error("Failed to take a bug report for {}, {}"
-                               .format(ad.serial, test_name))
+                ad.log.error("Failed to take a bug report for {}"
+                               .format(test_name))
 
     def _get_time_in_milliseconds(self):
         return int(round(time.time() * 1000))

@@ -120,12 +120,12 @@ class BtCarPairedConnectDisconnectTest(BluetoothBaseTest):
 
             # Check if we got connected.
             if not success:
-                self.log.info("Not all profiles connected.")
+                self.car.log.info("Not all profiles connected.")
                 if (bt_test_utils.is_hfp_client_device_connected(self.car,
                                                                  addr) and
                         bt_test_utils.is_a2dp_snk_device_connected(self.car,
                                                                    addr)):
-                    self.log.info(
+                    self.car.log.info(
                         "HFP Client or A2DP SRC connected successfully.")
                 else:
                     failure = failure + 1
@@ -138,12 +138,12 @@ class BtCarPairedConnectDisconnectTest(BluetoothBaseTest):
                  BtEnum.BluetoothProfile.A2DP_SINK.value])
 
             if success is False:
-                self.log.info("Disconnect failed.")
+                self.car.log.info("Disconnect failed.")
                 if (bt_test_utils.is_hfp_client_device_connected(self.car,
                                                                  addr) or
                         bt_test_utils.is_a2dp_snk_device_connected(self.car,
                                                                    addr)):
-                    self.log.info(
+                    self.car.log.info(
                         "HFP Client or A2DP SRC failed to disconnect.")
                     failure = failure + 1
                 continue
