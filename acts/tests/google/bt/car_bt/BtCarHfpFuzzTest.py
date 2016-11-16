@@ -91,7 +91,7 @@ class BtCarHfpFuzzTest(BluetoothCarHfpBaseTest):
             if not car_telecom_utils.wait_for_not_in_call(self.log, d):
                 self.log.warn(
                     "dial_a_hangup_quick wait_for_not_in_call failed {}".
-                    format(d.droid.getBuildSerial()))
+                    format(d.serial))
                 return False
 
         return True
@@ -115,7 +115,7 @@ class BtCarHfpFuzzTest(BluetoothCarHfpBaseTest):
             if not car_telecom_utils.wait_for_not_in_call(self.log, d):
                 self.log.warning(
                     "stabilize_and_check_sanity wait_for_not_in_call failed {}".
-                    format(d.droid.getBuildSerial()))
+                    format(d.serial))
                 return False
 
         return True
