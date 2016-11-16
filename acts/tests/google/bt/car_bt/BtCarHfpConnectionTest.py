@@ -89,26 +89,22 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # Wait for AG, RE to go into an Active state.
         if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(
-                self.ag.droid.getBuildSerial()))
+            self.log.error("AG not in Active {}".format(self.ag.serial))
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.re):
-            self.log.error("RE not in Active {}".format(
-                self.re.droid.getBuildSerial()))
+            self.log.error("RE not in Active {}".format(self.re.serial))
             return False
 
         # Now connect the devices.
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Could not connect HF and AG {} {}".format(
-                self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial(
-                )))
+                self.hf.serial, self.ag.serial))
             return False
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("HF not in Active {}".format(self.hf.serial))
             return False
 
         # Hangup the call and check all devices are clean
@@ -147,8 +143,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Could not connect HF and AG {} {}".format(
-                self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial(
-                )))
+                self.hf.serial, self.ag.serial))
             return False
 
         # make a call on AG
@@ -158,8 +153,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # Wait for all HF
         if not car_telecom_utils.wait_for_dialing(self.log, self.hf):
-            self.log.error("HF not in ringing {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("HF not in ringing {}".format(self.hf.serial))
             return False
 
         # Accept the call on RE
@@ -168,34 +162,30 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
             return False
         # Wait for all HF, AG, RE to go into an Active state.
         if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("AG not in Active {}".format(self.hf.serial))
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(
-                self.ag.droid.getBuildSerial()))
+            self.log.error("AG not in Active {}".format(self.ag.serial))
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.re):
-            self.log.error("RE not in Active {}".format(
-                self.re.droid.getBuildSerial()))
+            self.log.error("RE not in Active {}".format(self.re.serial))
             return False
 
         # Turn the adapter OFF on HF
         if not bt_test_utils.disable_bluetooth(self.hf.droid):
             self.log.error("Failed to turn BT off on HF {}".format(
-                self.hf.droid.getBuildSerial()))
+                self.hf.serial))
             return False
 
         # Turn adapter ON on HF
         if not bt_test_utils.enable_bluetooth(self.hf.droid, self.hf.ed):
             self.log.error("Failed to turn BT ON after call on HF {}".format(
-                self.hf.droid.getBuildSerial()))
+                self.hf.serial))
             return False
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("HF not in Active {}".format(self.hf.serial))
             return False
 
         # Hangup the call and check all devices are clean
@@ -236,15 +226,13 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Could not connect HF and AG {} {}".format(
-                self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial(
-                )))
+                self.hf.serial, self.ag.serial))
             return False
 
         # make a call on HF
         if not car_telecom_utils.dial_number(self.log, self.hf,
                                              self.re_phone_number):
-            self.log.error("HF not in dialing {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("HF not in dialing {}".format(self.hf.serial))
             return False
 
         # Wait for HF, AG to be dialing and RE to be ringing
@@ -278,15 +266,14 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
         # We use the proxy of the Call going away as HF disconnected
         if not car_telecom_utils.wait_for_not_in_call(self.log, self.hf):
             self.log.error("HF still in call after disconnection {}".format(
-                self.hf.droid.getBuildSerial()))
+                self.hf.serial))
             return False
 
         # Now connect the devices.
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Could not connect HF and AG {} {}".format(
-                self.hf.droid.getBuildSerial(), self.ag.droid.getBuildSerial(
-                )))
+                self.hf.serial, self.ag.serial))
             # Additional profile connection check for b/
             if not bt_test_utils.is_hfp_client_device_connected(
                     self.hf, self.ag.droid.bluetoothGetLocalAddress()):
@@ -297,8 +284,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(
-                self.hf.droid.getBuildSerial()))
+            self.log.error("HF not in Active {}".format(self.hf.serial))
             return False
 
         # Hangup the call and check all devices are clean

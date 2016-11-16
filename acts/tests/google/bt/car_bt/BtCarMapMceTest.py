@@ -65,7 +65,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         self.REMOTE.droid.smsStartTrackingIncomingSmsMessage()
         destinations = []
         for phone in remotes:
-            destinations.append("tel:{} ".format(
+            destinations.append("tel:{}".format(
                 get_phone_number(self.log, phone)))
         self.log.info(destinations)
         self.MCE.droid.mapSendMessage(

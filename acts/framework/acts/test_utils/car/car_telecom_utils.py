@@ -44,11 +44,11 @@ def dial_number(log, ad, uri):
         True if success, False if fail.
     """
     log.info("Dialing up droid {} call uri {}".format(
-        ad.droid.getBuildSerial(), uri))
+        ad.serial, uri))
 
     # First check that we are not in call.
     if ad.droid.telecomIsInCall():
-        log.info("We're still in call {}".format(ad.droid.getBuildSerial()))
+        log.info("We're still in call {}".format(ad.serial))
         return False
 
     # Start tracking updates.
@@ -72,7 +72,7 @@ def dial_number(log, ad, uri):
         ad.droid.telecomStopListeningForCallAdded()
 
     call_id = event['data']['CallId']
-    log.info("Call ID: {} dev {}".format(call_id, ad.droid.getBuildSerial()))
+    log.info("Call ID: {} dev {}".format(call_id, ad.serial)
 
     if not call_id:
         log.info("CallId is empty!")
@@ -103,7 +103,7 @@ def wait_for_call_state(log, ad, call_id, state):
     # We may have missed the update so do a quick check.
     if ad.droid.telecomCallGetCallState(call_id) == state:
         log.info("Call ID {} already in {} dev {}!".format(
-            call_id, state, ad.droid.getBuildSerial()))
+            call_id, state, ad.serial))
         ad.droid.telecomCallStopListeningForEvent(call_id,
             tel_defines.EventTelecomCallStateChanged)
         return True
@@ -124,11 +124,11 @@ def wait_for_call_state(log, ad, call_id, state):
                 return True
             else:
                 log.info("Droid {} in call {} state {}".format(
-                    ad.droid.getBuildSerial(), call_id, call_state))
+                    ad.serial, call_id, call_state))
                 continue
         except queue.Empty:
             log.info("Did not get into state {} dev {}".format(
-                state, ad.droid.getBuildSerial()))
+                state, ad.serial))
             ad.droid.telecomCallStopListeningForEvent(call_id,
                 tel_defines.EventTelecomCallStateChanged)
             return False
@@ -146,10 +146,10 @@ def hangup_call(log, ad, call_id):
         True if success, False if fail.
     """
     log.info("Hanging up droid {} call {}".format(
-        ad.droid.getBuildSerial(), call_id))
+        ad.serial, call_id))
     # First check that we are in call, otherwise fail.
     if not ad.droid.telecomIsInCall():
-        log.info("We are not in-call {}".format(ad.droid.getBuildSerial()))
+        log.info("We are not in-call {}".format(ad.serial))
         return False
 
     # Make sure we are registered with the events.
@@ -188,11 +188,11 @@ def hangup_conf(log, ad, conf_id):
         True if success, False if fail.
     """
     log.info("hangup_conf: Hanging up droid {} call {}".format(
-        ad.droid.getBuildSerial(), conf_id))
+        ad.serial, conf_id))
 
     # First check that we are in call, otherwise fail.
     if not ad.droid.telecomIsInCall():
-        log.info("We are not in-call {}".format(ad.droid.getBuildSerial()))
+        log.info("We are not in-call {}".format(ad.serial))
         return False
 
     # Get the list of children for this conference.
@@ -238,17 +238,17 @@ def accept_call(log, ad, call_id):
         True if success, False if fail.
     """
     log.info("Accepting call at droid {} call {}".format(
-        ad.droid.getBuildSerial(), call_id))
+        ad.serial, call_id))
     # First check we are in call, otherwise fail.
     if not ad.droid.telecomIsInCall():
-        log.info("We are not in-call {}".format(ad.droid.getBuildSerial()))
+        log.info("We are not in-call {}".format(ad.serial))
         return False
 
     # Accept the call and wait for the call to be accepted on AG.
     ad.droid.telecomCallAnswer(call_id, tel_defines.VT_STATE_AUDIO_ONLY)
     if not wait_for_call_state(log, ad, call_id, tel_defines.CALL_STATE_ACTIVE):
         log.error("Call {} on droid {} not active".format(
-            call_id, ad.droid.getBuildSerial()))
+            call_id, ad.serial))
         return False
 
     return True
@@ -267,12 +267,12 @@ def wait_for_not_in_call(log, ad):
 
     calls = ad.droid.telecomCallGetCallIds()
     if len(calls) > 1:
-        log.info("More than one call {} {}".format(calls, ad.droid.getBuildSerial()))
+        log.info("More than one call {} {}".format(calls, ad.serial))
         return False
 
     if len(calls) > 0:
         log.info("Got calls {} for {}".format(
-            calls, ad.droid.getBuildSerial()))
+            calls, ad.serial))
         try:
             event = ad.ed.pop_event(
                 tel_defines.EventTelecomCallRemoved,
@@ -280,7 +280,7 @@ def wait_for_not_in_call(log, ad):
         except queue.Empty:
             log.info("wait_for_not_in_call Did not get {} droid {}".format(
                 tel_defines.EventTelecomCallRemoved,
-                ad.droid.getBuildSerial()))
+                ad.serial))
             return False
         finally:
             ad.droid.telecomStopListeningForCallRemoved()
@@ -332,7 +332,7 @@ def wait_for_dialing(log, ad):
 
     # We may still not be in-call if the call setup is going on.
     # We wait for the call state to move to dialing.
-    log.info("call id {} droid {}".format(call_id, ad.droid.getBuildSerial()))
+    log.info("call id {} droid {}".format(call_id, ad.serial))
     if not wait_for_call_state(
         log, ad, call_id, tel_defines.CALL_STATE_DIALING):
         return False
@@ -350,13 +350,13 @@ def wait_for_ringing(log, ad):
     Returns:
         True if success, False if fail.
     """
-    log.info("waiting for ringing {}".format(ad.droid.getBuildSerial()))
+    log.info("waiting for ringing {}".format(ad.serial))
     # Start listening for events before anything else happens.
     ad.droid.telecomStartListeningForCallAdded()
 
     # First check if we re in call, then simply return.
     if ad.droid.telecomIsInCall():
-        log.info("Device already in call {}".format(ad.droid.getBuildSerial()))
+        log.info("Device already in call {}".format(ad.serial))
         ad.droid.telecomStopListeningForCallAdded()
         return True
 
@@ -377,20 +377,20 @@ def wait_for_ringing(log, ad):
     except queue.Empty:
         log.info("Did not get {} droid {}".format(
             tel_defines.EventTelecomCallAdded,
-            ad.droid.getBuildSerial()))
+            ad.serial))
         return False
     finally:
         ad.droid.telecomStopListeningForCallAdded()
     call_id = event['data']['CallId']
     log.info("wait_for_ringing call found {} dev {}".format(
-        call_id, ad.droid.getBuildSerial()))
+        call_id, ad.serial))
 
     # If the call already existed then we would have returned above otherwise
     # we will verify that the newly added call is indeed ringing.
     if not wait_for_call_state(
         log, ad, call_id, tel_defines.CALL_STATE_RINGING):
         log.info("No ringing call id {} droid {}".format(
-            call_id, ad.droid.getBuildSerial()))
+            call_id, ad.serial))
         return False
     return True
 
@@ -404,7 +404,7 @@ def wait_for_active(log, ad):
     Returns:
         True if success, False if fail.
     """
-    log.info("waiting for active {}".format(ad.droid.getBuildSerial()))
+    log.info("waiting for active {}".format(ad.serial))
     # Start listening for events before anything else happens.
     ad.droid.telecomStartListeningForCallAdded()
 
@@ -421,13 +421,13 @@ def wait_for_active(log, ad):
         except queue.Empty:
             log.info("Did not get {} droid {}".format(
                 tel_defines.EventTelecomCallAdded,
-                ad.droid.getBuildSerial()))
+                ad.serial))
             return False
         finally:
             ad.droid.telecomStopListeningForCallAdded()
         call_id = event['data']['CallId']
         log.info("wait_for_ringing call found {} dev {}".format(
-            call_id, ad.droid.getBuildSerial()))
+            call_id, ad.serial))
     else:
         call_id = calls_in_state[0]
 
@@ -436,7 +436,7 @@ def wait_for_active(log, ad):
     if not wait_for_call_state(
         log, ad, call_id, tel_defines.CALL_STATE_ACTIVE):
         log.info("No active call id {} droid {}".format(
-            call_id, ad.droid.getBuildSerial()))
+            call_id, ad.serial))
         return False
     return True
 
@@ -454,7 +454,7 @@ def wait_for_conference(log, ad, conf_calls):
     """
     conf_calls = set(conf_calls)
 
-    log.info("waiting for conference {}".format(ad.droid.getBuildSerial()))
+    log.info("waiting for conference {}".format(ad.serial))
     ad.droid.telecomStartListeningForCallAdded()
 
     call_ids = ad.droid.telecomCallGetCallIds()
@@ -474,11 +474,11 @@ def wait_for_conference(log, ad, conf_calls):
             tel_defines.EventTelecomCallAdded,
             tel_defines.MAX_WAIT_TIME_CALLEE_RINGING)
         log.info("wait_for_conference event {} droid {}".format(
-            event, ad.droid.getBuildSerial()))
+            event, ad.serial))
     except queue.Empty:
         log.error("Did not get {} droid {}".format(
             tel_defines.EventTelecomCallAdded,
-            ad.droid.getBuildSerial()))
+            ad.serial))
         return None
     finally:
         ad.droid.telecomStopListeningForCallAdded()
@@ -502,7 +502,7 @@ def wait_for_conference(log, ad, conf_calls):
                 return call_id
         except queue.Empty:
             log.error("Did not get {} droid {}".format(
-                tel_defines.EventTelecomCallChildrenChanged, ad.droid.getBuildSerial()))
+                tel_defines.EventTelecomCallChildrenChanged, ad.serial))
             ad.droid.telecomCallStopListeningForEvent(
                 call_id, tel_defines.EVENT_CALL_CHILDREN_CHANGED)
             return None
@@ -521,7 +521,7 @@ def get_call_id_children(log, ad, call_id):
     call = ad.droid.telecomCallGetCallById(call_id)
     call_chld = set(call['Children'])
     log.info("get_call_id_children droid {} call {} children {}".format(
-        ad.droid.getBuildSerial(), call, call_chld))
+        ad.serial, call, call_chld))
     return call_chld
 
 def get_calls_in_states(log, ad, call_states):
