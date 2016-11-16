@@ -293,7 +293,7 @@ def reset_bluetooth(android_devices):
     for a in android_devices:
         droid, ed = a.droid, a.ed
         log.info("Reset state of bluetooth on device: {}".format(
-            droid.getBuildSerial()))
+            a.serial))
         if droid.bluetoothCheckState() is True:
             droid.bluetoothToggleState(False)
             expected_bluetooth_off_event_name = bluetooth_off
@@ -810,8 +810,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
             break
 
     if not paired:
-        log.info("{} not paired to {}".format(pri_ad.droid.getBuildSerial(),
-                                              sec_ad.droid.getBuildSerial()))
+        log.info("{} not paired to {}".format(pri_ad.serial, sec_ad.serial))
         return False
 
     # Now try to connect them, the following call will try to initiate all
@@ -955,7 +954,7 @@ def take_btsnoop_log(ad, testcase, testname):
         testname: Name of the test case that triggered this bug report.
     """
     testname = "".join(x for x in testname if x.isalnum())
-    serial = ad.droid.getBuildSerial()
+    serial = ad.serial
     device_model = ad.droid.getBuildModel()
     device_model = device_model.replace(" ", "")
     out_name = ','.join((testname, device_model, serial))

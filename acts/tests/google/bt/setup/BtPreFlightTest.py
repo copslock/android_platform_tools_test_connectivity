@@ -30,7 +30,7 @@ class BtPreFlightTest(BaseTestClass):
     def setup_class(self):
         for a in self.android_devices:
             d = a.droid
-            serial = d.getBuildSerial()
+            serial = a.serial
             self.log.info("****START: {} DEVICE INFO****".format(serial))
             self.log.info("BOOTLOADER VERSION {}".format(d.getBuildBootloader(
             )))
