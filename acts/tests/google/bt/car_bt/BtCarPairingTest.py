@@ -67,24 +67,24 @@ class BtCarPairingTest(BluetoothBaseTest):
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_hfp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("hfp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(
-                ), ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.serial, ph_hfp_p,
+                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_a2dp_p = self.car.droid.bluetoothA2dpSinkGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_a2dp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("a2dp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(
-                ), ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.serial, ph_a2dp_p,
+                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_pbap_p = self.car.droid.bluetoothPbapClientGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_pbap_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("pbap {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(
-                ), ph_pbap_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.serial, ph_pbap_p,
+                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
         return True
 
@@ -141,16 +141,16 @@ class BtCarPairingTest(BluetoothBaseTest):
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_hfp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("hfp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(
-                ), ph_hfp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.serial, ph_hfp_p,
+                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         ph_a2dp_p = self.car.droid.bluetoothA2dpSinkGetPriority(
             self.ph.droid.bluetoothGetLocalAddress())
         if ph_a2dp_p != BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value:
             self.log.error("a2dp {} priority {} expected {}".format(
-                self.ph.droid.getBuildSerial(
-                ), ph_a2dp_p, BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
+                self.ph.serial, ph_a2dp_p,
+                BtEnum.BluetoothPriorityLevel.PRIORITY_ON.value))
             return False
 
         return True

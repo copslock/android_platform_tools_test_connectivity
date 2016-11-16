@@ -107,7 +107,7 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         # Accept the call on HF
         if not car_telecom_utils.accept_call(self.log, self.hf, call_1[0]):
             self.log.info("Accepting call failed {}".format(
-                self.hf.droid.getBuildSerial()))
+                self.hf.serial))
             return False
 
         # Dial another call from RE2
@@ -136,7 +136,7 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         # Accept the call on HF
         if not car_telecom_utils.accept_call(self.log, self.hf, call_2[0]):
             self.log.info("Accepting call failed {} {}".format(
-                calls_in_ringing, self.hf.droid.getBuildSerial()))
+                calls_in_ringing, self.hf.serial))
             return False
 
         # Merge the calls now.
@@ -153,7 +153,7 @@ class BtCarHfpConferenceTest(BluetoothCarHfpBaseTest):
         if not car_telecom_utils.hangup_conf(self.log, self.hf, conf_call_id):
             self.log.error(
                 "Could not hangup conference call {} droid {}!".format(
-                    conf_call_id, self.hf.droid.getBuildSerial()))
+                    conf_call_id, self.hf.serial))
             return False
 
         return True
