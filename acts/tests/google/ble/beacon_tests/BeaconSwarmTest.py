@@ -117,7 +117,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
         threads = []
         for a in self.android_devices:
             d, e = a.droid, a.ed
-            serial_no = d.getBuildSerial()
+            serial_no = a.serial
             if serial_no not in beacon_serials:
                 continue
             thread = threading.Thread(target=self._start_advertisements_thread,
@@ -146,7 +146,7 @@ class BeaconSwarmTest(BluetoothBaseTest):
             self.log.info("Restarting advertisements.")
             for a in self.android_devices:
                 d, e = a.droid, a.ed
-                serial_no = d.getBuildSerial()
+                serial_no = a.serial
                 if serial_no not in beacon_serials:
                     continue
                 thread = threading.Thread(
