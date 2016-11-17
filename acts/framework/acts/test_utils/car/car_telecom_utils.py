@@ -72,7 +72,7 @@ def dial_number(log, ad, uri):
         ad.droid.telecomStopListeningForCallAdded()
 
     call_id = event['data']['CallId']
-    log.info("Call ID: {} dev {}".format(call_id, ad.serial)
+    log.info("Call ID: {} dev {}".format(call_id, ad.serial))
 
     if not call_id:
         log.info("CallId is empty!")
