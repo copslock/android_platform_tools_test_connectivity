@@ -27,8 +27,6 @@ from acts import utils
 from acts.controllers import attenuator
 from acts.test_utils.tel import tel_defines
 
-log = logging
-
 # Number of seconds to wait for events that are supposed to happen quickly.
 # Like onSuccess for start background scan and confirmation on wifi state
 # change.
@@ -586,16 +584,15 @@ def wifi_forget_network(ad, net_ssid):
     Raises:
         WifiTestUtilsError is raised if forget network operation failed.
     """
-    droid, ed = ad.droid, ad.ed
-    droid.wifiToggleState(True)
-    networks = droid.wifiGetConfiguredNetworks()
+    ad.droid.wifiToggleState(True)
+    networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
     for n in networks:
         if net_ssid in n[WifiEnums.SSID_KEY]:
-            droid.wifiForgetNetwork(n['networkId'])
+            ad.droid.wifiForgetNetwork(n['networkId'])
             try:
-                event = ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+                event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
                                      SHORT_TIMEOUT)
             except Empty:
                 raise WifiTestUtilsError("Failed to remove network %s." % n)
@@ -675,9 +672,8 @@ def start_wifi_background_scan(ad, scan_setting):
     Returns:
         If scan was started successfully, event data of success event is returned.
     """
-    droid, ed = ad.droids[0], ad.eds[0]
-    idx = droid.wifiScannerStartBackgroundScan(scan_setting)
-    event = ed.pop_event("WifiScannerScan{}onSuccess".format(idx),
+    idx = ad.droid.wifiScannerStartBackgroundScan(scan_setting)
+    event = ad.ed.pop_event("WifiScannerScan{}onSuccess".format(idx),
                          SHORT_TIMEOUT)
     return event['data']
 
@@ -695,26 +691,25 @@ def start_wifi_tethering(ad, ssid, password, band=None):
     Returns:
         True if soft AP was started successfully, False otherwise.
     """
-    droid, ed = ad.droid, ad.ed
     config = {WifiEnums.SSID_KEY: ssid}
     if password:
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
-    asserts.assert_true(droid.wifiSetWifiApConfiguration(config),
+    asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(config),
                         "Failed to update WifiAp Configuration")
-    droid.wifiStartTrackingTetherStateChange()
-    droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
+    ad.droid.wifiStartTrackingTetherStateChange()
+    ad.droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
     try:
-        ed.pop_event("ConnectivityManagerOnTetheringStarted")
-        ed.wait_for_event("TetherStateChanged",
+        ad.ed.pop_event("ConnectivityManagerOnTetheringStarted")
+        ad.ed.wait_for_event("TetherStateChanged",
                           lambda x : x["data"]["ACTIVE_TETHER"], 30)
         ad.log.debug("Tethering started successfully.")
     except Empty:
         msg = "Failed to receive confirmation of wifi tethering starting"
         asserts.fail(msg)
     finally:
-        droid.wifiStopTrackingTetherStateChange()
+        ad.droid.wifiStopTrackingTetherStateChange()
 
 
 def stop_wifi_tethering(ad):
@@ -723,19 +718,18 @@ def stop_wifi_tethering(ad):
     Args:
         ad: android_device to stop wifi tethering on.
     """
-    droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingTetherStateChange()
-    droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
-    droid.wifiSetApEnabled(False, None)
+    ad.droid.wifiStartTrackingTetherStateChange()
+    ad.droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
+    ad.droid.wifiSetApEnabled(False, None)
     try:
-        ed.pop_event("WifiManagerApDisabled", 30)
-        ed.wait_for_event("TetherStateChanged",
+        ad.ed.pop_event("WifiManagerApDisabled", 30)
+        ad.ed.wait_for_event("TetherStateChanged",
                           lambda x : not x["data"]["ACTIVE_TETHER"], 30)
     except Empty:
         msg = "Failed to receive confirmation of wifi tethering stopping"
         asserts.fail(msg)
     finally:
-        droid.wifiStopTrackingTetherStateChange()
+        ad.droid.wifiStopTrackingTetherStateChange()
 
 
 def toggle_wifi_and_wait_for_reconnection(ad,
@@ -795,7 +789,6 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
         num_of_tries: An integer that is the number of times to try before
                       delaring failure. Default is 1.
     """
-    serial = ad.serial
     expected_ssid = network[WifiEnums.SSID_KEY]
     # First ensure that we're already connected to the provided network.
     verify_con = {WifiEnums.SSID_KEY: expected_ssid}
@@ -816,14 +809,14 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
                 pass
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
-                            (network, serial))
-        log.debug("Connection result on %s: %s.", serial, connect_result)
+                            (network, ad.serial))
+        logging.debug("Connection result on %s: %s.", ad.serial, connect_result)
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
                              "Connected to the wrong network on %s."
                              "Expected %s, but got %s." %
-                             (serial, expected_ssid, actual_ssid))
-        log.info("Connected to Wi-Fi network %s on %s", actual_ssid, serial)
+                             (ad.serial, expected_ssid, actual_ssid))
+        logging.info("Connected to Wi-Fi network %s on %s", actual_ssid, ad.serial)
     finally:
         ad.droid.wifiStopTrackingStateChange()
 
@@ -868,7 +861,6 @@ def _wifi_connect(ad, network, num_of_tries=1):
         num_of_tries: An integer that is the number of times to try before
                       delaring failure. Default is 1.
     """
-    serial = ad.serial
     asserts.assert_true(WifiEnums.SSID_KEY in network,
                         "Key '%s' must be present in network definition." %
                         WifiEnums.SSID_KEY)
@@ -876,7 +868,7 @@ def _wifi_connect(ad, network, num_of_tries=1):
     try:
         asserts.assert_true(
             ad.droid.wifiConnect(network),
-            "Wi-Fi connect returned false on %s." % serial)
+            "Wi-Fi connect returned false on %s." % ad.serial)
         connect_result = None
         for i in range(num_of_tries):
             try:
@@ -887,12 +879,12 @@ def _wifi_connect(ad, network, num_of_tries=1):
                 pass
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
-                            (network, serial))
+                            (network, ad.serial))
         ad.log.debug("Wi-Fi connection result: %s.", connect_result)
         expected_ssid = network[WifiEnums.SSID_KEY]
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
-                             "Connected to the wrong network on %s." % serial)
+                             "Connected to the wrong network on %s." % ad.serial)
         ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
     finally:
         ad.droid.wifiStopTrackingStateChange()
@@ -925,16 +917,15 @@ def track_connection(ad, network_ssid, check_connection_count):
     Returns:
         True if connection to given network happen, else return False.
     """
-    droid, ed = ad.droid, ad.ed
-    droid.wifiStartTrackingStateChange()
+    ad.droid.wifiStartTrackingStateChange()
     while check_connection_count > 0:
-        connect_network = ed.pop_event("WifiNetworkConnected", 120)
+        connect_network = ad.ed.pop_event("WifiNetworkConnected", 120)
         ad.log.info("Connected to network %s", connect_network)
         if (WifiEnums.SSID_KEY in connect_network['data'] and
                 connect_network['data'][WifiEnums.SSID_KEY] == network_ssid):
             return True
         check_connection_count -= 1
-    droid.wifiStopTrackingStateChange()
+    ad.droid.wifiStopTrackingStateChange()
     return False
 
 
@@ -974,10 +965,9 @@ def start_wifi_track_bssid(ad, track_setting):
     Returns:
       If tracking started successfully, event data of success event is returned.
     """
-    droid, ed = ad.droid, ad.ed
-    idx = droid.wifiScannerStartTrackingBssids(
+    idx = ad.droid.wifiScannerStartTrackingBssids(
         track_setting["bssidInfos"], track_setting["apLostThreshold"])
-    event = ed.pop_event("WifiScannerBssid{}onSuccess".format(idx),
+    event = ad.ed.pop_event("WifiScannerBssid{}onSuccess".format(idx),
                          SHORT_TIMEOUT)
     return event['data']
 
@@ -1012,8 +1002,7 @@ def check_internet_connection(ad, ping_addr):
     Returns:
         True, if address ping successful
     """
-    droid, ed = ad.droid, ad.ed
-    ping = droid.httpPing(ping_addr)
+    ping = ad.droid.httpPing(ping_addr)
     ad.log.info("Http ping result: %s.", ping)
     return ping
 
@@ -1082,8 +1071,6 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         validate_con: If True, validate Internet connection after connecting to
             the network.
     """
-    droid, ed = ad.droid, ad.ed
-    serial = ad.serial
     start_wifi_connection_scan(ad)
     expect_ssid = None
     if WifiEnums.SSID_KEY in config:
@@ -1097,12 +1084,12 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         ad.log.info("Connection started.")
     except Empty:
         asserts.fail("Failed to start connection process to %s on %s" %
-                     (config, serial))
+                     (config, ad.serial))
     try:
         event = ed.pop_event(WifiEventNames.WIFI_CONNECTED, 60)
     except Empty:
-        asserts.fail("Failed to connect to %s on %s." % (config, serial))
-    log.debug(event)
+        asserts.fail("Failed to connect to %s on %s." % (config, ad.serial))
+    logging.debug(event)
     if expect_ssid:
         actual_ssid = event["data"][WifiEnums.SSID_KEY]
         asserts.assert_equal(expect_ssid, actual_ssid)
@@ -1117,7 +1104,7 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         ad.log.info("Http ping result: %s.", ping)
         asserts.assert_true(ping,
                             "No Internet access on device %s on network %s." %
-                            (serial, config))
+                            (ad.serial, config))
 
 
 def expand_enterprise_config_by_phase2(config):
