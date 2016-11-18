@@ -45,6 +45,16 @@ class BtCarPbapTest(BluetoothBaseTest):
     def setup_class(self):
         if not super(BtCarPbapTest, self).setup_class():
             return False
+        permissions_list = ["android.permission.READ_CONTACTS",
+                            "android.permission.WRITE_CONTACTS",
+                            "android.permission.READ_EXTERNAL_STORAGE"]
+        for permission in permissions_list:
+            self.pse.adb.shell(
+                "pm grant com.google.android.contacts {}".format(permission))
+        for permission in permissions_list:
+            self.pce.adb.shell(
+                "pm grant com.android.contacts {}".format(permission))
+
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
