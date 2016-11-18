@@ -749,7 +749,7 @@ class AndroidDevice:
             base_name = base_name.replace(".txt", ".zip")
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
+        full_out_path = os.path.join(br_path, out_name.replace(' ', '_'))
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
