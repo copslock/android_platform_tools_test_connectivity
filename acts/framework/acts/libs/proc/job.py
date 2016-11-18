@@ -138,6 +138,10 @@ def run(command,
         Error: When the ssh connection failed to be created.
         CommandError: Ssh worked, but the command had an error executing.
     """
+    if "bugreportz" in command:
+        # TODO: This is only a temporary workaround for b/33009284.
+        # Bugreports can take over 60 seconds.
+        timeout = 240
     start_time = time.time()
     proc = subprocess.Popen(command,
                             env=env,
