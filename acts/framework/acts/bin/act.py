@@ -195,14 +195,14 @@ def main(argv):
         '--logpath',
         type=str,
         metavar="<PATH>",
-        help=("Root path under which all logs will be placed."))
+        help="Root path under which all logs will be placed.")
     parser.add_argument(
         '-tp',
         '--testpaths',
         nargs='*',
         type=str,
         metavar="<PATH> <PATH>",
-        help=("One or more non-recursive test class search paths."))
+        help="One or more non-recursive test class search paths.")
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
@@ -233,8 +233,8 @@ def main(argv):
     parsed_configs = config_parser.load_test_config_file(args.config[0],
                                                          args.testbed)
     for c in parsed_configs:
-        c[keys.Config.key_testbed] = args.testbed,
-        c[keys.Config.key_test_paths] = args.testpaths,
+        c[keys.Config.key_testbed] = args.testbed
+        c[keys.Config.key_test_paths] = args.testpaths
         c[keys.Config.key_log_path] = args.logpath
         c[keys.Config.ikey_cli_args.value] = args.test_args
     # Prepare args for test runs
