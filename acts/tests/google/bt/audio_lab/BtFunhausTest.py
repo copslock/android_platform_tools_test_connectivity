@@ -188,7 +188,6 @@ class BtFunhausTest(BluetoothBaseTest):
                  dumpsys_path, "/", out_name))
             exe_cmd(cmd)
 
-    @BluetoothBaseTest.bt_test_wrap
     def test_run_bt_audio_12_hours(self):
         """Test audio quality over 12 hours.
 
