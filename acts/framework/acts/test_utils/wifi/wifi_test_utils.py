@@ -25,6 +25,7 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.tel import tel_defines
 
 # Number of seconds to wait for events that are supposed to happen quickly.
@@ -354,13 +355,6 @@ class WifiEnums():
         165: 5825
     }
 
-
-class WifiEventNames:
-    WIFI_CONNECTED = "WifiNetworkConnected"
-    SUPPLICANT_CON_CHANGED = "SupplicantConnectionChanged"
-    WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
-
-
 class WifiTestUtilsError(Exception):
     pass
 
@@ -532,7 +526,7 @@ def _wifi_toggle_state(ad, new_state=None):
     fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
                                                            ad.serial)
     try:
-        event = ad.ed.pop_event(WifiEventNames.SUPPLICANT_CON_CHANGED,
+        event = ad.ed.pop_event(wifi_constants.SUPPLICANT_CON_CHANGED,
                                 SHORT_TIMEOUT)
         asserts.assert_equal(event['data']['Connected'], new_state, fail_msg)
     except Empty:
@@ -563,7 +557,7 @@ def reset_wifi(ad):
     for n in networks:
         ad.droid.wifiForgetNetwork(n['networkId'])
         try:
-            event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+            event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                     SHORT_TIMEOUT)
         except Empty:
             logging.warning("Could not confirm the removal of network %s.", n)
@@ -592,7 +586,7 @@ def wifi_forget_network(ad, net_ssid):
         if net_ssid in n[WifiEnums.SSID_KEY]:
             ad.droid.wifiForgetNetwork(n['networkId'])
             try:
-                event = ad.ed.pop_event(WifiEventNames.WIFI_FORGET_NW_SUCCESS,
+                event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                      SHORT_TIMEOUT)
             except Empty:
                 raise WifiTestUtilsError("Failed to remove network %s." % n)
@@ -801,7 +795,7 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
         connect_result = None
         for i in range(num_of_tries):
             try:
-                connect_result = ad.ed.pop_event(WifiEventNames.WIFI_CONNECTED,
+                connect_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED,
                                                  30)
                 break
             except Empty:
@@ -865,29 +859,30 @@ def _wifi_connect(ad, network, num_of_tries=1):
                         WifiEnums.SSID_KEY)
     ad.droid.wifiStartTrackingStateChange()
     try:
-        asserts.assert_true(
-            ad.droid.wifiConnect(network),
-            "Wi-Fi connect returned false on %s." % ad.serial)
+        ad.droid.wifiConnectByConfig(network)
         connect_result = None
         for i in range(num_of_tries):
             try:
-                connect_result = ad.ed.pop_event(WifiEventNames.WIFI_CONNECTED,
+                connect_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED,
                                                  30)
                 break
             except Empty:
                 pass
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
-                            (network, ad.serial))
+                            (network, serial))
         ad.log.debug("Wi-Fi connection result: %s.", connect_result)
         expected_ssid = network[WifiEnums.SSID_KEY]
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
-                             "Connected to the wrong network on %s." % ad.serial)
+                             "Connected to the wrong network on %s." % serial)
         ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
+    except Exception as error:
+         ad.log.error("Failed to connect to %s with error %s", expected_ssid,
+                      error)
+         raise signals.TestFailure("Failed to connect to %s network" % network)
     finally:
         ad.droid.wifiStopTrackingStateChange()
-
 
 def start_wifi_single_scan(ad, scan_setting):
     """Starts wifi single shot scan.
@@ -1085,7 +1080,7 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         asserts.fail("Failed to start connection process to %s on %s" %
                      (config, ad.serial))
     try:
-        event = ed.pop_event(WifiEventNames.WIFI_CONNECTED, 60)
+        event = ed.pop_event(wifi_constants.WIFI_CONNECTED, 60)
     except Empty:
         asserts.fail("Failed to connect to %s on %s." % (config, ad.serial))
     logging.debug(event)
