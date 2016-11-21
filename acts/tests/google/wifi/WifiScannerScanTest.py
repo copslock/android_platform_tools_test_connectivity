@@ -22,6 +22,7 @@ import traceback
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.tests.google.wifi import WifiTestConstants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 SCANTIME = 10000  #framework support only 10s as minimum scan interval
@@ -525,9 +526,9 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
-            self.dut.droid.wifiPriorityConnect(self.connect_network)
+            self.dut.droid.wifiConnectByConfig(self.connect_network)
             connect_result = self.dut.ed.pop_event(
-                "WifiManagerPriorityConnectOnSuccess", SHORT_TIMEOUT)
+                WifiTestConstants.CONNECT_BY_CONFIG_SUCCESS, SHORT_TIMEOUT)
             self.log.info(connect_result)
             return wutils.track_connection(self.dut,
                                            self.connect_network["ssid"], 1)
