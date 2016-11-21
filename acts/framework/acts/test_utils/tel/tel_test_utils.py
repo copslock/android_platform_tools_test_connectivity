@@ -432,12 +432,14 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
                 sub_id)
 
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
-    if new_state and not _wait_for_bluetooth_in_state(
-            log, ad, False, timeout_time - time.time()):
-        log.error(
-            "Failed waiting for bluetooth during airplane mode toggle on {}".
-            format(ad.serial))
-        return False
+    try:
+        if new_state and not _wait_for_bluetooth_in_state(
+              log, ad, False, timeout_time - time.time()):
+            log.error(
+                  "Failed waiting for bluetooth during airplane mode toggle on {}".
+                  format(ad.serial))
+    except Exception as e:
+        log.error("Failed to waiting for bluetooth during airplane mode due to %s" % e)
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
     if new_state and not _wait_for_wifi_in_state(log, ad, False,
