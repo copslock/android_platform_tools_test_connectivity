@@ -32,7 +32,6 @@ from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 class GattLongevityTest(GattConnectedBaseTest):
     longevity_iterations = 1100000
 
-    @BluetoothBaseTest.bt_test_wrap
     def test_write_characteristic_no_resp_longevity(self):
         """Longevity test write characteristic value
 
