@@ -18,6 +18,7 @@ import time
 
 from acts import asserts
 from acts import base_test
+from acts.tests.google.wifi import WifiTestConstants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -89,22 +90,22 @@ class WifiAutoJoinTest(base_test.BaseTestClass):
             self.dut.droid.wakeLockAcquireBright()
             self.dut.droid.wakeUpNow()
             try:
-                self.dut.droid.wifiPriorityConnect(self.reference_networks[0][
+                self.dut.droid.wifiConnectByConfig(self.reference_networks[0][
                     '2g'])
                 connect_result = self.dut.ed.pop_event(
-                    "WifiManagerPriorityConnectOnSuccess", 1)
+                    WifiTestConstants.CONNECT_BY_CONFIG_SUCCESS, 1)
                 self.log.info(connect_result)
                 time.sleep(wait_time)
                 if self.ref_ssid_count == 2:  #add 5g network as well
-                    self.dut.droid.wifiPriorityConnect(self.reference_networks[
+                    self.dut.droid.wifiConnectByConfig(self.reference_networks[
                         0]['5g'])
                     connect_result = self.dut.ed.pop_event(
-                        "WifiManagerPriorityConnectOnSuccess", 1)
+                        WifiTestConstants.CONNECT_BY_CONFIG_SUCCESS, 1)
                     self.log.info(connect_result)
                     time.sleep(wait_time)
-                self.dut.droid.wifiPriorityConnect(self.other_network)
+                self.dut.droid.wifiConnectByConfig(self.other_network)
                 connect_result = self.dut.ed.pop_event(
-                    "WifiManagerPriorityConnectOnSuccess")
+                    WifiTestConstants.CONNECT_BY_CONFIG_SUCCESS)
                 self.log.info(connect_result)
                 wutils.track_connection(self.dut, self.other_network["ssid"], 1)
                 wutils.wifi_forget_network(self.dut, self.other_network["ssid"])
