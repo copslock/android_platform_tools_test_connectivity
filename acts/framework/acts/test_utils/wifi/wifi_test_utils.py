@@ -683,7 +683,7 @@ def start_wifi_tethering(ad, ssid, password, band=None):
             WifiEnums.WIFI_CONFIG_APBAND_2G or WifiEnums.WIFI_CONFIG_APBAND_5G.
 
     Returns:
-        True if soft AP was started successfully, False otherwise.
+        No return value. Error checks in this function will raise test failure signals
     """
     config = {WifiEnums.SSID_KEY: ssid}
     if password:
