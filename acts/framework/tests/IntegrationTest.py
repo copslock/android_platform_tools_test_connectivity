@@ -32,5 +32,6 @@ class IntegrationTest(base_test.BaseTestClass):
                       "test flow works.")
         asserts.explicit_pass("Hello World")
 
+
 if __name__ == "__main__":
     test_runner.main()
