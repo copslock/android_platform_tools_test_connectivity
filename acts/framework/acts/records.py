@@ -341,7 +341,6 @@ class TestResult(object):
         """
         d = {}
         d["ControllerInfo"] = self.controller_info
-        d["Results"] = [record.to_dict() for record in self.executed]
         d["Requested"] = len(self.requested)
         d["Executed"] = len(self.executed)
         d["Passed"] = len(self.passed)
