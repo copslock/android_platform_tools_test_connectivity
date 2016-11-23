@@ -121,10 +121,11 @@ class AdbProxy():
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         ret = proc.returncode
-        total_output = "stdout: {}, stderr: {}, ret: {}".format(out, err, ret)
+        total_output = "{} cmd '{}' stdout: {}, stderr: {}, ret: {}".format(
+              self.serial, cmd, out, err, ret)
         # TODO(angli): Fix this when global logger is done.
         if self.log:
-            self.log.debug("{}\n{}".format(cmd, total_output))
+            self.log.debug(total_output)
         if ret == 0:
             return out
         else:
