@@ -3476,8 +3476,7 @@ class WifiUtils():
         import stop_wifi_tethering as _stop_wifi_tethering
     from acts.test_utils.wifi.wifi_test_utils \
         import WifiEnums as _WifiEnums
-    from acts.test_utils.wifi.wifi_test_utils \
-        import WifiEventNames as _WifiEventNames
+    from acts.test_utils.wifi import wifi_constants
 
     WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
     WIFI_CONFIG_APBAND_5G = _WifiEnums.WIFI_CONFIG_APBAND_5G
@@ -3521,7 +3520,7 @@ class WifiUtils():
             ad.droid.wifiForgetNetwork(network['networkId'])
             try:
                 event = ad.ed.pop_event(
-                    WifiUtils._WifiEventNames.WIFI_FORGET_NW_SUCCESS)
+                    WifiUtils.WIFI_FORGET_NW_SUCCESS)
             except Empty:
                 log.warning("Could not confirm the removal of network {}.".
                             format(network))
