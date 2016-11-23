@@ -245,7 +245,7 @@ class EventDispatcher:
                     'Timeout after {}s waiting for event: {}'.format(
                         timeout, event_name))
 
-    def pop_events(self, regex_pattern, timeout):
+    def pop_events(self, regex_pattern, timeout, freq=1):
         """Pop events whose names match a regex pattern.
 
         If such event(s) exist, pop one event from each event queue that
@@ -278,7 +278,7 @@ class EventDispatcher:
             results = self._match_and_pop(regex_pattern)
             if len(results) != 0 or time.time() > deadline:
                 break
-            time.sleep(1)
+            time.sleep(freq)
         if len(results) == 0:
             raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
                 timeout, regex_pattern))
