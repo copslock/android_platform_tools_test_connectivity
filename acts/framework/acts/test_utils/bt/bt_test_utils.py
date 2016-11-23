@@ -51,6 +51,7 @@ DEFAULT_TIMEOUT = 15
 DEFAULT_RFCOMM_TIMEOUT = 10000
 MAGIC_PAN_CONNECT_TIMEOUT = 5
 DEFAULT_DISCOVERY_TIMEOUT = 3
+TIMEOUT_SMALL = 0.0001
 
 PAIRING_VARIANT_PASSKEY_CONFIRMATION = 2
 
@@ -347,17 +348,26 @@ def determine_max_advertisements(android_device):
 
         android_device.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        try:
-            android_device.ed.pop_event(
-                adv_succ.format(advertise_callback), DEFAULT_TIMEOUT)
-            log.info("Advertisement {} started.".format(advertisement_count +
-                                                        1))
+
+        regex = "(" + adv_succ.format(
+            advertise_callback) + "|" + adv_fail.format(
+                advertise_callback) + ")"
+        # wait for either success or failure event
+        evt = android_device.ed.pop_events(regex, DEFAULT_TIMEOUT,
+                                           TIMEOUT_SMALL)
+        if evt[0]["name"] == adv_succ.format(advertise_callback):
             advertisement_count += 1
-        except Exception as err:
-            log.info(
-                "Advertisement failed to start. Reached max advertisements at {}".
-                format(advertisement_count))
-            break
+            log.info("Advertisement {} started.".format(advertisement_count))
+        else:
+            error = evt[0]["data"]["Error"]
+            if error == "ADVERTISE_FAILED_TOO_MANY_ADVERTISERS":
+                log.info(
+                    "Advertisement failed to start. Reached max advertisements at {}".format(
+                        advertisement_count))
+                break
+            else:
+                raise BtTestUtilsError("Expected ADVERTISE_FAILED_TOO_MANY_ADVERTISERS," +
+                                       " but received bad error code {}".format(error))
     try:
         for adv in advertise_callback_list:
             android_device.droid.bleStopBleAdvertising(adv)
