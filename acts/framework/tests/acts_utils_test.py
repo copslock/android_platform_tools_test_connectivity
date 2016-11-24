@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-__author__ = "angli@google.com (Ang Li)"
-
 import time
 import unittest
 
@@ -26,6 +24,7 @@ class ActsUtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under acts.utils.
     """
+
     def test_start_standing_subproc(self):
         with self.assertRaisesRegexp(utils.ActsUtilsError,
                                      "Process .* has terminated"):
@@ -40,4 +39,4 @@ class ActsUtilsTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()

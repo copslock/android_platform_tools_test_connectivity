@@ -20,10 +20,12 @@ import unittest
 
 from acts.controllers.utils_lib import host_utils
 
+
 class ActsHostUtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under acts.controllers.adb.
     """
+
     def test_is_port_available_positive(self):
         # Unfortunately, we cannot do this test reliably for SOCK_STREAM
         # because the kernel allow this socket to linger about for some
@@ -55,5 +57,6 @@ class ActsHostUtilsTest(unittest.TestCase):
         finally:
             test_s.close()
 
+
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()

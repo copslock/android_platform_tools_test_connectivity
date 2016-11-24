@@ -59,8 +59,9 @@ class ActsTestRunnerTest(unittest.TestCase):
     def test_register_optional_controller_no_config(self):
         tr = test_runner.TestRunner(self.base_mock_test_config,
                                     self.mock_run_list)
-        self.assertIsNone(tr.register_controller(mock_controller,
-                                                 required=False))
+        self.assertIsNone(
+            tr.register_controller(
+                mock_controller, required=False))
 
     def test_register_controller_third_party_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
@@ -184,16 +185,22 @@ class ActsTestRunnerTest(unittest.TestCase):
                                          {'MyMagic': {'magic': 'Magic2'}}]}
         self.assertEqual(tr.results.controller_info, expected_info)
 
-    @mock.patch('acts.controllers.adb.AdbProxy',
-                return_value=acts_android_device_test.MockAdbProxy(1))
-    @mock.patch('acts.controllers.fastboot.FastbootProxy',
-                return_value=acts_android_device_test.MockFastbootProxy(1))
-    @mock.patch('acts.controllers.android_device.list_adb_devices',
-                return_value=["1"])
-    @mock.patch('acts.controllers.android_device.get_all_instances',
-                return_value=acts_android_device_test.get_mock_ads(1))
-    def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
-                                  mock_fastboot, mock_adb,):
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=acts_android_device_test.MockAdbProxy(1))
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=acts_android_device_test.MockFastbootProxy(1))
+    @mock.patch(
+        'acts.controllers.android_device.list_adb_devices', return_value=["1"])
+    @mock.patch(
+        'acts.controllers.android_device.get_all_instances',
+        return_value=acts_android_device_test.get_mock_ads(1))
+    def test_run_two_test_classes(self,
+                                  mock_get_all,
+                                  mock_list_adb,
+                                  mock_fastboot,
+                                  mock_adb, ):
         """Verifies that runing more than one test class in one test run works
         proerly.
 
@@ -203,8 +210,9 @@ class ActsTestRunnerTest(unittest.TestCase):
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
-        my_config = [{"serial": "xxxx", "magic": "Magic1"},
-                     {"serial": "xxxx", "magic": "Magic2"}]
+        my_config = [{"serial": "xxxx",
+                      "magic": "Magic1"}, {"serial": "xxxx",
+                                           "magic": "Magic2"}]
         mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
         mock_test_config[tb_key]["AndroidDevice"] = [
             {"serial": "1", "skip_sl4a": True}]
