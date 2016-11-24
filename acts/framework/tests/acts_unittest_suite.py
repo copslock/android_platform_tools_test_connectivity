@@ -36,8 +36,7 @@ def compile_suite():
         acts_android_device_test.ActsAndroidDeviceTest,
         acts_records_test.ActsRecordsTest,
         acts_sl4a_client_test.ActsSl4aClientTest,
-        acts_utils_test.ActsUtilsTest,
-        acts_logger_test.ActsLoggerTest,
+        acts_utils_test.ActsUtilsTest, acts_logger_test.ActsLoggerTest,
         acts_host_utils_test.ActsHostUtilsTest
     ]
 
