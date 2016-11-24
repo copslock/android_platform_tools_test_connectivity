@@ -22,6 +22,7 @@ from acts import logger
 class ActsLoggerTest(unittest.TestCase):
     """Verifies code in acts.logger module.
     """
+
     def test_epoch_to_log_line_timestamp(self):
         actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
         self.assertEqual("07-21 13:51:02.116", actual_stamp)
