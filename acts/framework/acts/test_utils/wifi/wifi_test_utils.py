@@ -465,24 +465,29 @@ def match_networks(target_params, networks):
     """Finds the WiFi networks that match a given set of parameters in a list
     of WiFi networks.
 
-    To be considered a match, a network needs to have all the target parameters
-    and the values of those parameters need to equal to those of the target
-    parameters.
+    To be considered a match, the network should contain every key-value pair
+    of target_params
 
     Args:
-        target_params: The target parameters to match networks against.
+        target_params: A dict with 1 or more key-value pairs representing a Wi-Fi network.
+                       E.g { 'SSID': 'wh_ap1_5g', 'BSSID': '30:b5:c2:33:e4:47' }
         networks: A list of dict objects representing WiFi networks.
 
     Returns:
         The networks that match the target parameters.
     """
     results = []
+    asserts.assert_true(target_params, "Expected networks object 'target_params' is empty")
     for n in networks:
+        add_network = 1
         for k, v in target_params.items():
             if k not in n:
-                continue
+                add_network = 0
+                break
             if n[k] != v:
-                continue
+                add_network = 0
+                break
+        if add_network:
             results.append(n)
     return results
 
@@ -870,12 +875,12 @@ def _wifi_connect(ad, network, num_of_tries=1):
                 pass
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
-                            (network, serial))
+                            (network, ad.serial))
         ad.log.debug("Wi-Fi connection result: %s.", connect_result)
         expected_ssid = network[WifiEnums.SSID_KEY]
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
-                             "Connected to the wrong network on %s." % serial)
+                             "Connected to the wrong network on %s." % ad.serial)
         ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
     except Exception as error:
          ad.log.error("Failed to connect to %s with error %s", expected_ssid,
