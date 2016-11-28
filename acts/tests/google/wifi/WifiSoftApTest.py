@@ -121,8 +121,8 @@ class WifiSoftApTest(base_test.BaseTestClass):
         client_scan_results = self.dut_client.droid.wifiGetScanResults()
         for result in client_scan_results:
             self.dut.log.debug("scan found: %s", result[wutils.WifiEnums.SSID_KEY])
-        wutils.match_networks({wutils.WifiEnums.SSID_KEY: ap_ssid},
-                              client_scan_results)
+        wutils.assert_network_in_list({wutils.WifiEnums.SSID_KEY: ap_ssid},
+                                      client_scan_results)
 
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.
