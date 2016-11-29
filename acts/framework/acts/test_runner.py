@@ -302,7 +302,7 @@ class TestRunner(object):
                                                            attr))
             if not getattr(module, attr):
                 raise signals.ControllerError(
-                    ("Controller interface %s in %s cannot be null.") % (
+                    "Controller interface %s in %s cannot be null." % (
                      attr, module.__name__))
 
     def register_controller(self, module, required=True):

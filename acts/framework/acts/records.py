@@ -245,6 +245,17 @@ class TestResult(object):
                 setattr(sum_result, name, l_value)
         return sum_result
 
+
+    def add_controller_info(self, name, info):
+        try:
+            json.dumps(info)
+        except TypeError:
+            logging.warning(("Controller info for %s is not JSON serializable!"
+                             " Coercing it to string.") % name)
+            self.controller_info[name] = str(info)
+            return
+        self.controller_info[name] = info
+
     def add_record(self, record):
         """Adds a test record to test result.
 
@@ -341,6 +352,8 @@ class TestResult(object):
             A dictionary with the stats of this test result.
         """
         d = {}
+        d["ControllerInfo"] = self.controller_info
+        d["Results"] = [record.to_dict() for record in self.executed]
         d["Requested"] = len(self.requested)
         d["Executed"] = len(self.executed)
         d["Passed"] = len(self.passed)
