@@ -245,7 +245,6 @@ class TestResult(object):
                 setattr(sum_result, name, l_value)
         return sum_result
 
-
     def add_controller_info(self, name, info):
         try:
             json.dumps(info)
