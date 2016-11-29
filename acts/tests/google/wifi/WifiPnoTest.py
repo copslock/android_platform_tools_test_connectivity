@@ -20,7 +20,6 @@ from acts import base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
-WifiEventNames = wutils.WifiEventNames
 
 
 class WifiPnoTest(base_test.BaseTestClass):
