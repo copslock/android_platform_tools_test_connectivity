@@ -157,8 +157,7 @@ def setup_droid_properties(log, ad, sim_filename):
                 sim_serial = ad.droid.telephonyGetSimSerialNumberForSubscription(
                     sub_id)
                 if not sim_serial:
-                    log.error("Unable to find ICC-ID for SIM on {}!".format(
-                        ad.serial))
+                    ad.log.error("Unable to find ICC-ID for SIM.")
                 if sim_data is not None:
                     number = sim_data[sim_serial]["phone_num"]
                 else:
@@ -166,6 +165,9 @@ def setup_droid_properties(log, ad, sim_filename):
             except KeyError:
                 number = ad.droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
+            except Except as e:
+                log.error("fail to setup_droid_property with %s", e)
+                raise
             if not number or number == "":
                 raise TelTestUtilsError(
                     "Failed to find valid phone number for {}"
@@ -181,7 +183,7 @@ def setup_droid_properties(log, ad, sim_filename):
                     telephonyGetSimSerialNumberForSubscription(sub_id)))
 
     if found_sims == 0:
-        log.warning("No Valid SIMs found in device {}".format(ad.serial))
+        ad.log.warning("No Valid SIMs found in device")
 
     setattr(ad, 'cfg', device_props)
 
@@ -239,18 +241,20 @@ def get_num_active_sims(log, ad):
     return len(valid_sims.keys())
 
 
-def toggle_airplane_mode(log, ad, new_state=None):
+def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
     """ Toggle the state of airplane mode.
 
     Args:
+        log: log handler.
         ad: android_device object.
         new_state: Airplane mode state to set to.
             If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
 
     Returns:
         result: True if operation succeed. False if error happens.
     """
-    return toggle_airplane_mode_msim(log, ad, new_state)
+    return toggle_airplane_mode_msim(log, ad, new_state, strict_checking=True)
 
 
 def is_expected_event(event_to_check, events_list):
@@ -356,13 +360,15 @@ def _wait_for_wifi_in_state(log, ad, state, max_wait):
                 state)
 
 
-def toggle_airplane_mode_msim(log, ad, new_state=None):
+def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     """ Toggle the state of airplane mode.
 
     Args:
+        log: log handler.
         ad: android_device object.
         new_state: Airplane mode state to set to.
             If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
 
     Returns:
         result: True if operation succeed. False if error happens.
@@ -377,8 +383,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
 
     cur_state = ad.droid.connectivityCheckAirplaneMode()
     if cur_state == new_state:
-        log.info("Airplane mode already <{}> on {}".format(new_state,
-                                                           ad.serial))
+        ad.log.info("Airplane mode already <{}>".format(new_state))
         return True
     elif new_state is None:
         log.info("Current State {} New state {}".format(cur_state, new_state))
@@ -389,7 +394,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     service_state_list = []
     if new_state:
         service_state_list.append(SERVICE_STATE_POWER_OFF)
-        log.info("Turn on airplane mode on {}".format(ad.serial))
+        ad.log.info("Turn on airplane mode")
 
     else:
         # If either one of these 3 events show up, it should be OK.
@@ -398,7 +403,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         # NO SIM, or Dead SIM, or no Roaming coverage.
         service_state_list.append(SERVICE_STATE_OUT_OF_SERVICE)
         service_state_list.append(SERVICE_STATE_EMERGENCY_ONLY)
-        log.info("Turn off airplane mode on {}.".format(ad.serial))
+        ad.log.info("Turn off airplane mode.")
 
     for sub_id in sub_id_list:
         ad.droid.telephonyStartTrackingServiceStateChangeForSubscription(
@@ -420,11 +425,11 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
         except Empty:
             pass
         if event is None:
-            log.error("Did not get expected service state {} on {}".format(
-                service_state_list, ad.serial))
+            ad.log.error("Did not get expected service state {}".format(
+                service_state_list))
             return False
         else:
-            log.info("Received event: {} on {}".format(event, ad.serial))
+            ad.log.info("Received event: {}".format(event))
     finally:
         for sub_id in sub_id_list:
             ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
@@ -434,22 +439,22 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
     try:
         if new_state and not _wait_for_bluetooth_in_state(
               log, ad, False, timeout_time - time.time()):
-            log.error(
-                  "Failed waiting for bluetooth during airplane mode toggle on {}".
-                  format(ad.serial))
+            ad.log.error(
+                  "Failed waiting for bluetooth during airplane mode toggle")
+            if strict_checking: return False
     except Exception as e:
-        log.error("Failed to waiting for bluetooth during airplane mode due to %s" % e)
+        ad.log.error("Failed to check bluetooth state due to {}".format(e))
+        if strict_checking:
+            raise
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
     if new_state and not _wait_for_wifi_in_state(log, ad, False,
                                                  timeout_time - time.time()):
-        log.error("Failed waiting for wifi during airplane mode toggle on {}.".
-                  format(ad.serial))
+        ad.log.error("Failed waiting for wifi during airplane mode toggle.")
         return False
 
     if ad.droid.connectivityCheckAirplaneMode() != new_state:
-        log.error("Airplane mode {} failed on {}".format("ON" if new_state else
-                                                         "OFF", ad.serial))
+        ad.log.error("Airplane mode {} failed".format("ON" if new_state else "OFF"))
         return False
     return True
 
@@ -1561,7 +1566,7 @@ def wait_for_wifi_data_connection(
         True if success.
         False if failed.
     """
-    log.info("{} wait_for_wifi_data_connection".format(ad.serial))
+    ad.log.info("wait_for_wifi_data_connection")
     return _wait_for_nw_data_connection(
         log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
 
@@ -1630,17 +1635,17 @@ def _wait_for_nw_data_connection(
                 return True
             else:
                 if not is_connected and current_type != connection_type:
-                    log.info(
-                        "wait_for_nw_data_connection success: {} data not on {}!".
-                        format(ad.serial, connection_type))
+                    ad.log.info(
+                        "wait_for_nw_data_connection success: data not on {}!".
+                        format(connection_type))
                     return True
                 elif is_connected and current_type == connection_type:
-                    log.info(
+                    ad.log.info(
                         "wait_for_nw_data_connection success: {} data on {}!".
-                        format(ad.serial, connection_type))
+                        format(connection_type))
                     return True
         else:
-            log.info("{} current state: {} target: {}".format(
+            ad.log.info("{} current state: {} target: {}".format(
                 ad.serial, cur_data_connection_state, is_connected))
 
         try:
@@ -3586,7 +3591,7 @@ class WifiUtils():
                             WifiUtils.SSID_KEY]))
                     return False
             except Exception as e:
-                log.error("WifiUtils.wifi_connect not connected, no event.")
+                log.error("WifiUtils.wifi_connect failed with %s.", e)
                 return False
         except Exception as e:
             log.error("WifiUtils.wifi_connect exception: {}".format(e))
