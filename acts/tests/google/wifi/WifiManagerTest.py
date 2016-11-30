@@ -26,7 +26,6 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 from acts import asserts
 
 WifiEnums = wutils.WifiEnums
-WifiEventNames = wutils.WifiEventNames
 
 
 class WifiManagerTest(acts.base_test.BaseTestClass):
