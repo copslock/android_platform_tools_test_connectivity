@@ -167,6 +167,9 @@ def setup_droid_properties(log, ad, sim_filename):
             except KeyError:
                 number = ad.droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
+            except Except as e:
+                log.error("Failed to setup_droid_property with {}".format(e))
+                raise
             if not number or number == "":
                 raise TelTestUtilsError(
                     "Failed to find valid phone number for {}"
@@ -240,18 +243,21 @@ def get_num_active_sims(log, ad):
     return len(valid_sims.keys())
 
 
-def toggle_airplane_mode(log, ad, new_state=None):
+def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
     """ Toggle the state of airplane mode.
 
     Args:
+        log: log handler.
         ad: android_device object.
         new_state: Airplane mode state to set to.
             If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
 
     Returns:
         result: True if operation succeed. False if error happens.
     """
-    return toggle_airplane_mode_msim(log, ad, new_state)
+    return toggle_airplane_mode_msim(log, ad, new_state,
+                                     strict_checking=strict_checking)
 
 
 def is_expected_event(event_to_check, events_list):
@@ -357,13 +363,15 @@ def _wait_for_wifi_in_state(log, ad, state, max_wait):
                 state)
 
 
-def toggle_airplane_mode_msim(log, ad, new_state=None):
+def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     """ Toggle the state of airplane mode.
 
     Args:
+        log: log handler.
         ad: android_device object.
         new_state: Airplane mode state to set to.
             If None, opposite of the current state.
+        strict_checking: Whether to turn on strict checking that checks all features.
 
     Returns:
         result: True if operation succeed. False if error happens.
@@ -438,8 +446,11 @@ def toggle_airplane_mode_msim(log, ad, new_state=None):
             log.error(
                   "Failed waiting for bluetooth during airplane mode toggle on {}".
                   format(ad.serial))
+            if strict_checking: return False
     except Exception as e:
-        log.error("Failed to waiting for bluetooth during airplane mode due to %s" % e)
+        log.error("Failed to check bluetooth state due to {}".format(e))
+        if strict_checking:
+            raise
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
     if new_state and not _wait_for_wifi_in_state(log, ad, False,
@@ -3582,7 +3593,7 @@ class WifiUtils():
                             WifiUtils.SSID_KEY]))
                     return False
             except Exception as e:
-                log.error("WifiUtils.wifi_connect not connected, no event.")
+                log.error("WifiUtils.wifi_connect failed with {}.".format(e))
                 return False
         except Exception as e:
             log.error("WifiUtils.wifi_connect exception: {}".format(e))
