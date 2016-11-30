@@ -166,7 +166,7 @@ def setup_droid_properties(log, ad, sim_filename):
                 number = ad.droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
             except Except as e:
-                log.error("fail to setup_droid_property with %s", e)
+                log.error("Failed to setup_droid_property with {}".format(e))
                 raise
             if not number or number == "":
                 raise TelTestUtilsError(
@@ -254,7 +254,8 @@ def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
     Returns:
         result: True if operation succeed. False if error happens.
     """
-    return toggle_airplane_mode_msim(log, ad, new_state, strict_checking=True)
+    return toggle_airplane_mode_msim(log, ad, new_state,
+                                     strict_checking=strict_checking)
 
 
 def is_expected_event(event_to_check, events_list):
@@ -436,14 +437,16 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                 sub_id)
 
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
+    # Work around for https://buganizer.corp.google.com/issues/32341648
     try:
         if new_state and not _wait_for_bluetooth_in_state(
               log, ad, False, timeout_time - time.time()):
-            ad.log.error(
-                  "Failed waiting for bluetooth during airplane mode toggle")
+            log.error(
+                  "Failed waiting for bluetooth during airplane mode toggle on {}".
+                  format(ad.serial))
             if strict_checking: return False
     except Exception as e:
-        ad.log.error("Failed to check bluetooth state due to {}".format(e))
+        log.error("Failed to check bluetooth state due to {}".format(e))
         if strict_checking:
             raise
 
@@ -3591,7 +3594,7 @@ class WifiUtils():
                             WifiUtils.SSID_KEY]))
                     return False
             except Exception as e:
-                log.error("WifiUtils.wifi_connect failed with %s.", e)
+                log.error("WifiUtils.wifi_connect failed with {}.".format(e))
                 return False
         except Exception as e:
             log.error("WifiUtils.wifi_connect exception: {}".format(e))

@@ -156,6 +156,7 @@ class TelephonyBaseTest(BaseTestClass):
         sim_conf_file = self.user_params["sim_conf_file"]
         # If the sim_conf_file is not a full path, attempt to find it
         # relative to the config file.
+
         if not os.path.isfile(sim_conf_file):
             sim_conf_file = os.path.join(
                 self.user_params[Config.key_config_path], sim_conf_file)
@@ -169,7 +170,7 @@ class TelephonyBaseTest(BaseTestClass):
                 self.register_controller(acts.controllers.diag_logger,
                                          required=False))
         for ad in self.android_devices:
-            # Ensure the phone not in airplane mode before setup_droid_properties
+            # Ensure the phone is not in airplane mode before setup_droid_properties
             toggle_airplane_mode(self.log, ad, False, strict_checking=False)
             setup_droid_properties(self.log, ad, sim_conf_file)
 
@@ -218,7 +219,7 @@ class TelephonyBaseTest(BaseTestClass):
         finally:
             for ad in self.android_devices:
                 try:
-                    toggle_airplane_mode(self.log, ad, True, strick_checking=False)
+                    toggle_airplane_mode(self.log, ad, True, strict_checking=False)
                 except BrokenPipeError:
                     # Broken Pipe, can not call SL4A API to turn on Airplane Mode.
                     # Use adb command to turn on Airplane Mode.
