@@ -24,7 +24,6 @@ from acts.controllers import attenuator
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
-WifiEventNames = wutils.WifiEventNames
 
 AP_1 = 0
 AP_2 = 1
