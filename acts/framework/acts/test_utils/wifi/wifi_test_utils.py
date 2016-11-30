@@ -1080,13 +1080,13 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         ad.log.info("Connecting.")
     ad.droid.wifiEnterpriseConnect(config)
     try:
-        event = ed.pop_event("WifiManagerEnterpriseConnectOnSuccess", 30)
+        event = ad.ed.pop_event("WifiManagerEnterpriseConnectOnSuccess", 30)
         ad.log.info("Connection started.")
     except Empty:
         asserts.fail("Failed to start connection process to %s on %s" %
                      (config, ad.serial))
     try:
-        event = ed.pop_event(wifi_constants.WIFI_CONNECTED, 60)
+        event = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 60)
     except Empty:
         asserts.fail("Failed to connect to %s on %s." % (config, ad.serial))
     logging.debug(event)
