@@ -167,7 +167,7 @@ def setup_droid_properties(log, ad, sim_filename):
             except KeyError:
                 number = ad.droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
-            except Except as e:
+            except Exception as e:
                 log.error("Failed to setup_droid_property with {}".format(e))
                 raise
             if not number or number == "":
@@ -449,7 +449,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                   format(ad.serial))
             if strict_checking: return False
     except Exception as e:
-        log.error("Failed to check bluetooth state due to {}".format(e))
+        ad.log.error("Failed to check bluetooth state due to {}".format(e))
         if strict_checking:
             raise
 
