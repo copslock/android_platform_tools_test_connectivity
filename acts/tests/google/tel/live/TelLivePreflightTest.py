@@ -54,11 +54,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
 
     """ Tests Begin """
 
@@ -68,7 +69,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
         # Check WiFi environment.
         # 1. Connect to WiFi.
         # 2. Check WiFi have Internet access.
-        toggle_airplane_mode(self.log, ad, True)
+        toggle_airplane_mode(self.log, ad, False, strict_checking=False)
         try:
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
@@ -92,7 +93,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 self._preflight_fail(
                     "{}: Unable to find A valid subscription!".format(
                         ad.serial))
-            toggle_airplane_mode(self.log, ad, False)
+            toggle_airplane_mode(self.log, ad, False, strict_checking=False)
             if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
                 self._preflight_fail("{}: No Default Data Sub ID".format(
                     ad.serial))
@@ -113,3 +114,4 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
 
 """ Tests End """
+
