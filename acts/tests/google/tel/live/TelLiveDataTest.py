@@ -96,58 +96,14 @@ from acts.utils import rand_ascii_str
 class TelLiveDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = ("test_airplane_mode",
-                      "test_4g",
-                      "test_3g",
-                      "test_2g",
-                      "test_lte_wifi_switching",
-                      "test_wcdma_wifi_switching",
-                      "test_gsm_wifi_switching",
-                      "test_wifi_connect_disconnect",
-                      "test_lte_multi_bearer",
-                      "test_wcdma_multi_bearer",
-                      "test_2g_wifi_not_associated",
-                      "test_3g_wifi_not_associated",
-                      "test_4g_wifi_not_associated",
 
-                      # WiFi Tethering tests
-                      "test_tethering_entitlement_check",
-                      "test_tethering_2g_to_2gwifi",
-                      "test_tethering_2g_to_5gwifi",
-                      "test_tethering_3g_to_5gwifi",
-                      "test_tethering_3g_to_2gwifi",
-                      "test_tethering_4g_to_5gwifi",
-                      "test_tethering_4g_to_2gwifi",
-                      "test_tethering_4g_to_2gwifi_2clients",
-                      "test_toggle_apm_during_active_wifi_tethering",
-                      "test_toggle_data_during_active_wifi_tethering",
-                      "test_disable_wifi_tethering_resume_connected_wifi",
-                      "test_tethering_wifi_ssid_quotes",
-                      "test_tethering_wifi_no_password",
-                      "test_tethering_wifi_password_escaping_characters",
-                      "test_tethering_wifi_ssid",
-                      "test_tethering_wifi_password",
-                      "test_tethering_wifi_volte_call",
-                      "test_tethering_wifi_csfb_call",
-                      "test_tethering_wifi_3g_call",
-                      "test_tethering_wifi_reboot",
-                      "test_connect_wifi_start_tethering_wifi_reboot",
-                      "test_connect_wifi_reboot_start_tethering_wifi",
-                      "test_tethering_wifi_screen_off_enable_doze_mode",
-
-                      # stress tests
-                      "test_4g_stress",
-                      "test_3g_stress",
-                      "test_lte_multi_bearer_stress",
-                      "test_wcdma_multi_bearer_stress",
-                      "test_tethering_4g_to_2gwifi_stress",)
         self.stress_test_number = self.get_stress_test_number()
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_airplane_mode(self):
