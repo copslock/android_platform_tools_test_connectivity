@@ -1644,7 +1644,7 @@ def _wait_for_nw_data_connection(
                     return True
                 elif is_connected and current_type == connection_type:
                     ad.log.info(
-                        "wait_for_nw_data_connection success: {} data on {}!".
+                        "wait_for_nw_data_connection success: data on {}!".
                         format(connection_type))
                     return True
         else:
