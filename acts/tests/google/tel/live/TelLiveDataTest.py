@@ -96,13 +96,14 @@ from acts.utils import rand_ascii_str
 class TelLiveDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.stress_test_number = self.get_stress_test_number()
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
 
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
+        self.stress_test_number = self.get_stress_test_number()
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_airplane_mode(self):
