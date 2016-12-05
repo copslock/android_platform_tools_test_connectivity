@@ -109,12 +109,13 @@ def is_sl4a_installed(adb_proxy):
         True if sl4a is installed, False otherwise.
     """
     try:
-        adb_proxy.shell("pm path com.googlecode.android_scripting")
-        return True
+        if adb_proxy.shell("pm path com.googlecode.android_scripting"):
+            return True
     except adb.AdbError as e:
         if not e.stderr:
             return False
         raise
+    return False
 
 
 def is_sl4a_running(adb_proxy):

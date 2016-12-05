@@ -36,7 +36,7 @@ def exe_cmd(*cmds):
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
     (out, err) = proc.communicate()
     if not err:
-        return out
+        return out.decode("utf-8").strip()
     return err
 
 
