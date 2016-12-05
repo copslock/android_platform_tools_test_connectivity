@@ -18,12 +18,28 @@ from builtins import str
 
 import logging
 import random
+import re
 import socket
 import time
 
 from acts.controllers.utils_lib import host_utils
 from acts.controllers.utils_lib.ssh import connection
 from acts.libs.proc import job
+
+
+def parsing_parcel_output(output):
+    """Parsing the adb output in Parcel format.
+
+    Parsing the adb output in format:
+      Result: Parcel(
+        0x00000000: 00000000 00000014 00390038 00340031 '........8.9.1.4.'
+        0x00000010: 00300038 00300030 00300030 00340032 '8.0.0.0.0.0.2.4.'
+        0x00000020: 00350034 00330035 00320038 00310033 '4.5.5.3.8.2.3.1.'
+        0x00000030: 00000000                            '....            ')
+    """
+    output = ''.join(re.findall(r"'(.*)'", output))
+    return re.sub(r'[.\s]', '', output)
+
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -60,7 +76,7 @@ class AdbProxy(object):
                             conected to a remote host that we can reach via SSH.
         """
         self.serial = serial
-        adb_path = str(self._exec_cmd("which adb"), "utf-8").strip()
+        adb_path = self._exec_cmd("which adb")
         adb_cmd = [adb_path]
         if serial:
             adb_cmd.append("-s %s" % serial)
@@ -106,7 +122,11 @@ class AdbProxy(object):
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
         if ret == 0:
-            return out
+            out = out.decode("utf-8").strip()
+            if "Result: Parcel" in out:
+                return parsing_parcel_output(out)
+            else:
+                return out
         else:
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
 
@@ -159,7 +179,7 @@ class AdbProxy(object):
             A string that is the value of the property, or None if the property
             doesn't exist.
         """
-        return self.shell("getprop %s" % prop_name).decode("utf-8").strip()
+        return self.shell("getprop %s" % prop_name)
 
     def __getattr__(self, name):
         def adb_call(*args):
