@@ -81,18 +81,18 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
         """
         # make a call on AG
         if not initiate_call(self.log, self.ag, self.re_phone_number):
-            self.log.error("Failed to initiate call from ag.")
+            self.ag.log.error("Failed to initiate call from ag.")
             return False
         if not wait_and_answer_call(self.log, self.re):
-            self.log.error("Failed to accept call on re.")
+            self.re.log.error("Failed to accept call on re.")
             return False
 
         # Wait for AG, RE to go into an Active state.
         if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(self.ag.serial))
+            self.ag.log.error("AG not in Active state.")
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.re):
-            self.log.error("RE not in Active {}".format(self.re.serial))
+            self.re.log.error("RE not in Active state.")
             return False
 
         # Now connect the devices.
@@ -104,7 +104,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(self.hf.serial))
+            self.hf.log.error("HF not in Active state.")
             return False
 
         # Hangup the call and check all devices are clean
@@ -148,44 +148,42 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # make a call on AG
         if not initiate_call(self.log, self.ag, self.re_phone_number):
-            self.log.error("Failed to initiate call from ag.")
+            self.ag.log.error("Failed to initiate call from ag.")
             return False
 
         # Wait for all HF
         if not car_telecom_utils.wait_for_dialing(self.log, self.hf):
-            self.log.error("HF not in ringing {}".format(self.hf.serial))
+            self.hf.log.error("HF not in ringing state.")
             return False
 
         # Accept the call on RE
         if not wait_and_answer_call(self.log, self.re):
-            self.log.error("Failed to accept call on re.")
+            self.re.log.error("Failed to accept call on re.")
             return False
         # Wait for all HF, AG, RE to go into an Active state.
-        if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(self.hf.serial))
+        if not car_telecom_utils.wait_for_active(self.log, self.hf):
+            self.hf.log.error("HF not in Active state.")
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.ag):
-            self.log.error("AG not in Active {}".format(self.ag.serial))
+            self.ag.log.error("AG not in Active state.")
             return False
         if not car_telecom_utils.wait_for_active(self.log, self.re):
-            self.log.error("RE not in Active {}".format(self.re.serial))
+            self.re.log.error("RE not in Active state.")
             return False
 
         # Turn the adapter OFF on HF
         if not bt_test_utils.disable_bluetooth(self.hf.droid):
-            self.log.error("Failed to turn BT off on HF {}".format(
-                self.hf.serial))
+            self.hf.log.error("Failed to turn BT off on HF.")
             return False
 
         # Turn adapter ON on HF
         if not bt_test_utils.enable_bluetooth(self.hf.droid, self.hf.ed):
-            self.log.error("Failed to turn BT ON after call on HF {}".format(
-                self.hf.serial))
+            self.hf.log.error("Failed to turn BT ON after call on HF.")
             return False
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(self.hf.serial))
+            self.hf.log.error("HF not in Active state.")
             return False
 
         # Hangup the call and check all devices are clean
@@ -232,7 +230,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
         # make a call on HF
         if not car_telecom_utils.dial_number(self.log, self.hf,
                                              self.re_phone_number):
-            self.log.error("HF not in dialing {}".format(self.hf.serial))
+            self.hf.log.error("HF not in dialing state.")
             return False
 
         # Wait for HF, AG to be dialing and RE to be ringing
@@ -248,7 +246,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # Accept call on RE.
         if not wait_and_answer_call(self.log, self.re):
-            self.log.error("Failed to accept call on re.")
+            self.re.log.error("Failed to accept call on re.")
             return False
 
         ret &= car_telecom_utils.wait_for_active(self.log, self.hf)
@@ -265,8 +263,7 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
 
         # We use the proxy of the Call going away as HF disconnected
         if not car_telecom_utils.wait_for_not_in_call(self.log, self.hf):
-            self.log.error("HF still in call after disconnection {}".format(
-                self.hf.serial))
+            self.hf.log.error("HF still in call after disconnection.")
             return False
 
         # Now connect the devices.
@@ -277,14 +274,14 @@ class BtCarHfpConnectionTest(BluetoothCarHfpBaseTest):
             # Additional profile connection check for b/
             if not bt_test_utils.is_hfp_client_device_connected(
                     self.hf, self.ag.droid.bluetoothGetLocalAddress()):
-                self.log.info(
+                self.hf.log.info(
                     "HFP Client connected even though connection state changed "
                     + " event not found")
                 return False
 
         # Check that HF is in active state
         if not car_telecom_utils.wait_for_active(self.log, self.hf):
-            self.log.error("HF not in Active {}".format(self.hf.serial))
+            self.hf.log.error("HF not in Active state.")
             return False
 
         # Hangup the call and check all devices are clean
