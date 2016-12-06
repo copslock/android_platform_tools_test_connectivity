@@ -125,8 +125,11 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
+        if not sl4a_client.is_sl4a_installed(ad.adb):
+            ad.log.warn("Sl4a.apk not installed")
+            ad.skip_sl4a = True
         try:
-            ad.start_services(skip_sl4a=getattr(ad, "skip_sl4a", False))
+            ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
             ad.log.exception("Failed to start some services, abort!")
             destroy(running_ads)
@@ -144,7 +147,7 @@ def _parse_device_list(device_list_str, key):
     Returns:
         A list of android device serial numbers.
     """
-    clean_lines = str(device_list_str, 'utf-8').strip().split('\n')
+    clean_lines = device_list_str.split('\n')
     results = []
     for line in clean_lines:
         tokens = line.strip().split('\t')
@@ -365,6 +368,7 @@ class AndroidDevice:
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
+        self.skip_sl4a = False
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -437,6 +441,7 @@ class AndroidDevice:
         info["build_type"] = self.adb.getprop("ro.build.type")
         return info
 
+
     @property
     def build_info(self):
         """Get the build info of this Android device, including build id and
@@ -468,11 +473,11 @@ class AndroidDevice:
         """True if adb is running as root for this device.
         """
         try:
-            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+            return "0" == self.adb.shell("id -u")
         except adb.AdbError:
             # Wait a bit and retry to work around adb flakiness for this cmd.
             time.sleep(0.2)
-            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+            return "0" == self.adb.shell("id -u")
 
     @property
     def model(self):
@@ -735,7 +740,7 @@ class AndroidDevice:
         """
         new_br = True
         try:
-            stdout = self.adb.shell("bugreportz -v").decode("utf-8")
+            stdout = self.adb.shell("bugreportz -v")
             # This check is necessary for builds before N, where adb shell's ret
             # code and stderr are not propagated properly.
             if "not found" in stdout:
@@ -754,7 +759,7 @@ class AndroidDevice:
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
         if new_br:
-            out = self.adb.shell("bugreportz").decode("utf-8")
+            out = self.adb.shell("bugreportz")
             if not out.startswith("OK"):
                 raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
                                          (self.serial, out))
@@ -858,7 +863,7 @@ class AndroidDevice:
             results: results have data flow information
         """
         out = self.adb.shell("iperf3 -c {} {}".format(server_host, extra_args))
-        clean_out = str(out, 'utf-8').strip().split('\n')
+        clean_out = out.split('\n')
         if "error" in clean_out[0].lower():
             return False, clean_out
         return True, clean_out
