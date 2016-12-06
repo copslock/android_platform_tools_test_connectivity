@@ -48,6 +48,7 @@ PBAP_SYNC_TIME = 30
 
 log = logging
 
+
 def parse_contacts(file_name):
     """Read vcf file and generate a list of contacts.
 
@@ -62,9 +63,8 @@ def parse_contacts(file_name):
 
     with open(file_name, "r") as contacts_file:
         contacts = []
-        contacts_map = mmap(contacts_file.fileno(),
-                            length=0,
-                            access=ACCESS_READ)
+        contacts_map = mmap(
+            contacts_file.fileno(), length=0, access=ACCESS_READ)
         new_contact = None
 
         # Find all VCARDs in the input file, then extract the first full name,
@@ -82,8 +82,8 @@ def parse_contacts(file_name):
                 new_contact.email = email.group(1)
 
             for phone_number in tel_regex.findall(current_vcard[0]):
-                new_contact.add_phone_number(PhoneNumber(phone_number[0],
-                                                         phone_number[1]))
+                new_contact.add_phone_number(
+                    PhoneNumber(phone_number[0], phone_number[1]))
 
             contacts.append(new_contact)
 
@@ -94,33 +94,37 @@ def phone_number_count(destination_path, file_name):
     """Counts number of phone numbers in a VCF.
     """
     tel_regex = re.compile(b"^TEL;(.*):(.*)", re.MULTILINE)
-    with open("{}{}".format(destination_path, file_name), "r") as contacts_file:
-        contacts_map = mmap(contacts_file.fileno(),
-                            length=0,
-                            access=ACCESS_READ)
+    with open("{}{}".format(destination_path, file_name),
+              "r") as contacts_file:
+        contacts_map = mmap(
+            contacts_file.fileno(), length=0, access=ACCESS_READ)
         numbers = tel_regex.findall(contacts_map)
         return len(numbers)
 
 
-def count_contacts_with_differences(destination_path, pce_contacts_vcf_file_name, pse_contacts_vcf_file_name):
+def count_contacts_with_differences(destination_path,
+                                    pce_contacts_vcf_file_name,
+                                    pse_contacts_vcf_file_name):
     """Compare two contact files and report the number of differences.
 
     Difference count is returned, and the differences are logged, this is order
     independent.
     """
 
-    pce_contacts = parse_contacts("{}{}".format(destination_path, pce_contacts_vcf_file_name))
-    pse_contacts = parse_contacts("{}{}".format(destination_path, pse_contacts_vcf_file_name))
+    pce_contacts = parse_contacts("{}{}".format(destination_path,
+                                                pce_contacts_vcf_file_name))
+    pse_contacts = parse_contacts("{}{}".format(destination_path,
+                                                pse_contacts_vcf_file_name))
 
     differences = set(pce_contacts).symmetric_difference(set(pse_contacts))
     if not differences:
-        log.info("All {} contacts in the phonebooks match".format(str(len(
-            pce_contacts))))
+        log.info("All {} contacts in the phonebooks match".format(
+            str(len(pce_contacts))))
     else:
-        log.info("{} contacts match, but ".format(str(len(set(
-            pce_contacts).intersection(set(pse_contacts))))))
-        log.info("the following {} entries don't match:".format(str(len(
-            differences))))
+        log.info("{} contacts match, but ".format(
+            str(len(set(pce_contacts).intersection(set(pse_contacts))))))
+        log.info("the following {} entries don't match:".format(
+            str(len(differences))))
         for current_vcard in differences:
             log.info(current_vcard)
     return len(differences)
@@ -218,7 +222,10 @@ def generate_random_string(length=8,
     return "".join(name)
 
 
-def generate_contact_list(destination_path, file_name, contact_count, phone_number_count=1):
+def generate_contact_list(destination_path,
+                          file_name,
+                          contact_count,
+                          phone_number_count=1):
     """Generate a simple VCF file for count contacts with basic content.
 
     An example with count = 1 and local_number = 2]
@@ -235,10 +242,10 @@ def generate_contact_list(destination_path, file_name, contact_count, phone_numb
     vcards = []
     for i in range(contact_count):
         current_contact = VCard()
-        current_contact.first_name = generate_random_string(random.randint(1,
-                                                                           19))
-        current_contact.last_name = generate_random_string(random.randint(1,
-                                                                          19))
+        current_contact.first_name = generate_random_string(
+            random.randint(1, 19))
+        current_contact.last_name = generate_random_string(
+            random.randint(1, 19))
         current_contact.email = "{}{}@{}.{}".format(
             current_contact.last_name, current_contact.first_name,
             generate_random_string(random.randint(1, 19)),
@@ -249,7 +256,8 @@ def generate_contact_list(destination_path, file_name, contact_count, phone_numb
     create_new_contacts_vcf_from_vcards(destination_path, file_name, vcards)
 
 
-def create_new_contacts_vcf_from_vcards(destination_path, vcf_file_name, vcards):
+def create_new_contacts_vcf_from_vcards(destination_path, vcf_file_name,
+                                        vcards):
     """Create a new file with filename
     """
     contact_file = open("{}{}".format(destination_path, vcf_file_name), "w+")
@@ -270,7 +278,7 @@ def import_device_contacts_from_vcf(device, destination_path, vcf_file):
     """Uploads and import vcf file to device.
     """
     number_count = phone_number_count(destination_path, vcf_file)
-    log.info("Trying to add {} phone numbers.".format(number_count))
+    device.log.info("Trying to add {} phone numbers.".format(number_count))
     local_phonebook_path = "{}{}".format(destination_path, vcf_file)
     phone_phonebook_path = "{}{}".format(STORAGE_PATH, vcf_file)
     device.adb.push("{} {}".format(local_phonebook_path, phone_phonebook_path))
@@ -286,7 +294,7 @@ def export_device_contacts_to_vcf(device, destination_path, vcf_file):
     """
     path_on_phone = "{}{}".format(STORAGE_PATH, vcf_file)
     device.droid.exportVcf("{}".format(path_on_phone))
-        # Download and then remove file from device
+    # Download and then remove file from device
     device.adb.pull("{} {}".format(path_on_phone, destination_path))
     return True
 
@@ -294,10 +302,10 @@ def export_device_contacts_to_vcf(device, destination_path, vcf_file):
 def erase_contacts(device):
     """Erase all contacts out of devices contact database.
     """
-    log.info("Erasing contacts.")
+    device.log.info("Erasing contacts.")
     if get_contact_count(device) > 0:
         device.droid.contactsEraseAll()
-        try :
+        try:
             device.ed.pop_event(CONTACTS_ERASED_CALLBACK, PBAP_SYNC_TIME)
         except queue.Empty:
             log.error("Phone book not empty.")
@@ -317,7 +325,7 @@ def wait_for_phone_number_update_complete(device, expected_count):
     except queue.Empty:
         log.error("Contacts failed to update.")
         update_completed = False
-    log.info("Found {} out of the expected {} contacts.".format(
+    device.log.info("Found {} out of the expected {} contacts.".format(
         get_contact_count(device), expected_count))
     return update_completed
 
@@ -334,7 +342,7 @@ def wait_for_call_log_update_complete(device, expected_count):
     except queue.Empty:
         log.error("Call Log failed to update.")
         update_completed = False
-    log.info("Found {} out of the expected {} call logs.".format(
+    device.log.info("Found {} out of the expected {} call logs.".format(
         device.droid.callLogGetCount(), expected_count))
     return
 
