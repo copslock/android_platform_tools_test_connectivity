@@ -147,13 +147,7 @@ def _parse_device_list(device_list_str, key):
     Returns:
         A list of android device serial numbers.
     """
-    clean_lines = device_list_str.split('\n')
-    results = []
-    for line in clean_lines:
-        tokens = line.strip().split('\t')
-        if len(tokens) == 2 and tokens[1] == key:
-            results.append(tokens[0])
-    return results
+    return re.findall(r"(\S+)\t%s" % key, device_list_str)
 
 
 def list_adb_devices():
@@ -546,7 +540,8 @@ class AndroidDevice:
             an existing attribute.
         """
         for k, v in config.items():
-            if hasattr(self, k):
+            # skip_sl4a value can be reset from config file
+            if hasattr(self, k) and k != "skip_sl4a":
                 raise AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
                     (k, self.serial))
