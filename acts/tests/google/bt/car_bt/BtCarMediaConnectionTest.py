@@ -71,7 +71,8 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
         """
         devices = device1.droid.bluetoothA2dpSinkGetConnectedDevices()
         for device in devices:
-            self.log.info("A2dp Connected device {}".format(device["name"]))
+            self.device1.log.info("A2dp Connected device {}".format(device[
+                "name"]))
             if (device["address"] == device2.droid.bluetoothGetLocalAddress()):
                 return True
         return False
@@ -112,12 +113,12 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
             # Additional profile connection check for b/
             if bt_test_utils.is_a2dp_src_device_connected(
                     self.SRC, self.SNK.droid.bluetoothGetLocalAddress()):
-                self.log.error("Failed to disconnect on A2dp")
+                self.SRC.log.error("Failed to disconnect on A2dp")
                 return False
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
         if (car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC)):
-            self.log.error("Still connected after a disconnect")
+            self.SNK.log.error("Still connected after a disconnect")
 
         return True
 
@@ -158,10 +159,10 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
             # Additional profile connection check for b/
             if bt_test_utils.is_a2dp_snk_device_connected(
                     self.SNK, self.SRC.droid.bluetoothGetLocalAddress()):
-                self.log.error("Failed to disconnect on A2dp Sink")
+                self.SNK.log.error("Failed to disconnect on A2dp Sink")
                 return False
         # Logging if we connected right back, since that happens sometimes
         # Not failing the test if it did though
         if car_media_utils.is_a2dp_connected(self.log, self.SNK, self.SRC):
-            self.log.error("Still connected after a disconnect")
+            self.SNK.log.error("Still connected after a disconnect")
         return True

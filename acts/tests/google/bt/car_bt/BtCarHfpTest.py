@@ -47,7 +47,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
 
         if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
             [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
-            self.log.error("Failed to connect")
+            self.log.error("Failed to connect.")
             return False
         return True
 
@@ -73,7 +73,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         selected_acc = \
             self.hf.droid.telecomGetUserSelectedOutgoingPhoneAccount()
         if not selected_acc:
-            self.log.info("No default account found.")
+            self.hf.log.error("No default account found.")
             return False
 
         # Check if the default account is from the Bluetooth package. This is a
@@ -81,11 +81,11 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         try:
             acc_component_id = selected_acc['ComponentName']
         except KeyError:
-            self.log.info("No component name for account {}".format(
+            self.hf.log.error("No component name for account {}".format(
                 selected_acc))
             return False
         if not acc_component_id.startswith(BLUETOOTH_PKG_NAME):
-            self.log.info("Component name does not start with pkg name {}".
+            self.hf.log.error("Component name does not start with pkg name {}".
                           format(selected_acc))
             return False
         return True
