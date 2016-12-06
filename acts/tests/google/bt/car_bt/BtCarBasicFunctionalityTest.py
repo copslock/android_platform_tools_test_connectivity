@@ -54,7 +54,8 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         """
         profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['a2dp_sink']:
-            self.log.debug("Android device do not support A2DP SNK profile.")
+            self.car_ad.log.debug(
+                "Android device do not support A2DP SNK profile.")
             return False
         return True
 
@@ -70,7 +71,8 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         """
         profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['hfp_client']:
-            self.log.debug("Android device do not support HFP Client profile.")
+            self.car_ad.log.debug(
+                "Android device do not support HFP Client profile.")
             return False
         return True
 
@@ -86,7 +88,7 @@ class BtCarBasicFunctionalityTest(BluetoothBaseTest):
         """
         profiles = check_device_supported_profiles(self.car_ad.droid)
         if not profiles['pbap_client']:
-            self.log.debug(
+            self.car_ad.log.debug(
                 "Android device do not support PBAP Client profile.")
             return False
         return True

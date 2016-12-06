@@ -57,7 +57,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         try:
             self.MCE.ed.pop_event(EventSmsDeliverSuccess, 15)
         except queue.Empty:
-            self.log.info("Message failed to be delivered.")
+            self.log.error("Message failed to be delivered.")
             return False
         return True
 
@@ -74,19 +74,19 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         try:
             self.MCE.ed.pop_event(EventSmsSentSuccess, 15)
         except queue.Empty:
-            self.log.info("Message failed to send.")
+            self.MCE.log.error("Message failed to send.")
             return False
 
         try:
             receivedMessage = self.REMOTE.ed.pop_event(EventSmsReceived, 15)
-            self.log.info("Received a message: {}".format(receivedMessage[
-                'data']['Text']))
+            self.REMOTE.log.info("Received a message: {}".format(
+                receivedMessage['data']['Text']))
         except queue.Empty:
-            self.log.info("Remote did not receive message.")
+            self.REMOTE.log.error("Remote did not receive message.")
             return False
 
         if MESSAGE_TO_SEND != receivedMessage['data']['Text']:
-            self.log.error("Messages don't match")
+            self.log.error("Messages don't match.")
             self.log.error("Sent     {}".format(MESSAGE_TO_SEND))
             self.log.error("Received {}".format(receivedMessage['data'][
                 'Text']))
@@ -103,15 +103,15 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     def test_receive_message(self):
         bt_test_utils.connect_pri_to_sec(
             self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
-        self.log.info("start Tracking SMS")
+        self.MSE.log.info("Start Tracking SMS.")
         self.MSE.droid.smsStartTrackingIncomingSmsMessage()
-        self.log.info("Ready to send")
+        self.REMOTE.log.info("Ready to send")
         self.REMOTE.droid.smsSendTextMessage(
             get_phone_number(self.log, self.MSE), "test_receive_message",
             False)
-        self.log.info("Check inbound Messages")
+        self.MCE.log.info("Check inbound Messages.")
         receivedMessage = self.MCE.ed.pop_event(EVENT_MAP_MESSAGE_RECEIVED, 15)
-        self.log.info(receivedMessage['data'])
+        self.MCE.log.info(receivedMessage['data'])
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -136,7 +136,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
                 self.MCE, self.MSE,
                 set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         except acts.controllers.android.SL4AAPIError:
-            self.log.info("Failed to connect as expected")
+            self.MCE.log.info("Failed to connect as expected")
         return not self.send_message([self.REMOTE])
 
     @BluetoothBaseTest.bt_test_wrap
@@ -152,8 +152,8 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         time.sleep(3)
         if not bt_test_utils.is_map_mce_device_connected(self.MCE, addr):
             disconnected = True
-        self.log.info("Connected = {}, Disconnected = {}".format(connected,
-                                                                 disconnected))
+        self.MCE.log.info("Connected = {}, Disconnected = {}".format(
+            connected, disconnected))
         return connected and disconnected and not self.send_message(
             [self.REMOTE])
 
