@@ -863,6 +863,7 @@ def _wifi_connect(ad, network, num_of_tries=1):
                         "Key '%s' must be present in network definition." %
                         WifiEnums.SSID_KEY)
     ad.droid.wifiStartTrackingStateChange()
+    expected_ssid = network[WifiEnums.SSID_KEY]
     try:
         ad.droid.wifiConnectByConfig(network)
         connect_result = None
@@ -877,7 +878,6 @@ def _wifi_connect(ad, network, num_of_tries=1):
                             "Failed to connect to Wi-Fi network %s on %s" %
                             (network, ad.serial))
         ad.log.debug("Wi-Fi connection result: %s.", connect_result)
-        expected_ssid = network[WifiEnums.SSID_KEY]
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
                              "Connected to the wrong network on %s." % ad.serial)
