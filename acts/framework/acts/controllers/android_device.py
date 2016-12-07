@@ -438,26 +438,6 @@ class AndroidDevice:
 
 
     @property
-    def build_info(self):
-        """Get the build info of this Android device, including build id and
-        build type.
-
-        This is not available if the device is in bootloader mode.
-
-        Returns:
-            A dict with the build info of this Android device, or None if the
-            device is in bootloader mode.
-        """
-        if self.is_bootloader:
-            return
-        info = {}
-        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
-            "utf-8").strip()
-        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
-            "utf-8").strip()
-        return info
-
-    @property
     def is_bootloader(self):
         """True if the device is in bootloader mode.
         """
@@ -483,7 +463,7 @@ class AndroidDevice:
             out = self.fastboot.getvar("product").strip()
             # "out" is never empty because of the "total time" message fastboot
             # writes to stderr.
-            lines = out.decode("utf-8").split('\n', 1)
+            lines = out.split('\n', 1)
             if lines:
                 tokens = lines[0].split(' ')
                 if len(tokens) > 1:
@@ -881,7 +861,7 @@ class AndroidDevice:
             results: results have output of command
         """
         out = self.adb.shell("iperf3 -s {}".format(extra_args))
-        clean_out = str(out,'utf-8').strip().split('\n')
+        clean_out = out.split('\n')
         if "error" in clean_out[0].lower():
             return False, clean_out
         return True, clean_out
