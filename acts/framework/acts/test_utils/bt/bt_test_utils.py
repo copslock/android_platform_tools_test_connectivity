@@ -686,6 +686,18 @@ def pair_pri_to_sec(pri_ad, sec_ad, attempts=2, auto_confirm=True):
     while curr_attempts < attempts:
         if _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
             return True
+        # Wait 2 seconds before unbound
+        time.sleep(2)
+        if not clear_bonded_devices(pri_ad):
+            log.error("Failed to clear bond for primary device at attempt {}"
+                .format(str(curr_attempts)))
+            return False
+        if not clear_bonded_devices(sec_ad):
+            log.error("Failed to clear bond for secondary device at attempt {}"
+                .format(str(curr_attempts)))
+            return False
+        # Wait 2 seconds after unbound
+        time.sleep(2)
         curr_attempts += 1
     log.error("pair_pri_to_sec failed to connect after {} attempts".format(
         str(attempts)))
@@ -729,7 +741,7 @@ def _wait_for_passkey_match(pri_ad, sec_ad):
         if not confirmation:
             return False
     elif pri_variant != sec_variant:
-        log.debug("Pairing variant mismatched, abort connection")
+        log.error("Pairing variant mismatched, abort connection")
         return False
     return True
 
