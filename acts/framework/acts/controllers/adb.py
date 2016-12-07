@@ -19,6 +19,7 @@ from builtins import str
 import logging
 import random
 import re
+import shlex
 import socket
 import time
 
@@ -101,7 +102,7 @@ class AdbProxy(object):
         self.adb_str = " ".join(adb_cmd)
         self._ssh_connection = ssh_connection
 
-    def _exec_cmd(self, cmd):
+    def _exec_cmd(self, cmd, ignore_status=False):
         """Executes adb commands in a new shell.
 
         This is specific to executing adb binary because stderr is not a good
@@ -121,7 +122,8 @@ class AdbProxy(object):
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
-        if ret == 0:
+
+        if ret == 0 or ignore_status:
             out = out.decode("utf-8").strip()
             if "Result: Parcel" in out:
                 return parsing_parcel_output(out)
@@ -130,8 +132,9 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, arg_str):
-        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)))
+    def _exec_adb_cmd(self, name, arg_str, ignore_status=False):
+        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
+                              ignore_status=ignore_status)
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding from localhost to this android device.
@@ -180,6 +183,11 @@ class AdbProxy(object):
             doesn't exist.
         """
         return self.shell("getprop %s" % prop_name)
+
+    # TODO: This should be abstracted out into an object like the other shell
+    # command.
+    def shell(self, command, ignore_status=False):
+        return self._exec_adb_cmd('shell', shlex.quote(command), ignore_status)
 
     def __getattr__(self, name):
         def adb_call(*args):
