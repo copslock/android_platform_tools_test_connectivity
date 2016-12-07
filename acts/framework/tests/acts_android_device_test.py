@@ -75,15 +75,15 @@ class MockAdbProxy():
 
     def shell(self, params):
         if params == "id -u":
-            return b"root"
+            return "root"
         elif params == "bugreportz":
             if self.fail_br:
-                return b"OMG I died!\n"
-            return b'OK:/path/bugreport.zip\n'
+                return "OMG I died!\n"
+            return "OK:/path/bugreport.zip\n"
         elif params == "bugreportz -v":
             if self.fail_br_before_N:
-                return b"/system/bin/sh: bugreportz: not found"
-            return b'1.1'
+                return "/system/bin/sh: bugreportz: not found"
+            return "1.1"
 
     def getprop(self, params):
         if params == "ro.build.id":
@@ -96,7 +96,7 @@ class MockAdbProxy():
             return "1"
 
     def devices(self):
-        return bytearray("\t".join([str(self.serial), "device"]), "utf-8")
+        return "\t".join([str(self.serial), "device"])
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
@@ -124,7 +124,7 @@ class MockFastbootProxy():
         self.serial = serial
 
     def devices(self):
-        return b"xxxx device\nyyyy device"
+        return "xxxx\tdevice\nyyyy\tdevice"
 
     def __getattr__(self, name):
         def fastboot_call(*args):
