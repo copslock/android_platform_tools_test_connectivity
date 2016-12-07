@@ -95,8 +95,8 @@ def stop_sl4a(adb_proxy):
     Args:
         adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
     """
-    if is_sl4a_running(adb_proxy):
-        adb_proxy.shell('am force-stop com.googlecode.android_scripting')
+    adb_proxy.shell('am force-stop com.googlecode.android_scripting',
+                    ignore_status=True)
 
 
 def is_sl4a_installed(adb_proxy):
@@ -118,18 +118,34 @@ def is_sl4a_installed(adb_proxy):
     return False
 
 
-def is_sl4a_running(adb_proxy):
+def is_sl4a_running(adb_proxy, use_new_ps=True):
     """Checks if the sl4a app is running on an android device.
 
     Args:
         adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
+        use_new_ps: Newer versions of ps allow for the flag -A to show all
+                    processes. But older versions will interpert this as a pid.
+                    When true this will use the newer version and fall back to
+                    the old on failure.
 
     Returns:
         True if the sl4a app is running, False otherwise.
     """
     # Grep for process with a preceding S which means it is truly started.
-    out = adb_proxy.shell('ps | grep "S com.googlecode.android_scripting"')
-    if len(out) == 0:
+    try:
+        if use_new_ps:
+            out = adb_proxy.shell(
+                'ps -A | grep "S com.googlecode.android_scripting"')
+        else:
+            out = adb_proxy.shell(
+                'ps | grep "S com.googlecode.android_scripting"')
+    except adb.AdbError as e:
+        out = None
+    if not out:
+        if use_new_ps:
+            out = adb_proxy.shell('ps -A | grep "bad pid"', ignore_status=True)
+            if 'bad pid' in str(out):
+                return is_sl4a_running(adb_proxy, use_new_ps=False)
         return False
     return True
 
@@ -225,6 +241,12 @@ class Sl4aClient(object):
                 self.conn = socket.create_connection((self.addr, self.port),
                                                      max(1, get_time_left()))
                 self.conn.settimeout(self._SOCKET_TIMEOUT)
+                self.client = self.conn.makefile(mode="brw")
+
+                # Some devices will allow a connection but then disconnect
+                # instead of failing on create connection. The first command
+                # Will be error handled to make sure this does not happen.
+                resp = self._cmd(cmd, self.uid)
                 break
             except (socket.timeout):
                 logging.exception("Failed to create socket connection!")
@@ -239,9 +261,6 @@ class Sl4aClient(object):
                     raise
                 time.sleep(1)
 
-        self.client = self.conn.makefile(mode="brw")
-
-        resp = self._cmd(cmd, self.uid)
         if not resp:
             raise Sl4aProtocolError(
                 Sl4aProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
