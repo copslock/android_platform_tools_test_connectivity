@@ -341,7 +341,8 @@ class AndroidDevice:
                   via fastboot.
     """
 
-    def __init__(self, serial="", host_port=None, device_port=8080,
+    def __init__(self, serial="", host_port=None,
+                 device_port=sl4a_client.DEFAULT_DEVICE_SIDE_PORT,
                  ssh_connection=None):
         self.serial = serial
         self.h_port = host_port
@@ -606,9 +607,13 @@ class AndroidDevice:
             self.h_port = host_utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
 
+        if not sl4a_client.is_sl4a_running(self.adb):
+            sl4a_client.start_sl4a(self.adb)
+
         try:
             droid = self.start_new_session()
         except:
+            sl4a_client.stop_sl4a(self.adb)
             sl4a_client.start_sl4a(self.adb)
             droid = self.start_new_session()
 
