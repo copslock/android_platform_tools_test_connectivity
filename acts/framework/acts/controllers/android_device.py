@@ -483,7 +483,7 @@ class AndroidDevice:
             out = self.fastboot.getvar("product").strip()
             # "out" is never empty because of the "total time" message fastboot
             # writes to stderr.
-            lines = out.decode("utf-8").split('\n', 1)
+            lines = out.split('\n', 1)
             if lines:
                 tokens = lines[0].split(' ')
                 if len(tokens) > 1:
@@ -881,7 +881,7 @@ class AndroidDevice:
             results: results have output of command
         """
         out = self.adb.shell("iperf3 -s {}".format(extra_args))
-        clean_out = str(out,'utf-8').strip().split('\n')
+        clean_out = out.split('\n')
         if "error" in clean_out[0].lower():
             return False, clean_out
         return True, clean_out
