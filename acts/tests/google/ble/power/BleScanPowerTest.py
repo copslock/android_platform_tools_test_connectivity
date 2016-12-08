@@ -22,108 +22,39 @@ Shield box one: Android Device and Monsoon tool box
 import json
 import os
 
-from acts import asserts
-from acts.controllers import monsoon
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
-from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
-from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.utils import create_dir
-from acts.utils import force_airplane_mode
-from acts.utils import get_current_human_time
-from acts.utils import set_location_service
-from acts.utils import set_adaptive_brightness
-from acts.utils import set_ambient_display
-from acts.utils import set_auto_rotate
-from acts.utils import sync_device_time
-
-# Monsoon output Voltage in V
-MONSOON_OUTPUT_VOLTAGE = 4.2
-# Monsoon output max current in A
-MONSOON_MAX_CURRENT = 7.8
-
-# Power mesaurement sampling rate in Hz
-BLE_SCAN_POWER_SAMPLING_RATE = 20
-# Power mesaurement sample duration in seconds
-BLE_SCAN_POWER_SAMPLE_TIME = 60
-# Power mesaurement start time in seconds
-BLE_SCAN_START_TIME = 30
-# BLE scanning time in seconds
-BLE_SCAN_DURATION = 5
-# BLE no scanning time in seconds
-BLE_NOSCAN_DURATION = 5
-
-start_pmc_cmd = ("am start -n com.android.pmc/com.android.pmc."
-                 "PMCMainActivity")
-pmc_base_cmd = ("am broadcast -a com.android.pmc.BLESCAN --es ScanMode ")
+from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 
 
-class BleScanPowerTest(BluetoothBaseTest):
-    SCREEN_TIME_OFF = 10
+class BleScanPowerTest(PowerBaseTest):
+    # Time for measure power is 1 hour
+    POWER_SAMPLE_TIME = 3600
+
+    # Repetitions for scan and idle
+    # Make sure REPETITIONS*(SCAN_DURATION+IDLE_DURATION) = POWER_SAMPLE_TIME
+    REPETITIONS_40 = 40
+    REPETITIONS_360 = 360
+
+    # Power mesaurement start time in seconds
+    SCAN_START_TIME = 60
+    # BLE scanning time in seconds
+    SCAN_TIME_60 = 60
+    SCAN_TIME_5 = 5
+    # BLE no scanning time in seconds
+    IDLE_TIME_30 = 30
+    IDLE_TIME_5 = 5
+
+    PMC_BASE_CMD = ("am broadcast -a com.android.pmc.BLESCAN --es ScanMode ")
 
     def setup_class(self):
-        self.ad = self.android_devices[0]
-        self.mon = self.monsoons[0]
-        self.mon.set_voltage(MONSOON_OUTPUT_VOLTAGE)
-        self.mon.set_max_current(MONSOON_MAX_CURRENT)
-        # Monsoon phone
-        self.mon.attach_device(self.ad)
-        self.monsoon_log_path = os.path.join(self.log_path, "MonsoonLog")
-        create_dir(self.monsoon_log_path)
+        super(BleScanPowerTest, self).setup_class()
 
-        asserts.assert_true(
-            self.mon.usb("auto"),
-            "Failed to turn USB mode to auto on monsoon.")
-
-        sync_device_time(self.ad)
-
-        asserts.assert_true(
-            force_airplane_mode(self.ad, True),
-            "Can not turn on airplane mode on: %s" % self.ad.serial)
-        asserts.assert_true(
-            bluetooth_enabled_check(self.ad),
-            "Failed to set Bluetooth state to enabled")
-        set_location_service(self.ad, False)
-        set_adaptive_brightness(self.ad, False)
-        set_ambient_display(self.ad, False)
-        self.ad.adb.shell("settings put system screen_brightness 0")
-        set_auto_rotate(self.ad, False)
-        set_phone_screen_on(self.log, self.ad, self.SCREEN_TIME_OFF)
-
-        # Start pmc app.
-        self.ad.adb.shell(start_pmc_cmd)
-        self.ad.adb.shell("setprop log.tag.PMC VERBOSE")
-        wutils.wifi_toggle_state(self.ad, False)
-
-    def _save_logs_for_power_test(self, monsoon_result):
-        """utility function to save power data into log file.
-
-        "whether monsoon_log_for_power_test" needs to be set
-        in config file in order to save power data into a file
-        If bug_report_for_power_test is defined in test config file
-        it will also save a bug report.
-
-        Steps:
-        1. Save power data into a file if being configed.
-        2. Create a bug report if being configed
-
-        Args:
-            monsoon_result: power data object
-
-        Returns:
-            If success, return None.
-            if fail, exception will be thrown
-        """
-        current_time = get_current_human_time()
-        file_name = "%s_%s" % (self.current_test_name, current_time)
-        monsoon_result.save_to_text_file(
-            [monsoon_result], os.path.join(self.monsoon_log_path, file_name))
-
-        self.ad.take_bug_report(self.current_test_name, current_time)
-
-    def _test_power_for_scan(self, scan_mode):
+    def _measure_power_for_scan_n_log_data(self, scan_mode, scan_time,
+                                           idle_time, repetitions,
+                                           remove_idle_data):
         """utility function for power test with BLE scan.
 
         Steps:
@@ -131,41 +62,53 @@ class BleScanPowerTest(BluetoothBaseTest):
         2. Send the adb shell command to PMC
         3. PMC start first alarm to start scan
         4. After first alarm triggered it start the second alarm to stop scan
-        5. Save the power usage data into log file
+        5. Repeat the scan/idle cycle for the number of repetitions
+        6. Save the power usage data into log file
 
         Args:
-            scan_mode: scan mode
+            scan_mode: Scan mode
+            scan_time: Time duration for scanning
+            idle_time: Time duration for idle after scanning
+            repetitions:  The number of cycles of scanning/idle
+            remove_idle_data: Boolean to indicate whether to include idle data
+                              in average calculation
 
         Returns:
-            If success, return None.
-            if fail, error will be logged.
+            None
         """
 
-        msg = "%s%s --es StartTime %d --es ScanTime %d" % (
-            pmc_base_cmd, scan_mode, BLE_SCAN_START_TIME,
-            BLE_SCAN_POWER_SAMPLE_TIME)
+        first_part_msg = "%s%s --es StartTime %d --es ScanTime %d" % (
+            self.PMC_BASE_CMD, scan_mode, self.SCAN_START_TIME, scan_time)
+        msg = "%s --es NoScanTime %d --es Repetitions %d" % (
+            first_part_msg, idle_time, repetitions)
+
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
         # Start the power measurement
         result = self.mon.measure_power(
-            BLE_SCAN_POWER_SAMPLING_RATE, BLE_SCAN_POWER_SAMPLE_TIME,
-            self.current_test_name, BLE_SCAN_START_TIME)
+            self.POWER_SAMPLING_RATE, self.POWER_SAMPLE_TIME,
+            self.current_test_name, self.SCAN_START_TIME)
 
-        self._save_logs_for_power_test(result)
+        if remove_idle_data:
+            self.save_logs_for_power_test(result, scan_time, idle_time)
+        else:
+            self.save_logs_for_power_test(result, scan_time, 0)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_low_latency(self):
         """Test power usage when scan with low latency.
 
         Tests power usage when the device scans with low latency mode
-        for 60 seconds where there are no advertisements.
+        for 60 seconds and then idle for 30 seconds, repeat for 60 minutes
+        where there are no advertisements.
 
         Steps:
         1. Prepare adb shell command
         2. Send the adb shell command to PMC
         3. PMC start first alarm to start scan
         4. After first alarm triggered it start the second alarm to stop scan
-        5. Save the power usage data into log file
+        5. Repeat the cycle for 60 minutes
+        6. Save the power usage data into log file
 
         Expected Result:
         power consumption results
@@ -173,22 +116,25 @@ class BleScanPowerTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._test_power_for_scan(
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40, True)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_balanced(self):
         """Test power usage when scan with balanced mode.
 
         Tests power usage when the device scans with balanced mode
-        for 60 seconds where there are no advertisements.
+        for 60 seconds and then idle for 30 seconds, repeat for 60 minutes
+        where there are no advertisements.
 
         Steps:
         1. Prepare adb shell command
         2. Send the adb shell command to PMC
         3. PMC start first alarm to start scan
         4. After first alarm triggered it start the second alarm to stop scan
-        5. Save the power usage data into log file
+        5. Repeat the cycle for 60 minutes
+        6. Save the power usage data into log file
 
         Expected Result:
         power consumption results
@@ -196,22 +142,25 @@ class BleScanPowerTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._test_power_for_scan(
-            ScanSettingsScanMode.SCAN_MODE_BALANCED.value)
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_60,
+            self.IDLE_TIME_30, self.REPETITIONS_40, True)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_low_power(self):
         """Test power usage when scan with low power.
 
         Tests power usage when the device scans with low power mode
-        for 60 seconds where there are no advertisements.
+        for 60 seconds and then idle for 30 seconds, repeat for 60 minutes
+        where there are no advertisements.
 
         Steps:
         1. Prepare adb shell command
         2. Send the adb shell command to PMC
         3. PMC start first alarm to start scan
         4. After first alarm triggered it start the second alarm to stop scan
-        5. Save the power usage data into log file
+        5. Repeat the cycle for 60 minutes
+        6. Save the power usage data into log file
 
         Expected Result:
         power consumption results
@@ -219,14 +168,15 @@ class BleScanPowerTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._test_power_for_scan(
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value)
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_60,
+            self.IDLE_TIME_30, self.REPETITIONS_40, True)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_intervaled_scans_w_balanced(self):
-        """Test power usage when 12 intervaled scans with balanced mode
+        """Test power usage when intervaled scans with balanced mode
 
-        Tests power usage when the device perform 12 intervaled scans with
+        Tests power usage when the device perform multiple intervaled scans with
         balanced mode for 5 seconds each where there are no advertisements.
 
         Steps:
@@ -235,7 +185,8 @@ class BleScanPowerTest(BluetoothBaseTest):
         3. PMC start first alarm to start scan
         4. After first alarm triggered it starts the second alarm to stop scan
         5. After second alarm triggered it starts the third alarm to start scan
-        6. Repeat the alarms until 12 scans are done
+        6. Repeat the alarms until 360 scans are done
+        7. Save the power usage data into log file
 
         Expected Result:
         power consumption results
@@ -243,18 +194,58 @@ class BleScanPowerTest(BluetoothBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        msg1 = "%s%s --es StartTime %d --es ScanTime %d" % (
-            pmc_base_cmd, ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
-            BLE_SCAN_START_TIME, BLE_SCAN_DURATION)
-        msg = "%s --es NoScanTime %d --es Repetitions %d" % (
-            msg1, BLE_NOSCAN_DURATION, 12)
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_5,
+            self.IDLE_TIME_5, self.REPETITIONS_360, False)
 
-        self.ad.log.info("Send broadcast message: %s", msg)
-        self.ad.adb.shell(msg)
-        # Start the power measurement
-        result = self.mon.measure_power(
-            BLE_SCAN_POWER_SAMPLING_RATE,
-            (BLE_SCAN_DURATION + BLE_NOSCAN_DURATION) * 12,
-            self.current_test_name, BLE_SCAN_START_TIME)
+    @BluetoothBaseTest.bt_test_wrap
+    def test_power_for_intervaled_scans_w_low_latency(self):
+        """Test power usage when intervaled scans with low latency mode
 
-        self._save_logs_for_power_test(result)
+        Tests power usage when the device perform multiple intervaled scans with
+        low latency mode for 5 seconds each where there are no advertisements.
+
+        Steps:
+        1. Prepare adb shell command
+        2. Send the adb shell command to PMC
+        3. PMC start first alarm to start scan
+        4. After first alarm triggered it starts the second alarm to stop scan
+        5. After second alarm triggered it starts the third alarm to start scan
+        6. Repeat the alarms until 360 scans are done
+        7. Save the power usage data into log file
+
+        Expected Result:
+        power consumption results
+
+        TAGS: LE, Scanning, Power
+        Priority: 3
+        """
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value, self.SCAN_TIME_5,
+            self.IDLE_TIME_5, self.REPETITIONS_360, False)
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_power_for_intervaled_scans_w_low_power(self):
+        """Test power usage when intervaled scans with low power mode
+
+        Tests power usage when the device perform multiple intervaled scans with
+        low power mode for 5 seconds each where there are no advertisements.
+
+        Steps:
+        1. Prepare adb shell command
+        2. Send the adb shell command to PMC
+        3. PMC start first alarm to start scan
+        4. After first alarm triggered it starts the second alarm to stop scan
+        5. After second alarm triggered it starts the third alarm to start scan
+        6. Repeat the alarms until 360 scans are done
+        7. Save the power usage data into log file
+
+        Expected Result:
+        power consumption results
+
+        TAGS: LE, Scanning, Power
+        Priority: 3
+        """
+        self._measure_power_for_scan_n_log_data(
+            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_5,
+            self.IDLE_TIME_5, self.REPETITIONS_360, False)
