@@ -607,9 +607,10 @@ class AndroidDevice:
             self.h_port = host_utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
 
-        if not sl4a_client.is_sl4a_running(self.adb):
-            sl4a_client.start_sl4a(self.adb)
-
+        # TODO(bpeake) b/33470152 Fixup SL4A connection code
+        if sl4a_client.is_sl4a_running(self.adb):
+            sl4a_client.stop_sl4a(self.adb)
+        sl4a_client.start_sl4a(self.adb)
         try:
             droid = self.start_new_session()
         except:
