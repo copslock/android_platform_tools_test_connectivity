@@ -19,7 +19,7 @@ This test script is the base class for Bluetooth power testing
 
 import json
 import os
-import time
+import statistics
 
 from acts import asserts
 from acts import utils
@@ -48,11 +48,14 @@ class PowerBaseTest(BluetoothBaseTest):
     SCREEN_TIME_OFF = 10
     # Accuracy for current and power data
     ACCURACY = 4
+    THOUSAND = 1000
 
     START_PMC_CMD = ("am start -n com.android.pmc/com.android.pmc."
                      "PMCMainActivity")
+    PMC_VERBOSE_CMD = "setprop log.tag.PMC VERBOSE"
 
     def setup_class(self):
+        super(PowerBaseTest, self).setup_class()
         self.ad = self.android_devices[0]
         self.mon = self.monsoons[0]
         self.mon.set_voltage(self.MONSOON_OUTPUT_VOLTAGE)
@@ -65,8 +68,6 @@ class PowerBaseTest(BluetoothBaseTest):
         asserts.assert_true(
             self.mon.usb("auto"),
             "Failed to turn USB mode to auto on monsoon.")
-
-        sync_device_time(self.ad)
 
         asserts.assert_true(
             force_airplane_mode(self.ad, True),
@@ -83,7 +84,7 @@ class PowerBaseTest(BluetoothBaseTest):
 
         # Start PMC app.
         self.ad.adb.shell(self.START_PMC_CMD)
-        self.ad.adb.shell("setprop log.tag.PMC VERBOSE")
+        self.ad.adb.shell(self.PMC_VERBOSE_CMD)
         wutils.wifi_toggle_state(self.ad, False)
 
     def save_logs_for_power_test(self, monsoon_result, measure_time,
@@ -96,8 +97,9 @@ class PowerBaseTest(BluetoothBaseTest):
 
         Args:
             monsoon_result: power data object
-            measure_time: time duration for measure power
-            idle_time: time duration which is not count for power measurement
+            measure_time: time duration (sec) for measure power
+            idle_time: time duration (sec) which is not counted toward
+                       power measurement
 
         Returns:
             None
@@ -110,21 +112,28 @@ class PowerBaseTest(BluetoothBaseTest):
 
         self.ad.take_bug_report(self.current_test_name, current_time)
 
-    def average_current(self, monsoon_data, measure_time, idle_time):
-        """Utility function to calculate average current in the unit of mA.
+    def _calculate_average_current_n_std_dev(self, monsoon_data, measure_time,
+                                             idle_time):
+        """Utility function to calculate average current and standard deviation
+           in the unit of mA.
 
         Args:
             monsoon_result: power data object
-            measure_time: time duration when current is measured for measure cycle
-            idle_time: time duration when  current is not count for power measurement
+            measure_time: time duration (sec) when power data is counted toward
+                          calculation of average and std deviation
+            idle_time: time duration (sec) when power data is not counted
+                       toward calculation of average and std deviation
 
         Returns:
-            average current as float
+            A tuple of average current and std dev as float
         """
         if idle_time == 0:
-            return round(monsoon_data.average_current, self.ACCURACY)
+            # if idle time is 0 use Monsoon calculation
+            # in this case standard deviation is 0
+            return round(monsoon_data.average_current, self.ACCURACY), 0
+
         self.log.info(
-            "===measure time: {} idle time: {} total data points: {}".format(
+            "Measure time: {} Idle time: {} Total Data Points: {}".format(
                 measure_time, idle_time, len(monsoon_data.data_points)))
 
         # The base time to be used to calculate the relative time
@@ -132,41 +141,74 @@ class PowerBaseTest(BluetoothBaseTest):
 
         # Index for measure and idle cycle index
         measure_cycle_index = 0
-        # measure end time of measure cycle
+        # Measure end time of measure cycle
         measure_end_time = measure_time
-        # idle end time of measure cycle
+        # Idle end time of measure cycle
         idle_end_time = measure_time + idle_time
-        # sum of currenct data points
+        # Sum of current data points for a measure cycle
         current_sum = 0
-        # number of current data points
+        # Number of current data points for a measure cycle
         data_point_count = 0
+        average_60_sec = []
+        # Total number of measure data point
+        total_measured_data_point_count = 0
+
+        # Flag to indicate whether the average is calculated for this cycle
+        # For 1 second there are multiple data points
+        # so time comparison will yield to multiple cases
+        done_average = False
+
         for t, d in zip(monsoon_data.timestamps, monsoon_data.data_points):
             relative_timepoint = t - base_time
-            # when time exceeds 1 cycle of measurement update 2 end times
+            # When time exceeds 1 cycle of measurement update 2 end times
             if relative_timepoint > idle_end_time:
                 measure_cycle_index += 1
                 measure_end_time = measure_cycle_index * (
                     measure_time + idle_time) + measure_time
                 idle_end_time = measure_end_time + idle_time
+                done_average = False
 
-            # within measure time sum the current
+            # Within measure time sum the current
             if relative_timepoint <= measure_end_time:
                 current_sum += d
                 data_point_count += 1
+            elif not done_average:
+                # Calculate the average current for this cycle
+                average_60_sec.append(current_sum / data_point_count)
+                total_measured_data_point_count += data_point_count
+                current_sum = 0
+                data_point_count = 0
+                done_average = True
 
-        self.log.info("===count: {} sum: {}".format(data_point_count,
-                                                    current_sum))
-        # calculate the average current and convert it into mA
-        cur = current_sum * 1000 / data_point_count
-        return round(cur, self.ACCURACY)
+        # Calculate the average current and convert it into mA
+        current_avg = round(
+            statistics.mean(average_60_sec) * self.THOUSAND, self.ACCURACY)
+        # Calculate the min and max current and convert it into mA
+        current_min = round(min(average_60_sec) * self.THOUSAND, self.ACCURACY)
+        current_max = round(max(average_60_sec) * self.THOUSAND, self.ACCURACY)
 
-    def format_header(self, monsoon_data, measure_time, idle_time):
+        # Calculate the standard deviation and convert it into mA
+        stdev = round(
+            statistics.stdev(average_60_sec) * self.THOUSAND, self.ACCURACY)
+        self.log.info("Total Counted Data Points: {}".format(
+            total_measured_data_point_count))
+        self.log.info("Average Current: {} mA ".format(current_avg))
+        self.log.info("Standard Deviation: {} mA".format(stdev))
+        self.log.info("Min Current: {} mA ".format(current_min))
+        self.log.info("Max Current: {} mA".format(current_max))
+
+        return current_avg, stdev
+
+    def _format_header(self, monsoon_data, measure_time, idle_time):
         """Utility function to write the header info to the file.
+           The data is formated as tab delimited for spreadsheets.
 
         Args:
             monsoon_result: power data object
-            measure_time: time duration for measure power
-            idle_time: time duration which is not count for power measurement
+            measure_time: time duration (sec) when power data is counted toward
+                          calculation of average and std deviation
+            idle_time: time duration (sec) when power data is not counted
+                       toward calculation of average and std deviation
 
         Returns:
             None
@@ -176,15 +218,14 @@ class PowerBaseTest(BluetoothBaseTest):
             strs.append("\t\t" + monsoon_data.tag)
         else:
             strs.append("\t\tMonsoon Measurement Data")
-        average_cur = self.average_current(monsoon_data, measure_time,
-                                           idle_time)
-        self.log.info("=== Average Current: {} mA ===".format(average_cur))
-
+        average_cur, stdev = self._calculate_average_current_n_std_dev(
+            monsoon_data, measure_time, idle_time)
         total_power = round(average_cur * monsoon_data.voltage, self.ACCURACY)
 
-        strs.append("\t\tAverage Current: {}mA.".format(average_cur))
-        strs.append("\t\tVoltage: {}V.".format(monsoon_data.voltage))
-        strs.append("\t\tTotal Power: {}mW.".format(total_power))
+        strs.append("\t\tAverage Current: {} mA.".format(average_cur))
+        strs.append("\t\tSTD DEV Current: {} mA.".format(stdev))
+        strs.append("\t\tVoltage: {} V.".format(monsoon_data.voltage))
+        strs.append("\t\tTotal Power: {} mW.".format(total_power))
         strs.append((
             "\t\t{} samples taken at {}Hz, with an offset of {} samples."
         ).format(
@@ -192,21 +233,24 @@ class PowerBaseTest(BluetoothBaseTest):
             monsoon_data.offset))
         return "\n".join(strs)
 
-    def format_data_point(self, monsoon_data, measure_time, idle_time):
+    def _format_data_point(self, monsoon_data, measure_time, idle_time):
         """Utility function to format the data into a string.
+           The data is formated as tab delimited for spreadsheets.
 
         Args:
             monsoon_result: power data object
-            measure_time: time duration for measure power
-            idle_time: time duration which is not count for power measurement
+            measure_time: time duration (sec) when power data is counted toward
+                          calculation of average and std deviation
+            idle_time: time duration (sec) when power data is not counted
+                       toward calculation of average and std deviation
 
         Returns:
             Average current as float
         """
         strs = []
-        strs.append(self.format_header(monsoon_data, measure_time, idle_time))
-        strs.append("\t\tTime" + ' ' * 7 + "Amp")
-        # get the relative time
+        strs.append(self._format_header(monsoon_data, measure_time, idle_time))
+        strs.append("\t\tTime\tAmp")
+        # Get the relative time
         start_time = monsoon_data.timestamps[0]
         for t, d in zip(monsoon_data.timestamps, monsoon_data.data_points):
             strs.append("{}\t{}".format(
@@ -217,6 +261,7 @@ class PowerBaseTest(BluetoothBaseTest):
     def save_to_text_file(self, monsoon_data, file_path, measure_time,
                           idle_time):
         """Save multiple MonsoonData objects to a text file.
+           The data is formated as tab delimited for spreadsheets.
 
         Args:
             monsoon_data: A list of MonsoonData objects to write to a text
@@ -230,7 +275,10 @@ class PowerBaseTest(BluetoothBaseTest):
             return
 
         utils.create_dir(os.path.dirname(file_path))
-        with open(file_path, 'w') as f:
-            f.write(self.format_data_point(monsoon_data, measure_time,
-                                           idle_time))
-            f.write("\t\t" + monsoon_data.delimiter)
+        try:
+            with open(file_path, 'w') as f:
+                f.write(self._format_data_point(monsoon_data, measure_time,
+                                                idle_time))
+                f.write("\t\t" + monsoon_data.delimiter)
+        except IOError:
+            self.log.error("Fail to write power data into file")
