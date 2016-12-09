@@ -30,15 +30,11 @@ from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 
 
 class BleScanPowerTest(PowerBaseTest):
-    # Time for measure power is 1 hour
-    POWER_SAMPLE_TIME = 3600
-
     # Repetitions for scan and idle
-    # Make sure REPETITIONS*(SCAN_DURATION+IDLE_DURATION) = POWER_SAMPLE_TIME
     REPETITIONS_40 = 40
     REPETITIONS_360 = 360
 
-    # Power mesaurement start time in seconds
+    # Power measurement start time in seconds
     SCAN_START_TIME = 60
     # BLE scanning time in seconds
     SCAN_TIME_60 = 60
@@ -52,9 +48,12 @@ class BleScanPowerTest(PowerBaseTest):
     def setup_class(self):
         super(BleScanPowerTest, self).setup_class()
 
-    def _measure_power_for_scan_n_log_data(self, scan_mode, scan_time,
-                                           idle_time, repetitions,
-                                           remove_idle_data):
+    def _measure_power_for_scan_n_log_data(self,
+                                           scan_mode,
+                                           scan_time,
+                                           idle_time,
+                                           repetitions,
+                                           remove_idle_data=True):
         """utility function for power test with BLE scan.
 
         Steps:
@@ -85,9 +84,10 @@ class BleScanPowerTest(PowerBaseTest):
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
         # Start the power measurement
-        result = self.mon.measure_power(
-            self.POWER_SAMPLING_RATE, self.POWER_SAMPLE_TIME,
-            self.current_test_name, self.SCAN_START_TIME)
+        sample_time = (scan_time + idle_time) * repetitions
+        result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
+                                        self.current_test_name,
+                                        self.SCAN_START_TIME)
 
         if remove_idle_data:
             self.save_logs_for_power_test(result, scan_time, idle_time)
@@ -118,7 +118,7 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
-            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40, True)
+            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_balanced(self):
@@ -144,7 +144,7 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40, True)
+            self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_low_power(self):
@@ -170,7 +170,7 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40, True)
+            self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_intervaled_scans_w_balanced(self):
@@ -196,7 +196,7 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360, False)
+            self.IDLE_TIME_5, self.REPETITIONS_360)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_intervaled_scans_w_low_latency(self):
@@ -222,7 +222,7 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value, self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360, False)
+            self.IDLE_TIME_5, self.REPETITIONS_360)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_intervaled_scans_w_low_power(self):
@@ -248,4 +248,4 @@ class BleScanPowerTest(PowerBaseTest):
         """
         self._measure_power_for_scan_n_log_data(
             ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360, False)
+            self.IDLE_TIME_5, self.REPETITIONS_360)
