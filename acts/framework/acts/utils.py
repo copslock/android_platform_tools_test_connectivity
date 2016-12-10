@@ -188,6 +188,7 @@ def find_files(paths, file_predicate):
         A list of files that match the predicate.
     """
     file_list = []
+    if isinstance(paths, str): paths = [paths]
     for path in paths:
         p = abs_path(path)
         for dirPath, subdirList, fileList in os.walk(p):
