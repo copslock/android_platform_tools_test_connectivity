@@ -355,9 +355,6 @@ class WifiEnums():
         165: 5825
     }
 
-class WifiTestUtilsError(Exception):
-    pass
-
 
 class WifiChannelBase:
     ALL_2G_FREQUENCIES = []
@@ -552,9 +549,9 @@ def reset_wifi(ad):
     Args:
         ad: An AndroidDevice object.
 
-    Raises:
-        WifiTestUtilsError is raised if not all networks were removed.
     """
+    # TODO(gmoturu): need to remove wifi_toggle_state() in reset_wifi() when
+    # bug: 32809235 is fixed
     wifi_toggle_state(ad, True)
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
@@ -567,10 +564,8 @@ def reset_wifi(ad):
         except Empty:
             logging.warning("Could not confirm the removal of network %s.", n)
     # Check again to see if there's any network left.
-    networks = ad.droid.wifiGetConfiguredNetworks()
-    if networks:
-        raise WifiTestUtilsError(
-            "Failed to remove these configured Wi-Fi networks: %s" % networks)
+    asserts.assert_true(not ad.droid.wifiGetConfiguredNetworks(),
+                        "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
 def wifi_forget_network(ad, net_ssid):
@@ -580,8 +575,6 @@ def wifi_forget_network(ad, net_ssid):
         ad: android_device object for forget network.
         net_ssid: ssid of network to be forget
 
-    Raises:
-        WifiTestUtilsError is raised if forget network operation failed.
     """
     ad.droid.wifiToggleState(True)
     networks = ad.droid.wifiGetConfiguredNetworks()
@@ -594,7 +587,7 @@ def wifi_forget_network(ad, net_ssid):
                 event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
                                      SHORT_TIMEOUT)
             except Empty:
-                raise WifiTestUtilsError("Failed to remove network %s." % n)
+                asserts.fail("Failed to remove network %s." % n)
 
 
 def wifi_test_device_init(ad):
@@ -616,12 +609,9 @@ def wifi_test_device_init(ad):
     asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)
     wifi_toggle_state(ad, True)
     reset_wifi(ad)
-    msg = "Failed to clear configured networks."
-    asserts.assert_true(not ad.droid.wifiGetConfiguredNetworks(), msg)
     ad.droid.wifiEnableVerboseLogging(1)
     msg = "Failed to enable WiFi verbose logging."
     asserts.assert_equal(ad.droid.wifiGetVerboseLoggingLevel(), 1, msg)
-    ad.droid.wifiScannerToggleAlwaysAvailable(False)
     # We don't verify the following settings since they are not critical.
     # Set wpa_supplicant log level to EXCESSIVE.
     output = ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
@@ -633,19 +623,6 @@ def wifi_test_device_init(ad):
     # way to check right now.
     ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
     utils.set_ambient_display(ad, False)
-
-
-def sort_wifi_scan_results(results, key="level"):
-    """Sort wifi scan results by key.
-
-    Args:
-        results: A list of results to sort.
-        key: Name of the field to sort the results by.
-
-    Returns:
-        A list of results in sorted order.
-    """
-    return sorted(results, lambda d: (key not in d, d[key]))
 
 
 def start_wifi_connection_scan(ad):
@@ -1071,7 +1048,6 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         validate_con: If True, validate Internet connection after connecting to
             the network.
     """
-    start_wifi_connection_scan(ad)
     expect_ssid = None
     if WifiEnums.SSID_KEY in config:
         expect_ssid = config[WifiEnums.SSID_KEY]
