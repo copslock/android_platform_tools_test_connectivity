@@ -18,3 +18,6 @@
 WIFI_CONNECTED = "WifiNetworkConnected"
 SUPPLICANT_CON_CHANGED = "SupplicantConnectionChanged"
 WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
+
+# These constants will be used by the ACTS wifi tests.
+CONNECT_BY_CONFIG_SUCCESS = 'WifiManagerConnectByConfigOnSuccess'
