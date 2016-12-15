@@ -131,9 +131,8 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, arg_str, ignore_status=False):
-        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
-                              ignore_status=ignore_status)
+    def _exec_adb_cmd(self, name, arg_str, **kwargs):
+        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)), **kwargs)
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding from localhost to this android device.
@@ -190,9 +189,9 @@ class AdbProxy(object):
                                   ignore_status=ignore_status)
 
     def __getattr__(self, name):
-        def adb_call(*args):
+        def adb_call(*args, **kwargs):
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
-            return self._exec_adb_cmd(clean_name, arg_str)
+            return self._exec_adb_cmd(clean_name, arg_str, **kwargs)
 
         return adb_call
