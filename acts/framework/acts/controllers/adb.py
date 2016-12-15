@@ -19,7 +19,7 @@ from builtins import str
 import logging
 import random
 import re
-import shlex
+import shellescape
 import socket
 import time
 
@@ -118,13 +118,12 @@ class AdbProxy(object):
             AdbError is raised if the adb command exit code is not 0.
         """
         result = job.run(cmd, ignore_status=True)
-        ret, out, err = result.exit_status, result.raw_stdout, result.raw_stderr
+        ret, out, err = result.exit_status, result.stdout, result.stderr
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
 
         if ret == 0 or ignore_status:
-            out = out.decode("utf-8").strip()
             if "Result: Parcel" in out:
                 return parsing_parcel_output(out)
             else:
@@ -187,7 +186,8 @@ class AdbProxy(object):
     # TODO: This should be abstracted out into an object like the other shell
     # command.
     def shell(self, command, ignore_status=False):
-        return self._exec_adb_cmd('shell', shlex.quote(command), ignore_status)
+        return self._exec_adb_cmd('shell', shellescape.quote(command),
+                                  ignore_status=ignore_status)
 
     def __getattr__(self, name):
         def adb_call(*args):

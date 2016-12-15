@@ -34,7 +34,6 @@ class Error(Exception):
         self.result = result
 
 
-
 class TimeoutError(Error):
     """Thrown when a BackgroundJob times out on wait."""
 
@@ -58,14 +57,16 @@ class Result(object):
     def stdout(self):
         """String representation of standard output."""
         if not self._stdout_str:
-            self._stdout_str = self.raw_stdout.decode(encoding=self._encoding)
+            self._stdout_str = self._raw_stdout.decode(encoding=self._encoding)
+            self._stdout_str = self._stdout_str.strip()
         return self._stdout_str
 
     @property
     def stderr(self):
         """String representation of standard error."""
         if not self._stderr_str:
-            self._stderr_str = self.raw_stderr.decode(encoding=self._encoding)
+            self._stderr_str = self._raw_stderr.decode(encoding=self._encoding)
+            self._stderr_str = self._stderr_str.strip()
         return self._stderr_str
 
     def __init__(self,
@@ -89,21 +90,20 @@ class Result(object):
         """
         self.command = command
         self.exit_status = exit_status
-        self.raw_stdout = stdout
-        self.raw_stderr = stderr
+        self._raw_stdout = stdout
+        self._raw_stderr = stderr
         self._stdout_str = None
         self._stderr_str = None
         self._encoding = encoding
         self.duration = duration
         self.did_timeout = did_timeout
 
-
     def __repr__(self):
         return ('job.Result(command=%r, stdout=%r, stderr=%r, exit_status=%r, '
                 'duration=%r, did_timeout=%r, encoding=%r)') % (
                 self.command,
-                self.raw_stdout,
-                self.raw_stderr,
+                self._raw_stdout,
+                self._raw_stderr,
                 self.exit_status,
                 self.duration,
                 self.did_timeout,
@@ -115,7 +115,7 @@ def run(command,
         ignore_status=False,
         env=None,
         io_encoding='utf-8'):
-    """Execute a command in a subproccess and retain its output.
+    """Execute a command in a subproccess and return its output.
 
     Commands can be either shell commands (given as strings) or the
     path and arguments to an executable (given as a list).  This function
