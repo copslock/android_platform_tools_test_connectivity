@@ -14,30 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from subprocess import Popen, PIPE
-
-
-def exe_cmd(*cmds):
-    """Executes commands in a new shell. Directing stderr to PIPE.
-
-    This is fastboot's own exe_cmd because of its peculiar way of writing
-    non-error info to stderr.
-
-    Args:
-        cmds: A sequence of commands and arguments.
-
-    Returns:
-        The output of the command run.
-
-    Raises:
-        Exception is raised if an error occurred during the command execution.
-    """
-    cmd = ' '.join(cmds)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-    (out, err) = proc.communicate()
-    if not err:
-        return out.decode("utf-8").strip()
-    return err
+from acts.libs.proc import job
 
 
 class FastbootError(Exception):
@@ -64,11 +41,12 @@ class FastbootProxy():
     def _exec_fastboot_cmd(self, name, arg_str):
         command = ' '.join((self.fastboot_str, name, arg_str))
         if self.ssh_connection:
-            return self.connection.run(command).raw_stdout
-        return exe_cmd(command)
+            return self.connection.run(command).stdout
+        else:
+            return job.run(command).stdout
 
     def args(self, *args):
-        return exe_cmd(' '.join((self.fastboot_str, ) + args))
+        return job.run(' '.join((self.fastboot_str,) + args)).stdout
 
     def __getattr__(self, name):
         def fastboot_call(*args):
