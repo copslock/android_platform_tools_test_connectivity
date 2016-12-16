@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -38,7 +39,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-
+from acts.utils import rand_ascii_str
 
 class TelLiveStressCallTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -58,6 +59,8 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             "phone_call_iteration", 500))
         self.phone_call_duration = int(self.user_params.get(
             "phone_call_duration", 60))
+        self.sleep_time_between_test_iterations = int(self.user_params.get(
+            "sleep_time_between_test_iterations", 0))
 
         return True
 
@@ -126,7 +129,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         for ad in self.android_devices:
             hangup_call(self.log, ad)
 
-    def stress_test(self, setup_func=None, network_check_func=None):
+    def stress_test(self, setup_func=None, network_check_func=None, test_sms=False):
         if setup_func and not setup_func():
             self.log.error("Test setup %s failed", setup_func.__name__)
             return False
@@ -164,9 +167,19 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                 fail_count["drop"] += 1
 
             self._hangup_call()
+
+            if test_sms and not sms_send_receive_verify(
+                    self.log, self.caller, self.callee, [rand_ascii_str(180)]):
+                fail_count["sms"] += 1
+
             self.log.info("%s %s" % (msg, str(iteration_result)))
             if not iteration_result:
                 self._take_bug_report("%s_%s" % (self.test_name, i), self.begin_time)
+
+            if self.sleep_time_between_test_iterations:
+                self.caller.droid.goToSleepNow()
+                self.callee.droid.goToSleepNow()
+                time.sleep(self.sleep_time_between_test_iterations)
 
 
         test_result = True
@@ -185,7 +198,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
 
         Steps:
         1. Make Sure PhoneA and PhoneB in default mode.
-        2. Call from PhoneA to PhoneA, hang up on PhoneA.
+        2. Call from PhoneA to PhoneB, hang up on PhoneA.
         3, Repeat 2 around N times based on the config setup
 
         Expected Results:
@@ -197,6 +210,25 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         return self.stress_test()
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_and_sms_longevity(self):
+        """ Default state call stress test
+
+        Steps:
+        1. Make Sure PhoneA and PhoneB in default mode.
+        2. Call from PhoneA to PhoneB, hang up on PhoneA.
+        3. Send a text message from PhoneA to PhoneB.
+        4. Bring phone to sleep for x seconds based on the config setup.
+        5, Repeat 2 around N times based on the config setup
+
+        Expected Results:
+        1. Phone calls and text messages are successfully made
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self.stress_test(test_sms=True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_volte_stress(self):
