@@ -16,9 +16,22 @@
 
 from acts.libs.proc import job
 
+import logging
+
 
 class FastbootError(Exception):
     """Raised when there is an error in fastboot operations."""
+
+    def __init__(self, cmd, stdout, stderr, ret_code):
+        self.cmd = cmd
+        self.stdout = stdout
+        self.stderr = stderr
+        self.ret_code = ret_code
+
+    def __str__(self):
+        return ("Error executing fastboot cmd '%s'. ret: %d, stdout: %s,"
+                " stderr: %s") % (self.cmd, self.ret_code, self.stdout,
+                                  self.stderr)
 
 
 class FastbootProxy():
@@ -38,20 +51,26 @@ class FastbootProxy():
             self.fastboot_str = "fastboot"
         self.ssh_connection = ssh_connection
 
-    def _exec_fastboot_cmd(self, name, arg_str):
+    def _exec_fastboot_cmd(self, name, arg_str, ignore_status=False):
         command = ' '.join((self.fastboot_str, name, arg_str))
         if self.ssh_connection:
-            return self.connection.run(command).stdout
+            result = self.connection.run(command, ignore_status=True)
         else:
-            return job.run(command).stdout
+            result = job.run(command, ignore_status=True)
+        ret, out, err = result.exit_status, result.stdout, result.stderr
+        if ret == 0 or ignore_status:
+            return out
+        else:
+            raise FastbootError(
+                cmd=command, stdout=out, stderr=err, ret_code=ret)
 
     def args(self, *args):
         return job.run(' '.join((self.fastboot_str,) + args)).stdout
 
     def __getattr__(self, name):
-        def fastboot_call(*args):
+        def fastboot_call(*args, **kwargs):
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
-            return self._exec_fastboot_cmd(clean_name, arg_str)
+            return self._exec_fastboot_cmd(clean_name, arg_str, **kwargs)
 
         return fastboot_call
