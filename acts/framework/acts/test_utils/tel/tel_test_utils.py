@@ -162,7 +162,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
         except Exception:
             log.warning("Failed to load {}!".format(sim_filename))
 
-    sub_id = get_sub_id_by_adb(log, ad)
+    sub_id = get_sub_id_by_adb(ad)
     phone_number = get_phone_number_by_adb(ad) or sim_data[iccid]["phone_num"]
     if not phone_number:
         raise TelTestUtilsError(
