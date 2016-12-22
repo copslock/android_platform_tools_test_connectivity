@@ -16,7 +16,7 @@
 """
 Sanity tests for voice tests in telephony
 """
-from . md8475a import BtsBandwidth
+from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
 from acts.test_utils.tel.anritsu_utils import GSM_BAND_PCS1900
 from acts.test_utils.tel.anritsu_utils import GSM_BAND_GSM850
 from acts.test_utils.tel.anritsu_utils import LTE_BAND_2
