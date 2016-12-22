@@ -52,7 +52,6 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACK
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
-from acts.utils import get_current_human_time
 
 
 class _TelephonyTraceLogger():
@@ -93,10 +92,10 @@ class TelephonyBaseTest(BaseTestClass):
     @staticmethod
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
-            current_time = get_current_human_time()
+            current_time = time.strftime("%m-%d-%Y-%H-%M-%S")
             func_name = fn.__name__
             test_id = "{}:{}:{}".format(self.__class__.__name__, func_name,
-                                        current_time.replace(" ", "-"))
+                                        current_time)
             self.test_id = test_id
             self.begin_time = current_time
             self.test_name = func_name
@@ -105,10 +104,18 @@ class TelephonyBaseTest(BaseTestClass):
             try:
                 for ad in self.android_devices:
                     ad.droid.logI("Started " + log_string)
+                    ad.crash_report = ad.check_crash_report(log_crash_report=False)
+                    if ad.crash_report:
+                        ad.log.warn("Crash reports %s before test %s start" % (
+                                ad.crash_report, func_name))
+
                 # TODO: b/19002120 start QXDM Logging
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
                     ad.droid.logI("Finished " + log_string)
+                    new_crash = ad.check_crash_report()
+                    if new_crash != ad.crash_report:
+                        ad.log.error("Find new crash reports %s" % new_crash)
                 if result is not True and "telephony_auto_rerun" in self.user_params:
                     self.teardown_test()
                     # re-run only once, if re-run pass, mark as pass
