@@ -48,6 +48,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscri
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.asserts import abort_all
+from acts.asserts import fail
 
 
 class TelLivePreflightTest(TelephonyBaseTest):
@@ -104,6 +105,15 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 self._preflight_fail(
                     "{}: Did Not Attach For Voice Services".format(ad.serial))
         return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_check_crash(self):
+        for ad in self.android_devices:
+            ad.crash_report = ad.check_crash_report()
+            if ad.crash_report:
+                msg = "Find crash reports %s" % (ad.crash_report)
+                ad.log.error(msg)
+                fail(msg)
 
     def _preflight_fail(self, message):
         self.log.error(
