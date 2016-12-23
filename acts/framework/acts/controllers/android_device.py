@@ -41,6 +41,7 @@ ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
+CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/rampdumps/")
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -364,6 +365,7 @@ class AndroidDevice:
             self.root_adb()
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
+        self.crash_report = None
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -750,6 +752,25 @@ class AndroidDevice:
             self.adb.bugreport(" > {}".format(full_out_path))
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
+
+    def check_crash_report(self, log_crash_report=True):
+        """check crash report on the device.
+        """
+        crash_reports = []
+        crash_log_path = os.path.join(self.log_path, "CrashReports",
+                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+        for report_path in CRASH_REPORT_PATHS:
+            out = self.adb.shell("ls %s" % report_path, ignore_status=True)
+            if out:
+                reports = out.split('\n')
+                if log_crash_report:
+                    utils.create_dir(crash_log_path)
+                for report in reports:
+                    crash_report = os.path.join(report_path, report)
+                    crash_reports.append(crash_report)
+                    if log_crash_report:
+                        self.adb.pull("%s %s" %(crash_report, crash_log_path))
+        return crash_reports
 
     def start_new_session(self):
         """Start a new session in sl4a.
