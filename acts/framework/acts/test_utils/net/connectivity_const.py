@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import enum
+
 ######################################################
 # ConnectivityManager.NetworkCallback events
 ######################################################
@@ -37,3 +39,62 @@ NETWORK_CB_KEY_EVENT = "networkCallbackEvent"
 NETWORK_CB_KEY_MAX_MS_TO_LIVE = "maxMsToLive"
 NETWORK_CB_KEY_RSSI = "rssi"
 NETWORK_CB_KEY_INTERFACE_NAME = "interfaceName"
+
+# Constants for VPN connection status
+VPN_STATE_DISCONNECTED = 0
+VPN_STATE_INITIALIZING = 1
+VPN_STATE_CONNECTING = 2
+VPN_STATE_CONNECTED = 3
+VPN_STATE_TIMEOUT = 4
+VPN_STATE_FAILED = 5
+# TODO gmoturu: determine the exact timeout value
+# This is a random value as of now
+VPN_TIMEOUT = 15
+
+# Constants for VpnProfile
+class VpnProfile(object):
+    """ This class contains all the possible
+        parameters required for VPN connection
+    """
+    NAME = "name"
+    TYPE = "type"
+    SERVER = "server"
+    USER = "username"
+    PWD = "password"
+    DNS = "dnsServers"
+    SEARCH_DOMAINS = "searchDomains"
+    ROUTES = "routes"
+    MPPE = "mppe"
+    L2TP_SECRET = "l2tpSecret"
+    IPSEC_ID = "ipsecIdentifier"
+    IPSEC_SECRET = "ipsecSecret"
+    IPSEC_USER_CERT = "ipsecUserCert"
+    IPSEC_CA_CERT = "ipsecCaCert"
+    IPSEC_SERVER_CERT = "ipsecServerCert"
+
+# Enums for VPN profile types
+class VpnProfileType(enum.Enum):
+    """ Integer constant for each type of VPN
+    """
+    PPTP = 0
+    L2TP_IPSEC_PSK = 1
+    L2TP_IPSEC_RSA = 2
+    IPSEC_XAUTH_PSK = 3
+    IPSEC_XAUTH_RSA = 4
+    IPSEC_HYBRID_RSA = 5
+
+# Constants for config file
+class VpnReqParams(object):
+    """ Config file parameters required for
+        VPN connection
+    """
+    wifi_network = "wifi_network"
+    vpn_server_addresses = "vpn_server_addresses"
+    vpn_verify_address = "vpn_verify_address"
+    vpn_username = "vpn_username"
+    vpn_password = "vpn_password"
+    psk_secret = "psk_secret"
+    client_pkcs_file_name = "client_pkcs_file_name"
+    cert_path_vpnserver = "cert_path_vpnserver"
+    cert_password = "cert_password"
+    pptp_mppe = "pptp_mppe"
