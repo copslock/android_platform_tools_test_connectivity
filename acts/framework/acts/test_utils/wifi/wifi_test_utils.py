@@ -1054,7 +1054,7 @@ def _eap_connect(config, ad, validate_con=True, ping_addr=DEFAULT_PING_ADDR):
         ad.log.info("Connecting to %s.", expect_ssid)
     else:
         ad.log.info("Connecting.")
-    ad.droid.wifiEnterpriseConnect(config)
+    ad.droid.wifiConnectByConfig(config)
     try:
         event = ad.ed.pop_event("WifiManagerEnterpriseConnectOnSuccess", 30)
         ad.log.info("Connection started.")
