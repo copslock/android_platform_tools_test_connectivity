@@ -42,10 +42,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
                       "test_autojoin_in_Ap2_5gto2g",
                       "test_autojoin_swtich_AP2toAp1",
                       "test_autojoin_Ap1_2gto5g",
-                      "test_autojoin_Ap1_5gto2g",
-                      "test_autojoin_swtich_to_blacklist_AP",
-                      "test_autojoin_in_blacklist_AP",
-                      "test_autojoin_back_from_blacklist_AP", )
+                      "test_autojoin_Ap1_5gto2g", )
 
     def setup_class(self):
         """It will setup the required dependencies from config file and configure
