@@ -77,9 +77,11 @@ rfcomm_insecure_uuid = "8ce255c0-200a-11e0-ac64-0800200c9a66"
 
 advertisements_to_devices = {}
 
-batch_scan_not_supported_list = ["Nexus 4",
-                                 "Nexus 5",
-                                 "Nexus 7", ]
+batch_scan_not_supported_list = [
+    "Nexus 4",
+    "Nexus 5",
+    "Nexus 7",
+]
 
 
 class BtTestUtilsError(Exception):
@@ -246,10 +248,8 @@ def setup_multiple_devices_for_bt_test(android_devices):
                 a.log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
-            setup_result = a.droid.bluetoothConfigHciSnoopLog(True)
-            if not setup_result:
-                a.log.error("Failed to enable Bluetooth Hci Snoop Logging.")
-                return setup_result
+            if not a.droid.bluetoothConfigHciSnoopLog(True):
+                a.log.warning("Failed to enable Bluetooth Hci Snoop Logging.")
     except Exception as err:
         log.error("Something went wrong in multi device setup: {}".format(err))
         return False
@@ -272,8 +272,7 @@ def bluetooth_enabled_check(ad):
         try:
             ad.ed.pop_event(expected_bluetooth_on_event_name, DEFAULT_TIMEOUT)
         except Empty:
-            ad.log.info(
-                "Failed to toggle Bluetooth on(no broadcast received).")
+            ad.log.info("Failed to toggle Bluetooth on(no broadcast received).")
             # Try one more time to poke at the actual state.
             if ad.droid.bluetoothCheckState():
                 ad.log.info(".. actual state is ON")
@@ -299,8 +298,7 @@ def reset_bluetooth(android_devices):
             droid.bluetoothToggleState(False)
             expected_bluetooth_off_event_name = bluetooth_off
             try:
-                ed.pop_event(expected_bluetooth_off_event_name,
-                             DEFAULT_TIMEOUT)
+                ed.pop_event(expected_bluetooth_off_event_name, DEFAULT_TIMEOUT)
             except Exception:
                 a.log.error("Failed to toggle Bluetooth off.")
                 return False
@@ -338,7 +336,8 @@ def determine_max_advertisements(android_device):
             android_device.log.info(".. actual state is ON")
         else:
             android_device.log.error(
-                "Failed to turn Bluetooth on. Setting default advertisements to 1")
+                "Failed to turn Bluetooth on. Setting default advertisements to 1"
+            )
             advertisement_count = -1
             return advertisement_count
     advertise_callback_list = []
@@ -503,8 +502,8 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     filter_list = scan_ad.droid.bleGenFilterList()
     scan_settings = scan_ad.droid.bleBuildScanSetting()
     scan_callback = scan_ad.droid.bleGenScanCallback()
-    scan_ad.droid.bleSetScanFilterDeviceName(
-        adv_ad.droid.bluetoothGetLocalName())
+    scan_ad.droid.bleSetScanFilterDeviceName(adv_ad.droid.bluetoothGetLocalName(
+    ))
     scan_ad.droid.bleBuildScanFilter(filter_list)
     scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
     try:
@@ -650,8 +649,9 @@ def set_profile_priority(host_ad, client_ad, profiles, priority):
     """Sets the priority of said profile(s) on host_ad for client_ad"""
     for profile in profiles:
         host_ad.log.info("Profile {} on {} for {} set to priority {}".format(
-            profile, host_ad.droid.bluetoothGetLocalName(
-            ), client_ad.droid.bluetoothGetLocalAddress(), priority.value))
+            profile,
+            host_ad.droid.bluetoothGetLocalName(),
+            client_ad.droid.bluetoothGetLocalAddress(), priority.value))
         if BluetoothProfile.A2DP_SINK.value == profile:
             host_ad.droid.bluetoothA2dpSinkSetPriority(
                 client_ad.droid.bluetoothGetLocalAddress(), priority.value)
@@ -690,11 +690,11 @@ def pair_pri_to_sec(pri_ad, sec_ad, attempts=2, auto_confirm=True):
         time.sleep(2)
         if not clear_bonded_devices(pri_ad):
             log.error("Failed to clear bond for primary device at attempt {}"
-                .format(str(curr_attempts)))
+                      .format(str(curr_attempts)))
             return False
         if not clear_bonded_devices(sec_ad):
             log.error("Failed to clear bond for secondary device at attempt {}"
-                .format(str(curr_attempts)))
+                      .format(str(curr_attempts)))
             return False
         # Wait 2 seconds after unbound
         time.sleep(2)
@@ -710,15 +710,13 @@ def _wait_for_passkey_match(pri_ad, sec_ad):
     pri_pairing_req, sec_pairing_req = None, None
     try:
         pri_pairing_req = pri_ad.ed.pop_event(
-            event_name="BluetoothActionPairingRequest",
-            timeout=DEFAULT_TIMEOUT)
+            event_name="BluetoothActionPairingRequest", timeout=DEFAULT_TIMEOUT)
         pri_variant = pri_pairing_req["data"]["PairingVariant"]
         pri_pin = pri_pairing_req["data"]["Pin"]
         pri_ad.log.info("Primary device received Pin: {}, Variant: {}"
                         .format(pri_pin, pri_variant))
         sec_pairing_req = sec_ad.ed.pop_event(
-            event_name="BluetoothActionPairingRequest",
-            timeout=DEFAULT_TIMEOUT)
+            event_name="BluetoothActionPairingRequest", timeout=DEFAULT_TIMEOUT)
         sec_variant = sec_pairing_req["data"]["PairingVariant"]
         sec_pin = sec_pairing_req["data"]["Pin"]
         sec_ad.log.info("Secondary device received Pin: {}, Variant: {}"
@@ -754,9 +752,9 @@ def _pair_pri_to_sec(pri_ad, sec_ad, auto_confirm):
     sec_droid = sec_ad.droid
     pri_ad.ed.clear_all_events()
     sec_ad.ed.clear_all_events()
-    log.info(
-        "Bonding device {} to {}".format(pri_droid.bluetoothGetLocalAddress(),
-                                         sec_droid.bluetoothGetLocalAddress()))
+    log.info("Bonding device {} to {}".format(
+        pri_droid.bluetoothGetLocalAddress(),
+        sec_droid.bluetoothGetLocalAddress()))
     sec_droid.bluetoothMakeDiscoverable(DEFAULT_TIMEOUT)
     target_address = sec_droid.bluetoothGetLocalAddress()
     log.debug("Starting paring helper on each device")
@@ -844,8 +842,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
 
     # Now try to connect them, the following call will try to initiate all
     # connections.
-    pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress(
-    ))
+    pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress())
 
     end_time = time.time() + 10
     profile_connected = set()
@@ -991,8 +988,8 @@ def take_btsnoop_log(ad, testcase, testname):
     out_name = ','.join((testname, device_model, serial))
     snoop_path = ad.log_path + "/BluetoothSnoopLogs"
     utils.create_dir(snoop_path)
-    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE,
-                   " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
+    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE, " ",
+                   snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                       .format(device_model, serial))
     exe_cmd(cmd)
