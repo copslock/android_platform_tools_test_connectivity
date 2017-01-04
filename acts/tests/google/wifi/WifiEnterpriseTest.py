@@ -162,7 +162,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             True if connection failed as expected, False otherwise.
         """
         with asserts.assert_raises(signals.TestFailure, extras=config):
-            verdict = wutils.eap_connect(config, ad)
+            verdict = wutils.wifi_connect(ad, config)
         asserts.explicit_pass("Connection failed as expected.")
 
     def expand_config_by_phase2(self, config):
@@ -369,10 +369,9 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         Returns:
             True if the connection is successful and Internet access works.
         """
-        wutils.eap_connect(config, *args)
         ad = args[0]
-        wutils.toggle_wifi_and_wait_for_reconnection(ad, config,
-                                                     num_of_tries=5)
+        wutils.wifi_connect(ad, config)
+        wutils.toggle_wifi_and_wait_for_reconnection(ad, config, num_of_tries=5)
 
     """Tests"""
 
@@ -398,10 +397,11 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         eap_configs = self.gen_eap_configs()
         self.log.info("Testing %d different configs.", len(eap_configs))
         random.shuffle(eap_configs)
-        failed = self.run_generated_testcases(wutils.eap_connect,
+        failed = self.run_generated_testcases(wutils.wifi_connect,
                                               eap_configs,
                                               args=(self.dut, ),
-                                              name_func=self.gen_eap_test_name)
+                                              name_func=self.gen_eap_test_name,
+                                              format_args=True)
         asserts.assert_equal(
             len(failed), 0, "The following configs failed EAP connect test: %s"
             % pprint.pformat(failed))
@@ -492,10 +492,11 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.log.info("Testing %d different configs.", len(passpoint_configs))
         random.shuffle(passpoint_configs)
         failed = self.run_generated_testcases(
-            wutils.eap_connect,
-            passpoint_configs,
-            args=(self.dut, ),
-            name_func=self.gen_passpoint_test_name)
+                wutils.wifi_connect,
+                passpoint_configs,
+                args=(self.dut, ),
+                name_func=self.gen_passpoint_test_name,
+                format_args=True)
         asserts.assert_equal(
             len(failed), 0,
             "The following configs failed passpoint connect test: %s" %
