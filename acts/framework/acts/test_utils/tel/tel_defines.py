@@ -21,7 +21,7 @@
 MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 20
 
 # Max time to wait for network reselection
-MAX_WAIT_TIME_NW_SELECTION = 120
+MAX_WAIT_TIME_NW_SELECTION = 180
 
 # Max time to wait for call drop
 MAX_WAIT_TIME_CALL_DROP = 60
@@ -192,8 +192,8 @@ WIFI_WEAK_RSSI_VALUE = -80
 # Emergency call number
 DEFAULT_EMERGENCY_CALL_NUMBER = "911"
 
-EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911",
-                          "999", "*911", "#911"]
+EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911", "999",
+                          "*911", "#911"]
 
 AOSP_PREFIX = "aosp_"
 
