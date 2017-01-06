@@ -39,10 +39,10 @@ def main(argv):
     full_git_command = GIT_COMMAND % commit_id
 
     files = job.run(full_git_command).stdout.splitlines()
-    if not files:
+    full_files = [os.path.abspath(f) for f in files if f.endswith('.py')]
+    if not full_files:
         return
 
-    full_files = (os.path.abspath(f) for f in files if f.endswith('.py'))
     files_param_string = ' '.join(full_files)
 
     result = job.run(YAPF_COMMAND % files_param_string, ignore_status=True)
