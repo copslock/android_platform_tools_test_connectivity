@@ -464,10 +464,6 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                 self.log.info('%s: %s',
                               aware_const.SESSION_CB_ON_SESSION_TERMINATED,
                               event_pub_term['data'])
-                asserts.assert_equal(
-                    event_pub_term['data'][aware_const.SESSION_CB_KEY_REASON],
-                    aware_const.TERMINATE_REASON_DONE,
-                    "Publisher terminate reason is not DONE")
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on publisher' %
                              aware_const.SESSION_CB_ON_SESSION_TERMINATED)
@@ -479,10 +475,6 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                 self.log.info('%s: %s',
                               aware_const.SESSION_CB_ON_SESSION_TERMINATED,
                               event_sub_term['data'])
-                asserts.assert_equal(
-                    event_sub_term['data'][aware_const.SESSION_CB_KEY_REASON],
-                    aware_const.TERMINATE_REASON_DONE,
-                    "Subscriber terminate reason is not DONE")
             except queue.Empty:
                 asserts.fail('Timed out while waiting for %s on subscriber' %
                              aware_const.SESSION_CB_ON_SESSION_TERMINATED)
