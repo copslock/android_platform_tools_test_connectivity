@@ -98,10 +98,6 @@ SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 SESSION_CB_KEY_LATENCY_MS = "latencyMs"
 SESSION_CB_KEY_TIMESTAMP_MS = "timestampMs"
 
-# WifiAwareDiscoverySessionCallback#SessionTerminateCodes
-TERMINATE_REASON_DONE = 100
-TERMINATE_REASON_FAIL = 101
-
 ######################################################
 # WifiAwareRangingListener events (RttManager.RttListener)
 ######################################################
