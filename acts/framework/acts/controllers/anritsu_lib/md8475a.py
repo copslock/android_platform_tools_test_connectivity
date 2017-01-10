@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """
 Controller interface for Anritsu Signalling Tester MD8475A.
 """
@@ -29,13 +28,17 @@ from acts.controllers.anritsu_lib._anritsu_utils import NO_ERROR
 from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
 
 TERMINATOR = "\0"
-SMARTSTUDIO_LAUNCH_WAIT_TIME = 90
-SMARTSTUDIO_SIMULATION_START_WAIT_TIME = 120
+# The following wait times (except COMMUNICATION_STATE_WAIT_TIME) are actually
+# the times for socket to time out. Increasing them is to make sure there is
+# enough time for MD8475A operation to be completed in some cases.
+# It won't increase test execution time.
+SMARTSTUDIO_LAUNCH_WAIT_TIME = 180  # was 90
+SMARTSTUDIO_SIMULATION_START_WAIT_TIME = 180  # was 120
 REGISTRATION_STATE_WAIT_TIME = 240
 LOAD_SIMULATION_PARAM_FILE_WAIT_TIME = 30
 COMMUNICATION_STATE_WAIT_TIME = 240
 ANRITSU_SOCKET_BUFFER_SIZE = 8192
-COMMAND_COMPLETE_WAIT_TIME = 90
+COMMAND_COMPLETE_WAIT_TIME = 180  # was 90
 SETTLING_TIME = 1
 WAIT_TIME_IDENTITY_RESPONSE = 5
 
@@ -51,6 +54,7 @@ IMEISV_READ_USERDATA_GSM = "081503"
 IDENTITY_REQ_DATA_LEN = 24
 SEQ_LOG_MESSAGE_START_INDEX = 60
 
+
 def create(configs, logger):
     objs = []
     for c in configs:
@@ -58,8 +62,10 @@ def create(configs, logger):
         objs.append(MD8475A(ip_address, logger))
     return objs
 
+
 def destroy(objs):
     return
+
 
 class ProcessingStatus(Enum):
     ''' MD8475A processing status for UE,Packet,Voice,Video,SMS,
@@ -244,6 +250,7 @@ class TestMeasurement(Enum):
     MEASUREMENT_ENABLE = "ENABLE"
     MEASUREMENT_DISABLE = "DISABLE"
 
+
 '''MD8475A processing states'''
 _PROCESS_STATES = {
     "NONE": ProcessingStatus.PROCESS_STATUS_NONE,
@@ -261,6 +268,7 @@ _PROCESS_STATES = {
     "NWRELEASE": ProcessingStatus.PROCESS_STATUS_NWRELEASE,
 }
 
+
 class ImsCscfStatus(Enum):
     """ MD8475A ims cscf status for UE
     """
@@ -270,6 +278,7 @@ class ImsCscfStatus(Enum):
     CALLING = "CALLING"
     RINGING = "RINGING"
     UNKNOWN = "UNKNOWN"
+
 
 class ImsCscfCall(Enum):
     """ MD8475A ims cscf call action
@@ -282,6 +291,7 @@ class ImsCscfCall(Enum):
     ANSWER = "ANSWER"
     HOLD = "HOLD"
     RESUME = "RESUME"
+
 
 class VirtualPhoneStatus(IntEnum):
     ''' MD8475A virtual phone status for UE voice and UE video
@@ -314,10 +324,12 @@ _VP_STATUS = {
     "10": VirtualPhoneStatus.STATUS_VIDEOCALL_DISCONNECTED,
 }
 
+
 class VirtualPhoneAutoAnswer(Enum):
     ''' Virtual phone auto answer enable values'''
     ON = "ON"
     OFF = "OFF"
+
 
 class CsfbType(Enum):
     ''' CSFB Type values'''
@@ -336,16 +348,19 @@ class CTCHSetup(Enum):
     CTCH_ENABLE = "ENABLE"
     CTCH_DISABLE = "DISABLE"
 
+
 class UEIdentityType(Enum):
     '''UE Identity type values '''
     IMSI = "IMSI"
     IMEI = "IMEI"
     IMEISV = "IMEISV"
 
+
 class CBCHSetup(Enum):
     '''CBCH setting values '''
     CBCH_ENABLE = "ENABLE"
     CBCH_DISABLE = "DISABLE"
+
 
 class MD8475A(object):
     """Class to communicate with Anritsu MD8475A Signalling Tester.
@@ -358,14 +373,14 @@ class MD8475A(object):
 
         # Open socket connection to Signaling Tester
         self.log.info("Opening Socket Connection with "
-              "Signaling Tester ({}) ".format(self._ipaddr))
+                      "Signaling Tester ({}) ".format(self._ipaddr))
         try:
-            self._sock = socket.create_connection((self._ipaddr, 28002),
-                                                  timeout=30)
+            self._sock = socket.create_connection(
+                (self._ipaddr, 28002), timeout=30)
             self.send_query("*IDN?", 60)
             self.log.info("Communication with Signaling Tester OK.")
             self.log.info("Opened Socket connection to ({})"
-                  "with handle ({})".format(self._ipaddr, self._sock))
+                          "with handle ({})".format(self._ipaddr, self._sock))
             # launching Smart Studio Application needed for the simulation
             ret = self.launch_smartstudio()
         except socket.timeout:
@@ -468,7 +483,8 @@ class MD8475A(object):
         self._sock.settimeout(sock_timeout)
         try:
             self._sock.send(querytoSend)
-            result = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(TERMINATOR.encode('utf-8'))
+            result = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(
+                TERMINATOR.encode('utf-8'))
             response = result.decode('utf-8')
             self.log.info('<-- {}'.format(response))
             return response
@@ -492,10 +508,11 @@ class MD8475A(object):
             self._sock.settimeout(sock_timeout)
             try:
                 self._sock.send(cmdToSend)
-                err = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(TERMINATOR.encode('utf-8'))
+                err = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(
+                    TERMINATOR.encode('utf-8'))
                 error = int(err.decode('utf-8'))
                 if error != NO_ERROR:
-                    raise AnritsuError(error,  command)
+                    raise AnritsuError(error, command)
                 else:
                     # check operation status
                     status = self.send_query("*OPC?")
@@ -506,7 +523,7 @@ class MD8475A(object):
             except socket.error:
                 raise AnritsuError("Socket Error for Anritsu command")
             except Exception as e:
-                raise AnritsuError(e,  command)
+                raise AnritsuError(e, command)
         else:
             cmdToSend = (command + TERMINATOR).encode('utf-8')
             try:
@@ -531,12 +548,12 @@ class MD8475A(object):
         stat = self.send_query("STAT?", 30)
         if stat == "NOTEXIST":
             self.log.info("Launching Smart Studio Application,"
-                  "it takes about a minute.")
+                          "it takes about a minute.")
             time_to_wait = SMARTSTUDIO_LAUNCH_WAIT_TIME
             sleep_interval = 15
             waiting_time = 0
 
-            err = self.send_command("RUN", 120)
+            err = self.send_command("RUN", SMARTSTUDIO_LAUNCH_WAIT_TIME)
             stat = self.send_query("STAT?")
             while stat != "NOTRUN":
                 time.sleep(sleep_interval)
@@ -554,7 +571,7 @@ class MD8475A(object):
         # after the one of the steps from above
         if stat != "NOTRUN":
             self.log.info("Can not launch Smart Studio, "
-                  "please shut down all the Smart Studio SW components")
+                          "please shut down all the Smart Studio SW components")
             raise AnritsuError("Could not run SmartStudio")
 
     def close_smartstudio(self):
@@ -666,7 +683,7 @@ class MD8475A(object):
         self.stop_simulation()
         cmd = "LOADCELLPARAM \"" + filepath + '\";ERROR?'
         status = int(self.send_query(cmd))
-        if status != NO_ERROR :
+        if status != NO_ERROR:
             raise AnritsuError(status, cmd)
 
     def _set_simulation_model(self, sim_model):
@@ -678,12 +695,13 @@ class MD8475A(object):
         Returns:
             True/False
         """
-        error = int(self.send_query("SIMMODEL %s;ERROR?" % sim_model,
-                                    COMMAND_COMPLETE_WAIT_TIME))
+        error = int(
+            self.send_query("SIMMODEL %s;ERROR?" % sim_model,
+                            COMMAND_COMPLETE_WAIT_TIME))
         if error:
             return False
-        error = int(self.send_query("RESERVATION;ERROR?",
-                                    COMMAND_COMPLETE_WAIT_TIME))
+        error = int(
+            self.send_query("RESERVATION;ERROR?", COMMAND_COMPLETE_WAIT_TIME))
         if error:
             return False
         return True
@@ -704,8 +722,8 @@ class MD8475A(object):
         simmodel = bts1.value
         if bts2 is not None:
             simmodel = simmodel + "," + bts2.value
-        if "WLAN" not in simmodel and self._set_simulation_model(
-              "%s,WLAN" % simmodel):
+        if "WLAN" not in simmodel and self._set_simulation_model("%s,WLAN" %
+                                                                 simmodel):
             return True
         return self._set_simulation_model(simmodel)
 
@@ -915,7 +933,8 @@ class MD8475A(object):
             current Packet status
         """
         PACKET_STATUS_INDEX = 1
-        packet_status = self.send_query("CALLSTAT?").split(",")[PACKET_STATUS_INDEX]
+        packet_status = self.send_query("CALLSTAT?").split(",")[
+            PACKET_STATUS_INDEX]
         return _PROCESS_STATES[packet_status]
 
     def disconnect(self):
@@ -927,8 +946,8 @@ class MD8475A(object):
         Returns:
             None
         """
-        # exit smart studio application
-        self.close_smartstudio()
+        # no need to # exit smart studio application
+        # self.close_smartstudio()
         self._sock.close()
 
     def machine_reboot(self):
@@ -1021,8 +1040,8 @@ class MD8475A(object):
                                               warningMessage)
         self.send_command(cmd)
 
-    def send_etws_lte_wcdma(self, serialNo, messageID, warningType, warningMessage,
-                  userAlertenable, popUpEnable):
+    def send_etws_lte_wcdma(self, serialNo, messageID, warningType,
+                            warningMessage, userAlertenable, popUpEnable):
         """ Sends a ETWS message
 
         Args:
@@ -1033,15 +1052,16 @@ class MD8475A(object):
         Returns:
             None
         """
-        cmd = ('PWSSENDWM 3GPP,"BtsNo=1&WarningSystem=ETWS&SerialNo={}&'
-               'Primary=ON&PrimaryMessageID={}&Secondary=ON&SecondaryMessageID={}'
-               '&WarningType={}&wm={}&UserAlert={}&Popup={}&dcs=0x10&LanguageCode=en"').format(
-               serialNo, messageID, messageID, warningType, warningMessage,
-               userAlertenable, popUpEnable)
+        cmd = (
+            'PWSSENDWM 3GPP,"BtsNo=1&WarningSystem=ETWS&SerialNo={}&'
+            'Primary=ON&PrimaryMessageID={}&Secondary=ON&SecondaryMessageID={}'
+            '&WarningType={}&wm={}&UserAlert={}&Popup={&dcs=0x10&LanguageCode=en"'
+        ).format(serialNo, messageID, messageID, warningType, warningMessage,
+                 userAlertenable, popUpEnable)
         self.send_command(cmd)
 
     def send_cmas_etws_cdma1x(self, message_id, service_category, alert_ext,
-            response_type, severity, urgency, certainty):
+                              response_type, severity, urgency, certainty):
         """ Sends a CMAS/ETWS message on CDMA 1X
 
         Args:
@@ -1052,10 +1072,11 @@ class MD8475A(object):
         Returns:
             None
         """
-        cmd = ('PWSSENDWM 3GPP2,"BtsNo=1&ServiceCategory={}&MessageID={}&AlertText={}&'
-               'CharSet=ASCII&ResponseType={}&Severity={}&Urgency={}&Certainty={}"').format(
-                service_category, message_id, alert_ext, response_type, severity,
-                urgency, certainty)
+        cmd = (
+            'PWSSENDWM 3GPP2,"BtsNo=1&ServiceCategory={}&MessageID={}&AlertText={}&'
+            'CharSet=ASCII&ResponseType={}&Severity={}&Urgency={}&Certainty={}"'
+        ).format(service_category, message_id, alert_ext, response_type,
+                 severity, urgency, certainty)
         self.send_command(cmd)
 
     @property
@@ -1179,8 +1200,8 @@ class MD8475A(object):
 
         self.send_command("TMMESSAGEMODE {},USERDATA".format(identity_request))
         time.sleep(SETTLING_TIME)
-        self.send_command("TMUSERDATA {}, {}, {}".format(identity_request,
-                                              userdata, IDENTITY_REQ_DATA_LEN))
+        self.send_command("TMUSERDATA {}, {}, {}".format(
+            identity_request, userdata, IDENTITY_REQ_DATA_LEN))
         time.sleep(SETTLING_TIME)
         self.send_command("TMSENDUSERMSG {}".format(identity_request))
         time.sleep(WAIT_TIME_IDENTITY_RESPONSE)
@@ -1190,10 +1211,11 @@ class MD8475A(object):
         while (target not in seqlog):
             index = int(seqlog[0]) - 1
             if index < SEQ_LOG_MESSAGE_START_INDEX:
-                self.log.error("Can not find "+ target)
+                self.log.error("Can not find " + target)
                 return None
             seqlog = self.send_query("SEQLOG? %d" % index).split(",")
         return (seqlog[-1])
+
 
 class _AnritsuTestCases(object):
     '''Class to interact with the MD8475 supported test procedures '''
@@ -1414,6 +1436,7 @@ class _AnritsuTestCases(object):
 
 class _BaseTransceiverStation(object):
     '''Class to interact different BTS supported by MD8475 '''
+
     def __init__(self, anritsu, btsnumber):
         if not isinstance(btsnumber, BtsNumber):
             raise ValueError(' The parameter should be of type "BtsNumber" ')
@@ -2455,7 +2478,6 @@ class _BaseTransceiverStation(object):
         cmd = "NCLIST {},{}".format(mode, self._bts_number)
         self._anritsu.send_command(cmd)
 
-
     def get_neighbor_cell_type(self, system, index):
         """ Gets the neighbor cell type
 
@@ -2470,7 +2492,6 @@ class _BaseTransceiverStation(object):
         cmd = "NCTYPE? {},{},{}".format(system, index, self._bts_number)
         return self._anritsu.send_query(cmd)
 
-
     def set_neighbor_cell_type(self, system, index, cell_type):
         """ Sets the neighbor cell type
 
@@ -2484,7 +2505,8 @@ class _BaseTransceiverStation(object):
         Returns:
             None
         """
-        cmd = "NCTYPE {},{},{},{}".format(system, index, cell_type, self._bts_number)
+        cmd = "NCTYPE {},{},{},{}".format(system, index, cell_type,
+                                          self._bts_number)
         self._anritsu.send_command(cmd)
 
     def get_neighbor_cell_name(self, system, index):
@@ -2501,7 +2523,6 @@ class _BaseTransceiverStation(object):
         cmd = "NCCELLNAME? {},{},{}".format(system, index, self._bts_number)
         return self._anritsu.send_query(cmd)
 
-
     def set_neighbor_cell_name(self, system, index, name):
         """ Sets the neighbor cell name
 
@@ -2514,9 +2535,9 @@ class _BaseTransceiverStation(object):
         Returns:
             None
         """
-        cmd = "NCCELLNAME {},{},{},{}".format(system, index, name, self._bts_number)
+        cmd = "NCCELLNAME {},{},{},{}".format(system, index, name,
+                                              self._bts_number)
         self._anritsu.send_command(cmd)
-
 
     def get_neighbor_cell_mcc(self, system, index):
         """ Gets the neighbor cell mcc
@@ -2747,8 +2768,10 @@ class _BaseTransceiverStation(object):
         cmd = "CBCHPARAMSETUP {},{}".format(enable.value, self._bts_number)
         self._anritsu.send_command(cmd)
 
+
 class _VirtualPhone(object):
     '''Class to interact with virtual phone supported by MD8475 '''
+
     def __init__(self, anritsu):
         self._anritsu = anritsu
         self.log = anritsu.log
@@ -3006,6 +3029,7 @@ class _VirtualPhone(object):
 
 class _PacketDataNetwork(object):
     '''Class to configure PDN parameters'''
+
     def __init__(self, anritsu, pdnnumber):
         self._pdn_number = pdnnumber
         self._anritsu = anritsu
@@ -3224,6 +3248,7 @@ class _PacketDataNetwork(object):
 
 class _TriggerMessage(object):
     '''Class to interact with trigger message handling supported by MD8475 '''
+
     def __init__(self, anritsu):
         self._anritsu = anritsu
         self.log = anritsu.log

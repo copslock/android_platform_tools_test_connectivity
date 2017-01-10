@@ -27,6 +27,7 @@ from acts.test_utils.tel.anritsu_utils import WAIT_TIME_ANRITSU_REG_AND_CALL
 from acts.test_utils.tel.anritsu_utils import call_mo_setup_teardown
 from acts.test_utils.tel.anritsu_utils import call_mt_setup_teardown
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
+from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
@@ -77,11 +78,11 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         except KeyError:
             self.stress_test_number = 0
             self.log.info(
-                "No 'stress_test_number' defined: running single iteration tests")
+                "No 'stress_test_number' defined: running single iteration tests"
+            )
 
         self.ad = self.android_devices[0]
-        self.md8475a_ip_address = self.user_params[
-            "anritsu_md8475a_ip_address"]
+        self.md8475a_ip_address = self.user_params["anritsu_md8475a_ip_address"]
 
         setattr(self, 'emergency_call_number', DEFAULT_EMERGENCY_CALL_NUMBER)
         if 'emergency_call_number' in self.user_params:
@@ -131,15 +132,17 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                               teardown_side=CALL_TEARDOWN_PHONE,
                               wait_time_in_call=WAIT_TIME_IN_CALL):
         try:
-            self.anritsu.reset()
-            if cell_param_file:
-                self.anritsu.load_cell_paramfile(cell_param_file)
+            # if load simumation parpameter file then no need to reset
             if simulation_param_file:
                 self.anritsu.load_simulation_paramfile(simulation_param_file)
+            else:
+                self.anritsu.reset()
+            # load cell parameter file after setting simulation parameters
+            if cell_param_file:
+                self.anritsu.load_cell_paramfile(cell_param_file)
             if set_simulation_func:
                 set_simulation_func(self.anritsu, self.user_params)
-            self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
-                                                   2)
+            self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON, 2)
             self.anritsu.start_simulation()
             iterations = 1
             if self.stress_test_number > 0:
@@ -181,13 +184,13 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 if self.stress_test_number:
                     self.log.info("Passed iteration {}".format(i))
             if self.stress_test_number:
-                self.log.info("Total of {} successes out of {} attempts".
-                              format(successes, iterations))
+                self.log.info("Total of {} successes out of {} attempts".format(
+                    successes, iterations))
             return True if successes == iterations else False
 
         except AnritsuError as e:
-            self.log.error("Error in connection with Anritsu Simulator: " +
-                           str(e))
+            self.log.error("Error in connection with Anritsu Simulator: " + str(
+                e))
             return False
         except Exception as e:
             self.log.error("Exception during emergency call procedure: " + str(
@@ -404,6 +407,31 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return self._setup_emergency_call(
             self.CELL_PARAM_FILE,
             set_system_model_1x,
+            self.SIM_PARAM_FILE,
+            self._phone_setup_1x,
+            emergency_number=self.emergency_call_number)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_1x_evdo(self):
+        """ Test Emergency call functionality on CDMA 1X with EVDO
+
+        Steps:
+        1. Setup CallBox on 1x and EVDO network, make sure DUT register on 1x network.
+        2. Make an emergency call to 911.
+        3. Make sure Anritsu receives the call and accept.
+        4. Tear down the call.
+
+        Expected Results:
+        2. Emergency call succeed.
+        3. Anritsu can accept the call.
+        4. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_1x_evdo,
             self.SIM_PARAM_FILE,
             self._phone_setup_1x,
             emergency_number=self.emergency_call_number)
