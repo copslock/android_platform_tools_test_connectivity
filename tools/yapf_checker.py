@@ -22,8 +22,8 @@ from acts.libs.proc import job
 COMMIT_ID_ENV_KEY = 'PREUPLOAD_COMMIT'
 REPO_PATH_KEY = 'REPO_PATH'
 GIT_COMMAND = 'git diff-tree --no-commit-id --name-only -r %s'
-YAPF_COMMAND = 'yapf --style google -d -p %s'
-YAPF_OLD_COMMAND = 'yapf --style google -d %s'
+YAPF_COMMAND = 'yapf -d -p %s'
+YAPF_OLD_COMMAND = 'yapf -d %s'
 
 
 def main(argv):
