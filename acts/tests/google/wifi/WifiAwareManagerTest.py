@@ -949,8 +949,11 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
           * S waits for message
           * S creates an Aware network to P as INITIATOR (order important!)
           * Both P & S wait for events confirming network set up
-          * P registers NSD service
-          * S discovers NSD service and obtains P's IP address
+          * NSD option:
+          *     P registers NSD service
+          *     S discovers NSD service and obtains P's IPv6 address
+          * Direct config option:
+          *     No communication: script uses address read from P
           * run iperf3 between P (server) and S (client)
           * unregister network callback on S
         """
@@ -962,6 +965,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
         sub2pub_msg = "Get ready!"
         pub2sub_msg = "Ready!"
         test_token = "Token / <some magic string>"
+        use_nsd = False
 
         # Start Test
         pub_connect_id = self.exec_connect(self.publisher, "publisher")
@@ -1066,72 +1070,82 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                          (con_const.EVENT_NETWORK_CALLBACK,
                           con_const.NETWORK_CB_LINK_PROPERTIES_CHANGED))
         self.log.debug(event_network)
+        pub_aware_if = event_network['data']['interfaceName']
 
-        try:
-            # P registers NSD service (i.e. starts publishing)
-            nsd_reg = self.publisher.droid.nsdRegisterService(
-                self.nsd_service_info)
+        pub_ipv6 = "";
+        if use_nsd:
             try:
-                event_nsd = self.publisher.ed.wait_for_event(
-                    nsd_const.REG_LISTENER_EVENT,
-                    filter_callbacks,
-                    EVENT_TIMEOUT,
-                    key=nsd_const.REG_LISTENER_CALLBACK,
-                    name=nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
-                self.log.info(
-                    'Publisher %s: %s',
-                    nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
-                    event_nsd['data'])
-            except queue.Empty:
-                asserts.fail('Timed out while waiting for %s on Publisher' %
+                # P registers NSD service (i.e. starts publishing)
+                nsd_reg = self.publisher.droid.nsdRegisterService(
+                    self.nsd_service_info)
+                try:
+                    event_nsd = self.publisher.ed.wait_for_event(
+                        nsd_const.REG_LISTENER_EVENT,
+                        filter_callbacks,
+                        EVENT_TIMEOUT,
+                        key=nsd_const.REG_LISTENER_CALLBACK,
+                        name=nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
+                    self.log.info(
+                        'Publisher %s: %s',
+                        nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
+                        event_nsd['data'])
+                except queue.Empty:
+                    asserts.fail('Timed out while waiting for %s on Publisher' %
                              nsd_const.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED)
 
-            # S starts NSD discovery
-            nsd_discovery = self.subscriber.droid.nsdDiscoverServices(
-                self.nsd_service_info[nsd_const.NSD_SERVICE_INFO_SERVICE_TYPE])
-            try:
-                event_nsd = self.subscriber.ed.wait_for_event(
-                    nsd_const.DISCOVERY_LISTENER_EVENT,
-                    filter_callbacks,
-                    EVENT_TIMEOUT,
-                    key=nsd_const.DISCOVERY_LISTENER_DATA_CALLBACK,
-                    name=nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
-                self.log.info(
-                    'Subscriber %s: %s',
-                    nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
-                    event_nsd['data'])
-            except queue.Empty:
-                asserts.fail(
-                    'Timed out while waiting for %s on Subscriber' %
-                    nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
+                # S starts NSD discovery
+                nsd_discovery = self.subscriber.droid.nsdDiscoverServices(
+                    self.nsd_service_info[
+                        nsd_const.NSD_SERVICE_INFO_SERVICE_TYPE])
+                try:
+                    event_nsd = self.subscriber.ed.wait_for_event(
+                        nsd_const.DISCOVERY_LISTENER_EVENT,
+                        filter_callbacks,
+                        EVENT_TIMEOUT,
+                        key=nsd_const.DISCOVERY_LISTENER_DATA_CALLBACK,
+                       name=nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
+                    self.log.info(
+                        'Subscriber %s: %s',
+                        nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
+                        event_nsd['data'])
+                except queue.Empty:
+                    asserts.fail(
+                        'Timed out while waiting for %s on Subscriber' %
+                        nsd_const.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND)
 
-            # S resolves IP address of P from NSD service discovery
-            self.subscriber.droid.nsdResolveService(event_nsd['data'])
-            try:
-                event_nsd = self.subscriber.ed.wait_for_event(
-                    nsd_const.RESOLVE_LISTENER_EVENT,
-                    filter_callbacks,
-                    EVENT_TIMEOUT,
-                    key=nsd_const.RESOLVE_LISTENER_DATA_CALLBACK,
-                    name=nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
-                self.log.info(
-                    'Subscriber %s: %s',
-                    nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
-                    event_nsd['data'])
-            except queue.Empty:
-                asserts.fail(
-                    'Timed out while waiting for %s on Subscriber' %
-                    nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
+                # S resolves IP address of P from NSD service discovery
+                self.subscriber.droid.nsdResolveService(event_nsd['data'])
+                try:
+                    event_nsd = self.subscriber.ed.wait_for_event(
+                        nsd_const.RESOLVE_LISTENER_EVENT,
+                        filter_callbacks,
+                        EVENT_TIMEOUT,
+                        key=nsd_const.RESOLVE_LISTENER_DATA_CALLBACK,
+                      name=nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
+                    self.log.info(
+                        'Subscriber %s: %s',
+                        nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
+                        event_nsd['data'])
+                except queue.Empty:
+                    asserts.fail(
+                        'Timed out while waiting for %s on Subscriber' %
+                        nsd_const.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED)
 
-            # mDNS returns first character as '/' - strip out to get clean IPv6
-            pub_ipv6_from_nsd = event_nsd['data'][
-                nsd_const.NSD_SERVICE_INFO_HOST][1:]
-        finally:
-            # Stop NSD
-            if nsd_reg is not None:
-                self.publisher.droid.nsdUnregisterService(nsd_reg)
-            if nsd_discovery is not None:
-                self.subscriber.droid.nsdStopServiceDiscovery(nsd_discovery)
+                # mDNS returns first character as '/' - strip
+                # out to get clean IPv6
+                pub_ipv6 = event_nsd['data'][
+                               nsd_const.NSD_SERVICE_INFO_HOST][1:]
+            finally:
+                # Stop NSD
+                if nsd_reg is not None:
+                    self.publisher.droid.nsdUnregisterService(nsd_reg)
+                if nsd_discovery is not None:
+                    self.subscriber.droid.nsdStopServiceDiscovery(nsd_discovery)
+        else:
+            pub_ipv6 = self.publisher.droid.connectivityGetLinkLocalIpv6Address(
+                pub_aware_if)
+            pub_ipv6 = pub_ipv6.split('%')[0] # get rid of <name> - xx:xx%<name>
+            self.log.info('Publisher IPv6: %s', pub_ipv6)
 
         # P starts iPerf server
         result, data = self.publisher.run_iperf_server("-D")
@@ -1139,7 +1153,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
 
         # S starts iPerf client
         result, data = self.subscriber.run_iperf_client(
-            "%s%%%s" % (pub_ipv6_from_nsd, sub_aware_if), "-6 -J")
+            "%s%%%s" % (pub_ipv6, sub_aware_if), "-6 -J")
         self.log.debug(data)
         asserts.assert_true(result,
                             "Failure starting/running iperf3 in client mode")
