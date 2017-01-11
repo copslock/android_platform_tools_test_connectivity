@@ -25,6 +25,7 @@ import os
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 
@@ -47,6 +48,14 @@ class BleScanPowerTest(PowerBaseTest):
 
     def setup_class(self):
         super(BleScanPowerTest, self).setup_class()
+        # Get power test device serial number
+        power_test_device_serial = self.user_params["PowerTestDevice"]
+        # If there are multiple devices in the shield box turn off
+        # all of them except the one for the power testing
+        if len(self.android_devices) > 1:
+            for ad in self.android_devices:
+                if ad.serial != power_test_device_serial:
+                    disable_bluetooth(ad.droid)
 
     def _measure_power_for_scan_n_log_data(self,
                                            scan_mode,
@@ -117,8 +126,8 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
-            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40)
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value, self.SCAN_TIME_60,
+            self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_balanced(self):
