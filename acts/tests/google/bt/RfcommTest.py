@@ -22,6 +22,7 @@ import threading
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
@@ -76,6 +77,7 @@ class RfcommTest(BluetoothBaseTest):
             self.server_ad.droid.bluetoothRfcommStop()
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='f0bd466f-9a59-4612-8b75-ae4f691eef77')
     def test_rfcomm_connection(self):
         """Test bluetooth RFCOMM connection
 
@@ -105,6 +107,7 @@ class RfcommTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='240e106a-efd0-4795-8baa-9c0ea88b8b25')
     def test_rfcomm_connection_write_ascii(self):
         """Test bluetooth RFCOMM writing and reading ascii data
 
@@ -143,6 +146,7 @@ class RfcommTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c6ebf4aa-1ccb-415f-98c2-cbffb067d1ea')
     def test_rfcomm_write_binary(self):
         """Test bluetooth RFCOMM writing and reading binary data
 
@@ -183,6 +187,7 @@ class RfcommTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='2b36d71e-102b-469e-b064-e0da8cefdbfe')
     def test_rfcomm_accept_timeout(self):
         """Test bluetooth RFCOMM accept socket timeout
 
