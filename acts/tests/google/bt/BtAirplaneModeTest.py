@@ -17,6 +17,8 @@
 Test script to test various airplane mode scenarios and how it
 affects Bluetooth state.
 """
+
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -42,6 +44,7 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='11209b74-f27f-44cc-b336-8cf7f168f653')
     def test_bt_on_toggle_airplane_mode_on(self):
         """Test that toggles airplane mode on while BT on
 
@@ -72,6 +75,7 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         return not self.dut.droid.bluetoothCheckState()
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='823bb1e1-ce39-43a9-9f2c-0bd2a9b8793f')
     def test_bt_on_toggle_airplane_mode_on_bt_remains_off(self):
         """Test that verifies BT remains off after airplane mode toggles
 
@@ -102,13 +106,13 @@ class BtAirplaneModeTest(BluetoothBaseTest):
             self.log.error("Failed to toggle airplane mode on")
             return False
         toggle_timeout = 60
-        self.log.info(
-            "Waiting {} seconds until verifying Bluetooth state.".format(
-                toggle_timeout))
+        self.log.info("Waiting {} seconds until verifying Bluetooth state.".
+                      format(toggle_timeout))
         time.sleep(toggle_timeout)
         return not self.dut.droid.bluetoothCheckState()
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d3977a15-c4b8-4dad-b4e4-98e7c3216688')
     def test_bt_on_toggle_airplane_mode_on_then_off(self):
         """Test that toggles airplane mode both on and off
 
