@@ -17,6 +17,7 @@
 This test script exercises GATT notify/indicate procedures.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -29,6 +30,7 @@ from math import ceil
 
 class GattNotifyTest(GattConnectedBaseTest):
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='e0ba60af-c1f2-4516-a5d5-89e2def0c757')
     def test_notify_char(self):
         """Test notify characteristic value.
 
@@ -79,14 +81,13 @@ class GattNotifyTest(GattConnectedBaseTest):
         event = self._client_wait(GattEvent.DESC_WRITE)
 
         #set notified value
-        notified_value = [1,5,9,7,5,3,6,4,8,2]
+        notified_value = [1, 5, 9, 7, 5, 3, 6, 4, 8, 2]
         self.per_ad.droid.gattServerCharacteristicSetValue(
             self.notifiable_char_index, notified_value)
 
         #send notification
         self.per_ad.droid.gattServerNotifyCharacteristicChanged(
-            self.gatt_server, bt_device_id,
-            self.notifiable_char_index, False)
+            self.gatt_server, bt_device_id, self.notifiable_char_index, False)
 
         #wait for client to receive the notification
         event = self._client_wait(GattEvent.CHAR_CHANGE)
