@@ -22,6 +22,7 @@ import pprint
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
@@ -31,6 +32,7 @@ from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import scan_result
+
 
 class BleStressTest(BluetoothBaseTest):
     default_timeout = 10
@@ -63,6 +65,7 @@ class BleStressTest(BluetoothBaseTest):
         return False
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='22f98085-6ed8-4ad8-b62d-b8d1eae20b89')
     def test_loop_scanning_1000(self):
         """Stress start/stop scan instances.
 
@@ -95,6 +98,7 @@ class BleStressTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6caa84c2-50ac-46f2-a5e5-f942fd2cd6f6')
     def test_loop_scanning_100_verify_no_hci_timeout(self):
         """Stress start/stop scan instances variant.
 
@@ -128,13 +132,14 @@ class BleStressTest(BluetoothBaseTest):
                 self.scn_ad.droid)
             self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
                                               scan_callback)
-            self.log.info(self.scn_ad.ed.pop_event(scan_result.format(
-                scan_callback)))
+            self.log.info(
+                self.scn_ad.ed.pop_event(scan_result.format(scan_callback)))
             self.scn_ad.droid.bleStopBleScan(scan_callback)
             time.sleep(1)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5e9e4c8d-b72e-4767-81e5-f907c1834430')
     def test_loop_advertising_100(self):
         """Stress start/stop advertising instances.
 
@@ -162,16 +167,16 @@ class BleStressTest(BluetoothBaseTest):
                 self.adv_ad.droid)
             self.adv_ad.droid.bleStartBleAdvertising(
                 advertise_callback, advertise_data, advertise_settings)
-            expected_advertise_event_name = "".join(["BleAdvertise", str(
-                advertise_callback), "onSuccess"])
+            expected_advertise_event_name = "".join(
+                ["BleAdvertise", str(advertise_callback), "onSuccess"])
             worker = self.adv_ad.ed.handle_event(
                 self.bleadvertise_verify_onsuccess_handler,
                 expected_advertise_event_name, ([]), self.default_timeout)
             try:
                 self.log.debug(worker.result(self.default_timeout))
             except Empty as error:
-                self.log.debug(" ".join(["Test failed with Empty error:", str(
-                    error)]))
+                self.log.debug(" ".join(
+                    ["Test failed with Empty error:", str(error)]))
                 test_result = False
             except concurrent.futures._base.TimeoutError as error:
                 self.log.debug(" ".join([
@@ -183,6 +188,7 @@ class BleStressTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='11a2f51b-7178-4c32-bb5c-7eddd100a50f')
     def test_restart_advertise_callback_after_bt_toggle(self):
         """Test to reuse an advertise callback.
 
@@ -212,21 +218,22 @@ class BleStressTest(BluetoothBaseTest):
             self.adv_ad.droid)
         self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
-        expected_advertise_event_name = "".join(["BleAdvertise", str(
-            advertise_callback), "onSuccess"])
+        expected_advertise_event_name = "".join(
+            ["BleAdvertise", str(advertise_callback), "onSuccess"])
         worker = self.adv_ad.ed.handle_event(
             self.bleadvertise_verify_onsuccess_handler,
             expected_advertise_event_name, ([]), self.default_timeout)
         try:
             self.log.debug(worker.result(self.default_timeout))
         except Empty as error:
-            self.log.debug(" ".join(["Test failed with Empty error:", str(
-                error)]))
+            self.log.debug(" ".join(
+                ["Test failed with Empty error:", str(error)]))
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(" ".join(
-                ["Test failed, filtering callback onSuccess never occurred:",
-                 str(error)]))
+            self.log.debug(" ".join([
+                "Test failed, filtering callback onSuccess never occurred:",
+                str(error)
+            ]))
         test_result = reset_bluetooth([self.scn_ad])
         if not test_result:
             return test_result
@@ -239,16 +246,18 @@ class BleStressTest(BluetoothBaseTest):
         try:
             self.log.debug(worker.result(self.default_timeout))
         except Empty as error:
-            self.log.debug(" ".join(["Test failed with Empty error:", str(
-                error)]))
+            self.log.debug(" ".join(
+                ["Test failed with Empty error:", str(error)]))
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
-            self.log.debug(" ".join(
-                ["Test failed, filtering callback onSuccess never occurred:",
-                 str(error)]))
+            self.log.debug(" ".join([
+                "Test failed, filtering callback onSuccess never occurred:",
+                str(error)
+            ]))
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='88f3c068-41be-41df-920c-c0ecaae1a619')
     def test_restart_scan_callback_after_bt_toggle(self):
         """Test to reuse an scan callback.
 
@@ -283,6 +292,7 @@ class BleStressTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='ce8adfc0-384f-4751-9438-13a76cada8da')
     def test_le_pairing(self):
         """Test LE pairing transport stress
 
