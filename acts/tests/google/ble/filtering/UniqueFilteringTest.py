@@ -24,6 +24,7 @@ import pprint
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
@@ -83,6 +84,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c3764358-cd65-451c-9a2d-4bfb6cf98f48')
     def test_scan_flush_pending_scan_results(self):
         """Test LE scan api flush pending results.
 
@@ -135,6 +137,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4b358654-db69-4b51-98ec-7599aee2db10')
     def test_scan_trigger_on_batch_scan_results(self):
         """Test triggering batch scan results.
 
@@ -191,6 +194,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='94dbe8b2-9e7f-4da4-973e-5162b84a7ce0')
     def test_scan_flush_results_without_on_batch_scan_results_triggered(self):
         """Test that doesn't expect a batch scan result.
 
@@ -239,6 +243,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5856882e-3d82-4a6f-b110-389086b0ac41')
     def test_scan_non_existent_name_filter(self):
         """Test non-existent name filter.
 
@@ -290,6 +295,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0a54c50b-d4ef-4d8c-8328-775781aab2c7')
     def test_scan_advertisement_with_device_service_uuid_filter_expect_no_events(
             self):
         """Test scan filtering against an advertisement with no data.
@@ -349,6 +355,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='aefbc70c-ea46-4a63-a627-6fcceb72ac9e')
     def test_scan_filtering_multiple_advertisements_manufacturer_data(self):
         """Test scan filtering against multiple varying advertisements.
 
@@ -404,6 +411,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cdbeeb8e-895e-4d11-9e42-7b89ff6917ce')
     def test_scan_filter_device_address(self):
         """Test scan filtering of a device address.
 
@@ -470,6 +478,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='a4921d7b-cdd5-4d52-834c-f4bb85a9e2e8')
     def test_filter_simulated_ibeacon(self):
         """Test scan filtering of a simulated ibeacon.
 
@@ -497,7 +506,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
         Priority: 1
         """
         manufacturer_id = 0x4c
-        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(manufacturer_id, [0x01])
+        self.adv_ad.droid.bleAddAdvertiseDataManufacturerId(manufacturer_id,
+                                                            [0x01])
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         advertise_callback, advertise_data, advertise_settings = (
@@ -513,7 +523,8 @@ class UniqueFilteringTest(BluetoothBaseTest):
 
         self.scn_ad.droid.bleSetScanSettingsScanMode(
             ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
-        self.scn_ad.droid.bleSetScanFilterManufacturerData(manufacturer_id, [0x01])
+        self.scn_ad.droid.bleSetScanFilterManufacturerData(manufacturer_id,
+                                                           [0x01])
         filter_list = self.scn_ad.droid.bleGenFilterList()
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_filter = self.scn_ad.droid.bleBuildScanFilter(filter_list)
@@ -544,6 +555,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='a70a276d-7990-4754-8899-792b586ecce6')
     def test_filter_manufacturer_id_bounds(self):
         """Test scan filtering of lower and upper bounds of allowed manu data
 
@@ -607,11 +619,11 @@ class UniqueFilteringTest(BluetoothBaseTest):
                 self.log.error("Unable to find beacon advertisement.")
                 return False
             found_manufacturer_id = json.loads(event['data']['Result'][
-                    'manufacturerIdList'])
+                'manufacturerIdList'])
             if found_manufacturer_id[0] != manufacturer_id:
                 self.log.error(
-                    "Manufacturer id mismatch. Found {}, Expected {}".
-                    format(found_manufacturer_id, manufacturer_id))
+                    "Manufacturer id mismatch. Found {}, Expected {}".format(
+                        found_manufacturer_id, manufacturer_id))
                 return False
             self.scn_ad.droid.bleStopBleScan(scan_callback)
             self.adv_ad.droid.bleStopBleAdvertising(advertise_callback)
