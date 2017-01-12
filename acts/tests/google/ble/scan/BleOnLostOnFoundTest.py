@@ -18,6 +18,7 @@ This test script exercises different onLost/onFound scenarios.
 """
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
@@ -75,6 +76,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
             return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9bd7fd09-71c9-4623-90f0-9a895eb37409')
     def test_onlost_onfound_defaults(self):
         """Test generic onlost/onfound defaults.
 
@@ -126,23 +128,23 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         if event['data'][
                 'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
             self.log.info(
-                "Found Callbacreset_bluetoothkType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value))
+                "Found Callbacreset_bluetoothkType:{}, Expected CallbackType:{}".
+                format(found_callback_type, ScanSettingsCallbackType.
+                       CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
         if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value))
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='10b48dc9-0c2a-46a3-8890-5cde3004a996')
     def test_onlost_onfound_match_mode_sticky(self):
         """Test generic onlost/onfound in sticky mode.
 
@@ -193,24 +195,23 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         found_callback_type = event['data']['CallbackType']
         if event['data'][
                 'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value))
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
         if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value))
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4fefed82-7800-41be-8272-aac076640fed')
     def test_onlost_onfound_match_num_few(self):
         """Test generic onlost/onfound num few.
 
@@ -261,19 +262,17 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         found_callback_type = event['data']['CallbackType']
         if event['data'][
                 'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value))
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
         if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type,
-                    ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value))
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True
