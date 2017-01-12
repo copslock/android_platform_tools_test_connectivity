@@ -21,6 +21,7 @@ This test was designed to be run in a shield box.
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.bt_test_utils import check_device_supported_profiles
@@ -55,8 +56,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         take_btsnoop_logs(self.android_devices, self, test_name, begin_time)
         reset_bluetooth(self.android_devices)
 
-    #@BluetoothTest(UUID=290eb41f-6e66-4dc1-8f3e-55783901d116)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5a5dcf94-8114-405c-a048-b80d73e80ecc')
     def test_bluetooth_reset(self):
         """Test resetting bluetooth.
 
@@ -78,8 +79,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         """
         return reset_bluetooth([self.droid_ad])
 
-    #@BluetoothTest(UUID=f9a5a5bb-12c4-435d-80a3-5172fd22266a)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='fc205cb8-6878-4f97-b9c8-7ed532742a1b')
     def test_make_device_discoverable(self):
         """Test device discoverablity.
 
@@ -143,8 +144,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             return False
         return True
 
-    #@BluetoothTest(UUID=e9c95b6d-b1b4-4f88-a43b-24bbbd6a2119)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c4d77bde-04ed-4805-9185-9bc46dc8af4b')
     def test_make_device_undiscoverable(self):
         """Test device un-discoverability.
 
@@ -169,8 +170,7 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 1
         """
         self.droid_ad.droid.bluetoothMakeUndiscoverable()
-        set_bt_scan_mode(self.droid1_ad,
-                         BluetoothScanModeType.SCAN_MODE_NONE)
+        set_bt_scan_mode(self.droid1_ad, BluetoothScanModeType.SCAN_MODE_NONE)
         scan_mode = self.droid1_ad.droid.bluetoothGetScanMode()
         if scan_mode == BluetoothScanModeType.SCAN_MODE_NONE:
             self.log.debug("Android device1 scan mode is SCAN_MODE_NONE")
@@ -206,8 +206,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             return False
         return True
 
-    #@BluetoothTest(UUID=5e2813a8-3386-461b-b327-2858101c40c0)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='2bcb6288-64c3-437e-bc89-bcd416310135')
     def test_set_device_name(self):
         """Test bluetooth device name.
 
@@ -231,7 +231,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         name = "SetDeviceName"
         return set_device_name(self.droid_ad.droid, name)
 
-    #@BluetoothTest(UUID=e5cdd6b6-3c66-4405-8e3e-74b0fb3a2599)
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b38fb110-a707-47cf-b1c3-981266373786')
     def test_scan_mode_off(self):
         """Test disabling bluetooth scanning.
 
@@ -253,11 +254,11 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 1
         """
         self.log.debug("Test scan mode STATE_OFF.")
-        return set_bt_scan_mode(self.droid_ad,
-                                BluetoothScanModeType.STATE_OFF)
+        return set_bt_scan_mode(self.droid_ad, BluetoothScanModeType.STATE_OFF)
 
     #@BluetoothTest(UUID=27576aa8-d52f-45ad-986a-f44fb565167d)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='702c3d58-94fd-47ee-9323-2421ce182ddb')
     def test_scan_mode_none(self):
         """Test bluetooth scan mode none.
 
@@ -282,8 +283,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         return set_bt_scan_mode(self.droid_ad,
                                 BluetoothScanModeType.SCAN_MODE_NONE)
 
-    #@BluetoothTest(UUID=c607780f-1bb3-4325-9248-a5bf131d0b40)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cb998a99-31a6-46b6-9de6-a9a17081a604')
     def test_scan_mode_connectable(self):
         """Test bluetooth scan mode connectable.
 
@@ -305,11 +306,11 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         Priority: 2
         """
         self.log.debug("Test scan mode SCAN_MODE_CONNECTABLE.")
-        return set_bt_scan_mode(
-            self.droid_ad, BluetoothScanModeType.SCAN_MODE_CONNECTABLE)
+        return set_bt_scan_mode(self.droid_ad,
+                                BluetoothScanModeType.SCAN_MODE_CONNECTABLE)
 
-    #@BluetoothTest(UUID=05fa38bc-9ed8-44aa-804f-6d7a7ef4d012)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='59bec55c-c64e-43e4-9a9a-e44408a801d7')
     def test_scan_mode_connectable_discoverable(self):
         """Test bluetooth scan mode connectable.
 
@@ -335,8 +336,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             self.droid_ad,
             BluetoothScanModeType.SCAN_MODE_CONNECTABLE_DISCOVERABLE)
 
-    #@BluetoothTest(UUID=f1aa3320-fab7-4206-9142-19dc2f5b8a66)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cd20a09d-a68d-4f55-b016-ba283b0460df')
     def test_if_support_hid_profile(self):
         """ Test that a single device can support HID profile.
         Steps
@@ -360,8 +361,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             return False
         return True
 
-    #@BluetoothTest(UUID=300775bd-b93c-492f-81ef-dc1191ef88b2)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='a110d330-7090-4784-a33b-33089dc5f67f')
     def test_if_support_hsp_profile(self):
         """ Test that a single device can support HSP profile.
         Steps
@@ -376,8 +377,8 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
             return False
         return True
 
-    #@BluetoothTest(UUID=f2c8862b-2bdc-4d02-a0de-ab2355daafba)
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9ccefdd9-62a9-4aed-b4d9-7b0a55c338b2')
     def test_if_support_a2dp_profile(self):
         """ Test that a single device can support A2DP profile.
         Steps
