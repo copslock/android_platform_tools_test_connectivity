@@ -513,11 +513,6 @@ class MD8475A(object):
                 error = int(err.decode('utf-8'))
                 if error != NO_ERROR:
                     raise AnritsuError(error, command)
-                else:
-                    # check operation status
-                    status = self.send_query("*OPC?")
-                    if int(status) != OPERATION_COMPLETE:
-                        raise AnritsuError("Operation not completed")
             except socket.timeout:
                 raise AnritsuError("Timeout for Command Response from Anritsu")
             except socket.error:
@@ -570,8 +565,9 @@ class MD8475A(object):
         # The state of the Smart Studio should be NOTRUN at this point
         # after the one of the steps from above
         if stat != "NOTRUN":
-            self.log.info("Can not launch Smart Studio, "
-                          "please shut down all the Smart Studio SW components")
+            self.log.info(
+                "Can not launch Smart Studio, "
+                "please shut down all the Smart Studio SW components")
             raise AnritsuError("Could not run SmartStudio")
 
     def close_smartstudio(self):
@@ -612,21 +608,15 @@ class MD8475A(object):
         sleep_interval = 2
         waiting_time = 0
 
-        self.send_command("START", 120)
-
-        #FIXME. Doing this since Anritsu has some issue with CALLSTAT? in CDMA1X
-        if BtsTechnology.CDMA1X.value in self.get_simulation_model():
-            time.sleep(15)
-            self.log.info("CDMA1X: Not waiting for POWEROFF state, returning")
-            return
+        self.send_command("START", SMARTSTUDIO_SIMULATION_START_WAIT_TIME)
 
         self.log.info("Waiting for CALLSTAT=POWEROFF")
-        callstat = self.send_query("CALLSTAT?").split(",")
+        callstat = self.send_query("CALLSTAT? BTS1").split(",")
         while callstat[0] != "POWEROFF":
             time.sleep(sleep_interval)
-            waiting_time = waiting_time + sleep_interval
+            waiting_time += sleep_interval
             if waiting_time <= time_to_wait:
-                callstat = self.send_query("CALLSTAT?").split(",")
+                callstat = self.send_query("CALLSTAT? BTS1").split(",")
             else:
                 raise AnritsuError("Timeout: Starting simulation")
 
@@ -804,20 +794,13 @@ class MD8475A(object):
         sleep_interval = 1
         waiting_time = 0
 
-        #FIXME. Doing this since Anritsu has some issue with CALLSTAT? in CDMA1X
-        if BtsTechnology.CDMA1X.value in self.get_simulation_model():
-            time.sleep(15)
-            self.log.info("CDMA1X: Not waiting for IDLE/COMMUNICATION state,"
-                          " returning")
-            return
-
         self.log.info("Waiting for CALLSTAT=COMMUNICATION/IDLE")
-        callstat = self.send_query("CALLSTAT?").split(",")
+        callstat = self.send_query("CALLSTAT? BTS1").split(",")
         while callstat[0] != "IDLE" and callstat[1] != "COMMUNICATION":
             time.sleep(sleep_interval)
-            waiting_time = waiting_time + sleep_interval
+            waiting_time += sleep_interval
             if waiting_time <= time_to_wait:
-                callstat = self.send_query("CALLSTAT?").split(",")
+                callstat = self.send_query("CALLSTAT? BTS1").split(",")
             else:
                 raise AnritsuError("UE failed to register on network")
 
@@ -835,20 +818,13 @@ class MD8475A(object):
         sleep_interval = 1
         waiting_time = 0
 
-        #FIXME. Doing this since Anritsu has some issue with CALLSTAT? in CDMA1X
-        if BtsTechnology.CDMA1X.value in self.get_simulation_model():
-            time.sleep(15)
-            self.log.info("CDMA1X: Not waiting for COMMUNICATION state,"
-                          " returning")
-            return
-
         self.log.info("Waiting for CALLSTAT=COMMUNICATION")
-        callstat = self.send_query("CALLSTAT?").split(",")
+        callstat = self.send_query("CALLSTAT? BTS1").split(",")
         while callstat[1] != "COMMUNICATION":
             time.sleep(sleep_interval)
-            waiting_time = waiting_time + sleep_interval
+            waiting_time += sleep_interval
             if waiting_time <= time_to_wait:
-                callstat = self.send_query("CALLSTAT?").split(",")
+                callstat = self.send_query("CALLSTAT? BTS1").split(",")
             else:
                 raise AnritsuError("UE failed to register on network")
 
@@ -1127,7 +1103,8 @@ class MD8475A(object):
             None
         """
         if not isinstance(enable, ReturnToEUTRAN):
-            raise ValueError('The parameter should be of type "ReturnToEUTRAN"')
+            raise ValueError(
+                'The parameter should be of type "ReturnToEUTRAN"')
         cmd = "SIMMODELEX RETEUTRAN," + enable.value
         self.send_command(cmd)
 
@@ -1246,7 +1223,8 @@ class _AnritsuTestCases(object):
             None
         """
         if not isinstance(procedure, TestProcedure):
-            raise ValueError('The parameter should be of type "TestProcedure" ')
+            raise ValueError(
+                'The parameter should be of type "TestProcedure" ')
         cmd = "TESTPROCEDURE " + procedure.value
         self._anritsu.send_command(cmd)
 
@@ -1602,7 +1580,8 @@ class _BaseTransceiverStation(object):
             None
         """
         if not isinstance(bandwidth, BtsBandwidth):
-            raise ValueError(' The parameter should be of type "BtsBandwidth" ')
+            raise ValueError(
+                ' The parameter should be of type "BtsBandwidth" ')
         cmd = "ULBANDWIDTH {},{}".format(bandwidth.value, self._bts_number)
         self._anritsu.send_command(cmd)
 
@@ -1719,7 +1698,8 @@ class _BaseTransceiverStation(object):
         if not isinstance(service_state, BtsServiceState):
             raise ValueError(' The parameter should be of type'
                              ' "BtsServiceState" ')
-        cmd = "OUTOFSERVICE {},{}".format(service_state.value, self._bts_number)
+        cmd = "OUTOFSERVICE {},{}".format(service_state.value,
+                                          self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
@@ -2989,7 +2969,7 @@ class _VirtualPhone(object):
             None
         """
         cmd = ("C2KSENDSMS System=CDMA\&Originating_Address={}\&UserData={}"
-              ).format(phoneNumber, AnritsuUtils.cdma_encode(message))
+               ).format(phoneNumber, AnritsuUtils.cdma_encode(message))
         return self._anritsu.send_command(cmd)
 
     def receiveSms(self):
@@ -3059,7 +3039,8 @@ class _PacketDataNetwork(object):
             None
         """
         if not isinstance(ip_type, IPAddressType):
-            raise ValueError(' The parameter should be of type "IPAddressType"')
+            raise ValueError(
+                ' The parameter should be of type "IPAddressType"')
         cmd = "PDNIPTYPE {},{}".format(self._pdn_number, ip_type.value)
         self._anritsu.send_command(cmd)
 
