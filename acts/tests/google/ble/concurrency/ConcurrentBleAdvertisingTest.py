@@ -23,6 +23,7 @@ import os
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
@@ -65,11 +66,13 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             scan_and_verify_n_advertisements(self.scn_ad, num_advertisements)
         except BtTestUtilsError:
             return False
-        teardown_n_advertisements(self.adv_ad, len(advertise_callback_list),
+        teardown_n_advertisements(self.adv_ad,
+                                  len(advertise_callback_list),
                                   advertise_callback_list)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='abc03874-6d7a-4b5d-9f29-18731a102793')
     def test_max_advertisements_defaults(self):
         """Testing max advertisements.
 
@@ -95,6 +98,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='50ee137e-eb71-40ef-b72f-a5fd646190d2')
     def test_max_advertisements_include_device_name_and_filter_device_name(
             self):
         """Testing max advertisement variant.
@@ -127,6 +131,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='f7e9ba2b-6286-4510-a8a0-f1df831056c0')
     def test_max_advertisements_exclude_device_name_and_filter_device_name(
             self):
         """Test max advertisement variant.
@@ -158,6 +163,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return not self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6ce102d7-61e1-4ca0-bcfb-767437b86c2b')
     def test_max_advertisements_with_manufacturer_data(self):
         """Test max advertisement variant.
 
@@ -188,6 +194,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='2fc7d5e8-1539-42a8-8681-ce0b8bfc0924')
     def test_max_advertisements_with_manufacturer_data_mask(self):
         """Test max advertisements variant.
 
@@ -218,6 +225,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9ef615ed-1705-44ae-ab5b-f7e8fb4bb770')
     def test_max_advertisements_with_service_data(self):
         """Test max advertisement variant.
 
@@ -246,12 +254,13 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         test_result = True
         filter_list = self.scn_ad.droid.bleGenFilterList()
         self.scn_ad.droid.bleSetScanFilterServiceData(
-            "0000110A-0000-1000-8000-00805F9B34FB", [11,17,80])
+            "0000110A-0000-1000-8000-00805F9B34FB", [11, 17, 80])
         self.adv_ad.droid.bleAddAdvertiseDataServiceData(
-            "0000110A-0000-1000-8000-00805F9B34FB", [11,17,80])
+            "0000110A-0000-1000-8000-00805F9B34FB", [11, 17, 80])
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9ef615ed-1705-44ae-ab5b-f7e8fb4bb770')
     def test_max_advertisements_with_manufacturer_data_mask_and_include_device_name(
             self):
         """Test max advertisement variant.
@@ -286,6 +295,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c2ca85fb-6663-431d-aa30-5286a85dbbe0')
     def test_max_advertisements_with_service_uuids(self):
         """Test max advertisement variant.
 
@@ -318,6 +328,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='756e026f-64d7-4a2f-935a-3790c0ac4503')
     def test_max_advertisements_with_service_uuid_and_service_mask(self):
         """Test max advertisements variant.
 
@@ -351,6 +362,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return self._verify_n_advertisements(self.max_advertisements)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='79c4b6cd-9f07-49a9-829f-69b29ea8d322')
     def test_max_advertisements_plus_one(self):
         """Test max advertisements plus one.
 
@@ -376,6 +388,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return not self._verify_n_advertisements(self.max_advertisements + 1)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0bd6e490-a501-4fe1-88e5-9b77970c0b95')
     def test_start_two_advertisements_on_same_callback(self):
         """Test invalid advertisement scenario.
 
@@ -428,6 +441,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='12632b31-22b9-4121-80b6-1263b9d90909')
     def test_toggle_advertiser_bt_state(self):
         """Test forcing stopping advertisements.
 
@@ -466,8 +480,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             return False
         except concurrent.futures._base.TimeoutError as error:
             self.log.error(
-                "Test failed, filtering callback onSuccess never occurred: {}".format(
-                    error))
+                "Test failed, filtering callback onSuccess never occurred: {}".
+                format(error))
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
@@ -501,6 +515,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='785c5c77-d5d4-4d0f-8b7b-3eb1f1646d2c')
     def test_restart_advertise_callback_after_bt_toggle(self):
         """Test starting an advertisement on a cleared out callback.
 
@@ -538,8 +553,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
             self.log.debug(
-                "Test failed, filtering callback onSuccess never occurred: {}".format(
-                    error))
+                "Test failed, filtering callback onSuccess never occurred: {}".
+                format(error))
         test_result = reset_bluetooth([self.android_devices[1]])
         if not test_result:
             return test_result
@@ -553,6 +568,6 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             test_result = False
         except concurrent.futures._base.TimeoutError as error:
             self.log.debug(
-                "Test failed, filtering callback onSuccess never occurred: {}".format(
-                    error))
+                "Test failed, filtering callback onSuccess never occurred: {}".
+                format(error))
         return test_result
