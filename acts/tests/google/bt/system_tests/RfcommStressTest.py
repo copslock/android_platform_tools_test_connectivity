@@ -22,6 +22,7 @@ import threading
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
@@ -42,6 +43,7 @@ class RfcommStressTest(BluetoothBaseTest):
         self.client_ad = self.android_devices[0]
         self.server_ad = self.android_devices[1]
 
+    @test_tracker_info(uuid='10452f63-e1fd-4345-a4da-e00fc4609a69')
     def test_rfcomm_connection_stress(self):
         """Stress test an RFCOMM connection
 
@@ -76,6 +78,7 @@ class RfcommStressTest(BluetoothBaseTest):
             self.log.info("Iteration {} completed".format(n))
         return True
 
+    @test_tracker_info(uuid='2dba96ec-4e5d-4394-85ef-b57b66399fbc')
     def test_rfcomm_connection_write_msg_stress(self):
         """Stress test an RFCOMM connection
 
@@ -113,6 +116,7 @@ class RfcommStressTest(BluetoothBaseTest):
             self.log.info("Iteration {} completed".format(n))
         return True
 
+    @test_tracker_info(uuid='78dca597-89c0-431c-a553-531f230fc3c0')
     def test_rfcomm_read_write_stress(self):
         """Stress test an RFCOMM connection's read and write capabilities
 
