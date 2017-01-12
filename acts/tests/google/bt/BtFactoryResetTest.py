@@ -16,6 +16,7 @@
 """
 Test script to test BluetoothAdapter's resetFactory method.
 """
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 
@@ -30,6 +31,7 @@ class BtFactoryResetTest(BluetoothBaseTest):
         self.sec_dut = self.android_devices[1]
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='800bce6a-87ef-4fd1-82a5-4c60c4133be1')
     def test_factory_reset_bluetooth(self):
         """Test that BluetoothAdapter.factoryReset removes bonded devices
 
@@ -52,8 +54,7 @@ class BtFactoryResetTest(BluetoothBaseTest):
         TAGS: Bluetooth, Factory Reset
         Priority: 2
         """
-        if not pair_pri_to_sec(
-                self.pri_dut, self.sec_dut, attemps=1):
+        if not pair_pri_to_sec(self.pri_dut, self.sec_dut, attemps=1):
             self.log.error("Failed to bond devices.")
             return False
         if not self.pri_dut.droid.bluetoothFactoryReset():
