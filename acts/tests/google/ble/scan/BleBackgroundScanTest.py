@@ -19,6 +19,7 @@ This test script exercises background scan test scenarios.
 
 from queue import Empty
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import BluetoothAdapterState
 from acts.test_utils.bt.bt_test_utils import bluetooth_off
@@ -79,6 +80,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
             return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4d13c3a8-1805-44ef-a92a-e385540767f1')
     def test_background_scan(self):
         """Test generic background scan.
 
@@ -139,6 +141,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9c4577f8-5e06-4034-b977-285956734974')
     def test_background_scan_ble_disabled(self):
         """Test background LE scanning with LE disabled.
 
@@ -192,6 +195,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0bdd1764-3dc6-4a82-b041-76e48ed0f424')
     def test_airplane_mode_disables_ble(self):
         """Try to start LE mode in Airplane Mode.
 
