@@ -37,6 +37,7 @@ from acts.test_utils.tel.anritsu_utils import cb_serial_number
 from acts.test_utils.tel.anritsu_utils import cmas_receive_verify_message_cdma1x
 from acts.test_utils.tel.anritsu_utils import cmas_receive_verify_message_lte_wcdma
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
+from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
@@ -129,11 +130,12 @@ class TelLabCmasTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for CMAS test.")
                 return False
 
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))
@@ -355,6 +357,71 @@ class TelLabCmasTest(TelephonyBaseTest):
         """
         return self._send_receive_cmas_message(
             set_system_model_1x, RAT_1XRTT, CMAS_C2K_CATEGORY_AMBER,
+            "1X CMAS Child abduction Alert", CMAS_C2K_RESPONSETYPE_MONITOR,
+            CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
+            CMAS_C2K_CERTIANTY_OBSERVED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_presidential_alert_1x_evdo(self):
+        """CMAS Presidential alert message reception on 1x with EVDO
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS presedential alert message when camped on 1x newtork
+
+        Steps:
+        1. Make Sure Phone is camped on 1x network with EVDO
+        2. Send CMAS Presidential message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Presidential alert message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(
+            set_system_model_1x_evdo, RAT_1XRTT,
+            CMAS_C2K_CATEGORY_PRESIDENTIAL, "1X CMAS Presidential Alert")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_extreme_immediate_likely_1x_evdo(self):
+        """CMAS Extreme immediate likely message reception on 1x with EVDO
+
+        Tests the capability of device to receive and inform the user
+        about the Extreme immediate likely message when camped on 1x newtork
+
+        1. Make Sure Phone is camped on 1x network with EVDO
+        2. Send CMAS Extreme immediate likely message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Extreme immediate likely message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(
+            set_system_model_1x_evdo, RAT_1XRTT, CMAS_C2K_CATEGORY_EXTREME,
+            "1X CMAS Extreme Immediate Likely", CMAS_C2K_RESPONSETYPE_EVACUATE,
+            CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
+            CMAS_C2K_CERTIANTY_LIKELY)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cmas_child_abduction_emergency_1x_evdo(self):
+        """CMAS Child abduction emergency message reception on 1x with EVDO
+
+        Tests the capability of device to receive and inform the user
+        about the CMAS Child abduction emergency message when camped on 1x newtork
+
+        1. Make Sure Phone is camped on 1x network
+        2. Send CMAS Child abduction emergency message from Anritsu
+
+        Expected Result:
+        Phone receives CMAS Child abduction emergency message
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._send_receive_cmas_message(
+            set_system_model_1x_evdo, RAT_1XRTT, CMAS_C2K_CATEGORY_AMBER,
             "1X CMAS Child abduction Alert", CMAS_C2K_RESPONSETYPE_MONITOR,
             CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
             CMAS_C2K_CERTIANTY_OBSERVED)
