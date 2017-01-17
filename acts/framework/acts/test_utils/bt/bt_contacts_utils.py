@@ -42,7 +42,7 @@ CONTACTS_ERASED_CALLBACK = "ContactsErased"
 CONTACTS_URI = "content://com.android.contacts/data/phones"
 
 # Path for temporary file storage on device.
-STORAGE_PATH = "/sdcard/Download/"
+STORAGE_PATH = "/storage/emulated/0/Download/"
 
 PBAP_SYNC_TIME = 30
 
