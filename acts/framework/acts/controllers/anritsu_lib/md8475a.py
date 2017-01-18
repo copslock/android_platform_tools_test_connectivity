@@ -1031,7 +1031,7 @@ class MD8475A(object):
         cmd = (
             'PWSSENDWM 3GPP,"BtsNo=1&WarningSystem=ETWS&SerialNo={}&'
             'Primary=ON&PrimaryMessageID={}&Secondary=ON&SecondaryMessageID={}'
-            '&WarningType={}&wm={}&UserAlert={}&Popup={&dcs=0x10&LanguageCode=en"'
+            '&WarningType={}&wm={}&UserAlert={}&Popup={}&dcs=0x10&LanguageCode=en"'
         ).format(serialNo, messageID, messageID, warningType, warningMessage,
                  userAlertenable, popUpEnable)
         self.send_command(cmd)
