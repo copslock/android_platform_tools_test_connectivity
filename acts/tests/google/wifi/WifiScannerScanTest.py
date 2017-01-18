@@ -834,7 +834,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         asserts.assert_true(self.connect_to_reference_network(), NETWORK_ERROR)
         time.sleep(10)  #wait for connection to be active
         asserts.assert_true(
-            wutils.check_internet_connection(self.dut, self.ping_addr),
+            wutils.validate_connection(self.dut, self.ping_addr),
             "Error, No internet connection for current network")
         #generating event wait time from scan setting plus leeway
         scan_time, scan_channels = wutils.get_scan_time_and_channels(
@@ -888,7 +888,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
         time.sleep(10)  #wait for IP to be assigned
         asserts.assert_true(
-            wutils.check_internet_connection(self.dut, self.ping_addr),
+            wutils.validate_connection(self.dut, self.ping_addr),
             "Error, No internet connection for current network")
         wutils.wifi_forget_network(self.dut, self.connect_network["ssid"])
 
@@ -951,8 +951,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                                         NETWORK_ERROR)
                     time.sleep(10)  #wait for connection to be active
                     asserts.assert_true(
-                        wutils.check_internet_connection(self.dut,
-                                                         self.ping_addr),
+                        wutils.validate_connection(self.dut, self.ping_addr),
                         "Error, No internet connection for current network")
                 elif snumber == 3:
                     self.log.info("Kicking PNO for reference network")
@@ -986,8 +985,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                                         NETWORK_ERROR)
                     time.sleep(10)  #wait for connection to be active
                     asserts.assert_true(
-                        wutils.check_internet_connection(self.dut,
-                                                         self.ping_addr),
+                        wutils.validate_connection(self.dut, self.ping_addr),
                         "Error, No internet connection for current network")
                     wutils.wifi_forget_network(self.dut,
                                                self.connect_network["ssid"])
