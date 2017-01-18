@@ -43,6 +43,8 @@ ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
 
+PORT_RETRY_COUNT = 3
+
 
 class AndroidDeviceError(signals.ControllerError):
     pass
@@ -605,9 +607,20 @@ class AndroidDevice:
             >>> ad = AndroidDevice()
             >>> droid, ed = ad.get_droid()
         """
-        if not self.h_port or not host_utils.is_port_available(self.h_port):
-            self.h_port = host_utils.get_available_host_port()
-        self.adb.tcp_forward(self.h_port, self.d_port)
+        forward_success = False
+        last_error = None
+        for _ in range(PORT_RETRY_COUNT):
+            if not self.h_port or not host_utils.is_port_available(self.h_port):
+                self.h_port = host_utils.get_available_host_port()
+            try:
+                self.adb.tcp_forward(self.h_port, self.d_port)
+                forward_success = True
+                break
+            except adb.AdbError as e:
+                last_error = e
+                pass
+        if not forward_success:
+            raise last_error
 
         # TODO(bpeake) b/33470152 Fixup SL4A connection code
         if sl4a_client.is_sl4a_running(self.adb):
