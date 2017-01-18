@@ -398,7 +398,8 @@ class BaseTestClass(object):
                                 args=None,
                                 kwargs=None,
                                 tag="",
-                                name_func=None):
+                                name_func=None,
+                                format_args=False):
         """Runs generated test cases.
 
         Generated test cases are not written down as functions, but as a list
@@ -420,6 +421,8 @@ class BaseTestClass(object):
                        proper test name. The test name should be shorter than
                        utils.MAX_FILENAME_LEN. Names over the limit will be
                        truncated.
+            format_args: If True, args will be appended as the first argument
+                         in the args list passed to test_func.
 
         Returns:
             A list of settings that did not pass.
@@ -427,23 +430,35 @@ class BaseTestClass(object):
         args = args or ()
         kwargs = kwargs or {}
         failed_settings = []
-        for s in settings:
-            test_name = "{} {}".format(tag, s)
+
+        for setting in settings:
+            test_name = "{} {}".format(tag, setting)
+
             if name_func:
                 try:
-                    test_name = name_func(s, *args, **kwargs)
+                    test_name = name_func(setting, *args, **kwargs)
                 except:
                     self.log.exception(("Failed to get test name from "
                                         "test_func. Fall back to default %s"),
                                        test_name)
+
             self.results.requested.append(test_name)
+
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
+
             previous_success_cnt = len(self.results.passed)
-            self.exec_one_testcase(test_name, test_func, (s, ) + args,
-                                   **kwargs)
+
+            if format_args:
+                self.exec_one_testcase(test_name, test_func, args + (setting, ),
+                                       **kwargs)
+            else:
+                self.exec_one_testcase(test_name, test_func, (setting, ) + args,
+                                       **kwargs)
+
             if len(self.results.passed) - previous_success_cnt != 1:
-                failed_settings.append(s)
+                failed_settings.append(setting)
+
         return failed_settings
 
     def _exec_func(self, func, *args):
