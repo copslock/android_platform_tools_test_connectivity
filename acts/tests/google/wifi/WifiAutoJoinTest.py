@@ -156,7 +156,7 @@ class WifiAutoJoinTest(base_test.BaseTestClass):
                 "Device is not connected to required bssid {}".format(bssid))
             time.sleep(10)  #wait for connection to be active
             asserts.assert_true(
-                wutils.check_internet_connection(self.dut, self.ping_addr),
+                wutils.validate_connection(self.dut, self.ping_addr),
                 "Error, No Internet connection for current bssid {}".format(
                     bssid))
         finally:
