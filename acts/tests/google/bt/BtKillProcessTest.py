@@ -40,7 +40,7 @@ class BtKillProcessTest(BluetoothBaseTest):
         else:
             return False
 
-    @BluetoothBaseTest.bt_test_wrap()
+    @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='c51186e9-4ba8-406c-b609-ea552868e4c9')
     def test_kill_process(self):
         """Test that a killed Bluetooth process restarts
