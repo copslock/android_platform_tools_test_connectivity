@@ -392,4 +392,7 @@ class SshConnection(object):
             'python -c "import socket; s=socket.socket(); '
             's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
         ) % interface_name
-        return int(self.run(free_port_cmd).stdout)
+        port = int(self.run(free_port_cmd).stdout)
+        # Yield to the os to ensure the port gets cleaned up.
+        time.sleep(0.001)
+        return port
