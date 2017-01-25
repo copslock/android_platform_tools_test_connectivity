@@ -571,3 +571,57 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
                 "Test failed, filtering callback onSuccess never occurred: {}".
                 format(error))
         return test_result
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_timeout(self):
+        """Test starting advertiser with timeout.
+
+        Test that when a timeout is used, the advertiser is cleaned properly,
+        and next one can be started.
+
+        Steps:
+        1. Setup the advertiser android device with 4 second timeout.
+        2. Call start ble advertising.
+        3. Wait 5 seconds, to make sure advertiser times out.
+        4. Repeat steps 1-4 four times.
+
+        Expected Result:
+        Starting the advertising should succeed each time.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Concurrency
+        Priority: 1
+        """
+        advertise_timeout_s = 4
+        num_iterations = 4
+        test_result = True
+
+        for i in range(0, num_iterations):
+            advertise_callback, advertise_data, advertise_settings = (
+                generate_ble_advertise_objects(self.adv_ad.droid))
+
+            self.adv_ad.droid.bleSetAdvertiseSettingsTimeout(
+                advertise_timeout_s * 1000)
+
+            self.adv_ad.droid.bleStartBleAdvertising(
+                advertise_callback, advertise_data, advertise_settings)
+            try:
+                self.adv_ad.ed.pop_event(
+                    adv_succ.format(advertise_callback), self.default_timeout)
+            except Empty as error:
+                self.log.error("Test failed with Empty error: {}".format(error))
+                test_result = False
+            except concurrent.futures._base.TimeoutError as error:
+                self.log.debug(
+                    "Test failed, filtering callback onSuccess never occurred: {}".
+                    format(error))
+
+            if not test_result:
+                return test_result
+
+            time.sleep(advertise_timeout_s + 1)
+
+        return test_result
