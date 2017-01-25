@@ -28,7 +28,14 @@ MAX_WAIT_TIME_CALL_DROP = 60
 
 # Max time to wait after caller make a call and before
 # callee start ringing
-MAX_WAIT_TIME_CALLEE_RINGING = 30
+MAX_WAIT_TIME_CALLEE_RINGING = 60
+
+# country code list
+COUNTRY_CODE_LIST = ["+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47",
+                     "+246", "+86", "+850", "+81"]
+
+# Wait time after enterring puk code
+WAIT_TIME_SUPPLY_PUK_CODE = 10
 
 # Max time to wait after caller make a call and before
 # callee start ringing
@@ -63,7 +70,7 @@ MAX_WAIT_TIME_IMS_REGISTRATION = 120
 MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 20
 
 # Max time to wait for WFC enabled flag to be True
-MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 50
+MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 120
 
 # Max time to wait for WFC enabled flag to be False
 MAX_WAIT_TIME_WFC_DISABLED = 60
@@ -192,8 +199,8 @@ WIFI_WEAK_RSSI_VALUE = -80
 # Emergency call number
 DEFAULT_EMERGENCY_CALL_NUMBER = "911"
 
-EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911", "999",
-                          "*911", "#911"]
+EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911",
+                          "999", "*911", "#911"]
 
 AOSP_PREFIX = "aosp_"
 
