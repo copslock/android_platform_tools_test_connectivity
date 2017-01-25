@@ -27,6 +27,7 @@ from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
+from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
 from acts.test_utils.tel.tel_defines import GEN_4G
@@ -73,6 +74,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
 from acts.test_utils.tel.tel_defines import SIM_STATE_READY
+from acts.test_utils.tel.tel_defines import WAIT_TIME_SUPPLY_PUK_CODE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
@@ -185,6 +187,22 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if hasattr(ad, 'cfg'):
         return
 
+    #The puk and pin should be provided in testbed config file in the format of
+    #"AndroidDevice": [{"serial": "84B5T15A29018214",
+    #                   "adb_logcat_param": "-b all",
+    #                   "puk": "12345678",
+    #                   "puk_pin": "1234"}]
+    if hasattr(ad, 'puk'):
+        if not hasattr(ad, 'puk_pin'):
+            raise TelTestUtilsError("puk_pin is not provided for {}".format(
+                ad.serial))
+        log.info("Enter PUK code and pin for {}".format(ad.serial))
+        if not ad.droid.telephonySupplyPuk(ad.puk, ad.puk_pin):
+            raise TelTestUtilsError(
+                "The puk and puk_pin provided in testbed config do NOT work for {}"
+                .format(ad.serial))
+        time.sleep(WAIT_TIME_SUPPLY_PUK_CODE)
+
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
@@ -221,8 +239,8 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 raise
             if not number or number == "":
                 raise TelTestUtilsError(
-                    "Failed to find valid phone number for {}"
-                    .format(ad.serial))
+                    "Failed to find valid phone number for {}".format(
+                        ad.serial))
 
             sim_record['phone_num'] = number
             sim_record['operator'] = get_operator_name(log, ad, sub_id)
@@ -883,8 +901,7 @@ def _phone_number_remove_prefix(number):
     """
     if number is None:
         return None, None
-    country_code_list = ["+1", "+44"]
-    for country_code in country_code_list:
+    for country_code in COUNTRY_CODE_LIST:
         if number.startswith(country_code):
             return number[len(country_code):], country_code
     if number[0] == "1" or number[0] == "0":
@@ -920,16 +937,25 @@ def check_phone_number_match(number1, number2):
     Returns:
         True if two phone numbers match. Otherwise False.
     """
+    # Handle extra country code attachment when matching phone number
+    if number1 in number2 or number2 in number1:
+        return True
     # Remove country code and prefix
     number1, country_code1 = _phone_number_remove_prefix(number1)
     number2, country_code2 = _phone_number_remove_prefix(number2)
     if ((country_code1 is not None) and (country_code2 is not None) and
         (country_code1 != country_code2)):
+        logging.info("country_code1 %s and country_code2 %s does not match" %
+                     (country_code1, country_code2))
         return False
     # Remove white spaces, dashes, dots
     number1 = phone_number_formatter(number1)
     number2 = phone_number_formatter(number2)
-    return number1 == number2
+    if number1 != number2:
+        logging.info("phone number1 %s and number2 %s does not match" %
+                     (number1, number2))
+        return False
+    return True
 
 
 def initiate_call(log, ad_caller, callee_number, emergency=False):
