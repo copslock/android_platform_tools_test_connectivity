@@ -137,9 +137,8 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
        """
         network, ad = params
         self.connect_to_wifi_network(params)
-        wutils.toggle_wifi_and_wait_for_reconnection(ad,
-                                                     network,
-                                                     num_of_tries=5)
+        wutils.toggle_wifi_and_wait_for_reconnection(
+            ad, network, num_of_tries=5)
         self.run_iperf_client(params)
 
     def run_iperf(self, iperf_args):
@@ -204,10 +203,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         nId = self.dut.droid.wifiAddNetwork(self.open_network)
         asserts.assert_true(nId > -1, "Failed to add network.")
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
-        self.log.debug(("Configured networks after adding: %s" %
-                        configured_networks))
-        wutils.assert_network_in_list(
-            {WifiEnums.SSID_KEY: ssid}, configured_networks)
+        self.log.debug(
+            ("Configured networks after adding: %s" % configured_networks))
+        wutils.assert_network_in_list({
+            WifiEnums.SSID_KEY: ssid
+        }, configured_networks)
 
     def test_forget_network(self):
         self.test_add_network()
@@ -221,8 +221,8 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
 
     @acts.signals.generated_test
     def test_iot_with_password(self):
-        params = list(itertools.product(self.iot_networks,
-                                        self.android_devices))
+        params = list(
+            itertools.product(self.iot_networks, self.android_devices))
         name_gen = lambda p: "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
         failed = self.run_generated_testcases(
             self.connect_to_wifi_network_and_run_iperf,
@@ -232,8 +232,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
 
     @acts.signals.generated_test
     def test_config_store(self):
-        params = list(itertools.product(self.config_store_networks,
-                                        self.android_devices))
+        params = list(
+            itertools.product(self.config_store_networks,
+                              self.android_devices))
 
         def name_gen(p):
             return "test_connection_to-%s-for_config_store" % p[0][
@@ -306,4 +307,3 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         wutils.wifi_connect(self.dut, self.open_network)
         self.test_energy_info()
-
