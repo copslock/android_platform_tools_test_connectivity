@@ -191,7 +191,7 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
         self.set_attns("a_on_b_off")
-        wutils.wifi_connect(self.dut, config, validate_con=False)
+        wutils.wifi_connect(self.dut, config)
         wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s", self.bssid_a, self.bssid_b)
         self.trigger_roaming_and_validate("b_on_a_off", expected_con_to_b)
