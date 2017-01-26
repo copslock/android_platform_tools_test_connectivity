@@ -48,6 +48,7 @@ class NexusModelNames:
     N6v3 = 'marlin'
     N5v3 = 'sailfish'
 
+
 class DozeModeStatus:
     ACTIVE = "ACTIVE"
     IDLE = "IDLE"
@@ -707,7 +708,8 @@ def bypass_setup_wizard(ad):
         False if failed.
     """
     ad.adb.shell(
-        "am start -n \"com.google.android.setupwizard/.SetupWizardExitActivity\"")
+        "am start -n \"com.google.android.setupwizard/.SetupWizardExitActivity\""
+    )
     # magical sleep to wait for the gservices override broadcast to complete
     time.sleep(3)
     provisioned_state = int(
