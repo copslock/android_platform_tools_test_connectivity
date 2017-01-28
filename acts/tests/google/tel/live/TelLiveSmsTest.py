@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_test_utils import \
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import setup_sim
@@ -99,7 +100,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return True
 
     def _mms_test(self, ads):
-        """Test SMS between two phones.
+        """Test MMS between two phones.
 
         Returns:
             True if success.
@@ -108,6 +109,27 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return mms_send_receive_verify(
             self.log, ads[0], ads[1],
             [("Test Message", "Basic Message Body", None)])
+
+    def _mms_test_after_call_hangup(self, ads):
+        """Test MMS send out after call hang up.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        args = [self.log, ads[0], ads[1],
+                [("Test Message", "Basic Message Body", None)]]
+        if not mms_send_receive_verify(*args):
+            self.log.info("MMS send in call is suspended.")
+            if not mms_receive_verify_after_call_hangup(*args):
+                self.log.error("MMS is not send out after call release.")
+                return False
+            else:
+                self.log.info("MMS is send out after call release.")
+                return True
+        else:
+            self.log.info("MMS is send out successfully in call.")
+            return True
 
     def _sms_test_mo(self, ads):
         return self._sms_test([ads[0], ads[1]])
@@ -120,6 +142,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     def _mms_test_mt(self, ads):
         return self._mms_test([ads[1], ads[0]])
+
+    def _mms_test_mo_after_call_hangup(self, ads):
+        return self._mms_test_after_call_hangup([ads[0], ads[1]])
+
+    def _mms_test_mt_after_call_hangup(self, ads):
+        return self._mms_test_after_call_hangup([ads[1], ads[0]])
 
     def _mo_sms_in_3g_call(self, ads):
         self.log.info("Begin In Call SMS Test.")
@@ -1103,7 +1131,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Send MMS on PhoneA during the call, MMS is send out after call is released.
 
         Returns:
             True if pass; False if fail.
@@ -1130,11 +1159,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mo(ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
+        return self._mms_test_mo_after_call_hangup(ads)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_1x(self):
@@ -1169,11 +1194,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mt(ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
+        return self._mms_test_mt_after_call_hangup(ads)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_csfb_1x(self):
@@ -1286,11 +1307,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mo(ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
+        return self._mms_test_mo_after_call_hangup(ads)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb_1x(self):
@@ -1325,11 +1342,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 verify_callee_func=None):
             return False
 
-        if not self._mms_test_mt(ads):
-            self.log.error("MMS test fail.")
-            return False
-
-        return True
+        return self._mms_test_mt_after_call_hangup(ads)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_iwlan(self):
