@@ -58,6 +58,10 @@ class FastbootProxy():
         else:
             result = job.run(command, ignore_status=True)
         ret, out, err = result.exit_status, result.stdout, result.stderr
+        # TODO: This is only a temporary workaround for b/34815412.
+        # fastboot getvar outputs to stderr instead of stdout
+        if "getvar" in command:
+            out = err
         if ret == 0 or ignore_status:
             return out
         else:
@@ -65,7 +69,7 @@ class FastbootProxy():
                 cmd=command, stdout=out, stderr=err, ret_code=ret)
 
     def args(self, *args):
-        return job.run(' '.join((self.fastboot_str,) + args)).stdout
+        return job.run(' '.join((self.fastboot_str, ) + args)).stdout
 
     def __getattr__(self, name):
         def fastboot_call(*args, **kwargs):

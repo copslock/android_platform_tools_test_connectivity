@@ -29,6 +29,7 @@ else:
 
 class Error(Exception):
     """Indicates that a command failed, is fatal to the test unless caught."""
+
     def __init__(self, result):
         super(Error, self).__init__(result)
         self.result = result
@@ -101,13 +102,9 @@ class Result(object):
     def __repr__(self):
         return ('job.Result(command=%r, stdout=%r, stderr=%r, exit_status=%r, '
                 'duration=%r, did_timeout=%r, encoding=%r)') % (
-                self.command,
-                self._raw_stdout,
-                self._raw_stderr,
-                self.exit_status,
-                self.duration,
-                self.did_timeout,
-                self._encoding)
+                    self.command, self._raw_stdout, self._raw_stderr,
+                    self.exit_status, self.duration, self.did_timeout,
+                    self._encoding)
 
 
 def run(command,
@@ -142,12 +139,17 @@ def run(command,
         # TODO: This is only a temporary workaround for b/33009284.
         # Bugreports can take over 60 seconds.
         timeout = 240
+    if "flash" in command:
+        # TODO: This is only a temporary workaround for b/34773016.
+        # Flashing a device can take up to 180 seconds.
+        timeout = 180
     start_time = time.time()
-    proc = subprocess.Popen(command,
-                            env=env,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=not isinstance(command, list))
+    proc = subprocess.Popen(
+        command,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=not isinstance(command, list))
     # Wait on the process terminating
     timed_out = False
     out = bytes()
@@ -159,10 +161,14 @@ def run(command,
         proc.kill()
         proc.wait()
 
-    result = Result(command=command, stdout=out, stderr=err,
-                    exit_status=proc.returncode,
-                    duration=time.time() - start_time, encoding=io_encoding,
-                    did_timeout=timed_out)
+    result = Result(
+        command=command,
+        stdout=out,
+        stderr=err,
+        exit_status=proc.returncode,
+        duration=time.time() - start_time,
+        encoding=io_encoding,
+        did_timeout=timed_out)
     logging.debug(result)
 
     if timed_out:
@@ -192,6 +198,10 @@ def run_async(command, env=None):
         A subprocess.Popen object representing the created subprocess.
 
     """
-    return subprocess.Popen(command, env=env, close_fds=True,
-                            shell=not isinstance(command, list),
-                            stdout=DEVNULL, stderr=subprocess.STDOUT)
+    return subprocess.Popen(
+        command,
+        env=env,
+        close_fds=True,
+        shell=not isinstance(command, list),
+        stdout=DEVNULL,
+        stderr=subprocess.STDOUT)
