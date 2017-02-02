@@ -22,6 +22,7 @@ import time
 import acts.base_test
 import acts.signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts.utils
 
 from acts import asserts
 
@@ -45,10 +46,24 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         if getattr(self, "attenuators", []):
             for a in self.attenuators:
                 a.set_atten(0)
+        self.user_params["additional_energy_info_models"] = []
+        self.user_params["additional_tdls_models"] = []
         req_params = ("iot_networks", "open_network", "config_store_networks",
-                      "iperf_server_address", "tdls_models",
-                      "energy_info_models")
-        self.unpack_userparams(req_params)
+                      "iperf_server_address")
+        opt_param = ("additional_energy_info_models", "additional_tdls_models")
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+        capablity_of_devices = acts.utils.CapablityPerDevice
+        self.user_params["energy_info_models"] = (
+            capablity_of_devices.energy_info_models +
+            self.user_params["additional_energy_info_models"])
+        self.user_params["energy_info_models"] = list(
+            set(self.user_params["energy_info_models"]))
+        self.user_params["tdls_models"] = (
+            capablity_of_devices.energy_info_models +
+            self.user_params["additional_tdls_models"])
+        self.user_params["tdls_models"] = list(
+            set(self.user_params["tdls_models"]))
         asserts.assert_true(
             len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
