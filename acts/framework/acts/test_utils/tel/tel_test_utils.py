@@ -3722,7 +3722,8 @@ class WifiUtils():
         for network in networks:
             ad.droid.wifiForgetNetwork(network['networkId'])
             try:
-                event = ad.ed.pop_event(WifiUtils.WIFI_FORGET_NW_SUCCESS)
+                event = ad.ed.pop_event(
+                    WifiUtils.wifi_constants.WIFI_FORGET_NW_SUCCESS)
             except Empty:
                 log.warning("Could not confirm the removal of network {}.".
                             format(network))
