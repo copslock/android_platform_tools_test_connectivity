@@ -25,6 +25,7 @@ from acts.controllers.anritsu_lib.md8475a import VirtualPhoneAutoAnswer
 from acts.controllers.anritsu_lib.md8475a import VirtualPhoneStatus
 from acts.test_utils.tel.anritsu_utils import WAIT_TIME_ANRITSU_REG_AND_CALL
 from acts.test_utils.tel.anritsu_utils import call_mo_setup_teardown
+from acts.test_utils.tel.anritsu_utils import ims_mo_cs_teardown
 from acts.test_utils.tel.anritsu_utils import call_mt_setup_teardown
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
@@ -129,6 +130,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                               is_ims_call=False,
                               is_wait_for_registration=True,
                               csfb_type=None,
+                              srlte_csfb=None,
+                              srvcc=False,
                               emergency_number=DEFAULT_EMERGENCY_CALL_NUMBER,
                               teardown_side=CALL_TEARDOWN_PHONE,
                               wait_time_in_call=WAIT_TIME_IN_CALL):
@@ -145,6 +148,10 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 set_simulation_func(self.anritsu, self.user_params)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
+            if csfb_type:
+                self.anritsu.csfb_type = csfb_type
+            if srlte_csfb == "lte_call_failure":
+                self.anritsu.send_command("IMSPSAPAUTOANSWER 1,DISABLE")
             self.anritsu.start_simulation()
             iterations = 1
             if self.stress_test_number > 0:
@@ -157,9 +164,6 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
-
-                if csfb_type is not None:
-                    self.anritsu.csfb_type = csfb_type
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
@@ -174,14 +178,24 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                         continue
 
                 time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
-                if not call_mo_setup_teardown(
-                        self.log, self.ad, self.anritsu, emergency_number,
-                        CALL_TEARDOWN_PHONE, True, WAIT_TIME_IN_CALL,
-                        is_ims_call):
-                    self.log.error(
-                        "Phone {} Failed to make emergency call to {}"
-                        .format(self.ad.serial, emergency_number))
-                    continue
+                if srlte_csfb or srvcc:
+                    if not ims_mo_cs_teardown(
+                            self.log, self.ad, self.anritsu, emergency_number,
+                            CALL_TEARDOWN_PHONE, True, True, False,
+                            WAIT_TIME_IN_CALL_FOR_IMS, WAIT_TIME_IN_CALL):
+                        self.log.error(
+                            "Phone {} Failed to make emergency call to {}"
+                            .format(self.ad.serial, emergency_number))
+                        continue
+                else:
+                    if not call_mo_setup_teardown(
+                            self.log, self.ad, self.anritsu, emergency_number,
+                            CALL_TEARDOWN_PHONE, True, WAIT_TIME_IN_CALL,
+                            is_ims_call):
+                        self.log.error(
+                            "Phone {} Failed to make emergency call to {}"
+                            .format(self.ad.serial, emergency_number))
+                        continue
                 successes += 1
                 if self.stress_test_number:
                     self.log.info("Passed iteration {}".format(i))
@@ -491,12 +505,43 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number)
 
     @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_csfb_1x_lte_call_failure(self):
+        """ Test Emergency call functionality,
+        CSFB to CDMA1x after VoLTE call failure
+        Ref: VzW LTE E911 test plan, 2.23, VZ_TC_LTEE911_7481
+        Steps:
+        1. Setup CallBox on VoLTE network with CDMA1x.
+        2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        3. Make sure Anritsu IMS server does not answer the call
+        4. The DUT requests CSFB to 1XCDMA and Anritsu accepts the call.
+        4. Tear down the call.
+
+        Expected Results:
+        2. VoLTE Emergency call is made.
+        3. Anritsu receive the call but does not answer.
+        4. The 911 call CSFB to CDMA1x and answered successfully.
+        4. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_1x,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srlte_csfb="lte_call_failure",
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte_1x(self):
         """ Test Emergency call functionality on VoLTE with CDMA1x
         Ref: VzW LTE E911 test plan, 2.24, VZ_TC_LTEE911_7482
         Steps:
         1. Setup CallBox on VoLTE network with CDMA1x.
-        2. Turn on Airplane mode on DUT. Make an emergency call to 911.
+        2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
         3. Make sure Anritsu receives the call and accept.
         4. Tear down the call.
 
@@ -524,7 +569,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
         Steps:
         1. Setup CallBox on VoLTE network.
-        2. Turn on Airplane mode on DUT. Make an emergency call to 911.
+        2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
         3. Make sure Anritsu receives the call and accept.
         4. Tear down the call.
 
