@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_defines import EventCmasReceived
 from acts.test_utils.tel.tel_defines import EventEtwsReceived
 from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
@@ -652,6 +653,10 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
     return status
 
 
+class _CallSequenceException(Exception):
+    pass
+
+
 def call_mo_setup_teardown(
         log,
         ad,
@@ -677,9 +682,6 @@ def call_mo_setup_teardown(
     Returns:
         True for success False for failure
     """
-
-    class _CallSequenceException(Exception):
-        pass
 
     log.info("Making Call to " + callee_number)
     virtual_phone_handle = anritsu_handle.get_VirtualPhone()
@@ -751,6 +753,110 @@ def call_mo_setup_teardown(
                                                VirtualPhoneStatus.STATUS_IDLE):
                 raise _CallSequenceException(
                     "Virtual Phone not idle after hangup.")
+        return True
+
+    except _CallSequenceException as e:
+        log.error(e)
+        return False
+    finally:
+        try:
+            if ad.droid.telecomIsInCall():
+                ad.droid.telecomEndCall()
+        except Exception as e:
+            log.error(str(e))
+
+
+# This procedure is for SRLTE CSFB and SRVCC test cases
+def ims_mo_cs_teardown(log,
+                       ad,
+                       anritsu_handle,
+                       callee_number,
+                       teardown_side=CALL_TEARDOWN_PHONE,
+                       is_emergency=False,
+                       check_ims_calling=True,
+                       srvcc=False,
+                       wait_time_in_volte=WAIT_TIME_IN_CALL_FOR_IMS,
+                       wait_time_in_cs=WAIT_TIME_IN_CALL,
+                       ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
+    """ Makes a MO call after IMS registred, transit to CS, tear down the call
+
+    Args:
+        ad: Android device object.
+        anritsu_handle: Anritsu object.
+        callee_number: Number to be called.
+        teardown_side: the side to end the call (Phone or remote).
+        is_emergency: to make emergency call on the phone.
+        check_ims_calling: check if Anritsu cscf server state is "CALLING".
+        srvcc: is the test case a SRVCC call.
+        wait_time_in_volte: Time for phone in VoLTE call, not used for SRLTE
+        wait_time_in_cs: Time for phone in CS call.
+        ims_virtual_network_id: ims virtual network id.
+
+    Returns:
+        True for success False for failure
+    """
+
+    virtual_phone_handle = anritsu_handle.get_VirtualPhone()
+
+    try:
+        # confirm ims registration
+        if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                        ims_virtual_network_id,
+                                        ImsCscfStatus.SIPIDLE.value):
+            raise _CallSequenceException("Phone IMS status is not idle.")
+        # confirm virtual phone in idle
+        if not wait_for_virtualphone_state(log, virtual_phone_handle,
+                                           VirtualPhoneStatus.STATUS_IDLE):
+            raise _CallSequenceException("Virtual Phone not idle.")
+        # make mo call
+        log.info("Making Call to " + callee_number)
+        if not initiate_call(log, ad, callee_number, is_emergency):
+            raise _CallSequenceException("Initiate call failed.")
+        # if check ims calling is required
+        if check_ims_calling:
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.CALLING.value):
+                raise _CallSequenceException(
+                    "Phone IMS status is not calling.")
+            # if SRVCC, check if VoLTE call is connected, then Handover
+            if srvcc:
+                if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                                ims_virtual_network_id,
+                                                ImsCscfStatus.CONNECTED.value):
+                    raise _CallSequenceException(
+                        "Phone IMS status is not connected.")
+                # stay in call for "wait_time_in_volte" seconds
+                time.sleep(wait_time_in_volte)
+                # SRVCC by handover, to be implemented
+                pass
+        # check if Virtual phone answers the call
+        if not wait_for_virtualphone_state(
+                log, virtual_phone_handle,
+                VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
+            raise _CallSequenceException("Virtual Phone not in call.")
+        # stay in call for "wait_time_in_cs" seconds
+        time.sleep(wait_time_in_cs)
+        # check if the phone stay in call
+        if not ad.droid.telecomIsInCall():
+            raise _CallSequenceException("Call ended before delay_in_call.")
+        # end the call
+        if teardown_side is CALL_TEARDOWN_REMOTE:
+            log.info("Disconnecting the call from Remote")
+            virtual_phone_handle.set_voice_on_hook()
+            if not wait_for_droid_not_in_call(log, ad,
+                                              MAX_WAIT_TIME_CALL_DROP):
+                raise _CallSequenceException("DUT call not drop.")
+        else:
+            log.info("Disconnecting the call from DUT")
+            if not hangup_call(log, ad):
+                raise _CallSequenceException(
+                    "Error in Hanging-Up Call on DUT.")
+        # confirm if virtual phone status is back to idle
+        if not wait_for_virtualphone_state(log, virtual_phone_handle,
+                                           VirtualPhoneStatus.STATUS_IDLE):
+            raise _CallSequenceException(
+                "Virtual Phone not idle after hangup.")
         return True
 
     except _CallSequenceException as e:
