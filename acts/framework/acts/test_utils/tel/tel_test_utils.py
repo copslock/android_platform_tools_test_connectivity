@@ -30,6 +30,8 @@ from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
+from acts.test_utils.tel.tel_defines import DATA_ROAMING_ENABLE
+from acts.test_utils.tel.tel_defines import DATA_ROAMING_DISABLE
 from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import GEN_UNKNOWN
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
@@ -203,6 +205,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 .format(ad.serial))
         time.sleep(WAIT_TIME_SUPPLY_PUK_CODE)
 
+    if getattr(ad, 'data_roaming', False):
+        ad.log.info("Enable cell data roaming")
+        toggle_cell_data_roaming(ad, True)
+
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
@@ -239,8 +245,8 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 raise
             if not number or number == "":
                 raise TelTestUtilsError(
-                    "Failed to find valid phone number for {}".format(
-                        ad.serial))
+                    "Failed to find valid phone number for {} with ICCID {}".
+                    format(ad.serial, sim_serial))
 
             sim_record['phone_num'] = number
             sim_record['operator'] = get_operator_name(log, ad, sub_id)
@@ -1806,6 +1812,37 @@ def _wait_for_nw_data_connection(
         return False
     finally:
         ad.droid.connectivityStopTrackingConnectivityStateChange()
+
+
+def toggle_cell_data_roaming(ad, state):
+    """Enable cell data roaming for default data subscription.
+
+    Wait for the data roaming status to be DATA_STATE_CONNECTED
+        or DATA_STATE_DISCONNECTED.
+
+    Args:
+        log: Log object.
+        ad: Android Device Object.
+        state: True or False for enable or disable cell data roaming.
+
+    Returns:
+        True if success.
+        False if failed.
+    """
+    state_int = {True: DATA_ROAMING_ENABLE, False: DATA_ROAMING_DISABLE}[state]
+    action_str = {True: "Enable", False: "Disable"}[state]
+    if ad.droid.connectivityCheckDataRoamingMode() == state:
+        ad.log.info("Data roaming is already in state %s", state)
+        return True
+    if not ad.droid.connectivitySetDataRoaming(state_int):
+        ad.error.info("Fail to config data roaming into state %s", state)
+        return False
+    if ad.droid.connectivityCheckDataRoamingMode() == state:
+        ad.log.info("Data roaming is configured into state %s", state)
+        return True
+    else:
+        ad.log.error("Data roaming is not configured into state %s", state)
+        return False
 
 
 def verify_incall_state(log, ads, expected_status):
