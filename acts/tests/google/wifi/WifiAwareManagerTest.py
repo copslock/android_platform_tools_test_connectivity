@@ -690,10 +690,8 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
         results['num_unique_received'] = 0
         results['num_empty_received'] = 0
         messages = {}
-        while (results['num_unique_received'] !=
-               results['num_non_empty_messages']) or (
-                   results['num_empty_received'] !=
-                   results['num_null_and_empty_messages']):
+        while (results['num_unique_received'] + results['num_empty_received'] <
+               results['num_tx_ok']):
             try:
                 event = self.publisher.ed.pop_event(
                     aware_const.SESSION_CB_ON_MESSAGE_RECEIVED, EVENT_TIMEOUT)
