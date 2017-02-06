@@ -773,6 +773,7 @@ def ims_mo_cs_teardown(log,
                        callee_number,
                        teardown_side=CALL_TEARDOWN_PHONE,
                        is_emergency=False,
+                       check_ims_reg=True,
                        check_ims_calling=True,
                        srvcc=False,
                        wait_time_in_volte=WAIT_TIME_IN_CALL_FOR_IMS,
@@ -786,6 +787,7 @@ def ims_mo_cs_teardown(log,
         callee_number: Number to be called.
         teardown_side: the side to end the call (Phone or remote).
         is_emergency: to make emergency call on the phone.
+        check_ims_reg: check if Anritsu cscf server state is "SIPIDLE".
         check_ims_calling: check if Anritsu cscf server state is "CALLING".
         srvcc: is the test case a SRVCC call.
         wait_time_in_volte: Time for phone in VoLTE call, not used for SRLTE
@@ -800,10 +802,11 @@ def ims_mo_cs_teardown(log,
 
     try:
         # confirm ims registration
-        if not wait_for_ims_cscf_status(log, anritsu_handle,
-                                        ims_virtual_network_id,
-                                        ImsCscfStatus.SIPIDLE.value):
-            raise _CallSequenceException("Phone IMS status is not idle.")
+        if check_ims_reg:
+            if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                            ims_virtual_network_id,
+                                            ImsCscfStatus.SIPIDLE.value):
+                raise _CallSequenceException("IMS/CSCF status is not idle.")
         # confirm virtual phone in idle
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
                                            VirtualPhoneStatus.STATUS_IDLE):
