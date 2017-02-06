@@ -152,7 +152,28 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 self.anritsu.csfb_type = csfb_type
             if srlte_csfb == "lte_call_failure":
                 self.anritsu.send_command("IMSPSAPAUTOANSWER 1,DISABLE")
-            self.anritsu.start_simulation()
+                self.anritsu.start_simulation()
+                check_ims_reg = True
+                check_ims_calling = True
+            elif srlte_csfb == "ims_unregistered":
+                self.anritsu.start_simulation()
+                self.anritsu.send_command(
+                    "IMSCSCFBEHAVIOR 1,SENDERRORRESPONSE603")
+                check_ims_reg = False
+                check_ims_calling = False
+            elif srlte_csfb == "ps911_unsupported":
+                self.anritsu.send_command("EMCBS NOTSUPPORT,BTS1")
+                self.anritsu.start_simulation()
+                check_ims_reg = True
+                check_ims_calling = False
+            elif srlte_csfb == "emc_barred":
+                self.anritsu.send_command("ACBARRED USERSPECIFIC,BTS1")
+                self.anritsu.send_command("LTEEMERGENCYACBARRED BARRED,BTS1")
+                self.anritsu.start_simulation()
+                check_ims_reg = True
+                check_ims_calling = False
+            else:
+                self.anritsu.start_simulation()
             iterations = 1
             if self.stress_test_number > 0:
                 iterations = self.stress_test_number
@@ -164,6 +185,12 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
+                # turn off all other BTS to ensure UE registers on BTS1
+                no_of_bts = len(
+                    self.anritsu.send_query("SIMMODEL?").split(","))
+                for i in range(2, no_of_bts + 1):
+                    self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
+                        i))
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
@@ -171,6 +198,10 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                         continue
                 if is_wait_for_registration:
                     self.anritsu.wait_for_registration_state()
+                # turn all other BTS back to on
+                for i in range(2, no_of_bts + 1):
+                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
+                        i))
 
                 if phone_idle_func_after_registration:
                     if not phone_idle_func_after_registration(self.log,
@@ -181,7 +212,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 if srlte_csfb or srvcc:
                     if not ims_mo_cs_teardown(
                             self.log, self.ad, self.anritsu, emergency_number,
-                            CALL_TEARDOWN_PHONE, True, True, False,
+                            CALL_TEARDOWN_PHONE, True, check_ims_reg,
+                            check_ims_calling, False,
                             WAIT_TIME_IN_CALL_FOR_IMS, WAIT_TIME_IN_CALL):
                         self.log.error(
                             "Phone {} Failed to make emergency call to {}"
@@ -514,12 +546,12 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
         3. Make sure Anritsu IMS server does not answer the call
         4. The DUT requests CSFB to 1XCDMA and Anritsu accepts the call.
-        4. Tear down the call.
+        5. Tear down the call.
 
         Expected Results:
-        2. VoLTE Emergency call is made.
-        3. Anritsu receive the call but does not answer.
-        4. The 911 call CSFB to CDMA1x and answered successfully.
+        1. VoLTE Emergency call is made.
+        2. Anritsu receive the call but does not answer.
+        3. The 911 call CSFB to CDMA1x and answered successfully.
         4. Tear down call succeed.
 
         Returns:
@@ -532,6 +564,101 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_volte,
             phone_idle_volte,
             srlte_csfb="lte_call_failure",
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_csfb_1x_ims_unregistered(self):
+        """ Test Emergency call functionality,
+        CSFB to CDMA1x because ims registration delcined
+        Ref: VzW LTE E911 test plan, 2.25, VZ_TC_LTEE911_7483
+        Steps:
+        1. Setup CallBox on VoLTE network with CDMA1x.
+        2. Setup Anritsu IMS server to decline IMS registration
+        3. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        4. The DUT requests CSFB to 1XCDMA and Anritsu accepts the call.
+        5. Tear down the call.
+
+        Expected Results:
+        1. Phone registers on LTE network with VoLTE enabled.
+        2. When Emergency call is made, phone request CSFB to CDMA1x.
+        3. The 911 call on CDMA1x is answered successfully.
+        4. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_1x,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            None,
+            srlte_csfb="ims_unregistered",
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_csfb_1x_ps911_unsupported(self):
+        """ Test Emergency call functionality,
+        CSFB to CDMA1x because MME does not support PS911, by setting
+        Emergency Bearer Service not supported in EPS network feature
+        Ref: VzW LTE E911 test plan, 2.26, VZ_TC_LTEE911_8357
+        Steps:
+        1. Setup CallBox on VoLTE network with CDMA1x.
+        2. Setup Emergency Bearer Service not supported in EPS network feature
+        3. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        4. The DUT requests CSFB to 1XCDMA and Anritsu accepts the call.
+        5. Tear down the call.
+
+        Expected Results:
+        1. Phone registers on LTE network with VoLTE enabled.
+        2. When Emergency call is made, phone request CSFB to CDMA1x.
+        3. The 911 call on CDMA1x is answered successfully.
+        4. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_1x,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srlte_csfb="ps911_unsupported",
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_csfb_1x_emc_barred(self):
+        """ Test Emergency call functionality,
+        CSFB to CDMA1x because SIB2 Emergency Barred,
+        by setting Access Class Barred for Emergency
+        Ref: VzW LTE E911 test plan, 2.27, VZ_TC_LTEE911_8358
+        Steps:
+        1. Setup CallBox on VoLTE network with CDMA1x.
+        2. Set Access Class Barred for Emergency in SIB2
+        3. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        4. The DUT requests CSFB to 1XCDMA and Anritsu accepts the call.
+        5. Tear down the call.
+
+        Expected Results:
+        1. Phone registers on LTE network with VoLTE enabled.
+        2. When Emergency call is made, phone request CSFB to CDMA1x.
+        3. The 911 call on CDMA1x is answered successfully.
+        4. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_1x,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srlte_csfb="emc_barred",
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
