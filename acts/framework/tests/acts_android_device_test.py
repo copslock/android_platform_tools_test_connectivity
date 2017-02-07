@@ -73,7 +73,7 @@ class MockAdbProxy():
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
 
-    def shell(self, params):
+    def shell(self, params, ignore_status=False, timeout=60):
         if params == "id -u":
             return "root"
         elif params == "bugreportz":
@@ -98,7 +98,7 @@ class MockAdbProxy():
     def devices(self):
         return "\t".join([str(self.serial), "device"])
 
-    def bugreport(self, params):
+    def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(logging.log_path,
                                 "AndroidDevice%s" % self.serial, "BugReports",
                                 "test_something,sometime,%s" % (self.serial))
@@ -110,7 +110,7 @@ class MockAdbProxy():
         simply return the adb command string.
         """
 
-        def adb_call(*args):
+        def adb_call(*args, **kwargs):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
 
@@ -166,14 +166,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             android_device.create("HAHA")
 
     def test_get_device_success_with_serial(self):
@@ -196,16 +196,16 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads = get_mock_ads(5)
         expected_msg = ("Could not find a target device that matches condition"
                         ": {'serial': 5}.")
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad = android_device.get_device(ads, serial=len(ads))
 
     def test_get_device_too_many_matches(self):
         ads = get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
         expected_msg = "More than one device matched: \[0, 0\]"
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad = android_device.get_device(ads, serial=target_serial)
 
     def test_start_services_on_ads(self):
@@ -221,7 +221,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads[2].start_services = mock.MagicMock(
             side_effect=android_device.AndroidDeviceError(msg))
         ads[2].clean_up = mock.MagicMock()
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError, msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError, msg):
             android_device._start_services_on_ads(ads)
         ads[0].clean_up.assert_called_once_with()
         ads[1].clean_up.assert_called_once_with()
@@ -297,8 +297,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad.take_bug_report("test_something", "sometime")
 
     @mock.patch(
@@ -341,8 +341,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* does not have an ongoing adb logcat"
                         " collection.")
         # Expect error if stop is called before start.
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
@@ -358,8 +358,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* already has an adb logcat thread "
                         "going on. Cannot start another one.")
         # Expect error if start is called back to back.
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad.start_adb_logcat()
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
@@ -387,8 +387,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* does not have an ongoing adb logcat"
                         " collection.")
         # Expect error if stop is called before start.
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
@@ -423,8 +423,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         # Expect error if attempted to cat adb log before starting adb logcat.
         expected_msg = ("Attempting to cat adb log when none has been "
                         "collected on Android device .*")
-        with self.assertRaisesRegexp(android_device.AndroidDeviceError,
-                                     expected_msg):
+        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+                                    expected_msg):
             ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
