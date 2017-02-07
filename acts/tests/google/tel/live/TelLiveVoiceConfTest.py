@@ -84,6 +84,13 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
     """ Private Test Utils """
 
+    def _get_expected_call_state(self, ad):
+        if ad.model in ("sailfish", "marlin") and "vzw" in [
+                sub["operator"] for sub in ad.cfg["subscription"].values()
+        ]:
+            return CALL_STATE_ACTIVE
+        return CALL_STATE_HOLDING
+
     def _hangup_call(self, ad, device_description='Device'):
         if not hangup_call(self.log, ad):
             self.log.error("Failed to hang up on {}: {}".format(
@@ -1432,7 +1439,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_conf_id = get_cep_conference_call_id(ads[0])
         if call_conf_id is None:
             self.log.error(
-                "No call with children. Probably CEP not enabled or merge failed.")
+                "No call with children. Probably CEP not enabled or merge failed."
+            )
             return None
         calls.remove(call_conf_id)
         if (set(ads[0].droid.telecomCallGetCallChildren(call_conf_id)) !=
@@ -1784,6 +1792,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         self.log.info("Hangup at {}, verify call continues.".format(
             ad_hangup.serial))
         if not self._hangup_call(ad_hangup):
+            ad_hangup.log.error("Phone fails to hang up")
             return False
         time.sleep(WAIT_TIME_IN_CALL)
 
@@ -1792,11 +1801,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                 call_id, ad_verify.droid.telecomCallGetCallState(
                     call_id), call_state))
             return False
+        ad_verify.log.info("Call in expected %s state", call_state)
         # TODO: b/26296375 add voice check.
 
         if not verify_incall_state(self.log, ads_active, True):
+            ads_active.log.error("Phone not in call state")
             return False
         if not verify_incall_state(self.log, [ad_hangup], False):
+            ad_hangup.log.error("Phone not in hangup state")
             return False
 
         return True
@@ -4221,7 +4233,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4269,7 +4281,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4316,7 +4328,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4361,7 +4373,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4409,7 +4421,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4457,7 +4469,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4503,7 +4515,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4549,7 +4561,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4597,7 +4609,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4645,7 +4657,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4691,7 +4703,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4737,7 +4749,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -7044,7 +7056,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -8705,7 +8717,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -8743,7 +8755,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -8781,7 +8793,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -8892,7 +8904,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -8930,7 +8942,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[2],
             ad_verify=ads[0],
             call_id=call_ab_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9038,7 +9050,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9075,7 +9087,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9112,7 +9124,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9253,7 +9265,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9290,7 +9302,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ad_hangup=ads[1],
             ad_verify=ads[0],
             call_id=call_ac_id,
-            call_state=CALL_STATE_HOLDING,
+            call_state=self._get_expected_call_state(ads[0]),
             ads_active=[ads[0], ads[2]])
 
     def _test_gsm_mo_mo_add_swap_x(self, num_swaps):
