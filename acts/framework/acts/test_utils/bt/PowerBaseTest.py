@@ -55,7 +55,10 @@ class PowerBaseTest(BluetoothBaseTest):
     PMC_VERBOSE_CMD = "setprop log.tag.PMC VERBOSE"
 
     def setup_class(self):
-        super(PowerBaseTest, self).setup_class()
+        # Not to call Base class setup_class()
+        # since it removes the bonded devices
+        for ad in self.android_devices:
+            sync_device_time(ad)
         self.ad = self.android_devices[0]
         self.mon = self.monsoons[0]
         self.mon.set_voltage(self.MONSOON_OUTPUT_VOLTAGE)
@@ -83,6 +86,7 @@ class PowerBaseTest(BluetoothBaseTest):
         set_phone_screen_on(self.log, self.ad, self.SCREEN_TIME_OFF)
 
         # Start PMC app.
+        self.log.info("Start PMC app...")
         self.ad.adb.shell(self.START_PMC_CMD)
         self.ad.adb.shell(self.PMC_VERBOSE_CMD)
         wutils.wifi_toggle_state(self.ad, False)
