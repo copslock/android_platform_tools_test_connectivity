@@ -543,7 +543,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                 sub_id)
 
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
-    # Work around for https://buganizer.corp.google.com/issues/32341648
     try:
         if new_state and not _wait_for_bluetooth_in_state(
                 log, ad, False, timeout_time - time.time()):
