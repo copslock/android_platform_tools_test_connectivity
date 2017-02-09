@@ -238,6 +238,20 @@ def load_file_to_base64_str(f_path):
         return base64_str
 
 
+def dump_string_to_file(content, file_path, mode='w'):
+    """ Dump content of a string to
+
+    Args:
+        content: content to be dumped to file
+        file_path: full path to the file including the file name.
+        mode: file open mode, 'w' (truncating file) by default
+    :return:
+    """
+    full_path = abs_path(file_path)
+    with open(full_path, mode) as f:
+        f.write(content)
+
+
 def find_field(item_list, cond, comparator, target_field):
     """Finds the value of a field in a dict object that satisfies certain
     conditions.
@@ -651,8 +665,8 @@ def set_ambient_display(ad, new_state):
         ad: android device object.
         new_state: new state for "Ambient Display". True or False.
     """
-    ad.adb.shell("settings put secure doze_enabled {}".format(1 if new_state
-                                                              else 0))
+    ad.adb.shell(
+        "settings put secure doze_enabled {}".format(1 if new_state else 0))
 
 
 def set_adaptive_brightness(ad, new_state):

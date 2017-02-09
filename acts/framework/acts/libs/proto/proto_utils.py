@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 from distutils.spawn import find_executable
+from google import protobuf
 from importlib import import_module
 
 
@@ -82,3 +83,12 @@ def compile_import_proto(output_dir, proto_path):
         logging.error("Cannot import generated py-proto %s" %
                       (output_module_name))
     return output_module
+
+
+def parse_proto_to_ascii(binary_proto_msg):
+    """
+    Parse binary protobuf message to human readable ascii string
+    :param binary_proto_msg:
+    :return: ascii string of the message
+    """
+    return protobuf.text_format.MessageToString(binary_proto_msg)

@@ -12,44 +12,26 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 import logging
-import os
 import time
 from google import protobuf
 
 from acts import asserts
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.libs.proto.proto_utils import compile_import_proto
-from acts.test_utils.bt.bt_metrics_utils import get_bluetooth_metrics
+from acts.test_utils.bt.BtMetricsBaseTest import BtMetricsBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.utils import create_dir, get_current_epoch_time, sync_device_time
+from acts.utils import get_current_epoch_time, sync_device_time
 
 
-class BtMetricsTest(BluetoothBaseTest):
+class BtMetricsTest(BtMetricsBaseTest):
     def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
-        self.bluetooth_proto_module = None
+        BtMetricsBaseTest.__init__(self, controllers)
         self.iterations = 1
-        self.metrics_path = None
-        self.bluetooth_proto_path = None
 
     def setup_class(self):
-        super(BluetoothBaseTest, self).setup_class()
-        self.metrics_path = os.path.join(self.android_devices[0].log_path,
-                                         "BluetoothMetrics")
-        self.bluetooth_proto_path = self.user_params["bluetooth_proto_path"]
-        if not os.path.isfile(self.bluetooth_proto_path):
-            self.log.error("Unable to find Bluetooth proto {}."
-                           .format(self.bluetooth_proto_path))
-            return False
-        create_dir(self.metrics_path)
-        self.bluetooth_proto_module = \
-            compile_import_proto(self.metrics_path, self.bluetooth_proto_path)
-        self.iterations = 1
+        return super(BtMetricsTest, self).setup_class()
 
     def setup_test(self):
-        super(BluetoothBaseTest, self).setup_test()
         # Reset bluetooth
         reset_bluetooth(self.android_devices)
         for ad in self.android_devices:
@@ -58,9 +40,7 @@ class BtMetricsTest(BluetoothBaseTest):
                 return False
             # Sync device time for timestamp comparison
             sync_device_time(ad)
-        # Clear all metrics
-        get_bluetooth_metrics(self.android_devices[0],
-                              self.bluetooth_proto_module)
+        return super(BtMetricsTest, self).setup_test()
 
     def test_pairing_metric(self):
         """Test if a pairing event generates the correct metric entry
@@ -110,10 +90,11 @@ class BtMetricsTest(BluetoothBaseTest):
                         "Failed to unbond devices: {}".format(bonded_devices))
                     return False
         end_time = get_current_epoch_time()
-        bluetooth_log = get_bluetooth_metrics(self.android_devices[0],
-                                              self.bluetooth_proto_module)
-        bluetooth_log_ascii = protobuf.text_format.MessageToString(
-            bluetooth_log)
+        bluetooth_logs, bluetooth_logs_ascii = \
+            self.collect_bluetooth_manager_metrics_logs(
+                [self.android_devices[0]])
+        bluetooth_log = bluetooth_logs[0]
+        bluetooth_log_ascii = bluetooth_logs_ascii[0]
         asserts.assert_equal(
             len(bluetooth_log.pair_event), 8, extras=bluetooth_log_ascii)
         for pair_event in bluetooth_log.pair_event:
@@ -148,7 +129,9 @@ class BtMetricsTest(BluetoothBaseTest):
         TAGS: Classic
         Priority: 1
         """
-        bluetooth_log = get_bluetooth_metrics(self.android_devices[0],
-                                              self.bluetooth_proto_module)
+        bluetooth_logs, bluetooth_logs_ascii = \
+            self.collect_bluetooth_manager_metrics_logs(
+                [self.android_devices[0]])
+        bluetooth_log = bluetooth_logs[0]
         self.log.info(protobuf.text_format.MessageToString(bluetooth_log))
         return True
