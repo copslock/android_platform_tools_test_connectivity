@@ -173,7 +173,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
             event = self.dut.ed.pop_event("WifiManagerApDisabled", 5)
             if initial_wifi_state:
                 self.verify_return_to_wifi_enabled()
-            elif not self.dut.droid.wifiCheckState():
+            elif self.dut.droid.wifiCheckState():
                 # really need to verify that wifi did not come back up, and will not
                 # TODO(silberst): look at alternatives to this simple check
                 asserts.fail("Wifi was disabled before softap and now it is enabled")
@@ -227,7 +227,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
                              "SoftAp is still reported as running")
         if initial_wifi_state:
             self.verify_return_to_wifi_enabled()
-        elif not self.dut.droid.wifiCheckState():
+        elif self.dut.droid.wifiCheckState():
             asserts.fail("Wifi was disabled before softap and now it is enabled")
 
     """ Tests End """
