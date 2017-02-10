@@ -166,7 +166,7 @@ def setup_droid_properties(log, ad, sim_filename):
             except KeyError:
                 number = ad.droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
-            except Except as e:
+            except Exception as e:
                 log.error("Failed to setup_droid_property with {}".format(e))
                 raise
             if not number or number == "":

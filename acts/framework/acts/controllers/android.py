@@ -115,7 +115,8 @@ class Android(object):
             raise SL4AProtocolError(SL4AProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
         if result['error']:
-            raise SL4AAPIError(result['error'])
+            raise SL4AAPIError(
+                "RPC call %s failed with error %s" % (method, result['error']))
         if result['id'] != apiid:
             raise SL4AProtocolError(SL4AProtocolError.MISMATCHED_API_ID)
         return result['result']
