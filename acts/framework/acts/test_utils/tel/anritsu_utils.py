@@ -29,6 +29,9 @@ from acts.controllers.anritsu_lib.md8475a import ImsCscfStatus
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts.controllers.anritsu_lib.md8475a import ReturnToEUTRAN
 from acts.controllers.anritsu_lib.md8475a import VirtualPhoneStatus
+from acts.controllers.anritsu_lib.md8475a import TestProcedure
+from acts.controllers.anritsu_lib.md8475a import TestPowerControl
+from acts.controllers.anritsu_lib.md8475a import TestMeasurement
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
@@ -831,8 +834,13 @@ def ims_mo_cs_teardown(log,
                         "Phone IMS status is not connected.")
                 # stay in call for "wait_time_in_volte" seconds
                 time.sleep(wait_time_in_volte)
-                # SRVCC by handover, to be implemented
-                pass
+                # SRVCC by handover test case procedure
+                srvcc_tc = anritsu_handle.get_AnritsuTestCases()
+                srvcc_tc.procedure = TestProcedure.PROCEDURE_HO
+                srvcc_tc.bts_direction = (BtsNumber.BTS1, BtsNumber.BTS2)
+                srvcc_tc.power_control = TestPowerControl.POWER_CONTROL_DISABLE
+                srvcc_tc.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
+                anritsu_handle.start_testcase()
         # check if Virtual phone answers the call
         if not wait_for_virtualphone_state(
                 log, virtual_phone_handle,
