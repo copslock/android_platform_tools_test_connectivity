@@ -32,6 +32,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
+from acts.test_utils.tel.anritsu_utils import set_system_model_lte_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import DEFAULT_EMERGENCY_CALL_NUMBER
@@ -172,8 +173,13 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 self.anritsu.start_simulation()
                 check_ims_reg = True
                 check_ims_calling = False
+            elif srvcc == True:
+                self.anritsu.start_simulation()
+                check_ims_reg = True
+                check_ims_calling = True
             else:
                 self.anritsu.start_simulation()
+
             iterations = 1
             if self.stress_test_number > 0:
                 iterations = self.stress_test_number
@@ -186,8 +192,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
                 # turn off all other BTS to ensure UE registers on BTS1
-                no_of_bts = len(
-                    self.anritsu.send_query("SIMMODEL?").split(","))
+                sim_model = self.anritsu.get_simulation_model()
+                no_of_bts = len(sim_model.split(","))
                 for i in range(2, no_of_bts + 1):
                     self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
                         i))
@@ -213,7 +219,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                     if not ims_mo_cs_teardown(
                             self.log, self.ad, self.anritsu, emergency_number,
                             CALL_TEARDOWN_PHONE, True, check_ims_reg,
-                            check_ims_calling, False,
+                            check_ims_calling, srvcc,
                             WAIT_TIME_IN_CALL_FOR_IMS, WAIT_TIME_IN_CALL):
                         self.log.error(
                             "Phone {} Failed to make emergency call to {}"
@@ -535,6 +541,64 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_airplane_mode,
             is_wait_for_registration=False,
             emergency_number=self.emergency_call_number)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_volte_wcdma_srvcc(self):
+        """ Test Emergency call functionality,
+        VoLTE to WCDMA SRVCC
+        Steps:
+        1. Setup CallBox on VoLTE network with WCDMA.
+        2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        3. Check if VoLTE emergency call connected successfully.
+        4. Handover the call to WCDMA and check if the call is still up.
+        5. Tear down the call.
+
+        Expected Results:
+        1. VoLTE Emergency call is made successfully.
+        2. After SRVCC, the 911 call is not dropped.
+        3. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_wcdma,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srvcc=True,
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_call_volte_gsm_srvcc(self):
+        """ Test Emergency call functionality,
+        VoLTE to GSM SRVCC
+        Steps:
+        1. Setup CallBox on VoLTE network with GSM.
+        2. Turn on DUT and enable VoLTE. Make an emergency call to 911.
+        3. Check if VoLTE emergency call connected successfully.
+        4. Handover the call to GSM and check if the call is still up.
+        5. Tear down the call.
+
+        Expected Results:
+        1. VoLTE Emergency call is made successfully.
+        2. After SRVCC, the 911 call is not dropped.
+        3. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_emergency_call(
+            self.CELL_PARAM_FILE,
+            set_system_model_lte_gsm,
+            self.SIM_PARAM_FILE_FOR_VOLTE,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srvcc=True,
+            emergency_number=self.emergency_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_csfb_1x_lte_call_failure(self):
