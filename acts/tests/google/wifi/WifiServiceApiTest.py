@@ -170,7 +170,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
             self.dut.log.warning(
                     "Currently expecting failure to delete network.")
         #if self.check_network_config_saved(test_network['config']):
-        if self.check_network_config_saved(test_network['config']):
+        if not self.check_network_config_saved(test_network['config']):
             raise signals.TestFailure(
                     "Test network was found in list of configured networks.")
 
@@ -178,5 +178,5 @@ class WifiServiceApiTest(base_test.BaseTestClass):
     """ Tests End """
 
 
-    if __name__ == "__main__":
-          pass
+if __name__ == "__main__":
+      pass
