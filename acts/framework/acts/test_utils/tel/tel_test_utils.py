@@ -3737,7 +3737,7 @@ class WifiUtils():
         try:
             WifiUtils._wifi_toggle_state(ad, state)
         except Exception as e:
-            log.error("WifiUtils.wifi_toggle_state exception: {}".format(e))
+            log.error("WifiUtils.wifi_toggle_state exception: %s", e)
             return False
         return True
 
@@ -3752,20 +3752,12 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
-        networks = ad.droid.wifiGetConfiguredNetworks()
-        if networks is None:
-            return True
-        for network in networks:
-            ad.droid.wifiForgetNetwork(network['networkId'])
-            try:
-                event = ad.ed.pop_event(
-                    WifiUtils.wifi_constants.WIFI_FORGET_NW_SUCCESS)
-            except Empty:
-                log.warning("Could not confirm the removal of network {}.".
-                            format(network))
-        networks = ad.droid.wifiGetConfiguredNetworks()
-        if len(networks):
-            log.error("Failed to forget all networks {}.".format(networks))
+        try:
+            old_state = ad.droid.wifiCheckState()
+            WifiUtils._reset_wifi(ad)
+            ad.droid.wifiToggleState(old_state)
+        except Exception as e:
+            log.error("WifiUtils.forget_all_networks exception: %s", e)
             return False
         return True
 
@@ -3780,13 +3772,16 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
+        try:
+            WifiUtils._reset_wifi(ad)
+        except Exception as e:
+            log.error("WifiUtils.wifi_reset exception: %s", e)
+            return False
         if disable_wifi is True:
             if not WifiUtils.wifi_toggle_state(log, ad, False):
                 log.error("Failed to disable WiFi during reset!")
                 return False
-            # Ensure toggle state has human-time to take effect
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        return WifiUtils.forget_all_networks(log, ad)
+        return True
 
     @staticmethod
     def wifi_connect(log, ad, ssid, password=None):
@@ -3800,31 +3795,13 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
-        if password == "":
-            password = None
+        network = {WifiUtils.SSID_KEY: ssid}
+        if password:
+            network[WifiUtils.PWD_KEY] = password
         try:
-            network = {WifiUtils.SSID_KEY: ssid}
-            if password:
-                network[WifiUtils.PWD_KEY] = password
             WifiUtils._wifi_connect(ad, network)
-        except Empty:
-            # did not get event, then check connection info
-            try:
-                if ad.droid.wifiGetConnectionInfo()[
-                        WifiUtils.SSID_KEY] == ssid:
-                    return True
-                else:
-                    log.error(
-                        "WifiUtils.wifi_connect not connected."
-                        "No event received. Expected SSID: {}, current SSID:{}".
-                        format(ssid, ad.droid.wifiGetConnectionInfo()[
-                            WifiUtils.SSID_KEY]))
-                    return False
-            except Exception as e:
-                log.error("WifiUtils.wifi_connect failed with {}.".format(e))
-                return False
         except Exception as e:
-            log.error("WifiUtils.wifi_connect exception: {}".format(e))
+            log.error("WifiUtils.wifi_connect exception: %s", e)
             return False
         return True
 
@@ -3844,7 +3821,7 @@ class WifiUtils():
         try:
             WifiUtils._start_wifi_tethering(ad, ssid, password, ap_band)
         except Exception as e:
-            log.error("WifiUtils.start_wifi_tethering exception: {}".format(e))
+            log.error("WifiUtils.start_wifi_tethering exception: %s", e)
             return False
         return True
 
@@ -3862,5 +3839,5 @@ class WifiUtils():
             WifiUtils._stop_wifi_tethering(ad)
             return True
         except Exception as e:
-            log.error("WifiUtils.stop_wifi_tethering exception: {}".format(e))
+            log.error("WifiUtils.stop_wifi_tethering exception: %s", e)
             return False
