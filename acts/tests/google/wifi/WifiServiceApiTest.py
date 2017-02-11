@@ -145,10 +145,6 @@ class WifiServiceApiTest(base_test.BaseTestClass):
     def test_remove_config_wifi_disabled(self):
         """ Test if config can be deleted when wifi is disabled.
 
-            NOTE: This test is currently modified to pass.  It will fail and
-            require changes back to a correct test when b/32809235 is fixed.
-            The proper test flow is described below.
-
             1. Enable wifi, if needed
             2. Create and save a random config.
             3. Confirm the config is present.
@@ -162,15 +158,9 @@ class WifiServiceApiTest(base_test.BaseTestClass):
             raise signals.TestFailure(
                     "Test network not found in list of configured networks.")
         wutils.wifi_toggle_state(self.dut, False)
-        # Changes when comment in test doc is addressed:
-        # 1 - Expect True in the next line.
-        # 2 - Uncomment the 'if' line below.
-        # 3 - Delete the current 'if' self.check_network_config_saved
         if not self.forget_network(test_network['network_id']):
-            self.dut.log.warning(
-                    "Currently expecting failure to delete network.")
-        #if self.check_network_config_saved(test_network['config']):
-        if not self.check_network_config_saved(test_network['config']):
+            raise signals.TestFailure("Failed to delete network.")
+        if self.check_network_config_saved(test_network['config']):
             raise signals.TestFailure(
                     "Test network was found in list of configured networks.")
 
