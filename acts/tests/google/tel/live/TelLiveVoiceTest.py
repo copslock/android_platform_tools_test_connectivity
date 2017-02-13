@@ -26,9 +26,15 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_subscription_utils import \
     set_subid_for_outgoing_call
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
+from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
+from acts.test_utils.tel.tel_defines import GEN_2G
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
 from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
@@ -52,19 +58,25 @@ from acts.test_utils.tel.tel_test_utils import \
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import http_file_download_by_adb
+from acts.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_phone_number
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import WifiUtils
@@ -621,9 +633,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        tasks = [(phone_setup_iwlan_cellular_preferred,
-                  (self.log, ads[0], self.wifi_network_ssid,
-                   self.wifi_network_pass)),
+        tasks = [(phone_setup_iwlan_cellular_preferred, (
+            self.log, ads[0], self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_iwlan_cellular_preferred,
                   (self.log, ads[1], self.wifi_network_ssid,
                    self.wifi_network_pass))]
@@ -1298,8 +1309,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count, str(100 * success_count / (
                 success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1356,8 +1367,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count, str(100 * success_count / (
                 success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1414,8 +1425,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count, str(100 * success_count / (
                 success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1472,8 +1483,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count, str(100 * success_count / (
                 success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1530,8 +1541,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count, str(100 * success_count / (
                 success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1582,8 +1593,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1634,8 +1645,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1726,12 +1737,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_iwlan,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1769,12 +1781,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_iwlan,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1812,12 +1825,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_iwlan,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1855,12 +1869,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_iwlan,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1898,12 +1913,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_iwlan):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1941,12 +1957,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_iwlan):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -1984,12 +2001,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_iwlan):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2027,12 +2045,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_iwlan):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_iwlan):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2068,12 +2087,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_volte,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2109,12 +2129,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_volte):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_volte):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2154,12 +2175,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_3g,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_3g,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2199,12 +2221,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_3g):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_3g):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2244,12 +2267,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_csfb,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_csfb,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2289,12 +2313,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_csfb):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_csfb):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2629,12 +2654,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ad_hangup=None,
-                                   verify_caller_func=is_phone_in_call_2g,
-                                   verify_callee_func=None):
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_2g,
+                verify_callee_func=None):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2673,12 +2699,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
-        if not call_setup_teardown(self.log,
-                                   ads[1],
-                                   ads[0],
-                                   ad_hangup=None,
-                                   verify_caller_func=None,
-                                   verify_callee_func=is_phone_in_call_2g):
+        if not call_setup_teardown(
+                self.log,
+                ads[1],
+                ads[0],
+                ad_hangup=None,
+                verify_caller_func=None,
+                verify_callee_func=is_phone_in_call_2g):
             return False
 
         if not self._hold_unhold_test(ads):
@@ -2691,12 +2718,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         self.log.info("Long Duration Call Test. Total duration = {}".format(
             total_duration))
-        return call_setup_teardown(self.log,
-                                   ads[0],
-                                   ads[1],
-                                   ads[0],
-                                   verify_caller_func=dut_incall_check_func,
-                                   wait_time_in_call=total_duration)
+        return call_setup_teardown(
+            self.log,
+            ads[0],
+            ads[1],
+            ads[0],
+            verify_caller_func=dut_incall_check_func,
+            wait_time_in_call=total_duration)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_call_long_duration_volte(self):
@@ -2853,6 +2881,409 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         return self._test_call_hangup_while_ringing(self.android_devices[1],
                                                     self.android_devices[0])
+
+    def _test_call_setup_while_http_file_download(
+            self,
+            nw_gen=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_file_download_interruption=False):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if nw_gen:
+            if not ensure_network_generation(
+                    self.log, self.android_devices[0], nw_gen,
+                    MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                self.log.error("Device failed to reselect in %s.",
+                               MAX_WAIT_TIME_NW_SELECTION)
+                return False
+
+            toggle_airplane_mode(self.log, self.android_devices[0], False)
+            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
+                                        False)
+
+            self.android_devices[0].droid.telephonyToggleDataConnection(True)
+            if not wait_for_cell_data_connection(
+                    self.log, self.android_devices[0], True):
+                self.log.error("Data connection is not on cell")
+                return False
+
+        if not verify_http_connection(self.log, self.android_devices[0]):
+            self.log.error("HTTP connection is not available")
+            return False
+
+        # files available for download on the same website:
+        # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
+        url = "http://download.thinkbroadband.com/10MB.zip"
+        file_size = 10000000
+        output_path = "/sdcard/Download/10MB.zip"
+        ad_download = self.android_devices[0]
+
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = self.android_devices[0]
+            ad_callee = self.android_devices[1]
+        else:
+            ad_caller = self.android_devices[1]
+            ad_callee = self.android_devices[0]
+        # download file by adb command, as phone call will use sl4a
+        tasks = [(http_file_download_by_adb, (self.log, ad_download, url,
+                                              output_path, file_size)),
+                 (call_setup_teardown, (self.log, ad_caller, ad_callee,
+                                        ad_caller))]
+        results = run_multithread_func(self.log, tasks)
+        if not results[1]:
+            self.log.error("Call setup failed during http file download.")
+            return False
+        if not allow_file_download_interruption:
+            if not results[0]:
+                self.log.error(
+                    "Http file download failed with parallel phone call.")
+                return False
+            else:
+                return True
+        self.log.info("Retry http file download after call hung up")
+        return http_file_download_by_adb(self.log, self.android_devices[0],
+                                         url, output_path, file_size)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_general_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_general_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_TERMINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_volte_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_4G, DIRECTION_MOBILE_ORIGINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_volte_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_4G, DIRECTION_MOBILE_TERMINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_csfb_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_4G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_csfb_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_4G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_3g_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_3G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_3g_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_3G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_2g_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_2G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_2g_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+        Note: file download will be suspended when call is initiated if voice
+              is using voice channel and voice channel and data channel are
+              on different RATs.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            GEN_2G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_file_download_interruption=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_wifi_wfc_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup IWLAN with NON-APM WIFI WFC on")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_wifi_wfc_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM off and WIFI and WFC on")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_TERMINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_apm_wifi_wfc_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting downloading file from Internet.
+        Initiate a MO voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_apm_wifi_wfc_while_http_file_download(self):
+        """Test call can be established during active data connection.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting downloading file from Internet.
+        Initiate a MT voice call. Verify call can be established.
+        Hangup Voice Call, verify file is downloaded successfully.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_while_http_file_download(
+            None, DIRECTION_MOBILE_TERMINATED)
 
 
 """ Tests End """

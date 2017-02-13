@@ -19,6 +19,7 @@ standard_library.install_aliases()
 
 import concurrent.futures
 import logging
+import os
 import urllib.parse
 import time
 
@@ -165,7 +166,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
         try:
             sim_data = load_config(sim_filename)
         except Exception:
-            log.warning("Failed to load {}!".format(sim_filename))
+            log.warning("Failed to load %s!", sim_filename)
 
     sub_id = get_sub_id_by_adb(ad)
     phone_number = get_phone_number_by_adb(ad) or sim_data[iccid]["phone_num"]
@@ -178,8 +179,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
         'operator': get_operator_by_adb(ad)
     }
     device_props = {'subscription': {sub_id: sim_record}}
-    log.info("phone_info: <{}:{}>, <subId: {}> <sim_record: {}>".format(
-        ad.model, ad.serial, sub_id, sim_record))
+    ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
     setattr(ad, 'cfg', device_props)
 
 
@@ -198,7 +198,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
         if not hasattr(ad, 'puk_pin'):
             raise TelTestUtilsError("puk_pin is not provided for {}".format(
                 ad.serial))
-        log.info("Enter PUK code and pin for {}".format(ad.serial))
+        ad.log.info("Enter PUK code and pin")
         if not ad.droid.telephonySupplyPuk(ad.puk, ad.puk_pin):
             raise TelTestUtilsError(
                 "The puk and puk_pin provided in testbed config do NOT work for {}"
@@ -212,14 +212,15 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
+
     device_props = {}
     device_props['subscription'] = {}
 
     try:
         sim_data = load_config(sim_filename)
     except Exception:
-        log.warning("Failed to load {}!".format(sim_filename))
-        sim_data = None
+        log.warning("Failed to load %s!", sim_filename)
+        sim_data = {}
     sub_info_list = ad.droid.subscriptionGetAllSubInfoList()
     found_sims = 0
     for sub_info in sub_info_list:
@@ -227,39 +228,28 @@ def setup_droid_properties(log, ad, sim_filename=None):
         if sub_info['simSlotIndex'] is not INVALID_SIM_SLOT_INDEX:
             found_sims += 1
             sim_record = {}
-            try:
-                sim_serial = ad.droid.telephonyGetSimSerialNumberForSubscription(
-                    sub_id)
-                if not sim_serial:
-                    log.error("Unable to find ICC-ID for SIM on {}!".format(
-                        ad.serial))
-                if sim_data is not None:
-                    number = sim_data[sim_serial]["phone_num"]
-                else:
-                    raise KeyError("No file to load phone number info!")
-            except KeyError:
-                number = ad.droid.telephonyGetLine1NumberForSubscription(
-                    sub_id)
-            except Except as e:
-                log.error("Failed to setup_droid_property with {}".format(e))
-                raise
-            if not number or number == "":
-                raise TelTestUtilsError(
-                    "Failed to find valid phone number for {} with ICCID {}".
-                    format(ad.serial, sim_serial))
-
+            sim_serial = ad.droid.telephonyGetSimSerialNumberForSubscription(
+                sub_id)
+            if not sim_serial:
+                ad.log.error("Unable to find ICC-ID for SIM")
+            number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
+            if not number:
+                ad.log.warn("Unable to retrieve phone number from device")
+                if sim_serial not in sim_data:
+                    ad.log.error("ICCID %s is not provided in sim file %s",
+                                 sim_serial, sim_filename)
+                    raise TelTestUtilsError(
+                        "Failed to find valid phone number for %s with ICCID %s"
+                        % (ad.serial, sim_serial))
+                number = sim_data[sim_serial]["phone_num"]
             sim_record['phone_num'] = number
+            sim_record['iccid'] = sim_serial
             sim_record['operator'] = get_operator_name(log, ad, sub_id)
             device_props['subscription'][sub_id] = sim_record
-            log.info(
-                "phone_info: <{}:{}>, <subId:{}> {} <{}>, ICC-ID:<{}>".format(
-                    ad.model, ad.serial, sub_id, number, get_operator_name(
-                        log, ad, sub_id), ad.droid.
-                    telephonyGetSimSerialNumberForSubscription(sub_id)))
+            ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
 
     if found_sims == 0:
-        log.warning("No Valid SIMs found in device {}".format(ad.serial))
-
+        ad.log.warning("No Valid SIMs found in device")
     setattr(ad, 'cfg', device_props)
 
 
@@ -1535,6 +1525,139 @@ def verify_http_connection(log,
     log.info("Verify Internet retry failed after {}s"
              .format(i * retry_interval))
     return False
+
+
+def _generate_file_name_and_out_path(url, out_path):
+    file_name = url.split("/")[-1]
+    if not out_path:
+        out_path = "/sdcard/Download/%s" % file_name
+    elif out_path.endswith("/"):
+        out_path = os.path.join(out_path, file_name)
+    else:
+        file_name = out_path.split("/")[-1]
+    return file_name, out_path
+
+
+def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
+    """Check file existance by file_name and out_path. If expected_file_size
+       is provided, then also check if the file meet the file size requirement.
+    """
+    if out_path.endswith("/"):
+        out_path = os.path.join(out_path, file_name)
+    out = ad.adb.shell("ls -l %s" % out_path, ignore_status=True)
+    # Handle some old version adb returns error message "No such" into std_out
+    if "No such" not in out and file_name in out:
+        if expected_file_size:
+            file_size = int(out.split(" ")[4])
+            if file_size >= expected_file_size:
+                ad.log.info("File %s of size %s is in %s", file_name,
+                            file_size, out_path)
+                return True
+            else:
+                ad.log.error(
+                    "File size for %s in %s is %s does not meet expected %s",
+                    file_name, out_path, file_size, expected_file_size)
+                return False
+        else:
+            ad.log.info("File %s is in %s", file_name, out_path)
+            return True
+    else:
+        ad.log.error("File %s does not exist in %s.", file_name, out_path)
+        return False
+
+
+def http_file_download_by_adb(log,
+                              ad,
+                              url,
+                              out_path=None,
+                              expected_file_size=None,
+                              remove_file_after_check=True,
+                              timeout=300,
+                              limit_rate=100000,
+                              retry=3):
+    """Download http file by adb curl.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        out_path: Optional. Where to download file to.
+                  out_path is /sdcard/Download/ by default.
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+        limit_rate: download rate in bps. None, if do not apply rate limit.
+        retry: the retry request times provided in curl command.
+    """
+    file_name, out_path = _generate_file_name_and_out_path(url, out_path)
+    curl_cmd = "curl"
+    if limit_rate:
+        curl_cmd += " --limit-rate %s" % limit_rate
+    if retry:
+        curl_cmd += " --retry %s" % retry
+    curl_cmd += " --url %s > %s" % (url, out_path)
+    try:
+        ad.log.info("Download file from %s to %s by adb shell command %s", url,
+                    out_path, curl_cmd)
+        ad.adb.shell(curl_cmd, timeout=timeout)
+        if _check_file_existance(ad, file_name, out_path, expected_file_size):
+            ad.log.info("File %s is downloaded from %s successfully",
+                        file_name, url)
+            return True
+        else:
+            ad.log.warn("Fail to download file from %s", url)
+            return False
+    except Exception as e:
+        ad.log.warn("Download file from %s failed with exception %s", url, e)
+        return False
+    finally:
+        if remove_file_after_check:
+            ad.log.info("Remove the downloaded file %s", out_path)
+            ad.adb.shell("rm %s" % out_path, ignore_status=True)
+
+
+def http_file_download_by_sl4a(log,
+                               ad,
+                               url,
+                               out_path=None,
+                               expected_file_size=None,
+                               remove_file_after_check=True,
+                               timeout=300):
+    """Download http file by sl4a RPC call.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        out_path: Optional. Where to download file to.
+                  out_path is /sdcard/Download/ by default.
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+    """
+    file_name, out_path = _generate_file_name_and_out_path(url, out_path)
+    try:
+        ad.log.info("Download file from %s to %s by sl4a RPC call", url,
+                    out_path)
+        ad.droid.httpDownloadFile(url, out_path, timeout=timeout)
+        if _check_file_existance(ad, file_name, out_path, expected_file_size):
+            ad.log.info("File %s is downloaded from %s successfully",
+                        file_name, url)
+            return True
+        else:
+            ad.log.warn("Fail to download file from %s", url)
+            return False
+    except Exception as e:
+        ad.log.error("Download file from %s failed with exception %s", url, e)
+        raise
+    finally:
+        if remove_file_after_check:
+            ad.log.info("Remove the downloaded file %s", out_path)
+            ad.adb.shell("rm %s" % out_path, ignore_status=True)
 
 
 def _connection_state_change(_event, target_state, connection_type):
@@ -3280,16 +3403,16 @@ def ensure_phone_default_state(log, ad):
 
     toggle_video_calling(log, ad, False)
 
+    if (not WifiUtils.wifi_reset(log, ad)):
+        log.error("ensure_phones_default_state:reset WiFi fail {}.".format(
+            ad.serial))
+        result = False
+
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
         log.error(
             "ensure_phones_default_state: wait_for_droid_not_in iwlan fail {}.".
             format(ad.serial))
-        result = False
-
-    if (not WifiUtils.wifi_reset(log, ad)):
-        log.error("ensure_phones_default_state:reset WiFi fail {}.".format(
-            ad.serial))
         result = False
 
     if not toggle_airplane_mode(log, ad, False):
@@ -3334,6 +3457,8 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=0):
         wifi_pwd: WiFi network password. This is optional.
 
     """
+    if WifiUtils.wifi_connect(log, ad, wifi_ssid, wifi_pwd):
+        return True
     while (retry >= 0):
         WifiUtils.wifi_reset(log, ad)
         WifiUtils.wifi_toggle_state(log, ad, True)
@@ -3388,6 +3513,26 @@ def task_wrapper(task):
     return func(*params)
 
 
+def run_multithread_func(log, tasks):
+    """Run multi-thread functions and return results.
+
+    Args:
+        log: log object.
+        tasks: a list of tasks to be executed in parallel.
+
+    Returns:
+        results for tasks.
+    """
+    MAX_NUMBER_OF_WORKERS = 4
+    number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
+    executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=number_of_workers)
+    results = list(executor.map(task_wrapper, tasks))
+    executor.shutdown()
+    log.info("multithread_func result: %s", results)
+    return results
+
+
 def multithread_func(log, tasks):
     """Multi-thread function wrapper.
 
@@ -3399,17 +3544,35 @@ def multithread_func(log, tasks):
         True if all tasks return True.
         False if any task return False.
     """
-    MAX_NUMBER_OF_WORKERS = 4
-    number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
-    executor = concurrent.futures.ThreadPoolExecutor(
-        max_workers=number_of_workers)
-    results = list(executor.map(task_wrapper, tasks))
-    executor.shutdown()
-    log.info("multithread_func result: {}".format(results))
+    results = run_multithread_func(log, tasks)
     for r in results:
         if not r:
             return False
     return True
+
+
+def multithread_func_and_check_results(log, tasks, expected_results):
+    """Multi-thread function wrapper.
+
+    Args:
+        log: log object.
+        tasks: tasks to be executed in parallel.
+        expected_results: check if the results from tasks match expected_results.
+
+    Returns:
+        True if expected_results are met.
+        False if expected_results are not met.
+    """
+    return_value = True
+    results = run_multithread_func(log, tasks)
+    log.info("multithread_func result: %s, expecting %s", results,
+             expected_results)
+    for task, result, expected_result in zip(tasks, results, expected_results):
+        if result != expected_result:
+            logging.info("Result for task %s is %s, expecting %s", task[0],
+                         result, expected_result)
+            return_value = False
+    return return_value
 
 
 def set_phone_screen_on(log, ad, screen_on_time=MAX_SCREEN_ON_TIME):
@@ -3752,6 +3915,8 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
+        if not ad.droid.wifiGetConfiguredNetworks():
+            return True
         try:
             old_state = ad.droid.wifiCheckState()
             WifiUtils._reset_wifi(ad)
