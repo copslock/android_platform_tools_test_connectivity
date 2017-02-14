@@ -1050,9 +1050,39 @@ def expand_enterprise_config_by_phase2(config):
                 phase2_type == WifiEnums.EapPhase2.GTC):
             continue
         c = dict(config)
-        c[WifiEnums.Enterprise.PHASE2] = phase2_type
+        c[WifiEnums.Enterprise.PHASE2] = phase2_type.value
         results.append(c)
     return results
+
+
+def generate_eap_test_name(config):
+    """ Generates a test case name based on an EAP configuration.
+
+    Args:
+        config: A dict representing an EAP credential.
+
+    Returns:
+        A string representing the name of a generated EAP test case.
+    """
+    eap = WifiEnums.Eap
+    eap_phase2 = WifiEnums.EapPhase2
+    name = "test_connect-"
+    eap_name = ""
+    for e in eap:
+        if e.value == config[Ent.EAP]:
+            eap_name = e.name
+            break
+    if "peap0" in config[WifiEnums.SSID_KEY].lower():
+        eap_name = "PEAP0"
+    if "peap1" in config[WifiEnums.SSID_KEY].lower():
+        eap_name = "PEAP1"
+    name += eap_name
+    if Ent.PHASE2 in config:
+        for e in eap_phase2:
+            if e.value == config[Ent.PHASE2]:
+                name += "-{}".format(e.name)
+                break
+    return name
 
 
 def group_attenuators(attenuators):
