@@ -75,17 +75,17 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
                                plmn=None)
         # Default configs for EAP networks.
         self.config_peap0 = {
-            Ent.EAP: EAP.PEAP,
+            Ent.EAP: int(EAP.PEAP),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ssid_peap0
         }
         self.config_peap1 = dict(self.config_peap0)
         self.config_peap1[WifiEnums.SSID_KEY] = self.ssid_peap1
         self.config_tls = {
-            Ent.EAP: EAP.TLS,
+            Ent.EAP: int(EAP.TLS),
             Ent.CA_CERT: self.ca_cert,
             WifiEnums.SSID_KEY: self.ssid_tls,
             Ent.CLIENT_CERT: self.client_cert,
@@ -93,29 +93,29 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             Ent.IDENTITY: self.eap_identity,
         }
         self.config_ttls = {
-            Ent.EAP: EAP.TTLS,
+            Ent.EAP: int(EAP.TTLS),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ssid_ttls
         }
         self.config_pwd = {
-            Ent.EAP: EAP.PWD,
+            Ent.EAP: int(EAP.PWD),
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
             WifiEnums.SSID_KEY: self.ssid_pwd
         }
         self.config_sim = {
-            Ent.EAP: EAP.SIM,
+            Ent.EAP: int(EAP.SIM),
             WifiEnums.SSID_KEY: self.ssid_sim,
         }
         self.config_aka = {
-            Ent.EAP: EAP.AKA,
+            Ent.EAP: int(EAP.AKA),
             WifiEnums.SSID_KEY: self.ssid_aka,
         }
         self.config_aka_prime = {
-            Ent.EAP: EAP.AKA_PRIME,
+            Ent.EAP: int(EAP.AKA_PRIME),
             WifiEnums.SSID_KEY: self.ssid_aka_prime,
         }
 
@@ -195,7 +195,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             if Ent.FQDN in config and phase2_type == EapPhase2.GTC:
                 continue
             c = dict(config)
-            c[Ent.PHASE2] = phase2_type
+            c[Ent.PHASE2] = phase2_type.value
             results.append(c)
         return results
 
@@ -300,28 +300,6 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         configs = self.gen_passpoint_configs()
         return self.gen_negative_configs(configs, neg_params)
 
-    def gen_eap_test_name(self, config, ad):
-        """Generates a test case name based on an EAP configuration.
-
-        Args:
-            config: A dict representing an EAP credential.
-            ad: Discarded. This is here because name function signature needs
-                to be consistent with logic function signature for generated
-                test cases.
-
-        Returns:
-            A string representing the name of a generated EAP test case.
-        """
-        eap_name = config[Ent.EAP].name
-        if "peap0" in config[WifiEnums.SSID_KEY].lower():
-            eap_name = "PEAP0"
-        if "peap1" in config[WifiEnums.SSID_KEY].lower():
-            eap_name = "PEAP1"
-        name = "test_connect-%s" % eap_name
-        if Ent.PHASE2 in config:
-            name += "-{}".format(config[Ent.PHASE2].name)
-        return name
-
     def gen_passpoint_test_name(self, config, ad):
         """Generates a test case name based on an EAP passpoint configuration.
 
@@ -335,7 +313,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             A string representing the name of a generated EAP passpoint connect
             test case.
         """
-        name = self.gen_eap_test_name(config, ad)
+        name = wutils.generate_eap_test_name(config)
         name = name.replace("connect", "passpoint_connect")
         return name
 
@@ -366,7 +344,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             wutils.eap_connect,
             eap_configs,
             args=(self.dut,),
-            name_func=self.gen_eap_test_name)
+            name_func=wutils.generate_eap_test_name)
         msg = ("The following configs failed EAP connect test: %s" %
                pprint.pformat(failed))
         asserts.assert_equal(len(failed), 0, msg)
@@ -386,7 +364,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.log.info("Testing %d different configs." % len(neg_eap_configs))
         random.shuffle(neg_eap_configs)
         def name_gen(config, ad):
-            name = self.gen_eap_test_name(config, ad)
+            name = wutils.generate_eap_test_name(config)
             name += "-with_wrong-{}".format(config["invalid_field"])
             return name
         failed = self.run_generated_testcases(
