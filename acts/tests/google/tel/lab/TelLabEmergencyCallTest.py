@@ -106,10 +106,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
-        ensure_phones_idle(self.log, self.android_devices)
+        super(TelLabEmergencyCallTest, self).setup_test()
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
-        toggle_airplane_mode(self.log, self.ad, True)
         return True
 
     def teardown_test(self):
