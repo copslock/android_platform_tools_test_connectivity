@@ -35,7 +35,7 @@ COUNTRY_CODE_LIST = ["+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47",
                      "+246", "+86", "+850", "+81"]
 
 # Wait time after enterring puk code
-WAIT_TIME_SUPPLY_PUK_CODE = 10
+WAIT_TIME_SUPPLY_PUK_CODE = 30
 
 # Max time to wait after caller make a call and before
 # callee start ringing
