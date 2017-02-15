@@ -42,7 +42,7 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
-BUG_REPORT_TIMEOUT = 240
+BUG_REPORT_TIMEOUT = 1200
 PORT_RETRY_COUNT = 3
 
 
@@ -770,7 +770,7 @@ class AndroidDevice:
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
 
-    def check_crash_report(self, log_crash_report=True):
+    def check_crash_report(self, log_crash_report=False):
         """check crash report on the device.
         """
         crash_reports = []
