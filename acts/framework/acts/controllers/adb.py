@@ -27,6 +27,8 @@ from acts.controllers.utils_lib import host_utils
 from acts.controllers.utils_lib.ssh import connection
 from acts.libs.proc import job
 
+DEFAULT_ADB_TIMEOUT = 60
+
 
 def parsing_parcel_output(output):
     """Parsing the adb output in Parcel format.
@@ -89,9 +91,8 @@ class AdbProxy(object):
             temp_dir = ssh_connection.run("mktemp -d").stdout.strip()
             ssh_connection.send_file(adb_path, temp_dir)
             # Start up a new adb server running as root from the copied binary.
-            remote_adb_cmd = "%s/adb %s root" % (
-                temp_dir,
-                "-s %s" % serial if serial else "")
+            remote_adb_cmd = "%s/adb %s root" % (temp_dir, "-s %s" % serial
+                                                 if serial else "")
             ssh_connection.run(remote_adb_cmd)
             # Proxy a local port to the adb server port
             local_port = ssh_connection.create_ssh_tunnel(5037)
@@ -102,7 +103,7 @@ class AdbProxy(object):
         self.adb_str = " ".join(adb_cmd)
         self._ssh_connection = ssh_connection
 
-    def _exec_cmd(self, cmd, ignore_status=False):
+    def _exec_cmd(self, cmd, ignore_status=False, timeout=DEFAULT_ADB_TIMEOUT):
         """Executes adb commands in a new shell.
 
         This is specific to executing adb binary because stderr is not a good
@@ -117,7 +118,7 @@ class AdbProxy(object):
         Raises:
             AdbError is raised if the adb command exit code is not 0.
         """
-        result = job.run(cmd, ignore_status=True)
+        result = job.run(cmd, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
@@ -132,7 +133,8 @@ class AdbProxy(object):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
 
     def _exec_adb_cmd(self, name, arg_str, **kwargs):
-        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)), **kwargs)
+        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
+                              **kwargs)
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding from localhost to this android device.
@@ -184,9 +186,12 @@ class AdbProxy(object):
 
     # TODO: This should be abstracted out into an object like the other shell
     # command.
-    def shell(self, command, ignore_status=False):
-        return self._exec_adb_cmd('shell', shellescape.quote(command),
-                                  ignore_status=ignore_status)
+    def shell(self, command, ignore_status=False, timeout=DEFAULT_ADB_TIMEOUT):
+        return self._exec_adb_cmd(
+            'shell',
+            shellescape.quote(command),
+            ignore_status=ignore_status,
+            timeout=timeout)
 
     def __getattr__(self, name):
         def adb_call(*args, **kwargs):
