@@ -16,6 +16,7 @@
 import logging
 import os
 import pprint
+import re
 import time
 import urllib.request
 
@@ -48,6 +49,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.unpack_userparams(required_params)
         wifi_test_utils.wifi_test_device_init(self.dut)
         wifi_test_utils.wifi_connect(self.dut, self.wifi_network)
+        time.sleep(3)
 
     def teardown_class(self):
         """ Reset wifi to make sure VPN tears down cleanly
@@ -70,7 +72,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         local_file_path = os.path.join(self.log_path, local_cert_name)
         try:
             ret = urllib.request.urlopen(url)
-            with open(file_path, "wb") as f:
+            with open(local_file_path, "wb") as f:
                 f.write(ret.read())
         except:
             asserts.fail("Unable to download certificate from the server")
@@ -140,6 +142,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
             Args:
                 VpnProfileType (1 of the 6 types supported by Android)
         """
+        self.dut.adb.shell("ip xfrm state flush")
         vpn_profile = self.generate_legacy_vpn_profile(vpn_type)
         logging.info("Connecting to: %s", vpn_profile)
         self.dut.droid.vpnStartLegacyVpn(vpn_profile)
@@ -150,6 +153,11 @@ class LegacyVpnTest(base_test.BaseTestClass):
                              "Unable to establish VPN connection for %s"
                              % vpn_profile)
         self.verify_ping_to_vpn_ip(connected_vpn_info)
+        ip_xfrm_state = self.dut.adb.shell("ip xfrm state")
+        match_obj = re.search(r'hmac(.*)', "%s" % ip_xfrm_state)
+        if match_obj:
+            ip_xfrm_state = format(match_obj.group(0)).split()
+            self.log.info("HMAC for ESP is %s " % ip_xfrm_state[0])
         self.dut.droid.vpnStopLegacyVpn()
         connected_vpn_info = self.dut.droid.vpnGetLegacyVpnInfo()
         asserts.assert_true(not connected_vpn_info,
