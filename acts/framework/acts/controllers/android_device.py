@@ -42,7 +42,7 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
-
+BUG_REPORT_TIMEOUT = 240
 PORT_RETRY_COUNT = 3
 
 
@@ -610,7 +610,8 @@ class AndroidDevice:
         forward_success = False
         last_error = None
         for _ in range(PORT_RETRY_COUNT):
-            if not self.h_port or not host_utils.is_port_available(self.h_port):
+            if not self.h_port or not host_utils.is_port_available(
+                    self.h_port):
                 self.h_port = host_utils.get_available_host_port()
             try:
                 self.adb.tcp_forward(self.h_port, self.d_port)
@@ -780,10 +781,14 @@ class AndroidDevice:
                 raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
                                          (self.serial, out))
             br_out_path = out.split(':')[1].strip()
-            self.adb.pull("%s %s" % (br_out_path, full_out_path))
+            self.adb.pull(
+                "%s %s" % (br_out_path, full_out_path),
+                timeout=BUG_REPORT_TIMEOUT)
         else:
-            self.adb.bugreport(" > {}".format(full_out_path))
-        self.log.info("Bugreport for %s taken at %s.", test_name, full_out_path)
+            self.adb.bugreport(
+                " > {}".format(full_out_path), timeout=BUG_REPORT_TIMEOUT)
+        self.log.info("Bugreport for %s taken at %s.", test_name,
+                      full_out_path)
 
     def check_crash_report(self, log_crash_report=True):
         """check crash report on the device.
@@ -793,7 +798,7 @@ class AndroidDevice:
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
         for report_path in CRASH_REPORT_PATHS:
             out = self.adb.shell("ls %s" % report_path, ignore_status=True)
-            if out:
+            if out and "No such" not in out:
                 reports = out.split('\n')
                 if log_crash_report:
                     utils.create_dir(crash_log_path)
@@ -801,7 +806,9 @@ class AndroidDevice:
                     crash_report = os.path.join(report_path, report)
                     crash_reports.append(crash_report)
                     if log_crash_report:
-                        self.adb.pull("%s %s" % (crash_report, crash_log_path))
+                        self.adb.pull(
+                            "%s %s" % (crash_report, crash_log_path),
+                            timeout=BUG_REPORT_TIMEOUT)
         return crash_reports
 
     def start_new_session(self):
@@ -860,7 +867,7 @@ class AndroidDevice:
                 droid.close()
             del self._droid_sessions[session_id]
         ed_key = self.serial + str(session_id)
-        if ed_key in self._event_dispatchers:
+        if self._event_dispatchers and ed_key in self._event_dispatchers:
             self._event_dispatchers[ed_key].clean_up()
             del self._event_dispatchers[ed_key]
 
@@ -981,7 +988,6 @@ class AndroidDevice:
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
-
     def process(self, msg, kwargs):
         msg = "[AndroidDevice|%s] %s" % (self.extra["serial"], msg)
         return (msg, kwargs)

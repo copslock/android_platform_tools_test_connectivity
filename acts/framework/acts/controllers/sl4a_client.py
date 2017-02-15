@@ -95,8 +95,8 @@ def stop_sl4a(adb_proxy):
     Args:
         adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
     """
-    adb_proxy.shell('am force-stop com.googlecode.android_scripting',
-                    ignore_status=True)
+    adb_proxy.shell(
+        'am force-stop com.googlecode.android_scripting', ignore_status=True)
 
 
 def is_sl4a_installed(adb_proxy):
@@ -293,12 +293,15 @@ class Sl4aClient(object):
         """
         if not uid:
             uid = self.uid
-        self.client.write(json.dumps({'cmd': command,
-                                      'uid': uid}).encode("utf8") + b'\n')
+        self.client.write(
+            json.dumps({
+                'cmd': command,
+                'uid': uid
+            }).encode("utf8") + b'\n')
         self.client.flush()
         return self.client.readline()
 
-    def _rpc(self, method, *args):
+    def _rpc(self, method, *args, timeout=None):
         """Sends an rpc to sl4a.
 
         Sends an rpc call to sl4a using this clients connection.
@@ -306,6 +309,7 @@ class Sl4aClient(object):
         Args:
             method: str, The name of the method to execute.
             args: any, The args to send to sl4a.
+            timeout: timeout for the RPC call.
 
         Returns:
             The result of the rpc.
@@ -316,6 +320,8 @@ class Sl4aClient(object):
         """
         with self._lock:
             apiid = next(self._counter)
+        if timeout:
+            self.conn.settimeout(timeout)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
         self.client.write(request.encode("utf8") + b'\n')
@@ -324,8 +330,11 @@ class Sl4aClient(object):
         if not response:
             raise Sl4aProtocolError(Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
+        if timeout:
+            self.conn.settimeout(self._SOCKET_TIMEOUT)
         if result['error']:
-            raise Sl4aApiError(result['error'])
+            raise Sl4aApiError("RPC call %s failed with error %s" %
+                               (method, result['error']))
         if result['id'] != apiid:
             raise Sl4aProtocolError(Sl4aProtocolError.MISMATCHED_API_ID)
         return result['result']
@@ -333,7 +342,7 @@ class Sl4aClient(object):
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
-        def rpc_call(*args):
-            return self._rpc(name, *args)
+        def rpc_call(*args, **kwargs):
+            return self._rpc(name, *args, **kwargs)
 
         return rpc_call
