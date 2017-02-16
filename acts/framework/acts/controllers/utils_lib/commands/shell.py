@@ -130,7 +130,8 @@ class ShellCommand(object):
             True if the string or pattern was found, False otherwise.
         """
         try:
-            self.run('grep %s %s' % (shellescape.quote(search_string), file_name))
+            self.run('grep %s %s' %
+                     (shellescape.quote(search_string), file_name))
             return True
         except job.Error:
             return False
@@ -154,6 +155,15 @@ class ShellCommand(object):
             data: The string of data to write.
         """
         return self.run('echo %s > %s' % (shellescape.quote(data), file_name))
+
+    def append_file(self, file_name, data):
+        """Appends a block of data to a file through the shell.
+
+        Args:
+            file_name: The name of the file to write to.
+            data: The string of data to write.
+        """
+        return self.run('echo %s >> %s' % (shellescape.quote(data), file_name))
 
     def touch_file(self, file_name):
         """Creates a file through the shell.

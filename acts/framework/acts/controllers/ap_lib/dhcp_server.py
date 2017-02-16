@@ -20,6 +20,12 @@ import time
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.utils_lib.commands import shell
 
+# The router wan interface will be hard set since this the default for the
+# whirlwind.  In the future it maybe desireable to see which interface has a
+# public address and assign it dynamically.
+_ROUTER_WAN_INTERFACE = 'eth2'
+_ROUTER_DNS = '8.8.8.8, 4.4.4.4'
+
 
 class Error(Exception):
     """An error caused by the dhcp server."""
@@ -40,7 +46,7 @@ class DhcpServer(object):
 
     PROGRAM_FILE = 'dhcpd'
 
-    def __init__(self, runner, working_dir='/tmp'):
+    def __init__(self, runner, interface, working_dir='/tmp'):
         """
         Args:
             runner: Object that has a run_async and run methods for running
@@ -51,10 +57,10 @@ class DhcpServer(object):
         self._runner = runner
         self._working_dir = working_dir
         self._shell = shell.ShellCommand(runner, working_dir)
-        self._log_file = 'dhcpd.log'
-        self._config_file = 'dhcpd.conf'
-        self._lease_file = 'dhcpd.leases'
-        self._identifier = self.PROGRAM_FILE
+        self._log_file = 'dhcpd_%s.log' % interface
+        self._config_file = 'dhcpd_%s.conf' % interface
+        self._lease_file = 'dhcpd_%s.leases' % interface
+        self._identifier = '%s.*%s' % (self.PROGRAM_FILE, self._config_file)
 
     def start(self, config, timeout=60):
         """Starts the dhcp server.
@@ -75,8 +81,16 @@ class DhcpServer(object):
         if self.is_alive():
             self.stop()
 
-        self._write_configs(config)
+        # The following three commands are needed to enable bridging between
+        # the WAN and LAN/WLAN ports.  This means anyone connecting to the
+        # WLAN/LAN ports will be able to access the internet if the WAN port
+        # is connected to the internet.
+        self._runner.run('iptables -t nat -F')
+        self._runner.run('iptables -t nat -A POSTROUTING -o %s -j MASQUERADE' %
+                         _ROUTER_WAN_INTERFACE)
+        self._runner.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
 
+        self._write_configs(config)
         self._shell.delete_file(self._log_file)
         self._shell.touch_file(self._lease_file)
 
@@ -176,6 +190,7 @@ class DhcpServer(object):
 
     def _write_configs(self, config):
         """Writes the configs to the dhcp server config file."""
+
         self._shell.delete_file(self._config_file)
 
         lines = []
@@ -196,6 +211,7 @@ class DhcpServer(object):
             lines.append('subnet %s netmask %s {' % (address, mask))
             lines.append('\toption subnet-mask %s;' % mask)
             lines.append('\toption routers %s;' % router)
+            lines.append('\toption domain-name-servers %s;' % _ROUTER_DNS)
             lines.append('\trange %s %s;' % (start, end))
             if lease_time:
                 lines.append('\tdefault-lease-time %d;' % lease_time)
