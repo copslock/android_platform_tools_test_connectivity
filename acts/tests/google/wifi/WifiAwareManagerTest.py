@@ -203,7 +203,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
             'Unable to obtain IPv6 link-local for interface %s' % interface)
         return res.group(1)
 
-    def exec_connect(self, device, name):
+    def exec_connect(self, device, name, config=None):
         """Executes the Aware connection creation operation.
 
         Creates an Aware connection (client) and waits for a confirmation event
@@ -212,8 +212,9 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
         Args:
             device: The 'AndroidDevice' on which to set up the connection.
             name: An arbitary name used for logging.
+            config: An optional ConfigRequest (JSON-configured) structure.
         """
-        session_id = device.droid.wifiAwareAttach()
+        session_id = device.droid.wifiAwareAttach(config)
         try:
             event = device.ed.pop_event(aware_const.EVENT_CB_ON_ATTACHED,
                                         EVENT_TIMEOUT)
@@ -504,8 +505,11 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                                      discovery_configs,
                                      name_func=name_func)
 
-    def test_aware_discovery_latency(self):
+    def run_aware_discovery_latency(self, dw_interval):
         """Measure the latency of Aware discovery on the subscriber.
+
+        Args:
+            dw_interval: Discovery Window Interval configuration
 
         Configuration: 2 devices, one acting as Publisher (P) and the
         other as Subscriber (S)
@@ -527,8 +531,10 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
         results['num_iterations'] = 100
 
         # Start Test
-        pub_connect_id = self.exec_connect(self.publisher, "publisher")
-        sub_connect_id = self.exec_connect(self.subscriber, "subscriber")
+        pub_connect_id = self.exec_connect(self.publisher, "publisher",
+                                           {"DiscoveryWindowInterval": [dw_interval, dw_interval]})
+        sub_connect_id = self.exec_connect(self.subscriber, "subscriber",
+                                           {"DiscoveryWindowInterval": [dw_interval, dw_interval]})
 
         pub_id = self.publisher.droid.wifiAwarePublish(pub_connect_id,
                                                        self.publish_config)
@@ -582,6 +588,18 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                            'Subscribe Session Discovery')
         asserts.explicit_pass('test_aware_discovery_latency finished',
                               extras=results)
+
+    @generated_test
+    def test_aware_discovery_latency(self):
+        """Measure the latency of Aware discovery on the subscriber.
+
+        Test different discovery window intervals: 1, 2, 3, 4, 5
+        """
+
+        name_func = lambda dw_interval: "test_aware_discovery_latency__dw_%d" % dw_interval
+        self.run_generated_testcases(self.run_aware_discovery_latency,
+                                     [1, 2, 3, 4, 5],
+                                     name_func=name_func)
 
     def run_aware_messaging(self, retry_count):
         """Perform Aware configuration, discovery, and large message exchange.
