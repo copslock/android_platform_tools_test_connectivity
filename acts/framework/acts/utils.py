@@ -562,6 +562,7 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         wait_for_device_with_timeout(ad)
         ad.adb.shell("settings put global airplane_mode_on {}".format(
             1 if new_state else 0))
+        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
     except TimeoutError:
         # adb wait for device timeout
         return False
