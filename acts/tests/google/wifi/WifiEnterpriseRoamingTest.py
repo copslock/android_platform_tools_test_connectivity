@@ -51,15 +51,15 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             "device_password")
         self.unpack_userparams(req_params)
         self.config_peap = {
-            Ent.EAP: EAP.PEAP,
+            Ent.EAP: int(EAP.PEAP),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid
         }
         self.config_tls = {
-            Ent.EAP: EAP.TLS,
+            Ent.EAP: int(EAP.TLS),
             Ent.CA_CERT: self.ca_cert,
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
             Ent.CLIENT_CERT: self.client_cert,
@@ -67,15 +67,15 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             Ent.IDENTITY: self.eap_identity,
         }
         self.config_ttls = {
-            Ent.EAP: EAP.TTLS,
+            Ent.EAP: int(EAP.TTLS),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid
         }
         self.config_sim = {
-            Ent.EAP: EAP.SIM,
+            Ent.EAP: int(EAP.SIM),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
         }
         self.attenuators = wutils.group_attenuators(self.attenuators)
@@ -134,20 +134,6 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
         configs += wutils.expand_enterprise_config_by_phase2(self.config_ttls)
         configs += wutils.expand_enterprise_config_by_phase2(self.config_peap)
         return configs
-
-    def gen_eap_roaming_test_name(self, config):
-        """Generates a test case name based on an EAP configuration.
-
-        Args:
-            config: A dict representing an EAP credential.
-
-        Returns:
-            A string representing the name of a generated EAP test case.
-        """
-        name = "test_roaming-%s" % config[Ent.EAP].name
-        if Ent.PHASE2 in config:
-            name += "-{}".format(config[Ent.PHASE2].name)
-        return name
 
     def trigger_roaming_and_validate(self, attn_val_name, expected_con):
         """Sets attenuators to trigger roaming and validate the DUT connected
@@ -208,7 +194,7 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
         failed = self.run_generated_testcases(
             self.roaming_between_a_and_b_logic,
             eap_configs,
-            name_func=self.gen_eap_roaming_test_name)
+            name_func=wutils.generate_eap_test_name)
         asserts.assert_equal(
             len(failed), 0,
             "The following configs failed enterprise roaming test: %s" %
