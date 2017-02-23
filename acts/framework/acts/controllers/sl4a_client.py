@@ -309,7 +309,7 @@ class Sl4aClient(object):
         Args:
             method: str, The name of the method to execute.
             args: any, The args to send to sl4a.
-            timeout: timeout for the RPC call.
+            kwargs: timeout: timeout for the RPC call.
 
         Returns:
             The result of the rpc.
@@ -318,12 +318,11 @@ class Sl4aClient(object):
             Sl4aProtocolError: Something went wrong with the sl4a protocol.
             Sl4aApiError: The rpc went through, however executed with errors.
         """
+        timeout = kwargs.get("timeout")
         with self._lock:
             apiid = next(self._counter)
-        if kwargs.get("timeout"):
+        if timeout:
             self.conn.settimeout(timeout)
-        else:
-            self.conn.settimeout(self._SOCKET_TIMEOUT)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
         self.client.write(request.encode("utf8") + b'\n')
@@ -332,7 +331,7 @@ class Sl4aClient(object):
         if not response:
             raise Sl4aProtocolError(Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
-        if kwargs.get("timeout"):
+        if timeout:
             self.conn.settimeout(self._SOCKET_TIMEOUT)
         if result['error']:
             raise Sl4aApiError("RPC call %s failed with error %s" %
