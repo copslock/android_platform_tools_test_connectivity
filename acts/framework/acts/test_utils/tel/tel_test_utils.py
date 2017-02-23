@@ -201,6 +201,8 @@ def refresh_droid_config(log, ad):
     Returns:
         None
     """
+    if not hasattr(ad, 'cfg'):
+        return
     for sub_id in ad.cfg['subscription']:
         # Update Phone number
         number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
