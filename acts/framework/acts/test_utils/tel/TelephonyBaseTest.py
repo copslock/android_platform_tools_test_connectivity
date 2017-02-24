@@ -186,7 +186,7 @@ class TelephonyBaseTest(BaseTestClass):
             if "vzw" in [sub["operator"] for sub in ad.cfg[
                     "subscription"].values()] and ad.model in (
                             "marlin", "sailfish") and (build_id.startswith(
-                                    "N2") or build_id.startswith("OR")):
+                                    "N") or build_id.startswith("O")):
                 ad.log.info("setup VoWiFi MDN for MR2 or OC branch per b/33187374")
                 ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
                 ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
