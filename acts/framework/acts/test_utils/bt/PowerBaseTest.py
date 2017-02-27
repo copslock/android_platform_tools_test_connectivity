@@ -20,6 +20,7 @@ This test script is the base class for Bluetooth power testing
 import json
 import os
 import statistics
+import time
 
 from acts import asserts
 from acts import utils
@@ -46,6 +47,8 @@ class PowerBaseTest(BluetoothBaseTest):
     # Power mesaurement sampling rate in Hz
     POWER_SAMPLING_RATE = 20
     SCREEN_TIME_OFF = 10
+    # Wait time for PMC to start in seconds
+    WAIT_TIME = 10
     # Accuracy for current and power data
     ACCURACY = 4
     THOUSAND = 1000
@@ -85,11 +88,21 @@ class PowerBaseTest(BluetoothBaseTest):
         set_auto_rotate(self.ad, False)
         set_phone_screen_on(self.log, self.ad, self.SCREEN_TIME_OFF)
 
+        wutils.wifi_toggle_state(self.ad, False)
+
         # Start PMC app.
         self.log.info("Start PMC app...")
         self.ad.adb.shell(self.START_PMC_CMD)
         self.ad.adb.shell(self.PMC_VERBOSE_CMD)
-        wutils.wifi_toggle_state(self.ad, False)
+
+        self.log.info("Check to see if PMC app started")
+        for _ in range(self.WAIT_TIME):
+            time.sleep(1)
+            try:
+                self.ad.adb.shell('ps -A | grep "S com.android.pmc"')
+                break
+            except adb.AdbError as e:
+                self.log.info("PMC app is NOT started yet")
 
     def save_logs_for_power_test(self, monsoon_result, measure_time,
                                  idle_time):
