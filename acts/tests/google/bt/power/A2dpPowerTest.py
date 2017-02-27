@@ -58,10 +58,13 @@ def push_file_to_device(ad, file_path, device_path, config_path):
 
 
 class A2dpPowerTest(PowerBaseTest):
-    # Time for playing music in seconds
-    PLAY_TIME = 3600
-    # Power mesaurement start time in seconds
-    START_TIME = 30
+    # Time for measuring the power when playing music in seconds
+    MEASURE_TIME = 3600
+    # Time for Music to start playing in seconds
+    START_PLAY_TIME = 60
+    # Delay time in seconds between starting playing and measuring power
+    DELAY_TIME = 60
+    # Wait time in seconds to check if BT device is connected
     WAIT_TIME = 10
     # Base command for PMC
     PMC_BASE_CMD = ("am broadcast -a com.android.pmc.A2DP --es MusicURL")
@@ -211,9 +214,9 @@ class A2dpPowerTest(PowerBaseTest):
         # Get the base name of music file
         music_name = os.path.basename(music_file)
         self.music_url = "file:///sdcard/Music/{}".format(music_name)
-
+        play_time = self.MEASURE_TIME + self.DELAY_TIME * 2
         first_part_msg = "%s %s --es StartTime %d --es PlayTime %d --es" % (
-            self.PMC_BASE_CMD, self.music_url, self.START_TIME, self.PLAY_TIME)
+            self.PMC_BASE_CMD, self.music_url, self.START_PLAY_TIME, play_time)
 
         sec_part_msg = "%s  CodecType %d --es SampleRate %d" % (
             first_part_msg, codec_type, sample_rate)
@@ -239,13 +242,13 @@ class A2dpPowerTest(PowerBaseTest):
 
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
-
+        start_measure_time = self.START_PLAY_TIME + self.DELAY_TIME
         # Start the power measurement
-        result = self.mon.measure_power(self.POWER_SAMPLING_RATE,
-                                        self.PLAY_TIME, self.current_test_name,
-                                        self.START_TIME)
+        result = self.mon.measure_power(
+            self.POWER_SAMPLING_RATE, self.MEASURE_TIME,
+            self.current_test_name, start_measure_time)
         # Save data into log file
-        self.save_logs_for_power_test(result, self.PLAY_TIME, 0)
+        self.save_logs_for_power_test(result, self.MEASURE_TIME, 0)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='6dc78cf4-7cae-4b03-8a31-0d23f41d1baa')
