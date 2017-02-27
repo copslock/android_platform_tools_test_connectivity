@@ -1055,17 +1055,20 @@ def expand_enterprise_config_by_phase2(config):
     return results
 
 
-def generate_eap_test_name(config):
+def generate_eap_test_name(config, ad=None):
     """ Generates a test case name based on an EAP configuration.
 
     Args:
         config: A dict representing an EAP credential.
+        ad object: Redundant but required as the same param is passed
+                   to test_func in run_generated_tests
 
     Returns:
         A string representing the name of a generated EAP test case.
     """
     eap = WifiEnums.Eap
     eap_phase2 = WifiEnums.EapPhase2
+    Ent = WifiEnums.Enterprise
     name = "test_connect-"
     eap_name = ""
     for e in eap:
