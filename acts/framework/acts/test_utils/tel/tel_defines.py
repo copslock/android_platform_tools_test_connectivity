@@ -28,7 +28,7 @@ MAX_WAIT_TIME_CALL_DROP = 60
 
 # Max time to wait after caller make a call and before
 # callee start ringing
-MAX_WAIT_TIME_CALLEE_RINGING = 60
+MAX_WAIT_TIME_CALLEE_RINGING = 90
 
 # country code list
 COUNTRY_CODE_LIST = ["+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47",
