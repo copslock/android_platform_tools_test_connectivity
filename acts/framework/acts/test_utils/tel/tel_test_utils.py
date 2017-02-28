@@ -130,6 +130,12 @@ from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_message_sub_id
+from acts.test_utils.wifi.wifi_test_utils import WifiEnums
+from acts.test_utils.wifi.wifi_test_utils import wifi_connect
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
+from acts.test_utils.wifi.wifi_test_utils import reset_wifi
+from acts.test_utils.wifi.wifi_test_utils import toggle_wifi_and_wait_for_reconnection
+from acts.test_utils.wifi import wifi_constants
 from acts.utils import load_config
 
 log = logging
@@ -246,7 +252,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
             sim_record['iccid'] = sim_serial
             sim_record['operator'] = get_operator_name(log, ad, sub_id)
             device_props['subscription'][sub_id] = sim_record
-            ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
+            ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
 
     if found_sims == 0:
         ad.log.warning("No Valid SIMs found in device")
@@ -265,6 +271,8 @@ def refresh_droid_config(log, ad):
     Returns:
         None
     """
+    if not hasattr(ad, 'cfg'):
+        return
     for sub_id in ad.cfg['subscription']:
         # Update Phone number
         number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
@@ -306,7 +314,7 @@ def get_num_active_sims(log, ad):
     return len(valid_sims.keys())
 
 
-def toggle_airplane_mode_by_adb(log, ad, new_state=None, strict_checking=True):
+def toggle_airplane_mode_by_adb(log, ad, new_state=None):
     """ Toggle the state of airplane mode.
 
     Args:
@@ -321,7 +329,7 @@ def toggle_airplane_mode_by_adb(log, ad, new_state=None, strict_checking=True):
     """
     cur_state = bool(int(ad.adb.shell("settings get global airplane_mode_on")))
     if new_state == cur_state:
-        log.info("Airplane mode already {} on {}".format(new_state, ad.serial))
+        ad.log.info("Airplane mode already in %s", new_state)
         return True
     elif new_state is None:
         new_state = not cur_state
@@ -430,8 +438,8 @@ def _wait_for_bluetooth_in_state(log, ad, state, max_wait):
         if bt_state == state:
             return True
         if max_wait <= 0:
-            log.error("Time out: bluetooth state still {}, expecting {}".
-                      format(bt_state, state))
+            ad.log.error("Time out: bluetooth state still %s, expecting %s",
+                         bt_state, state)
             return False
 
         event = {
@@ -441,8 +449,8 @@ def _wait_for_bluetooth_in_state(log, ad, state, max_wait):
         ad.ed.pop_event(event, max_wait)
         return True
     except Empty:
-        log.error("Time out: bluetooth state still {}, expecting {}".format(
-            bt_state, state))
+        ad.log.error("Time out: bluetooth state still in %s, expecting %s",
+                     bt_state, state)
         return False
     finally:
         ad.droid.bluetoothStopListeningForAdapterStateChange()
@@ -479,11 +487,10 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
 
     cur_state = ad.droid.connectivityCheckAirplaneMode()
     if cur_state == new_state:
-        log.info("Airplane mode already <{}> on {}".format(new_state,
-                                                           ad.serial))
+        ad.log.info("Airplane mode already in %s", new_state)
         return True
     elif new_state is None:
-        log.info("Current State {} New state {}".format(cur_state, new_state))
+        ad.log.info("APM Current State %s New state %s", cur_state, new_state)
 
     if new_state is None:
         new_state = not cur_state
@@ -491,7 +498,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     service_state_list = []
     if new_state:
         service_state_list.append(SERVICE_STATE_POWER_OFF)
-        log.info("Turn on airplane mode on {}".format(ad.serial))
+        ad.log.info("Turn on airplane mode")
 
     else:
         # If either one of these 3 events show up, it should be OK.
@@ -500,7 +507,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         # NO SIM, or Dead SIM, or no Roaming coverage.
         service_state_list.append(SERVICE_STATE_OUT_OF_SERVICE)
         service_state_list.append(SERVICE_STATE_EMERGENCY_ONLY)
-        log.info("Turn off airplane mode on {}.".format(ad.serial))
+        ad.log.info("Turn off airplane mode")
 
     for sub_id in sub_id_list:
         ad.droid.telephonyStartTrackingServiceStateChangeForSubscription(
@@ -522,11 +529,11 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         except Empty:
             pass
         if event is None:
-            log.error("Did not get expected service state {} on {}".format(
-                service_state_list, ad.serial))
+            ad.log.error("Did not get expected service state %s",
+                         service_state_list)
             return False
         else:
-            log.info("Received event: {} on {}".format(event, ad.serial))
+            ad.log.info("Received event: %s", event)
     finally:
         for sub_id in sub_id_list:
             ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
@@ -536,25 +543,22 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     try:
         if new_state and not _wait_for_bluetooth_in_state(
                 log, ad, False, timeout_time - time.time()):
-            log.error(
-                "Failed waiting for bluetooth during airplane mode toggle on {}".
-                format(ad.serial))
+            ad.log.error(
+                "Failed waiting for bluetooth during airplane mode toggle")
             if strict_checking: return False
     except Exception as e:
-        ad.log.error("Failed to check bluetooth state due to {}".format(e))
+        ad.log.error("Failed to check bluetooth state due to %s", e)
         if strict_checking:
             raise
 
     # APM on (new_state=True) will turn off wifi but may not turn it on
     if new_state and not _wait_for_wifi_in_state(log, ad, False,
                                                  timeout_time - time.time()):
-        log.error("Failed waiting for wifi during airplane mode toggle on {}.".
-                  format(ad.serial))
-        return False
+        ad.log.error("Failed waiting for wifi during airplane mode toggle on")
+        if strict_checking: return False
 
     if ad.droid.connectivityCheckAirplaneMode() != new_state:
-        log.error("Airplane mode {} failed on {}".format("ON" if new_state else
-                                                         "OFF", ad.serial))
+        ad.log.error("Set airplane mode to %s failed", new_state)
         return False
     return True
 
@@ -602,8 +606,6 @@ def _wait_for_ringing_event(log, ad, wait_time):
         event_ringing if received ringing event.
         otherwise return None.
     """
-    log.info("Wait for ringing.")
-    start_time = time.time()
     event_ringing = None
 
     try:
@@ -613,12 +615,9 @@ def _wait_for_ringing_event(log, ad, wait_time):
             timeout=wait_time,
             field=CallStateContainer.CALL_STATE,
             value=TELEPHONY_STATE_RINGING)
+        ad.log.info("Receive ringing event")
     except Empty:
-        if ad.droid.telecomIsRinging():
-            log.error("No Ringing event. But Callee in Ringing state.")
-            log.error("Event may have been dropped.")
-        else:
-            log.error("No Ringing Event, Callee not in ringing state.")
+        ad.log.info("No Ringing Event")
     finally:
         return event_ringing
 
@@ -641,48 +640,94 @@ def wait_for_ringing_call(log, ad, incoming_number=None):
         log, ad, get_incoming_voice_sub_id(ad), incoming_number)
 
 
-def wait_for_ringing_call_for_subscription(log,
-                                           ad,
-                                           sub_id,
-                                           incoming_number=None):
+def wait_for_ringing_call_for_subscription(
+        log,
+        ad,
+        sub_id,
+        incoming_number=None,
+        event_tracking_started=False,
+        timeout=MAX_WAIT_TIME_CALLEE_RINGING):
     """Wait for an incoming call on specified subscription.
 
     Args:
         log: log object.
         ad: android device object.
         sub_id: subscription ID
-        incoming_number: Expected incoming number.
-            Optional. Default is None
+        incoming_number: Expected incoming number. Default is None
+        event_tracking_started: True if event tracking already state outside
+        timeout: time to wait for ring
 
     Returns:
         True: if incoming call is received and answered successfully.
         False: for errors
     """
-    if (not ad.droid.telecomIsRinging() and
-            ad.droid.telephonyGetCallStateForSubscription(sub_id) !=
-            TELEPHONY_STATE_RINGING):
+    if not event_tracking_started:
         ad.ed.clear_all_events()
         ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-        event_ringing = _wait_for_ringing_event(log, ad,
-                                                MAX_WAIT_TIME_CALLEE_RINGING)
+    event_ringing = _wait_for_ringing_event(log, ad, timeout)
+    if not event_tracking_started:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-        if event_ringing is None:
-            log.error("No Ringing Event.")
-            return False
-
-        if not incoming_number:
-            result = True
+    if not event_ringing:
+        if ad.droid.telephonyGetCallStateForSubscription(
+                sub_id
+        ) == TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging():
+            ad.log.info("In call ringing state without ringing event")
+            return True
         else:
-            result = check_phone_number_match(
-                event_ringing['data'][CallStateContainer.INCOMING_NUMBER],
-                incoming_number)
-
-        if not result:
-            log.error("Incoming Number not match")
-            log.error("Expected number:{}, actual number:{}".format(
-                incoming_number, event_ringing['data'][
-                    CallStateContainer.INCOMING_NUMBER]))
+            ad.log.info(
+                "Neither in call ringing state nor capture ringing event")
             return False
+    ad.log.info("Received ringing event")
+    if not incoming_number:
+        return True
+
+    result = check_phone_number_match(
+        event_ringing['data'][CallStateContainer.INCOMING_NUMBER],
+        incoming_number)
+    if not result:
+        ad.log.error(
+            "Incoming Number not match. Expected number:%s, actual number:%s",
+            incoming_number,
+            event_ringing['data'][CallStateContainer.INCOMING_NUMBER])
+        return False
+    return True
+
+
+def wait_for_call_offhook_event(
+        log,
+        ad,
+        event_tracking_started=False,
+        timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT):
+    """Wait for an incoming call on specified subscription.
+
+    Args:
+        log: log object.
+        ad: android device object.
+        event_tracking_started: True if event tracking already state outside
+        timeout: time to wait for event
+
+    Returns:
+        True: if call offhook event is received.
+        False: if call offhook event is not received.
+    """
+    if not event_tracking_started:
+        ad.ed.clear_all_events()
+        ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
+    try:
+        ad.ed.wait_for_event(
+            EventCallStateChanged,
+            is_event_match,
+            timeout=timeout,
+            field=CallStateContainer.CALL_STATE,
+            value=TELEPHONY_STATE_OFFHOOK)
+    except Empty:
+        ad.log.info("No call state change to OFFHOOK event.")
+        return False
+    finally:
+        if not event_tracking_started:
+            ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
+                sub_id)
+    ad.log.info("Call accepted successfully")
     return True
 
 
@@ -691,7 +736,9 @@ def wait_and_answer_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
-        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        checking_interval=10,
+        timeout=MAX_WAIT_TIME_CALLEE_RINGING):
     """Wait for an incoming call on specified subscription and
        accepts the call.
 
@@ -711,37 +758,39 @@ def wait_and_answer_call_for_subscription(
         True: if incoming call is received and answered successfully.
         False: for errors
     """
-
-    if not wait_for_ringing_call_for_subscription(log, ad, sub_id,
-                                                  incoming_number):
-        log.error("Could not answer a call: phone never rang.")
-        return False
-
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    if not wait_for_telecom_ringing(log, ad, MAX_WAIT_TIME_TELECOM_RINGING):
-        log.error("Telecom is not ringing.")
-        return False
-    log.info("Accept on callee.")
-    ad.droid.telecomAcceptRingingCall()
+    result = False
     try:
-        ad.ed.wait_for_event(
-            EventCallStateChanged,
-            is_event_match,
-            timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
-            field=CallStateContainer.CALL_STATE,
-            value=TELEPHONY_STATE_OFFHOOK)
-    except Empty:
-        if not ad.droid.telecomIsInCall():
-            log.error("Accept call failed.")
+        checking_retries = int(timeout / checking_interval)
+        for i in range(checking_retries):
+            if wait_for_ringing_call_for_subscription(
+                    log,
+                    ad,
+                    sub_id,
+                    incoming_number=None,
+                    event_tracking_started=True,
+                    timeout=checking_interval):
+                result = True
+                break
+        if not result:
+            ad.log.info("Could not answer a call: phone never rang.")
+            return False
+        ad.droid.telecomAcceptRingingCall()
+        if wait_for_call_offhook_event(
+                log, ad, event_tracking_started=True,
+                timeout=checking_interval) or ad.droid.telecomIsInCall():
+            ad.log.info("Call answered successfully.")
+            return True
+        else:
+            ad.log.error("Could not answer the call.")
             return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-    if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
-        ad.droid.telecomShowInCallScreen()
-    elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:
-        ad.droid.showHomeScreen()
-    return True
+        if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
+            ad.droid.telecomShowInCallScreen()
+        elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:
+            ad.droid.showHomeScreen()
 
 
 def wait_and_reject_call(log,
@@ -973,6 +1022,7 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
 
     try:
         # Make a Call
+        ad_caller.log.info("Make a phone call to %s", callee_number)
         if emergency:
             ad_caller.droid.telecomCallEmergencyNumber(callee_number)
         else:
@@ -987,7 +1037,7 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
                 field=CallStateContainer.CALL_STATE,
                 value=TELEPHONY_STATE_OFFHOOK)
     except Empty:
-        log.error("initiate_call did not receive Telephony OFFHOOK event.")
+        ad_caller.log.error("Did not receive Telephony OFFHOOK event.")
         return False
     finally:
         ad_caller.droid.telephonyStopTrackingCallStateChangeForSubscription(
@@ -1002,10 +1052,11 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
                     TELEPHONY_STATE_OFFHOOK)):
             return True
         time.sleep(1)
-    log.error("Make call fail. telecomIsInCall:{}, Telecom State:{},"
-              " Telephony State:{}".format(ad_caller.droid.telecomIsInCall(
-              ), ad_caller.droid.telephonyGetCallState(
-              ), ad_caller.droid.telecomGetCallState()))
+    ad_caller.log.error(
+        "Make call fail. telecomIsInCall:%s, Telecom State:%s, Telephony State:%s",
+        ad_caller.droid.telecomIsInCall(),
+        ad_caller.droid.telephonyGetCallState(),
+        ad_caller.droid.telecomGetCallState())
     return False
 
 
@@ -1016,8 +1067,8 @@ def call_reject(log, ad_caller, ad_callee, reject=True):
     """
     subid_caller = ad_caller.droid.subscriptionGetDefaultVoiceSubId()
     subid_callee = ad_callee.incoming_voice_sub_id
-    log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller,
-                                                         subid_callee))
+    ad_caller.log.info("Sub-ID Caller %s, Sub-ID Callee %s", subid_caller,
+                       subid_callee)
     return call_reject_for_subscription(log, ad_caller, ad_callee,
                                         subid_caller, subid_callee, reject)
 
@@ -1037,7 +1088,7 @@ def call_reject_for_subscription(log,
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
-    log.info("Call from {} to {}".format(caller_number, callee_number))
+    ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
     try:
         if not initiate_call(log, ad_caller, callee_number):
             raise _CallSequenceException("Initiate call failed.")
@@ -1130,7 +1181,7 @@ def call_reject_leave_message_for_subscription(
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
-    log.info("Call from {} to {}".format(caller_number, callee_number))
+    ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
 
     try:
 
@@ -1186,8 +1237,9 @@ def call_reject_leave_message_for_subscription(
                 EventMessageWaitingIndicatorChanged))
         voice_mail_count_after = ad_callee.droid.telephonyGetVoiceMailCountForSubscription(
             subid_callee)
-        log.info("telephonyGetVoiceMailCount output - before: {}, after: {}".
-                 format(voice_mail_count_before, voice_mail_count_after))
+        ad_callee.log.info(
+            "telephonyGetVoiceMailCount output - before: %s, after: %s",
+            voice_mail_count_before, voice_mail_count_after)
 
         # voice_mail_count_after should:
         # either equals to (voice_mail_count_before + 1) [For ATT and SPT]
@@ -1260,7 +1312,7 @@ def call_voicemail_erase_all_pending_voicemail(log, ad):
         time.sleep(1)
         remaining_time -= 1
     current_voice_mail_count = ad.droid.telephonyGetVoiceMailCount()
-    log.info("telephonyGetVoiceMailCount: {}".format(current_voice_mail_count))
+    ad.log.info("telephonyGetVoiceMailCount: %s", current_voice_mail_count)
     return (current_voice_mail_count == 0)
 
 
@@ -1307,8 +1359,6 @@ def call_setup_teardown(log,
     """
     subid_caller = get_outgoing_voice_sub_id(ad_caller)
     subid_callee = get_incoming_voice_sub_id(ad_callee)
-    log.info("Sub-ID Caller {}, Sub-ID Callee {}".format(subid_caller,
-                                                         subid_callee))
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
@@ -1362,7 +1412,7 @@ def call_setup_teardown_for_subscription(
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
-    log.info("Call from {} to {}".format(caller_number, callee_number))
+    ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
 
     try:
         if not initiate_call(log, ad_caller, callee_number):
@@ -1428,17 +1478,17 @@ def call_setup_teardown_for_subscription(
                     log.error(str(e))
 
 
-def phone_number_formatter(input_string, format=None):
+def phone_number_formatter(input_string, formatter=None):
     """Get expected format of input phone number string.
 
     Args:
         input_string: (string) input phone number.
             The input could be 10/11/12 digital, with or without " "/"-"/"."
-        format: (int) expected format, this could be 7/10/11/12
-            if format is 7: output string would be 7 digital number.
-            if format is 10: output string would be 10 digital (standard) number.
-            if format is 11: output string would be "1" + 10 digital number.
-            if format is 12: output string would be "+1" + 10 digital number.
+        formatter: (int) expected format, this could be 7/10/11/12
+            if formatter is 7: output string would be 7 digital number.
+            if formatter is 10: output string would be 10 digital (standard) number.
+            if formatter is 11: output string would be "1" + 10 digital number.
+            if formatter is 12: output string would be "+1" + 10 digital number.
 
     Returns:
         If no error happen, return phone number in expected format.
@@ -1448,7 +1498,7 @@ def phone_number_formatter(input_string, format=None):
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(".",
                                                                           "")
-    if not format:
+    if not formatter:
         return input_string
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT and
@@ -1458,18 +1508,18 @@ def phone_number_formatter(input_string, format=None):
           input_string[0:2] == "+1"):
         input_string = input_string[2:]
     elif (len(input_string) == PHONE_NUMBER_STRING_FORMAT_7_DIGIT and
-          format == PHONE_NUMBER_STRING_FORMAT_7_DIGIT):
+          formatter == PHONE_NUMBER_STRING_FORMAT_7_DIGIT):
         return input_string
     elif len(input_string) != PHONE_NUMBER_STRING_FORMAT_10_DIGIT:
         return None
     # change input_string according to format
-    if format == PHONE_NUMBER_STRING_FORMAT_12_DIGIT:
+    if formatter == PHONE_NUMBER_STRING_FORMAT_12_DIGIT:
         input_string = "+1" + input_string
-    elif format == PHONE_NUMBER_STRING_FORMAT_11_DIGIT:
+    elif formatter == PHONE_NUMBER_STRING_FORMAT_11_DIGIT:
         input_string = "1" + input_string
-    elif format == PHONE_NUMBER_STRING_FORMAT_10_DIGIT:
+    elif formatter == PHONE_NUMBER_STRING_FORMAT_10_DIGIT:
         input_string = input_string
-    elif format == PHONE_NUMBER_STRING_FORMAT_7_DIGIT:
+    elif formatter == PHONE_NUMBER_STRING_FORMAT_7_DIGIT:
         input_string = input_string[3:]
     else:
         return None
@@ -1516,14 +1566,13 @@ def verify_http_connection(log,
         # None (regular fail)
         # So here use "if http_response" to see if it pass or fail
         if http_response:
-            log.info("Verify Internet succeeded after {}s.".format(
-                i * retry_interval) if i > 0 else "Verify Internet succeeded.")
+            ad.log.info("Verify Internet succeeded")
             return True
         else:
             if i < retry:
                 time.sleep(retry_interval)
-    log.info("Verify Internet retry failed after {}s"
-             .format(i * retry_interval))
+    ad.log.info("Verify Internet retry failed after %s second",
+                i * retry_interval)
     return False
 
 
@@ -1669,9 +1718,8 @@ def _connection_state_change(_event, target_state, connection_type):
             connection_type_string_in_event)
         if cur_type != connection_type:
             log.info(
-                "_connection_state_change expect: {}, received: {} <type {}>".
-                format(connection_type, connection_type_string_in_event,
-                       cur_type))
+                "_connection_state_change expect: %s, received: %s <type %s>",
+                connection_type, connection_type_string_in_event, cur_type)
             return False
 
     if 'isConnected' in _event['data'] and _event['data'][
@@ -1764,8 +1812,8 @@ def wait_for_cell_data_connection_for_subscription(
                 field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
                 value=state_str)
         except Empty:
-            log.debug("No expected event EventDataConnectionStateChanged {}.".
-                      format(state_str))
+            ad.log.inf("No expected event EventDataConnectionStateChanged %s",
+                       state_str)
 
         # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
         # data connection state.
@@ -1807,7 +1855,7 @@ def wait_for_wifi_data_connection(
         True if success.
         False if failed.
     """
-    log.info("{} wait_for_wifi_data_connection".format(ad.serial))
+    ad.log.info("wait_for_wifi_data_connection")
     return _wait_for_nw_data_connection(
         log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
 
@@ -1869,32 +1917,26 @@ def _wait_for_nw_data_connection(
         cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
         if is_connected == cur_data_connection_state:
             current_type = get_internet_connection_type(log, ad)
-            log.info(
-                "_wait_for_nw_data_connection: current connection type: {}".
-                format(current_type))
+            ad.log.info("current datat connection type: %s", current_type)
             if not connection_type:
                 return True
             else:
                 if not is_connected and current_type != connection_type:
-                    log.info(
-                        "wait_for_nw_data_connection success: {} data not on {}!".
-                        format(ad.serial, connection_type))
+                    ad.log.info("data connection not on %s!", connection_type)
                     return True
                 elif is_connected and current_type == connection_type:
-                    ad.log.info(
-                        "wait_for_nw_data_connection success: data on {}!".
-                        format(connection_type))
+                    ad.log.info("data connection on %s as expected",
+                                connection_type)
                     return True
         else:
-            log.info("{} current state: {} target: {}".format(
-                ad.serial, cur_data_connection_state, is_connected))
+            ad.log.info("current data connection state: %s target: %s",
+                        cur_data_connection_state, is_connected)
 
         try:
             event = ad.ed.wait_for_event(
                 EventConnectivityChanged, _connection_state_change,
                 timeout_value, is_connected, connection_type)
-            log.info("_wait_for_nw_data_connection received event:{}".format(
-                event))
+            ad.log.info("received event: %s", event)
         except Empty:
             pass
 
@@ -1908,29 +1950,23 @@ def _wait_for_nw_data_connection(
                 log, ad, MAX_WAIT_TIME_CONNECTION_STATE_UPDATE,
                 _is_network_connected_state_match, is_connected):
             current_type = get_internet_connection_type(log, ad)
-            log.info(
-                "_wait_for_nw_data_connection: current connection type: {}".
-                format(current_type))
+            ad.log.info("current data connection type: %s", current_type)
             if not connection_type:
                 return True
             else:
                 if not is_connected and current_type != connection_type:
-                    log.info("wait_for_nw_data_connection after event wait,"
-                             " success: {} data not on {}!".format(
-                                 ad.serial, connection_type))
+                    ad.log.info("data connection not on %s", connection_type)
                     return True
                 elif is_connected and current_type == connection_type:
-                    log.info("wait_for_nw_data_connection after event wait,"
-                             " success: {} data on {}!".format(
-                                 ad.serial, connection_type))
+                    ad.log.info("after event wait, data connection on %s",
+                                connection_type)
                     return True
                 else:
                     return False
         else:
             return False
     except Exception as e:
-        log.error("tel_test_utils._wait_for_nw_data_connection"
-                  "threw Random exception {}".format(str(e)))
+        ad.log.error("Exception error %s", str(e))
         return False
     finally:
         ad.droid.connectivityStopTrackingConnectivityStateChange()
@@ -1982,8 +2018,8 @@ def verify_incall_state(log, ads, expected_status):
     result = True
     for ad in ads:
         if ad.droid.telecomIsInCall() is not expected_status:
-            log.error("Verify_incall_state: {} status:{}, expected:{}".format(
-                ad.serial, ad.droid.telecomIsInCall(), expected_status))
+            ad.log.error("InCall status:%s, expected:%s",
+                         ad.droid.telecomIsInCall(), expected_status)
             result = False
     return result
 
@@ -2004,9 +2040,8 @@ def verify_active_call_number(log, ad, expected_number):
     else:
         actual_number = len(calls)
     if actual_number != expected_number:
-        log.error("Active Call number in {}".format(ad.serial))
-        log.error("Expected:{}, Actual:{}".format(expected_number,
-                                                  actual_number))
+        ad.log.error("Active Call number is %s, expecting", actual_number,
+                     expected_number)
         return False
     return True
 
@@ -2079,7 +2114,7 @@ def set_wfc_mode(log, ad, wfc_mode):
         True if success. False if ad does not support WFC or error happened.
     """
     try:
-        log.info("{} set wfc mode to {}".format(ad.serial, wfc_mode))
+        ad.log.info("Set wfc mode to %s", wfc_mode)
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
                 return True
@@ -2361,7 +2396,7 @@ def is_volte_enabled(log, ad):
     """
     volte_status = ad.droid.telephonyIsVolteAvailable()
     if volte_status is True and is_ims_registered(log, ad) is False:
-        log.error("Error! VoLTE is Available, but IMS is not registered.")
+        ad.log.error("Error! VoLTE is Available, but IMS is not registered.")
         return False
     return volte_status
 
@@ -2665,10 +2700,10 @@ def wait_for_matching_sms(log,
                 received_sms += event['data']['Text']
             return True
         except Empty:
-            log.error("No matched SMS received event.")
+            ad_rx.log.error("No matched SMS received event.")
             if received_sms != '':
-                log.error("Only received partial matched SMS: {}".format(
-                    received_sms))
+                ad_rx.log.error("Only received partial matched SMS: %s",
+                                received_sms)
             return False
 
 
@@ -2734,8 +2769,8 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
     for text in array_message:
-        log.info("Sending SMS {} to {}, len: {}, content: {}.".format(
-            phonenumber_tx, phonenumber_rx, len(text), text))
+        ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                       phonenumber_tx, phonenumber_rx, len(text), text)
         result = False
         ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
@@ -2800,9 +2835,9 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
     for subject, message, filename in array_payload:
-        log.info(
-            "Sending MMS {} to {}, subject: {}, message: {}, file: {}.".format(
-                phonenumber_tx, phonenumber_rx, subject, message, filename))
+        ad_tx.log.info(
+            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
         result = False
         ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingMmsMessage()
@@ -2813,7 +2848,7 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_tx.ed.pop_event(EventMmsSentSuccess,
                                    MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
-                log.warn("No sent_success event.")
+                ad.tx.log.warn("No sent_success event.")
                 return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
@@ -2862,9 +2897,9 @@ def mms_receive_verify_after_call_hangup_for_subscription(
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
     for subject, message, filename in array_payload:
-        log.info(
-            "Waiting MMS {} to {}, subject: {}, message: {}, file: {}.".format(
-                phonenumber_tx, phonenumber_rx, subject, message, filename))
+        ad_rx.log.info(
+            "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
         result = False
         ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingMmsMessage()
@@ -2913,33 +2948,36 @@ def ensure_network_rat_for_subscription(
     """
     if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
             network_preference, sub_id):
-        log.error("Set Preferred Networks failed.")
+        ad.log.error("Set sub_id %s Preferred Networks Type %s failed.",
+                     sub_id, network_preference)
         return False
     if is_droid_in_rat_family_for_subscription(log, ad, sub_id, rat_family,
                                                voice_or_data):
+        ad.log.info("Sub_id %s in RAT %s for %s", sub_id, rat_family,
+                    voice_or_data)
         return True
 
     if toggle_apm_after_setting:
-        toggle_airplane_mode(log, ad, True)
+        toggle_airplane_mode(log, ad, new_state=True, strict_checking=False)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        toggle_airplane_mode(log, ad, False)
+        toggle_airplane_mode(log, ad, new_state=None, strict_checking=False)
 
     result = wait_for_network_rat_for_subscription(
         log, ad, sub_id, rat_family, max_wait_time, voice_or_data)
 
     log.info(
-        "End of ensure_network_rat_for_subscription for {}. "
-        "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
-        "data: {}(family: {})".format(
-            ad.serial, network_preference, rat_family, voice_or_data, ad.droid.
-            telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-            rat_family_from_rat(
-                ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
-                    sub_id)),
+        "End of ensure_network_rat_for_subscription for %s. "
+        "Setting to %s, Expecting %s %s. Current: voice: %s(family: %s), "
+        "data: %s(family: %s)", ad.serial, network_preference, rat_family,
+        voice_or_data,
+        ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+        rat_family_from_rat(
+            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
+                sub_id)),
+        ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
+        rat_family_from_rat(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                sub_id), rat_family_from_rat(
-                    ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                        sub_id))))
+                sub_id)))
     return result
 
 
@@ -2976,26 +3014,26 @@ def ensure_network_preference_for_subscription(
         return True
 
     if toggle_apm_after_setting:
-        toggle_airplane_mode(log, ad, True)
+        toggle_airplane_mode(log, ad, new_state=True, strict_checking=False)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        toggle_airplane_mode(log, ad, False)
+        toggle_airplane_mode(log, ad, new_state=False, strict_checking=False)
 
     result = wait_for_preferred_network_for_subscription(
         log, ad, sub_id, network_preference, max_wait_time, voice_or_data)
 
-    log.info(
-        "End of ensure_network_preference_for_subscription for {}. "
-        "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
-        "data: {}(family: {})".format(
-            ad.serial, network_preference, rat_family_list, voice_or_data, ad.
-            droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-            rat_family_from_rat(
-                ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
-                    sub_id)),
+    ad.log.info(
+        "End of ensure_network_preference_for_subscription. "
+        "Setting to %s, Expecting %s %s. Current: voice: %s(family: %s), "
+        "data: %s(family: %s)", network_preference, rat_family_list,
+        voice_or_data,
+        ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+        rat_family_from_rat(
+            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
+                sub_id)),
+        ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
+        rat_family_from_rat(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                sub_id), rat_family_from_rat(
-                    ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                        sub_id))))
+                sub_id)))
     return result
 
 
@@ -3030,27 +3068,37 @@ def ensure_network_generation_for_subscription(
     Toggle ON/OFF airplane mode if necessary.
     Wait for ad in expected network type.
     """
+    ad.log.info(
+        "RAT network type voice: %s, data: %s",
+        ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+        ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))
+    if is_droid_in_network_generation_for_subscription(
+            log, ad, sub_id, generation, voice_or_data):
+        return True
+
+    # Update the setting if necessary
     operator = get_operator_name(log, ad, sub_id)
     try:
         network_preference = network_preference_for_generaton(generation,
                                                               operator)
         rat_family = rat_family_for_generation(generation, operator)
     except KeyError:
-        log.error("Failed to find a rat_family entry for "
-                  "PLMN: {}, operator:{}, generation: {}".format(
-                      ad.droid.telephonyGetSimOperatorForSubscription(sub_id),
-                      operator, generation))
+        ad.log.error("Failed to find a rat_family entry for "
+                     "PLMN: %s, operator:%s, generation: %s",
+                     ad.droid.telephonyGetSimOperatorForSubscription(sub_id),
+                     operator, generation)
         return False
 
     current_network_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
                 sub_id)
 
-    # Update the setting iff necessary
     if (current_network_preference is not network_preference and
             not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
                 network_preference, sub_id)):
-        log.error("Set Preferred Networks failed.")
+        ad.log.error(
+            "Network preference is %s. Set Preferred Networks to %s failed.",
+            current_network_preference, network_preference)
         return False
 
     if is_droid_in_network_generation_for_subscription(
@@ -3058,26 +3106,24 @@ def ensure_network_generation_for_subscription(
         return True
 
     if toggle_apm_after_setting:
-        toggle_airplane_mode(log, ad, True)
+        toggle_airplane_mode(log, ad, new_state=True, strict_checking=False)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        toggle_airplane_mode(log, ad, False)
+        toggle_airplane_mode(log, ad, new_state=False, strict_checking=False)
 
     result = wait_for_network_generation_for_subscription(
         log, ad, sub_id, generation, max_wait_time, voice_or_data)
 
-    log.info(
-        "End of ensure_network_generation_for_subscription for {}. "
-        "Setting to {}, Expecting {} {}. Current: voice: {}(family: {}), "
-        "data: {}(family: {})".format(
-            ad.serial, network_preference, generation, voice_or_data, ad.droid.
-            telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
-            rat_generation_from_rat(
-                ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
-                    sub_id)),
+    ad.log.info(
+        "Setting to %s, Expecting %s %s. Current: voice: %s(family: %s), "
+        "data: %s(family: %s)", network_preference, generation, voice_or_data,
+        ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
+        rat_generation_from_rat(
+            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
+                sub_id)),
+        ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id),
+        rat_generation_from_rat(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                sub_id), rat_generation_from_rat(
-                    ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
-                        sub_id))))
+                sub_id)))
 
     return result
 
@@ -3339,11 +3385,8 @@ def get_network_gen_for_subscription(log, ad, sub_id, voice_or_data):
     try:
         return rat_generation_from_rat(
             get_network_rat_for_subscription(log, ad, sub_id, voice_or_data))
-    except KeyError:
-        log.error(
-            "KeyError happened in get_network_gen, ad:{}, d/v: {}, rat: {}".
-            format(ad.serial, voice_or_data, get_network_rat_for_subscription(
-                log, ad, sub_id, voice_or_data)))
+    except KeyError as e:
+        ad.log.error("KeyError %s", e)
         return GEN_UNKNOWN
 
 
@@ -3391,35 +3434,30 @@ def ensure_phone_default_state(log, ad):
     Phone not in airplane mode.
     """
     result = True
-    if ad.droid.telecomIsInCall():
-        ad.droid.telecomEndCall()
+    reset_preferred_network_type_to_allowable_range(log, ad)
+    #Toggle airplane mode to bring preferred network to default.
+    #It will also end active phone calls.
+    if not toggle_airplane_mode_by_adb(log, ad, True):
+        ad.log.error("ensure_phones_default_state:turn on airplane mode fail.")
+        result = False
 
-    if not wait_for_droid_not_in_call(log, ad):
-        log.error("Failed to end call on {} "
-                  "while ensuring phone in default state.".format(ad.serial))
+    if not toggle_airplane_mode_by_adb(log, ad, False):
+        ad.log.error(
+            "ensure_phones_default_state:turn off airplane mode fail.")
         result = False
 
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
     toggle_video_calling(log, ad, False)
 
-    if (not WifiUtils.wifi_reset(log, ad)):
-        log.error("ensure_phones_default_state:reset WiFi fail {}.".format(
-            ad.serial))
-        result = False
+    if (set_wifi_to_default(log, ad)):
+        ad.log.error("Fail to set WIFI to default state")
 
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
-        log.error(
-            "ensure_phones_default_state: wait_for_droid_not_in iwlan fail {}.".
-            format(ad.serial))
+        ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
         result = False
 
-    if not toggle_airplane_mode(log, ad, False):
-        log.error(
-            "ensure_phones_default_state:turn off airplane mode fail {}.".
-            format(ad.serial))
-        result = False
     # make sure phone data is on
     ad.droid.telephonyToggleDataConnection(True)
 
@@ -3447,27 +3485,108 @@ def ensure_phones_default_state(log, ads):
     return True
 
 
-def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retry=0):
-    """Ensure ad connected to wifi.
+def check_is_wifi_connected(log, ad, wifi_ssid):
+    """Check if ad is connected to wifi wifi_ssid.
 
     Args:
         log: Log object.
         ad: Android device object.
         wifi_ssid: WiFi network SSID.
-        wifi_pwd: WiFi network password. This is optional.
 
+    Returns:
+        True if wifi is connected to wifi_ssid
+        False if wifi is not connected to wifi_ssid
     """
-    if WifiUtils.wifi_connect(log, ad, wifi_ssid, wifi_pwd):
+    wifi_info = ad.droid.wifiGetConnectionInfo()
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
+        ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
-    while (retry >= 0):
-        WifiUtils.wifi_reset(log, ad)
-        WifiUtils.wifi_toggle_state(log, ad, True)
-        if WifiUtils.wifi_connect(log, ad, wifi_ssid, wifi_pwd):
-            return True
-        else:
-            log.info("ensure_wifi_connected: Connect WiFi failed")
-            retry -= 1
+    else:
+        ad.log.info("Wifi is not connected to %s", wifi_ssid)
+        ad.log.debug("Wifi connection_info=%s", wifi_info)
+        return False
+
+
+def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
+    """Ensure ad connected to wifi on network wifi_ssid.
+
+    Args:
+        log: Log object.
+        ad: Android device object.
+        wifi_ssid: WiFi network SSID.
+        wifi_pwd: optional secure network password.
+        retries: the number of retries.
+
+    Returns:
+        True if wifi is connected to wifi_ssid
+        False if wifi is not connected to wifi_ssid
+    """
+    if not ad.droid.wifiCheckState():
+        ad.log.info("Wifi state is down. Turn on Wifi")
+        #try to use wifi_test_utils after bug fix
+        #if not wifi_toggle_state(ad, new_state=True, assert_on_fail=False):
+        #    ad.log.error("Fail to turn on WIFI")
+        #    return False
+        ad.droid.wifiToggleState(True)
+        time.sleep(20)
+    if check_is_wifi_connected(log, ad, wifi_ssid):
+        ad.log.info("Wifi is connected to %s", wifi_ssid)
+        return True
+    else:
+        network = {WifiEnums.SSID_KEY: wifi_ssid}
+        if wifi_pwd:
+            network[WifiEnums.PWD_KEY] = wifi_pwd
+        for i in range(retries):
+            ad.log.info("Connecting to wifi %s", wifi_ssid)
+            ad.droid.wifiConnectByConfig(network)
+            time.sleep(20)
+            if check_is_wifi_connected(log, ad, wifi_ssid):
+                return True
+    ad.log.info("Fail to connected to wifi %s", wifi_ssid)
     return False
+
+
+def forget_all_wifi_networks(log, ad):
+    """Forget all stored wifi network information
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    if not ad.droid.wifiGetConfiguredNetworks():
+        return True
+    try:
+        old_state = ad.droid.wifiCheckState()
+        reset_wifi(ad)
+        wifi_toggle_state(ad, new_state=old_state)
+    except Exception as e:
+        log.error("forget_all_wifi_networks with exception: %s", e)
+        return False
+    return True
+
+
+def set_wifi_to_default(log, ad):
+    """Set wifi to default state (Wifi disabled and no configured network)
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    if (not forget_all_wifi_networks(log, ad)):
+        ad.log.error("Fail to forget all wifi network")
+        return False
+    ad.droid.wifiToggleState(False)
+    #try to use wifi_test_utils after bug fix
+    #if not wifi_toggle_state(ad, new_state=False, assert_on_fail=False):
+    #    ad.log.error("Fail to turn off WIFI")
+    #    return False
 
 
 def reset_preferred_network_type_to_allowable_range(log, ad):
@@ -3487,6 +3606,7 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
         operator = get_operator_name(log, ad, sub_id)
         current_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
+        ad.log.info("sub_id network preference is %s", current_preference)
         try:
             if current_preference not in get_allowable_network_preference(
                     operator):
@@ -3529,7 +3649,8 @@ def run_multithread_func(log, tasks):
         max_workers=number_of_workers)
     results = list(executor.map(task_wrapper, tasks))
     executor.shutdown()
-    log.info("multithread_func result: %s", results)
+    log.info("multithread_func %s result: %s",
+             [task[0].__name__ for task in tasks], results)
     return results
 
 
@@ -3602,6 +3723,10 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
         True if set successfully.
     """
     ad.droid.toggleRingerSilentMode(silent_mode)
+    ad.droid.setMediaVolume(0)
+    ad.droid.setVoiceCallVolume(0)
+    ad.droid.setAlarmVolume(0)
+
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 
@@ -3614,8 +3739,7 @@ def set_preferred_subid_for_sms(log, ad, sub_id):
         sub_id :Subscription ID.
 
     """
-    log.info("Setting subscription:{} as Message SIM for {}".format(sub_id,
-                                                                    ad.serial))
+    ad.log.info("Setting subscription %s as preferred SMS SIM", sub_id)
     ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
     # Wait to make sure settings take effect
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
@@ -3631,8 +3755,7 @@ def set_preferred_subid_for_data(log, ad, sub_id):
         sub_id :Subscription ID.
 
     """
-    log.info("Setting subscription:{} as Data SIM for {}".format(sub_id,
-                                                                 ad.serial))
+    ad.log.info("Setting subscription %s as preferred Data SIM", sub_id)
     ad.droid.subscriptionSetDefaultDataSubId(sub_id)
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
     # Wait to make sure settings take effect
@@ -3654,8 +3777,7 @@ def set_preferred_subid_for_voice(log, ad, sub_id):
         sub_id :Subscription ID.
 
     """
-    log.info("Setting subscription:{} as Voice SIM for {}".format(sub_id,
-                                                                  ad.serial))
+    ad.log.info("Setting subscription %s as Voice SIM", sub_id)
     ad.droid.subscriptionSetDefaultVoiceSubId(sub_id)
     ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
     # Wait to make sure settings take effect
@@ -3779,8 +3901,7 @@ def is_build_id(log, ad, build_id):
     """
     actual_bid = ad.droid.getBuildID()
 
-    log.info("{} BUILD DISPLAY: {}"
-             .format(ad.serial, ad.droid.getBuildDisplay()))
+    ad.log.info("BUILD DISPLAY: %s", ad.droid.getBuildDisplay())
     #In case we want to log more stuff/more granularity...
     #log.info("{} BUILD ID:{} ".format(ad.serial, ad.droid.getBuildID()))
     #log.info("{} BUILD FINGERPRINT: {} "
@@ -3790,7 +3911,7 @@ def is_build_id(log, ad, build_id):
     #log.info("{} BUILD NUMBER: {} "
     # .format(ad.serial), ad.droid.getBuildNumber())
     if actual_bid.upper() != build_id.upper():
-        log.error("{}: Incorrect Build ID".format(ad.model))
+        ad.log.error("%s: Incorrect Build ID", ad.model)
         return False
     return True
 
@@ -3897,12 +4018,7 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
-        try:
-            WifiUtils._wifi_toggle_state(ad, state)
-        except Exception as e:
-            log.error("WifiUtils.wifi_toggle_state exception: %s", e)
-            return False
-        return True
+        return WifiUtils._wifi_toggle_state(ad, state, assert_on_fail=False)
 
     @staticmethod
     def forget_all_networks(log, ad):
@@ -3937,15 +4053,13 @@ class WifiUtils():
         Returns:
             boolean success (True) or failure (False)
         """
-        try:
-            WifiUtils._reset_wifi(ad)
-        except Exception as e:
-            log.error("WifiUtils.wifi_reset exception: %s", e)
+        if not WifiUtils.forget_all_networks(log, ad):
+            ad.log.error("Unable to forget all networks")
             return False
-        if disable_wifi is True:
-            if not WifiUtils.wifi_toggle_state(log, ad, False):
-                log.error("Failed to disable WiFi during reset!")
-                return False
+        if not WifiUtils.wifi_toggle_state(log, ad, not disable_wifi):
+            ad.log.error("Failed to toggle WiFi state to %s!",
+                         not disable_wifi)
+            return False
         return True
 
     @staticmethod
@@ -3963,12 +4077,7 @@ class WifiUtils():
         network = {WifiUtils.SSID_KEY: ssid}
         if password:
             network[WifiUtils.PWD_KEY] = password
-        try:
-            WifiUtils._wifi_connect(ad, network)
-        except Exception as e:
-            log.error("WifiUtils.wifi_connect exception: %s", e)
-            return False
-        return True
+        return WifiUtils._wifi_connect(ad, network, assert_on_fail=False)
 
     @staticmethod
     def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
