@@ -474,7 +474,8 @@ def match_networks(target_params, networks):
         The networks that match the target parameters.
     """
     results = []
-    asserts.assert_true(target_params, "Expected networks object 'target_params' is empty")
+    asserts.assert_true(target_params,
+                        "Expected networks object 'target_params' is empty")
     for n in networks:
         add_network = 1
         for k, v in target_params.items():
@@ -502,7 +503,8 @@ def wifi_toggle_state(ad, new_state=None, assert_on_fail=True):
         If assert_on_fail is False, function returns True if the toggle was
         successful, False otherwise. If assert_on_fail is True, no return value.
     """
-    _assert_on_fail_handler(_wifi_toggle_state, assert_on_fail, ad, new_state)
+    return _assert_on_fail_handler(
+        _wifi_toggle_state, assert_on_fail, ad, new_state=new_state)
 
 
 def _wifi_toggle_state(ad, new_state=None):
@@ -564,8 +566,9 @@ def reset_wifi(ad):
         except Empty:
             logging.warning("Could not confirm the removal of network %s.", n)
     # Check again to see if there's any network left.
-    asserts.assert_true(not ad.droid.wifiGetConfiguredNetworks(),
-                        "Failed to remove these configured Wi-Fi networks: %s" % networks)
+    asserts.assert_true(
+        not ad.droid.wifiGetConfiguredNetworks(),
+        "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
 def wifi_forget_network(ad, net_ssid):
@@ -585,7 +588,7 @@ def wifi_forget_network(ad, net_ssid):
             ad.droid.wifiForgetNetwork(n['networkId'])
             try:
                 event = ad.ed.pop_event(wifi_constants.WIFI_FORGET_NW_SUCCESS,
-                                     SHORT_TIMEOUT)
+                                        SHORT_TIMEOUT)
             except Empty:
                 asserts.fail("Failed to remove network %s." % n)
 
@@ -650,7 +653,7 @@ def start_wifi_background_scan(ad, scan_setting):
     """
     idx = ad.droid.wifiScannerStartBackgroundScan(scan_setting)
     event = ad.ed.pop_event("WifiScannerScan{}onSuccess".format(idx),
-                         SHORT_TIMEOUT)
+                            SHORT_TIMEOUT)
     return event['data']
 
 
@@ -672,14 +675,15 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
-    asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(config),
-                        "Failed to update WifiAp Configuration")
+    asserts.assert_true(
+        ad.droid.wifiSetWifiApConfiguration(config),
+        "Failed to update WifiAp Configuration")
     ad.droid.wifiStartTrackingTetherStateChange()
     ad.droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
     try:
         ad.ed.pop_event("ConnectivityManagerOnTetheringStarted")
         ad.ed.wait_for_event("TetherStateChanged",
-                          lambda x : x["data"]["ACTIVE_TETHER"], 30)
+                             lambda x: x["data"]["ACTIVE_TETHER"], 30)
         ad.log.debug("Tethering started successfully.")
     except Empty:
         msg = "Failed to receive confirmation of wifi tethering starting"
@@ -700,7 +704,7 @@ def stop_wifi_tethering(ad):
     try:
         ad.ed.pop_event("WifiManagerApDisabled", 30)
         ad.ed.wait_for_event("TetherStateChanged",
-                          lambda x : not x["data"]["ACTIVE_TETHER"], 30)
+                             lambda x: not x["data"]["ACTIVE_TETHER"], 30)
     except Empty:
         msg = "Failed to receive confirmation of wifi tethering stopping"
         asserts.fail(msg)
@@ -738,8 +742,12 @@ def toggle_wifi_and_wait_for_reconnection(ad,
         If assert_on_fail is False, function returns True if the toggle was
         successful, False otherwise. If assert_on_fail is True, no return value.
     """
-    _assert_on_fail_handler(_toggle_wifi_and_wait_for_reconnection,
-                            assert_on_fail, ad, network, num_of_tries)
+    return _assert_on_fail_handler(
+        _toggle_wifi_and_wait_for_reconnection,
+        assert_on_fail,
+        ad,
+        network,
+        num_of_tries=num_of_tries)
 
 
 def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
@@ -786,13 +794,15 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
                             (network, ad.serial))
-        logging.debug("Connection result on %s: %s.", ad.serial, connect_result)
+        logging.debug("Connection result on %s: %s.", ad.serial,
+                      connect_result)
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
                              "Connected to the wrong network on %s."
                              "Expected %s, but got %s." %
                              (ad.serial, expected_ssid, actual_ssid))
-        logging.info("Connected to Wi-Fi network %s on %s", actual_ssid, ad.serial)
+        logging.info("Connected to Wi-Fi network %s on %s", actual_ssid,
+                     ad.serial)
     finally:
         ad.droid.wifiStopTrackingStateChange()
 
@@ -818,8 +828,8 @@ def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True):
         If assert_on_fail is False, function returns True if the toggle was
         successful, False otherwise. If assert_on_fail is True, no return value.
     """
-    _assert_on_fail_handler(_wifi_connect, assert_on_fail, ad, network,
-                            num_of_tries)
+    return _assert_on_fail_handler(
+        _wifi_connect, assert_on_fail, ad, network, num_of_tries=num_of_tries)
 
 
 def _wifi_connect(ad, network, num_of_tries=1):
@@ -860,7 +870,8 @@ def _wifi_connect(ad, network, num_of_tries=1):
         ad.log.debug("Wi-Fi connection result: %s.", connect_result)
         actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
         asserts.assert_equal(actual_ssid, expected_ssid,
-                             "Connected to the wrong network on %s." % ad.serial)
+                             "Connected to the wrong network on %s." %
+                             ad.serial)
         ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
 
         # Wait for data connection to stabilize.
@@ -960,7 +971,7 @@ def start_wifi_track_bssid(ad, track_setting):
     idx = ad.droid.wifiScannerStartTrackingBssids(
         track_setting["bssidInfos"], track_setting["apLostThreshold"])
     event = ad.ed.pop_event("WifiScannerBssid{}onSuccess".format(idx),
-                         SHORT_TIMEOUT)
+                            SHORT_TIMEOUT)
     return event['data']
 
 
