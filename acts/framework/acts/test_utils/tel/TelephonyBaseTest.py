@@ -194,23 +194,26 @@ class TelephonyBaseTest(BaseTestClass):
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
             # logging.
-            if not set_phone_screen_on(self.log, ad):
-                self.log.error("Failed to set phone screen-on time.")
-                return False
-            if not set_phone_silent_mode(self.log, ad):
-                self.log.error("Failed to set phone silent mode.")
-                return False
+            try:
+                if not set_phone_screen_on(self.log, ad):
+                    self.log.error("Failed to set phone screen-on time.")
+                    return False
+                if not set_phone_silent_mode(self.log, ad):
+                    self.log.error("Failed to set phone silent mode.")
+                    return False
 
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
-            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
+                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                    PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
 
-            if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
-
+                if "enable_wifi_verbose_logging" in self.user_params:
+                    ad.droid.wifiEnableVerboseLogging(
+                        WIFI_VERBOSE_LOGGING_ENABLED)
+            except Exception as e:
+                self.log.error("Failure with %s", e)
         # Sub ID setup
         for ad in self.android_devices:
             initial_set_up_for_subid_infomation(self.log, ad)
