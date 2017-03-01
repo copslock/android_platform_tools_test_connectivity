@@ -276,10 +276,13 @@ class HostapdConfig(object):
     # tolerate HT40+ on channel 7 (not allowed in the US).  We take the loose
     # definition so that we don't prohibit testing in either domain.
     HT40_ALLOW_MAP = {
-        N_CAPABILITY_HT40_MINUS: tuple(itertools.chain(
-            range(6, 14), range(40, 65, 8), range(104, 137, 8), [153, 161])),
-        N_CAPABILITY_HT40_PLUS: tuple(itertools.chain(
-            range(1, 8), range(36, 61, 8), range(100, 133, 8), [149, 157]))
+        N_CAPABILITY_HT40_MINUS: tuple(
+            itertools.chain(
+                range(6, 14), range(40, 65, 8), range(104, 137, 8), [153, 161
+                                                                     ])),
+        N_CAPABILITY_HT40_PLUS: tuple(
+            itertools.chain(
+                range(1, 8), range(36, 61, 8), range(100, 133, 8), [149, 157]))
     }
 
     PMF_SUPPORT_DISABLED = 0
@@ -435,6 +438,14 @@ class HostapdConfig(object):
         self.frequency = self.get_frequency_for_channel(value)
 
     @property
+    def bssid(self):
+        return self._bssid
+
+    @bssid.setter
+    def bssid(self, value):
+        self._bssid = value
+
+    @property
     def frequency(self):
         """Returns: int, frequency for hostapd to listen on."""
         return self._frequency
@@ -451,6 +462,10 @@ class HostapdConfig(object):
             raise ValueError('Tried to set an invalid frequency: %r.' % value)
 
         self._frequency = value
+
+    @property
+    def bss_lookup(self):
+        return self._bss_lookup
 
     @property
     def ssid(self):
@@ -610,8 +625,9 @@ class HostapdConfig(object):
                              'but not both.')
 
         self._wmm_enabled = False
-        unknown_caps = [cap for cap in n_capabilities
-                        if cap not in self.ALL_N_CAPABILITIES]
+        unknown_caps = [
+            cap for cap in n_capabilities if cap not in self.ALL_N_CAPABILITIES
+        ]
         if unknown_caps:
             raise ValueError('Unknown capabilities: %r' % unknown_caps)
 
@@ -685,7 +701,7 @@ class HostapdConfig(object):
             (self.__class__.__name__, self._mode, self.channel, self.frequency,
              self._n_capabilities, self._beacon_interval, self._dtim_period,
              self._frag_threshold, self._ssid, self._bssid, self._wmm_enabled,
-             self._security_config, self._spectrum_mgmt_required))
+             self._security, self._spectrum_mgmt_required))
 
     def supports_channel(self, value):
         """Check whether channel is supported by the current hardware mode.
@@ -808,8 +824,8 @@ class HostapdConfig(object):
         all_conf = [conf]
 
         for bss in self._bss_lookup.values():
-            bss_conf = {}
-            for k, v in bss.generate_dict():
+            bss_conf = collections.OrderedDict()
+            for k, v in (bss.generate_dict()).items():
                 bss_conf[k] = v
             all_conf.append(bss_conf)
 
