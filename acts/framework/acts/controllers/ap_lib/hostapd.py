@@ -52,13 +52,18 @@ class Hostapd(object):
         self._config_file = 'hostapd-%s.conf' % self._interface
         self._identifier = '%s.*%s' % (self.PROGRAM_FILE, self._config_file)
 
-    def start(self, config, timeout=60):
+    def start(self, config, timeout=60, additional_parameters=None):
         """Starts hostapd
 
         Starts the hostapd daemon and runs it in the background.
 
         Args:
-            config: Cconfigs to start the hostapd with.
+            config: Configs to start the hostapd with.
+            timeout: Time to wait for DHCP server to come up.
+            additional_parameters: A dicitonary of parameters that can sent
+                                   directly into the hostapd config file.  This
+                                   can be used for debugging and or adding one
+                                   off parameters into the config.
 
         Returns:
             True if the daemon could be started. Note that the daemon can still
@@ -72,7 +77,7 @@ class Hostapd(object):
 
         self.config = config
 
-        self._write_configs()
+        self._write_configs(additional_parameters=additional_parameters)
 
         self._shell.delete_file(self._ctrl_file)
         self._shell.delete_file(self._log_file)
@@ -168,15 +173,16 @@ class Hostapd(object):
         if should_be_up and is_dead:
             raise Error('Hostapd failed to start', self)
 
-    def _write_configs(self):
+    def _write_configs(self, additional_parameters=None):
         """Writes the configs to the hostapd config file."""
         self._shell.delete_file(self._config_file)
 
         our_configs = collections.OrderedDict()
         our_configs['interface'] = self._interface
         our_configs['ctrl_interface'] = self._ctrl_file
-
         packaged_configs = self.config.package_configs()
+        if additional_parameters:
+            packaged_configs.append(additional_parameters)
 
         pairs = ('%s=%s' % (k, v) for k, v in our_configs.items())
         for packaged_config in packaged_configs:
