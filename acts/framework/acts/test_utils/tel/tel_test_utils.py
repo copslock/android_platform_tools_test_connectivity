@@ -667,17 +667,11 @@ def wait_for_ringing_call_for_subscription(
     event_ringing = _wait_for_ringing_event(log, ad, timeout)
     if not event_tracking_started:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-    if not event_ringing:
-        if ad.droid.telephonyGetCallStateForSubscription(
-                sub_id
-        ) == TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging():
-            ad.log.info("In call ringing state without ringing event")
-            return True
-        else:
-            ad.log.info(
-                "Neither in call ringing state nor capture ringing event")
-            return False
-    ad.log.info("Received ringing event")
+    if not event_ringing and not (
+            ad.droid.telephonyGetCallStateForSubscription(sub_id) ==
+            TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging()):
+        ad.log.info("Not in call ringing state")
+        return False
     if not incoming_number:
         return True
 
@@ -696,6 +690,7 @@ def wait_for_ringing_call_for_subscription(
 def wait_for_call_offhook_event(
         log,
         ad,
+        sub_id,
         event_tracking_started=False,
         timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT):
     """Wait for an incoming call on specified subscription.
@@ -721,13 +716,12 @@ def wait_for_call_offhook_event(
             field=CallStateContainer.CALL_STATE,
             value=TELEPHONY_STATE_OFFHOOK)
     except Empty:
-        ad.log.info("No call state change to OFFHOOK event.")
+        ad.log.info("No event for call state change to OFFHOOK")
         return False
     finally:
         if not event_tracking_started:
             ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
                 sub_id)
-    ad.log.info("Call accepted successfully")
     return True
 
 
@@ -776,10 +770,14 @@ def wait_and_answer_call_for_subscription(
         if not result:
             ad.log.info("Could not answer a call: phone never rang.")
             return False
-        ad.droid.telecomAcceptRingingCall()
+        ad.log.info("Accept the ring call")
+        #New TelephonyManager.acceptRingCall need ANSWER_PHONE_CALLS permission
+        #Put it back after sl4a Manifest permission add it
+        #ad.droid.telecomAcceptRingingCall()
+        ad.adb.shell("input keyevent KEYCODE_CALL")
         if wait_for_call_offhook_event(
-                log, ad, event_tracking_started=True,
-                timeout=checking_interval) or ad.droid.telecomIsInCall():
+                log, ad, sub_id, event_tracking_started=True,
+                timeout=timeout) or ad.droid.telecomIsInCall():
             ad.log.info("Call answered successfully.")
             return True
         else:
@@ -1002,7 +1000,12 @@ def check_phone_number_match(number1, number2):
     return True
 
 
-def initiate_call(log, ad_caller, callee_number, emergency=False):
+def initiate_call(log,
+                  ad,
+                  callee_number,
+                  emergency=False,
+                  timeout=MAX_WAIT_TIME_CALL_INITIATION,
+                  checking_interval=5):
     """Make phone call from caller to callee.
 
     Args:
@@ -1014,50 +1017,34 @@ def initiate_call(log, ad_caller, callee_number, emergency=False):
     Returns:
         result: if phone call is placed successfully.
     """
-    ad_caller.ed.clear_all_events()
-    sub_id = get_outgoing_voice_sub_id(ad_caller)
-    ad_caller.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-
-    wait_time_for_incall_state = MAX_WAIT_TIME_CALL_INITIATION
+    ad.ed.clear_all_events()
+    sub_id = get_outgoing_voice_sub_id(ad)
+    ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
 
     try:
         # Make a Call
-        ad_caller.log.info("Make a phone call to %s", callee_number)
+        ad.log.info("Make a phone call to %s", callee_number)
         if emergency:
-            ad_caller.droid.telecomCallEmergencyNumber(callee_number)
+            ad.droid.telecomCallEmergencyNumber(callee_number)
         else:
-            ad_caller.droid.telecomCallNumber(callee_number)
+            ad.droid.telecomCallNumber(callee_number)
 
         # Verify OFFHOOK event
-        if ad_caller.droid.telephonyGetCallState() != TELEPHONY_STATE_OFFHOOK:
-            event_offhook = ad_caller.ed.wait_for_event(
-                EventCallStateChanged,
-                is_event_match,
-                timeout=wait_time_for_incall_state,
-                field=CallStateContainer.CALL_STATE,
-                value=TELEPHONY_STATE_OFFHOOK)
-    except Empty:
-        ad_caller.log.error("Did not receive Telephony OFFHOOK event.")
+        checking_retries = int(timeout / checking_interval)
+        for i in range(checking_retries):
+            if (ad.droid.telecomIsInCall() and
+                    ad.droid.telephonyGetCallState() == TELEPHONY_STATE_OFFHOOK
+                    and ad.droid.telecomGetCallState() ==
+                    TELEPHONY_STATE_OFFHOOK) or wait_for_call_offhook_event(
+                        log, ad, sub_id, True, checking_interval):
+                return True
+        ad.log.error(
+            "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
+            " Telephony State:%s", callee_number, ad.droid.telecomIsInCall(),
+            ad.droid.telephonyGetCallState(), ad.droid.telecomGetCallState())
         return False
     finally:
-        ad_caller.droid.telephonyStopTrackingCallStateChangeForSubscription(
-            sub_id)
-
-    # Verify call state
-    while wait_time_for_incall_state > 0:
-        wait_time_for_incall_state -= 1
-        if (ad_caller.droid.telecomIsInCall() and
-            (ad_caller.droid.telephonyGetCallState() == TELEPHONY_STATE_OFFHOOK
-             ) and (ad_caller.droid.telecomGetCallState() ==
-                    TELEPHONY_STATE_OFFHOOK)):
-            return True
-        time.sleep(1)
-    ad_caller.log.error(
-        "Make call fail. telecomIsInCall:%s, Telecom State:%s, Telephony State:%s",
-        ad_caller.droid.telecomIsInCall(),
-        ad_caller.droid.telephonyGetCallState(),
-        ad_caller.droid.telecomGetCallState())
-    return False
+        ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -1405,6 +1392,7 @@ def call_setup_teardown_for_subscription(
 
     """
     CHECK_INTERVAL = 3
+    result = True
 
     class _CallSequenceException(Exception):
         pass
@@ -1467,9 +1455,10 @@ def call_setup_teardown_for_subscription(
 
     except _CallSequenceException as e:
         log.error(e)
+        result = False
         return False
     finally:
-        if ad_hangup:
+        if ad_hangup or not result:
             for ad in [ad_caller, ad_callee]:
                 try:
                     if ad.droid.telecomIsInCall():
@@ -2848,7 +2837,7 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_tx.ed.pop_event(EventMmsSentSuccess,
                                    MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
-                ad.tx.log.warn("No sent_success event.")
+                ad_tx.log.warn("No sent_success event.")
                 return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
@@ -3539,7 +3528,10 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             network[WifiEnums.PWD_KEY] = wifi_pwd
         for i in range(retries):
             ad.log.info("Connecting to wifi %s", wifi_ssid)
-            ad.droid.wifiConnectByConfig(network)
+            if ad.build_info["build_id"].startswith("O"):
+                ad.droid.wifiConnectByConfig(network)
+            else:
+                ad.droid.wifiConnect(network)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 return True
@@ -3606,7 +3598,7 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
         operator = get_operator_name(log, ad, sub_id)
         current_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
-        ad.log.info("sub_id network preference is %s", current_preference)
+        ad.log.debug("sub_id network preference is %s", current_preference)
         try:
             if current_preference not in get_allowable_network_preference(
                     operator):
