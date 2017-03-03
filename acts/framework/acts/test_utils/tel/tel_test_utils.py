@@ -84,6 +84,7 @@ from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
 from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
@@ -731,7 +732,6 @@ def wait_and_answer_call_for_subscription(
         sub_id,
         incoming_number=None,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-        checking_interval=10,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING):
     """Wait for an incoming call on specified subscription and
        accepts the call.
@@ -756,25 +756,20 @@ def wait_and_answer_call_for_subscription(
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     result = False
     try:
-        checking_retries = int(timeout / checking_interval)
-        for i in range(checking_retries):
-            if wait_for_ringing_call_for_subscription(
-                    log,
-                    ad,
-                    sub_id,
-                    incoming_number=None,
-                    event_tracking_started=True,
-                    timeout=checking_interval):
-                result = True
-                break
-        if not result:
+        if not _wait_for_droid_in_state(
+                log,
+                ad,
+                timeout,
+                wait_for_ringing_call_for_subscription,
+                sub_id,
+                incoming_number=None,
+                event_tracking_started=True):
             ad.log.info("Could not answer a call: phone never rang.")
             return False
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ad.log.info("Accept the ring call")
-        #New TelephonyManager.acceptRingCall need ANSWER_PHONE_CALLS permission
-        #Put it back after sl4a Manifest permission add it
-        #ad.droid.telecomAcceptRingingCall()
-        ad.adb.shell("input keyevent KEYCODE_CALL")
+        ad.droid.telecomAcceptRingingCall()
+
         if wait_for_call_offhook_event(
                 log, ad, sub_id, event_tracking_started=True,
                 timeout=timeout) or ad.droid.telecomIsInCall():
@@ -1801,8 +1796,8 @@ def wait_for_cell_data_connection_for_subscription(
                 field=DataConnectionStateContainer.DATA_CONNECTION_STATE,
                 value=state_str)
         except Empty:
-            ad.log.inf("No expected event EventDataConnectionStateChanged %s",
-                       state_str)
+            ad.log.info("No expected event EventDataConnectionStateChanged %s",
+                        state_str)
 
         # TODO: Wait for <MAX_WAIT_TIME_CONNECTION_STATE_UPDATE> seconds for
         # data connection state.
@@ -2152,8 +2147,8 @@ def _wait_for_droid_in_state(log, ad, max_time, state_check_func, *args,
         if state_check_func(log, ad, *args, **kwargs):
             return True
 
-        time.sleep(1)
-        max_time -= 1
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+        max_time -= WAIT_TIME_BETWEEN_STATE_CHECK
 
     return False
 
@@ -2164,8 +2159,8 @@ def _wait_for_droid_in_state_for_subscription(
         if state_check_func(log, ad, sub_id, *args, **kwargs):
             return True
 
-        time.sleep(1)
-        max_time -= 1
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+        max_time -= WAIT_TIME_BETWEEN_STATE_CHECK
 
     return False
 
@@ -2181,8 +2176,8 @@ def _wait_for_droids_in_state(log, ads, max_time, state_check_func, *args,
         if success:
             return True
 
-        time.sleep(1)
-        max_time -= 1
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+        max_time -= WAIT_TIME_BETWEEN_STATE_CHECK
 
     return False
 
@@ -2261,11 +2256,10 @@ def _is_attached(log, ad, voice_or_data):
 
 
 def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
-    if get_network_rat_for_subscription(log, ad, sub_id,
-                                        voice_or_data) != RAT_UNKNOWN:
-        return True
-    else:
-        return False
+    rat = get_network_rat_for_subscription(log, ad, sub_id, voice_or_data)
+    ad.log.info("Sub_id %s network rate is %s for %s", sub_id, rat,
+                voice_or_data)
+    return rat != RAT_UNKNOWN
 
 
 def wait_for_voice_attach(log, ad, max_time):
@@ -3423,32 +3417,29 @@ def ensure_phone_default_state(log, ad):
     Phone not in airplane mode.
     """
     result = True
-    reset_preferred_network_type_to_allowable_range(log, ad)
-    #Toggle airplane mode to bring preferred network to default.
-    #It will also end active phone calls.
-    if not toggle_airplane_mode_by_adb(log, ad, True):
-        ad.log.error("ensure_phones_default_state:turn on airplane mode fail.")
-        result = False
 
-    if not toggle_airplane_mode_by_adb(log, ad, False):
-        ad.log.error(
-            "ensure_phones_default_state:turn off airplane mode fail.")
-        result = False
+    try:
+        ad.droid.telephonyFactoryReset()
+        if ad.droid.telecomIsInCall():
+            ad.droid.telecomEndCall()
+        if not wait_for_droid_not_in_call(log, ad):
+            ad.log.error("Failed to end call on %s")
+    except Exception as e:
+        ad.log.error("Failure %s, toggle APM instead", e)
+        toggle_airplane_mode(log, ad, True, False)
+        ad.droid.telephonyToggleDataConnection(True)
 
+    if not toggle_airplane_mode(log, ad, False, False):
+        ad.log.error("Fail to turn off airplane mode")
+        result = False
     set_wfc_mode(log, ad, WFC_MODE_DISABLED)
-
     toggle_video_calling(log, ad, False)
-
-    if (set_wifi_to_default(log, ad)):
-        ad.log.error("Fail to set WIFI to default state")
+    set_wifi_to_default(log, ad)
 
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
         ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
         result = False
-
-    # make sure phone data is on
-    ad.droid.telephonyToggleDataConnection(True)
 
     # Leave the delay time to make sure droid can recover to idle from ongoing call.
     time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
@@ -3511,22 +3502,17 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
         True if wifi is connected to wifi_ssid
         False if wifi is not connected to wifi_ssid
     """
-    if not ad.droid.wifiCheckState():
-        ad.log.info("Wifi state is down. Turn on Wifi")
-        #try to use wifi_test_utils after bug fix
-        #if not wifi_toggle_state(ad, new_state=True, assert_on_fail=False):
-        #    ad.log.error("Fail to turn on WIFI")
-        #    return False
-        ad.droid.wifiToggleState(True)
-        time.sleep(20)
-    if check_is_wifi_connected(log, ad, wifi_ssid):
-        ad.log.info("Wifi is connected to %s", wifi_ssid)
-        return True
-    else:
-        network = {WifiEnums.SSID_KEY: wifi_ssid}
-        if wifi_pwd:
-            network[WifiEnums.PWD_KEY] = wifi_pwd
-        for i in range(retries):
+    network = {WifiEnums.SSID_KEY: wifi_ssid}
+    if wifi_pwd:
+        network[WifiEnums.PWD_KEY] = wifi_pwd
+    for i in range(retries):
+        if not ad.droid.wifiCheckState():
+            ad.log.info("Wifi state is down. Turn on Wifi")
+            ad.droid.wifiToggleState(True)
+        if check_is_wifi_connected(log, ad, wifi_ssid):
+            ad.log.info("Wifi is connected to %s", wifi_ssid)
+            return True
+        else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
             if ad.build_info["build_id"].startswith("O"):
                 ad.droid.wifiConnectByConfig(network)
@@ -3571,9 +3557,7 @@ def set_wifi_to_default(log, ad):
     Returns:
         boolean success (True) or failure (False)
     """
-    if (not forget_all_wifi_networks(log, ad)):
-        ad.log.error("Fail to forget all wifi network")
-        return False
+    ad.droid.wifiFactoryReset()
     ad.droid.wifiToggleState(False)
     #try to use wifi_test_utils after bug fix
     #if not wifi_toggle_state(ad, new_state=False, assert_on_fail=False):
