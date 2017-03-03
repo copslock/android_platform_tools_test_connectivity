@@ -508,6 +508,44 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                   " toggling WiFi and rebooting.")
             raise signals.TestFailure(msg)
 
+    def test_toggle_airplane_reboot_configstore_reconnect(self):
+        """Connect to multiple networks, enable Airplane mode, reboot, then
+           reconnect to previously connected network.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Toggle Airplane mode ON.
+        4. Reboot device.
+        5. Toggle Airplane mode OFF.
+        4. Verify all networks are persistent after reboot.
+        5. Reconnect to the non-current network.
+
+        """
+        network_list = self.connect_multiple_networks(self.dut)
+        self.log.debug("Toggling Airplane mode ON")
+        asserts.assert_true(
+            force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        self.log.debug("Toggling Airplane mode OFF")
+        asserts.assert_true(
+            force_airplane_mode(self.dut, False),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        time.sleep(DEFAULT_TIMEOUT)
+        self.check_configstore_networks(network_list)
+        reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
+                                                network_list[BAND_5GHZ])
+        reconnect = self.reconnect_to_wifi_network(
+                            reconnect_to[WifiEnums.NETID_KEY],
+                            reconnect_to[WifiEnums.SSID_KEY])
+        if not reconnect:
+            msg = ("Device failed to reconnect to the correct network after"
+                  " toggling Airplane mode and rebooting.")
+            raise signals.TestFailure(msg)
+
     @acts.signals.generated_test
     def test_iot_with_password(self):
         params = list(
