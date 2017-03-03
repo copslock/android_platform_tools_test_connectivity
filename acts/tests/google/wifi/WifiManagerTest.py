@@ -151,6 +151,60 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         network_list.append(connect_5g_data)
         return network_list
 
+    def get_enabled_network(self, network1, network2):
+        """Check network status and return currently unconnected network.
+
+        Args:
+            network1: dict representing a network.
+            network2: dict representing a network.
+
+        Return:
+            Network dict of the unconnected network.
+
+        """
+        wifi_info = self.dut.droid.wifiGetConnectionInfo()
+        enabled = network1
+        if wifi_info[WifiEnums.SSID_KEY] == network1[WifiEnums.SSID_KEY]:
+            enabled = network2
+        return enabled
+
+    def check_configstore_networks(self, networks):
+        """Verify that all previously configured networks are presistent after
+           reboot.
+
+        Args:
+            networks: List of network dicts.
+
+        Return:
+            None. Raises TestFailure.
+
+        """
+        network_info = self.dut.droid.wifiGetConfiguredNetworks()
+        if len(network_info) != len(networks):
+            msg = ("Length of configured networks before and after reboot don't"
+                  " match. \nBefore reboot = %s \n After reboot = %s" %
+                  (networks, network_info))
+            raise signals.TestFailure(msg)
+        current_count = 0
+        # For each network, check if it exists in configured list after reboot
+        for network in networks:
+             exists = wutils.match_networks(
+                              {WifiEnums.SSID_KEY:network[WifiEnums.SSID_KEY]},
+                               network_info)
+             if not len(exists):
+                 raise signals.TestFailure("%s network is not present in the"
+                                           " configured list after reboot" %
+                                           network[WifiEnums.SSID_KEY])
+             # Get the new network id for each network after reboot.
+             network['id'] = exists[0]['networkId']
+             if exists[0]['status'] == 'CURRENT':
+                 current_count += 1
+                 # At any given point, there can only be one currently active
+                 # network, defined with 'status':'CURRENT'
+                 if current_count > 1:
+                     raise signals.TestFailure("More than one network showing"
+                                               "as 'CURRENT' after reboot")
+
     def connect_to_wifi_network_with_id(self, network_id, network_ssid):
         """Connect to the given network using network id and verify SSID.
 
@@ -392,6 +446,67 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling Airplane mode.")
+
+    def test_reboot_configstore_reconnect(self):
+        """Connect to multiple networks, reboot then reconnect to previously
+           connected network.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Reboot device.
+        4. Verify all networks are persistent after reboot.
+        5. Reconnect to the non-current network.
+
+        """
+        network_list = self.connect_multiple_networks(self.dut)
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        self.check_configstore_networks(network_list)
+
+        reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
+                                                network_list[BAND_5GHZ])
+
+        reconnect = self.reconnect_to_wifi_network(
+                            reconnect_to[WifiEnums.NETID_KEY],
+                            reconnect_to[WifiEnums.SSID_KEY])
+        if not reconnect:
+            raise signals.TestFailure("Device failed to reconnect to the correct"
+                                      " network after reboot.")
+
+    def test_toggle_wifi_reboot_configstore_reconnect(self):
+        """Connect to multiple networks, disable WiFi, reboot, then
+           reconnect to previously connected network.
+
+        Steps:
+        1. Connect to a 2GHz network.
+        2. Connect to a 5GHz network.
+        3. Turn WiFi OFF.
+        4. Reboot device.
+        5. Turn WiFi ON.
+        4. Verify all networks are persistent after reboot.
+        5. Reconnect to the non-current network.
+
+        """
+        network_list = self.connect_multiple_networks(self.dut)
+        self.log.debug("Toggling wifi OFF")
+        wutils.wifi_toggle_state(self.dut, False)
+        time.sleep(DEFAULT_TIMEOUT)
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+        self.log.debug("Toggling wifi ON")
+        wutils.wifi_toggle_state(self.dut, True)
+        time.sleep(DEFAULT_TIMEOUT)
+        self.check_configstore_networks(network_list)
+        reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
+                                                network_list[BAND_5GHZ])
+        reconnect = self.reconnect_to_wifi_network(
+                            reconnect_to[WifiEnums.NETID_KEY],
+                            reconnect_to[WifiEnums.SSID_KEY])
+        if not reconnect:
+            msg = ("Device failed to reconnect to the correct network after"
+                  " toggling WiFi and rebooting.")
+            raise signals.TestFailure(msg)
 
     @acts.signals.generated_test
     def test_iot_with_password(self):
