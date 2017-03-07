@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
@@ -52,14 +53,15 @@ from acts.asserts import fail
 
 
 class TelLivePreflightTest(TelephonyBaseTest):
-
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
 
     """ Tests Begin """
 
@@ -73,11 +75,10 @@ class TelLivePreflightTest(TelephonyBaseTest):
         try:
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
-                self._preflight_fail("{}: WiFi connect fail.".format(ad.serial))
+                abort_all_tests(ad.log, "WiFi connect fail")
             if (not wait_for_wifi_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
-                self._preflight_fail("{}: Data not available on WiFi.".format(
-                    ad.serial))
+                abort_all_tests(ad.log, "Data not available on WiFi")
         finally:
             WifiUtils.wifi_toggle_state(self.log, ad, False)
         # TODO: add more environment check here.
@@ -89,20 +90,15 @@ class TelLivePreflightTest(TelephonyBaseTest):
             #check for sim and service
             subInfo = ad.droid.subscriptionGetAllSubInfoList()
             if not subInfo or len(subInfo) < 1:
-                self._preflight_fail("{}: Unable to find A valid subscription!".
-                                     format(ad.serial))
-            toggle_airplane_mode(self.log, ad, False, strict_checking=False)
+                abort_all_tests(ad.log, "Unable to find A valid subscription!")
             if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
-                self._preflight_fail("{}: No Default Data Sub ID".format(
-                    ad.serial))
+                abort_all_tests(ad.log, "No Default Data Sub ID")
             elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
-                self._preflight_fail("{}: No Valid Voice Sub ID".format(
-                    ad.serial))
+                abort_all_tests(ad.log, "No Valid Voice Sub ID")
             sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
             if not wait_for_voice_attach_for_subscription(
                     self.log, ad, sub_id, MAX_WAIT_TIME_NW_SELECTION):
-                self._preflight_fail(
-                    "{}: Did Not Attach For Voice Services".format(ad.serial))
+                abort_all_tests(ad.log, "Did Not Attach For Voice Services")
         return True
 
     @TelephonyBaseTest.tel_test_wrap
@@ -114,8 +110,3 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 ad.log.error(msg)
                 fail(msg)
         return True
-
-    def _preflight_fail(self, message):
-        self.log.error(
-            "Aborting all ongoing tests due to preflight check failure.")
-        abort_all(message)
