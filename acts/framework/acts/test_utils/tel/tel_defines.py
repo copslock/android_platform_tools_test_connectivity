@@ -26,6 +26,9 @@ MAX_WAIT_TIME_NW_SELECTION = 180
 # Max time to wait for call drop
 MAX_WAIT_TIME_CALL_DROP = 60
 
+# Wait time between state check retry
+WAIT_TIME_BETWEEN_STATE_CHECK = 5
+
 # Max time to wait after caller make a call and before
 # callee start ringing
 MAX_WAIT_TIME_CALLEE_RINGING = 90
@@ -67,7 +70,7 @@ MAX_WAIT_TIME_IMS_REGISTRATION = 120
 # be used for wait after IMS registration.
 
 # Max time to wait for VoLTE enabled flag to be True
-MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 20
+MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 60
 
 # Max time to wait for WFC enabled flag to be True
 MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 120
