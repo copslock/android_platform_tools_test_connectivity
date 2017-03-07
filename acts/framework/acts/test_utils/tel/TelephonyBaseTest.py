@@ -117,16 +117,20 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.crash_report = ad.check_crash_report(
                         log_crash_report=False)
                     if ad.crash_report:
-                        ad.log.warn("Crash reports %s before test %s start",
+                        ad.log.info("Crash reports %s before test %s start",
                                     ad.crash_report, func_name)
 
                 # TODO: b/19002120 start QXDM Logging
+                self.setup_test()
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
                     ad.droid.logI("Finished %s" % log_string)
                     new_crash = ad.check_crash_report()
-                    if new_crash != ad.crash_report:
-                        ad.log.error("Find new crash reports %s", new_crash)
+                    crash_diff = set(new_crash).difference(
+                        set(ad.crash_report))
+                    if crash_diff:
+                        ad.log.error("Find new crash reports %s",
+                                     list(crash_diff))
                 if result is not True and "telephony_auto_rerun" in self.user_params:
                     self.teardown_test()
                     # re-run only once, if re-run pass, mark as pass
