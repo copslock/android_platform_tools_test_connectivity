@@ -840,7 +840,7 @@ def phone_idle_volte_for_subscription(log, ad, sub_id):
     if not wait_for_volte_enabled(log, ad, MAX_WAIT_TIME_VOLTE_ENABLED):
         ad.log.error(
             "Failed to <report volte enabled true> within %s seconds.",
-            ad.serial, MAX_WAIT_TIME_VOLTE_ENABLED)
+            MAX_WAIT_TIME_VOLTE_ENABLED)
         return False
     return True
 
