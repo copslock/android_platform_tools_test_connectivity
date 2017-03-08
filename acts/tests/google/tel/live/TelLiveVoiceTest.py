@@ -18,6 +18,7 @@
 """
 
 import time
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
@@ -79,7 +80,7 @@ from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
-from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -115,21 +116,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
+        self.wifi_network_pass = self.user_params.get("wifi_network_pass")
 
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
-
-        if "long_duration_call_total_duration" in self.user_params:
-            self.long_duration_call_total_duration = self.user_params[
-                "long_duration_call_total_duration"]
-        else:
-            self.long_duration_call_total_duration = DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION
+        self.long_duration_call_total_duration = self.user_params.get(
+            "long_duration_call_total_duration",
+            DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
 
     """ Tests Begin """
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="8036004e-e42e-441f-b32d-96069be71ec2")
     def test_call_mo_voice_general(self):
         """ General voice to voice call.
 
@@ -153,6 +149,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                         None, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="448e1597-c28f-4e1d-88fd-3158e6b7c630")
     def test_call_mt_voice_general(self):
         """ General voice to voice call.
 
@@ -176,6 +173,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                         None, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b2de097b-70e1-4242-b555-c1aa0a5acd8c")
     def test_call_volte_to_volte(self):
         """ VoLTE to VoLTE call test
 
@@ -201,6 +199,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="3c7f5a09-0177-4469-9994-cd5e7dd7c7fe")
     def test_call_volte_to_volte_7_digit_dialing(self):
         """ VoLTE to VoLTE call test, dial with 7 digit number
 
@@ -234,6 +233,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return result
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="721ef935-a03c-4d0f-85b9-4753d857162f")
     def test_call_volte_to_volte_10_digit_dialing(self):
         """ VoLTE to VoLTE call test, dial with 10 digit number
 
@@ -267,6 +267,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return result
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4fd3aa62-2398-4cee-994e-7fc5cadbcbc1")
     def test_call_volte_to_volte_11_digit_dialing(self):
         """ VoLTE to VoLTE call test, dial with 11 digit number
 
@@ -300,6 +301,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return result
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="969abdac-6a57-442a-9c40-48199bd8d556")
     def test_call_volte_to_volte_12_digit_dialing(self):
         """ VoLTE to VoLTE call test, dial with 12 digit number
 
@@ -333,6 +335,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return result
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="6b13a03d-c9ff-43d7-9798-adbead7688a4")
     def test_call_volte_to_csfb_3g(self):
         """ VoLTE to CSFB 3G call test
 
@@ -357,6 +360,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="38096fdb-324a-4ce0-8836-8bbe713cffc2")
     def test_call_volte_to_csfb_for_tmo(self):
         """ VoLTE to CSFB 3G call test for TMobile
 
@@ -381,6 +385,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                         is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="82f9515d-a52b-4dec-93a5-997ffdbca76c")
     def test_call_volte_to_csfb_1x_long(self):
         """ VoLTE to CSFB 1x call test
 
@@ -412,6 +417,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_1x, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="2e57fad6-5eaf-4e7d-8353-8aa6f4c52776")
     def test_call_volte_to_csfb_long(self):
         """ VoLTE to CSFB WCDMA call test
 
@@ -443,6 +449,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4bab759f-7610-4cec-893c-0a8aed95f70c")
     def test_call_volte_to_3g(self):
         """ VoLTE to 3G call test
 
@@ -467,6 +474,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b394cdc5-d88d-4659-8a26-0e58fde69974")
     def test_call_volte_to_3g_1x_long(self):
         """ VoLTE to 3G 1x call test
 
@@ -497,6 +505,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_1x, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b39a74a9-2a89-4c0b-ac4e-71ed9317bd75")
     def test_call_volte_to_3g_wcdma_long(self):
         """ VoLTE to 3G WCDMA call test
 
@@ -528,6 +537,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_wcdma, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="573bbcf1-6cbd-4084-9cb7-e14fb6c9521e")
     def test_call_volte_to_2g(self):
         """ VoLTE to 2G call test
 
@@ -589,6 +599,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a4a043c0-f4ba-4405-9262-42c752cc4487")
     def test_call_epdg_to_epdg_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling to WiFi Calling test
 
@@ -605,6 +616,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_ssid, self.wifi_network_pass)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ae171d58-d4c1-43f7-aa93-4860b4b28d53")
     def test_call_epdg_to_epdg_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to WiFi Calling test
 
@@ -621,6 +633,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_ssid, self.wifi_network_pass)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ece58857-fedc-49a9-bf10-b76bd78a51f2")
     def test_call_epdg_to_epdg_wfc_cellular_preferred(self):
         """ Cellular Preferred, WiFi calling to WiFi Calling test
 
@@ -647,6 +660,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             is_phone_in_call_not_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="0d63c250-d9e7-490c-8c48-0a6afbad5f88")
     def test_call_epdg_to_epdg_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling to WiFi Calling test
 
@@ -663,6 +677,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_ssid, self.wifi_network_pass)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="7678e4ee-29c6-4319-93ab-d555501d1876")
     def test_call_epdg_to_epdg_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to WiFi Calling test
 
@@ -679,6 +694,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_ssid, self.wifi_network_pass)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="8f5c637e-683a-448d-9443-b2b39626ab19")
     def test_call_epdg_to_epdg_apm_wfc_cellular_preferred(self):
         """ Airplane + Cellular Preferred, WiFi calling to WiFi Calling test
 
@@ -695,6 +711,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.wifi_network_ssid, self.wifi_network_pass)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="0b51666e-c83c-40b5-ba0f-737e64bc82a2")
     def test_call_epdg_to_volte_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling to VoLTE test
 
@@ -722,6 +739,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="6e0630a9-63b2-4ea1-8ec9-6560f001905c")
     def test_call_epdg_to_volte_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to VoLTE test
 
@@ -749,6 +767,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="51077985-2229-491f-9a54-1ff53871758c")
     def test_call_epdg_to_volte_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling to VoLTE test
 
@@ -776,6 +795,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="fff9edcd-1ace-4f2d-a09b-06f3eea56cca")
     def test_call_epdg_to_volte_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to VoLTE test
 
@@ -803,6 +823,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="8591554e-4e38-406c-97bf-8921d5329c47")
     def test_call_epdg_to_csfb_3g_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling to CSFB 3G test
 
@@ -829,6 +850,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="9711888d-5b1e-4d05-86e9-98f94f46098b")
     def test_call_epdg_to_csfb_3g_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to CSFB 3G test
 
@@ -855,6 +877,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="902c96a4-858f-43ff-bd56-6d7d27004320")
     def test_call_epdg_to_csfb_3g_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling to CSFB 3G test
 
@@ -881,6 +904,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="362a5396-ebda-4706-a73a-d805e5028fd7")
     def test_call_epdg_to_csfb_3g_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to CSFB 3G test
 
@@ -907,6 +931,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="647bb859-46bc-4e3e-b6ab-7944d3bbcc26")
     def test_call_epdg_to_3g_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling to 3G test
 
@@ -933,6 +958,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="3688ea1f-a52d-4a35-9df4-d5ed0985e49b")
     def test_call_epdg_to_3g_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to 3G test
 
@@ -959,6 +985,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f4efc821-fbaf-4ec2-b89b-5a47354344f0")
     def test_call_epdg_to_3g_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling to 3G test
 
@@ -985,6 +1012,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="2b1345b7-3b62-44bd-91ad-9c5a4925b0e1")
     def test_call_epdg_to_3g_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to 3G test
 
@@ -1011,6 +1039,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="7b3fea22-114a-442e-aa12-dde3b6001681")
     def test_call_csfb_3g_to_csfb_3g(self):
         """ CSFB 3G to CSFB 3G call test
 
@@ -1035,6 +1064,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="91d751ea-40c8-4ffc-b9d3-03d0ad0902bd")
     def test_call_3g_to_3g(self):
         """ 3G to 3G call test
 
@@ -1059,6 +1089,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="df57c481-010a-4d21-a5c1-5116917871b2")
     def test_call_volte_to_volte_long(self):
         """ VoLTE to VoLTE call test
 
@@ -1086,6 +1117,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b0712d8a-71cf-405f-910c-8592da082660")
     def test_call_epdg_to_epdg_long_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling to WiFi Calling test
 
@@ -1117,6 +1149,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="7049de19-3abf-48df-868f-18d0af829393")
     def test_call_epdg_to_epdg_long_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to WiFi Calling test
 
@@ -1148,6 +1181,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="029af2a7-aba4-406b-9095-b32da57a7cdb")
     def test_call_epdg_to_epdg_long_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling to WiFi Calling test
 
@@ -1179,6 +1213,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="2b926e4a-f493-41fa-98af-20d25ec132bb")
     def test_call_epdg_to_epdg_long_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to WiFi Calling test
 
@@ -1210,6 +1245,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             WAIT_TIME_IN_CALL_FOR_IMS)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="30d5d573-043f-4d8b-98e0-e7f7bc9b8d6f")
     def test_call_csfb_3g_to_csfb_3g_long(self):
         """ CSFB 3G to CSFB 3G call test
 
@@ -1236,6 +1272,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_csfb, is_phone_in_call_csfb, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="54768178-818f-4126-9e50-4f49e43a6fd3")
     def test_call_3g_to_3g_long(self):
         """ 3G to 3G call test
 
@@ -1262,6 +1299,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_3g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="")
     def test_call_volte_to_volte_loop(self):
         """ Stress test: VoLTE to VoLTE call test
 
@@ -1316,6 +1354,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="dfa2c1a7-0e9a-42f2-b3ba-7e196df87e1b")
     def test_call_epdg_to_epdg_loop_wfc_wifi_only(self):
         """ Stress test: WiFi Only, WiFi calling to WiFi Calling test
 
@@ -1374,6 +1413,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="382f97ad-65d4-4ebb-a31b-aa243e01bce4")
     def test_call_epdg_to_epdg_loop_wfc_wifi_preferred(self):
         """ Stress test: WiFi Preferred, WiFi Calling to WiFi Calling test
 
@@ -1432,6 +1472,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="c820e2ea-8a14-421c-b608-9074b716f7dd")
     def test_call_epdg_to_epdg_loop_apm_wfc_wifi_only(self):
         """ Stress test: Airplane + WiFi Only, WiFi Calling to WiFi Calling test
 
@@ -1490,6 +1531,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="3b8cb344-1551-4244-845d-b864501f2fb4")
     def test_call_epdg_to_epdg_loop_apm_wfc_wifi_preferred(self):
         """ Stress test: Airplane + WiFi Preferred, WiFi Calling to WiFi Calling test
 
@@ -1548,6 +1590,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="")
     def test_call_csfb_3g_to_csfb_3g_loop(self):
         """ Stress test: CSFB 3G to CSFB 3G call test
 
@@ -1600,6 +1643,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="")
     def test_call_3g_to_3g_loop(self):
         """ Stress test: 3G to 3G call test
 
@@ -1709,6 +1753,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4043c68a-c5d4-4e1d-9010-ef65b205cab1")
     def test_call_epdg_mo_hold_unhold_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling MO call hold/unhold test
 
@@ -1753,6 +1798,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="0667535e-dcad-49f0-9b4b-fa45d6c75f5b")
     def test_call_epdg_mo_hold_unhold_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling MO call hold/unhold test
 
@@ -1797,6 +1843,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="cf318b4c-c920-4e80-b73f-2f092c03a144")
     def test_call_epdg_mo_hold_unhold_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling MO call hold/unhold test
 
@@ -1841,6 +1888,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ace36801-1e7b-4f06-aa0b-17affc8df069")
     def test_call_epdg_mo_hold_unhold_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling MO call hold/unhold test
 
@@ -1885,6 +1933,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="2ad32874-0d39-4475-8ae3-d6dccda675f5")
     def test_call_epdg_mt_hold_unhold_wfc_wifi_only(self):
         """ WiFi Only, WiFi calling MT call hold/unhold test
 
@@ -1929,6 +1978,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="3efd5d59-30ee-45f5-8966-56ce8fadf9a1")
     def test_call_epdg_mt_hold_unhold_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling MT call hold/unhold test
 
@@ -1973,6 +2023,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="35ed0f89-7435-4d3b-9ebc-c5cdc3f7e32b")
     def test_call_epdg_mt_hold_unhold_apm_wfc_wifi_only(self):
         """ Airplane + WiFi Only, WiFi calling MT call hold/unhold test
 
@@ -2017,6 +2068,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info("37ad003b-6426-42f7-b528-ec7c1842fd18")
     def test_call_epdg_mt_hold_unhold_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling MT call hold/unhold test
 
@@ -2061,6 +2113,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="fa37cd37-c30a-4caa-80b4-52507995ec77")
     def test_call_volte_mo_hold_unhold(self):
         """ VoLTE MO call hold/unhold test
 
@@ -2103,6 +2156,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="28a9acb3-83e8-4dd1-82bf-173da8bd2eca")
     def test_call_volte_mt_hold_unhold(self):
         """ VoLTE MT call hold/unhold test
 
@@ -2145,6 +2199,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ffe724ae-4223-4c15-9fed-9aba17de9a63")
     def test_call_wcdma_mo_hold_unhold(self):
         """ MO WCDMA hold/unhold test
 
@@ -2191,6 +2246,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="23805165-01ce-4351-83d3-73c9fb3bda76")
     def test_call_wcdma_mt_hold_unhold(self):
         """ MT WCDMA hold/unhold test
 
@@ -2237,6 +2293,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="08c846c7-1978-4ece-8f2c-731129947699")
     def test_call_csfb_mo_hold_unhold(self):
         """ MO CSFB WCDMA/GSM hold/unhold test
 
@@ -2283,6 +2340,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a6405fe6-c732-4ae6-bbae-e912a124f4a2")
     def test_call_csfb_mt_hold_unhold(self):
         """ MT CSFB WCDMA/GSM hold/unhold test
 
@@ -2329,6 +2387,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="5edc5034-90ef-4113-926f-05407ed60a87")
     def test_erase_all_pending_voicemail(self):
         """Script for TMO/ATT/SPT phone to erase all pending voice mail.
         This script only works if phone have already set up voice mail options,
@@ -2357,6 +2416,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log, self.android_devices[1])
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="c81156a2-089b-4b10-ba80-7afea61d06c6")
     def test_voicemail_indicator_volte(self):
         """Test Voice Mail notification in LTE (VoLTE enabled).
         This script currently only works for TMO now.
@@ -2384,6 +2444,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_volte)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="529e12cb-3178-4d2c-b155-d5cfb1eac0c9")
     def test_voicemail_indicator_lte(self):
         """Test Voice Mail notification in LTE (VoLTE disabled).
         This script currently only works for TMO/ATT/SPT now.
@@ -2411,6 +2472,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_csfb)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="60cef7dd-f990-4913-af9a-75e9336fc80a")
     def test_voicemail_indicator_3g(self):
         """Test Voice Mail notification in 3G
         This script currently only works for TMO/ATT/SPT now.
@@ -2438,6 +2500,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_3g)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e4c83cfa-db60-4258-ab69-15f7de3614b0")
     def test_voicemail_indicator_2g(self):
         """Test Voice Mail notification in 2G
         This script currently only works for TMO/ATT/SPT now.
@@ -2465,6 +2528,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[0], phone_idle_2g)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f0cb02fb-a028-43da-9c87-5b21b2f8549b")
     def test_voicemail_indicator_iwlan(self):
         """Test Voice Mail notification in WiFI Calling
         This script currently only works for TMO now.
@@ -2494,6 +2558,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_iwlan)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="9bd0550e-abfd-436b-912f-571810f973d7")
     def test_voicemail_indicator_apm_iwlan(self):
         """Test Voice Mail notification in WiFI Calling
         This script currently only works for TMO now.
@@ -2523,6 +2588,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                ads[1], phone_idle_iwlan)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="cfc94b2c-8e28-4e6f-b4d3-1cc8af18a52b")
     def test_call_2g_to_2g(self):
         """ Test 2g<->2g call functionality.
 
@@ -2547,6 +2613,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_2g, is_phone_in_call_2g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="057a2213-8b78-497b-8d65-e6ed87d337cb")
     def test_call_2g_to_2g_long(self):
         """ Test 2g<->2g call functionality.
 
@@ -2573,6 +2640,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_2g, is_phone_in_call_2g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="6e24e64f-aa0e-4101-89ed-4cc30c738c7e")
     def test_call_3g_to_2g_long(self):
         """ Test 3g<->2g call functionality.
 
@@ -2599,6 +2667,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_2g, is_phone_in_call_2g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="0db7fc8b-4f83-4e30-80ab-cc53c8eff99f")
     def test_call_2g_to_3g_long(self):
         """ Test 2g<->3g call functionality.
 
@@ -2625,6 +2694,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_2g, is_phone_in_call_3g, None)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d109df55-ac2f-493f-9324-9be1d3d7d6d3")
     def test_call_gsm_mo_hold_unhold(self):
         """ Test GSM call hold/unhold functionality.
 
@@ -2670,6 +2740,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a8279cda-73b3-470a-8ca7-a331ef99270b")
     def test_call_gsm_mt_hold_unhold(self):
         """ Test GSM call hold/unhold functionality.
 
@@ -2727,6 +2798,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             wait_time_in_call=total_duration)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d0008b51-25ed-414a-9b82-3ffb139a6e0d")
     def test_call_long_duration_volte(self):
         """ Test call drop rate for VoLTE long duration call.
 
@@ -2754,6 +2826,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             is_phone_in_call_volte, self.long_duration_call_total_duration)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d4c1aec0-df05-403f-954c-496faf18605a")
     def test_call_long_duration_wfc(self):
         """ Test call drop rate for WiFi Calling long duration call.
 
@@ -2783,6 +2856,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             is_phone_in_call_iwlan, self.long_duration_call_total_duration)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="bc44f3ca-2616-4024-b959-3a5a85503dfd")
     def test_call_long_duration_3g(self):
         """ Test call drop rate for 3G long duration call.
 
@@ -2853,6 +2927,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ef4fb42d-9040-46f2-9626-d0a2e1dd854f")
     def test_call_mo_hangup_while_ringing(self):
         """ Call a phone and verify ringing, then hangup from the originator
 
@@ -2868,6 +2943,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                     self.android_devices[1])
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f514ac72-d551-4e21-b5af-bd87b6cdf34a")
     def test_call_mt_hangup_while_ringing(self):
         """ Call a phone and verify ringing, then hangup from the originator
 
@@ -2911,8 +2987,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 return False
 
             toggle_airplane_mode(self.log, self.android_devices[0], False)
-            WifiUtils.wifi_toggle_state(self.log, self.android_devices[0],
-                                        False)
+            wifi_toggle_state(self.log, self.android_devices[0], False)
 
             self.android_devices[0].droid.telephonyToggleDataConnection(True)
             if not wait_for_cell_data_connection(
@@ -2958,6 +3033,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                          url, output_path, file_size)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
     def test_call_mo_voice_general_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -2978,6 +3054,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d750d66b-2091-4e8d-baa2-084b9d2bbff5")
     def test_call_mt_voice_general_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -2998,6 +3075,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             None, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="35703e83-b3e6-40af-aeaf-6b983d6205f4")
     def test_call_mo_voice_volte_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3021,6 +3099,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             GEN_4G, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a0f658d9-4212-44db-b3e8-7202f1eec04d")
     def test_call_mt_voice_volte_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3044,6 +3123,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             GEN_4G, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e0b264ec-fc29-411e-b018-684b7ff5a37e")
     def test_call_mo_voice_csfb_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3069,6 +3149,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="98f04a27-74e1-474d-90d1-a4a45cdb6f5b")
     def test_call_mt_voice_csfb_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3094,6 +3175,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="359b1ee1-36a6-427b-9d9e-4d77231fcb09")
     def test_call_mo_voice_3g_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3119,6 +3201,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b172bbb4-2d6e-4d83-a381-ebfdf23bc30e")
     def test_call_mt_voice_3g_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3144,6 +3227,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f5d9bfd0-0996-4c18-b11e-c6113dc201e2")
     def test_call_mo_voice_2g_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3169,6 +3253,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="99cfd1be-b992-48bf-a50e-fc3eec8e5a67")
     def test_call_mt_voice_2g_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3194,6 +3279,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             allow_file_download_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="12677cf2-40d3-4bb1-8afa-91ebcbd0f862")
     def test_call_mo_voice_wifi_wfc_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3217,6 +3303,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="84adcc19-43bb-4ea3-9284-7322ab139aac")
     def test_call_mt_voice_wifi_wfc_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3240,6 +3327,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             None, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="42566255-c33f-406c-abab-932a0aaa01a8")
     def test_call_mo_voice_apm_wifi_wfc_while_http_file_download(self):
         """Test call can be established during active data connection.
 
@@ -3263,6 +3351,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="fbf52f60-449b-46f2-9486-36d338a1b070")
     def test_call_mt_voice_apm_wifi_wfc_while_http_file_download(self):
         """Test call can be established during active data connection.
 
