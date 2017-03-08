@@ -33,6 +33,7 @@ DEFAULT_TIMEOUT = 10
 BAND_2GHZ = 0
 BAND_5GHZ = 1
 
+
 class WifiManagerTest(acts.base_test.BaseTestClass):
     """Tests for APIs in Android's WifiManager class.
 
@@ -50,24 +51,26 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         if getattr(self, "attenuators", []):
             for a in self.attenuators:
                 a.set_atten(0)
-        self.user_params["additional_energy_info_models"] = []
-        self.user_params["additional_tdls_models"] = []
         req_params = ("iot_networks", "open_network", "config_store_networks",
                       "iperf_server_address", "reference_networks")
         opt_param = ("additional_energy_info_models", "additional_tdls_models")
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
         capablity_of_devices = acts.utils.CapablityPerDevice
-        self.user_params["energy_info_models"] = (
-            capablity_of_devices.energy_info_models +
-            self.user_params["additional_energy_info_models"])
-        self.user_params["energy_info_models"] = list(
-            set(self.user_params["energy_info_models"]))
-        self.user_params["tdls_models"] = (
-            capablity_of_devices.energy_info_models +
-            self.user_params["additional_tdls_models"])
-        self.user_params["tdls_models"] = list(
-            set(self.user_params["tdls_models"]))
+        if "additional_energy_info_models" in self.user_params:
+            self.energy_info_models = (capablity_of_devices.energy_info_models
+                                       + self.additional_energy_info_models)
+        else:
+            self.energy_info_models = capablity_of_devices.energy_info_models
+        self.user_params["energy_info_models"] = self.energy_info_models
+
+        if "additional_tdls_models" in self.user_params:
+            self.tdls_models = (capablity_of_devices.energy_info_models +
+                                self.additional_tdls_models)
+        else:
+            self.tdls_models = capablity_of_devices.energy_info_models
+        self.user_params["tdls_models"] = self.tdls_models
+
         asserts.assert_true(
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
@@ -181,29 +184,30 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         network_info = self.dut.droid.wifiGetConfiguredNetworks()
         if len(network_info) != len(networks):
-            msg = ("Length of configured networks before and after reboot don't"
-                  " match. \nBefore reboot = %s \n After reboot = %s" %
-                  (networks, network_info))
+            msg = (
+                "Length of configured networks before and after reboot don't"
+                " match. \nBefore reboot = %s \n After reboot = %s" %
+                (networks, network_info))
             raise signals.TestFailure(msg)
         current_count = 0
         # For each network, check if it exists in configured list after reboot
         for network in networks:
-             exists = wutils.match_networks(
-                              {WifiEnums.SSID_KEY:network[WifiEnums.SSID_KEY]},
-                               network_info)
-             if not len(exists):
-                 raise signals.TestFailure("%s network is not present in the"
-                                           " configured list after reboot" %
-                                           network[WifiEnums.SSID_KEY])
-             # Get the new network id for each network after reboot.
-             network['id'] = exists[0]['networkId']
-             if exists[0]['status'] == 'CURRENT':
-                 current_count += 1
-                 # At any given point, there can only be one currently active
-                 # network, defined with 'status':'CURRENT'
-                 if current_count > 1:
-                     raise signals.TestFailure("More than one network showing"
-                                               "as 'CURRENT' after reboot")
+            exists = wutils.match_networks({
+                WifiEnums.SSID_KEY: network[WifiEnums.SSID_KEY]
+            }, network_info)
+            if not len(exists):
+                raise signals.TestFailure("%s network is not present in the"
+                                          " configured list after reboot" %
+                                          network[WifiEnums.SSID_KEY])
+            # Get the new network id for each network after reboot.
+            network['id'] = exists[0]['networkId']
+            if exists[0]['status'] == 'CURRENT':
+                current_count += 1
+                # At any given point, there can only be one currently active
+                # network, defined with 'status':'CURRENT'
+                if current_count > 1:
+                    raise signals.TestFailure("More than one network showing"
+                                              "as 'CURRENT' after reboot")
 
     def connect_to_wifi_network_with_id(self, network_id, network_ssid):
         """Connect to the given network using network id and verify SSID.
@@ -219,8 +223,8 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         wutils.wifi_connect_by_id(self.dut, network_id)
         connect_data = self.dut.droid.wifiGetConnectionInfo()
         connect_ssid = reconnect_data[WifiEnums.SSID_KEY]
-        self.log.debug("Expected SSID = %s Connected SSID = %s" %(network_ssid,
-                        connect_ssid))
+        self.log.debug("Expected SSID = %s Connected SSID = %s" %
+                       (network_ssid, connect_ssid))
         if connect_ssid != network_ssid:
             return False
         return True
@@ -365,18 +369,18 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         reconnect_2g = self.connect_to_wifi_network_with_id(
-                               connect_2g_data[WifiEnums.NETID_KEY],
-                               connect_2g_data[WifiEnums.SSID_KEY])
+            connect_2g_data[WifiEnums.NETID_KEY],
+            connect_2g_data[WifiEnums.SSID_KEY])
         if not reconnect_2g:
             raise signals.TestFailure("Device did not connect to the correct"
-                                       " 2GHz network.")
+                                      " 2GHz network.")
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
         reconnect_5g = self.connect_to_wifi_network_with_id(
-                               connect_5g_data[WifiEnums.NETID_KEY],
-                               connect_5g_data[WifiEnums.SSID_KEY])
+            connect_5g_data[WifiEnums.NETID_KEY],
+            connect_5g_data[WifiEnums.SSID_KEY])
         if not reconnect_5g:
             raise signals.TestFailure("Device did not connect to the correct"
-                                       " 5GHz network.")
+                                      " 5GHz network.")
 
     def test_reconnect_to_previously_connected(self):
         """Connect to multiple networks and reconnect to the previous network.
@@ -391,14 +395,14 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
         reconnect_2g = self.connect_to_wifi_network_with_id(
-                               connect_2g_data[WifiEnums.NETID_KEY],
-                               connect_2g_data[WifiEnums.SSID_KEY])
+            connect_2g_data[WifiEnums.NETID_KEY],
+            connect_2g_data[WifiEnums.SSID_KEY])
         if not reconnect_2g:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " 2GHz network.")
         reconnect_5g = self.connect_to_wifi_network_with_id(
-                               connect_5g_data[WifiEnums.NETID_KEY],
-                               connect_5g_data[WifiEnums.SSID_KEY])
+            connect_5g_data[WifiEnums.NETID_KEY],
+            connect_5g_data[WifiEnums.SSID_KEY])
         if not reconnect_5g:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " 5GHz network.")
@@ -417,10 +421,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
         wutils.toggle_wifi_off_and_on()
-        reconnect_to = self.get_enabled_network(connect_2g_data, connect_5g_data)
+        reconnect_to = self.get_enabled_network(connect_2g_data,
+                                                connect_5g_data)
         reconnect = self.connect_to_wifi_network_with_id(
-                            reconnect_to[WifiEnums.NETID_KEY],
-                            reconnect_to[WifiEnums.SSID_KEY])
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling WiFi.")
@@ -439,10 +444,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
         wutils.toggle_airplane_mode_on_and_off()
-        reconnect_to = self.get_enabled_network(connect_2g_data, connect_5g_data)
+        reconnect_to = self.get_enabled_network(connect_2g_data,
+                                                connect_5g_data)
         reconnect = self.connect_to_wifi_network_with_id(
-                            reconnect_to[WifiEnums.NETID_KEY],
-                            reconnect_to[WifiEnums.SSID_KEY])
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
             raise signals.TestFailure("Device did not connect to the correct"
                                       " network after toggling Airplane mode.")
@@ -468,11 +474,12 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                                                 network_list[BAND_5GHZ])
 
         reconnect = self.reconnect_to_wifi_network(
-                            reconnect_to[WifiEnums.NETID_KEY],
-                            reconnect_to[WifiEnums.SSID_KEY])
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
-            raise signals.TestFailure("Device failed to reconnect to the correct"
-                                      " network after reboot.")
+            raise signals.TestFailure(
+                "Device failed to reconnect to the correct"
+                " network after reboot.")
 
     def test_toggle_wifi_reboot_configstore_reconnect(self):
         """Connect to multiple networks, disable WiFi, reboot, then
@@ -501,11 +508,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
         reconnect = self.reconnect_to_wifi_network(
-                            reconnect_to[WifiEnums.NETID_KEY],
-                            reconnect_to[WifiEnums.SSID_KEY])
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
             msg = ("Device failed to reconnect to the correct network after"
-                  " toggling WiFi and rebooting.")
+                   " toggling WiFi and rebooting.")
             raise signals.TestFailure(msg)
 
     def test_toggle_airplane_reboot_configstore_reconnect(self):
@@ -539,11 +546,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
         reconnect = self.reconnect_to_wifi_network(
-                            reconnect_to[WifiEnums.NETID_KEY],
-                            reconnect_to[WifiEnums.SSID_KEY])
+            reconnect_to[WifiEnums.NETID_KEY],
+            reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
             msg = ("Device failed to reconnect to the correct network after"
-                  " toggling Airplane mode and rebooting.")
+                   " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
 
     @acts.signals.generated_test
