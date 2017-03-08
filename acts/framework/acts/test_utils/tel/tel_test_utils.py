@@ -24,6 +24,7 @@ import urllib.parse
 import time
 
 from queue import Empty
+from acts.asserts import abort_all
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -146,6 +147,11 @@ class TelTestUtilsError(Exception):
     pass
 
 
+def abort_all_tests(log, msg):
+    log.error("Aborting all ongoing tests due to: %s.", msg)
+    abort_all(msg)
+
+
 def get_phone_number_by_adb(ad):
     return ad.adb.shell("service call iphonesubinfo 13")
 
@@ -178,8 +184,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
     sub_id = get_sub_id_by_adb(ad)
     phone_number = get_phone_number_by_adb(ad) or sim_data[iccid]["phone_num"]
     if not phone_number:
-        raise TelTestUtilsError(
-            "Failed to find valid phone number for {}".format(ad.serial))
+        abort_all_tests(ad.log, "Failed to find valid phone number")
     sim_record = {
         'phone_num': phone_number_formatter(phone_number),
         'iccid': get_iccid_by_adb(ad),
@@ -203,13 +208,12 @@ def setup_droid_properties(log, ad, sim_filename=None):
     #                   "puk_pin": "1234"}]
     if hasattr(ad, 'puk'):
         if not hasattr(ad, 'puk_pin'):
-            raise TelTestUtilsError("puk_pin is not provided for {}".format(
-                ad.serial))
+            abort_all_tests(ad.log, "puk_pin is not provided")
         ad.log.info("Enter PUK code and pin")
         if not ad.droid.telephonySupplyPuk(ad.puk, ad.puk_pin):
-            raise TelTestUtilsError(
-                "The puk and puk_pin provided in testbed config do NOT work for {}"
-                .format(ad.serial))
+            abort_all_tests(
+                ad.log,
+                "Puk and puk_pin provided in testbed config do NOT work")
         time.sleep(WAIT_TIME_SUPPLY_PUK_CODE)
 
     if getattr(ad, 'data_roaming', False):
@@ -245,9 +249,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 if sim_serial not in sim_data:
                     ad.log.error("ICCID %s is not provided in sim file %s",
                                  sim_serial, sim_filename)
-                    raise TelTestUtilsError(
-                        "Failed to find valid phone number for %s with ICCID %s"
-                        % (ad.serial, sim_serial))
+                    abort_all_tests(
+                        ad.log,
+                        "Failed to find valid phone number for ICCID %s" %
+                        sim_serial)
                 number = sim_data[sim_serial]["phone_num"]
             sim_record['phone_num'] = number
             sim_record['iccid'] = sim_serial
