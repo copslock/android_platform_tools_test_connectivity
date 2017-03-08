@@ -27,6 +27,8 @@ import acts.controllers.diag_logger
 from acts.base_test import BaseTestClass
 from acts.keys import Config
 from acts.signals import TestSignal
+from acts.signals import TestAbortClass
+from acts.signals import TestAbortAll
 from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -152,7 +154,7 @@ class TelephonyBaseTest(BaseTestClass):
                         self.log.info("Rerun indeterminate.")
                         result = False
                 return result
-            except TestSignal:
+            except (TestSignal, TestAbortClass, TestAbortAll):
                 raise
             except Exception as e:
                 self.log.error(traceback.format_exc())
