@@ -980,7 +980,8 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
 
         sub2pub_msg = "Get ready!"
         pub2sub_msg = "Ready!"
-        test_token = "Token / <some magic string>"
+        publisher_passphrase = None
+        subscriber_passphrase = None
         use_nsd = False
 
         # Start Test
@@ -1025,7 +1026,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
 
         # P requests an Aware network as RESPONDER
         pub_ns = self.publisher.droid.wifiAwareCreateNetworkSpecifier(pub_id,
-            event_pub_rx['data']['peerId'], test_token)
+            event_pub_rx['data']['peerId'], publisher_passphrase)
         self.log.info("Publisher network specifier - '%s'", pub_ns)
         self.network_req['NetworkSpecifier'] = pub_ns
         pub_req_key = self.publisher.droid.connectivityRequestNetwork(
@@ -1049,7 +1050,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
 
         # S requests an Aware network as INITIATOR
         sub_ns = self.subscriber.droid.wifiAwareCreateNetworkSpecifier(sub_id,
-            event_sub_rx['data']['peerId'], test_token)
+            event_sub_rx['data']['peerId'], subscriber_passphrase)
         self.log.info("Subscriber network specifier - '%s'", sub_ns)
         self.network_req['NetworkSpecifier'] = sub_ns
         sub_req_key = self.subscriber.droid.connectivityRequestNetwork(
