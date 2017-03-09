@@ -890,6 +890,7 @@ def generate_eap_test_name(config, ad=None):
     """
     eap = WifiEnums.Eap
     eap_phase2 = WifiEnums.EapPhase2
+    Ent = WifiEnums.Enterprise
     name = "test_connect-"
     eap_name = ""
     for e in eap:
