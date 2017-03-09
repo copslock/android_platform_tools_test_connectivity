@@ -99,6 +99,9 @@ class TelephonyBaseTest(BaseTestClass):
         for ad in self.android_devices:
             ad.log = _TelephonyTraceLogger(ad.log)
 
+        self.skip_reset_between_cases = self.user_params.get(
+            "skip_reset_between_cases", False)
+
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
     @staticmethod
@@ -123,7 +126,6 @@ class TelephonyBaseTest(BaseTestClass):
                                     ad.crash_report, func_name)
 
                 # TODO: b/19002120 start QXDM Logging
-                self.setup_test()
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
                     ad.droid.logI("Finished %s" % log_string)
@@ -266,6 +268,8 @@ class TelephonyBaseTest(BaseTestClass):
                 self.log.info("Starting a diagnostic session %s", logger)
                 self.logger_sessions.append((logger, logger.start()))
 
+        if self.skip_reset_between_cases:
+            return True
         return ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
