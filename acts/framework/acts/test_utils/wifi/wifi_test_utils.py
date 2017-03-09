@@ -1033,6 +1033,84 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
         ad.droid.wifiStopTrackingStateChange()
 
 
+def wifi_passpoint_connect(ad, config, num_of_tries=1, assert_on_fail=True):
+    """Connect an Android device to a wifi network.
+
+    Initiate connection to a wifi network, wait for the "connected" event, then
+    confirm the connected ssid is the one requested.
+
+    This will directly fail a test if anything goes wrong.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        config: A JSON dict containing the Passpoint profile to be installed on
+                the device, and the WiFi network SSID the device is expected to
+                connect to.
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure. Default is 1.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        If assert_on_fail is False, function returns network id, if the connect was
+        successful, False otherwise. If assert_on_fail is True, no return value.
+    """
+    _assert_on_fail_handler(_wifi_passpoint_connect, assert_on_fail, ad, config,
+                            num_of_tries = num_of_tries)
+
+
+def _wifi_passpoint_connect(ad, config, num_of_tries=1):
+    """Connect an Android device to a wifi network.
+
+    Initiate connection to a wifi network, wait for the "connected" event, then
+    confirm the connected ssid is the one requested.
+
+    This will directly fail a test if anything goes wrong.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        config: A JSON dict containing the Passpoint profile to be installed on
+                the device, and the WiFi network SSID the device is expected to
+                connect to.
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure. Default is 1.
+    """
+    asserts.assert_true(WifiEnums.SSID_KEY in config,
+                        "Key '%s' must be present in network definition." %
+                        WifiEnums.SSID_KEY)
+    ad.droid.wifiStartTrackingStateChange()
+    expected_ssid = config[WifiEnums.SSID_KEY]
+    ad.droid.addUpdatePasspointConfig(config)
+    ad.log.info("Starting connection process to passpoint %s", expected_ssid)
+
+    try:
+        connect_result = wait_for_connect(ad, num_of_tries)
+        asserts.assert_true(connect_result,
+                            "Failed to connect to WiFi passpoint network %s on"
+                            " %s" % (expected_ssid, ad.serial))
+        ad.log.info("Wi-Fi connection result: %s.", connect_result)
+        actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
+        asserts.assert_equal(actual_ssid, expected_ssid,
+                             "Connected to the wrong network on %s." % ad.serial)
+        ad.log.info("Connected to Wi-Fi passpoint network %s.", actual_ssid)
+
+        # Wait for data connection to stabilize.
+        time.sleep(5)
+
+        internet = validate_connection(ad, DEFAULT_PING_ADDR)
+        if not internet:
+            raise signals.TestFailure("Failed to connect to internet on %s" %
+                                      expected_ssid)
+    except Exception as error:
+        ad.log.error("Failed to connect to passpoint network %s with error %s",
+                      expected_ssid, error)
+        raise signals.TestFailure("Failed to connect to %s passpoint network" %
+                                   expected_ssid)
+
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+
 def start_wifi_single_scan(ad, scan_setting):
     """Starts wifi single shot scan.
 
