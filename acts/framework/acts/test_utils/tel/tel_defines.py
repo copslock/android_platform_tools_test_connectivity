@@ -34,8 +34,10 @@ WAIT_TIME_BETWEEN_STATE_CHECK = 5
 MAX_WAIT_TIME_CALLEE_RINGING = 90
 
 # country code list
-COUNTRY_CODE_LIST = ["+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47",
-                     "+246", "+86", "+850", "+81"]
+COUNTRY_CODE_LIST = [
+    "+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47", "+246", "+86",
+    "+850", "+81"
+]
 
 # Wait time after enterring puk code
 WAIT_TIME_SUPPLY_PUK_CODE = 30
@@ -202,8 +204,9 @@ WIFI_WEAK_RSSI_VALUE = -80
 # Emergency call number
 DEFAULT_EMERGENCY_CALL_NUMBER = "911"
 
-EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911",
-                          "999", "*911", "#911"]
+EMERGENCY_CALL_NUMBERS = [
+    "08", "000", "110", "112", "118", "119", "911", "999", "*911", "#911"
+]
 
 AOSP_PREFIX = "aosp_"
 
