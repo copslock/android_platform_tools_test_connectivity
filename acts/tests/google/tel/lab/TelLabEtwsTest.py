@@ -55,8 +55,11 @@ class TelLabEtwsTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.ad.adb.shell("settings put secure cmas_additional_broadcast_pkg "
+                          "com.googlecode.android_scripting")
 
     def setup_class(self):
+        super(TelLabEmergencyCallTest, self).setup_class()
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
         except AnritsuError:
@@ -107,11 +110,12 @@ class TelLabEtwsTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for ETWS test.")
                 return False
 
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))
