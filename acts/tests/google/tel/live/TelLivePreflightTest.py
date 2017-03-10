@@ -35,7 +35,6 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
-from acts.test_utils.tel.tel_test_utils import WifiUtils
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
@@ -47,6 +46,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.asserts import abort_all
 from acts.asserts import fail
@@ -80,7 +80,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
                     not verify_http_connection(self.log, ad)):
                 abort_all_tests(ad.log, "Data not available on WiFi")
         finally:
-            WifiUtils.wifi_toggle_state(self.log, ad, False)
+            wifi_toggle_state(self.log, ad, False)
         # TODO: add more environment check here.
         return True
 
