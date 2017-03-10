@@ -42,12 +42,14 @@ from acts.test_utils.tel.tel_test_utils import wait_for_volte_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import wifi_reset
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+
 
 class TelLiveSettingsTest(TelephonyBaseTest):
 
@@ -67,16 +69,19 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         self.stress_test_number = self.get_stress_test_number()
 
-    def _wifi_connected_enable_wfc_teardown_wfc(self,
-        tear_down_operation, initial_setup_wifi=True,
-        initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED,
-        check_volte_after_wfc_disabled=False):
+    def _wifi_connected_enable_wfc_teardown_wfc(
+            self,
+            tear_down_operation,
+            initial_setup_wifi=True,
+            initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED,
+            check_volte_after_wfc_disabled=False):
         if initial_setup_wifi and not ensure_wifi_connected(
-            self.log, self.ad, self.wifi_network_ssid, self.wifi_network_pass):
+                self.log, self.ad, self.wifi_network_ssid,
+                self.wifi_network_pass):
             self.log.error("Failed to connect WiFi")
             return False
-        if initial_setup_wfc_mode and not set_wfc_mode(
-            self.log, self.ad, initial_setup_wfc_mode):
+        if initial_setup_wfc_mode and not set_wfc_mode(self.log, self.ad,
+                                                       initial_setup_wfc_mode):
             self.log.error("Failed to set WFC mode.")
             return False
         if not phone_idle_iwlan(self.log, self.ad):
@@ -85,11 +90,11 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         # Tear Down WFC based on tear_down_operation
         if tear_down_operation == self._TEAR_DOWN_OPERATION_DISCONNECT_WIFI:
-            if not WifiUtils.wifi_toggle_state(self.log, self.ad, False):
+            if not wifi_toggle_state(self.log, self.ad, False):
                 self.log.error("Failed to turn off WiFi.")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_RESET_WIFI:
-            if not WifiUtils.wifi_reset(self.log, self.ad, False):
+            if not wifi_reset(self.log, self.ad, False):
                 self.log.error("Failed to reset WiFi")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_DISABLE_WFC:
@@ -100,8 +105,11 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("No tear down operation")
             return False
 
-        if not wait_for_not_network_rat(self.log, self.ad, RAT_FAMILY_WLAN,
-            voice_or_data=NETWORK_SERVICE_DATA):
+        if not wait_for_not_network_rat(
+                self.log,
+                self.ad,
+                RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Data Rat is still iwlan.")
             return False
         if not wait_for_wfc_disabled(self.log, self.ad):
@@ -111,20 +119,22 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         # If VoLTE was previous available, after tear down WFC, DUT should have
         # VoLTE service.
         if check_volte_after_wfc_disabled and not wait_for_volte_enabled(
-            self.log, self.ad, MAX_WAIT_TIME_VOLTE_ENABLED):
+                self.log, self.ad, MAX_WAIT_TIME_VOLTE_ENABLED):
             self.log.error("Device failed to acquire VoLTE service")
             return False
         return True
 
-    def _wifi_connected_set_wfc_mode_change_wfc_mode(self,
-        initial_wfc_mode,
-        new_wfc_mode,
-        is_wfc_available_in_initial_wfc_mode,
-        is_wfc_available_in_new_wfc_mode,
-        initial_setup_wifi=True,
-        check_volte_after_wfc_disabled=False):
+    def _wifi_connected_set_wfc_mode_change_wfc_mode(
+            self,
+            initial_wfc_mode,
+            new_wfc_mode,
+            is_wfc_available_in_initial_wfc_mode,
+            is_wfc_available_in_new_wfc_mode,
+            initial_setup_wifi=True,
+            check_volte_after_wfc_disabled=False):
         if initial_setup_wifi and not ensure_wifi_connected(
-            self.log, self.ad, self.wifi_network_ssid, self.wifi_network_pass):
+                self.log, self.ad, self.wifi_network_ssid,
+                self.wifi_network_pass):
             self.log.error("Failed to connect WiFi")
             return False
         # Set to initial_wfc_mode first, then change to new_wfc_mode
@@ -132,8 +142,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             [(initial_wfc_mode, is_wfc_available_in_initial_wfc_mode),
              (new_wfc_mode, is_wfc_available_in_new_wfc_mode)]:
             current_wfc_status = is_wfc_enabled(self.log, self.ad)
-            self.log.info("Current WFC: {}, Set WFC to {}".
-                format(current_wfc_status, wfc_mode))
+            self.log.info("Current WFC: {}, Set WFC to {}".format(
+                current_wfc_status, wfc_mode))
             if not set_wfc_mode(self.log, self.ad, wfc_mode):
                 self.log.error("Failed to set WFC mode.")
                 return False
@@ -164,13 +174,13 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                         self.log.error("WFC is available.")
                         return False
                 if check_volte_after_wfc_disabled and not wait_for_volte_enabled(
-                    self.log, self.ad, MAX_WAIT_TIME_VOLTE_ENABLED):
+                        self.log, self.ad, MAX_WAIT_TIME_VOLTE_ENABLED):
                     self.log.error("Device failed to acquire VoLTE service")
                     return False
         return True
 
-    def _wifi_connected_set_wfc_mode_turn_off_apm(self, wfc_mode,
-        is_wfc_available_after_turn_off_apm):
+    def _wifi_connected_set_wfc_mode_turn_off_apm(
+            self, wfc_mode, is_wfc_available_after_turn_off_apm):
         if not ensure_wifi_connected(self.log, self.ad, self.wifi_network_ssid,
                                      self.wifi_network_pass):
             self.log.error("Failed to connect WiFi")
@@ -186,12 +196,12 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
         is_wfc_not_available = wait_for_wfc_disabled(self.log, self.ad)
         if is_wfc_available_after_turn_off_apm and is_wfc_not_available:
-                self.log.error("WFC is not available.")
-                return False
+            self.log.error("WFC is not available.")
+            return False
         elif (not is_wfc_available_after_turn_off_apm and
               not is_wfc_not_available):
-                self.log.error("WFC is available.")
-                return False
+            self.log.error("WFC is available.")
+            return False
         return True
 
     @TelephonyBaseTest.tel_test_wrap
@@ -420,10 +430,9 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if not phone_setup_volte(self.log, self.ad):
             self.log.error("Failed to setup VoLTE.")
             return False
-        if not phone_setup_iwlan(self.log, self.ad, False,
-                                 WFC_MODE_WIFI_PREFERRED,
-                                 self.wifi_network_ssid,
-                                 self.wifi_network_pass):
+        if not phone_setup_iwlan(
+                self.log, self.ad, False, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
             self.log.error("Failed to setup WFC.")
             return False
         # Turn Off VoLTE, then Turn On VoLTE
@@ -461,8 +470,10 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup VoLTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-            True, False,
+            WFC_MODE_WIFI_PREFERRED,
+            WFC_MODE_CELLULAR_PREFERRED,
+            True,
+            False,
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -485,8 +496,10 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup LTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-            True, False,
+            WFC_MODE_WIFI_PREFERRED,
+            WFC_MODE_CELLULAR_PREFERRED,
+            True,
+            False,
             check_volte_after_wfc_disabled=False)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -509,8 +522,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-            True, False)
+            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, False)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_wfc_wifi_preferred_to_cellular_preferred(self):
@@ -532,8 +544,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-            True, False)
+            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, False)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_apm_wfc_wifi_preferred_to_cellular_preferred(self):
@@ -555,8 +566,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-            True, True)
+            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_volte_wfc_cellular_preferred_to_wifi_preferred(self):
@@ -579,8 +589,10 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup VoLTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED,
-            False, True,
+            WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED,
+            False,
+            True,
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -603,8 +615,10 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup LTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED,
-            False, True,
+            WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED,
+            False,
+            True,
             check_volte_after_wfc_disabled=False)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -627,8 +641,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED,
-            False, True)
+            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, False, True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_apm_wfc_cellular_preferred_to_wifi_preferred(self):
@@ -650,8 +663,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED,
-            True, True)
+            WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, True, True)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_apm_wfc_wifi_preferred_turn_off_apm(self):
@@ -730,7 +742,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             'mo_call_success': 0
         }
 
-        WifiUtils.wifi_reset(self.log, ad)
+        wifi_reset(self.log, ad)
         toggle_airplane_mode(self.log, ad, True)
 
         set_wfc_mode(self.log, ad, WFC_MODE_WIFI_PREFERRED)
@@ -739,14 +751,13 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         self.log.info("Start Time {}s".format(time_values['start']))
 
-        WifiUtils.wifi_toggle_state(self.log, ad, True)
+        wifi_toggle_state(self.log, ad, True)
         time_values['wifi_enabled'] = time.time()
         self.log.info("WiFi Enabled After {}s".format(time_values[
             'wifi_enabled'] - time_values['start']))
 
-        WifiUtils.wifi_connect(self.log, ad, self.wifi_network_ssid,
-                               self.wifi_network_pass)
-
+        ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                              self.wifi_network_pass)
         ad.droid.wakeUpNow()
 
         if not wait_for_wifi_data_connection(self.log, ad, True,
@@ -767,10 +778,9 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         self.log.info("WifiData After {}s".format(time_values[
             'wifi_data'] - time_values['wifi_connected']))
 
-        if not wait_for_network_rat(self.log,
-                                    ad,
-                                    RAT_FAMILY_WLAN,
-                                    voice_or_data=NETWORK_SERVICE_DATA):
+        if not wait_for_network_rat(
+                self.log, ad, RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Failed to set-up iwlan, aborting!")
             if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
                                       NETWORK_SERVICE_DATA):
@@ -799,10 +809,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
-        wait_for_not_network_rat(self.log,
-                                 ad,
-                                 RAT_FAMILY_WLAN,
-                                 voice_or_data=NETWORK_SERVICE_DATA)
+        wait_for_not_network_rat(
+            self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
 
         self.log.info("\n\n------------------summary-----------------")
         self.log.info("WiFi Enabled After {0:.2f} s".format(time_values[
@@ -915,16 +923,18 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if not phone_setup_volte(self.log, self.ad):
             self.log.error("Failed to setup VoLTE.")
             return False
-        if not ensure_wifi_connected(
-            self.log, self.ad, self.wifi_network_ssid, self.wifi_network_pass):
+        if not ensure_wifi_connected(self.log, self.ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
             self.log.error("Failed to connect WiFi")
             return False
 
         for i in range(1, self.stress_test_number + 1):
             self.log.info("Start Iteration {}.".format(i))
             result = self._wifi_connected_set_wfc_mode_change_wfc_mode(
-                WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED,
-                True, False,
+                WFC_MODE_WIFI_PREFERRED,
+                WFC_MODE_CELLULAR_PREFERRED,
+                True,
+                False,
                 initial_setup_wifi=False,
                 check_volte_after_wfc_disabled=True)
             if not result:
