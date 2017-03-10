@@ -107,6 +107,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
     def setup_test(self):
         super(TelLabEmergencyCallTest, self).setup_test()
+        toggle_airplane_mode(self.log, self.ad, True)
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
         return True
