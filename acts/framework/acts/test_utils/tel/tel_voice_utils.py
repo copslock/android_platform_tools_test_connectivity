@@ -1195,7 +1195,7 @@ def swap_calls(log,
 
     i = 1
     while (i <= num_swaps):
-        ad.log.info("swap_test %s: swap and check call status.", i)
+        ads[0].log.info("swap_test %s: swap and check call status.", i)
         ads[0].droid.telecomCallHold(call_active_id)
         time.sleep(WAIT_TIME_IN_CALL)
         # Swap object reference

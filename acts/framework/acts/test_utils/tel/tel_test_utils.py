@@ -132,14 +132,14 @@ from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_message_sub_id
-from acts.test_utils.wifi.wifi_test_utils import WifiEnums
-from acts.test_utils.wifi.wifi_test_utils import wifi_connect
-from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
-from acts.test_utils.wifi.wifi_test_utils import reset_wifi
-from acts.test_utils.wifi.wifi_test_utils import toggle_wifi_and_wait_for_reconnection
+from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import load_config
 
+WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
+WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
+WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
+WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
 log = logging
 
 
@@ -3520,9 +3520,9 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
         True if wifi is connected to wifi_ssid
         False if wifi is not connected to wifi_ssid
     """
-    network = {WifiEnums.SSID_KEY: wifi_ssid}
+    network = {WIFI_SSID_KEY: wifi_ssid}
     if wifi_pwd:
-        network[WifiEnums.PWD_KEY] = wifi_pwd
+        network[WIFI_PWD_KEY] = wifi_pwd
     for i in range(retries):
         if not ad.droid.wifiCheckState():
             ad.log.info("Wifi state is down. Turn on Wifi")
@@ -3532,10 +3532,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             return True
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
-            if ad.build_info["build_id"].startswith("O"):
-                ad.droid.wifiConnectByConfig(network)
-            else:
-                ad.droid.wifiConnect(network)
+            wifi_test_utils.wifi_connect(ad, network, 1, assert_on_fail=False)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 return True
@@ -3557,10 +3554,29 @@ def forget_all_wifi_networks(log, ad):
         return True
     try:
         old_state = ad.droid.wifiCheckState()
-        reset_wifi(ad)
+        wifi_test_utils.reset_wifi(ad)
         wifi_toggle_state(ad, new_state=old_state)
     except Exception as e:
         log.error("forget_all_wifi_networks with exception: %s", e)
+        return False
+    return True
+
+
+def wifi_reset(log, ad, disable_wifi=True):
+    """Forget all stored wifi networks and (optionally) disable WiFi
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+        disable_wifi: boolean to disable wifi, defaults to True
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    if not forget_all_wifi_networks(log, ad):
+        ad.log.error("Unable to forget all networks")
+        return False
+    if not wifi_toggle_state(log, ad, not disable_wifi):
+        ad.log.error("Failed to toggle WiFi state to %s!", not disable_wifi)
         return False
     return True
 
@@ -3577,10 +3593,58 @@ def set_wifi_to_default(log, ad):
     """
     ad.droid.wifiFactoryReset()
     ad.droid.wifiToggleState(False)
-    #try to use wifi_test_utils after bug fix
-    #if not wifi_toggle_state(ad, new_state=False, assert_on_fail=False):
-    #    ad.log.error("Fail to turn off WIFI")
-    #    return False
+
+
+def wifi_toggle_state(log, ad, state, retries=3):
+    """Toggle the WiFi State
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+        state: True, False, or None
+
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    for i in range(retries):
+        if wifi_test_utils.wifi_toggle_state(ad, state, assert_on_fail=False):
+            return True
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    return False
+
+
+def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
+    """Start a Tethering Session
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+        ssid: the name of the WiFi network
+        password: optional password, used for secure networks.
+        ap_band=DEPRECATED specification of 2G or 5G tethering
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    return wifi_test_utils._assert_on_fail_handler(
+        wifi_test_utils.start_wifi_tethering,
+        False,
+        ad,
+        ssid,
+        password,
+        band=ap_band)
+
+
+def stop_wifi_tethering(log, ad):
+    """Stop a Tethering Session
+
+    Args:
+        log: log object
+        ad: AndroidDevice object
+    Returns:
+        boolean success (True) or failure (False)
+    """
+    return wifi_test_utils._assert_on_fail_handler(
+        wifi_test_utils.stop_wifi_tethering, False, ad)
 
 
 def reset_preferred_network_type_to_allowable_range(log, ad):
@@ -3975,136 +4039,3 @@ def get_number_from_tel_uri(uri):
         return uri_number
     else:
         return None
-
-
-# TODO: b/26294018 Remove wrapper class once wifi_utils methods updated
-class WifiUtils():
-
-    from acts.test_utils.wifi.wifi_test_utils \
-        import reset_wifi as _reset_wifi
-    from acts.test_utils.wifi.wifi_test_utils \
-        import wifi_connect as _wifi_connect
-    from acts.test_utils.wifi.wifi_test_utils \
-        import wifi_toggle_state as _wifi_toggle_state
-    from acts.test_utils.wifi.wifi_test_utils \
-        import start_wifi_tethering as _start_wifi_tethering
-    from acts.test_utils.wifi.wifi_test_utils \
-        import stop_wifi_tethering as _stop_wifi_tethering
-    from acts.test_utils.wifi.wifi_test_utils \
-        import WifiEnums as _WifiEnums
-    from acts.test_utils.wifi import wifi_constants
-
-    WIFI_CONFIG_APBAND_2G = _WifiEnums.WIFI_CONFIG_APBAND_2G
-    WIFI_CONFIG_APBAND_5G = _WifiEnums.WIFI_CONFIG_APBAND_5G
-    SSID_KEY = _WifiEnums.SSID_KEY
-    PWD_KEY = _WifiEnums.PWD_KEY
-
-    @staticmethod
-    def wifi_toggle_state(log, ad, state):
-        """Toggle the WiFi State
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-            state: True, False, or None
-
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        return WifiUtils._wifi_toggle_state(ad, state, assert_on_fail=False)
-
-    @staticmethod
-    def forget_all_networks(log, ad):
-        """Forget all stored wifi network information
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        if not ad.droid.wifiGetConfiguredNetworks():
-            return True
-        try:
-            old_state = ad.droid.wifiCheckState()
-            WifiUtils._reset_wifi(ad)
-            ad.droid.wifiToggleState(old_state)
-        except Exception as e:
-            log.error("WifiUtils.forget_all_networks exception: %s", e)
-            return False
-        return True
-
-    @staticmethod
-    def wifi_reset(log, ad, disable_wifi=True):
-        """Forget all stored wifi networks and (optionally) disable WiFi
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-            disable_wifi: boolean to disable wifi, defaults to True
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        if not WifiUtils.forget_all_networks(log, ad):
-            ad.log.error("Unable to forget all networks")
-            return False
-        if not WifiUtils.wifi_toggle_state(log, ad, not disable_wifi):
-            ad.log.error("Failed to toggle WiFi state to %s!",
-                         not disable_wifi)
-            return False
-        return True
-
-    @staticmethod
-    def wifi_connect(log, ad, ssid, password=None):
-        """Connect to a WiFi network with a provided SSID and Password
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-            ssid: the name of the WiFi network
-            password: optional password, used for secure networks.
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        network = {WifiUtils.SSID_KEY: ssid}
-        if password:
-            network[WifiUtils.PWD_KEY] = password
-        return WifiUtils._wifi_connect(ad, network, assert_on_fail=False)
-
-    @staticmethod
-    def start_wifi_tethering(log, ad, ssid, password, ap_band=None):
-        """Start a Tethering Session
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-            ssid: the name of the WiFi network
-            password: optional password, used for secure networks.
-            ap_band=DEPRECATED specification of 2G or 5G tethering
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        try:
-            WifiUtils._start_wifi_tethering(ad, ssid, password, ap_band)
-        except Exception as e:
-            log.error("WifiUtils.start_wifi_tethering exception: %s", e)
-            return False
-        return True
-
-    @staticmethod
-    def stop_wifi_tethering(log, ad):
-        """Stop a Tethering Session
-
-        Args:
-            log: log object
-            ad: AndroidDevice object
-        Returns:
-            boolean success (True) or failure (False)
-        """
-        try:
-            WifiUtils._stop_wifi_tethering(ad)
-            return True
-        except Exception as e:
-            log.error("WifiUtils.stop_wifi_tethering exception: %s", e)
-            return False
