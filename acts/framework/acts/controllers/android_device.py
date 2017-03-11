@@ -129,8 +129,11 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         if not sl4a_client.is_sl4a_installed(ad.adb):
-            ad.log.warn("Sl4a.apk not installed")
-            ad.skip_sl4a = True
+            ad.log.info("sl4a.apk is not installed")
+            if not ad.skip_sl4a:
+                ad.log.exception("The required sl4a.apk is not installed")
+                destroy(running_ads)
+                raise
         try:
             ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
@@ -756,14 +759,12 @@ class AndroidDevice:
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
         if new_br:
-            out = self.adb.shell("bugreportz")
+            out = self.adb.shell("bugreportz", timeout=BUG_REPORT_TIMEOUT)
             if not out.startswith("OK"):
                 raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
                                          (self.serial, out))
             br_out_path = out.split(':')[1].strip()
-            self.adb.pull(
-                "%s %s" % (br_out_path, full_out_path),
-                timeout=BUG_REPORT_TIMEOUT)
+            self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
             self.adb.bugreport(
                 " > {}".format(full_out_path), timeout=BUG_REPORT_TIMEOUT)
@@ -843,7 +844,7 @@ class AndroidDevice:
         """
         if self._droid_sessions and (session_id in self._droid_sessions):
             for droid in self._droid_sessions[session_id]:
-                droid.closeSl4aSession()
+                droid.closeSl4aSession(timeout=180)
                 droid.close()
             del self._droid_sessions[session_id]
         ed_key = self.serial + str(session_id)
@@ -915,7 +916,7 @@ class AndroidDevice:
         timeout_start = time.time()
         timeout = 15 * 60
 
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=180)
         while time.time() < timeout_start + timeout:
             try:
                 completed = self.adb.getprop("sys.boot_completed")

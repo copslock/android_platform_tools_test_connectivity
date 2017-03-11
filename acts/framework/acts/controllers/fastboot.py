@@ -51,12 +51,18 @@ class FastbootProxy():
             self.fastboot_str = "fastboot"
         self.ssh_connection = ssh_connection
 
-    def _exec_fastboot_cmd(self, name, arg_str, ignore_status=False):
+    def _exec_fastboot_cmd(self,
+                           name,
+                           arg_str,
+                           ignore_status=False,
+                           timeout=60):
         command = ' '.join((self.fastboot_str, name, arg_str))
         if self.ssh_connection:
-            result = self.connection.run(command, ignore_status=True)
+            result = self.connection.run(command,
+                                         ignore_status=True,
+                                         timeout=timeout)
         else:
-            result = job.run(command, ignore_status=True)
+            result = job.run(command, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
         # TODO: This is only a temporary workaround for b/34815412.
         # fastboot getvar outputs to stderr instead of stdout
@@ -68,8 +74,8 @@ class FastbootProxy():
             raise FastbootError(
                 cmd=command, stdout=out, stderr=err, ret_code=ret)
 
-    def args(self, *args):
-        return job.run(' '.join((self.fastboot_str, ) + args)).stdout
+    def args(self, *args, **kwargs):
+        return job.run(' '.join((self.fastboot_str, ) + args), **kwargs).stdout
 
     def __getattr__(self, name):
         def fastboot_call(*args, **kwargs):
