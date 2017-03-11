@@ -28,6 +28,7 @@ from acts.controllers.utils_lib.ssh import connection
 from acts.libs.proc import job
 
 DEFAULT_ADB_TIMEOUT = 60
+DEFAULT_ADB_PULL_TIMEOUT = 180
 
 
 def parsing_parcel_output(output):
@@ -192,6 +193,13 @@ class AdbProxy(object):
             shellescape.quote(command),
             ignore_status=ignore_status,
             timeout=timeout)
+
+    def pull(self,
+             command,
+             ignore_status=False,
+             timeout=DEFAULT_ADB_PULL_TIMEOUT):
+        return self._exec_adb_cmd(
+            'pull', command, ignore_status=ignore_status, timeout=timeout)
 
     def __getattr__(self, name):
         def adb_call(*args, **kwargs):
