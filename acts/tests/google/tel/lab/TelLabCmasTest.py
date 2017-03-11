@@ -16,6 +16,8 @@
 """
 Sanity tests for voice tests in telephony
 """
+import time
+
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import CBCHSetup
 from acts.controllers.anritsu_lib.md8475a import CTCHSetup
@@ -58,6 +60,8 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
+WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
+
 
 class TelLabCmasTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
@@ -69,6 +73,8 @@ class TelLabCmasTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.wait_time_between_reg_and_msg = self.user_params.get(
+            "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
         try:
@@ -143,6 +149,9 @@ class TelLabCmasTest(TelephonyBaseTest):
 
             self.anritsu.wait_for_registration_state()
             if rat != RAT_1XRTT:
+                # GSM takes little long for IDLE b/36104585
+                if rat == RAT_GSM:
+                    time.sleep(self.wait_time_between_reg_and_msg)
                 if not cmas_receive_verify_message_lte_wcdma(
                         self.log, self.ad, self.anritsu,
                         next(TelLabCmasTest.SERIAL_NO), message_id,
