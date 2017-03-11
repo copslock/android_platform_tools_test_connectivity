@@ -135,14 +135,6 @@ def run(command,
         Error: When the ssh connection failed to be created.
         CommandError: Ssh worked, but the command had an error executing.
     """
-    if "bugreportz" in command:
-        # TODO: This is only a temporary workaround for b/33009284.
-        # Bugreports can take over 60 seconds.
-        timeout = 240
-    if "flash" in command:
-        # TODO: This is only a temporary workaround for b/34773016.
-        # Flashing a device can take up to 180 seconds.
-        timeout = 180
     start_time = time.time()
     proc = subprocess.Popen(
         command,
@@ -172,6 +164,8 @@ def run(command,
     logging.debug(result)
 
     if timed_out:
+        logging.error("Command %s with %s timeout setting timed out", command,
+                      timeout)
         raise TimeoutError(result)
 
     if not ignore_status and proc.returncode != 0:

@@ -329,14 +329,19 @@ class Sl4aClient(object):
         self.client.flush()
         response = self.client.readline()
         if not response:
+            logging.error("No response for RPC method %s", method)
             raise Sl4aProtocolError(Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
         if timeout:
             self.conn.settimeout(self._SOCKET_TIMEOUT)
         if result['error']:
+            logging.error("RPC method %s with error %s", method,
+                          result['error'])
             raise Sl4aApiError("RPC call %s failed with error %s" %
                                (method, result['error']))
         if result['id'] != apiid:
+            logging.error("RPC method %s with mismatched api id %s", method,
+                          result['id'])
             raise Sl4aProtocolError(Sl4aProtocolError.MISMATCHED_API_ID)
         return result['result']
 
