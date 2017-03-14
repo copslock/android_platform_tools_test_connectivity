@@ -42,6 +42,7 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
+CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS")
 BUG_REPORT_TIMEOUT = 1200
 PORT_RETRY_COUNT = 3
 
@@ -804,6 +805,8 @@ class AndroidDevice:
                 if log_crash_report:
                     utils.create_dir(crash_log_path)
                 for report in reports:
+                    if report in CRASH_REPORT_SKIPS:
+                        continue
                     crash_report = os.path.join(report_path, report)
                     crash_reports.append(crash_report)
                     if log_crash_report:
