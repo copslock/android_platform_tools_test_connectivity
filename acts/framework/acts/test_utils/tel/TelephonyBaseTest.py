@@ -135,7 +135,7 @@ class TelephonyBaseTest(BaseTestClass):
                     if crash_diff:
                         ad.log.error("Find new crash reports %s",
                                      list(crash_diff))
-                if result is not True and "telephony_auto_rerun" in self.user_params:
+                if not result and self.user_params.get("telephony_auto_rerun"):
                     self.teardown_test()
                     # re-run only once, if re-run pass, mark as pass
                     log_string = "[Rerun Test ID] %s. 1st run failed." % test_id
@@ -318,8 +318,10 @@ class TelephonyBaseTest(BaseTestClass):
                     "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path, timeout=1200)
-            except:
-                ad.log.error("Failed to take a bug report for %s", test_name)
+            except Exception as e:
+                ad.log.error(
+                    "Failed to take a bug report for %s with error %s",
+                    test_name, e)
 
     def get_stress_test_number(self):
         """Gets the stress_test_number param from user params.
