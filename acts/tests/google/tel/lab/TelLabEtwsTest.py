@@ -65,7 +65,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
             "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
-        super(TelLabEmergencyCallTest, self).setup_class()
+        super(TelLabEtwsTest, self).setup_class()
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
         except AnritsuError:
