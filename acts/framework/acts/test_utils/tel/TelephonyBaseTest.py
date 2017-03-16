@@ -122,8 +122,8 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.crash_report = ad.check_crash_report(
                         log_crash_report=False)
                     if ad.crash_report:
-                        ad.log.info("Crash reports %s before test %s start",
-                                    ad.crash_report, func_name)
+                        ad.log.info("Found crash reports %s before test start",
+                                    ad.crash_report)
 
                 # TODO: b/19002120 start QXDM Logging
                 result = fn(self, *args, **kwargs)
@@ -241,9 +241,8 @@ class TelephonyBaseTest(BaseTestClass):
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
-        finally:
-            for ad in self.android_devices:
-                toggle_airplane_mode(self.log, ad, True, strict_checking=False)
+        except Exception as e:
+            self.log.error("Failure with %s", e)
 
         return True
 
