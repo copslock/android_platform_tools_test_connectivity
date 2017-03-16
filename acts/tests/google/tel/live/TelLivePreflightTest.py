@@ -37,6 +37,7 @@ from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
@@ -88,25 +89,16 @@ class TelLivePreflightTest(TelephonyBaseTest):
     def test_pre_flight_check(self):
         for ad in self.android_devices:
             #check for sim and service
-            subInfo = ad.droid.subscriptionGetAllSubInfoList()
-            if not subInfo or len(subInfo) < 1:
-                abort_all_tests(ad.log, "Unable to find A valid subscription!")
-            if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
-                abort_all_tests(ad.log, "No Default Data Sub ID")
-            elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
-                abort_all_tests(ad.log, "No Valid Voice Sub ID")
-            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-            if not wait_for_voice_attach_for_subscription(
-                    self.log, ad, sub_id, MAX_WAIT_TIME_NW_SELECTION):
-                abort_all_tests(ad.log, "Did Not Attach For Voice Services")
+            if not ensure_phone_subscription(self.log, ad):
+                abort_all_tests(ad.log, "Unable to find a valid subscription!")
         return True
 
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
         for ad in self.android_devices:
-            ad.crash_report = ad.check_crash_report()
-            if ad.crash_report:
-                msg = "Find crash reports %s" % (ad.crash_report)
-                ad.log.error(msg)
-                fail(msg)
+            ad.crash_report_preflight = ad.check_crash_report()
+            if ad.crash_report_preflight:
+                msg = "Find crash reports %s before test starts" % (
+                    ad.crash_report_preflight)
+                ad.log.warn(msg)
         return True
