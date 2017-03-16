@@ -54,7 +54,9 @@ class BleScanPowerTest(PowerBaseTest):
         # all of them except the one for the power testing
         if len(self.android_devices) > 1:
             for ad in self.android_devices:
-                if ad.serial != power_test_device_serial:
+                if ad.serial != power_test_device_serial[0]:
+                    self.ad.log.info("Disable BT for %s != %s", ad.serial,
+                                     power_test_device_serial[0])
                     disable_bluetooth(ad.droid)
 
     def _measure_power_for_scan_n_log_data(self,
@@ -126,8 +128,8 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value, self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40)
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_balanced(self):
