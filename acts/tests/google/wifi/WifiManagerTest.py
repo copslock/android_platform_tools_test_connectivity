@@ -222,7 +222,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         wutils.wifi_connect_by_id(self.dut, network_id)
         connect_data = self.dut.droid.wifiGetConnectionInfo()
-        connect_ssid = reconnect_data[WifiEnums.SSID_KEY]
+        connect_ssid = connect_data[WifiEnums.SSID_KEY]
         self.log.debug("Expected SSID = %s Connected SSID = %s" %
                        (network_ssid, connect_ssid))
         if connect_ssid != network_ssid:
