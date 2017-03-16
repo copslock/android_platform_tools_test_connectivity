@@ -143,6 +143,10 @@ WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
 log = logging
 
 
+class _CallSequenceException(Exception):
+    pass
+
+
 class TelTestUtilsError(Exception):
     pass
 
@@ -651,6 +655,7 @@ def wait_for_ringing_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
+        caller=None,
         event_tracking_started=False,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING):
     """Wait for an incoming call on specified subscription.
@@ -673,6 +678,9 @@ def wait_for_ringing_call_for_subscription(
     event_ringing = _wait_for_ringing_event(log, ad, timeout)
     if not event_tracking_started:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
+    if caller and not caller.droid.telecomIsInCall():
+        caller.log.error("Caller not in call state")
+        raise _CallSequenceException("Caller not in call state")
     if not event_ringing and not (
             ad.droid.telephonyGetCallStateForSubscription(sub_id) ==
             TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging()):
@@ -736,6 +744,7 @@ def wait_and_answer_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
+        caller=None,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING):
     """Wait for an incoming call on specified subscription and
@@ -759,7 +768,6 @@ def wait_and_answer_call_for_subscription(
     """
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    result = False
     try:
         if not _wait_for_droid_in_state(
                 log,
@@ -768,6 +776,7 @@ def wait_and_answer_call_for_subscription(
                 wait_for_ringing_call_for_subscription,
                 sub_id,
                 incoming_number=None,
+                caller=caller,
                 event_tracking_started=True,
                 timeout=WAIT_TIME_BETWEEN_STATE_CHECK):
             ad.log.info("Could not answer a call: phone never rang.")
@@ -784,6 +793,9 @@ def wait_and_answer_call_for_subscription(
         else:
             ad.log.error("Could not answer the call.")
             return False
+    except Exception as e:
+        log.error(e)
+        return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
@@ -1070,9 +1082,6 @@ def call_reject_for_subscription(log,
     """
     """
 
-    class _CallSequenceException(Exception):
-        pass
-
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
@@ -1159,9 +1168,6 @@ def call_reject_leave_message_for_subscription(
         True: if voice message is received on callee successfully.
         False: for errors
     """
-
-    class _CallSequenceException(Exception):
-        pass
 
     # Currently this test utility only works for TMO and ATT and SPT.
     # It does not work for VZW (see b/21559800)
@@ -1396,9 +1402,6 @@ def call_setup_teardown_for_subscription(
     CHECK_INTERVAL = 3
     result = True
 
-    class _CallSequenceException(Exception):
-        pass
-
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
@@ -1413,6 +1416,7 @@ def call_setup_teardown_for_subscription(
                 ad_callee,
                 subid_callee,
                 incoming_number=caller_number,
+                caller = ad_caller,
                 incall_ui_display=incall_ui_display):
             raise _CallSequenceException("Answer call fail.")
 
@@ -3417,6 +3421,28 @@ def ensure_phone_idle(log, ad, settling_time=WAIT_TIME_ANDROID_STATE_SETTLING):
     return ensure_phones_idle(log, [ad], settling_time)
 
 
+def ensure_phone_subscription(log, ad):
+    """Ensure Phone Subscription.
+    """
+    #check for sim and service
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    if not subInfo or len(subInfo) < 1:
+        ad.log.error("Unable to find A valid subscription!")
+        return False
+    if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
+        ad.log.error("No Default Data Sub ID")
+        return False
+    elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
+        ad.log.error("No Valid Voice Sub ID")
+        return False
+    sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
+                                                  MAX_WAIT_TIME_NW_SELECTION):
+        ad.log.error("Did Not Attach For Voice Services")
+        return False
+    return True
+
+
 def ensure_phone_default_state(log, ad):
     """Ensure ad in default state.
     Phone not in call.
@@ -3543,7 +3569,7 @@ def forget_all_wifi_networks(log, ad):
     try:
         old_state = ad.droid.wifiCheckState()
         wifi_test_utils.reset_wifi(ad)
-        wifi_toggle_state(log, ad, new_state=old_state)
+        wifi_toggle_state(log, ad, old_state)
     except Exception as e:
         log.error("forget_all_wifi_networks with exception: %s", e)
         return False
