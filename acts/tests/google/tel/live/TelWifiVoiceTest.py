@@ -83,6 +83,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_idle_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 
 # Attenuator name
@@ -491,7 +492,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         return phone_idle_iwlan(self.log, self.android_devices[0])
 
     def _phone_idle_not_iwlan(self):
-        return not self._phone_idle_iwlan()
+        return phone_idle_not_iwlan(self.log, self.android_devices[0])
 
     def _phone_idle_volte(self):
         return phone_idle_volte(self.log, self.android_devices[0])

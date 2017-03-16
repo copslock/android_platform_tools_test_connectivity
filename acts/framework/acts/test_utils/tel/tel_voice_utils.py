@@ -76,6 +76,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import \
+     wait_for_not_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_volte_enabled
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
@@ -873,6 +875,31 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
         return False
     return True
 
+def phone_idle_not_iwlan(log, ad):
+    """Return if phone is idle for non WiFi calling call test.
+
+    Args:
+        ad: Android device object.
+    """
+    return phone_idle_not_iwlan_for_subscription(log, ad,
+                                             get_outgoing_voice_sub_id(ad))
+
+def phone_idle_not_iwlan_for_subscription(log, ad, sub_id):
+    """Return if phone is idle for non WiFi calling call test for sub id.
+
+    Args:
+        ad: Android device object.
+        sub_id: subscription id.
+    """
+    if not wait_for_not_network_rat_for_subscription(
+            log,
+            ad,
+            sub_id,
+            RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA):
+        log.error("{} data rat in iwlan mode.".format(ad.serial))
+        return False
+    return True
 
 def phone_idle_csfb(log, ad):
     """Return if phone is idle for CSFB call test.
