@@ -58,6 +58,7 @@ from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
+from acts.test_utils.tel.tel_test_utils import active_data_transfer_task
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_phone_number
@@ -2958,11 +2959,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return self._test_call_hangup_while_ringing(self.android_devices[1],
                                                     self.android_devices[0])
 
-    def _test_call_setup_while_http_file_download(
+    def _test_call_setup_in_active_data_transfer(
             self,
             nw_gen=None,
             call_direction=DIRECTION_MOBILE_ORIGINATED,
-            allow_file_download_interruption=False):
+            allow_data_transfer_interruption=False):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -2978,6 +2979,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+
+        def _call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                                 caller_verifier, callee_verifier,
+                                 wait_time_in_call):
+            #wait time for active data transfer
+            time.sleep(10)
+            return call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
+                                       caller_verifier, callee_verifier,
+                                       wait_time_in_call)
+
         if nw_gen:
             if not ensure_network_generation(
                     self.log, self.android_devices[0], nw_gen,
@@ -2986,8 +2997,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                MAX_WAIT_TIME_NW_SELECTION)
                 return False
 
-            toggle_airplane_mode(self.log, self.android_devices[0], False)
-            wifi_toggle_state(self.log, self.android_devices[0], False)
+            #toggle_airplane_mode(self.log, self.android_devices[0], False)
+            #wifi_toggle_state(self.log, self.android_devices[0], False)
 
             self.android_devices[0].droid.telephonyToggleDataConnection(True)
             if not wait_for_cell_data_connection(
@@ -2999,42 +3010,38 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("HTTP connection is not available")
             return False
 
-        # files available for download on the same website:
-        # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
-        url = "http://download.thinkbroadband.com/10MB.zip"
-        file_size = 10000000
-        output_path = "/sdcard/Download/10MB.zip"
-        ad_download = self.android_devices[0]
-
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
             ad_caller = self.android_devices[0]
             ad_callee = self.android_devices[1]
         else:
             ad_caller = self.android_devices[1]
             ad_callee = self.android_devices[0]
-        # download file by adb command, as phone call will use sl4a
-        tasks = [(http_file_download_by_adb, (self.log, ad_download, url,
-                                              output_path, file_size)),
-                 (call_setup_teardown, (self.log, ad_caller, ad_callee,
-                                        ad_caller))]
-        results = run_multithread_func(self.log, tasks)
+        ad_download = self.android_devices[0]
+
+        call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
+                                            ad_caller, None, None, 60))
+        download_task = active_data_transfer_task(self.log, ad_download)
+        results = run_multithread_func(self.log, [download_task, call_task])
         if not results[1]:
-            self.log.error("Call setup failed during http file download.")
+            self.log.error("Call setup failed in active data transfer.")
             return False
-        if not allow_file_download_interruption:
-            if not results[0]:
-                self.log.error(
-                    "Http file download failed with parallel phone call.")
-                return False
-            else:
+        if not allow_data_transfer_interruption:
+            if results[0]:
+                self.log.info(
+                    "Data transfer succeeded with parallel phone call.")
                 return True
-        self.log.info("Retry http file download after call hung up")
-        return http_file_download_by_adb(self.log, self.android_devices[0],
-                                         url, output_path, file_size)
+            else:
+                self.log.error(
+                    "Data transfer failed with parallel phone call.")
+                return False
+        self.log.info("Retry data transfer after call hung up")
+        #return http_file_download_by_adb(self.log, self.android_devices[0],
+        #                                 url, output_path, file_size)
+        return download_task[0](*download_task[1])
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
-    def test_call_mo_voice_general_while_http_file_download(self):
+    def test_call_mo_voice_general_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3050,12 +3057,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="d750d66b-2091-4e8d-baa2-084b9d2bbff5")
-    def test_call_mt_voice_general_while_http_file_download(self):
+    def test_call_mt_voice_general_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3071,12 +3078,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="35703e83-b3e6-40af-aeaf-6b983d6205f4")
-    def test_call_mo_voice_volte_while_http_file_download(self):
+    def test_call_mo_voice_volte_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3095,12 +3102,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_volte(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_4G, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a0f658d9-4212-44db-b3e8-7202f1eec04d")
-    def test_call_mt_voice_volte_while_http_file_download(self):
+    def test_call_mt_voice_volte_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3119,12 +3126,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_volte(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_4G, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e0b264ec-fc29-411e-b018-684b7ff5a37e")
-    def test_call_mo_voice_csfb_while_http_file_download(self):
+    def test_call_mo_voice_csfb_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3143,14 +3150,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_4G,
             DIRECTION_MOBILE_ORIGINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="98f04a27-74e1-474d-90d1-a4a45cdb6f5b")
-    def test_call_mt_voice_csfb_while_http_file_download(self):
+    def test_call_mt_voice_csfb_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3169,14 +3176,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_4G,
             DIRECTION_MOBILE_TERMINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="359b1ee1-36a6-427b-9d9e-4d77231fcb09")
-    def test_call_mo_voice_3g_while_http_file_download(self):
+    def test_call_mo_voice_3g_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3195,14 +3202,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
             DIRECTION_MOBILE_ORIGINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b172bbb4-2d6e-4d83-a381-ebfdf23bc30e")
-    def test_call_mt_voice_3g_while_http_file_download(self):
+    def test_call_mt_voice_3g_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3221,14 +3228,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
             DIRECTION_MOBILE_TERMINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="f5d9bfd0-0996-4c18-b11e-c6113dc201e2")
-    def test_call_mo_voice_2g_while_http_file_download(self):
+    def test_call_mo_voice_2g_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3247,14 +3254,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_2G,
             DIRECTION_MOBILE_ORIGINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="99cfd1be-b992-48bf-a50e-fc3eec8e5a67")
-    def test_call_mt_voice_2g_while_http_file_download(self):
+    def test_call_mt_voice_2g_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, disable WiFi, enable Cellular Data.
@@ -3273,14 +3280,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not phone_setup_csfb(self.log, self.android_devices[0]):
             self.android_devices[0].log.error("Failed to setup VoLTE")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             GEN_2G,
             DIRECTION_MOBILE_TERMINATED,
-            allow_file_download_interruption=True)
+            allow_data_transfer_interruption=True)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="12677cf2-40d3-4bb1-8afa-91ebcbd0f862")
-    def test_call_mo_voice_wifi_wfc_while_http_file_download(self):
+    def test_call_mo_voice_wifi_wfc_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, turn on wfc and wifi.
@@ -3299,12 +3306,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup IWLAN with NON-APM WIFI WFC on")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="84adcc19-43bb-4ea3-9284-7322ab139aac")
-    def test_call_mt_voice_wifi_wfc_while_http_file_download(self):
+    def test_call_mt_voice_wifi_wfc_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn off airplane mode, turn on wfc and wifi.
@@ -3323,12 +3330,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM off and WIFI and WFC on")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="42566255-c33f-406c-abab-932a0aaa01a8")
-    def test_call_mo_voice_apm_wifi_wfc_while_http_file_download(self):
+    def test_call_mo_voice_apm_wifi_wfc_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn on wifi-calling, airplane mode and wifi.
@@ -3347,12 +3354,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="fbf52f60-449b-46f2-9486-36d338a1b070")
-    def test_call_mt_voice_apm_wifi_wfc_while_http_file_download(self):
+    def test_call_mt_voice_apm_wifi_wfc_in_active_data_transfer(self):
         """Test call can be established during active data connection.
 
         Turn on wifi-calling, airplane mode and wifi.
@@ -3371,7 +3378,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.android_devices[0].log.error(
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
-        return self._test_call_setup_while_http_file_download(
+        return self._test_call_setup_in_active_data_transfer(
             None, DIRECTION_MOBILE_TERMINATED)
 
 
