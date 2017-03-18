@@ -18,6 +18,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import concurrent.futures
+import json
 import logging
 import os
 import urllib.parse
@@ -25,6 +26,7 @@ import time
 
 from queue import Empty
 from acts.asserts import abort_all
+from acts.controllers.adb import AdbError
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -1416,7 +1418,7 @@ def call_setup_teardown_for_subscription(
                 ad_callee,
                 subid_callee,
                 incoming_number=caller_number,
-                caller = ad_caller,
+                caller=ad_caller,
                 incall_ui_display=incall_ui_display):
             raise _CallSequenceException("Answer call fail.")
 
@@ -1610,6 +1612,71 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
         return False
 
 
+def active_data_transfer_task(log, ad):
+    curl_capable = True
+    try:
+        out = ad.adb.shell("curl --version")
+        if "not found" in out:
+            curl_capable = False
+    except AdbError:
+        curl_capable = False
+    if not curl_capable:
+        return (iperf_test_by_adb, (log, ad, "ikoula.testdebit.info"))
+    else:
+        # files available for download on the same website:
+        # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
+        # download file by adb command, as phone call will use sl4a
+        url = "http://download.thinkbroadband.com/5MB.zip"
+        file_size = 5000000
+        output_path = "/sdcard/Download/5MB.zip"
+        return (http_file_download_by_adb,
+                (log, ad, url, output_path, file_size))
+
+
+def active_data_transfer_test(log, ad):
+    task = active_data_transfer_task(log, ad)
+    return task[0](*task[1])
+
+
+def iperf_test_by_adb(log,
+                      ad,
+                      iperf_server,
+                      timeout=180,
+                      limit_rate=100000,
+                      omit=10,
+                      ipv6=False):
+    """Iperf test by adb.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+        url: The iperf host url".
+        timeout: timeout for file download to complete.
+        limit_rate: iperf bandwidth option. None by default
+        omit: the omit option provided in iperf command.
+    """
+    iperf_option = "-t %s -O %s -J" % (timeout, omit)
+    if limit_rate: iperf_option += " -b %s" % limit_rate
+    if ipv6: iperf_option += " -6"
+    try:
+        ad.log.info("Running adb iperf test with server %s", iperf_server)
+        result, data = ad.run_iperf_client(
+            iperf_server, iperf_option, timeout=timeout + 60)
+        ad.log.info("Iperf test result with server %s is %s", iperf_server,
+                    result)
+        if result:
+            data_json = json.loads(''.join(data))
+            tx_rate = data_json['end']['sum_sent']['bits_per_second']
+            rx_rate = data_json['end']['sum_received']['bits_per_second']
+            ad.log.info(
+                'iPerf3 upload speed is %sbps, download speed is %sbps',
+                tx_rate, rx_rate)
+        return result
+    except Exception as e:
+        ad.log.warn("Fail to run iperf test with exception %s", e)
+        return False
+
+
 def http_file_download_by_adb(log,
                               ad,
                               url,
@@ -1617,7 +1684,7 @@ def http_file_download_by_adb(log,
                               expected_file_size=None,
                               remove_file_after_check=True,
                               timeout=300,
-                              limit_rate=100000,
+                              limit_rate=50000,
                               retry=3):
     """Download http file by adb curl.
 
