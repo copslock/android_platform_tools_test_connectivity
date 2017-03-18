@@ -26,7 +26,7 @@ class TelLivePostflightTest(TelephonyBaseTest):
     def test_check_crash(self):
         for ad in self.android_devices:
             post_crash = ad.check_crash_report()
-            pre_crash = get_attr(ad, crash_report_preflight, [])
+            pre_crash = getattr(ad, crash_report_preflight, [])
             crash_diff = set(post_crash).difference(set(pre_crash))
             if crash_diff:
                 msg = "Find new crash reports %s" % list(crash_diff)
