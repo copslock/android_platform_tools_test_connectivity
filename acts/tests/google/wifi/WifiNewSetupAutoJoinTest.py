@@ -63,17 +63,17 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
         self.log.debug("Configured networks :: {}".format(configured_networks))
         count_confnet = 0
         result = False
-        if self.reference_networks[0]['2g']['ssid'] == self.reference_networks[
-                0]['5g']['ssid']:
+        if self.reference_networks[0]['2g']['SSID'] == self.reference_networks[
+                0]['5g']['SSID']:
             self.ref_ssid_count = 1
         else:
             self.ref_ssid_count = 2  # Different SSID for 2g and 5g
         for confnet in configured_networks:
             if confnet[WifiEnums.SSID_KEY] == self.reference_networks[0]['2g'][
-                    'ssid']:
+                    'SSID']:
                 count_confnet += 1
             elif confnet[WifiEnums.SSID_KEY] == self.reference_networks[0][
-                    '5g']['ssid']:
+                    '5g']['SSID']:
                 count_confnet += 1
         self.log.info("count_confnet {}".format(count_confnet))
         if count_confnet == self.ref_ssid_count:
@@ -105,8 +105,8 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
                 connect_result = self.dut.ed.pop_event(
                     wifi_constants.CONNECT_BY_CONFIG_SUCCESS)
                 self.log.info(connect_result)
-                wutils.track_connection(self.dut, self.other_network["ssid"], 1)
-                wutils.wifi_forget_network(self.dut, self.other_network["ssid"])
+                wutils.track_connection(self.dut, self.other_network["SSID"], 1)
+                wutils.wifi_forget_network(self.dut, self.other_network["SSID"])
                 time.sleep(wait_time)
                 current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
