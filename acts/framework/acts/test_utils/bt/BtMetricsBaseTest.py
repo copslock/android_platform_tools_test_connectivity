@@ -41,9 +41,15 @@ class BtMetricsBaseTest(BluetoothBaseTest):
                                          "BluetoothMetrics")
         self.bluetooth_proto_path = self.user_params["bluetooth_proto_path"]
         if not os.path.isfile(self.bluetooth_proto_path):
-            self.log.error("Unable to find Bluetooth proto {}."
-                           .format(self.bluetooth_proto_path))
-            return False
+            try:
+                self.bluetooth_proto_path = "{}/bluetooth.proto".format(
+                    os.path.dirname(os.path.realpath(__file__)))
+            except Exception:
+                self.log.error("File not found.")
+            if not os.path.isfile(self.bluetooth_proto_path):
+                self.log.error("Unable to find Bluetooth proto {}."
+                               .format(self.bluetooth_proto_path))
+                return False
         create_dir(self.metrics_path)
         self.bluetooth_proto_module = \
             compile_import_proto(self.metrics_path, self.bluetooth_proto_path)
