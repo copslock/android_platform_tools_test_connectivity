@@ -200,7 +200,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                                           " configured list after reboot" %
                                           network[WifiEnums.SSID_KEY])
             # Get the new network id for each network after reboot.
-            network['id'] = exists[0]['networkId']
+            network[WifiEnums.NETID_KEY] = exists[0]['networkId']
             if exists[0]['status'] == 'CURRENT':
                 current_count += 1
                 # At any given point, there can only be one currently active
@@ -220,6 +220,11 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                  False otherwise.
 
         """
+        self.dut.ed.clear_all_events()
+        wutils.start_wifi_connection_scan(self.dut)
+        scan_results = self.dut.droid.wifiGetScanResults()
+        wutils.assert_network_in_list({WifiEnums.SSID_KEY: network_ssid},
+                                      scan_results)
         wutils.wifi_connect_by_id(self.dut, network_id)
         connect_data = self.dut.droid.wifiGetConnectionInfo()
         connect_ssid = connect_data[WifiEnums.SSID_KEY]
@@ -420,7 +425,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
-        wutils.toggle_wifi_off_and_on()
+        wutils.toggle_wifi_off_and_on(self.dut)
         reconnect_to = self.get_enabled_network(connect_2g_data,
                                                 connect_5g_data)
         reconnect = self.connect_to_wifi_network_with_id(
@@ -443,7 +448,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         """
         connect_2g_data = self.get_connection_data(self.dut, self.wpapsk_2g)
         connect_5g_data = self.get_connection_data(self.dut, self.wpapsk_5g)
-        wutils.toggle_airplane_mode_on_and_off()
+        wutils.toggle_airplane_mode_on_and_off(self.dut)
         reconnect_to = self.get_enabled_network(connect_2g_data,
                                                 connect_5g_data)
         reconnect = self.connect_to_wifi_network_with_id(
@@ -473,7 +478,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
 
-        reconnect = self.reconnect_to_wifi_network(
+        reconnect = self.connect_to_wifi_network_with_id(
             reconnect_to[WifiEnums.NETID_KEY],
             reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
@@ -507,7 +512,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.check_configstore_networks(network_list)
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
-        reconnect = self.reconnect_to_wifi_network(
+        reconnect = self.connect_to_wifi_network_with_id(
             reconnect_to[WifiEnums.NETID_KEY],
             reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:
@@ -532,20 +537,20 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         network_list = self.connect_multiple_networks(self.dut)
         self.log.debug("Toggling Airplane mode ON")
         asserts.assert_true(
-            force_airplane_mode(self.dut, True),
+            acts.utils.force_airplane_mode(self.dut, True),
             "Can not turn on airplane mode on: %s" % self.dut.serial)
         time.sleep(DEFAULT_TIMEOUT)
         self.dut.reboot()
         time.sleep(DEFAULT_TIMEOUT)
         self.log.debug("Toggling Airplane mode OFF")
         asserts.assert_true(
-            force_airplane_mode(self.dut, False),
+            acts.utils.force_airplane_mode(self.dut, False),
             "Can not turn on airplane mode on: %s" % self.dut.serial)
         time.sleep(DEFAULT_TIMEOUT)
         self.check_configstore_networks(network_list)
         reconnect_to = self.get_enabled_network(network_list[BAND_2GHZ],
                                                 network_list[BAND_5GHZ])
-        reconnect = self.reconnect_to_wifi_network(
+        reconnect = self.connect_to_wifi_network_with_id(
             reconnect_to[WifiEnums.NETID_KEY],
             reconnect_to[WifiEnums.SSID_KEY])
         if not reconnect:

@@ -531,7 +531,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                 wifi_constants.CONNECT_BY_CONFIG_SUCCESS, SHORT_TIMEOUT)
             self.log.info(connect_result)
             return wutils.track_connection(self.dut,
-                                           self.connect_network["ssid"], 1)
+                                           self.connect_network["SSID"], 1)
         except Exception as error:
             self.log.exception(traceback.format_exc())
             self.log.error("Connection to network fail because %s", error)
@@ -890,7 +890,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         asserts.assert_true(
             wutils.validate_connection(self.dut, self.ping_addr),
             "Error, No internet connection for current network")
-        wutils.wifi_forget_network(self.dut, self.connect_network["ssid"])
+        wutils.wifi_forget_network(self.dut, self.connect_network["SSID"])
 
     def test_wifi_connection_and_pno_while_batch_scan(self):
         """Test configuring a connection and PNO connection parallel to wifi
@@ -988,7 +988,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         wutils.validate_connection(self.dut, self.ping_addr),
                         "Error, No internet connection for current network")
                     wutils.wifi_forget_network(self.dut,
-                                               self.connect_network["ssid"])
+                                               self.connect_network["SSID"])
         except queue.Empty as error:
             raise AssertionError(
                 "Event did not triggered for batch scan {}".format(error))

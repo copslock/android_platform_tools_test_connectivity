@@ -28,6 +28,9 @@ from acts.controllers import attenuator
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.tel import tel_defines
 
+# Default timeout used for reboot, toggle WiFi and Airplane mode,
+# for the system to settle down after the operation.
+DEFAULT_TIMEOUT = 10
 # Number of seconds to wait for events that are supposed to happen quickly.
 # Like onSuccess for start background scan and confirmation on wifi state
 # change.
@@ -572,38 +575,38 @@ def reset_wifi(ad):
         "Failed to remove these configured Wi-Fi networks: %s" % networks)
 
 
-    def toggle_airplane_mode_on_and_off(self):
-        """Turn ON and OFF Airplane mode.
+def toggle_airplane_mode_on_and_off(ad):
+    """Turn ON and OFF Airplane mode.
 
-        Args: None.
-        Returns: Assert if turning on/off Airplane mode fails.
+    ad: An AndroidDevice object.
+    Returns: Assert if turning on/off Airplane mode fails.
 
-        """
-        self.log.debug("Toggling Airplane mode ON.")
-        asserts.assert_true(
-            force_airplane_mode(self.dut, True),
-            "Can not turn on airplane mode on: %s" % self.dut.serial)
-        time.sleep(DEFAULT_TIMEOUT)
-        self.log.debug("Toggling Airplane mode OFF.")
-        asserts.assert_true(
-            force_airplane_mode(self.dut, False),
-            "Can not turn on airplane mode on: %s" % self.dut.serial)
-        time.sleep(DEFAULT_TIMEOUT)
+    """
+    ad.log.debug("Toggling Airplane mode ON.")
+    asserts.assert_true(
+        utils.force_airplane_mode(ad, True),
+        "Can not turn on airplane mode on: %s" % ad.serial)
+    time.sleep(DEFAULT_TIMEOUT)
+    ad.log.debug("Toggling Airplane mode OFF.")
+    asserts.assert_true(
+        utils.force_airplane_mode(ad, False),
+        "Can not turn on airplane mode on: %s" % ad.serial)
+    time.sleep(DEFAULT_TIMEOUT)
 
 
-    def toggle_wifi_off_and_on(self):
-        """Turn OFF and ON WiFi.
+def toggle_wifi_off_and_on(ad):
+    """Turn OFF and ON WiFi.
 
-        Args: None.
-        Returns: Assert if turning off/on WiFi fails.
+    ad: An AndroidDevice object.
+    Returns: Assert if turning off/on WiFi fails.
 
-        """
-        self.log.debug("Toggling wifi OFF.")
-        wutils.wifi_toggle_state(self.dut, False)
-        time.sleep(DEFAULT_TIMEOUT)
-        self.log.debug("Toggling wifi ON.")
-        wutils.wifi_toggle_state(self.dut, True)
-        time.sleep(DEFAULT_TIMEOUT)
+    """
+    ad.log.debug("Toggling wifi OFF.")
+    wifi_toggle_state(ad, False)
+    time.sleep(DEFAULT_TIMEOUT)
+    ad.log.debug("Toggling wifi ON.")
+    wifi_toggle_state(ad, True)
+    time.sleep(DEFAULT_TIMEOUT)
 
 
 def wifi_forget_network(ad, net_ssid):
