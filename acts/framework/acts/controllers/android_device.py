@@ -447,26 +447,6 @@ class AndroidDevice:
         return info
 
     @property
-    def build_info(self):
-        """Get the build info of this Android device, including build id and
-        build type.
-
-        This is not available if the device is in bootloader mode.
-
-        Returns:
-            A dict with the build info of this Android device, or None if the
-            device is in bootloader mode.
-        """
-        if self.is_bootloader:
-            return
-        info = {}
-        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
-            "utf-8").strip()
-        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
-            "utf-8").strip()
-        return info
-
-    @property
     def is_bootloader(self):
         """True if the device is in bootloader mode.
         """
