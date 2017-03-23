@@ -65,20 +65,20 @@ WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
 
 class TelLabCmasTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
-    CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\ACTS\\2cell_param.wnscp'
-    SIM_PARAM_FILE = 'C:\\MX847570\\SimParam\\ACTS\\2cell_param.wnssp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
         self.wait_time_between_reg_and_msg = self.user_params.get(
             "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
+                                   self.wlan_option)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False
@@ -110,10 +110,9 @@ class TelLabCmasTest(TelephonyBaseTest):
             c2k_urgency=CMAS_C2K_URGENCY_IMMEDIATE,
             c2k_certainty=CMAS_C2K_CERTIANTY_OBSERVED):
         try:
-            self.anritsu.reset()
-            self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
-            self.anritsu.load_simulation_paramfile(self.SIM_PARAM_FILE)
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params)
+            if self.ad.sim_card == "P0250Ax":
+                self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -149,9 +148,6 @@ class TelLabCmasTest(TelephonyBaseTest):
 
             self.anritsu.wait_for_registration_state()
             if rat != RAT_1XRTT:
-                # GSM takes little long for IDLE b/36104585
-                if rat == RAT_GSM:
-                    time.sleep(self.wait_time_between_reg_and_msg)
                 if not cmas_receive_verify_message_lte_wcdma(
                         self.log, self.ad, self.anritsu,
                         next(TelLabCmasTest.SERIAL_NO), message_id,
