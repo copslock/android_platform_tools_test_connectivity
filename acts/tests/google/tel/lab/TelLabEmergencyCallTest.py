@@ -30,6 +30,7 @@ from acts.test_utils.tel.anritsu_utils import call_mt_setup_teardown
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
+from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_gsm
@@ -59,17 +60,6 @@ from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 
 class TelLabEmergencyCallTest(TelephonyBaseTest):
-
-    # Used for all RATS other than LTE+VoLTE
-    CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\ACTS\\2cell_param.wnscp'
-    SIM_PARAM_FILE = 'C:\\MX847570\\SimParam\\ACTS\\2cell_param.wnssp'
-
-    # Used for VoLTE Tests
-    CELL_PARAM_FILE_FOR_VOLTE = \
-        'C:\\MX847570\\CellParam\\ACTS\\LTE_VOLTE_CELL_PARAMETER.wnscp'
-    SIM_PARAM_FILE_FOR_VOLTE = \
-        'C:\\MX847570\\SimParam\\ACTS\\LTE_VOLTE_SIM_PARAMETER.wnssp'
-
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         try:
@@ -86,6 +76,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
 
         setattr(self, 'emergency_call_number', DEFAULT_EMERGENCY_CALL_NUMBER)
         if 'emergency_call_number' in self.user_params:
@@ -99,7 +90,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
     def setup_class(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
+                                   self.wlan_option)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False
@@ -123,30 +115,22 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def _setup_emergency_call(self,
-                              cell_param_file,
                               set_simulation_func,
-                              simulation_param_file,
                               phone_setup_func,
                               phone_idle_func_after_registration=None,
                               is_ims_call=False,
                               is_wait_for_registration=True,
                               csfb_type=None,
                               srlte_csfb=None,
-                              srvcc=False,
+                              srvcc=None,
                               emergency_number=DEFAULT_EMERGENCY_CALL_NUMBER,
                               teardown_side=CALL_TEARDOWN_PHONE,
                               wait_time_in_call=WAIT_TIME_IN_CALL):
         try:
-            # if load simumation parpameter file then no need to reset
-            if simulation_param_file:
-                self.anritsu.load_simulation_paramfile(simulation_param_file)
-            else:
-                self.anritsu.reset()
-            # load cell parameter file after setting simulation parameters
-            if cell_param_file:
-                self.anritsu.load_cell_paramfile(cell_param_file)
-            if set_simulation_func:
-                set_simulation_func(self.anritsu, self.user_params)
+            set_simulation_func(self.anritsu, self.user_params)
+
+            if self.ad.sim_card == "P0250Ax":
+                self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
             if csfb_type:
@@ -154,10 +138,12 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             if srlte_csfb == "lte_call_failure":
                 self.anritsu.send_command("IMSPSAPAUTOANSWER 1,DISABLE")
                 self.anritsu.start_simulation()
+                self.anritsu.send_command("IMSSTARTVN 1")
                 check_ims_reg = True
                 check_ims_calling = True
             elif srlte_csfb == "ims_unregistered":
                 self.anritsu.start_simulation()
+                self.anritsu.send_command("IMSSTARTVN 1")
                 self.anritsu.send_command(
                     "IMSCSCFBEHAVIOR 1,SENDERRORRESPONSE603")
                 check_ims_reg = False
@@ -165,20 +151,25 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             elif srlte_csfb == "ps911_unsupported":
                 self.anritsu.send_command("EMCBS NOTSUPPORT,BTS1")
                 self.anritsu.start_simulation()
+                self.anritsu.send_command("IMSSTARTVN 1")
                 check_ims_reg = True
                 check_ims_calling = False
             elif srlte_csfb == "emc_barred":
                 self.anritsu.send_command("ACBARRED USERSPECIFIC,BTS1")
                 self.anritsu.send_command("LTEEMERGENCYACBARRED BARRED,BTS1")
                 self.anritsu.start_simulation()
+                self.anritsu.send_command("IMSSTARTVN 1")
                 check_ims_reg = True
                 check_ims_calling = False
-            elif srvcc == True:
+            elif srvcc == "InCall":
                 self.anritsu.start_simulation()
+                self.anritsu.send_command("IMSSTARTVN 1")
                 check_ims_reg = True
                 check_ims_calling = True
             else:
                 self.anritsu.start_simulation()
+            if is_ims_call:
+                self.anritsu.send_command("IMSSTARTVN 1")
 
             iterations = 1
             if self.stress_test_number > 0:
@@ -191,9 +182,10 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
+
                 # turn off all other BTS to ensure UE registers on BTS1
-                sim_model = self.anritsu.get_simulation_model()
-                no_of_bts = len(sim_model.split(","))
+                sim_model = (self.anritsu.get_simulation_model()).split(",")
+                no_of_bts = len(sim_model)
                 for i in range(2, no_of_bts + 1):
                     self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
                         i))
@@ -204,15 +196,15 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                         continue
                 if is_wait_for_registration:
                     self.anritsu.wait_for_registration_state()
-                # turn all other BTS back to on
-                for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
-                        i))
 
                 if phone_idle_func_after_registration:
                     if not phone_idle_func_after_registration(self.log,
                                                               self.ad):
                         continue
+
+                for i in range(2, no_of_bts + 1):
+                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
+                        i))
 
                 time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
                 if srlte_csfb or srvcc:
@@ -331,9 +323,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_wcdma,
-            self.SIM_PARAM_FILE,
             self._phone_setup_lte_wcdma,
             emergency_number=self.emergency_call_number,
             csfb_type=CsfbType.CSFB_TYPE_REDIRECTION)
@@ -358,9 +348,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_wcdma,
-            self.SIM_PARAM_FILE,
             self._phone_setup_lte_wcdma,
             emergency_number=self.emergency_call_number,
             csfb_type=CsfbType.CSFB_TYPE_HANDOVER)
@@ -384,9 +372,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE,
             self._phone_setup_lte_1x,
             emergency_number=self.emergency_call_number)
 
@@ -409,9 +395,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_wcdma,
-            self.SIM_PARAM_FILE,
             self._phone_setup_wcdma,
             emergency_number=self.emergency_call_number)
 
@@ -434,9 +418,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_gsm,
-            self.SIM_PARAM_FILE,
             self._phone_setup_gsm,
             emergency_number=self.emergency_call_number)
 
@@ -459,9 +441,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_1x,
-            self.SIM_PARAM_FILE,
             self._phone_setup_1x,
             emergency_number=self.emergency_call_number)
 
@@ -484,9 +464,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_1x_evdo,
-            self.SIM_PARAM_FILE,
             self._phone_setup_1x,
             emergency_number=self.emergency_call_number)
 
@@ -509,9 +487,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_1x,
-            self.SIM_PARAM_FILE,
             self._phone_setup_airplane_mode,
             is_wait_for_registration=False,
             emergency_number=self.emergency_call_number)
@@ -535,9 +511,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_wcdma,
-            self.SIM_PARAM_FILE,
             self._phone_setup_airplane_mode,
             is_wait_for_registration=False,
             emergency_number=self.emergency_call_number)
@@ -562,12 +536,10 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_wcdma,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
-            srvcc=True,
+            srvcc="InCall",
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
@@ -591,12 +563,10 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_gsm,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
-            srvcc=True,
+            srvcc="InCall",
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
@@ -622,9 +592,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
             srlte_csfb="lte_call_failure",
@@ -653,9 +621,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             None,
             srlte_csfb="ims_unregistered",
@@ -685,9 +651,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
             srlte_csfb="ps911_unsupported",
@@ -717,9 +681,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
             srlte_csfb="emc_barred",
@@ -745,9 +707,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_lte_1x,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
             self._phone_setup_volte,
             phone_idle_volte,
             is_ims_call=True,
@@ -773,9 +733,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE_FOR_VOLTE,
-            None,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
+            set_system_model_lte,
             self._phone_setup_volte,
             phone_idle_volte,
             is_ims_call=True,
@@ -801,9 +759,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE_FOR_VOLTE,
-            None,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
+            set_system_model_lte,
             self._phone_setup_volte_airplane_mode,
             is_ims_call=True,
             is_wait_for_registration=False,
@@ -829,9 +785,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_wcdma,
-            None,
             None,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
@@ -855,9 +809,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_1x,
-            None,
             None,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
@@ -881,9 +833,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE,
             set_system_model_gsm,
-            None,
             None,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
@@ -907,9 +857,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         return self._setup_emergency_call(
-            self.CELL_PARAM_FILE_FOR_VOLTE,
-            None,
-            self.SIM_PARAM_FILE_FOR_VOLTE,
+            set_system_model_lte,
             None,
             is_wait_for_registration=False,
             is_ims_call=True,
@@ -942,9 +890,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             True if pass; False if fail
         """
         if not self._setup_emergency_call(
-                self.CELL_PARAM_FILE,
                 set_system_model_1x,
-                None,
                 None,
                 emergency_number=self.emergency_call_number,
                 is_wait_for_registration=False):
