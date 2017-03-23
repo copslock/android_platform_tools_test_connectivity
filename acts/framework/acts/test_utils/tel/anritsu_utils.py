@@ -32,6 +32,7 @@ from acts.controllers.anritsu_lib.md8475a import VirtualPhoneStatus
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
 from acts.controllers.anritsu_lib.md8475a import TestPowerControl
 from acts.controllers.anritsu_lib.md8475a import TestMeasurement
+from acts.controllers.anritsu_lib.md8475a import Switch
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_REMOTE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
@@ -61,6 +62,8 @@ WAIT_TIME_ANRITSU_REG_AND_CALL = 10
 MAX_WAIT_TIME_VIRTUAL_PHONE_STATE = 45
 # Time to wait for Anritsu's IMS CSCF state change
 MAX_WAIT_TIME_IMS_CSCF_STATE = 30
+# Time to wait for before aSRVCC
+WAIT_TIME_IN_ALERT = 5
 
 # Test PLMN information
 TEST_PLMN_LTE_NAME = "MD8475A_LTE"
@@ -75,11 +78,23 @@ DEFAULT_RAC = 1
 DEFAULT_LAC = 1
 
 # IP address information for internet sharing
-GATEWAY_IPV4_ADDRESS = "192.168.137.1"
-UE_IPV4_ADDRESS_1 = "192.168.137.2"
-UE_IPV4_ADDRESS_2 = "192.168.137.3"
-DNS_IPV4_ADDRESS = "192.168.137.1"
-CSCF_IPV4_ADDRESS = "192.168.137.1"
+#GATEWAY_IPV4_ADDRESS = "192.168.137.1"
+#UE_IPV4_ADDRESS_1 = "192.168.137.2"
+#UE_IPV4_ADDRESS_2 = "192.168.137.3"
+#UE_IPV4_ADDRESS_3 = "192.168.137.4"
+#DNS_IPV4_ADDRESS = "192.168.137.1"
+#CSCF_IPV4_ADDRESS = "192.168.137.1"
+
+# Default IP address in Smart Studio, work for Internet Sharing with and
+# without WLAN ePDG server. Remember to add 192.168.1.2 to Ethernet 0
+# on MD8475A after turn on Windows' Internet Coonection Sharing
+GATEWAY_IPV4_ADDRESS = "192.168.1.2"
+UE_IPV4_ADDRESS_1 = "192.168.1.1"
+UE_IPV4_ADDRESS_2 = "192.168.1.11"
+UE_IPV4_ADDRESS_3 = "192.168.1.21"
+DNS_IPV4_ADDRESS = "192.168.1.2"
+CSCF_IPV4_ADDRESS = "192.168.1.2"
+CSCF_IPV6_ADDRESS = "2001:0:0:1::2"
 
 # LTE BAND constants
 LTE_BAND_1 = 1
@@ -109,11 +124,12 @@ GSM_BAND_DCS1800 = "DCS1800"
 GSM_BAND_PCS1900 = "PCS1900"
 
 # CDMA 1X BAND constants
-CDMA_1X_BAND_0 = 0
-CDMA_1X_BAND_1 = 1
+CDMA1X_BAND_0 = 0
+CDMA1X_BAND_1 = 1
 
 # CDMA 1X DL Channel constants
 CDMA1X_CHANNEL_356 = 356
+CDMA1X_CHANNEL_600 = 600
 
 # CDMA 1X SID constants
 CDMA1X_SID_0 = 0
@@ -121,8 +137,26 @@ CDMA1X_SID_0 = 0
 # CDMA 1X NID constants
 CDMA1X_NID_65535 = 65535
 
-# BANDWIDTH constants
-CDMA1X_NID_65535 = 65535
+# EVDO constants
+EVDO_BAND_0 = 0
+EVDO_BAND_1 = 1
+EVDO_CHANNEL_356 = 356
+EVDO_CHANNEL_600 = 600
+EVDO_SECTOR_ID_0000 = "00000000,00000000,00000000,00000000"
+
+# Default Cell Parameters
+DEFAULT_OUTPUT_LEVEL = -40
+DEFAULT_INPUT_LEVEL = -10  # apply to LTE & WCDMA only
+DEFAULT_LTE_BAND = LTE_BAND_2
+DEFAULT_WCDMA_BAND = WCDMA_BAND_1
+DEFAULT_GSM_BAND = GSM_BAND_GSM850
+DEFAULT_CDMA1X_BAND = CDMA1X_BAND_1
+DEFAULT_CDMA1X_CHANNEL = CDMA1X_CHANNEL_600
+DEFAULT_CDMA1X_SID = CDMA1X_SID_0
+DEFAULT_CDMA1X_NID = CDMA1X_NID_65535
+DEFAULT_EVDO_BAND = EVDO_BAND_0
+DEFAULT_EVDO_CHANNEL = EVDO_CHANNEL_356
+DEFAULT_EVDO_SECTOR_ID = EVDO_SECTOR_ID_0000
 
 # CMAS Message IDs
 CMAS_MESSAGE_PRESIDENTIAL_ALERT = hex(0x1112)
@@ -177,6 +211,13 @@ CMAS_C2K_CERTIANTY_LIKELY = "Likely"
 
 #PDN Numbers
 PDN_NO_1 = 1
+PDN_NO_2 = 2
+PDN_NO_3 = 3
+
+# IMS Services parameters
+DEFAULT_VNID = 1
+NDP_NIC_NAME = '"Intel(R) 82577LM Gigabit Network Connection"'
+CSCF_Monitoring_UA_URI = '"sip:+11234567890@test.3gpp.com"'
 
 #Cell Numbers
 CELL_1 = 1
@@ -250,6 +291,8 @@ def _init_lte_bts(bts, user_params, cell_no):
     bts.mcc = get_lte_mcc(user_params, cell_no)
     bts.mnc = get_lte_mnc(user_params, cell_no)
     bts.band = get_lte_band(user_params, cell_no)
+    bts.output_level = DEFAULT_OUTPUT_LEVEL
+    bts.input_level = DEFAULT_INPUT_LEVEL
 
 
 def _init_wcdma_bts(bts, user_params, cell_no):
@@ -272,6 +315,8 @@ def _init_wcdma_bts(bts, user_params, cell_no):
     bts.band = get_wcdma_band(user_params, cell_no)
     bts.rac = get_wcdma_rac(user_params, cell_no)
     bts.lac = get_wcdma_lac(user_params, cell_no)
+    bts.output_level = DEFAULT_OUTPUT_LEVEL
+    bts.input_level = DEFAULT_INPUT_LEVEL
 
 
 def _init_gsm_bts(bts, user_params, cell_no):
@@ -294,6 +339,7 @@ def _init_gsm_bts(bts, user_params, cell_no):
     bts.band = get_gsm_band(user_params, cell_no)
     bts.rac = get_gsm_rac(user_params, cell_no)
     bts.lac = get_gsm_lac(user_params, cell_no)
+    bts.output_level = DEFAULT_OUTPUT_LEVEL
 
 
 def _init_1x_bts(bts, user_params, cell_no):
@@ -314,6 +360,7 @@ def _init_1x_bts(bts, user_params, cell_no):
     bts.dl_channel = get_1x_channel(user_params, cell_no)
     bts.sector1_sid = get_1x_sid(user_params, cell_no)
     bts.sector1_nid = get_1x_nid(user_params, cell_no)
+    bts.output_level = DEFAULT_OUTPUT_LEVEL
 
 
 def _init_evdo_bts(bts, user_params, cell_no):
@@ -329,11 +376,13 @@ def _init_evdo_bts(bts, user_params, cell_no):
     Returns:
         None
     """
-    # TODO: b/26296702 add logic to initialize EVDO BTS
-    pass
+    bts.band = get_evdo_band(user_params, cell_no)
+    bts.dl_channel = get_evdo_channel(user_params, cell_no)
+    bts.evdo_sid = get_evdo_sid(user_params, cell_no)
+    bts.output_level = DEFAULT_OUTPUT_LEVEL
 
 
-def _init_PDN(anritsu_handle, pdn, ip_address):
+def _init_PDN(anritsu_handle, pdn, ip_address, ims_binding):
     """ initializes the PDN parameters
         All PDN parameters should be set here
 
@@ -341,6 +390,7 @@ def _init_PDN(anritsu_handle, pdn, ip_address):
         anritsu_handle: anritusu device object.
         pdn: pdn object
         ip_address : UE IP address
+        ims_binding: to bind with IMS VNID(1) or not
 
     Returns:
         None
@@ -348,9 +398,34 @@ def _init_PDN(anritsu_handle, pdn, ip_address):
     # Setting IP address for internet connection sharing
     anritsu_handle.gateway_ipv4addr = GATEWAY_IPV4_ADDRESS
     pdn.ue_address_ipv4 = ip_address
-    pdn.primary_dns_address_ipv4 = DNS_IPV4_ADDRESS
-    pdn.secondary_dns_address_ipv4 = DNS_IPV4_ADDRESS
-    pdn.cscf_address_ipv4 = CSCF_IPV4_ADDRESS
+    if ims_binding:
+        pdn.pdn_ims = Switch.ENABLE
+        pdn.pdn_vnid = DEFAULT_VNID
+    else:
+        pdn.primary_dns_address_ipv4 = DNS_IPV4_ADDRESS
+        pdn.secondary_dns_address_ipv4 = DNS_IPV4_ADDRESS
+        pdn.cscf_address_ipv4 = CSCF_IPV4_ADDRESS
+
+
+def _init_IMS(anritsu_handle, vnid):
+    """ initializes the IMS VNID parameters
+        All IMS parameters should be set here
+
+    Args:
+        anritsu_handle: anritusu device object.
+        vnid: IMS Services object
+
+    Returns:
+        None
+    """
+    # vnid.sync = Switch.ENABLE # supported in 6.40a release
+    vnid.cscf_address_ipv4 = CSCF_IPV4_ADDRESS
+    vnid.cscf_address_ipv6 = CSCF_IPV6_ADDRESS
+    vnid.dns = Switch.DISABLE
+    vnid.ndp_nic = NDP_NIC_NAME
+    vnid.cscf_monitoring_ua = CSCF_Monitoring_UA_URI
+    vnid.psap = Switch.ENABLE
+    vnid.psap_auto_answer = Switch.ENABLE
 
 
 def set_system_model_lte_lte(anritsu_handle, user_params):
@@ -370,8 +445,14 @@ def set_system_model_lte_lte(anritsu_handle, user_params):
     _init_lte_bts(lte1_bts, user_params, CELL_1)
     _init_lte_bts(lte2_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    pdn2 = anritsu_handle.get_PDN(PDN_NO_2)
+    pdn3 = anritsu_handle.get_PDN(PDN_NO_3)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, True)
+    _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDRESS_2, False)
+    _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDRESS_3, True)
+    vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
+    _init_IMS(anritsu_handle, vnid1)
     return [lte1_bts, lte2_bts]
 
 
@@ -394,7 +475,7 @@ def set_system_model_wcdma_wcdma(anritsu_handle, user_params):
     _init_wcdma_bts(wcdma2_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [wcdma1_bts, wcdma2_bts]
 
 
@@ -415,8 +496,14 @@ def set_system_model_lte_wcdma(anritsu_handle, user_params):
     _init_lte_bts(lte_bts, user_params, CELL_1)
     _init_wcdma_bts(wcdma_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    pdn2 = anritsu_handle.get_PDN(PDN_NO_2)
+    pdn3 = anritsu_handle.get_PDN(PDN_NO_3)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, True)
+    _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDRESS_2, False)
+    _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDRESS_3, True)
+    vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
+    _init_IMS(anritsu_handle, vnid1)
     return [lte_bts, wcdma_bts]
 
 
@@ -437,8 +524,14 @@ def set_system_model_lte_gsm(anritsu_handle, user_params):
     _init_lte_bts(lte_bts, user_params, CELL_1)
     _init_gsm_bts(gsm_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    pdn2 = anritsu_handle.get_PDN(PDN_NO_2)
+    pdn3 = anritsu_handle.get_PDN(PDN_NO_3)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, True)
+    _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDRESS_2, False)
+    _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDRESS_3, True)
+    vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
+    _init_IMS(anritsu_handle, vnid1)
     return [lte_bts, gsm_bts]
 
 
@@ -460,8 +553,14 @@ def set_system_model_lte_1x(anritsu_handle, user_params):
     _init_lte_bts(lte_bts, user_params, CELL_1)
     _init_1x_bts(cdma1x_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    pdn2 = anritsu_handle.get_PDN(PDN_NO_2)
+    pdn3 = anritsu_handle.get_PDN(PDN_NO_3)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, True)
+    _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDRESS_2, False)
+    _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDRESS_3, True)
+    vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
+    _init_IMS(anritsu_handle, vnid1)
     return [lte_bts, cdma1x_bts]
 
 
@@ -483,7 +582,7 @@ def set_system_model_wcdma_gsm(anritsu_handle, user_params):
     _init_gsm_bts(gsm_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [wcdma_bts, gsm_bts]
 
 
@@ -505,7 +604,7 @@ def set_system_model_gsm_gsm(anritsu_handle, user_params):
     _init_gsm_bts(gsm2_bts, user_params, CELL_2)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [gsm1_bts, gsm2_bts]
 
 
@@ -524,8 +623,14 @@ def set_system_model_lte(anritsu_handle, user_params):
     lte_bts = anritsu_handle.get_BTS(BtsNumber.BTS1)
     _init_lte_bts(lte_bts, user_params, CELL_1)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
+    pdn2 = anritsu_handle.get_PDN(PDN_NO_2)
+    pdn3 = anritsu_handle.get_PDN(PDN_NO_3)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, True)
+    _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDRESS_2, False)
+    _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDRESS_3, True)
+    vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
+    _init_IMS(anritsu_handle, vnid1)
     return [lte_bts]
 
 
@@ -545,7 +650,7 @@ def set_system_model_wcdma(anritsu_handle, user_params):
     _init_wcdma_bts(wcdma_bts, user_params, CELL_1)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [wcdma_bts]
 
 
@@ -565,7 +670,7 @@ def set_system_model_gsm(anritsu_handle, user_params):
     _init_gsm_bts(gsm_bts, user_params, CELL_1)
     pdn1 = anritsu_handle.get_PDN(PDN_NO_1)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [gsm_bts]
 
 
@@ -586,7 +691,7 @@ def set_system_model_1x(anritsu_handle, user_params):
     _init_1x_bts(cdma1x_bts, user_params, CELL_1)
     pdn1 = anritsu_handle.get_PDN(PDN_ONE)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [cdma1x_bts]
 
 
@@ -610,7 +715,7 @@ def set_system_model_1x_evdo(anritsu_handle, user_params):
     _init_evdo_bts(evdo_bts, user_params, CELL_1)
     pdn1 = anritsu_handle.get_PDN(PDN_ONE)
     # Initialize PDN IP address for internet connection sharing
-    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1)
+    _init_PDN(anritsu_handle, pdn1, UE_IPV4_ADDRESS_1, False)
     return [cdma1x_bts]
 
 
@@ -778,9 +883,10 @@ def ims_mo_cs_teardown(log,
                        is_emergency=False,
                        check_ims_reg=True,
                        check_ims_calling=True,
-                       srvcc=False,
+                       srvcc=None,
                        wait_time_in_volte=WAIT_TIME_IN_CALL_FOR_IMS,
                        wait_time_in_cs=WAIT_TIME_IN_CALL,
+                       wait_time_in_alert=WAIT_TIME_IN_ALERT,
                        ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
     """ Makes a MO call after IMS registred, transit to CS, tear down the call
 
@@ -826,14 +932,18 @@ def ims_mo_cs_teardown(log,
                 raise _CallSequenceException(
                     "Phone IMS status is not calling.")
             # if SRVCC, check if VoLTE call is connected, then Handover
-            if srvcc:
-                if not wait_for_ims_cscf_status(log, anritsu_handle,
-                                                ims_virtual_network_id,
-                                                ImsCscfStatus.CONNECTED.value):
-                    raise _CallSequenceException(
-                        "Phone IMS status is not connected.")
-                # stay in call for "wait_time_in_volte" seconds
-                time.sleep(wait_time_in_volte)
+            if srvcc != None:
+                if srvcc == "InCall":
+                    if not wait_for_ims_cscf_status(
+                            log, anritsu_handle, ims_virtual_network_id,
+                            ImsCscfStatus.CONNECTED.value):
+                        raise _CallSequenceException(
+                            "Phone IMS status is not connected.")
+                    # stay in call for "wait_time_in_volte" seconds
+                    time.sleep(wait_time_in_volte)
+                elif srvcc == "Alert":
+                    # ring for WAIT_TIME_IN_ALERT seconds
+                    time.sleep(WAIT_TIME_IN_ALERT)
                 # SRVCC by handover test case procedure
                 srvcc_tc = anritsu_handle.get_AnritsuTestCases()
                 srvcc_tc.procedure = TestProcedure.PROCEDURE_HO
@@ -1301,7 +1411,7 @@ def get_lte_band(user_params, cell_no):
     try:
         lte_band = user_params[key]
     except KeyError:
-        lte_band = LTE_BAND_2
+        lte_band = DEFAULT_LTE_BAND
     return lte_band
 
 
@@ -1321,7 +1431,7 @@ def get_wcdma_band(user_params, cell_no):
     try:
         wcdma_band = user_params[key]
     except KeyError:
-        wcdma_band = WCDMA_BAND_1
+        wcdma_band = DEFAULT_WCDMA_BAND
     return wcdma_band
 
 
@@ -1341,7 +1451,7 @@ def get_gsm_band(user_params, cell_no):
     try:
         gsm_band = user_params[key]
     except KeyError:
-        gsm_band = GSM_BAND_GSM850
+        gsm_band = DEFAULT_GSM_BAND
     return gsm_band
 
 
@@ -1361,8 +1471,24 @@ def get_1x_band(user_params, cell_no):
     try:
         cdma_1x_band = user_params[key]
     except KeyError:
-        cdma_1x_band = CDMA_1X_BAND_0
+        cdma_1x_band = DEFAULT_CDMA1X_BAND
     return cdma_1x_band
+
+
+def get_evdo_band(user_params, cell_no):
+    """ Returns the EVDO BAND to be used from the user specified parameters
+        or default value
+
+    Args:
+        user_params: pointer to user supplied parameters
+        cell_no: specify the cell number this BTS is configured
+        Anritsu supports two cells. so cell_1 or cell_2
+
+    Returns:
+        EVDO BAND to be used
+    """
+    key = "cell{}_evdo_band".format(cell_no)
+    return user_params.get(key, DEFAULT_EVDO_BAND)
 
 
 def get_wcdma_rac(user_params, cell_no):
@@ -1598,11 +1724,7 @@ def get_1x_channel(user_params, cell_no):
         1X Channel to be used
     """
     key = "cell{}_1x_channel".format(cell_no)
-    try:
-        cdma_1x_channel = user_params[key]
-    except KeyError:
-        cdma_1x_channel = CDMA1X_CHANNEL_356
-    return cdma_1x_channel
+    return user_params.get(key, DEFAULT_CDMA1X_CHANNEL)
 
 
 def get_1x_sid(user_params, cell_no):
@@ -1638,11 +1760,39 @@ def get_1x_nid(user_params, cell_no):
         1X NID to be used
     """
     key = "cell{}_1x_nid".format(cell_no)
-    try:
-        cdma_1x_nid = user_params[key]
-    except KeyError:
-        cdma_1x_nid = CDMA1X_NID_65535
-    return cdma_1x_nid
+    return user_params.get(key, CDMA1X_NID_65535)
+
+
+def get_evdo_channel(user_params, cell_no):
+    """ Returns the EVDO Channel to be used from the user specified parameters
+        or default value
+
+    Args:
+        user_params: pointer to user supplied parameters
+        cell_no: specify the cell number this BTS is configured
+        Anritsu supports two cells. so cell_1 or cell_2
+
+    Returns:
+        EVDO Channel to be used
+    """
+    key = "cell{}_evdo_channel".format(cell_no)
+    return user_params.get(key, DEFAULT_EVDO_CHANNEL)
+
+
+def get_evdo_sid(user_params, cell_no):
+    """ Returns the EVDO SID to be used from the user specified parameters
+        or default value
+
+    Args:
+        user_params: pointer to user supplied parameters
+        cell_no: specify the cell number this BTS is configured
+        Anritsu supports two cells. so cell_1 or cell_2
+
+    Returns:
+        EVDO SID to be used
+    """
+    key = "cell{}_evdo_sid".format(cell_no)
+    return user_params.get(key, DEFAULT_EVDO_SECTOR_ID)
 
 
 def get_csfb_type(user_params):
