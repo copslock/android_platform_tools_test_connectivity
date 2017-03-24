@@ -67,14 +67,21 @@ class TelLiveSmsTest(TelephonyBaseTest):
         # The path for "sim config file" should be set
         # in "testbed.config" entry "sim_conf_file".
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
+        self.wifi_network_pass = self.user_params.get("wifi_network_pass")
+        # Try to put SMS and call on different help device
+        # If it is a three phone test bed, use the first one as dut,
+        # use the second one as sms/mms help device, use the third one
+        # as the active call help device.
+        self.caller = self.android_devices[0]
+        if len(self.android_devices) > 2:
+            self.callee = self.android_devices[2]
+        else:
+            self.callee = self.android_devices[1]
+        self.message_lengths = (50, 160, 180)
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        is_roaming = False
         for ad in self.android_devices:
             #verizon supports sms over wifi. will add more carriers later
             if "vzw" in [
@@ -87,6 +94,11 @@ class TelLiveSmsTest(TelephonyBaseTest):
             #not needed for now. might need for image attachment later
             #ad.adb.shell("pm grant com.google.android.apps.messaging "
             #             "android.permission.READ_EXTERNAL_STORAGE")
+            if getattr(ad, 'data_roaming', False):
+                is_roaming = True
+        if is_roaming:
+            # roaming device does not allow message of length 180
+            self.message_lengths = (50, 160)
 
     def teardown_test(self):
         ensure_phones_idle(self.log, self.android_devices)
@@ -98,17 +110,16 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-
-        message_arrays = [[rand_ascii_str(50)], [rand_ascii_str(160)],
-                          [rand_ascii_str(180)]]
-
-        for message_array in message_arrays:
+        for length in self.message_lengths:
+            message_array = [rand_ascii_str(length)]
             if not sms_send_receive_verify(self.log, ads[0], ads[1],
                                            message_array):
-                self.log.error("SMS of length %s test fail",
-                               message_array.length())
+                ads[0].log.warning("SMS of length %s test failed", length)
                 return False
-        self.log.info("SMS test succeed.")
+            else:
+                ads[0].log.info("SMS of length %s test succeeded", length)
+        self.log.info("SMS test of length %s characters succeeded.",
+                      self.message_lengths)
         return True
 
     def _mms_test(self, ads):
@@ -118,14 +129,17 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if mms_send_receive_verify(
-                self.log, ads[0], ads[1],
-            [("Test Message", "Basic Message Body", None)]):
-            self.log.info("MMS is send and received successfully")
-            return True
-        else:
-            self.log.warn("MMS is not send and received successfully")
-            return False
+        for length in self.message_lengths:
+            message_array = [("Test Message", rand_ascii_str(length), None)]
+            if not mms_send_receive_verify(self.log, ads[0], ads[1],
+                                           message_array):
+                self.log.warning("MMS of body length %s test failed", length)
+                return False
+            else:
+                self.log.info("MMS of body length %s test succeeded", length)
+        self.log.info("MMS test of body lengths %s succeeded",
+                      self.message_lengths)
+        return True
 
     def _mms_test_after_call_hangup(self, ads):
         """Test MMS send out after call hang up.
@@ -173,8 +187,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_3g,
                 verify_callee_func=None):
@@ -190,8 +204,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_3g,
                 verify_callee_func=None):
@@ -207,8 +221,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_3g,
                 verify_callee_func=None):
@@ -223,8 +237,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_3g,
                 verify_callee_func=None):
@@ -239,8 +253,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_2g,
                 verify_callee_func=None):
@@ -256,8 +270,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_2g,
                 verify_callee_func=None):
@@ -273,8 +287,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_2g,
                 verify_callee_func=None):
@@ -289,8 +303,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_2g,
                 verify_callee_func=None):
@@ -305,8 +319,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
@@ -322,8 +336,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
@@ -339,8 +353,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
@@ -355,8 +369,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
@@ -371,8 +385,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
@@ -388,8 +402,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_csfb,
                 verify_callee_func=None):
@@ -405,8 +419,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_csfb,
                 verify_callee_func=None):
@@ -421,8 +435,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
-                ads[0],
-                ads[1],
+                self.caller,
+                self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_csfb,
                 verify_callee_func=None):
