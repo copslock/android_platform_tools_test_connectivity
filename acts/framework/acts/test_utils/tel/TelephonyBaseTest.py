@@ -189,11 +189,9 @@ class TelephonyBaseTest(BaseTestClass):
                                    sim_conf_file)
                     return False
 
-        setattr(
-            self,
-            "diag_logger",
-            self.register_controller(
-                acts.controllers.diag_logger, required=False))
+        setattr(self, "diag_logger",
+                self.register_controller(
+                    acts.controllers.diag_logger, required=False))
 
         ensure_phones_default_state(self.log, self.android_devices)
         for ad in self.android_devices:
@@ -247,9 +245,6 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def setup_test(self):
-        for ad in self.android_devices:
-            refresh_droid_config(self.log, ad)
-
         if getattr(self, "diag_logger", None):
             for logger in self.diag_logger:
                 self.log.info("Starting a diagnostic session %s", logger)
