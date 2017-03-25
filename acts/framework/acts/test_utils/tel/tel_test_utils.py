@@ -159,7 +159,8 @@ def abort_all_tests(log, msg):
 
 
 def get_phone_number_by_adb(ad):
-    return ad.adb.shell("service call iphonesubinfo 13")
+    return phone_number_formatter(
+        ad.adb.shell("service call iphonesubinfo 13"))
 
 
 def get_iccid_by_adb(ad):
@@ -188,13 +189,16 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
             log.warning("Failed to load %s!", sim_filename)
 
     sub_id = get_sub_id_by_adb(ad)
-    phone_number = get_phone_number_by_adb(ad) or sim_data[iccid]["phone_num"]
+    if iccid in sim_data and sim_data[iccid].get("phone_num"):
+        phone_number = phone_number_formatter(sim_data[iccid]["phone_num"])
+    else:
+        phone_number = get_phone_number_by_adb(ad)
     if not phone_number:
         abort_all_tests(ad.log, "Failed to find valid phone number")
     sim_record = {
-        'phone_num': phone_number_formatter(phone_number),
+        'phone_num': phone_number,
         'iccid': get_iccid_by_adb(ad),
-        'operator': get_operator_by_adb(ad)
+        'sim_operator_name': get_operator_by_adb(ad)
     }
     device_props = {'subscription': {sub_id: sim_record}}
     ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
@@ -222,10 +226,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 "Puk and puk_pin provided in testbed config do NOT work")
         time.sleep(WAIT_TIME_SUPPLY_PUK_CODE)
 
-    if getattr(ad, 'data_roaming', False):
-        ad.log.info("Enable cell data roaming")
-        toggle_cell_data_roaming(ad, True)
-
+    refresh_droid_config(log, ad)
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
@@ -238,43 +239,42 @@ def setup_droid_properties(log, ad, sim_filename=None):
     except Exception:
         log.warning("Failed to load %s!", sim_filename)
         sim_data = {}
-    sub_info_list = ad.droid.subscriptionGetAllSubInfoList()
-    found_sims = 0
-    for sub_info in sub_info_list:
-        sub_id = sub_info['subscriptionId']
-        if sub_info['simSlotIndex'] is not INVALID_SIM_SLOT_INDEX:
-            found_sims += 1
-            sim_record = {}
-            sim_serial = ad.droid.telephonyGetSimSerialNumberForSubscription(
-                sub_id)
-            if not sim_serial:
-                ad.log.error("Unable to find ICC-ID for SIM")
-            number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
-            if not number:
-                ad.log.warning("Unable to retrieve phone number from device")
-                if sim_serial not in sim_data:
-                    ad.log.error("ICCID %s is not provided in sim file %s",
-                                 sim_serial, sim_filename)
-                    abort_all_tests(
-                        ad.log,
-                        "Failed to find valid phone number for ICCID %s" %
-                        sim_serial)
-                number = sim_data[sim_serial]["phone_num"]
-            sim_record['phone_num'] = number
-            sim_record['iccid'] = sim_serial
-            sim_record['operator'] = get_operator_name(log, ad, sub_id)
-            device_props['subscription'][sub_id] = sim_record
-            ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
+    if not ad.cfg["subscription"]:
+        abort_all_tests(ad.log, "No Valid SIMs found in device")
+    for sub_id, sub_info in ad.cfg["subscription"].items():
+        sub_info["operator"] = get_operator_name(log, ad, sub_id)
+        iccid = sub_info["iccid"]
+        if not iccid:
+            ad.log.warn("Unable to find ICC-ID for SIM")
+            continue
+        if not sub_info["phone_num"]:
+            if iccid not in sim_data or not sim_data[iccid].get("phone_num"):
+                abort_all_tests(
+                    ad.log,
+                    "Failed to find valid phone number for ICCID %s in %s" %
+                    (iccid, sim_filename))
+            else:
+                sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+        elif sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
+            if not check_phone_number_match(sub_info["phone_num"],
+                                            sim_data[iccid]["phone_num"]):
+                ad.log.error(
+                    "ICCID %s phone number is %s in %s, does not match "
+                    "the number %s retrieved from the phone", iccid,
+                    sim_data[iccid]["phone_num"], sim_filename,
+                    sub_info["phone_num"])
+            sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+        if sub_info["sim_operator_name"] != sub_info["network_operator_name"]:
+            setattr(ad, 'data_roaming', True)
+    if getattr(ad, 'data_roaming', False):
+        ad.log.info("Enable cell data roaming")
+        toggle_cell_data_roaming(ad, True)
 
-    if found_sims == 0:
-        ad.log.warning("No Valid SIMs found in device")
-    setattr(ad, 'cfg', device_props)
+    ad.log.info("cfg = %s", ad.cfg)
 
 
 def refresh_droid_config(log, ad):
     """ Update Android Device cfg records for each sub_id.
-    1. Update Phone Number using Line1Number (if Line1Number is valid).
-    2. Update Operator name.
 
     Args:
         log: log object
@@ -283,17 +283,53 @@ def refresh_droid_config(log, ad):
     Returns:
         None
     """
-    if not hasattr(ad, 'cfg'):
-        return
-    for sub_id in ad.cfg['subscription']:
-        # Update Phone number
-        number = ad.droid.telephonyGetLine1NumberForSubscription(sub_id)
-        if number:
-            number = phone_number_formatter(number)
-            ad.cfg['subscription'][sub_id]['phone_num'] = number
-        # Update Operator Name
-        ad.cfg['subscription'][sub_id]['operator'] = get_operator_name(log, ad,
-                                                                       sub_id)
+    cfg = {"subscription": {}}
+    droid = ad.droid
+    sub_info_list = droid.subscriptionGetAllSubInfoList()
+    for sub_info in sub_info_list:
+        sub_id = sub_info["subscriptionId"]
+        sim_slot = sub_info["simSlotIndex"]
+        if sim_slot != INVALID_SIM_SLOT_INDEX:
+            sim_serial = droid.telephonyGetSimSerialNumberForSubscription(
+                sub_id)
+            if not sim_serial:
+                ad.log.error("Unable to find ICC-ID for SIM in slot %s",
+                             sim_slot)
+            sim_record = {}
+            sim_record["iccid"] = sim_serial
+            sim_record["sim_slot"] = sim_slot
+            try:
+                sim_record[
+                    "phone_type"] = droid.telephonyGetPhoneTypeForSubscription(
+                        sub_id)
+            except:
+                sim_record["phone_type"] = droid.telephonyGetPhoneType()
+            sim_record[
+                "sim_plmn"] = droid.telephonyGetSimOperatorForSubscription(
+                    sub_id)
+            sim_record[
+                "sim_operator_name"] = droid.telephonyGetSimOperatorNameForSubscription(
+                    sub_id)
+            sim_record[
+                "network_plmn"] = droid.telephonyGetNetworkOperatorForSubscription(
+                    sub_id)
+            sim_record[
+                "network_operator_name"] = droid.telephonyGetNetworkOperatorNameForSubscription(
+                    sub_id)
+            sim_record[
+                "network_type"] = droid.telephonyGetNetworkTypeForSubscription(
+                    sub_id)
+            sim_record[
+                "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
+                    sub_id)
+            sim_record["phone_num"] = phone_number_formatter(
+                droid.telephonyGetLine1NumberForSubscription(sub_id))
+            sim_record[
+                "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
+                    sub_id)
+            cfg['subscription'][sub_id] = sim_record
+            ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
+    setattr(ad, 'cfg', cfg)
 
 
 def get_slot_index_from_subid(log, ad, sub_id):
@@ -578,7 +614,8 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
 def wait_and_answer_call(log,
                          ad,
                          incoming_number=None,
-                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+                         caller=None):
     """Wait for an incoming call on default voice subscription and
        accepts the call.
 
@@ -597,8 +634,12 @@ def wait_and_answer_call(log,
         False: for errors
         """
     return wait_and_answer_call_for_subscription(
-        log, ad,
-        get_incoming_voice_sub_id(ad), incoming_number, incall_ui_display)
+        log,
+        ad,
+        get_incoming_voice_sub_id(ad),
+        incoming_number,
+        incall_ui_display=incall_ui_display,
+        caller=caller)
 
 
 def wait_for_ringing_event(log, ad, wait_time):
@@ -746,9 +787,9 @@ def wait_and_answer_call_for_subscription(
         ad,
         sub_id,
         incoming_number=None,
-        caller=None,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-        timeout=MAX_WAIT_TIME_CALLEE_RINGING):
+        timeout=MAX_WAIT_TIME_CALLEE_RINGING,
+        caller=None):
     """Wait for an incoming call on specified subscription and
        accepts the call.
 
@@ -994,26 +1035,16 @@ def check_phone_number_match(number1, number2):
     Returns:
         True if two phone numbers match. Otherwise False.
     """
+    number1 = phone_number_formatter(number1)
+    number2 = phone_number_formatter(number2)
     # Handle extra country code attachment when matching phone number
     if number1.replace("+", "") in number2 or number2.replace("+",
                                                               "") in number1:
         return True
-    # Remove country code and prefix
-    number1, country_code1 = _phone_number_remove_prefix(number1)
-    number2, country_code2 = _phone_number_remove_prefix(number2)
-    if ((country_code1 is not None) and (country_code2 is not None) and
-        (country_code1 != country_code2)):
-        logging.info("country_code1 %s and country_code2 %s does not match" %
-                     (country_code1, country_code2))
-        return False
-    # Remove white spaces, dashes, dots
-    number1 = phone_number_formatter(number1)
-    number2 = phone_number_formatter(number2)
-    if number1 != number2:
+    else:
         logging.info("phone number1 %s and number2 %s does not match" %
                      (number1, number2))
         return False
-    return True
 
 
 def initiate_call(log,
@@ -1496,8 +1527,8 @@ def phone_number_formatter(input_string, formatter=None):
     """
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
-    input_string = input_string.replace(" ", "").replace("-", "").replace(".",
-                                                                          "")
+    input_string = input_string.replace(" ", "").replace(
+        "-", "").replace(".", "").strip("0")
     if not formatter:
         return input_string
     # Remove "1"  or "+1"from front
@@ -1680,11 +1711,7 @@ def iperf_test_by_adb(log,
         return False
 
 
-def parse_ping_ouput(log,
-                     ad,
-                     count,
-                     out,
-                     loss_tolerance=20):
+def parse_ping_ouput(log, ad, count, out, loss_tolerance=20):
     """Ping Parsing util.
 
     Args:
@@ -1708,23 +1735,19 @@ def parse_ping_ouput(log,
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
 
     if (packet_loss >= loss_tolerance or
-        packet_xmit < count * min_packet_xmit_rcvd or
-        packet_rcvd < count * min_packet_xmit_rcvd):
+            packet_xmit < count * min_packet_xmit_rcvd or
+            packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error(
             "More than %d %% packet loss seen, Expected Packet_count %d \
             Packet loss %.2f%% Packets_xmitted %d Packets_rcvd %d",
             loss_tolerance, count, packet_loss, packet_xmit, packet_rcvd)
         return False
-    ad.log.info("Pkt_count %d Pkt_loss %.2f%% Pkt_xmit %d Pkt_rcvd %d",
-                count, packet_loss, packet_xmit, packet_rcvd)
+    ad.log.info("Pkt_count %d Pkt_loss %.2f%% Pkt_xmit %d Pkt_rcvd %d", count,
+                packet_loss, packet_xmit, packet_rcvd)
     return True
 
 
-def adb_shell_ping(log,
-                   ad,
-                   count=120,
-                   dest_ip="www.google.com",
-                   timeout=200):
+def adb_shell_ping(log, ad, count=120, dest_ip="www.google.com", timeout=200):
     """Ping utility using adb shell.
 
     Args:
@@ -1741,8 +1764,8 @@ def adb_shell_ping(log,
     if dest_ip:
         ping_cmd += " %s | tee /data/ping.txt" % dest_ip
     try:
-        ad.log.info("Starting ping test to %s using adb command %s",
-                    dest_ip, ping_cmd)
+        ad.log.info("Starting ping test to %s using adb command %s", dest_ip,
+                    ping_cmd)
         out = ad.adb.shell(ping_cmd, timeout=timeout)
         if not parse_ping_ouput(log, ad, count, out):
             return False
@@ -2723,10 +2746,10 @@ def get_operator_name(log, ad, subId=None):
     try:
         if subId is not None:
             result = operator_name_from_plmn_id(
-                ad.droid.telephonyGetSimOperatorForSubscription(subId))
+                ad.droid.telephonyGetNetworkOperatorForSubscription(subId))
         else:
             result = operator_name_from_plmn_id(
-                ad.droid.telephonyGetSimOperator())
+                ad.droid.telephonyGetNetworkOperator())
     except KeyError:
         result = CARRIER_UNKNOWN
     return result
@@ -2910,8 +2933,9 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
     for text in array_message:
+        length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
-                       phonenumber_tx, phonenumber_rx, len(text), text)
+                       phonenumber_tx, phonenumber_rx, length, text)
         result = False
         ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
@@ -2922,7 +2946,8 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_tx.ed.pop_event(EventSmsSentSuccess,
                                    MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
-                ad_tx.log.error("No sent_success event.")
+                ad_tx.log.error("No sent_success event for SMS of length %s.",
+                                length)
                 return False
 
             if not wait_for_matching_sms(
@@ -2931,6 +2956,8 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                     phonenumber_tx,
                     text,
                     allow_multi_part_long_sms=True):
+                ad_rx.log.error("No matching received SMS of length %s.",
+                                length)
                 return False
         finally:
             ad_rx.droid.smsStopTrackingIncomingSmsMessage()
@@ -3222,17 +3249,23 @@ def ensure_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
         return True
 
-    # Update the setting if necessary
-    operator = get_operator_name(log, ad, sub_id)
     try:
-        network_preference = network_preference_for_generaton(generation,
-                                                              operator)
-        rat_family = rat_family_for_generation(generation, operator)
-    except KeyError:
-        ad.log.error("Failed to find a rat_family entry for "
-                     "PLMN: %s, operator:%s, generation: %s",
-                     ad.droid.telephonyGetSimOperatorForSubscription(sub_id),
-                     operator, generation)
+        ad.log.info("Finding the network preference for generation %s for "
+                    "operator %s phone type %s", generation,
+                    ad.cfg["subscription"][sub_id]["operator"],
+                    ad.cfg["subscription"][sub_id]["phone_type"])
+        network_preference = network_preference_for_generaton(
+            generation, ad.cfg["subscription"][sub_id]["operator"],
+            ad.cfg["subscription"][sub_id]["phone_type"])
+        ad.log.info("Network preference for %s is %s", generation,
+                    network_preference)
+        rat_family = rat_family_for_generation(
+            generation, ad.cfg["subscription"][sub_id]["operator"],
+            ad.cfg["subscription"][sub_id]["phone_type"])
+    except KeyError as e:
+        ad.log.error("Failed to find a rat_family entry for generation %s"
+                     " for subscriber %s with error %s", generation,
+                     ad.cfg["subscription"][sub_id], e)
         return False
 
     current_network_preference = \
@@ -3835,18 +3868,15 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
     Returns:
         None
     """
-    sub_info_list = ad.droid.subscriptionGetAllSubInfoList()
-    for sub_info in sub_info_list:
-        sub_id = sub_info['subscriptionId']
-        operator = get_operator_name(log, ad, sub_id)
+    for sub_id, sub_info in ad.cfg["subscription"].items():
         current_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
         ad.log.debug("sub_id network preference is %s", current_preference)
         try:
             if current_preference not in get_allowable_network_preference(
-                    operator):
-                network_preference = network_preference_for_generaton(GEN_4G,
-                                                                      operator)
+                    sub_info["operator"], sub_info["phone_type"]):
+                network_preference = network_preference_for_generaton(
+                    GEN_4G, sub_info["operator"], sub_info["phone_type"])
                 ad.droid.telephonySetPreferredNetworkTypesForSubscription(
                     network_preference, sub_id)
         except KeyError:
