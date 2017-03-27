@@ -360,9 +360,8 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "serial": self.serial
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {"serial": self.serial})
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -416,7 +415,7 @@ class AndroidDevice:
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        if self.adb_logcat_process:
+        if self.is_adb_logcat_on:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
         sl4a_client.stop_sl4a(self.adb)
@@ -556,7 +555,14 @@ class AndroidDevice:
         """Whether there is an ongoing adb logcat collection.
         """
         if self.adb_logcat_process:
-            return True
+            ret = self.adb_logcat_process.poll()
+            if ret is None:
+                return True
+            else:
+                if self.droid:
+                    self.droid.logI('Logcat died')
+                self.log.error('Logcat died on %s' % self.adb_logcat_file_path)
+                return False
         return False
 
     def load_config(self, config):
@@ -719,9 +725,15 @@ class AndroidDevice:
                         if in_range:
                             break
 
-    def start_adb_logcat(self):
+    def start_adb_logcat(self, cont_logcat_file=False):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
+
+        Args:
+            cont_logcat_file: Specifies whether to continue the previous logcat
+                              file.  This allows for start_adb_logcat to act
+                              as a restart logcat function if it is noticed
+                              logcat is no longer running.
         """
         if self.is_adb_logcat_on:
             raise AndroidDeviceError(("Android device {} already has an adb "
@@ -731,9 +743,16 @@ class AndroidDevice:
         # because 'start' doesn't support --clear option before Android N.
         self.adb.shell("logpersist.stop --clear")
         self.adb.shell("logpersist.start")
-        f_name = "adblog,{},{}.txt".format(self.model, self.serial)
-        utils.create_dir(self.log_path)
-        logcat_file_path = os.path.join(self.log_path, f_name)
+        if cont_logcat_file:
+            if self.droid:
+                self.droid.logI('Restarting logcat')
+            self.log.warning('Restarting logcat on file %s' %
+                             self.adb_logcat_file_path)
+            logcat_file_path = self.adb_logcat_file_path
+        else:
+            f_name = "adblog,{},{}.txt".format(self.model, self.serial)
+            utils.create_dir(self.log_path)
+            logcat_file_path = os.path.join(self.log_path, f_name)
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
