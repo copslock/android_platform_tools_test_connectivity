@@ -40,14 +40,12 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                       "MatchFilter": {"int0": 14,
                                       "data0": "MESSAGE_ALL"},
                       "PublishType": 0,
-                      "PublishCount": 0,
                       "TtlSec": 0}
     subscribe_config = {"ServiceName": "GoogleTestServiceX",
                         "ServiceSpecificInfo": "Data ABC",
                         "MatchFilter": {"int0": 14,
                                         "data0": "MESSAGE_ALL"},
                         "SubscribeType": 0,
-                        "SubscribeCount": 0,
                         "TtlSec": 0,
                         "MatchStyle": 0}
     rtt_24_20 = {"deviceType": 5,
