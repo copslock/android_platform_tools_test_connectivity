@@ -845,11 +845,13 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
         ad.droid.wifiStopTrackingStateChange()
 
 
-def wait_for_connect(ad, tries):
+def wait_for_connect(ad, ssid=None, id=None, tries=1):
     """Wait for a connect event on queue and pop when available.
 
     Args:
         ad: An Android device object.
+        ssid: SSID of the network to connect to.
+        id: Network Id of the network to connect to.
         tries: An integer that is the number of times to try before failing.
 
     Returns:
@@ -873,12 +875,21 @@ def wait_for_connect(ad, tries):
 
     """
     connect_result = None
+
+    # Either ssid or network id should be given.
+    if id is None and ssid is None:
+        return None
+
     for i in range(tries):
         try:
             connect_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 30)
-            break
+            if id and connect_result['data'][WifiEnums.NETID_KEY] == id:
+                break
+            elif ssid and connect_result['data'][WifiEnums.SSID_KEY] == ssid:
+                break
         except Empty:
             pass
+
     return connect_result
 
 
@@ -931,7 +942,7 @@ def _wifi_connect(ad, network, num_of_tries=1):
     ad.log.info("Starting connection process to %s", expected_ssid)
     try:
         event = ad.ed.pop_event(wifi_constants.CONNECT_BY_CONFIG_SUCCESS, 30)
-        connect_result = wait_for_connect(ad, num_of_tries)
+        connect_result = wait_for_connect(ad, ssid=expected_ssid, tries=num_of_tries)
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
                             (network, ad.serial))
@@ -961,7 +972,7 @@ def _wifi_connect(ad, network, num_of_tries=1):
         ad.droid.wifiStopTrackingStateChange()
 
 
-def wifi_connect_by_id(ad, network_id, num_of_tries=1, assert_on_fail=True):
+def wifi_connect_by_id(ad, network_id, num_of_tries=3, assert_on_fail=True):
     """Connect an Android device to a wifi network using network Id.
 
     Start connection to the wifi network, with the given network Id, wait for
@@ -997,14 +1008,14 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
         num_of_tries: An integer that is the number of times to try before
                       delaring failure. Default is 1.
     """
-    # Clear all previous connect events.
-    ad.ed.clear_events(wifi_constants.WIFI_CONNECTED)
     ad.droid.wifiStartTrackingStateChange()
+    # Clear all previous events.
+    ad.ed.clear_all_events()
     ad.droid.wifiConnectByNetworkId(network_id)
     ad.log.info("Starting connection to network with id %d", network_id)
     try:
         event = ad.ed.pop_event(wifi_constants.CONNECT_BY_NETID_SUCCESS, 60)
-        connect_result = wait_for_connect(ad, num_of_tries)
+        connect_result = wait_for_connect(ad, id=network_id, tries=num_of_tries)
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network using network id")
         ad.log.debug("Wi-Fi connection result: %s", connect_result)
