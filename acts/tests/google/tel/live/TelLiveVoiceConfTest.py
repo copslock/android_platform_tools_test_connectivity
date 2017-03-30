@@ -374,14 +374,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
-                0].serial))
+            self.log.error(
+                "{} not CDMA phone, abort this 1x test.".format(ads[0].serial))
             return None, None, None
 
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
@@ -391,8 +392,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if num_active_calls(self.log, ads[0]) != 3:
             return None, None, None
         for call_id in calls:
-            if (CALL_CAPABILITY_MERGE_CONFERENCE in
-                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+            if (CALL_CAPABILITY_MERGE_CONFERENCE in ads[0]
+                    .droid.telecomCallGetCapabilities(call_id)):
                 call_conf_id = call_id
             elif call_id != call_ab_id:
                 call_ac_id = call_id
@@ -415,14 +416,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
-                0].serial))
+            self.log.error(
+                "{} not CDMA phone, abort this 1x test.".format(ads[0].serial))
             return None, None, None
 
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
@@ -433,8 +435,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if num_active_calls(self.log, ads[0]) != 3:
             return None, None, None
         for call_id in calls:
-            if (CALL_CAPABILITY_SWAP_CONFERENCE in
-                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+            if (CALL_CAPABILITY_SWAP_CONFERENCE in ads[0]
+                    .droid.telecomCallGetCapabilities(call_id)):
                 call_conf_id = call_id
             elif call_id != call_ab_id:
                 call_ac_id = call_id
@@ -469,14 +471,15 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         # make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("{} not CDMA phone, abort this 1x test.".format(ads[
-                0].serial))
+            self.log.error(
+                "{} not CDMA phone, abort this 1x test.".format(ads[0].serial))
             return None, None, None
 
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_1x, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_1x, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None, None
@@ -487,8 +490,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if num_active_calls(self.log, ads[0]) != 3:
             return None, None, None
         for call_id in calls:
-            if (CALL_CAPABILITY_SWAP_CONFERENCE in
-                    ads[0].droid.telecomCallGetCapabilities(call_id)):
+            if (CALL_CAPABILITY_SWAP_CONFERENCE in ads[0]
+                    .droid.telecomCallGetCapabilities(call_id)):
                 call_conf_id = call_id
             elif call_id != call_ab_id:
                 call_ac_id = call_id
@@ -570,8 +573,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         self.log.info("Drop current call on Host.")
         if not self._hangup_call(host, "Host"):
             return False
-        if not wait_and_answer_call(self.log, host, get_phone_number(
-                self.log, held_participant_ad)):
+        if not wait_and_answer_call(self.log, host,
+                                    get_phone_number(self.log,
+                                                     held_participant_ad)):
             self.log.error("Did not receive call back.")
             return False
         time.sleep(WAIT_TIME_IN_CALL)
@@ -585,8 +589,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if not self._hangup_call(host, "Host"):
             return False
         time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log, [host, held_participant_ad,
-                                              active_participant_ad], False):
+        if not verify_incall_state(self.log, [
+                host, held_participant_ad, active_participant_ad
+        ], False):
             return False
         return True
 
@@ -666,9 +671,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [phone_setup_volte, phone_setup_volte, phone_setup_volte], [
+                is_phone_in_call_volte, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -711,9 +717,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [phone_setup_volte, phone_setup_volte, phone_setup_volte], [
+                is_phone_in_call_volte, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -756,9 +763,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_volte, phone_setup_volte],
-            [is_phone_in_call_volte, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [phone_setup_volte, phone_setup_volte, phone_setup_volte], [
+                is_phone_in_call_volte, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -808,9 +816,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mo(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g], [
+                is_phone_in_call_volte, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -860,9 +869,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mo_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g], [
+                is_phone_in_call_volte, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -912,9 +922,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         call_ab_id = self._three_phone_call_mt_add_mt(
             [ads[0], ads[1], ads[2]],
-            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g],
-            [is_phone_in_call_volte, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [phone_setup_volte, phone_setup_voice_3g, phone_setup_voice_3g], [
+                is_phone_in_call_volte, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -958,8 +969,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mo(
@@ -1009,8 +1020,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mt(
@@ -1060,8 +1071,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         call_ab_id = self._three_phone_call_mt_add_mt(
@@ -1115,9 +1126,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_3g, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1165,9 +1177,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_3g, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_3g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1215,9 +1228,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_3g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_wcdma, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_3g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_wcdma, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1265,9 +1279,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_csfb, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_csfb, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_csfb, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_csfb, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1315,9 +1330,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_csfb, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_csfb, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_csfb, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_csfb, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1450,14 +1466,14 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                     ads[0].droid.telecomCallGetCallChildren(call_conf_id)))
             return None
 
-        if (CALL_PROPERTY_CONFERENCE not in
-                ads[0].droid.telecomCallGetProperties(call_conf_id)):
+        if (CALL_PROPERTY_CONFERENCE not in ads[0]
+                .droid.telecomCallGetProperties(call_conf_id)):
             self.log.error("Conf call id properties wrong: {}".format(ads[
                 0].droid.telecomCallGetProperties(call_conf_id)))
             return None
 
-        if (CALL_CAPABILITY_MANAGE_CONFERENCE not in
-                ads[0].droid.telecomCallGetCapabilities(call_conf_id)):
+        if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
+                .droid.telecomCallGetCapabilities(call_conf_id)):
             self.log.error("Conf call id capabilities wrong: {}".format(ads[
                 0].droid.telecomCallGetCapabilities(call_conf_id)))
             return None
@@ -1789,8 +1805,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         """
 
-        self.log.info("Hangup at {}, verify call continues.".format(
-            ad_hangup.serial))
+        self.log.info(
+            "Hangup at {}, verify call continues.".format(ad_hangup.serial))
         if not self._hangup_call(ad_hangup):
             ad_hangup.log.error("Phone fails to hang up")
             return False
@@ -1798,8 +1814,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         if ad_verify.droid.telecomCallGetCallState(call_id) != call_state:
             self.log.error("Call_id:{}, state:{}, expected: {}".format(
-                call_id, ad_verify.droid.telecomCallGetCallState(
-                    call_id), call_state))
+                call_id,
+                ad_verify.droid.telecomCallGetCallState(call_id), call_state))
             return False
         ad_verify.log.info("Call in expected %s state", call_state)
         # TODO: b/26296375 add voice check.
@@ -1834,9 +1850,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_epdg_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
-             is_phone_in_call_iwlan])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+                is_phone_in_call_iwlan
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1880,9 +1897,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_epdg_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
-             is_phone_in_call_iwlan])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+                is_phone_in_call_iwlan
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1926,9 +1944,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mt_mt_add_epdg_swap_x in test cases.
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_iwlan,
-             is_phone_in_call_iwlan])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_iwlan,
+                is_phone_in_call_iwlan
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -1972,9 +1991,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_volte_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2018,9 +2038,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_volte_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2064,9 +2085,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mt_mt_add_volte_swap_x in test cases.
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_volte,
-             is_phone_in_call_volte])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_volte,
+                is_phone_in_call_volte
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2117,9 +2139,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mo_add_wcdma_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2170,9 +2193,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
         call_ab_id = self._three_phone_call_mo_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2223,9 +2247,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # To make thing simple, for epdg, setup should be called before calling
         # _test_epdg_mo_mt_add_wcdma_swap_x in test cases.
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]], [None, None, None],
-            [is_phone_in_call_iwlan, is_phone_in_call_wcdma,
-             is_phone_in_call_wcdma])
+            [ads[0], ads[1], ads[2]], [None, None, None], [
+                is_phone_in_call_iwlan, is_phone_in_call_wcdma,
+                is_phone_in_call_wcdma
+            ])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -2269,8 +2294,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
@@ -2321,8 +2346,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
@@ -2373,8 +2398,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         # make sure PhoneB and PhoneC are CDMA phone before proceed.
         for ad in [ads[1], ads[2]]:
             if (ad.droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-                self.log.error("{} not CDMA phone, abort 1x swap test.".format(
-                    ad.serial))
+                self.log.error(
+                    "{} not CDMA phone, abort 1x swap test.".format(ad.serial))
                 return None, None
 
         # To make thing simple, for epdg, setup should be called before calling
@@ -9330,9 +9355,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mo_add_mo(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_2g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_2g, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_2g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_2g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -9380,9 +9406,10 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return None, None
 
         call_ab_id = self._three_phone_call_mt_add_mt(
-            [ads[0], ads[1], ads[2]],
-            [phone_setup_voice_2g, phone_setup_voice_general,
-             phone_setup_voice_general], [is_phone_in_call_2g, None, None])
+            [ads[0], ads[1], ads[2]], [
+                phone_setup_voice_2g, phone_setup_voice_general,
+                phone_setup_voice_general
+            ], [is_phone_in_call_2g, None, None])
         if call_ab_id is None:
             self.log.error("Failed to get call_ab_id")
             return None, None
@@ -9534,6 +9561,30 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         return self._test_gsm_conference_merge_drop(call_ab_id, call_ac_id)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_gsm_mo_mo_add_swap_twice_drop_active(self):
+        """Test swap feature in GSM call.
+
+        PhoneA (GSM) call PhoneB, accept on PhoneB.
+        PhoneA (GSM) call PhoneC, accept on PhoneC.
+        Swap active call on PhoneA.
+        Swap active call on PhoneA.
+        Hangup call from PhoneC, check if call continues between AB.
+
+        """
+        ads = self.android_devices
+
+        call_ab_id, call_ac_id = self._test_gsm_mo_mo_add_swap_x(1)
+        if call_ab_id is None or call_ac_id is None:
+            return False
+
+        return self._three_phone_hangup_call_verify_call_state(
+            ad_hangup=ads[2],
+            ad_verify=ads[0],
+            call_id=call_ab_id,
+            call_state=self._get_expected_call_state(ads[0]),
+            ads_active=[ads[0], ads[1]])
 
     @TelephonyBaseTest.tel_test_wrap
     def test_epdg_mo_mo_add_epdg_merge_drop_second_call_from_participant_wfc_apm_wifi_preferred_no_cep(
