@@ -25,7 +25,7 @@ from acts.controllers.anritsu_lib.md8475a import VirtualPhoneAutoAnswer
 from acts.controllers.anritsu_lib.md8475a import VirtualPhoneStatus
 from acts.test_utils.tel.anritsu_utils import WAIT_TIME_ANRITSU_REG_AND_CALL
 from acts.test_utils.tel.anritsu_utils import call_mo_setup_teardown
-from acts.test_utils.tel.anritsu_utils import ims_mo_cs_teardown
+from acts.test_utils.tel.anritsu_utils import ims_call_cs_teardown
 from acts.test_utils.tel.anritsu_utils import call_mt_setup_teardown
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
@@ -51,7 +51,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -63,8 +63,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         try:
-            self.stress_test_number = int(self.user_params[
-                "stress_test_number"])
+            self.stress_test_number = int(
+                self.user_params["stress_test_number"])
             self.log.info("Executing {} calls per test in stress test mode".
                           format(self.stress_test_number))
         except KeyError:
@@ -94,8 +94,11 @@ class TelLabVoiceTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
-        super(TelLabVoiceTest, self).setup_test()
-        toggle_airplane_mode(self.log, self.ad, True)
+        try:
+            self.ad.droid.telephonyFactoryReset()
+        except Exception as e:
+            self.ad.log.error(e)
+        toggle_airplane_mode_by_adb(self.log, self.ad, True)
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
         return True
@@ -103,7 +106,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
     def teardown_test(self):
         self.log.info("Stopping Simulation")
         self.anritsu.stop_simulation()
-        toggle_airplane_mode(self.log, self.ad, True)
+        toggle_airplane_mode_by_adb(self.log, self.ad, True)
         return True
 
     def teardown_class(self):
@@ -118,6 +121,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
                           is_wait_for_registration=True,
                           csfb_type=None,
                           srvcc=None,
+                          mo=True,
                           voice_number=DEFAULT_CALL_NUMBER,
                           teardown_side=CALL_TEARDOWN_PHONE,
                           wait_time_in_call=WAIT_TIME_IN_CALL):
@@ -146,8 +150,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
             successes = 0
             for i in range(1, iterations + 1):
                 if self.stress_test_number:
-                    self.log.info("Running iteration {} of {}".format(
-                        i, iterations))
+                    self.log.info(
+                        "Running iteration {} of {}".format(i, iterations))
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
@@ -156,8 +160,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
                 sim_model = (self.anritsu.get_simulation_model()).split(",")
                 no_of_bts = len(sim_model)
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
-                        i))
+                    self.anritsu.send_command(
+                        "OUTOFSERVICE OUT,BTS{}".format(i))
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
@@ -172,24 +176,29 @@ class TelLabVoiceTest(TelephonyBaseTest):
                         continue
 
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
-                        i))
+                    self.anritsu.send_command(
+                        "OUTOFSERVICE IN,BTS{}".format(i))
 
                 time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
                 if srvcc:
-                    if not ims_mo_cs_teardown(
+                    if not ims_call_cs_teardown(
                             self.log, self.ad, self.anritsu, voice_number,
-                            CALL_TEARDOWN_PHONE, True, check_ims_reg,
-                            check_ims_calling, srvcc,
+                            CALL_TEARDOWN_PHONE, False, check_ims_reg,
+                            check_ims_calling, srvcc, mo,
                             WAIT_TIME_IN_CALL_FOR_IMS, WAIT_TIME_IN_CALL):
-                        self.log.error(
-                            "Phone {} Failed to make voice call to {}"
-                            .format(self.ad.serial, voice_number))
+                        if mo:
+                            self.log.error(
+                                "Phone {} Failed to make voice call to {}"
+                                .format(self.ad.serial, voice_number))
+                        else:
+                            self.log.error(
+                                "Phone {} failed to answer voice call."
+                                .format(self.ad.serial))
                         continue
                 else:
                     if not call_mo_setup_teardown(
                             self.log, self.ad, self.anritsu, voice_number,
-                            CALL_TEARDOWN_PHONE, True, WAIT_TIME_IN_CALL,
+                            CALL_TEARDOWN_PHONE, False, WAIT_TIME_IN_CALL,
                             is_ims_call):
                         self.log.error(
                             "Phone {} Failed to make voice call to {}"
@@ -253,11 +262,11 @@ class TelLabVoiceTest(TelephonyBaseTest):
             toggle_apm_after_setting=True)
 
     def _phone_setup_airplane_mode(self, ad):
-        return toggle_airplane_mode(self.log, ad, True)
+        return toggle_airplane_mode_by_adb(self.log, ad, True)
 
     def _phone_setup_volte_airplane_mode(self, ad):
         toggle_volte(self.log, ad, True)
-        return toggle_airplane_mode(self.log, ad, True)
+        return toggle_airplane_mode_by_adb(self.log, ad, True)
 
     def _phone_setup_volte(self, ad):
         ad.droid.telephonyToggleDataConnection(True)
@@ -540,6 +549,61 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_volte,
             phone_idle_volte,
             srvcc="Alert",
+            voice_number=self.voice_call_number,
+            wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_voice_call_volte_wcdma_asrvcc_mt(self):
+        """ Test Voice call functionality,
+        MT VoLTE to WCDMA aSRVCC
+        Steps:
+        1. Setup CallBox on VoLTE network with WCDMA.
+        2. Turn on DUT and enable VoLTE. Make a VoLTE call from MD8475A to UE.
+        3. Check if Virtual UA in CSCF server calling.
+        4. Handover the call to WCDMA and check if the call is connected.
+        5. Tear down the call.
+
+        Expected Results:
+        1. Virtual UA is rining.
+        2. After aSRVCC, the DEFAULT_CALL_NUMBER call is connected.
+        3. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_voice_call(
+            set_system_model_lte_wcdma,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srvcc="Alert",
+            mo=False,
+            voice_number=self.voice_call_number)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_voice_call_volte_gsm_asrvcc_mt(self):
+        """ Test Voice call functionality,
+        MT VoLTE to GSM aSRVCC
+        Steps:
+        1. Setup CallBox on VoLTE network with GSM.
+        2. Turn on DUT and enable VoLTE. Make a VoLTE call from MD8475A to UE.
+        3. Check if Virtual UA in CSCF server calling.
+        4. Handover the call to GSM and check if the call is connected.
+        5. Tear down the call.
+
+        Expected Results:
+        1. Virtual UA is rining.
+        2. After aSRVCC, the DEFAULT_CALL_NUMBER call is connected.
+        3. Tear down call succeed.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self._setup_voice_call(
+            set_system_model_lte_gsm,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            srvcc="Alert",
+            mo=False,
             voice_number=self.voice_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
