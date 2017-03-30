@@ -60,8 +60,8 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.utils import rand_ascii_str
 
-
-SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk", "dtag")
+SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
+                           "dtag")
 
 
 class TelLiveSmsTest(TelephonyBaseTest):
@@ -383,14 +383,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
-    def _mo_sms_in_1x_call(self, ads):
+    def _mo_sms_in_csfb_call(self, ads):
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
                 self.caller,
                 self.callee,
                 ad_hangup=None,
-                verify_caller_func=is_phone_in_call_1x,
+                verify_caller_func=is_phone_in_call_csfb,
                 verify_callee_func=None):
             return False
 
