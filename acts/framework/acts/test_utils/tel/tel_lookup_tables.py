@@ -553,7 +553,7 @@ class _TelTables():
         },
         tel_defines.GEN_3G: {
             'rat_family': tel_defines.RAT_FAMILY_WCDMA,
-            'network_preference': tel_defines.NETWORK_MODE_GSM_UMTS
+            'network_preference': tel_defines.NETWORK_MODE_WCDMA_ONLY
         },
         tel_defines.GEN_2G: {
             'rat_family': tel_defines.RAT_FAMILY_GSM,
@@ -595,12 +595,17 @@ class _TelTables():
     }
 
     umts_allowable_network_preference_tbl = \
-        [tel_defines.NETWORK_MODE_LTE_GSM_WCDMA,
+        [tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA,
+         tel_defines.NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA,
+         tel_defines.NETWORK_MODE_LTE_GSM_WCDMA,
          tel_defines.NETWORK_MODE_WCDMA_PREF,
+         tel_defines.NETWORK_MODE_WCDMA_ONLY,
          tel_defines.NETWORK_MODE_GSM_ONLY]
 
     cdma_allowable_network_preference_tbl = \
-        [tel_defines.NETWORK_MODE_LTE_CDMA_EVDO,
+        [tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA,
+         tel_defines.NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA,
+         tel_defines.NETWORK_MODE_LTE_CDMA_EVDO,
          tel_defines.NETWORK_MODE_CDMA,
          tel_defines.NETWORK_MODE_CDMA_NO_EVDO,
          tel_defines.NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA]
