@@ -60,6 +60,9 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.utils import rand_ascii_str
 
 
+SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk", "dtag")
+
+
 class TelLiveSmsTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
@@ -83,18 +86,16 @@ class TelLiveSmsTest(TelephonyBaseTest):
         TelephonyBaseTest.setup_class(self)
         is_roaming = False
         for ad in self.android_devices:
+            ad.sms_over_wifi = False
             #verizon supports sms over wifi. will add more carriers later
-            if "vzw" in [
-                    sub["operator"] for sub in ad.cfg["subscription"].values()
-            ]:
-                ad.sms_over_wifi = True
-            else:
-                ad.sms_over_wifi = False
+            for sub in ad.cfg["subscription"].values():
+                if sub["operator"] in SMS_OVER_WIFI_PROVIDERS:
+                    ad.sms_over_wifi = True
             ad.adb.shell("su root setenforce 0")
             #not needed for now. might need for image attachment later
             #ad.adb.shell("pm grant com.google.android.apps.messaging "
             #             "android.permission.READ_EXTERNAL_STORAGE")
-            if getattr(ad, 'data_roaming', False):
+            if getattr(ad, 'roaming', False):
                 is_roaming = True
         if is_roaming:
             # roaming device does not allow message of length 180
