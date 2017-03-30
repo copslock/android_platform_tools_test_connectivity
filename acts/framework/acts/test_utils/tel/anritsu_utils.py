@@ -875,19 +875,21 @@ def call_mo_setup_teardown(
 
 
 # This procedure is for SRLTE CSFB and SRVCC test cases
-def ims_mo_cs_teardown(log,
-                       ad,
-                       anritsu_handle,
-                       callee_number,
-                       teardown_side=CALL_TEARDOWN_PHONE,
-                       is_emergency=False,
-                       check_ims_reg=True,
-                       check_ims_calling=True,
-                       srvcc=None,
-                       wait_time_in_volte=WAIT_TIME_IN_CALL_FOR_IMS,
-                       wait_time_in_cs=WAIT_TIME_IN_CALL,
-                       wait_time_in_alert=WAIT_TIME_IN_ALERT,
-                       ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
+def ims_call_cs_teardown(
+        log,
+        ad,
+        anritsu_handle,
+        callee_number,
+        teardown_side=CALL_TEARDOWN_PHONE,
+        is_emergency=False,
+        check_ims_reg=True,
+        check_ims_calling=True,
+        srvcc=None,
+        mo=True,
+        wait_time_in_volte=WAIT_TIME_IN_CALL_FOR_IMS,
+        wait_time_in_cs=WAIT_TIME_IN_CALL,
+        wait_time_in_alert=WAIT_TIME_IN_ALERT,
+        ims_virtual_network_id=DEFAULT_IMS_VIRTUAL_NETWORK_ID):
     """ Makes a MO call after IMS registred, transit to CS, tear down the call
 
     Args:
@@ -899,6 +901,7 @@ def ims_mo_cs_teardown(log,
         check_ims_reg: check if Anritsu cscf server state is "SIPIDLE".
         check_ims_calling: check if Anritsu cscf server state is "CALLING".
         srvcc: is the test case a SRVCC call.
+        mo: Mobile originated call
         wait_time_in_volte: Time for phone in VoLTE call, not used for SRLTE
         wait_time_in_cs: Time for phone in CS call.
         ims_virtual_network_id: ims virtual network id.
@@ -920,17 +923,29 @@ def ims_mo_cs_teardown(log,
         if not wait_for_virtualphone_state(log, virtual_phone_handle,
                                            VirtualPhoneStatus.STATUS_IDLE):
             raise _CallSequenceException("Virtual Phone not idle.")
-        # make mo call
-        log.info("Making Call to " + callee_number)
-        if not initiate_call(log, ad, callee_number, is_emergency):
-            raise _CallSequenceException("Initiate call failed.")
+        if mo:  # make MO call
+            log.info("Making Call to " + callee_number)
+            if not initiate_call(log, ad, callee_number, is_emergency):
+                raise _CallSequenceException("Initiate call failed.")
+        else:  # make MT call
+            log.info("Making IMS Call to UE from MD8475A...")
+            anritsu_handle.ims_cscf_call_action(ims_virtual_network_id,
+                                                ImsCscfCall.MAKE.value)
         # if check ims calling is required
         if check_ims_calling:
-            if not wait_for_ims_cscf_status(log, anritsu_handle,
-                                            ims_virtual_network_id,
-                                            ImsCscfStatus.CALLING.value):
-                raise _CallSequenceException(
-                    "Phone IMS status is not calling.")
+            if mo:
+                if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                                ims_virtual_network_id,
+                                                ImsCscfStatus.CALLING.value):
+                    raise _CallSequenceException(
+                        "Phone IMS status is not calling.")
+            else:
+                if not wait_for_ims_cscf_status(log, anritsu_handle,
+                                                ims_virtual_network_id,
+                                                ImsCscfStatus.RINGING.value):
+                    raise _CallSequenceException(
+                        "Phone IMS status is not ringing.")
+
             # if SRVCC, check if VoLTE call is connected, then Handover
             if srvcc != None:
                 if srvcc == "InCall":
@@ -951,7 +966,12 @@ def ims_mo_cs_teardown(log,
                 srvcc_tc.power_control = TestPowerControl.POWER_CONTROL_DISABLE
                 srvcc_tc.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
                 anritsu_handle.start_testcase()
-        # check if Virtual phone answers the call
+                time.sleep(5)
+        if not mo:
+            # answer the call on the UE
+            if not wait_and_answer_call(log, ad):
+                raise _CallSequenceException("UE Answer call Fail")
+        # check if Virtual phone in the call
         if not wait_for_virtualphone_state(
                 log, virtual_phone_handle,
                 VirtualPhoneStatus.STATUS_VOICECALL_INPROGRESS):
