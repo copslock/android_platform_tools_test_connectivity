@@ -211,34 +211,20 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if hasattr(ad, 'cfg'):
         return
 
-    #The puk and pin should be provided in testbed config file in the format of
-    #"AndroidDevice": [{"serial": "84B5T15A29018214",
-    #                   "adb_logcat_param": "-b all",
-    #                   "puk": "12345678",
-    #                   "puk_pin": "1234"}]
-    if hasattr(ad, 'puk'):
-        if not hasattr(ad, 'puk_pin'):
-            abort_all_tests(ad.log, "puk_pin is not provided")
-        ad.log.info("Enter PUK code and pin")
-        if not ad.droid.telephonySupplyPuk(ad.puk, ad.puk_pin):
-            abort_all_tests(
-                ad.log,
-                "Puk and puk_pin provided in testbed config do NOT work")
-        time.sleep(WAIT_TIME_SUPPLY_PUK_CODE)
-
-    refresh_droid_config(log, ad)
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
 
+    refresh_droid_config(log, ad)
     device_props = {}
     device_props['subscription'] = {}
 
-    try:
-        sim_data = load_config(sim_filename)
-    except Exception:
-        log.warning("Failed to load %s!", sim_filename)
-        sim_data = {}
+    sim_data = {}
+    if sim_filename:
+        try:
+            sim_data = load_config(sim_filename)
+        except Exception:
+            log.warning("Failed to load %s!", sim_filename)
     if not ad.cfg["subscription"]:
         abort_all_tests(ad.log, "No Valid SIMs found in device")
     for sub_id, sub_info in ad.cfg["subscription"].items():
@@ -265,8 +251,8 @@ def setup_droid_properties(log, ad, sim_filename=None):
                     sub_info["phone_num"])
             sub_info["phone_num"] = sim_data[iccid]["phone_num"]
         if sub_info["sim_operator_name"] != sub_info["network_operator_name"]:
-            setattr(ad, 'data_roaming', True)
-    if getattr(ad, 'data_roaming', False):
+            setattr(ad, 'roaming', True)
+    if getattr(ad, 'roaming', False):
         ad.log.info("Enable cell data roaming")
         toggle_cell_data_roaming(ad, True)
 
