@@ -535,7 +535,13 @@ class AndroidDevice:
         """Whether there is an ongoing adb logcat collection.
         """
         if self.adb_logcat_process:
-            ret = self.adb_logcat_process.poll()
+            try:
+                ret = self.adb_logcat_process.poll()
+            except AttributeError as e:
+                #This happens if the logcat process is not a Popen object as
+                #would be expected if connected to a real android device.  This
+                #solves the mock test problem.
+                ret = None
             if ret is None:
                 return True
             else:
