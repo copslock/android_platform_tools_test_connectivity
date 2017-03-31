@@ -334,9 +334,10 @@ class BaseTestClass(object):
         verdict = None
         try:
             try:
-                for ad in self.android_devices:
-                    if not ad.is_adb_logcat_on:
-                        ad.start_adb_logcat(cont_logcat_file=True)
+                if hasattr(self, 'android_devices'):
+                    for ad in self.android_devices:
+                        if not ad.is_adb_logcat_on:
+                            ad.start_adb_logcat(cont_logcat_file=True)
                 ret = self._setup_test(test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
