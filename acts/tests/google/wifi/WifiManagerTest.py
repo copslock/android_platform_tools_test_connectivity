@@ -98,7 +98,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.cat_adb_log(test_name, begin_time)
+        self.dut.take_bug_report(test_name, begin_time)
 
     """Helper Functions"""
 
