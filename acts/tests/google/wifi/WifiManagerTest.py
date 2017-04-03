@@ -94,7 +94,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        if self.iot_test_prefix in self.current_test_name:
+        if self.current_test_name and self.iot_test_prefix in self.current_test_name:
             self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
