@@ -59,7 +59,7 @@ from acts.test_utils.tel.tel_test_utils import \
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import active_data_transfer_task
-from acts.test_utils.tel.tel_test_utils import adb_shell_ping
+from acts.utils import adb_shell_ping
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_phone_number
@@ -110,7 +110,7 @@ from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
-
+DEFAULT_PING_DURATION = 120 # in seconds
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -586,7 +586,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], apm_mode, wfc_mode, wifi_ssid, wifi_pwd)),
                  (phone_setup_iwlan,
@@ -601,7 +600,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (self.log, ads[0], phone_idle_iwlan,
                       is_phone_in_call_iwlan, ads[1], phone_idle_iwlan,
                       is_phone_in_call_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS))
-        ping_task = (adb_shell_ping, (self.log, ad_ping))
+        ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
 
         results = run_multithread_func(self.log, [ping_task, call_task])
         if not results[1]:
