@@ -231,12 +231,10 @@ def main(argv):
     if args.repeat:
         repeat = args.repeat
     parsed_configs = config_parser.load_test_config_file(args.config[0],
-                                                         args.testbed)
-    for c in parsed_configs:
-        c[keys.Config.key_testbed] = args.testbed
-        c[keys.Config.key_test_paths] = args.testpaths
-        c[keys.Config.key_log_path] = args.logpath
-        c[keys.Config.ikey_cli_args.value] = args.test_args
+                                                         args.testbed,
+                                                         args.testpaths,
+                                                         args.logpath,
+                                                         args.test_args)
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
     # Execute test runners.

@@ -156,7 +156,9 @@ def parse_test_list(test_list):
     return result
 
 
-def load_test_config_file(test_config_path, tb_filters=None):
+def load_test_config_file(test_config_path, tb_filters=None,
+                          override_test_path=None, override_log_path=None,
+                          override_test_args=None):
     """Processes the test configuration file provied by user.
 
     Loads the configuration file into a json object, unpacks each testbed
@@ -167,12 +169,21 @@ def load_test_config_file(test_config_path, tb_filters=None):
         test_config_path: Path to the test configuration file.
         tb_filters: A subset of test bed names to be pulled from the config
                     file. If None, then all test beds will be selected.
+        override_test_path: If not none the test path to use instead.
+        override_log_path: If not none the log path to use instead.
+        override_test_args: If not none the test args to use instead.
 
     Returns:
         A list of test configuration json objects to be passed to
         test_runner.TestRunner.
     """
     configs = utils.load_config(test_config_path)
+    if override_test_path:
+        configs[keys.Config.key_test_paths.value] = override_test_path
+    if override_log_path:
+        configs[keys.Config.key_log_path.value] = override_log_path
+    if override_test_args:
+        configs[keys.Config.ikey_cli_args.value] = override_test_args
     if tb_filters:
         tbs = []
         for tb in configs[keys.Config.key_testbed.value]:
