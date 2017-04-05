@@ -186,15 +186,13 @@ class WifiServiceApiTest(base_test.BaseTestClass):
     def test_retrieve_config_wifi_disabled(self):
         """ Test if config can be retrieved when wifi is disabled.
 
-            1. Enable wifi
+            1. Disable wifi
             2. Create and save a random config
-            3. Disable wifi
-            4. Retrieve the config
-            5. Remove the config (clean up from the test)
+            3. Retrieve the config
+            4. Remove the config (clean up from the test)
         """
-        wutils.wifi_toggle_state(self.dut, True)
-        test_network = self.create_and_save_wifi_network_config()
         wutils.wifi_toggle_state(self.dut, False)
+        test_network = self.create_and_save_wifi_network_config()
         if not self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
             raise signals.TestFailure(
                     "Test network not found in list of configured networks.")
