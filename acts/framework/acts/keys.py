@@ -36,6 +36,7 @@ class Config(enum.Enum):
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
+    key_relay_device = "RelayDevice"
     key_access_point = "AccessPoint"
     key_attenuator = "Attenuator"
     key_iperf_server = "IPerfServer"
@@ -51,6 +52,7 @@ class Config(enum.Enum):
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
     m_key_native_android_device = "native_android_device"
+    m_key_relay_device = "relay_device_controller"
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
@@ -62,8 +64,9 @@ class Config(enum.Enum):
 
     # Controller names packaged with ACTS.
     builtin_controller_names = [
-        key_android_device, key_native_android_device, key_access_point,
-        key_attenuator, key_iperf_server, key_monsoon, key_sniffer
+        key_android_device, key_native_android_device, key_relay_device,
+        key_access_point, key_attenuator, key_iperf_server, key_monsoon,
+        key_sniffer
     ]
 
 
