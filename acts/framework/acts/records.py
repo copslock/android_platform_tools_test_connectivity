@@ -293,6 +293,15 @@ class TestResult(object):
         self.executed.append(test_record)
         self.failed.append(test_record)
 
+    def skip_class(self, test_record):
+        """Add a record to indicate a test class setup has skipped and no test
+        in the class was executed.
+
+        Args:
+            test_record: A TestResultRecord object for the test class.
+        """
+        self.skipped.append(test_record)
+
     @property
     def is_all_pass(self):
         """True if no tests failed or threw errors, False otherwise."""
