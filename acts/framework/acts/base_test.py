@@ -566,6 +566,12 @@ class BaseTestClass(object):
         try:
             if self._setup_class() is False:
                 asserts.fail("Failed to setup %s." % self.TAG)
+        except signals.TestSkipClass as e:
+            class_record.test_skip(e)
+            self._exec_procedure_func(self._on_skip, class_record)
+            self._exec_func(self.teardown_class)
+            self.results.skip_class(class_record)
+            return self.results
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             class_record.test_fail(e)
