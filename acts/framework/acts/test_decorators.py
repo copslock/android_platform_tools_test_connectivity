@@ -70,7 +70,8 @@ def test_info(predicate=None, **keyed_info):
     return test_info_decoractor
 
 
-def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
+def test_tracker_info(uuid, extra_environment_info=None, priority=3,
+                      predicate=None):
     """Decorator for adding test tracker info to tests results.
 
     Will add test tracker info inside of Extras/test_tracker_info.
@@ -83,9 +84,11 @@ def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
 
     Args:
         uuid: The uuid of the test case in test tracker.
-        extra_environment_info: Extra info about the test tracker environment.
+        extra_environment_info: Extra info about the test tracker environment.\
+        priority: The priority of this test.
         predicate: A func that if false when called will ignore this info.
     """
     return test_info(test_tracker_uuid=uuid,
                      test_tracker_enviroment_info=extra_environment_info,
+                     test_tracker_priority=priority,
                      predicate=predicate)
