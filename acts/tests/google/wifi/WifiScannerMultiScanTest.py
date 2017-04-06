@@ -66,7 +66,7 @@ class WifiScanResultEvents():
             "timestamp"]
         expected_interval = self.scan_setting['periodInMs'] * 1000
         delta = abs(actual_interval - expected_interval)
-        margin = expected_interval * 0.20  # 20% of the expected_interval
+        margin = expected_interval * 0.25  # 25% of the expected_interval
         asserts.assert_true(
             delta < margin, "The difference in time between scan %s and "
             "%s is %dms, which is out of the expected range %sms" % (
