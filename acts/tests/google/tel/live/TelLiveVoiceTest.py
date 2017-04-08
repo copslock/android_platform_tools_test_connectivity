@@ -3039,18 +3039,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")
             return False
-        if not allow_data_transfer_interruption:
-            if results[0]:
-                self.log.info(
-                    "Data transfer succeeded with parallel phone call.")
-                return True
-            else:
-                self.log.error(
-                    "Data transfer failed with parallel phone call.")
-                return False
+        if results[0]:
+            self.log.info("Data transfer succeeded.")
+            return True
+        elif not allow_data_transfer_interruption:
+            self.log.error(
+                "Data transfer failed with parallel phone call.")
+            return False
         self.log.info("Retry data transfer after call hung up")
-        #return http_file_download_by_adb(self.log, self.android_devices[0],
-        #                                 url, output_path, file_size)
         return download_task[0](*download_task[1])
 
     @TelephonyBaseTest.tel_test_wrap
