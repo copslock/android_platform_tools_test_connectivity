@@ -56,7 +56,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         """
         wifi_test_utils.reset_wifi(self.dut)
 
-    def download_load_certs(self,vpn_type_name):
+    def download_load_certs(self, vpn_type, vpn_server_addr, ipsec_server_type):
         """ Download the certificates from VPN server and push to sdcard of DUT
 
             Args:
@@ -65,10 +65,12 @@ class LegacyVpnTest(base_test.BaseTestClass):
             Returns:
                 Client cert file name on DUT's sdcard
         """
-        url = "http://%s%s%s" % (self.vpn_server_addresses[vpn_type_name],
+        url = "http://%s%s%s" % (vpn_server_addr,
                                  self.cert_path_vpnserver,
                                  self.client_pkcs_file_name)
-        local_cert_name = "%s_%s" % (vpn_type_name,self.client_pkcs_file_name)
+        local_cert_name = "%s_%s_%s" % (vpn_type.name,
+                                        ipsec_server_type,
+                                        self.client_pkcs_file_name)
         local_file_path = os.path.join(self.log_path, local_cert_name)
         try:
             ret = urllib.request.urlopen(url)
@@ -80,7 +82,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.dut.adb.push("%s sdcard/" % local_file_path)
         return local_cert_name
 
-    def generate_legacy_vpn_profile(self,vpn_type):
+    def generate_legacy_vpn_profile(self, vpn_type, vpn_server_addr, ipsec_server_type):
         """ Generate legacy VPN profile for a VPN
 
             Args:
@@ -89,18 +91,20 @@ class LegacyVpnTest(base_test.BaseTestClass):
         vpn_profile = {VPN_CONST.USER: self.vpn_username,
                        VPN_CONST.PWD: self.vpn_password,
                        VPN_CONST.TYPE: vpn_type.value,
-                       VPN_CONST.SERVER: self.vpn_server_addresses[vpn_type.name],}
-        vpn_profile[VPN_CONST.NAME] = "test_%s" % vpn_type.name
+                       VPN_CONST.SERVER: vpn_server_addr,}
+        vpn_profile[VPN_CONST.NAME] = "test_%s_%s" % (vpn_type.name,ipsec_server_type)
+        if vpn_type.name == "PPTP":
+            vpn_profile[VPN_CONST.NAME] = "test_%s" % vpn_type.name
         psk_set = set(["L2TP_IPSEC_PSK", "IPSEC_XAUTH_PSK"])
         rsa_set = set(["L2TP_IPSEC_RSA", "IPSEC_XAUTH_RSA", "IPSEC_HYBRID_RSA"])
         if vpn_type.name in psk_set:
             vpn_profile[VPN_CONST.IPSEC_SECRET] = self.psk_secret
         elif vpn_type.name in rsa_set:
-            cert_name = self.download_load_certs(vpn_type.name)
-            vpn_profile[VPN_CONST.IPSEC_USER_CERT] = "%s_%s" % (vpn_type.name,
-                                                      cert_name.split('.')[0])
-            vpn_profile[VPN_CONST.IPSEC_CA_CERT] = "%s_%s" % (vpn_type.name,
-                                                   cert_name.split('.')[0])
+            cert_name = self.download_load_certs(vpn_type,
+                                                 vpn_server_addr,
+                                                 ipsec_server_type)
+            vpn_profile[VPN_CONST.IPSEC_USER_CERT] = cert_name.split('.')[0]
+            vpn_profile[VPN_CONST.IPSEC_CA_CERT] = cert_name.split('.')[0]
             self.dut.droid.installCertificate(vpn_profile,cert_name,self.cert_password)
         else:
             vpn_profile[VPN_CONST.MPPE] = self.pptp_mppe
@@ -127,7 +131,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
                 asserts.fail("Ping to the internal IP failed.\
                              Expected to pass as VPN is connected")
 
-    def legacy_vpn_connection_test_logic(self, vpn_type):
+    def legacy_vpn_connection_test_logic(self, vpn_profile):
         """ Test logic for each legacy VPN connection
 
             Steps:
@@ -143,7 +147,6 @@ class LegacyVpnTest(base_test.BaseTestClass):
                 VpnProfileType (1 of the 6 types supported by Android)
         """
         self.dut.adb.shell("ip xfrm state flush")
-        vpn_profile = self.generate_legacy_vpn_profile(vpn_type)
         logging.info("Connecting to: %s", vpn_profile)
         self.dut.droid.vpnStartLegacyVpn(vpn_profile)
         time.sleep(connectivity_const.VPN_TIMEOUT)
@@ -182,11 +185,21 @@ class LegacyVpnTest(base_test.BaseTestClass):
                 Pass: if all VPNs pass
                 Fail: if any one VPN fails
         """
-        def gen_name(vpn_type):
-            return "test_legacy_vpn_%s" % vpn_type.name
+        def gen_name(vpn_profile):
+            return "test_legacy_vpn_" + vpn_profile[VPN_CONST.NAME][5:]
 
+        vpn_profiles = []
+        for vpn in VPN_TYPE:
+            for i in range(len(self.ipsec_server_type)):
+                vpn_profiles.append(
+                    self.generate_legacy_vpn_profile(vpn,
+                                                     self.vpn_server_addresses[v.name][i],
+                                                     self.ipsec_server_type[i]))
+                # PPTP does not depend on ipsec and only strongswan supports Hybrid RSA
+                if vpn.name =="PPTP" or vpn.name =="IPSEC_HYBRID_RSA":
+                    break
         result = self.run_generated_testcases(self.legacy_vpn_connection_test_logic,
-                                              VPN_TYPE,
+                                              vpn_profiles,
                                               name_func=gen_name,)
         msg = ("The following configs failed vpn connection %s"
                % pprint.pformat(result))
