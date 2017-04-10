@@ -305,6 +305,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
 
     """Tests"""
 
+    @test_tracker_info(uuid="525fc5e3-afba-4bfd-9a02-5834119e3c66")
     def test_toggle_state(self):
         """Test toggling wifi"""
         self.log.debug("Going from on to off.")
@@ -330,6 +331,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             time.sleep(wait_time)
             self.dut.droid.goToSleepNow()
 
+    @test_tracker_info(uuid="b8c58e90-8ef8-4705-ac2f-d89be52e6b89")
     def test_scan(self):
         """Test wifi connection scan can start and find expected networks."""
         wutils.wifi_toggle_state(self.dut, True)
@@ -340,6 +342,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         ssid = self.open_network[WifiEnums.SSID_KEY]
         wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, wifi_results)
 
+    @test_tracker_info(uuid="a4ad9930-a8fa-4868-81ed-a79c7483e502")
     def test_add_network(self):
         """Test wifi connection scan."""
         ssid = self.open_network[WifiEnums.SSID_KEY]
@@ -352,6 +355,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             WifiEnums.SSID_KEY: ssid
         }, configured_networks)
 
+    @test_tracker_info(uuid="aca85551-10ba-4007-90d9-08bcdeb16a60")
     def test_forget_network(self):
         self.test_add_network()
         ssid = self.open_network[WifiEnums.SSID_KEY]
@@ -558,6 +562,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
                    " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
 
+    @test_tracker_info(uuid="cfc0084d-8fe4-4d19-8af2-6c9a8d1e2b6b")
     @acts.signals.generated_test
     def test_iot_with_password(self):
         params = list(
@@ -569,6 +574,7 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             name_func=name_gen)
         asserts.assert_true(not failed, "Failed ones: {}".format(failed))
 
+    @test_tracker_info(uuid="117b1d1c-963d-40f1-bf50-7cbc8b5e1c69")
     @acts.signals.generated_test
     def test_config_store(self):
         params = list(

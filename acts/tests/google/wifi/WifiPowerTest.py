@@ -171,14 +171,17 @@ class WifiPowerTest(base_test.BaseTestClass):
         asserts.explicit_pass("Measurement finished for %s." % tag,
                               extras=result_extra)
 
+    @test_tracker_info(uuid="99ed6d06-ad07-4650-8434-0ac9d856fafa")
     def test_power_wifi_off(self):
         wutils.wifi_toggle_state(self.dut, False)
         self.measure_and_process_result()
 
+    @test_tracker_info(uuid="086db8fd-4040-45ac-8934-49b4d84413fc")
     def test_power_wifi_on_idle(self):
         wutils.wifi_toggle_state(self.dut, True)
         self.measure_and_process_result()
 
+    @test_tracker_info(uuid="031516d9-b0f5-4f21-bc8b-078258852325")
     def test_power_disconnected_connectivity_scan(self):
         try:
             self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
@@ -189,12 +192,14 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_connect_scan_cmd)
             self.log.info("Stoped connectivity scan.")
 
+    @test_tracker_info(uuid="5e1f92d7-a79e-459c-aff0-d4acba3adee4")
     def test_power_connected_2g_idle(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
         wutils.wifi_connect(self.dut, self.network_2g)
         self.measure_and_process_result()
 
+    @test_tracker_info(uuid="e2b4ab89-420e-4560-a08b-d3bf4336f05d")
     def test_power_connected_2g_continuous_traffic(self):
         try:
             wutils.reset_wifi(self.dut)
@@ -208,12 +213,14 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.iperf_server.stop()
             self.log.info("Stopped iperf traffic.")
 
+    @test_tracker_info(uuid="a9517306-b967-494e-b471-84de58df8f1b")
     def test_power_connected_5g_idle(self):
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
         wutils.wifi_connect(self.dut, self.network_5g)
         self.measure_and_process_result()
 
+    @test_tracker_info(uuid="816716b3-a90b-4835-84b8-d8d761ebfba9")
     def test_power_connected_5g_continuous_traffic(self):
         try:
             wutils.reset_wifi(self.dut)
@@ -227,6 +234,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.iperf_server.stop()
             self.log.info("Stopped iperf traffic.")
 
+    @test_tracker_info(uuid="e2d08e4e-7863-4554-af63-64d41ab0976a")
     def test_power_gscan_three_2g_channels(self):
         try:
             self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
@@ -237,6 +245,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
 
+    @test_tracker_info(uuid="0095b7e7-94b9-4cd9-912f-51971949748b")
     def test_power_gscan_all_channels_no_dfs(self):
         try:
             self.dut.adb.shell(pmc_interval_cmd % self.scan_interval)
@@ -247,6 +256,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
 
+    @test_tracker_info(uuid="263d1b68-8eb0-4e7f-99d4-3ca23ca359ce")
     def test_power_connected_2g_gscan_all_channels_no_dfs(self):
         try:
             wutils.wifi_connect(self.dut, self.network_2g)
@@ -258,6 +268,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
 
+    @test_tracker_info(uuid="aad1a39d-01f9-4fa5-a23a-b85d54210f3c")
     def test_power_connected_5g_gscan_all_channels_no_dfs(self):
         try:
             wutils.wifi_connect(self.dut, self.network_5g)
@@ -269,6 +280,7 @@ class WifiPowerTest(base_test.BaseTestClass):
             self.dut.adb.shell(pmc_stop_gscan_cmd)
             self.log.info("Stopped gscan.")
 
+    @test_tracker_info(uuid="8f72cd5f-1c66-4ced-92d9-b7ebadf76424")
     def test_power_auto_reconnect(self):
         """
         Steps:
@@ -297,6 +309,7 @@ class WifiPowerTest(base_test.BaseTestClass):
         finally:
             t.join()
 
+    @test_tracker_info(uuid="a6db5964-3c68-47fa-b4c9-49f880549031")
     def test_power_screen_on_wifi_off(self):
         self.duration = 10 * 60
         self.offset = 4 * 60
@@ -307,6 +320,7 @@ class WifiPowerTest(base_test.BaseTestClass):
         finally:
             self.dut.adb.shell(pmc_turn_screen_off)
 
+    @test_tracker_info(uuid="230d667a-aa42-4123-9dae-2036429ed574")
     def test_power_screen_on_wifi_connected_2g_idle(self):
         self.duration = 10 * 60
         self.offset = 4 * 60
