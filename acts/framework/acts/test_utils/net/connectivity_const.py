@@ -98,3 +98,4 @@ class VpnReqParams(object):
     cert_path_vpnserver = "cert_path_vpnserver"
     cert_password = "cert_password"
     pptp_mppe = "pptp_mppe"
+    ipsec_server_type = "ipsec_server_type"
