@@ -193,7 +193,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
             for i in range(len(self.ipsec_server_type)):
                 vpn_profiles.append(
                     self.generate_legacy_vpn_profile(vpn,
-                                                     self.vpn_server_addresses[v.name][i],
+                                                     self.vpn_server_addresses[vpn.name][i],
                                                      self.ipsec_server_type[i]))
                 # PPTP does not depend on ipsec and only strongswan supports Hybrid RSA
                 if vpn.name =="PPTP" or vpn.name =="IPSEC_HYBRID_RSA":
