@@ -205,8 +205,9 @@ class TelephonyBaseTest(BaseTestClass):
         setattr(self, "diag_logger",
                 self.register_controller(
                     acts.controllers.diag_logger, required=False))
-
-        ensure_phones_default_state(self.log, self.android_devices)
+        is_mobility_setup = self.user_params.get("Attenuator")
+        if not is_mobility_setup:
+            ensure_phones_default_state(self.log, self.android_devices)
         for ad in self.android_devices:
             setup_droid_properties(self.log, ad, sim_conf_file)
 
