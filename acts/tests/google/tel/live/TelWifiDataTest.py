@@ -27,26 +27,141 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
+from acts.utils import adb_shell_ping
 
 # Attenuator name
-ATTEN_NAME_FOR_WIFI = 'wifi0'
-ATTEN_NAME_FOR_CELL = 'cell0'
+ATTEN_NAME_FOR_WIFI_2G = 'wifi0'
+ATTEN_NAME_FOR_WIFI_5G = 'wifi1'
+ATTEN_NAME_FOR_CELL_3G = 'cell0'
+ATTEN_NAME_FOR_CELL_4G = 'cell1'
 
+DEFAULT_PING_DURATION = 120
+DEFAULT_IRAT_DURATION = 60
 
 class TelWifiDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-        self.tests = ("test_wifi_cell_switching_stress", )
+        self.tests = ("test_wifi_cell_switching_stress",
+                      "test_wifi_cell_irat_stress_ping_continuous",)
         self.stress_test_number = self.get_stress_test_number()
         self.live_network_ssid = self.user_params["wifi_network_ssid"]
-        try:
-            self.live_network_pwd = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.live_network_pwd = None
+        self.live_network_pwd = self.user_params.get("wifi_network_pass")
 
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
+        attentuator_name_list = [ATTEN_NAME_FOR_WIFI_2G,
+                                 ATTEN_NAME_FOR_WIFI_5G,
+                                 ATTEN_NAME_FOR_CELL_3G,
+                                 ATTEN_NAME_FOR_CELL_4G]
+        for atten_name in attentuator_name_list:
+            set_rssi(self.log, self.attens[atten_name], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+
+    def _basic_connectivity_check(self):
+        """
+        Set Attenuator Value for WiFi and Cell to 0
+        Make sure DUT get Cell Data coverage (LTE)
+        Make sure DUT WiFi is connected
+        """
+        toggle_airplane_mode(self.log, self.android_devices[0], False)
+        if not ensure_network_generation(self.log, self.android_devices[0],
+                                         GEN_4G, NETWORK_SERVICE_DATA):
+            return False
+
+        if not ensure_wifi_connected(self.log, self.android_devices[0],
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("%s connect WiFI failed",
+                           self.android_devices[0].serial)
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def _wifi_cell_irat_task(self, ad_dut, irat_wait_time=60):
+        """
+        Atten only WiFi to MIN and MAX
+        WiFi --> Cellular
+        """
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+
+        if (not wait_for_wifi_data_connection(
+                self.log, ad_dut, True, irat_wait_time) or
+                not verify_http_connection(self.log,
+                                           self.android_devices[0])):
+            self.log.error("Data not on WiFi")
+            return False
+
+        self.log.info("Triggering WiFi to Cellular IRAT")
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+
+        if (not wait_for_cell_data_connection(
+                self.log, ad_dut, True, irat_wait_time) or
+                not verify_http_connection(self.log,
+                                           ad_dut)):
+            self.log.error("Data not on Cell")
+            return False
+        return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_cell_irat_stress_ping_continuous(self):
+        """Test for data switch between WiFi and Cell. DUT go in and out WiFi
+        coverage for multiple times.
+
+        Steps:
+        1. Set WiFi and Cellular signal to good (attenuation value to MIN).
+        2. Make sure DUT get Cell data coverage (LTE) and WiFi connected.
+        3. Set WiFi RSSI to MAX (WiFi attenuator value to MIN).
+        4. Verify DUT report WiFi connected and Internet access OK.
+        5. Set WiFi RSSI to MIN (WiFi attenuator value to MAX).
+        6. Verify DUT report Cellular Data connected and Internet access OK.
+        7. Repeat Step 3~6 for stress number.
+
+        Expected Results:
+        4. DUT report WiFi connected and Internet access OK.
+        6. DUT report Cellular Data connected and Internet access OK.
+        7. Stress test should pass.
+
+        Returns:
+        True if Pass. False if fail.
+        """
+        if not self._basic_connectivity_check():
+            self.log.error("Basic Connectivity Check Failed")
+            return False
+
+        total_iteration = self.stress_test_number
+        ad_dut = self.android_devices[0]
+        ping_task = (adb_shell_ping, (ad_dut, DEFAULT_PING_DURATION))
+        irat_task = (self._wifi_cell_irat_task, (ad_dut, DEFAULT_IRAT_DURATION))
+        current_iteration = 1
+        while (current_iteration <= total_iteration):
+            self.log.info(">----Current iteration = %d/%d----<",
+                          current_iteration, total_iteration)
+            results = run_multithread_func(self.log, [ping_task, irat_task])
+            if not results[1]:
+                self.log.error("Data IRAT failed in active ICMP transfer")
+                break
+            if results[0]:
+                self.log.info("ICMP transfer succeeded with parallel IRAT")
+            else:
+                self.log.error("ICMP transfer failed with parallel IRAT")
+                break
+            self.log.info(">----Iteration : %d/%d succeed.----<",
+                          current_iteration, total_iteration)
+            current_iteration += 1
+        if current_iteration <= total_iteration:
+            self.log.info(">----Iteration : %d/%d failed.----<",
+                          current_iteration, total_iteration)
+            return False
+        else:
+            return True
 
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_cell_switching_stress(self):
@@ -70,66 +185,43 @@ class TelWifiDataTest(TelephonyBaseTest):
         Returns:
         True if Pass. False if fail.
         """
-        WIFI_RSSI_CHANGE_STEP_SIZE = 2
-        WIFI_RSSI_CHANGE_DELAY_PER_STEP = 1
-        # Set Attenuator Value for WiFi and Cell to 0.
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-
-        # Make sure DUT get Cell Data coverage (LTE).
-        toggle_airplane_mode(self.log, self.android_devices[0], False)
-        if not ensure_network_generation(self.log, self.android_devices[0],
-                                         GEN_4G, NETWORK_SERVICE_DATA):
-            return False
-
-        # Make sure DUT WiFi is connected.
-        if not ensure_wifi_connected(self.log, self.android_devices[0],
-                                     self.live_network_ssid,
-                                     self.live_network_pwd):
-            self.log.error("{} connect WiFI failed".format(
-                self.android_devices[0].serial))
+        if not self._basic_connectivity_check():
+            self.log.error("Basic Connectivity Check Failed")
             return False
 
         total_iteration = self.stress_test_number
-        self.log.info("Stress test. Total iteration = {}.".format(
-            total_iteration))
+        self.log.info("Stress test. Total iteration = %d.",
+                      total_iteration)
         current_iteration = 1
         while (current_iteration <= total_iteration):
-            self.log.info(">----Current iteration = {}/{}----<".format(
-                current_iteration, total_iteration))
-
-            # Set WiFi RSSI to MAX.
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
-                     MAX_RSSI_RESERVED_VALUE, WIFI_RSSI_CHANGE_STEP_SIZE,
-                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
-            # Wait for DUT report WiFi connected and Internet access OK.
+            self.log.info(">----Current iteration = %d/%d----<",
+                          current_iteration, total_iteration)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
             if (not wait_for_wifi_data_connection(
                     self.log, self.android_devices[0], True) or
                     not verify_http_connection(self.log,
                                                self.android_devices[0])):
                 self.log.error("Data not on WiFi")
                 break
-
-            # Set WiFi RSSI to MIN (DUT lose WiFi coverage).
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI], 0,
-                     MIN_RSSI_RESERVED_VALUE, WIFI_RSSI_CHANGE_STEP_SIZE,
-                     WIFI_RSSI_CHANGE_DELAY_PER_STEP)
-            # Wait for DUT report Cellular Data connected and Internet access OK.
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                     MIN_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                     MIN_RSSI_RESERVED_VALUE)
             if (not wait_for_cell_data_connection(
                     self.log, self.android_devices[0], True) or
                     not verify_http_connection(self.log,
                                                self.android_devices[0])):
                 self.log.error("Data not on Cell")
                 break
-
-            self.log.info(">----Iteration : {}/{} succeed.----<".format(
-                current_iteration, total_iteration))
+            self.log.info(">----Iteration : %d/%d succeed.----<",
+                          current_iteration, total_iteration)
             current_iteration += 1
         if current_iteration <= total_iteration:
-            self.log.info(">----Iteration : {}/{} failed.----<".format(
-                current_iteration, total_iteration))
+            self.log.info(">----Iteration : %d/%d failed.----<",
+                          current_iteration, total_iteration)
             return False
         else:
             return True
