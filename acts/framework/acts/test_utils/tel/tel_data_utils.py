@@ -370,12 +370,14 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
         False if failed.
     """
     ensure_phones_idle(log, [ad])
-
+    wait_time = MAX_WAIT_TIME_NW_SELECTION
+    if getattr(ad, 'roaming', False):
+       wait_time = 2 * wait_time
     if not ensure_network_generation_for_subscription(
             log, ad, get_default_data_sub_id(ad), nw_gen,
             MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-        log.error("Device failed to reselect in {}s.".format(
-            MAX_WAIT_TIME_NW_SELECTION))
+        ad.log.error("Device failed to connect to %s in %ss.", nw_gen,
+                     wait_time)
         return False
 
     try:
