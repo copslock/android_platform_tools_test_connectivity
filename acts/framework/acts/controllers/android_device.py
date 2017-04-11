@@ -446,26 +446,6 @@ class AndroidDevice:
         return info
 
     @property
-    def build_info(self):
-        """Get the build info of this Android device, including build id and
-        build type.
-
-        This is not available if the device is in bootloader mode.
-
-        Returns:
-            A dict with the build info of this Android device, or None if the
-            device is in bootloader mode.
-        """
-        if self.is_bootloader:
-            return
-        info = {}
-        info["build_id"] = self.adb.shell("getprop ro.build.id").decode(
-            "utf-8").strip()
-        info["build_type"] = self.adb.shell("getprop ro.build.type").decode(
-            "utf-8").strip()
-        return info
-
-    @property
     def is_bootloader(self):
         """True if the device is in bootloader mode.
         """
@@ -752,8 +732,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.warning('Restarting logcat on file %s' %
-                             self.adb_logcat_file_path)
+            self.log.warning(
+                'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -980,8 +960,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError("Device %s booting process timed out." %
-                                 self.serial)
+        raise AndroidDeviceError(
+            "Device %s booting process timed out." % self.serial)
 
     def reboot(self):
         """Reboots the device.
