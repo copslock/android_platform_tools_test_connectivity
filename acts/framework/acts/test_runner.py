@@ -274,8 +274,8 @@ class TestRunner(object):
         for ctrl_name in keys.Config.builtin_controller_names.value:
             if ctrl_name in self.testbed_configs:
                 module_name = keys.get_module_name(ctrl_name)
-                module = importlib.import_module("acts.controllers.%s" %
-                                                 module_name)
+                module = importlib.import_module(
+                    "acts.controllers.%s" % module_name)
                 builtin_controllers.append(module)
         return builtin_controllers
 
@@ -302,8 +302,8 @@ class TestRunner(object):
                                                            attr))
             if not getattr(module, attr):
                 raise signals.ControllerError(
-                    "Controller interface %s in %s cannot be null." % (
-                     attr, module.__name__))
+                    "Controller interface %s in %s cannot be null." %
+                    (attr, module.__name__))
 
     def register_controller(self, module, required=True):
         """Registers an ACTS controller module for a test run.
@@ -421,8 +421,8 @@ class TestRunner(object):
         # tracking controller objs in test_run_info.
         if builtin:
             self.test_run_info[module_ref_name] = objects
-        self.log.debug("Found %d objects for controller %s", len(objects),
-                      module_config_name)
+        self.log.debug("Found %d objects for controller %s",
+                       len(objects), module_config_name)
         destroy_func = module.destroy
         self.controller_destructors[module_ref_name] = destroy_func
         return objects
@@ -506,7 +506,9 @@ class TestRunner(object):
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
             raise ValueError(("Unable to locate class %s in any of the test "
-                              "paths specified.") % test_cls_name)
+                              "paths specified in the given config. Are you "
+                              "running the tests from the correct directory?")
+                             % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
