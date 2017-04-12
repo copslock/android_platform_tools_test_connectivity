@@ -3279,8 +3279,9 @@ def ensure_network_generation_for_subscription(
         log, ad, sub_id, generation, max_wait_time, voice_or_data)
 
     ad.log.info(
-        "Setting to %s, Expecting %s %s. Current: voice: %s(family: %s), "
-        "data: %s(family: %s)", network_preference, generation, voice_or_data,
+        "Ensure network %s %s %s. With network preference %s, "
+        "current: voice: %s(family: %s), data: %s(family: %s)",
+        generation, voice_or_data, result, network_preference,
         ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
         rat_generation_from_rat(
             ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
@@ -3468,13 +3469,16 @@ def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen,
 
     for service in service_list:
         nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
-
+        ad.log.info("network rat for %s is %s", service, nw_rat)
         if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
             continue
 
         if rat_generation_from_rat(nw_rat) == nw_gen:
+            ad.log.info("network rat %s is expected %s", nw_rat, nw_gen)
             return True
         else:
+            ad.log.info("network rat %s is %s, expecting %s",
+                        nw_rat, rat_generation_from_rat(nw_rat), nw_gen)
             return False
 
     return False
