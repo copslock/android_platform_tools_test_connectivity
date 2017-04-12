@@ -132,7 +132,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         try:
             set_simulation_func(self.anritsu, self.user_params)
 
-            if self.ad.sim_card == "P0250Ax":
+            if getattr(self.ad, "sim_card", None) == "P0250Ax":
                 self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
