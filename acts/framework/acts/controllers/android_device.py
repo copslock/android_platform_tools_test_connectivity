@@ -20,6 +20,7 @@ from builtins import open
 import logging
 import os
 import re
+import socket
 import time
 
 from acts import logger as acts_logger
@@ -1001,6 +1002,52 @@ class AndroidDevice:
         if has_adb_log:
             self.start_adb_logcat()
         return droid, ed
+
+    def get_ipv4_address(self, interface='wlan0', timeout=5):
+        for timer in range(0, timeout):
+            try:
+                ip_string = self.adb.shell('ifconfig %s|grep inet' % interface)
+                break
+            except adb.AdbError as e:
+                if timer + 1 == timeout:
+                    self.log.warning('Unable to find IP address for %s.' %
+                                     interface)
+                    return None
+                else:
+                    time.sleep(1)
+        result = re.search('addr:(.*) Bcast', ip_string)
+        if result != None:
+            ip_address = result.group(1)
+            try:
+                socket.inet_aton(ip_address)
+                return ip_address
+            except socket.error:
+                return None
+        else:
+            return None
+
+    def get_ipv4_gateway(self, timeout=5):
+        for timer in range(0, timeout):
+            try:
+                gateway_string = self.adb.shell(
+                    'dumpsys wifi | grep mDhcpResults')
+                break
+            except adb.AdbError as e:
+                if timer + 1 == timeout:
+                    self.log.warning('Unable to find gateway')
+                    return None
+                else:
+                    time.sleep(1)
+        result = re.search('Gateway (.*) DNS servers', gateway_string)
+        if result != None:
+            ipv4_gateway = result.group(1)
+            try:
+                socket.inet_aton(ipv4_gateway)
+                return ipv4_gateway
+            except socket.error:
+                return None
+        else:
+            return None
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
