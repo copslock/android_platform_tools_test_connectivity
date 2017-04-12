@@ -35,6 +35,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_lte_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.anritsu_utils import set_usim_parameters
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
@@ -63,8 +64,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         try:
-            self.stress_test_number = int(
-                self.user_params["stress_test_number"])
+            self.stress_test_number = int(self.user_params[
+                "stress_test_number"])
             self.log.info("Executing {} calls per test in stress test mode".
                           format(self.stress_test_number))
         except KeyError:
@@ -74,6 +75,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             )
 
         self.ad = self.android_devices[0]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
@@ -126,10 +128,9 @@ class TelLabVoiceTest(TelephonyBaseTest):
                           teardown_side=CALL_TEARDOWN_PHONE,
                           wait_time_in_call=WAIT_TIME_IN_CALL):
         try:
-            set_simulation_func(self.anritsu, self.user_params)
-
-            if self.ad.sim_card == "P0250Ax":
-                self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
+            set_simulation_func(self.anritsu, self.user_params,
+                                self.ad.sim_card)
+            set_usim_parameters(self.anritsu, self.ad.sim_card)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
             if srvcc != None:
@@ -150,8 +151,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
             successes = 0
             for i in range(1, iterations + 1):
                 if self.stress_test_number:
-                    self.log.info(
-                        "Running iteration {} of {}".format(i, iterations))
+                    self.log.info("Running iteration {} of {}".format(
+                        i, iterations))
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
@@ -160,8 +161,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
                 sim_model = (self.anritsu.get_simulation_model()).split(",")
                 no_of_bts = len(sim_model)
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command(
-                        "OUTOFSERVICE OUT,BTS{}".format(i))
+                    self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
+                        i))
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
@@ -176,8 +177,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
                         continue
 
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command(
-                        "OUTOFSERVICE IN,BTS{}".format(i))
+                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
+                        i))
 
                 time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
                 if srvcc:

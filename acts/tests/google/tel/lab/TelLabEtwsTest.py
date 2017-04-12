@@ -29,6 +29,7 @@ from acts.test_utils.tel.anritsu_utils import etws_receive_verify_message_lte_wc
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.anritsu_utils import set_usim_parameters
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
@@ -55,6 +56,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
@@ -64,7 +66,6 @@ class TelLabEtwsTest(TelephonyBaseTest):
             "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
-        super(TelLabEtwsTest, self).setup_class()
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
                                    self.wlan_option)
@@ -90,9 +91,9 @@ class TelLabEtwsTest(TelephonyBaseTest):
     def _send_receive_etws_message(self, set_simulation_func, rat, message_id,
                                    warning_message):
         try:
-            [self.bts1] = set_simulation_func(self.anritsu, self.user_params)
-            if self.ad.sim_card == "P0250Ax":
-                self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
+                                              self.ad.sim_card)
+            set_usim_parameters(self.anritsu, self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
