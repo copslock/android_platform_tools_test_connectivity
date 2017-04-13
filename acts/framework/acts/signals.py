@@ -77,6 +77,10 @@ class TestSkip(TestSignal):
     """Raised when a test has been skipped."""
 
 
+class TestBlocked(TestSignal):
+    """Raised when a test has been blocked from running."""
+
+
 class TestSkipClass(TestSignal):
     """Raised in setup_class when a whole test class should be skipped."""
 
