@@ -27,16 +27,19 @@ class BssSettings(object):
         security: Security, The security settings to use.
     """
 
-    def __init__(self, name, ssid, hidden=False, security=None):
+    def __init__(self, name, ssid, hidden=False, security=None, bssid=None):
         self.name = name
         self.ssid = ssid
         self.hidden = hidden
         self.security = security
+        self.bssid = bssid
 
     def generate_dict(self):
         """Returns: A dictionary of bss settings."""
         settings = collections.OrderedDict()
         settings['bss'] = self.name
+        if self.bssid:
+            settings['bssid'] = self.bssid
         if self.ssid:
             settings['ssid'] = self.ssid
             settings['ignore_broadcast_ssid'] = 1 if self.hidden else 0
