@@ -1632,7 +1632,7 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
         return False
 
 
-def active_data_transfer_task(log, ad):
+def active_data_transfer_task(log, ad, file_name="5MB"):
     curl_capable = True
     try:
         out = ad.adb.shell("curl --version")
@@ -1646,15 +1646,22 @@ def active_data_transfer_task(log, ad):
         # files available for download on the same website:
         # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
         # download file by adb command, as phone call will use sl4a
-        url = "http://download.thinkbroadband.com/5MB.zip"
-        file_size = 5000000
-        output_path = "/sdcard/Download/5MB.zip"
+        url = "http://download.thinkbroadband.com/" + file_name + ".zip"
+        file_map_dict = {'5MB':5000000, '10MB':10000000, '20MB':20000000,
+                        '50MB':50000000, '200MB':200000000, '512MB':512000000,
+                        '1GB':1000000000}
+        if file_name in file_map_dict:
+            file_size = file_map_dict[file_name]
+        else:
+            ad.log.warning("file_size provided for DL is not available")
+            return False
+        output_path = "/sdcard/Download/" + file_name + ".zip"
         return (http_file_download_by_adb,
                 (log, ad, url, output_path, file_size))
 
 
-def active_data_transfer_test(log, ad):
-    task = active_data_transfer_task(log, ad)
+def active_data_transfer_test(log, ad, file_name="5MB"):
+    task = active_data_transfer_task(log, ad, file_name)
     return task[0](*task[1])
 
 
@@ -1769,8 +1776,8 @@ def http_file_download_by_adb(log,
                               out_path=None,
                               expected_file_size=None,
                               remove_file_after_check=True,
-                              timeout=300,
-                              limit_rate=50000,
+                              timeout=900,
+                              limit_rate=None,
                               retry=3):
     """Download http file by adb curl.
 
