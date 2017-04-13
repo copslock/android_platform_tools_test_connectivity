@@ -20,6 +20,7 @@ import queue
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 BSSID_EVENT_WAIT = 30
