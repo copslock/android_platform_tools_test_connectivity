@@ -18,6 +18,7 @@ import time
 
 from acts import asserts
 from acts import base_test
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -170,7 +171,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
 
     """ Tests Begin """
 
-    @test_tracker_info(uuid="ec509d40-e339-47c2-995e-cc77f5a28687")
+    @test_tracker_info(uuid="9ea2c78d-d305-497f-87a5-f621f0a4b34e")
     def test_autojoin_Ap1_2g(self):
         """Test wifi auto join functionality move in range of AP1.
 
@@ -195,7 +196,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed,
             "Number of test_autojoin_Ap1_2g failed {}".format(len(failed)))
 
-    @test_tracker_info(uuid="01faeba0-bd66-4d30-a3d9-b81e959025b2")
+    @test_tracker_info(uuid="b5eba5ec-96e5-4bd8-b483-f5b2a9504558")
     def test_autojoin_Ap1_2gto5g(self):
         """Test wifi auto join functionality move to high range.
 
@@ -219,7 +220,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed,
             "Number of test_autojoin_Ap1_2gto5g failed {}".format(len(failed)))
 
-    @test_tracker_info(uuid="9ea2c78d-d305-497f-87a5-f621f0a4b34e")
+    @test_tracker_info(uuid="37822578-d35c-462c-87c0-7a2d9252938c")
     def test_autojoin_in_AP1_5gto2g(self):
         """Test wifi auto join functionality move to low range toward AP2.
 
@@ -244,7 +245,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed, "Number of test_autojoin_in_AP1_5gto2g failed {}".format(
                 len(failed)))
 
-    @test_tracker_info(uuid="b5eba5ec-96e5-4bd8-b483-f5b2a9504558")
+    @test_tracker_info(uuid="8ffdcab1-2bfb-4acd-b1e8-089ba8a4ec41")
     def test_autojoin_swtich_AP1toAp2(self):
         """Test wifi auto join functionality move from low range of AP1 to better
            range of AP2.
@@ -270,7 +271,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed, "Number of test_autojoin_swtich_AP1toAp2 failed {}".format(
                 len(failed)))
 
-    @test_tracker_info(uuid="15c27654-bae0-4d2d-bdc8-54fb04b901d1")
+    @test_tracker_info(uuid="7a8b9242-f93c-449a-90a6-4562274a213a")
     def test_autojoin_Ap2_2gto5g(self):
         """Test wifi auto join functionality move to high range of AP2.
 
@@ -294,7 +295,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed,
             "Number of test_autojoin_Ap2_2gto5g failed {}".format(len(failed)))
 
-    @test_tracker_info(uuid="8ffdcab1-2bfb-4acd-b1e8-089ba8a4ec41")
+    @test_tracker_info(uuid="009457df-f430-402c-96ab-c456b043b6f5")
     def test_autojoin_Ap2_5gto2g(self):
         """Test wifi auto join functionality move to low range of AP2.
 
@@ -317,7 +318,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed,
             "Number of test_autojoin_Ap2_5gto2g failed {}".format(len(failed)))
 
-    @test_tracker_info(uuid="7a8b9242-f93c-449a-90a6-4562274a213a")
+    @test_tracker_info(uuid="c6d070af-b601-42f1-adec-5ac564154b29")
     def test_autojoin_out_of_range(self):
         """Test wifi auto join functionality move to low range.
 
@@ -347,7 +348,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             self.dut.droid.wifiLockRelease()
             self.dut.droid.goToSleepNow()
 
-    @test_tracker_info(uuid="009457df-f430-402c-96ab-c456b043b6f5")
+    @test_tracker_info(uuid="15c27654-bae0-4d2d-bdc8-54fb04b901d1")
     def test_autojoin_Ap2_2g(self):
         """Test wifi auto join functionality move in low range of AP2.
 
@@ -372,7 +373,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed,
             "Number of test_autojoin_Ap2_2g failed {}".format(len(failed)))
 
-    @test_tracker_info(uuid="e294889d-ad87-4475-852a-7d1f3c476d10")
+    @test_tracker_info(uuid="80e74c78-59e2-46db-809d-cb03bd1b6824")
     def test_autojoin_in_Ap2_5gto2g(self):
         """Test wifi auto join functionality move to medium range of Ap2 and
            low range of AP1.
@@ -397,7 +398,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed, "Number of test_autojoin_in_Ap2_5gto2g failed {}".format(
                 len(failed)))
 
-    @test_tracker_info(uuid="80e74c78-59e2-46db-809d-cb03bd1b6824")
+    @test_tracker_info(uuid="01faeba0-bd66-4d30-a3d9-b81e959025b2")
     def test_autojoin_swtich_AP2toAp1(self):
         """Test wifi auto join functionality move from low range of AP2 to better
            range of AP1.
@@ -423,7 +424,7 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
             failed, "Number of test_autojoin_swtich_AP2toAp1 failed {}".format(
                 len(failed)))
 
-    @test_tracker_info(uuid="59be1afa-cde1-4cfa-bb16-26c0a96ceeca")
+    @test_tracker_info(uuid="ec509d40-e339-47c2-995e-cc77f5a28687")
     def test_autojoin_Ap1_5gto2g(self):
         """Test wifi auto join functionality move to medium range of AP1.
 
