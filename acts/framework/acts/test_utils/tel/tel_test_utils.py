@@ -1513,8 +1513,8 @@ def phone_number_formatter(input_string, formatter=None):
     """
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
-    input_string = input_string.replace(" ", "").replace(
-        "-", "").replace(".", "").strip("0")
+    input_string = input_string.replace(" ", "").replace("-", "").replace(
+        ".", "").strip("0")
     if not formatter:
         return input_string
     # Remove "1"  or "+1"from front
@@ -1647,17 +1647,23 @@ def active_data_transfer_task(log, ad, file_name="5MB"):
         # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
         # download file by adb command, as phone call will use sl4a
         url = "http://download.thinkbroadband.com/" + file_name + ".zip"
-        file_map_dict = {'5MB':5000000, '10MB':10000000, '20MB':20000000,
-                        '50MB':50000000, '200MB':200000000, '512MB':512000000,
-                        '1GB':1000000000}
+        file_map_dict = {
+            '5MB': 5000000,
+            '10MB': 10000000,
+            '20MB': 20000000,
+            '50MB': 50000000,
+            '200MB': 200000000,
+            '512MB': 512000000,
+            '1GB': 1000000000
+        }
         if file_name in file_map_dict:
             file_size = file_map_dict[file_name]
         else:
             ad.log.warning("file_size provided for DL is not available")
             return False
         output_path = "/sdcard/Download/" + file_name + ".zip"
-        return (http_file_download_by_adb,
-                (log, ad, url, output_path, file_size))
+        return (http_file_download_by_adb, (log, ad, url, output_path,
+                                            file_size))
 
 
 def active_data_transfer_test(log, ad, file_name="5MB"):
@@ -1702,6 +1708,7 @@ def iperf_test_by_adb(log,
     except Exception as e:
         ad.log.warning("Fail to run iperf test with exception %s", e)
         return False
+
 
 def http_file_download_by_adb(log,
                               ad,
@@ -1811,8 +1818,7 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data'][
-            'isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
         return True
     return False
 
@@ -1839,8 +1845,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
-                                                          state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(
+        log, ad, sub_id, state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -2006,7 +2012,7 @@ def _wait_for_nw_data_connection(
         cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
         if is_connected == cur_data_connection_state:
             current_type = get_internet_connection_type(log, ad)
-            ad.log.info("current datat connection type: %s", current_type)
+            ad.log.info("current data connection type: %s", current_type)
             if not connection_type:
                 return True
             else:
@@ -3220,8 +3226,8 @@ def ensure_network_generation_for_subscription(
 
     ad.log.info(
         "Ensure network %s %s %s. With network preference %s, "
-        "current: voice: %s(family: %s), data: %s(family: %s)",
-        generation, voice_or_data, result, network_preference,
+        "current: voice: %s(family: %s), data: %s(family: %s)", generation,
+        voice_or_data, result, network_preference,
         ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
         rat_generation_from_rat(
             ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(
@@ -3417,8 +3423,8 @@ def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen,
             ad.log.info("network rat %s is expected %s", nw_rat, nw_gen)
             return True
         else:
-            ad.log.info("network rat %s is %s, expecting %s",
-                        nw_rat, rat_generation_from_rat(nw_rat), nw_gen)
+            ad.log.info("network rat %s is %s, expecting %s", nw_rat,
+                        rat_generation_from_rat(nw_rat), nw_gen)
             return False
 
     return False
@@ -3636,8 +3642,7 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info[
-            "SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4075,8 +4080,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data'][
-                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data']
+                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
