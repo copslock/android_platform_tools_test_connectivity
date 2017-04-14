@@ -113,12 +113,21 @@ def get_spt_voice_mail_number():
     return None
 
 
+def get_ee_voice_mail_number():
+    return "+447953222222"
+
+
 def get_voice_mail_number_function(operator):
-    return _TelTables.voice_mail_number_get_function_tbl[operator]
+    return _TelTables.voice_mail_number_get_function_tbl.get(operator)
 
 
 def get_voice_mail_count_check_function(operator):
-    return _TelTables.voice_mail_count_check_function_tbl[operator]
+    return _TelTables.voice_mail_count_check_function_tbl.get(
+        operator, check_tmo_voice_mail_count)
+
+
+def get_voice_mail_delete_digit(operator):
+    return _TelTables.voice_mail_delete_digit_tbl.get(operator, "7")
 
 
 def get_allowable_network_preference(operator, phone_type=None):
@@ -627,7 +636,8 @@ class _TelTables():
         tel_defines.CARRIER_TMO: get_tmo_voice_mail_number,
         tel_defines.CARRIER_VZW: get_vzw_voice_mail_number,
         tel_defines.CARRIER_ATT: get_att_voice_mail_number,
-        tel_defines.CARRIER_SPT: get_spt_voice_mail_number
+        tel_defines.CARRIER_SPT: get_spt_voice_mail_number,
+        tel_defines.CARRIER_EEUK: get_ee_voice_mail_number
     }
 
     voice_mail_count_check_function_tbl = {
@@ -635,6 +645,8 @@ class _TelTables():
         tel_defines.CARRIER_ATT: check_att_voice_mail_count,
         tel_defines.CARRIER_SPT: check_spt_voice_mail_count
     }
+
+    voice_mail_delete_digit_tbl = {tel_defines.CARRIER_EEUK: "3"}
 
 
 device_capabilities = {
