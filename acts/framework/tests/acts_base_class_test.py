@@ -53,10 +53,9 @@ class ActsBaseClassTest(unittest.TestCase):
     def test_current_test_case_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(
-                    self.current_test_name == "test_func",
-                    ("Got "
-                     "unexpected test name %s.") % self.current_test_name)
+                asserts.assert_true(self.current_test_name == "test_func", (
+                    "Got "
+                    "unexpected test name %s.") % self.current_test_name)
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
@@ -175,18 +174,16 @@ class ActsBaseClassTest(unittest.TestCase):
                 # This should not execute because setup_class failed.
                 never_call()
 
-            def on_fail(self, test_name, begin_time):
+            def on_blocked(self, test_name, begin_time):
                 call_check("haha")
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        actual_record = bt_cls.results.failed[0]
-        self.assertEqual(actual_record.test_name, "setup_class")
-        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
-        self.assertIsNone(actual_record.extras)
+        actual_record = bt_cls.results.blocked[0]
+        self.assertEqual(actual_record.test_name, "test_something")
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 1, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 1, ControllerInfo {}, Executed 0, Failed 0, Passed 0,"
+            " Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
         call_check.assert_called_once_with("haha")
 
@@ -206,8 +203,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_setup_test_fail_by_test_signal(self):
@@ -226,8 +223,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 1, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_setup_test_fail_by_return_False(self):
@@ -247,8 +244,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, expected_msg)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 1, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_assert_fail(self):
@@ -266,8 +263,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_raise_exception(self):
@@ -287,8 +284,8 @@ class ActsBaseClassTest(unittest.TestCase):
         expected_extra_error = {"teardown_test": MSG_EXPECTED_EXCEPTION}
         self.assertEqual(actual_record.extra_errors, expected_extra_error)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_executed_if_test_pass(self):
@@ -309,8 +306,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 1, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 1, "
+            "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_executed_if_setup_test_fails(self):
@@ -334,8 +331,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_executed_if_test_fails(self):
@@ -356,8 +353,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_exception_executed_if_teardown_test_fails(self):
@@ -381,8 +378,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_fail_executed_if_test_fails(self):
@@ -403,8 +400,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 1, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_fail_executed_if_test_setup_fails_by_exception(self):
@@ -428,8 +425,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_fail_executed_if_test_setup_fails_by_return_False(self):
@@ -454,8 +451,8 @@ class ActsBaseClassTest(unittest.TestCase):
                          'Setup for test_something failed.')
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 1, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 0")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_failure_to_call_procedure_function_is_recorded(self):
@@ -474,8 +471,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_failure_in_procedure_functions_is_recorded(self):
@@ -497,8 +494,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_both_teardown_and_test_body_raise_exceptions(self):
@@ -518,8 +515,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors["teardown_test"],
                          "Details=This is an expected exception., Extras=None")
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_explicit_pass_but_teardown_test_raises_an_exception(self):
@@ -542,8 +539,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors["teardown_test"],
                          "Details=This is an expected exception., Extras=None")
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_pass_raise_exception(self):
@@ -564,8 +561,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors,
                          {'_on_pass': MSG_EXPECTED_EXCEPTION})
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_fail_raise_exception(self):
@@ -586,8 +583,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors,
                          {'_on_fail': MSG_EXPECTED_EXCEPTION})
         expected_summary = (
-            "ControllerInfo {}, Executed 1, Failed 0, Passed 0, Requested 1, "
-            "Skipped 0, Unknown 1")
+            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_abort_class(self):
@@ -608,8 +605,8 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.failed[0].details,
                          MSG_EXPECTED_EXCEPTION)
         self.assertEqual(bt_cls.results.summary_str(), (
-            "ControllerInfo {}, Executed 2, Failed 1, Passed 1, Requested 3, "
-            "Skipped 0, Unknown 0"))
+            "Blocked 0, ControllerInfo {}, Executed 2, Failed 1, Passed 1, "
+            "Requested 3, Skipped 0, Unknown 0"))
 
     def test_uncaught_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
