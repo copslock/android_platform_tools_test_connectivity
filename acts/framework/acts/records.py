@@ -43,6 +43,7 @@ class TestResultEnums(object):
     TEST_RESULT_PASS = "PASS"
     TEST_RESULT_FAIL = "FAIL"
     TEST_RESULT_SKIP = "SKIP"
+    TEST_RESULT_BLOCKED = "BLOCKED"
     TEST_RESULT_UNKNOWN = "UNKNOWN"
 
 
@@ -123,6 +124,14 @@ class TestResultRecord(object):
             e: An instance of acts.signals.TestSkip.
         """
         self._test_end(TestResultEnums.TEST_RESULT_SKIP, e)
+
+    def test_blocked(self, e=None):
+        """To mark the test as blocked in this record.
+
+        Args:
+            e: An instance of acts.signals.Test
+        """
+        self._test_end(TestResultEnums.TEST_RESULT_BLOCKED, e)
 
     def test_unknown(self, e=None):
         """To mark the test as unknown in this record.
@@ -213,6 +222,7 @@ class TestResult(object):
         self.executed = []
         self.passed = []
         self.skipped = []
+        self.blocked = []
         self.unknown = []
         self.controller_info = {}
 
@@ -263,14 +273,18 @@ class TestResult(object):
         Args:
             record: A test record object to add.
         """
-        self.executed.append(record)
         if record.result == TestResultEnums.TEST_RESULT_FAIL:
+            self.executed.append(record)
             self.failed.append(record)
         elif record.result == TestResultEnums.TEST_RESULT_SKIP:
             self.skipped.append(record)
         elif record.result == TestResultEnums.TEST_RESULT_PASS:
+            self.executed.append(record)
             self.passed.append(record)
+        elif record.result == TestResultEnums.TEST_RESULT_BLOCKED:
+            self.blocked.append(record)
         else:
+            self.executed.append(record)
             self.unknown.append(record)
 
     def add_controller_info(self, name, info):
@@ -283,29 +297,11 @@ class TestResult(object):
             return
         self.controller_info[name] = info
 
-    def fail_class(self, test_record):
-        """Add a record to indicate a test class setup has failed and no test
-        in the class was executed.
-
-        Args:
-            test_record: A TestResultRecord object for the test class.
-        """
-        self.executed.append(test_record)
-        self.failed.append(test_record)
-
-    def skip_class(self, test_record):
-        """Add a record to indicate a test class setup has skipped and no test
-        in the class was executed.
-
-        Args:
-            test_record: A TestResultRecord object for the test class.
-        """
-        self.skipped.append(test_record)
-
     @property
     def is_all_pass(self):
         """True if no tests failed or threw errors, False otherwise."""
-        num_of_failures = len(self.failed) + len(self.unknown)
+        num_of_failures = (
+            len(self.failed) + len(self.unknown) + len(self.blocked))
         if num_of_failures == 0:
             return True
         return False
@@ -366,5 +362,6 @@ class TestResult(object):
         d["Passed"] = len(self.passed)
         d["Failed"] = len(self.failed)
         d["Skipped"] = len(self.skipped)
+        d["Blocked"] = len(self.blocked)
         d["Unknown"] = len(self.unknown)
         return d

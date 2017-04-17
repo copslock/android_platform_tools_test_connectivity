@@ -267,6 +267,28 @@ class BaseTestClass(object):
             begin_time: Logline format timestamp taken when the test started.
         """
 
+    def _on_blocked(self, record):
+        """Proxy function to guarantee the base implementation of on_blocked
+        is called.
+
+        Args:
+            record: The records.TestResultRecord object for the blocked test
+                    case.
+        """
+        test_name = record.test_name
+        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.log.info("Reason to block: %s", record.details)
+        self.on_blocked(test_name, begin_time)
+
+    def on_blocked(self, test_name, begin_time):
+        """A function that is executed upon a test begin skipped.
+
+        Args:
+            test_name: Name of the test that triggered this function.
+            begin_time: Logline format timestamp taken when the test started.
+        """
+
     def _on_exception(self, record):
         """Proxy function to guarantee the base implementation of on_exception
         is called.
@@ -374,6 +396,9 @@ class BaseTestClass(object):
             # This is a trigger test for generated tests, suppress reporting.
             is_generate_trigger = True
             self.results.requested.remove(test_name)
+        except signals.TestBlocked as e:
+            tr_record.test_blocked(e)
+            self._exec_procedure_func(self._on_blocked, tr_record)
         except Exception as e:
             self.log.error(traceback.format_exc())
             # Exception happened during test.
@@ -518,15 +543,50 @@ class BaseTestClass(object):
         """
         test_funcs = []
         for test_name in test_names:
-            if not test_name.startswith("test_"):
-                raise Error(("Test case name %s does not follow naming "
-                             "convention test_*, abort.") % test_name)
-            try:
-                test_funcs.append((test_name, getattr(self, test_name)))
-            except AttributeError:
-                raise Error("%s does not have test case %s." % (self.TAG,
-                                                                test_name))
+            test_funcs.append(self._get_test_func(test_name))
+
         return test_funcs
+
+    def _get_test_func(self, test_name):
+        """Obtain the actual function of test cases based on the test name.
+
+        Args:
+            test_name: String, The name of the test.
+
+        Returns:
+            A tuples of (string, function). String is the test case
+            name, function is the actual test case function.
+
+        Raises:
+            Error is raised if the test name does not follow
+            naming convention "test_*". This can only be caused by user input
+            here.
+        """
+        if not test_name.startswith("test_"):
+            raise Error(("Test case name %s does not follow naming "
+                         "convention test_*, abort.") % test_name)
+
+        try:
+            return test_name, getattr(self, test_name)
+        except:
+            raise Error("%s does not have test case %s." % (self.TAG,
+                                                            test_name))
+
+    def _block_all_test_cases(self, tests):
+        """
+        Block all passed in test cases.
+        Args:
+            tests: The tests to block.
+        """
+        for test_name, test_func in tests:
+            signal = signals.TestBlocked("Failed class setup")
+            record = records.TestResultRecord(test_name, self.TAG)
+            record.test_begin()
+            if hasattr(test_func, 'gather'):
+                signal.extras = test_func.gather()
+            record.test_blocked(signal)
+            self.results.add_record(record)
+            self._on_blocked(record)
 
     def run(self, test_names=None):
         """Runs test cases within a test class by the order they appear in the
@@ -560,24 +620,16 @@ class BaseTestClass(object):
         self.results.requested = test_names
         tests = self._get_test_funcs(test_names)
         # A TestResultRecord used for when setup_class fails.
-        class_record = records.TestResultRecord("setup_class", self.TAG)
-        class_record.test_begin()
         # Setup for the class.
         try:
             if self._setup_class() is False:
-                asserts.fail("Failed to setup %s." % self.TAG)
-        except signals.TestSkipClass as e:
-            class_record.test_skip(e)
-            self._exec_procedure_func(self._on_skip, class_record)
-            self._exec_func(self.teardown_class)
-            self.results.skip_class(class_record)
-            return self.results
+                self.log.error("Failed to setup %s.", self.TAG)
+                self._block_all_test_cases(tests)
+                return self.results
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
-            class_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, class_record)
             self._exec_func(self.teardown_class)
-            self.results.fail_class(class_record)
+            self._block_all_test_cases(tests)
             return self.results
         # Run tests in order.
         try:
