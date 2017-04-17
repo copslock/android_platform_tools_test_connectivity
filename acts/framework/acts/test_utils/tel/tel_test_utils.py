@@ -1674,8 +1674,10 @@ def active_data_transfer_test(log, ad, file_name="5MB"):
 def iperf_test_by_adb(log,
                       ad,
                       iperf_server,
+                      port_num=None,
+                      reverse=False,
                       timeout=180,
-                      limit_rate=100000,
+                      limit_rate=None,
                       omit=10,
                       ipv6=False):
     """Iperf test by adb.
@@ -1683,14 +1685,17 @@ def iperf_test_by_adb(log,
     Args:
         log: log object
         ad: Android Device Object.
-        url: The iperf host url".
+        iperf_Server: The iperf host url".
+        port_num: TCP/UDP server port
         timeout: timeout for file download to complete.
         limit_rate: iperf bandwidth option. None by default
         omit: the omit option provided in iperf command.
     """
     iperf_option = "-t %s -O %s -J" % (timeout, omit)
     if limit_rate: iperf_option += " -b %s" % limit_rate
+    if port_num: iperf_option += " -p %s" % port_num
     if ipv6: iperf_option += " -6"
+    if reverse: iperf_option += " -R"
     try:
         ad.log.info("Running adb iperf test with server %s", iperf_server)
         result, data = ad.run_iperf_client(
