@@ -188,42 +188,6 @@ class ActsRecordsTest(unittest.TestCase):
         with self.assertRaisesRegexp(TypeError, expected_msg):
             tr1 += "haha"
 
-    def test_result_fail_class_with_test_signal(self):
-        record1 = records.TestResultRecord(self.tn)
-        record1.test_begin()
-        s = signals.TestPass(self.details, self.float_extra)
-        record1.test_pass(s)
-        tr = records.TestResult()
-        tr.add_record(record1)
-        s = signals.TestFailure(self.details, self.float_extra)
-        record2 = records.TestResultRecord("SomeTest", s)
-        tr.fail_class(record2)
-        self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
-
-    def test_result_fail_class_with_special_error(self):
-        """Call TestResult.fail_class with an error class that requires more
-        than one arg to instantiate.
-        """
-        record1 = records.TestResultRecord(self.tn)
-        record1.test_begin()
-        s = signals.TestPass(self.details, self.float_extra)
-        record1.test_pass(s)
-        tr = records.TestResult()
-        tr.add_record(record1)
-
-        class SpecialError(Exception):
-            def __init__(self, arg1, arg2):
-                self.msg = "%s %s" % (arg1, arg2)
-
-        se = SpecialError("haha", 42)
-        record2 = records.TestResultRecord("SomeTest", se)
-        tr.fail_class(record2)
-        self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
-
     def test_is_all_pass(self):
         s = signals.TestPass(self.details, self.float_extra)
         record1 = records.TestResultRecord(self.tn)
@@ -251,17 +215,6 @@ class ActsRecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.add_record(record1)
         tr.add_record(record2)
-        self.assertFalse(tr.is_all_pass)
-
-    def test_is_all_pass_with_fail_class(self):
-        """Verifies that is_all_pass yields correct value when fail_class is
-        used.
-        """
-        record1 = records.TestResultRecord(self.tn)
-        record1.test_begin()
-        record1.test_fail(Exception("haha"))
-        tr = records.TestResult()
-        tr.fail_class(record1)
         self.assertFalse(tr.is_all_pass)
 
 
