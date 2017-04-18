@@ -1027,7 +1027,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
             event_pub_rx['data']['peerId'], publisher_passphrase)
         self.log.info("Publisher network specifier - '%s'", pub_ns)
         self.network_req['NetworkSpecifier'] = pub_ns
-        pub_req_key = self.publisher.droid.connectivityRequestNetwork(
+        pub_req_key = self.publisher.droid.connectivityRequestWifiAwareNetwork(
             self.network_req)
 
         # P sends message to S
@@ -1051,7 +1051,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
             event_sub_rx['data']['peerId'], subscriber_passphrase)
         self.log.info("Subscriber network specifier - '%s'", sub_ns)
         self.network_req['NetworkSpecifier'] = sub_ns
-        sub_req_key = self.subscriber.droid.connectivityRequestNetwork(
+        sub_req_key = self.subscriber.droid.connectivityRequestWifiAwareNetwork(
             self.network_req)
 
         # Wait until both S and P get confirmation that network formed
