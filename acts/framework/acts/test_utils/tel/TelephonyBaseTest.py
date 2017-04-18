@@ -67,16 +67,23 @@ class _TelephonyTraceLogger():
         inspect_stack = inspect.stack()
         trace_info = ""
         for i in range(level):
-            stack_frames = inspect_stack[2 + i]
-            info = inspect.getframeinfo(stack_frames[0])
-            trace_info = "%s[%s:%s:%s]" % (trace_info,
-                                           os.path.basename(info.filename),
-                                           info.function, info.lineno)
+            try:
+                stack_frames = inspect_stack[2 + i]
+                info = inspect.getframeinfo(stack_frames[0])
+                trace_info = "%s[%s:%s:%s]" % (trace_info,
+                                               os.path.basename(info.filename),
+                                               info.function, info.lineno)
+            except IndexError:
+                break
         return trace_info
 
     def error(self, msg, *args, **kwargs):
         trace_info = _TelephonyTraceLogger._get_trace_info(level=3)
         self._logger.error("%s %s" % (msg, trace_info), *args, **kwargs)
+
+    def warn(self, msg, *args, **kwargs):
+        trace_info = _TelephonyTraceLogger._get_trace_info(level=1)
+        self._logger.warn("%s %s" % (msg, trace_info), *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
         trace_info = _TelephonyTraceLogger._get_trace_info(level=1)
@@ -213,11 +220,12 @@ class TelephonyBaseTest(BaseTestClass):
 
             # Setup VoWiFi MDN for Verizon. b/33187374
             build_id = ad.build_info["build_id"]
-            if "vzw" in [sub["operator"] for sub in ad.cfg[
-                    "subscription"].values()] and ad.model in (
-                            "marlin", "sailfish") and (build_id.startswith(
-                                    "N2") or build_id.startswith("OR")):
-                ad.log.info("setup VoWiFi MDN for MR2 or OC branch per b/33187374")
+            if "vzw" in [
+                    sub["operator"] for sub in ad.cfg["subscription"].values()
+            ] and ad.model in ("marlin", "sailfish") and (
+                    build_id.startswith("N2") or build_id.startswith("OR")):
+                ad.log.info(
+                    "setup VoWiFi MDN for MR2 or OC branch per b/33187374")
                 ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
                 ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
                              "\"com.google.android.wfcactivation/"
@@ -265,10 +273,9 @@ class TelephonyBaseTest(BaseTestClass):
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
+            return True
         except Exception as e:
             self.log.error("Failure with %s", e)
-
-        return True
 
     def setup_test(self):
         if getattr(self, "diag_logger", None):
@@ -322,8 +329,8 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.adb.wait_for_device()
                 ad.take_bug_report(test_name, begin_time)
                 tombstone_path = os.path.join(
-                    ad.log_path, "BugReports",
-                    "{},{}".format(begin_time, ad.serial).replace(' ', '_'))
+                    ad.log_path, "BugReports", "{},{}".format(
+                        begin_time, ad.serial).replace(' ', '_'))
                 utils.create_dir(tombstone_path)
                 ad.adb.pull('/data/tombstones/', tombstone_path, timeout=1200)
             except Exception as e:
