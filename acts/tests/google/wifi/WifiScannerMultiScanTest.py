@@ -19,6 +19,7 @@ import time
 
 from acts import asserts
 from acts import base_test
+from acts import signals
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiChannelUS = wutils.WifiChannelUS
@@ -128,6 +129,47 @@ class WifiScanResultEvents():
         5. The time gap between two consecutive scan results should be
            approximately equal to the scan interval specified by the scan
            setting.
+        A scan result looks like this:
+        {
+          'data':
+           {
+             'Type': 'onResults',
+             'ResultElapsedRealtime': 4280931,
+             'Index': 10,
+             'Results': [
+                         {
+                          'Flags': 0,
+                          'Id': 4,
+                          'ScanResults':[
+                                          {
+                                           'is80211McRTTResponder': False,
+                                           'channelWidth': 0,
+                                           'numUsage': 0,
+                                           'SSID': '"wh_ap1_2g"',
+                                           'timestamp': 4280078660,
+                                           'numConnection': 0,
+                                           'BSSID': '30:b5:c2:33:f9:05',
+                                           'frequency': 2412,
+                                           'numIpConfigFailures': 0,
+                                           'distanceSdCm': 0,
+                                           'distanceCm': 0,
+                                           'centerFreq1': 0,
+                                           'centerFreq0': 0,
+                                           'blackListTimestamp': 0,
+                                           'venueName': '',
+                                           'seen': 0,
+                                           'operatorFriendlyName': '',
+                                           'level': -31,
+                                           'passpointNetwork': False,
+                                           'untrusted': False
+                                          }
+                                        ]
+                         }
+                        ]
+            },
+          'time': 1491744576383,
+          'name': 'WifiScannerScan10onResults'
+        }
         """
         num_of_events = len(self.results_events)
         asserts.assert_true(
@@ -137,6 +179,9 @@ class WifiScanResultEvents():
         for event_idx in range(num_of_events):
             batches = self.results_events[event_idx]["data"]["Results"]
             actual_num_of_batches = len(batches)
+            if not actual_num_of_batches:
+                raise signals.TestFailure("Scan returned empty Results list %s "
+                                          "% batches")
             # For batch scan results.
             report_type = self.scan_setting['reportEvents']
             if not (report_type & WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN):
@@ -148,8 +193,13 @@ class WifiScanResultEvents():
                     "Expected to get at most %d batches in event No.%d, got %d."
                     % (expected_num_of_batches, event_idx,
                        actual_num_of_batches))
-                # Check the results within each event of batch scan
-                for batch_idx in range(1, actual_num_of_batches):
+            # Check the results within each event of batch scan
+            for batch_idx in range(actual_num_of_batches):
+                if not len(batches[batch_idx]["ScanResults"]):
+                    raise signals.TestFailure("Scan event %d returned empty"
+                    " scan results in batch %d" % (event_idx, batch_idx))
+                # Start checking interval from the second batch.
+                if batch_idx >=1:
                     self.check_interval(
                         batches[batch_idx - 1]["ScanResults"][0],
                         batches[batch_idx]["ScanResults"][0])
