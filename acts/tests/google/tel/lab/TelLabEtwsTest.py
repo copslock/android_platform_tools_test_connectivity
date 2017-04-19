@@ -46,6 +46,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_decorators import test_tracker_info
 
 WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
 
@@ -146,6 +147,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="af4a00d0-9a91-45d5-9f65-9541e64a57f2")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_lte(self):
         """ETWS Earthquake and Tsunami warning message reception on LTE
@@ -168,6 +170,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_EARTHQUAKETSUNAMI,
                                                "LTE Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="03785878-0319-413c-9190-d4e08f0edc33")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_lte(self):
         """ETWS Other emergency warning message reception on LTE
@@ -190,6 +193,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_OTHER_EMERGENCY,
                                                "LTE ETWS Other Emergency")
 
+    @test_tracker_info(uuid="1ef4a5d7-9ceb-49eb-8ec7-5538625c8bd4")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_wcdma(self):
         """ETWS Earthquake and Tsunami warning message reception on WCDMA
@@ -212,6 +216,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
             set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_EARTHQUAKETSUNAMI,
             "WCDMA Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="71dc9650-d00a-4533-99f5-5cc301c21334")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_wcdma(self):
         """ETWS Other emergency warning message reception on WCDMA
@@ -234,6 +239,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
             set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_OTHER_EMERGENCY,
             "WCDMA ETWS Other Emergency")
 
+    @test_tracker_info(uuid="a9fd9c0e-21bf-41d1-81d2-c34679052fe0")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_gsm(self):
         """ETWS Earthquake and Tsunami warning message reception on GSM
@@ -256,6 +262,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_EARTHQUAKETSUNAMI,
                                                "GSM Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="0ae42f8d-1720-449c-9200-e88f7f1d2cbe")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_gsm(self):
         """ETWS Other emergency warning message reception on GSM
