@@ -136,6 +136,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
     get_incoming_message_sub_id
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
+from acts.utils import adb_shell_ping
 from acts.utils import load_config
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
@@ -1669,6 +1670,18 @@ def active_data_transfer_task(log, ad, file_name="5MB"):
 def active_data_transfer_test(log, ad, file_name="5MB"):
     task = active_data_transfer_task(log, ad, file_name)
     return task[0](*task[1])
+
+
+def verify_internet_connection(log, ad):
+    """Verify internet connection by ping test.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+
+    """
+    ad.log.info("Verify internet connection")
+    return adb_shell_ping(ad, count=5, timeout=60, loss_tolerance=40)
 
 
 def iperf_test_by_adb(log,
@@ -3682,9 +3695,10 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             return True
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
-            wifi_test_utils.wifi_connect(ad, network, 1, assert_on_fail=False)
+            ad.droid.wifiConnectByConfig(network)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
+                ad.log.info("Coneected to Wifi %s", wifi_ssid)
                 return True
     ad.log.info("Fail to connected to wifi %s", wifi_ssid)
     return False
