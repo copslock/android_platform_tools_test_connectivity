@@ -59,6 +59,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_decorators import test_tracker_info
 
 WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
 
@@ -175,6 +176,7 @@ class TelLabCmasTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="e5ddf562-e94b-4b58-bc7d-6635c01f290e")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_lte(self):
         """CMAS Presidential alert message reception on LTE
@@ -196,6 +198,7 @@ class TelLabCmasTest(TelephonyBaseTest):
                                                CMAS_MESSAGE_PRESIDENTIAL_ALERT,
                                                "LTE CMAS Presidential Alert")
 
+    @test_tracker_info(uuid="33be2aaa-e8a6-4832-afea-8bd7e5555cc7")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_lte(self):
         """CMAS Extreme immediate likely message reception on LTE
@@ -217,6 +220,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
             "LTE CMAS Extreme Immediate Likely")
 
+    @test_tracker_info(uuid="111d3b0b-020a-4818-9681-e46d1d4d61fd")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_lte(self):
         """CMAS Child abduction emergency message reception on LTE
@@ -238,6 +242,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
             "LTE CMAS Child abduction Alert")
 
+    @test_tracker_info(uuid="df5676b2-cfab-4d64-8c51-ed2b95642dce")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_wcdma(self):
         """CMAS Presidential alert message reception on WCDMA
@@ -259,6 +264,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             set_system_model_wcdma, RAT_WCDMA, CMAS_MESSAGE_PRESIDENTIAL_ALERT,
             "WCDMA CMAS Presidential Alert")
 
+    @test_tracker_info(uuid="954544cc-75e8-408b-a5a5-4d820d0e0b3d")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_wcdma(self):
         """CMAS Extreme immediate likely message reception on WCDMA
@@ -280,6 +286,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
             "WCDMA CMAS Extreme Immediate Likely")
 
+    @test_tracker_info(uuid="8c681524-b217-422b-9b45-0dea9b30deed")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_wcdma(self):
         """CMAS Child abduction emergency message reception on WCDMA
@@ -301,6 +308,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_MESSAGE_CHILD_ABDUCTION_EMERGENCY,
             "WCDMA CMAS Child abduction Alert")
 
+    @test_tracker_info(uuid="44b0c8c5-b5f4-4fe0-b62f-6586bd37c728")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_1x(self):
         """CMAS Presidential alert message reception on 1x
@@ -322,6 +330,7 @@ class TelLabCmasTest(TelephonyBaseTest):
                                                CMAS_C2K_CATEGORY_PRESIDENTIAL,
                                                "1X CMAS Presidential Alert")
 
+    @test_tracker_info(uuid="67cccd46-4cce-47b2-9cba-a24abe7aedc5")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_1x(self):
         """CMAS Extreme immediate likely message reception on 1x
@@ -344,6 +353,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
             CMAS_C2K_CERTIANTY_LIKELY)
 
+    @test_tracker_info(uuid="4053c54b-cda8-456a-8bce-5483732c9aee")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_1x(self):
         """CMAS Child abduction emergency message reception on 1x
@@ -366,6 +376,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
             CMAS_C2K_CERTIANTY_OBSERVED)
 
+    @test_tracker_info(uuid="95e4643b-3387-41ce-ac24-8db3a8f96557")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_1x_evdo(self):
         """CMAS Presidential alert message reception on 1x with EVDO
@@ -387,6 +398,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             set_system_model_1x_evdo, RAT_1XRTT,
             CMAS_C2K_CATEGORY_PRESIDENTIAL, "1X CMAS Presidential Alert")
 
+    @test_tracker_info(uuid="d1283544-81d0-4852-9387-c94826794896")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_1x_evdo(self):
         """CMAS Extreme immediate likely message reception on 1x with EVDO
@@ -409,6 +421,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
             CMAS_C2K_CERTIANTY_LIKELY)
 
+    @test_tracker_info(uuid="8ae7027e-77ec-4c9b-88e5-c20caef007a5")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_1x_evdo(self):
         """CMAS Child abduction emergency message reception on 1x with EVDO
@@ -431,6 +444,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_C2K_SEVERITY_EXTREME, CMAS_C2K_URGENCY_IMMEDIATE,
             CMAS_C2K_CERTIANTY_OBSERVED)
 
+    @test_tracker_info(uuid="7e4ab36b-4e9b-4bdf-bdb8-8356103a3e79")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_presidential_alert_gsm(self):
         """CMAS Presidential alert message reception on GSM
@@ -452,6 +466,7 @@ class TelLabCmasTest(TelephonyBaseTest):
                                                CMAS_MESSAGE_PRESIDENTIAL_ALERT,
                                                "GSM CMAS Presidential Alert")
 
+    @test_tracker_info(uuid="c6d6b57b-c915-46e3-acbe-4d7f8cd6e52e")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_extreme_immediate_likely_gsm(self):
         """CMAS Extreme immediate likely message reception on GSM
@@ -473,6 +488,7 @@ class TelLabCmasTest(TelephonyBaseTest):
             CMAS_MESSAGE_EXTREME_IMMEDIATE_LIKELY,
             "GSM CMAS Extreme Immediate Likely")
 
+    @test_tracker_info(uuid="eb0a51de-f5fa-4b66-b0c2-21320fca44ca")
     @TelephonyBaseTest.tel_test_wrap
     def test_cmas_child_abduction_emergency_gsm(self):
         """CMAS Child abduction emergency message reception on GSM
