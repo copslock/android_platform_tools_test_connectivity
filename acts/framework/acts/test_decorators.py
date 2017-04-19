@@ -88,7 +88,132 @@ def test_tracker_info(uuid, extra_environment_info=None, priority=3,
         priority: The priority of this test.
         predicate: A func that if false when called will ignore this info.
     """
-    return test_info(test_tracker_uuid=uuid,
-                     test_tracker_enviroment_info=extra_environment_info,
-                     test_tracker_priority=priority,
-                     predicate=predicate)
+    return test_info(
+        test_tracker_uuid=uuid,
+        test_tracker_enviroment_info=extra_environment_info,
+        predicate=predicate)
+
+
+class _TestInfoDecoratorFunc(object):
+    """Object that acts as a function decorator test info."""
+
+    def __init__(self, func, predicate, keyed_info):
+        self.func = func
+        self.predicate = predicate
+        self.keyed_info = keyed_info
+        self.__name__ = func.__name__
+
+    def __get__(self, instance, owner):
+        """Called by Python to create a binding for an instance closure.
+
+        When called by Python this object will create a special binding for
+        that instance. That binding will know how to interact with this
+        specific decorator.
+        """
+        return _TestInfoBinding(self, instance)
+
+    def __call__(self, *args, **kwargs):
+        """
+        When called runs the underlying func and then attaches test info
+        to a signal.
+        """
+        try:
+            result = self.func(*args, **kwargs)
+
+            if result or result is None:
+                new_signal = signals.TestPass('')
+            else:
+                new_signal = signals.TestFailure('')
+        except signals.TestSignal as signal:
+            new_signal = signal
+
+        if not isinstance(new_signal.extras, dict) and new_signal.extras:
+            raise ValueError('test_info can only append to signal data '
+                             'that has a dict as the extra value.')
+        elif not new_signal.extras:
+            new_signal.extras = {}
+
+        gathered_extras = self._gather_local_info(*args, **kwargs)
+        for k, v in gathered_extras.items():
+            if k not in new_signal.extras:
+                new_signal.extras[k] = v
+            else:
+                if not isinstance(new_signal.extras[k], list):
+                    new_signal.extras[k] = [new_signal.extras[k]]
+
+                new_signal.extras[k].insert(0, v)
+
+        raise new_signal
+
+    def gather(self, *args, **kwargs):
+        """
+        Gathers the info from this decorator without invoking the underlying
+        function. This will also gather all child info if the underlying func
+        has that ability.
+
+        Returns: A dictionary of info.
+        """
+        if hasattr(self.func, 'gather'):
+            extras = self.func.gather(*args, **kwargs)
+        else:
+            extras = {}
+
+        self._gather_local_info(*args, gather_into=extras, **kwargs)
+
+        return extras
+
+    def _gather_local_info(self, *args, gather_into=None, **kwargs):
+        """Gathers info from this decorator and ignores children.
+
+        Args:
+            gather_into: Gathers into a dictionary that already exists.
+
+        Returns: The dictionary with gathered info in it.
+        """
+        if gather_into is None:
+            extras = {}
+        else:
+            extras = gather_into
+        if not self.predicate or self.predicate(args, kwargs):
+            for k, v in self.keyed_info.items():
+                if v and k not in extras:
+                    extras[k] = v
+                elif v and k in extras:
+                    if not isinstance(extras[k], list):
+                        extras[k] = [extras[k]]
+                    extras[k].insert(0, v)
+
+        return extras
+
+
+class _TestInfoBinding(object):
+    """
+    When Python creates an instance of an object it creates a binding object
+    for each closure that contains what the instance variable should be when
+    called. This object is a similar binding for _TestInfoDecoratorFunc.
+    When Python tries to create a binding of a _TestInfoDecoratorFunc it
+    will return one of these objects to hold the instance for that closure.
+    """
+
+    def __init__(self, target, instance):
+        """
+        Args:
+            target: The target for creating a binding to.
+            instance: The instance to bind the target with.
+        """
+        self.target = target
+        self.instance = instance
+        self.__name__ = target.__name__
+
+    def __call__(self, *args, **kwargs):
+        """
+        When this object is called it will call the target with the bound
+        instance.
+        """
+        return self.target(self.instance, *args, **kwargs)
+
+    def gather(self, *args, **kwargs):
+        """
+        Will gather the target with the bound instance.
+        """
+        return self.target.gather(self.instance, *args, **kwargs)
