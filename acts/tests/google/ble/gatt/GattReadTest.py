@@ -148,3 +148,51 @@ class GattReadTest(GattConnectedBaseTest):
                          "Read value shall be equal to value sent from server")
 
         return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_read_using_char_uuid(self):
+        """Test read using characteristic UUID.
+
+        Test GATT read value using characteristic UUID.
+
+        Steps:
+        1. Central: send read by UUID request.
+        2. Peripheral: receive read request .
+        3. Peripheral: send read response with status 0 (success), and
+           characteristic value.
+        4. Central: receive read response, verify it's conent matches what was
+           sent
+
+        Expected Result:
+        Verify that read request/response is properly delivered.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, GATT, Characteristic
+        Priority: 0
+        """
+        self.cen_ad.droid.gattClientReadUsingCharacteristicUuid(
+            self.bluetooth_gatt, self.READABLE_CHAR_UUID, 0x0001, 0xFFFF)
+
+        event = self._server_wait(GattEvent.CHAR_READ_REQ)
+
+        request_id = event['data']['requestId']
+        self.assertEqual(0, event['data']['offset'], "offset should be 0")
+
+        bt_device_id = 0
+        status = 0
+        char_value = [1, 2, 3, 4, 5, 6, 7, 20]
+        offset = 0
+        self.per_ad.droid.gattServerSendResponse(self.gatt_server,
+                                                 bt_device_id, request_id,
+                                                 status, offset, char_value)
+
+        event = self._client_wait(GattEvent.CHAR_READ)
+        self.assertEqual(status, event["data"]["Status"],
+                         "Write status should be 0")
+        self.assertEqual(char_value, event["data"]["CharacteristicValue"],
+                         "Read value shall be equal to value sent from server")
+
+        return True
