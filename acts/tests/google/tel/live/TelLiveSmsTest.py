@@ -449,8 +449,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="480b6ba2-1e5f-4a58-9d88-9b75c8fab1b6")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_general(self):
         """Test SMS basic function between two phone. Phones in any network.
 
@@ -472,8 +472,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="aa87fe73-8236-44c7-865c-3fe3b733eeb4")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_general(self):
         """Test SMS basic function between two phone. Phones in any network.
 
@@ -495,8 +495,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="57db830c-71eb-46b3-adaa-915c641de18d")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_general(self):
         """Test MMS basic function between two phone. Phones in any network.
 
@@ -518,8 +518,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="f2779e1e-7d09-43f0-8b5c-87eae5d146be")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_general(self):
         """Test MMS basic function between two phone. Phones in any network.
 
@@ -541,8 +541,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2c229a4b-c954-4ba3-94ba-178dc7784d03")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_2g(self):
         """Test SMS basic function between two phone. Phones in 3g network.
 
@@ -564,8 +564,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="17fafc41-7e12-47ab-a4cc-fb9bd94e79b9")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_2g(self):
         """Test SMS basic function between two phone. Phones in 3g network.
 
@@ -587,8 +587,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b4919317-18b5-483c-82f4-ced37a04f28d")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_2g(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -610,8 +610,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="cd56bb8a-0794-404d-95bd-c5fd00f4b35a")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_2g(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -633,8 +633,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b39fbc30-9cc2-4d86-a9f4-6f0c1dd0a905")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_2g_wifi(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -659,8 +659,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b158a0a7-9697-4b3b-8d5b-f9b6b6bc1c03")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_2g_wifi(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -685,8 +685,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="f094e3da-2523-4f92-a1f3-7cf9edcff850")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_3g(self):
         """Test SMS basic function between two phone. Phones in 3g network.
 
@@ -709,8 +709,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2186e152-bf83-4d6e-93eb-b4bf9ae2d76e")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_3g(self):
         """Test SMS basic function between two phone. Phones in 3g network.
 
@@ -733,8 +733,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e716c678-eee9-4a0d-a9cd-ca9eae4fea51")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_3g(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -757,8 +757,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e864a99e-d935-4bd9-95f6-8183cdd3d760")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_3g(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -781,8 +781,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c6cfba55-6cde-41cd-93bb-667c317a0127")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_3g_wifi(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -808,8 +808,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="83c5dd99-f2fe-433d-9775-80a36d0d493b")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_3g_wifi(self):
         """Test MMS basic function between two phone. Phones in 3g network.
 
@@ -835,8 +835,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c97687e2-155a-4cf3-9f51-22543b89d53e")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_4g(self):
         """Test SMS basic function between two phone. Phones in LTE network.
 
@@ -860,8 +860,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e2e01a47-2b51-4d00-a7b2-dbd3c8ffa6ae")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_4g(self):
         """Test SMS basic function between two phone. Phones in LTE network.
 
@@ -886,8 +886,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5795143c-5252-4536-9fd3-b28e83124e1c")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_4g(self):
         """Test MMS text function between two phone. Phones in LTE network.
 
@@ -910,8 +910,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="dc24361c-713f-45eb-ac7b-a34c649f1c36")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_4g(self):
         """Test MMS text function between two phone. Phones in LTE network.
 
@@ -934,8 +934,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c7349fdf-a376-4846-b466-1f329bd1557f")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_4g_wifi(self):
         """Test MMS text function between two phone. Phones in LTE network.
 
@@ -960,8 +960,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
                               self.wifi_network_pass)
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="1affab34-e03c-49dd-9062-e9ed8eac406b")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_4g_wifi(self):
         """Test MMS text function between two phone. Phones in LTE network.
 
@@ -987,8 +987,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7ee57edb-2962-4d20-b6eb-79cebce91fff")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_volte(self):
         """ Test MO SMS during a MO VoLTE call.
 
@@ -1023,8 +1023,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5576276b-4ca1-41cc-bb74-31ccd71f9f96")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_volte(self):
         """ Test MT SMS during a MO VoLTE call.
 
@@ -1059,8 +1059,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="3bf8ff74-baa6-4dc6-86eb-c13816fa9bc8")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_volte(self):
         """ Test MO MMS during a MO VoLTE call.
 
@@ -1095,8 +1095,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="289e6516-5f66-403a-b292-50d067151730")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_volte(self):
         """ Test MT MMS during a MO VoLTE call.
 
@@ -1131,8 +1131,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5654d974-3c32-4cce-9d07-0c96213dacc5")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_volte_wifi(self):
         """ Test MO MMS during a MO VoLTE call.
 
@@ -1170,8 +1170,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="cbd5ab3d-d76a-4ece-ac09-62efeead7550")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_volte_wifi(self):
         """ Test MT MMS during a MO VoLTE call.
 
@@ -1209,8 +1209,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="516457ae-5f99-41c1-b145-bfe72876b872")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_wcdma(self):
         """ Test MO SMS during a MO wcdma call.
 
@@ -1235,8 +1235,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_sms_in_3g_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="d99697f4-5be2-46f2-9d95-aa73b5d9cebc")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_wcdma(self):
         """ Test MT SMS during a MO wcdma call.
 
@@ -1261,8 +1261,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_sms_in_3g_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2a2d64cc-88db-4ec0-9c2d-1da24a0f9eaf")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_wcdma(self):
         """ Test MO MMS during a MO wcdma call.
 
@@ -1287,8 +1287,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_3g_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="20df9556-a8af-4346-97b8-b97596d146a4")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_wcdma(self):
         """ Test MT MMS during a MO wcdma call.
 
@@ -1313,8 +1313,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_3g_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c4a39519-44d8-4194-8dfc-68b1dd723b39")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_wcdma_wifi(self):
         """ Test MO MMS during a MO wcdma call.
 
@@ -1342,8 +1342,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_3g_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="bcc5b02d-2fef-431a-8c0b-f31c98999bfb")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_wcdma_wifi(self):
         """ Test MT MMS during a MO wcdma call.
 
@@ -1371,8 +1371,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
                               self.wifi_network_pass)
         return self._mt_mms_in_3g_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b6e9ce80-8577-48e5-baa7-92780932f278")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_csfb(self):
         """ Test MO SMS during a MO csfb wcdma/gsm call.
 
@@ -1397,8 +1397,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_sms_in_csfb_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="93f0b58a-01e9-4bc9-944f-729d455597dd")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_csfb(self):
         """ Test MT SMS during a MO csfb wcdma/gsm call.
 
@@ -1423,8 +1423,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_sms_in_csfb_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="bd8e9e80-1955-429f-b122-96b127771bbb")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_csfb(self):
         """ Test MO MMS during a MO csfb wcdma/gsm call.
 
@@ -1449,8 +1449,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_csfb_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="89d65fd2-fc75-4fc5-a018-2d05a4364304")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb(self):
         """ Test MT MMS during a MO csfb wcdma/gsm call.
 
@@ -1475,8 +1475,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_csfb_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="9c542b5d-3b8f-4d4a-80de-fb804f066c3d")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_csfb_wifi(self):
         """ Test MO MMS during a MO csfb wcdma/gsm call.
 
@@ -1504,8 +1504,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_csfb_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c1bed6f5-f65c-4f4d-aa06-0e9f5c867819")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb_wifi(self):
         """ Test MT MMS during a MO csfb wcdma/gsm call.
 
@@ -1533,8 +1533,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_csfb_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="60996028-b4b2-4a16-9e4b-eb6ef80179a7")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_1x(self):
         """ Test MO SMS during a MO 1x call.
 
@@ -1559,8 +1559,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_sms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="6b352aac-9b4e-4062-8980-3b1c0e61015b")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_1x(self):
         """ Test MT SMS during a MO 1x call.
 
@@ -1585,8 +1585,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_sms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="cfae3613-c490-4ce0-b00b-c13286d85027")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_1x(self):
         """ Test MO MMS during a MO 1x call.
 
@@ -1612,8 +1612,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="4311cb8c-626d-48a9-955b-6505b41c7519")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_1x(self):
         """ Test MT MMS during a MO 1x call.
 
@@ -1638,8 +1638,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="18093f87-aab5-4d86-b178-8085a1651828")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_1x_wifi(self):
         """ Test MO MMS during a MO 1x call.
 
@@ -1667,8 +1667,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="8fe3359a-0857-401f-a043-c47a2a2acb47")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_1x_wifi(self):
         """ Test MT MMS during a MO 1x call.
 
@@ -1695,8 +1695,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_1x_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="96214c7c-2843-4242-8cfa-1d08241514b0")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_csfb_1x(self):
         """ Test MO SMS during a MO csfb 1x call.
 
@@ -1721,8 +1721,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_sms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="3780a8e5-2649-45e6-bf6b-9ab1e86456eb")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_csfb_1x(self):
         """ Test MT SMS during a MO csfb 1x call.
 
@@ -1747,8 +1747,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_sms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5de29f86-1aa8-46ff-a679-97309c314fe2")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_csfb_1x(self):
         """ Test MO MMS during a MO csfb 1x call.
 
@@ -1773,8 +1773,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="29ed3fea-0409-4b43-9caf-dbbaac7d430f")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb_1x(self):
         """ Test MT MMS during a MO csfb 1x call.
 
@@ -1799,8 +1799,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_1x_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="12e05635-7934-4f14-a27e-430d0fc52edb")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_csfb_1x_wifi(self):
         """ Test MO MMS during a MO csfb 1x call.
 
@@ -1827,8 +1827,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="bd884be7-756b-4f0f-b233-052dc79233c0")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb_1x_wifi(self):
         """ Test MT MMS during a MO csfb 1x call.
 
@@ -1855,8 +1855,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_1x_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="ed720013-e366-448b-8901-bb09d26cea05")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_iwlan(self):
         """ Test MO SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -1881,8 +1881,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="4d4b0b7b-bf00-44f6-a0ed-23b438c30fc2")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_iwlan(self):
         """ Test MT SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -1907,8 +1907,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="30139605-fdb0-4f8f-8772-2f56addb6f21")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_iwlan(self):
         """ Test MO MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -1933,8 +1933,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="d1e1b686-fa16-4715-9506-be2e2b1e1a96")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_iwlan(self):
         """ Test MT MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -1959,8 +1959,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="075933a2-df7f-4374-a405-92f96bcc7770")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_apm_wifi_wfc_off(self):
         """ Test MO SMS, Phone in APM, WiFi connected, WFC off.
 
@@ -1983,8 +1983,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="637af228-29fc-4b74-a963-883f66ddf080")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_apm_wifi_wfc_off(self):
         """ Test MT SMS, Phone in APM, WiFi connected, WFC off.
 
@@ -2007,8 +2007,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="502aba0d-8895-4807-b394-50a44208ecf7")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_apm_wifi_wfc_off(self):
         """ Test MO MMS, Phone in APM, WiFi connected, WFC off.
 
@@ -2031,8 +2031,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="235bfdbf-4275-4d89-99f5-41b5b7de8345")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_apm_wifi_wfc_off(self):
         """ Test MT MMS, Phone in APM, WiFi connected, WFC off.
 
@@ -2055,8 +2055,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e5a31b94-1cb6-4770-a2bc-5a0ddba51502")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_iwlan(self):
         """ Test MO SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -2092,8 +2092,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="d6d30cc5-f75b-42df-b517-401456ee8466")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_iwlan(self):
         """ Test MT SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -2129,8 +2129,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="54e4244a-2c8b-4350-9b2c-ade6e05b1494")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_iwlan(self):
         """ Test MO MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -2166,8 +2166,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="6cf9d2a3-b476-4855-95d7-ce4b426a0a2f")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_iwlan(self):
         """ Test MT MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
 
@@ -2203,8 +2203,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="9f1933bb-c4cb-4655-8655-327c1f38e8ee")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_vt(self):
         """ Test MO SMS, Phone in ongoing VT call.
 
@@ -2236,8 +2236,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="0a07e737-4862-4492-9b48-8d94799eab91")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_vt(self):
         """ Test MT SMS, Phone in ongoing VT call.
 
@@ -2269,8 +2269,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="80254125-861f-4f3d-9164-eb9a2699152e")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_vt(self):
         """ Test MO MMS, Phone in ongoing VT call.
 
@@ -2302,8 +2302,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a46074f0-304b-4bb0-a2da-5102ee2be619")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_vt(self):
         """ Test MT MMS, Phone in ongoing VT call.
 
@@ -2335,8 +2335,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c60c89ba-ff72-425d-9ac0-93cb2ee5a0bc")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_gsm(self):
         """ Test MO SMS during a MO gsm call.
 
@@ -2375,8 +2375,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="ba55daf2-89b9-450c-9832-732fd9413410")
+    @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_in_call_gsm(self):
         """ Test MT SMS during a MO gsm call.
 
@@ -2415,8 +2415,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2bd94d69-3621-4b94-abc7-bd24c4325485")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_gsm(self):
         """ Test MO MMS during a MO gsm call.
 
@@ -2441,8 +2441,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_2g_call(ads)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e20be70d-99d6-4344-a742-f69581b66d8f")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_gsm(self):
         """ Test MT MMS during a MO gsm call.
 
@@ -2468,6 +2468,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return self._mt_mms_in_2g_call(ads)
 
     @test_tracker_info(uuid="3510d368-4b16-4716-92a3-9dd01842ba79")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_gsm_wifi(self):
         """ Test MO MMS during a MO gsm call.
 
@@ -2494,8 +2495,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_2g_call(ads, wifi=True)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="060def89-01bd-4b44-a49b-a4536fe39165")
+    @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_gsm_wifi(self):
         """ Test MT MMS during a MO gsm call.
 
