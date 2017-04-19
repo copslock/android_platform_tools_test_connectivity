@@ -58,7 +58,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-
+from acts.test_decorators import test_tracker_info
 
 class TelLabEmergencyCallTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -307,6 +307,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="f5c93228-3b43-48a3-b509-796d41625171")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_lte_wcdma_csfb_redirection(self):
         """ Test Emergency call functionality on LTE (CSFB to WCDMA).
@@ -332,6 +333,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             csfb_type=CsfbType.CSFB_TYPE_REDIRECTION)
 
+    @test_tracker_info(uuid="8deb6b21-2cb0-4241-bcad-6cd62a340b07")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_lte_wcdma_csfb_handover(self):
         """ Test Emergency call functionality on LTE (CSFB to WCDMA).
@@ -357,6 +359,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             csfb_type=CsfbType.CSFB_TYPE_HANDOVER)
 
+    @test_tracker_info(uuid="52b6b783-de77-497d-87e0-63c930e6c9bb")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_lte_1x_csfb(self):
         """ Test Emergency call functionality on LTE (CSFB to 1x).
@@ -380,6 +383,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_lte_1x,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="fcdd5a4f-fdf2-44dc-b1b2-44ab175791ce")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_wcdma(self):
         """ Test Emergency call functionality on WCDMA
@@ -403,6 +407,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_wcdma,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="295c3188-24e2-4c53-80c6-3d3001e2ff16")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_gsm(self):
         """ Test Emergency call functionality on GSM
@@ -426,6 +431,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_gsm,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="4f21bfc0-a0a9-43b8-9285-dcfb131a3a04")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_1x(self):
         """ Test Emergency call functionality on CDMA 1X
@@ -449,6 +455,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_1x,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="6dfd3e1d-7faa-426f-811a-ebd5e54f9c9a")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_1x_evdo(self):
         """ Test Emergency call functionality on CDMA 1X with EVDO
@@ -472,6 +479,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             self._phone_setup_1x,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="40f9897e-4924-4896-9f2c-0b4f45331251")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_1x_apm(self):
         """ Test Emergency call functionality on Airplane mode
@@ -496,6 +504,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             is_wait_for_registration=False,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="5997c004-449b-4a5e-816e-2ff0c0eb928d")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_wcdma_apm(self):
         """ Test Emergency call functionality on Airplane mode
@@ -520,6 +529,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             is_wait_for_registration=False,
             emergency_number=self.emergency_call_number)
 
+    @test_tracker_info(uuid="9afde8d3-bdf0-41d9-af8c-2a8f36aae169")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte_wcdma_srvcc(self):
         """ Test Emergency call functionality,
@@ -547,6 +557,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="2e454f11-e77d-452a-bcac-7271378953ed")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte_gsm_srvcc(self):
         """ Test Emergency call functionality,
@@ -574,6 +585,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="4dae7e62-b73e-4ba1-92ee-ecc121b898b3")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_csfb_1x_lte_call_failure(self):
         """ Test Emergency call functionality,
@@ -603,6 +615,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="e98c9101-1ab6-497e-9d67-a4ff62d28fea")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_csfb_1x_ims_unregistered(self):
         """ Test Emergency call functionality,
@@ -632,6 +645,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="d96e1b9b-2f6d-49f3-a203-f4277056869e")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_csfb_1x_ps911_unsupported(self):
         """ Test Emergency call functionality,
@@ -662,6 +676,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="f7d48841-b8ef-4031-99de-28534aaf4c44")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_csfb_1x_emc_barred(self):
         """ Test Emergency call functionality,
@@ -692,6 +707,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="5bbbecec-0fef-430b-acbd-01ef7c7055c0")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte_1x(self):
         """ Test Emergency call functionality on VoLTE with CDMA1x
@@ -718,6 +734,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="e32862e0-ec11-4de8-8b9a-851bab9feb29")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte(self):
         """ Test Emergency call functionality on VoLTE
@@ -744,6 +761,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="fa5b4e52-c249-42ec-a9d3-9523336f88f7")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_volte_apm(self):
         """ Test Emergency call functionality on VoLTE
@@ -770,6 +788,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="260e4892-fdae-4d49-bfc6-04fe72a5a715")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_no_sim_wcdma(self):
         """ Test Emergency call functionality with no SIM.
@@ -794,6 +813,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
+    @test_tracker_info(uuid="2dbbbde5-c298-4a2d-ae65-b739d1dd1445")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_no_sim_1x(self):
         """ Test Emergency call functionality with no SIM.
@@ -818,6 +838,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
+    @test_tracker_info(uuid="fa77dee2-3235-42e0-b24d-c8fdb3fbef2f")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_no_sim_gsm(self):
         """ Test Emergency call functionality with no SIM.
@@ -842,6 +863,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
+    @test_tracker_info(uuid="9ead5c6a-b4cb-40d5-80b0-54d3c7ad31ff")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_no_sim_volte(self):
         """ Test Emergency call functionality with no SIM.
@@ -868,6 +890,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             emergency_number=self.emergency_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="d6bdc1d7-0a08-4e6e-9de8-4084abb48bad")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_no_sim_1x_ecbm(self):
         """ Test Emergency call functionality with no SIM.
