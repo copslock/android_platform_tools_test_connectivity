@@ -454,6 +454,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_phone_setup_cellular_absent(self, wfc_mode):
         is_exception_happened = False
+        time.sleep(30)
         try:
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
@@ -553,7 +554,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
                                  self.live_network_ssid,
-                                 self.live_network_pwd):
+                                 self.live_network_pwd, 1):
             self.log.error("{} connect WiFI succeed, expected not succeed".
                            format(self.android_devices[0].serial))
             return False
@@ -561,6 +562,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_phone_setup_cellular_absent_wifi_absent(self, wfc_mode):
         is_exception_happened = False
+        time.sleep(30)
         try:
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
@@ -591,7 +593,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
                                  self.live_network_ssid,
-                                 self.live_network_pwd):
+                                 self.live_network_pwd, 1):
             self.log.error("{} connect WiFI succeed, expected not succeed".
                            format(self.android_devices[0].serial))
             return False
@@ -657,6 +659,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_phone_setup_cellular_absent_wifi_disabled(self, wfc_mode):
         is_exception_happened = False
+        time.sleep(30)
         try:
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
@@ -1212,7 +1215,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1303,7 +1305,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1581,7 +1582,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1640,7 +1640,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1670,7 +1669,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1698,7 +1696,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1728,7 +1725,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1760,7 +1756,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1854,7 +1849,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1949,7 +1943,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -1979,7 +1972,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2010,7 +2002,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2040,7 +2031,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2070,7 +2060,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2100,7 +2089,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2130,7 +2118,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2162,7 +2149,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2195,7 +2181,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2227,7 +2212,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2259,7 +2243,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2292,7 +2275,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2382,7 +2364,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
@@ -2460,7 +2441,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         if ensure_wifi_connected(self.log, self.android_devices[0],
                                  self.live_network_ssid,
-                                 self.live_network_pwd):
+                                 self.live_network_pwd, 1):
             self.log.error("{} connect WiFI succeed, expected not succeed".
                            format(self.android_devices[0].serial))
             return False
@@ -2812,7 +2793,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         return self._rove_in_test(GEN_4G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -2849,7 +2829,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         return self._rove_in_test(GEN_3G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -2886,7 +2865,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         return self._rove_out_test(GEN_4G, WFC_MODE_WIFI_ONLY)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -2923,7 +2901,6 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        ###########
         return self._rove_out_test(GEN_3G, WFC_MODE_WIFI_ONLY)
 
     def _increase_wifi_rssi_check_phone_hand_in(self):
