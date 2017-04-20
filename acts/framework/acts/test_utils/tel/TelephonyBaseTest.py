@@ -222,14 +222,17 @@ class TelephonyBaseTest(BaseTestClass):
             build_id = ad.build_info["build_id"]
             if "vzw" in [
                     sub["operator"] for sub in ad.cfg["subscription"].values()
-            ] and ad.model in ("marlin", "sailfish") and (
-                    build_id.startswith("N2") or build_id.startswith("OR")):
-                ad.log.info(
-                    "setup VoWiFi MDN for MR2 or OC branch per b/33187374")
-                ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-                ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                             "\"com.google.android.wfcactivation/"
-                             ".VzwEmergencyAddressActivity\"")
+            ]:
+                try:
+                    ad.adb.shell("pm path com.google.android.wfcactivation")
+                    ad.log.info("setup VoWiFi MDN per b/33187374")
+                    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+                    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
+                                 "\"com.google.android.wfcactivation/"
+                                 ".VzwEmergencyAddressActivity\"")
+                except Exception:
+                    ad.log.info(
+                        "com.google.android.wfcactivation not installed")
 
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
