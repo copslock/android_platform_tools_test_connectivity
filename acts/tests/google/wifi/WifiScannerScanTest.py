@@ -22,6 +22,7 @@ import traceback
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -543,6 +544,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
     """ Helper Functions End """
     """ Tests Begin """
 
+    @test_tracker_info(uuid="7cca8142-529f-4951-ab6f-cd03b359b3cc")
     def test_available_channels_generated(self):
         """Test available channels for different bands.
 
@@ -559,6 +561,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             not failed,
             "Number of test_get_channel_band failed {}".format(len(failed)))
 
+    @test_tracker_info(uuid="95069244-b76c-4834-b3a6-96b0d8da98d8")
     def test_single_scan_report_each_scan_for_channels_with_enumerated_params(
             self):
         """Test WiFi scanner single scan for channels with enumerated settings.
@@ -588,6 +591,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             failed, ("Number of test_single_scan_report_each_scan_for_channels"
                      " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="5595ebe5-6d91-4379-a606-be59967e5ec9")
     def test_single_scan_report_each_scan_for_band_with_enumerated_params(
             self):
         """Test WiFi scanner single scan for bands with enumerated settings.
@@ -616,6 +620,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             "Number of test_single_scan_report_each_scan_for_band failed %s" %
             len(failed))
 
+    @test_tracker_info(uuid="44989f93-e63b-4c2e-a90a-a483477303bb")
     def test_batch_scan_report_buffer_full_for_channels_with_enumerated_params(
             self):
         """Test WiFi scanner batch scan using channels with enumerated settings
@@ -641,6 +646,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             "Number of test_batch_scan_report_buffer_full_for_channels"
             " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="63538df6-388a-4c16-964f-e9c19b750e07")
     def test_batch_scan_report_buffer_full_for_band_with_enumerated_params(
             self):
         """Test WiFi scanner batch scan using band with enumerated settings
@@ -666,6 +672,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             failed, ("Number of test_batch_scan_report_buffer_full_for_band"
                      " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="bd4e8c53-16c8-4ed6-b680-55c1ba688ad8")
     def test_batch_scan_report_each_scan_for_channels_with_enumerated_params(
             self):
         """Test WiFi scanner batch scan using channels with enumerated settings
@@ -691,6 +698,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             failed, ("Number of test_batch_scan_report_each_scan_for_channels"
                      " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="d11e8c09-97d0-49c1-bf09-b9ec672c2fa6")
     def test_batch_scan_report_each_scan_for_band_with_enumerated_params(self):
         """Test WiFi scanner batch scan using band with enumerated settings
            to report each scan results.
@@ -715,6 +723,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             not failed, ("Number of test_batch_scan_report_each_scan_for_band"
                          " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="7f967b0e-82fe-403e-9d74-0dee7f09a21d")
     def test_single_scan_report_full_scan_for_channels_with_enumerated_params(
             self):
         """Test WiFi scanner single scan using channels with enumerated settings
@@ -740,6 +749,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             failed, ("Number of test_single_scan_report_full_scan_for_channels"
                      " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="34d09f60-31bf-4952-8fb3-03fc93ec98fa")
     def test_single_scan_report_full_scan_for_band_with_enumerated_params(
             self):
         """Test WiFi scanner single scan using band with enumerated settings
@@ -765,6 +775,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             not failed, ("Number of test_single_scan_report_full_scan_for_band"
                          " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="0ddccf2e-b518-45a7-ae75-96924070b841")
     def test_batch_scan_report_full_scan_for_channels_with_enumerated_params(
             self):
         """Test WiFi scanner batch scan using channels with enumerated settings
@@ -791,6 +802,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             failed, ("Number of test_batch_scan_report_full_scan_for_channels"
                      " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="0685b667-8470-43a0-923d-dee71428f8ce")
     def test_batch_scan_report_full_scan_for_band_with_enumerated_params(self):
         """Test WiFi scanner batch scan using channels with enumerated settings
            to report full scan results.
@@ -816,6 +828,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             not failed, ("Number of test_batch_scan_report_full_scan_for_band"
                          " failed {}").format(len(failed)))
 
+    @test_tracker_info(uuid="740e1c18-911a-43d2-9317-3827ecf71d3b")
     def test_wifi_connection_while_single_scan(self):
         """Test configuring a connection parallel to wifi scanner single scan.
 
@@ -859,6 +872,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             raise AssertionError(
                 "Event did not triggered for single scan {}".format(error))
 
+    @test_tracker_info(uuid="e9a7cfb5-21c4-4c40-8169-8d88b65a1dee")
     def test_single_scan_while_pno(self):
         """Test wifi scanner single scan parallel to PNO connection.
 
@@ -892,6 +906,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             "Error, No internet connection for current network")
         wutils.wifi_forget_network(self.dut, self.connect_network["SSID"])
 
+    @test_tracker_info(uuid="fc18d947-0b5a-42b4-98f3-dd1f2b52a7af")
     def test_wifi_connection_and_pno_while_batch_scan(self):
         """Test configuring a connection and PNO connection parallel to wifi
            scanner batch scan.
@@ -996,6 +1011,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             self.dut.droid.wifiScannerStopBackgroundScan(idx)
             self.dut.ed.clear_all_events()
 
+    @test_tracker_info(uuid="7c25ce32-0fae-4a68-a7cb-fdf6d4d03caf")
     def test_wifi_scanner_single_scan_channel_sanity(self):
         """Test WiFi scanner single scan for mix channel with default setting
            parameters.
@@ -1010,6 +1026,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         wutils.WifiEnums.REPORT_EVENT_AFTER_EACH_SCAN}
         self.wifi_scanner_single_scan(scan_setting)
 
+    @test_tracker_info(uuid="e9f3aaad-4af3-4c54-9829-65dc1d6d4987")
     def test_wifi_scanner_batch_scan_channel_sanity(self):
         """Test WiFi scanner batch scan for mix channel with default setting
            parameters to report the result on buffer full.
@@ -1024,6 +1041,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         wutils.WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL}
         self.wifi_scanner_batch_scan(scan_setting)
 
+    @test_tracker_info(uuid="49ba245a-52e2-4c9b-90ad-a2fbc97e3d9f")
     def test_wifi_scanner_batch_scan_period_too_short(self):
         """Test WiFi scanner batch scan for band with too short period time.
 
@@ -1035,6 +1053,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         wutils.WifiEnums.REPORT_EVENT_AFTER_BUFFER_FULL}
         self.start_wifi_scanner_background_scan_expect_failure(scan_setting)
 
+    @test_tracker_info(uuid="6fe45cd7-4fac-4ddd-a950-b9431e68f735")
     def test_wifi_scanner_single_scan_in_isolated(self):
         """Test WiFi scanner in isolated environment with default scan settings.
 
@@ -1076,6 +1095,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
             self.attenuators[0].set_atten(0)
             self.attenuators[1].set_atten(0)
 
+    @test_tracker_info(uuid="46f817b9-97a3-455e-af2c-56f9aea64f7e")
     def test_wifi_scanner_with_wifi_off(self):
         """Test WiFi scanner single scan when wifi is off.
 
@@ -1090,6 +1110,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         self.log.debug("Turning wifi back on.")
         wutils.wifi_toggle_state(self.dut, True)
 
+    @test_tracker_info(uuid="257ad734-c21f-49f4-b448-3986b70eba3d")
     def test_wifi_scanner_with_invalid_numBssidsPerScan(self):
         """Test WiFi scanner single scan with invalid number of bssids reported
            per scan.
