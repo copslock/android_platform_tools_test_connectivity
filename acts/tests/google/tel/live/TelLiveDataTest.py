@@ -72,7 +72,7 @@ from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
@@ -376,7 +376,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.android_devices[0].droid.telephonyToggleDataConnection(True)
         if (not wait_for_cell_data_connection(self.log,
                                               self.android_devices[0], True) or
-                not verify_http_connection(self.log, self.android_devices[0])):
+                not verify_internet_connection(self.log,
+                                               self.android_devices[0])):
             self.log.error("Data not available on cell")
             return False
 
@@ -396,8 +397,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             if simultaneous_voice_data:
                 self.log.info("Step3 Verify internet.")
                 time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-                if not verify_http_connection(self.log,
-                                              self.android_devices[0]):
+                if not verify_internet_connection(self.log,
+                                                  self.android_devices[0]):
                     raise _LocalException("Internet Inaccessible when Enabled")
 
                 self.log.info("Step4 Turn off data and verify not connected.")
@@ -407,7 +408,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                         self.log, self.android_devices[0], False):
                     raise _LocalException("Failed to Disable Cellular Data")
 
-                if verify_http_connection(self.log, self.android_devices[0]):
+                if verify_internet_connection(self.log,
+                                              self.android_devices[0]):
                     raise _LocalException("Internet Accessible when Disabled")
 
                 self.log.info("Step5 Re-enable data.")
@@ -416,12 +418,12 @@ class TelLiveDataTest(TelephonyBaseTest):
                 if not wait_for_cell_data_connection(
                         self.log, self.android_devices[0], True):
                     raise _LocalException("Failed to Re-Enable Cellular Data")
-                if not verify_http_connection(self.log,
-                                              self.android_devices[0]):
+                if not verify_internet_connection(self.log,
+                                                  self.android_devices[0]):
                     raise _LocalException("Internet Inaccessible when Enabled")
             else:
                 self.log.info("Step3 Verify no Internet and skip step 4-5.")
-                if verify_http_connection(
+                if verify_internet_connection(
                         self.log, self.android_devices[0], retry=0):
                     raise _LocalException("Internet Accessible.")
 
@@ -433,7 +435,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not hangup_call(self.log, self.android_devices[0]):
                 self.log.error("Failed to hang up call")
                 return False
-            if not verify_http_connection(self.log, self.android_devices[0]):
+            if not verify_internet_connection(self.log,
+                                              self.android_devices[0]):
                 raise _LocalException("Internet Inaccessible when Enabled")
 
         except _LocalException as e:
@@ -683,8 +686,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         self.log.info("Verify internet")
-        if not verify_http_connection(self.log, provider):
-            provider.log.error("Provider data not available on cell.")
+        if not verify_internet_connection(self.log, provider):
+            provider.log.error("Data not available on cell.")
             return False
 
         # Turn off active SoftAP if any.
@@ -901,7 +904,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
-                not verify_http_connection(self.log, ads[0])):
+                not verify_internet_connection(self.log, ads[0])):
             self.log.error("Provider data did not return to Wifi")
             return False
         return True
@@ -946,7 +949,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "Disable Data on Provider, verify no data on Client.")
             ads[0].droid.telephonyToggleDataConnection(False)
             time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if verify_http_connection(self.log, ads[0]):
+            if verify_internet_connection(self.log, ads[0]):
                 ads[0].log.error("Disable data on provider failed.")
                 return False
             if not ads[0].droid.wifiIsApEnabled():
@@ -962,7 +965,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not wait_for_cell_data_connection(self.log, ads[0], True):
                 ads[0].log.error("Provider failed to enable data connection.")
                 return False
-            if not verify_http_connection(self.log, ads[0]):
+            if not verify_internet_connection(self.log, ads[0]):
                 ads[0].log.error("Provider internet connection check failed.")
                 return False
             if not ads[0].droid.wifiIsApEnabled():
@@ -970,7 +973,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
 
             if not check_is_wifi_connected(self.log, ads[1], ssid) or (
-                    not verify_http_connection(self.log, ads[1])):
+                    not verify_internet_connection(self.log, ads[1])):
                 ads[1].log.error("Client wifi connection check failed!")
                 return False
         finally:
@@ -1025,7 +1028,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider failed to reselect to 3G.")
                 return False
             time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_http_connection(self.log, ads[0]):
+            if not verify_internet_connection(self.log, ads[0]):
                 self.log.error("Data not available on Provider.")
                 return False
             if not ads[0].droid.wifiIsApEnabled():
@@ -1086,7 +1089,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider failed to reselect to 4G.")
                 return False
             time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_http_connection(self.log, ads[0]):
+            if not verify_internet_connection(self.log, ads[0]):
                 self.log.error("Data not available on Provider.")
                 return False
             if not ads[0].droid.wifiIsApEnabled():
@@ -1145,7 +1148,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if ads[0].droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering not stopped.")
                 return False
-            if verify_http_connection(self.log, ads[1]):
+            if verify_internet_connection(self.log, ads[1]):
                 self.log.error("Client should not have Internet connection.")
                 return False
             wifi_info = ads[1].droid.wifiGetConnectionInfo()
@@ -1164,7 +1167,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if ads[0].droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering should not on.")
                 return False
-            if not verify_http_connection(self.log, ads[0]):
+            if not verify_internet_connection(self.log, ads[0]):
                 self.log.error("Provider should have Internet connection.")
                 return False
         finally:
@@ -1185,7 +1188,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         if (not wait_for_cell_data_connection(self.log,
                                               self.android_devices[0], True) or
-                not verify_http_connection(self.log, self.android_devices[0])):
+                not verify_internet_connection(self.log,
+                                               self.android_devices[0])):
             self.log.error("Failed cell data call for entitlement check.")
             return False
 
@@ -1446,9 +1450,9 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Setup Call Failed.")
                 return False
             self.log.info("3. Verify data.")
-            if not verify_http_connection(self.log, provider):
+            if not verify_internet_connection(self.log, provider):
                 self.log.error("Provider have no Internet access.")
-            if not verify_http_connection(self.log, client):
+            if not verify_internet_connection(self.log, client):
                 self.log.error("Client have no Internet access.")
             hangup_call(self.log, provider)
 
@@ -1464,9 +1468,9 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Setup Call Failed.")
                 return False
             self.log.info("5. Verify data.")
-            if not verify_http_connection(self.log, provider):
+            if not verify_internet_connection(self.log, provider):
                 self.log.error("Provider have no Internet access.")
-            if not verify_http_connection(self.log, client):
+            if not verify_internet_connection(self.log, client):
                 self.log.error("Client have no Internet access.")
             hangup_call(self.log, provider)
 
@@ -1628,7 +1632,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         if ((not ensure_wifi_connected(self.log, ads[0],
                                        self.wifi_network_ssid,
                                        self.wifi_network_pass)) or
-            (not verify_http_connection(self.log, ads[0]))):
+            (not verify_internet_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")
             return False
 
@@ -1659,7 +1663,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
             self.log.info("Make sure WiFi can connect automatically.")
             if (not wait_for_wifi_data_connection(self.log, ads[0], True) or
-                    not verify_http_connection(self.log, ads[0])):
+                    not verify_internet_connection(self.log, ads[0])):
                 self.log.error("Data did not return to WiFi")
                 return False
 
@@ -1696,7 +1700,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         if ((not ensure_wifi_connected(self.log, ads[0],
                                        self.wifi_network_ssid,
                                        self.wifi_network_pass)) or
-            (not verify_http_connection(self.log, ads[0]))):
+            (not verify_internet_connection(self.log, ads[0]))):
             self.log.error("WiFi connect fail.")
             return False
 
@@ -1752,7 +1756,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "Turn off screen on provider: <{}>.".format(ads[0].serial))
             ads[0].droid.goToSleepNow()
             time.sleep(60)
-            if not verify_http_connection(self.log, ads[1]):
+            if not verify_internet_connection(self.log, ads[1]):
                 self.log.error("Client have no Internet access.")
                 return False
 
@@ -1762,7 +1766,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed to enable doze mode.")
                 return False
             time.sleep(60)
-            if not verify_http_connection(self.log, ads[1]):
+            if not verify_internet_connection(self.log, ads[1]):
                 self.log.error("Client have no Internet access.")
                 return False
         finally:
@@ -1811,7 +1815,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Device data does not attach to 2G.")
             return False
-        if not verify_http_connection(self.log, ad):
+        if not verify_internet_connection(self.log, ad):
             self.log.error("No Internet access on default Data SIM.")
             return False
 
@@ -1866,8 +1870,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_http_connection(self.log, ad,
-                                          'http://www.google.com', 100, .1):
+            if not verify_internet_connection(
+                    self.log, ad, 'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
 
@@ -1882,8 +1886,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_http_connection(self.log, ad,
-                                          'http://www.google.com', 100, .1):
+            if not verify_internet_connection(
+                    self.log, ad, 'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
         return True
@@ -2037,11 +2041,11 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
             if not is_data_available_during_call:
-                if verify_http_connection(self.log, ads[1], retry=0):
+                if verify_internet_connection(self.log, ads[1], retry=0):
                     self.log.error("Client should not have Internet Access.")
                     return False
             else:
-                if not verify_http_connection(self.log, ads[1]):
+                if not verify_internet_connection(self.log, ads[1]):
                     self.log.error("Client should have Internet Access.")
                     return False
 
@@ -2052,7 +2056,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not ads[0].droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
-            if not verify_http_connection(self.log, ads[1]):
+            if not verify_internet_connection(self.log, ads[1]):
                 self.log.error("Client should have Internet Access.")
                 return False
         finally:
@@ -2162,7 +2166,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     self.log.error("Failed to change data SIM.")
                     return False
                 current_sim_slot_index = next_sim_slot_index
-                if not verify_http_connection(self.log, ads[1]):
+                if not verify_internet_connection(self.log, ads[1]):
                     self.log.error("Client should have Internet Access.")
                     return False
         finally:
@@ -2210,7 +2214,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Device data does not attach to 2G.")
             return False
-        if not verify_http_connection(self.log, ad):
+        if not verify_internet_connection(self.log, ad):
             self.log.error("No Internet access on default Data SIM.")
             return False
 
@@ -2220,7 +2224,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("WiFi connect fail.")
             return False
         if (not wait_for_wifi_data_connection(self.log, ad, True) or
-                not verify_http_connection(self.log, ad)):
+                not verify_internet_connection(self.log, ad)):
             self.log.error("Data is not on WiFi")
             return False
 
@@ -2235,7 +2239,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed to attach data on subId:{}".format(
                     next_data_sub_id))
                 return False
-            if not verify_http_connection(self.log, ad):
+            if not verify_internet_connection(self.log, ad):
                 self.log.error("No Internet access after changing Data SIM.")
                 return False
 
@@ -2282,7 +2286,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 voice_or_data=NETWORK_SERVICE_DATA):
             self.log.error("Device data does not attach to 2G.")
             return False
-        if not verify_http_connection(self.log, ad):
+        if not verify_internet_connection(self.log, ad):
             self.log.error("No Internet access on default Data SIM.")
             return False
 
