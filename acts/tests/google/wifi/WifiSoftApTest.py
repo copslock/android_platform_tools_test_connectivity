@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts import utils
 from acts import base_test
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -141,6 +142,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
 
 
     """ Tests Begin """
+    @test_tracker_info(uuid="6437727d-7db1-4f69-963e-f26a7797e47f")
     def test_switch_to_softap_mode(self):
         """Test switch to softap mode.
 
@@ -185,6 +187,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
             self.dut.droid.wifiStopTrackingTetherStateChange()
             self.dut_client.droid.wifiStopTrackingStateChange()
 
+    @test_tracker_info(uuid="495f1252-e440-461c-87a7-2c45f369e129")
     def test_check_wifi_tethering_supported(self):
         """Test check for wifi tethering support.
 
@@ -202,6 +205,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
         asserts.assert_true(tethering_supported,
                             "DUT should also support wifi tethering when called from ConnectivityManager")
 
+    @test_tracker_info(uuid="09c19c35-c708-48a5-939b-ac2bbb403d54")
     def test_full_tether_startup(self):
         """Test full startup of wifi tethering
 
