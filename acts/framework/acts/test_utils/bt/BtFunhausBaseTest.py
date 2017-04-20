@@ -53,7 +53,7 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         for ad in self.android_devices:
             sync_device_time(ad)
             # Disable Bluetooth HCI Snoop Logs for audio tests
-            ad.droid.bluetoothConfigHciSnoopLog(False)
+            ad.adb.shell("setprop persist.bluetooth.btsnoopenable false")
             if not bypass_setup_wizard(ad):
                 self.log.debug(
                     "Failed to bypass setup wizard, continuing test.")
