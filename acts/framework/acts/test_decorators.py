@@ -37,7 +37,6 @@ def test_info(predicate=None, **keyed_info):
         **keyed_info: The key, value info to include in the extras for this
                       test.
     """
-
     def test_info_decoractor(func):
         return _TestInfoDecoratorFunc(func, predicate, keyed_info)
 
