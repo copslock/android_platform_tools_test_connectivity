@@ -50,6 +50,7 @@ class TestSignal(Exception):
         extras: A json-serializable data type to convey extra information about
                 a test result.
     """
+
     def __init__(self, details, extras=None):
         super(TestSignal, self).__init__(details)
         self.details = str(details)
@@ -74,6 +75,14 @@ class TestPass(TestSignal):
 
 class TestSkip(TestSignal):
     """Raised when a test has been skipped."""
+
+
+class TestBlocked(TestSignal):
+    """Raised when a test has been blocked from running."""
+
+
+class TestSkipClass(TestSignal):
+    """Raised in setup_class when a whole test class should be skipped."""
 
 
 class TestSilent(TestSignal):
