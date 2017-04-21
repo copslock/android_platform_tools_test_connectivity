@@ -17,11 +17,13 @@
 from acts import signals
 
 
-def test_info(**keyed_info):
+def test_info(predicate=None, **keyed_info):
     """Adds info about test.
 
     Extra Info to include about the test. This info will be available in the
-    test output.
+    test output. Note that if a key is given multiple times it will be added
+    as a list of all values. If multiples of these are stacked there results
+    will be merged.
 
     Example:
         # This test will have a variable my_var
@@ -30,11 +32,11 @@ def test_info(**keyed_info):
             return False
 
     Args:
-        func: The test case to wrap around.
+        predicate: A func to call that if false will skip adding this test
+                   info. Function signature is bool(test_obj, args, kwargs)
         **keyed_info: The key, value info to include in the extras for this
                       test.
     """
-
     def test_info_decoractor(func):
         def func_wrapper(*args, **kwargs):
             try:
@@ -52,9 +54,14 @@ def test_info(**keyed_info):
             elif not new_signal.extras:
                 new_signal.extras = {}
 
-            for k, v in keyed_info.items():
-                if k not in new_signal.extras:
-                    new_signal.extras[k] = v
+            if not predicate or predicate(args[0], args[1:], kwargs):
+                for k, v in keyed_info.items():
+                    if v and k not in new_signal.extras:
+                        new_signal.extras[k] = v
+                    elif v and k in new_signal.extras:
+                        if not isinstance(new_signal.extras[k], list):
+                            new_signal.extras[k] = [new_signal.extras[k]]
+                        new_signal.extras[k].append(v)
 
             raise new_signal
 
@@ -63,7 +70,7 @@ def test_info(**keyed_info):
     return test_info_decoractor
 
 
-def test_tracker_info(uuid):
+def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
     """Decorator for adding test tracker info to tests results.
 
     Will add test tracker info inside of Extras/test_tracker_info.
@@ -76,6 +83,9 @@ def test_tracker_info(uuid):
 
     Args:
         uuid: The uuid of the test case in test tracker.
+        extra_environment_info: Extra info about the test tracker environment.
+        predicate: A func that if false when called will ignore this info.
     """
-    tt_info = {'test_tracker_uuid': uuid}
-    return test_info(test_tracker_info=tt_info)
+    return test_info(test_tracker_uuid=uuid,
+                     test_tracker_enviroment_info=extra_environment_info,
+                     predicate=predicate)
