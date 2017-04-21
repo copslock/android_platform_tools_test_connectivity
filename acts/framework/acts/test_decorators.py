@@ -73,6 +73,7 @@ class _TestInfoDecoratorFunc(object):
         self.func = func
         self.predicate = predicate
         self.keyed_info = keyed_info
+        self.__name__ = func.__name__
 
     def __get__(self, instance, owner):
         """Called by Python to create a binding for an instance closure.
@@ -174,6 +175,7 @@ class _TestInfoBinding(object):
         """
         self.target = target
         self.instance = instance
+        self.__name__ = target.__name__
 
     def __call__(self, *args, **kwargs):
         """
