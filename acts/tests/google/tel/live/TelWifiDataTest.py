@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_atten_utils import set_rssi
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
@@ -150,6 +151,7 @@ class TelWifiDataTest(TelephonyBaseTest):
             return False
         return True
 
+    @test_tracker_info(uuid="b223f74b-59f4-4eec-8785-67420bd96bd1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_cell_irat_stress_ping_continuous(self):
         """Test for data switch between WiFi and Cell. DUT go in and out WiFi
@@ -203,6 +205,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         else:
             return True
 
+    @test_tracker_info(uuid="72d2aa4d-c395-417e-99c5-12dc22ea90a1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_cell_irat_stress_http_dl(self):
         """Test for data switch between WiFi and Cell. DUT go in and out WiFi
@@ -267,7 +270,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         else:
             return True
 
-
+    @test_tracker_info(uuid="bce71469-114c-489f-b9c4-26c53c29a553")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_cell_irat_stress_ping(self):
         """Test for data switch between WiFi and Cell. DUT go in and out WiFi
@@ -326,6 +329,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         else:
             return True
 
+    @test_tracker_info(uuid="696f22ef-39cd-4e15-bbb2-f836d2ee47f1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_only_http_dl(self):
         """Test for 1GB file download on WiFi Only
@@ -356,6 +360,7 @@ class TelWifiDataTest(TelephonyBaseTest):
             return False
         return True
 
+    @test_tracker_info(uuid="6c9bf89b-5469-4b08-acf4-0ef651b1a318")
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_only_http_dl(self):
         """Test for 1GB file download on WiFi Only
