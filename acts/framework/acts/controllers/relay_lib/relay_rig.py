@@ -17,6 +17,7 @@ from acts.controllers.relay_lib.errors import RelayConfigError
 from acts.controllers.relay_lib.helpers import validate_key
 from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
+from acts.controllers.relay_lib.fugu_remote import FuguRemote
 
 
 class RelayRig:
@@ -46,6 +47,7 @@ class RelayRig:
     # Similar to the dict above, except for devices.
     _device_constructors = {
         'GenericRelayDevice': lambda x, rig: GenericRelayDevice(x, rig),
+        'FuguRemote': lambda x, rig: FuguRemote(x, rig),
     }
 
     def __init__(self, config):
