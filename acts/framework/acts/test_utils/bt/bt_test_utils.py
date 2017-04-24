@@ -71,6 +71,7 @@ mtu_changed = "GattConnect{}onMtuChanged"
 bluetooth_profile_connection_state_changed = \
     "BluetoothProfileConnectionStateChanged"
 advertising_set_started = "AdvertisingSet{}onAdvertisingSetStarted"
+advertising_set_on_own_address_read = "AdvertisingSet{}onOwnAddressRead"
 advertising_set_stopped = "AdvertisingSet{}onAdvertisingSetStopped"
 advertising_set_enabled = "AdvertisingSet{}onAdvertisingEnabled"
 advertising_set_data_set = "AdvertisingSet{}onAdvertisingDataSet"
