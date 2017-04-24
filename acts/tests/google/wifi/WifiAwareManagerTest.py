@@ -46,8 +46,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                         "MatchFilter": {"int0": 14,
                                         "data0": "MESSAGE_ALL"},
                         "SubscribeType": 0,
-                        "TtlSec": 0,
-                        "MatchStyle": 0}
+                        "TtlSec": 0}
     rtt_24_20 = {"deviceType": 5,
                  "requestType": 2,
                  "frequency": 2437,
