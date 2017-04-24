@@ -88,7 +88,7 @@ class AdvertisingSetTest(BluetoothBaseTest):
 
         set_started_evt = self.adv_ad.ed.pop_event(
             advertising_set_started.format(adv_callback), self.default_timeout)
-        set_id = set_started_evt['data']['set_id']
+        set_id = set_started_evt['data']['setId']
         assert_equal(0, set_started_evt['data']['status'])
         assert_equal(0, set_started_evt['data']['status'])
 
@@ -97,7 +97,7 @@ class AdvertisingSetTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetEnableAdvertising(set_id, False, 0)
         enable_evt = self.adv_ad.ed.pop_event(
             advertising_set_enabled.format(adv_callback), self.default_timeout)
-        assert_equal(set_id, enable_evt['data']['set_id'])
+        assert_equal(set_id, enable_evt['data']['setId'])
         assert_equal(False, enable_evt['data']['enable'])
         assert_equal(0, enable_evt['data']['status'])
         self.log.info("Successfully disabled advertising set " + str(set_id))
@@ -106,14 +106,14 @@ class AdvertisingSetTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetEnableAdvertising(set_id, True, 2000)
         enable_evt = self.adv_ad.ed.pop_event(
             advertising_set_enabled.format(adv_callback), self.default_timeout)
-        assert_equal(set_id, enable_evt['data']['set_id'])
+        assert_equal(set_id, enable_evt['data']['setId'])
         assert_equal(True, enable_evt['data']['enable'])
         assert_equal(0, enable_evt['data']['status'])
         self.log.info("Enabled. Waiting for disable event ~2s ...")
 
         enable_evt = self.adv_ad.ed.pop_event(
             advertising_set_enabled.format(adv_callback), self.default_timeout)
-        assert_equal(set_id, enable_evt['data']['set_id'])
+        assert_equal(set_id, enable_evt['data']['setId'])
         assert_equal(False, enable_evt['data']['enable'])
         assert_equal(0, enable_evt['data']['status'])
         self.log.info("Disable event received. Now trying to set data...")
@@ -124,7 +124,7 @@ class AdvertisingSetTest(BluetoothBaseTest):
         data_set_evt = self.adv_ad.ed.pop_event(
             advertising_set_data_set.format(adv_callback),
             self.default_timeout)
-        assert_equal(set_id, data_set_evt['data']['set_id'])
+        assert_equal(set_id, data_set_evt['data']['setId'])
         assert_equal(0, data_set_evt['data']['status'])
         self.log.info("Data changed successfully.")
 
@@ -139,7 +139,7 @@ class AdvertisingSetTest(BluetoothBaseTest):
         data_set_evt = self.adv_ad.ed.pop_event(
             advertising_set_data_set.format(adv_callback),
             self.default_timeout)
-        assert_equal(set_id, data_set_evt['data']['set_id'])
+        assert_equal(set_id, data_set_evt['data']['setId'])
         assert_equal(0, data_set_evt['data']['status'])
         self.log.info("Data changed successfully.")
 
@@ -152,7 +152,7 @@ class AdvertisingSetTest(BluetoothBaseTest):
             data_set_evt = self.adv_ad.ed.pop_event(
                 advertising_set_data_set.format(adv_callback),
                 self.default_timeout)
-            assert_equal(set_id, data_set_evt['data']['set_id'])
+            assert_equal(set_id, data_set_evt['data']['setId'])
             #TODO(jpawlowski): make nicer error fot this case
             assert_true(data_set_evt['data']['status'] != 0,
                         "Setting data should fail because data too long.")
