@@ -18,6 +18,7 @@
 """
 
 import time
+from acts.test_decorators import test_tracker_info
 from acts.base_test import BaseTestClass
 from queue import Empty
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -108,6 +109,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
 
+    @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
     @TelephonyBaseTest.tel_test_wrap
     def test_airplane_mode(self):
         """ Test airplane mode basic on Phone and Live SIM.
@@ -122,6 +124,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return airplane_mode_test(self.log, self.android_devices[0])
 
+    @test_tracker_info(uuid="47430f01-583f-4efb-923a-285a51b75d50")
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_wifi_switching(self):
         """Test data connection network switching when phone camped on LTE.
@@ -140,6 +143,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                    self.wifi_network_ssid,
                                    self.wifi_network_pass, GEN_4G)
 
+    @test_tracker_info(uuid="8a836cf1-600b-4cf3-abfe-2e3da5c11396")
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_wifi_switching(self):
         """Test data connection network switching when phone camped on WCDMA.
@@ -158,6 +162,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                    self.wifi_network_ssid,
                                    self.wifi_network_pass, GEN_3G)
 
+    @test_tracker_info(uuid="c016f2e8-0af6-42e4-a3cb-a2b7d8b564d0")
     @TelephonyBaseTest.tel_test_wrap
     def test_gsm_wifi_switching(self):
         """Test data connection network switching when phone camped on GSM.
@@ -176,6 +181,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                                    self.wifi_network_ssid,
                                    self.wifi_network_pass, GEN_2G)
 
+    @test_tracker_info(uuid="78d6b258-82d4-47b4-8723-3b3a15412d2d")
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_multi_bearer(self):
         """Test LTE data connection before call and in call. (VoLTE call)
@@ -197,6 +203,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         return self._test_data_connectivity_multi_bearer(GEN_4G)
 
+    @test_tracker_info(uuid="5c9cb076-0c26-4517-95dc-2ec4974e8ce3")
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_multi_bearer(self):
         """Test WCDMA data connection before call and in call.
@@ -215,6 +222,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return self._test_data_connectivity_multi_bearer(GEN_3G)
 
+    @test_tracker_info(uuid="314bbf1c-073f-4d48-9817-a6e14f96f3c0")
     @TelephonyBaseTest.tel_test_wrap
     def test_gsm_multi_bearer_mo(self):
         """Test gsm data connection before call and in call.
@@ -232,6 +240,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_data_connectivity_multi_bearer(
             GEN_2G, False, DIRECTION_MOBILE_ORIGINATED)
 
+    @test_tracker_info(uuid="549271ff-1034-4d02-8d92-b9d1b2bb912e")
     @TelephonyBaseTest.tel_test_wrap
     def test_gsm_multi_bearer_mt(self):
         """Test gsm data connection before call and in call.
@@ -249,6 +258,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_data_connectivity_multi_bearer(
             GEN_2G, False, DIRECTION_MOBILE_TERMINATED)
 
+    @test_tracker_info(uuid="111de471-559a-4bc3-9d3e-de18f098c162")
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_multi_bearer_stress(self):
         """Stress Test WCDMA data connection before call and in call.
@@ -288,6 +298,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return False
 
+    @test_tracker_info(uuid="c7f14ba7-7ac3-45d2-b391-5ed5c4b0e70b")
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_multi_bearer_stress(self):
         """Stress Test LTE data connection before call and in call. (VoLTE call)
@@ -451,6 +462,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return True
 
+    @test_tracker_info(uuid="dcb9bdc6-dbe2-47e1-9c2d-6f37c529d366")
     @TelephonyBaseTest.tel_test_wrap
     def test_2g(self):
         """Test data connection in 2G.
@@ -470,6 +482,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_2G)
 
+    @test_tracker_info(uuid="84197a49-d73f-44ce-8b9e-9479e5c4dfdc")
     @TelephonyBaseTest.tel_test_wrap
     def test_2g_wifi_not_associated(self):
         """Test data connection in 2G.
@@ -490,6 +503,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_2G)
 
+    @test_tracker_info(uuid="97067ebb-130a-4fcb-8e6b-f4ec5874828f")
     @TelephonyBaseTest.tel_test_wrap
     def test_3g(self):
         """Test data connection in 3G.
@@ -509,6 +523,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_3G)
 
+    @test_tracker_info(uuid="ffe2a392-95b8-4a4d-8a6f-bfa846c3462f")
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_wifi_not_associated(self):
         """Test data connection in 3G.
@@ -529,6 +544,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_3G)
 
+    @test_tracker_info(uuid="9c2f459f-1aac-4c68-818b-8698e8124c8b")
     @TelephonyBaseTest.tel_test_wrap
     def test_4g(self):
         """Test data connection in 4g.
@@ -548,6 +564,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_4G)
 
+    @test_tracker_info(uuid="015a39a1-15ac-4b76-962b-d7d82d52d425")
     @TelephonyBaseTest.tel_test_wrap
     def test_4g_wifi_not_associated(self):
         """Test data connection in 4g.
@@ -568,6 +585,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return data_connectivity_single_bearer(self.log,
                                                self.android_devices[0], RAT_4G)
 
+    @test_tracker_info(uuid="44f47b64-f8bc-4a17-9195-42dcca0806bb")
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_stress(self):
         """Stress Test data connection in 3G.
@@ -610,6 +628,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return False
 
+    @test_tracker_info(uuid="c8876388-0441-4a51-81e6-ac2cb358a531")
     @TelephonyBaseTest.tel_test_wrap
     def test_4g_stress(self):
         """Stress Test data connection in 4g.
@@ -696,6 +715,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return True
 
+    @test_tracker_info(uuid="912a11a3-14b3-4928-885f-cea69f14a571")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_2gwifi(self):
         """WiFi Tethering test: LTE to WiFI 2.4G Tethering
@@ -721,6 +741,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="743e3998-d39f-42b9-b11f-009dcee34f3f")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_5gwifi(self):
         """WiFi Tethering test: LTE to WiFI 5G Tethering
@@ -746,6 +767,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="59be8d68-f05b-4448-8584-de971174fd81")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_3g_to_2gwifi(self):
         """WiFi Tethering test: 3G to WiFI 2.4G Tethering
@@ -771,6 +793,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="1be6b741-92e8-4ee1-9f59-e7f9f369b065")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_3g_to_5gwifi(self):
         """WiFi Tethering test: 3G to WiFI 5G Tethering
@@ -796,6 +819,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="f8c4e3d8-b0e5-40ac-a31e-5ae5705a42c6")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_2gwifi_2clients(self):
         """WiFi Tethering test: LTE to WiFI 2.4G Tethering, with multiple clients
@@ -821,6 +845,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="89fe6321-4c0d-40c0-89b2-54008ecca68f")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_2g_to_2gwifi(self):
         """WiFi Tethering test: 2G to WiFI 2.4G Tethering
@@ -846,6 +871,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="b8258d51-9581-4d52-80b6-501941ec1191")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_2g_to_5gwifi(self):
         """WiFi Tethering test: 2G to WiFI 5G Tethering
@@ -871,6 +897,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="8ed766a6-71c5-4b3b-8897-a4e796c75619")
     @TelephonyBaseTest.tel_test_wrap
     def test_disable_wifi_tethering_resume_connected_wifi(self):
         """WiFi Tethering test: WiFI connected to 2.4G network,
@@ -909,6 +936,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         return True
 
+    @test_tracker_info(uuid="b879ceb2-1b80-4762-93f9-afef4d688c28")
     @TelephonyBaseTest.tel_test_wrap
     def test_toggle_data_during_active_wifi_tethering(self):
         """WiFi Tethering test: Toggle Data during active WiFi Tethering
@@ -983,6 +1011,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data conenction is active.
+    @test_tracker_info(uuid="c92a961b-e85d-435c-8988-052928add591")
     @TelephonyBaseTest.tel_test_wrap
     def test_change_rat_during_active_wifi_tethering_lte_to_3g(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from LTE to 3G,
@@ -1044,6 +1073,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
     # Invalid Live Test. Can't rely on the result of this test with live network.
     # Network may decide not to change the RAT when data conenction is active.
+    @test_tracker_info(uuid="eb5f0180-b70d-436f-8fcb-60c59307cc43")
     @TelephonyBaseTest.tel_test_wrap
     def test_change_rat_during_active_wifi_tethering_3g_to_lte(self):
         """WiFi Tethering test: Change Cellular Data RAT generation from 3G to LTE,
@@ -1103,6 +1133,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    @test_tracker_info(uuid="12a6c910-fa96-4d9b-99a5-8391fea33732")
     @TelephonyBaseTest.tel_test_wrap
     def test_toggle_apm_during_active_wifi_tethering(self):
         """WiFi Tethering test: Toggle APM during active WiFi Tethering
@@ -1175,6 +1206,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             wifi_reset(self.log, ads[1])
         return True
 
+    @test_tracker_info(uuid="037e80fc-6eab-4cd1-846a-b9780a1d502d")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_entitlement_check(self):
         """Tethering Entitlement Check Test
@@ -1199,6 +1231,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             ad.serial, result))
         return result
 
+    @test_tracker_info(uuid="4972826e-39ea-42f7-aae0-06fe3aa9ecc6")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_4g_to_2gwifi_stress(self):
         """Stress Test LTE to WiFI 2.4G Tethering
@@ -1237,6 +1270,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return False
 
+    @test_tracker_info(uuid="54e85aed-09e3-42e2-bb33-bca1005d93ab")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_ssid_quotes(self):
         """WiFi Tethering test: SSID name have quotes.
@@ -1264,6 +1298,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_iteration=10,
             ssid=ssid)
 
+    @test_tracker_info(uuid="320326da-bf32-444d-81f9-f781c55dbc99")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_password_escaping_characters(self):
         """WiFi Tethering test: password have escaping characters.
@@ -1333,6 +1368,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             result = False
         return result
 
+    @test_tracker_info(uuid="617c7e71-f166-465f-bfd3-b5a3a40cc0d4")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_ssid(self):
         """WiFi Tethering test: start WiFi tethering with all kinds of SSIDs.
@@ -1373,6 +1409,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         else:
             return True
 
+    @test_tracker_info(uuid="9a5b5a34-b5cf-451d-94c4-8a64d456dfe5")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_password(self):
         """WiFi Tethering test: start WiFi tethering with all kinds of passwords.
@@ -1479,6 +1516,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    @test_tracker_info(uuid="216bdb8c-edbf-4ff8-8750-a0861ab44df6")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_volte_call(self):
         """WiFi Tethering test: VoLTE call during WiFi tethering
@@ -1496,6 +1534,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_tethering_wifi_and_voice_call(
             RAT_4G, phone_setup_volte, is_phone_in_call_volte)
 
+    @test_tracker_info(uuid="bcd430cc-6d33-47d1-825d-aae9f248addc")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_csfb_call(self):
         """WiFi Tethering test: CSFB call during WiFi tethering
@@ -1513,6 +1552,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_tethering_wifi_and_voice_call(
             RAT_4G, phone_setup_csfb, is_phone_in_call_csfb)
 
+    @test_tracker_info(uuid="19e0df23-6819-4c69-bfda-eea9cce802d8")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_3g_call(self):
         """WiFi Tethering test: 3G call during WiFi tethering
@@ -1530,6 +1570,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_tethering_wifi_and_voice_call(
             RAT_3G, phone_setup_voice_3g, is_phone_in_call_3g)
 
+    @test_tracker_info(uuid="4acd98b5-fdef-4736-969f-3fa953990a58")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_no_password(self):
         """WiFi Tethering test: Start WiFi tethering with no password
@@ -1556,6 +1597,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_iteration=10,
             password="")
 
+    @test_tracker_info(uuid="86ad1680-bfb8-457e-8b4d-23321cb3f223")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_reboot(self):
         """WiFi Tethering test: Start WiFi tethering then Reboot device
@@ -1606,6 +1648,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 stop_wifi_tethering(self.log, ads[0])
         return True
 
+    @test_tracker_info(uuid="5cf04ca2-dfde-43d6-be74-78b9abdf6c26")
     @TelephonyBaseTest.tel_test_wrap
     def test_connect_wifi_start_tethering_wifi_reboot(self):
         """WiFi Tethering test: WiFI connected, then start WiFi tethering,
@@ -1674,6 +1717,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 stop_wifi_tethering(self.log, ads[0])
         return True
 
+    @test_tracker_info(uuid="e0621997-c5bd-4137-afa6-b43406e9c713")
     @TelephonyBaseTest.tel_test_wrap
     def test_connect_wifi_reboot_start_tethering_wifi(self):
         """WiFi Tethering test: DUT connected to WiFi, then reboot,
@@ -1716,6 +1760,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             check_interval=10,
             check_iteration=10)
 
+    @test_tracker_info(uuid="89a849ef-e2ed-4bf2-ac31-81d34aba672a")
     @TelephonyBaseTest.tel_test_wrap
     def test_tethering_wifi_screen_off_enable_doze_mode(self):
         """WiFi Tethering test: Start WiFi tethering, then turn off DUT's screen,
@@ -1778,6 +1823,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    @test_tracker_info(uuid="695eef18-f759-4b41-8ad3-1fb329ee4b1b")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_switch_data_sim_2g(self):
         """Switch Data SIM on 2G network.
@@ -1892,6 +1938,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
         return True
 
+    @test_tracker_info(uuid="9b8e92da-0ae1-472c-a72a-f6427e5405ce")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_connect_disconnect_4g(self):
         """Perform multiple connects and disconnects from WiFi and verify that
@@ -1921,6 +1968,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         return self._test_wifi_connect_disconnect()
 
+    @test_tracker_info(uuid="09893b1f-a4a2-49d3-8027-c2c91cb8742e")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_connect_disconnect_3g(self):
         """Perform multiple connects and disconnects from WiFi and verify that
@@ -1950,6 +1998,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
         return self._test_wifi_connect_disconnect()
 
+    @test_tracker_info(uuid="0f095ca4-ce05-458f-9670-49a69f8c8270")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_connect_disconnect_2g(self):
         """Perform multiple connects and disconnects from WiFi and verify that
@@ -2066,6 +2115,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 stop_wifi_tethering(self.log, ads[0])
         return True
 
+    @test_tracker_info(uuid="4d7a68c6-5eae-4242-a6e6-668f830caec3")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_tethering_enabled_add_mo_voice_call_2g_dsds(self):
         """Tethering enabled + voice call
@@ -2091,6 +2141,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_wifi_tethering_enabled_add_voice_call(
             GEN_2G, DIRECTION_MOBILE_ORIGINATED, False)
 
+    @test_tracker_info(uuid="de720069-a46c-4a6f-ae80-60b9349c8528")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_tethering_enabled_add_mt_voice_call_2g_dsds(self):
         """Tethering enabled + voice call
@@ -2116,6 +2167,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_wifi_tethering_enabled_add_voice_call(
             GEN_2G, DIRECTION_MOBILE_TERMINATED, False)
 
+    @test_tracker_info(uuid="fad169c0-8ae6-45d2-98ba-3fb60466ff0b")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_tethering_msim_switch_data_sim(self):
         """Tethering enabled + switch data SIM.
@@ -2176,6 +2228,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 stop_wifi_tethering(self.log, ads[0])
         return True
 
+    @test_tracker_info(uuid="8bb9383f-ddf9-400c-a831-c9462bae6b47")
     @TelephonyBaseTest.tel_test_wrap
     def test_msim_cell_data_switch_to_wifi_switch_data_sim_2g(self):
         """Switch Data SIM on 2G network.
@@ -2249,6 +2302,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return True
 
+    @test_tracker_info(uuid="8a8cd773-77f5-4802-85ac-1a654bb4743c")
     @TelephonyBaseTest.tel_test_wrap
     def test_disable_data_on_non_active_data_sim(self):
         """Switch Data SIM on 2G network.
