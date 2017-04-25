@@ -29,6 +29,8 @@ import subprocess
 import time
 import traceback
 
+from acts.controllers import adb
+
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
@@ -722,27 +724,48 @@ def set_mobile_data_always_on(ad, new_state):
         1 if new_state else 0))
 
 
-def bypass_setup_wizard(ad):
+def bypass_setup_wizard(ad, bypass_wait_time=3):
     """Bypass the setup wizard on an input Android device
 
     Args:
         ad: android device object.
+        bypass_wait_time: Do not set this variable. Only modified for framework
+        tests.
 
     Returns:
         True if Andorid device successfully bypassed the setup wizard.
         False if failed.
     """
-    ad.adb.shell(
-        "am start -n \"com.google.android.setupwizard/.SetupWizardExitActivity\""
-    )
+    try:
+        ad.adb.shell("am start -n \"com.google.android.setupwizard/"
+                     ".SetupWizardExitActivity\"")
+    except adb.AdbError as adb_error:
+        if adb_error.stdout == "ADB_CMD_OUTPUT:0":
+            if adb_error.stderr and \
+                    not adb_error.stderr.startswith("Error type 3\n"):
+                raise adb_error
+        elif adb_error.stdout == "ADB_CMD_OUTPUT:255":
+            # Run it again as root.
+            ad.adb.root_adb()
+            try:
+                ad.adb.shell("am start -n \"com.google.android.setupwizard/"
+                             ".SetupWizardExitActivity\"")
+            except adb.AdbError as adb_error:
+                if adb_error.stdout == "ADB_CMD_OUTPUT:0":
+                    if adb_error.stderr and \
+                            not adb_error.stderr.startswith("Error type 3"):
+                        raise adb_error
+
     # magical sleep to wait for the gservices override broadcast to complete
-    time.sleep(3)
+    time.sleep(bypass_wait_time)
+
     provisioned_state = int(
         ad.adb.shell("settings get global device_provisioned"))
-    if (provisioned_state != 1):
+    if provisioned_state != 1:
         logging.error("Failed to bypass setup wizard.")
         return False
     return True
+
 
 def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     """Ping Parsing util.
@@ -779,7 +802,10 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     return True
 
 
-def adb_shell_ping(ad, count=120, dest_ip="www.google.com", timeout=200,
+def adb_shell_ping(ad,
+                   count=120,
+                   dest_ip="www.google.com",
+                   timeout=200,
                    loss_tolerance=20):
     """Ping utility using adb shell.
 
