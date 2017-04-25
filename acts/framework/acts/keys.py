@@ -33,6 +33,8 @@ class Config(enum.Enum):
     key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
+    key_random = "random"
+    key_test_case_iterations = "test_case_iterations"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
