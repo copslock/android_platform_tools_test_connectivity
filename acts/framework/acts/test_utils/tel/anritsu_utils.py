@@ -1493,7 +1493,7 @@ def get_1x_band(user_params, cell_no, sim_card):
         1X BAND to be used
     """
     key = "cell{}_1x_band".format(cell_no)
-    band = VzW_CDMA1x_BAND if sim_card == VzW12349 else DEFAULT_CDMA1x_BAND
+    band = VzW_CDMA1x_BAND if sim_card == VzW12349 else DEFAULT_CDMA1X_BAND
     return user_params.get(key, band)
 
 
