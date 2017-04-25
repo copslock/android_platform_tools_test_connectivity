@@ -34,6 +34,8 @@ class GattCbErr(Enum):
     MTU_SERV_CHANGED_ERR = "MTU Server Changed event not found. Expected {}"
     GATT_CONN_CHANGE_ERR = "GATT Connection Changed event not found. Expected {}"
     CHAR_CHANGE_ERR = "GATT Characteristic Changed event not fond. Expected {}"
+    PHY_READ_ERR = "Phy Read event not fond. Expected {}"
+    PHY_UPDATE_ERR = "Phy Update event not fond. Expected {}"
 
 class GattCbStrings(Enum):
     CHAR_WRITE_REQ = "GattServer{}onCharacteristicWriteRequest"
@@ -52,6 +54,10 @@ class GattCbStrings(Enum):
     MTU_SERV_CHANGED = "GattServer{}onMtuChanged"
     GATT_CONN_CHANGE = "GattConnect{}onConnectionStateChange"
     CHAR_CHANGE = "GattConnect{}onCharacteristicChanged"
+    PHY_READ = "GattConnect{}onPhyRead"
+    PHY_UPDATE = "GattConnect{}onPhyUpdate"
+    SERV_PHY_READ = "GattServer{}onPhyRead"
+    SERV_PHY_UPDATE = "GattServer{}onPhyUpdate"
 
 
 class GattEvent(Enum):
@@ -85,6 +91,14 @@ class GattEvent(Enum):
                         "err": GattCbErr.GATT_CONN_CHANGE_ERR.value}
     CHAR_CHANGE = {"evt": GattCbStrings.CHAR_CHANGE.value,
                         "err": GattCbErr.CHAR_CHANGE_ERR.value}
+    PHY_READ = {"evt": GattCbStrings.PHY_READ.value,
+                        "err": GattCbErr.PHY_READ_ERR.value}
+    PHY_UPDATE = {"evt": GattCbStrings.PHY_UPDATE.value,
+                        "err": GattCbErr.PHY_UPDATE_ERR.value}
+    SERV_PHY_READ = {"evt": GattCbStrings.SERV_PHY_READ.value,
+                        "err": GattCbErr.PHY_READ_ERR.value}
+    SERV_PHY_UPDATE = {"evt": GattCbStrings.SERV_PHY_UPDATE.value,
+                        "err": GattCbErr.PHY_UPDATE_ERR.value}
 
 
 class GattConnectionState(IntEnum):
@@ -169,3 +183,9 @@ class GattTransport(IntEnum):
     TRANSPORT_AUTO = 0x00
     TRANSPORT_BREDR = 0x01
     TRANSPORT_LE = 0x02
+
+
+class GattPhy(IntEnum):
+    PHY_LE_1M = 1
+    PHY_LE_2M = 2
+    PHY_LE_CODED = 3
