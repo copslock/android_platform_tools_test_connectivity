@@ -178,11 +178,14 @@ def main(argv):
         help=("If set, tests will be executed on all testbeds in parallel. "
               "Otherwise, tests are executed iteratively testbed by testbed."))
     parser.add_argument(
-        '-r',
-        '--repeat',
+        '-ci',
+        '--campaign_iterations',
+        metavar="<CAMPAIGN_ITERATIONS>",
+        nargs='?',
         type=int,
-        metavar="<NUMBER>",
-        help="Number of times to run the specified test cases.")
+        const=1,
+        default=1,
+        help="Number of times to run the campaign or a group of test cases.")
     parser.add_argument(
         '-tb',
         '--testbed',
@@ -220,30 +223,38 @@ def main(argv):
         metavar="<PATH>",
         help=("Path to a file containing a comma delimited list of test "
               "classes to run."))
+    parser.add_argument(
+        '-r',
+        '--random',
+        action="store_true",
+        help=("If set, tests will be executed in random order."))
+    parser.add_argument(
+        '-ti',
+        '--test_case_iterations',
+        metavar="<TEST_CASE_ITERATIONS>",
+        nargs='?',
+        type=int,
+        help="Number of times to run every test case.")
 
     args = parser.parse_args(argv)
     test_list = None
-    repeat = 1
     if args.testfile:
         test_list = config_parser.parse_test_file(args.testfile[0])
     elif args.testclass:
         test_list = args.testclass
-    if args.repeat:
-        repeat = args.repeat
-    parsed_configs = config_parser.load_test_config_file(args.config[0],
-                                                         args.testbed,
-                                                         args.testpaths,
-                                                         args.logpath,
-                                                         args.test_args)
+    parsed_configs = config_parser.load_test_config_file(
+        args.config[0], args.testbed, args.testpaths, args.logpath,
+        args.test_args, args.random, args.test_case_iterations)
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
+
     # Execute test runners.
     if args.parallel and len(parsed_configs) > 1:
         exec_result = _run_tests_parallel(parsed_configs, test_identifiers,
-                                          repeat)
+                                          args.campaign_iterations)
     else:
         exec_result = _run_tests_sequential(parsed_configs, test_identifiers,
-                                            repeat)
+                                            args.campaign_iterations)
     if exec_result is False:
         sys.exit(1)
     sys.exit(0)
