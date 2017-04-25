@@ -189,3 +189,9 @@ class GattPhy(IntEnum):
     PHY_LE_1M = 1
     PHY_LE_2M = 2
     PHY_LE_CODED = 3
+
+
+class GattPhyMask(IntEnum):
+    PHY_LE_1M_MASK = 1
+    PHY_LE_2M_MASK = 2
+    PHY_LE_CODED_MASK = 4
