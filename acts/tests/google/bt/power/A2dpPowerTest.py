@@ -60,14 +60,16 @@ def push_file_to_device(ad, file_path, device_path, config_path):
 class A2dpPowerTest(PowerBaseTest):
     # Time for measuring the power when playing music in seconds
     MEASURE_TIME = 3600
-    # Time for Music to start playing in seconds
-    START_PLAY_TIME = 60
     # Delay time in seconds between starting playing and measuring power
-    DELAY_TIME = 60
-    # Wait time in seconds to check if BT device is connected
+    DELAY_MEASURE_TIME = 300
+    # Extra time to stop Music in PMC after power measurement is stopped
+    DELAY_STOP_TIME = 10
+    # Log file name
+    LOG_FILE = "A2DPPOWER.log"
+    # Wait time in seconds to check if Bluetooth device is connected
     WAIT_TIME = 10
     # Base command for PMC
-    PMC_BASE_CMD = ("am broadcast -a com.android.pmc.A2DP --es MusicURL")
+    PMC_BASE_CMD = ("am broadcast -a com.android.pmc.A2DP")
     # Codec Types
     CODEC_SBC = 0
     CODEC_AAC = 1
@@ -185,8 +187,8 @@ class A2dpPowerTest(PowerBaseTest):
                                             bits_per_sample,
                                             music_file,
                                             ldac_playback_quality=LDACBT_NONE,
-                                            not_play=False,
-                                            mute=False):
+                                            bt_on_not_play=False,
+                                            bt_off_mute=False):
         """Main util function for power test of A2dp with different codec.
 
         Steps:
@@ -205,49 +207,54 @@ class A2dpPowerTest(PowerBaseTest):
                         Hi Res quality (96KHz/24bits)
             ldac_playback_quality: LDACBT_EQMID_HQ, LDACBT_EQMID_SQ,
                                    LDACBT_EQMID_MQ
-            not_play: for baseline case when MediaPlayer is not play
-            mute: for baseline case when BT is off
+            bt_on_not_play: for baseline when MediaPlayer isn't play
+                            but Bluetooth is on
+            bt_off_mute: for baseline case when Bluetooth is off and
+                            on board speakers muted
 
         Returns:
             None
         """
-        # Get the base name of music file
-        music_name = os.path.basename(music_file)
-        self.music_url = "file:///sdcard/Music/{}".format(music_name)
-        play_time = self.MEASURE_TIME + self.DELAY_TIME * 2
-        first_part_msg = "%s %s --es StartTime %d --es PlayTime %d --es" % (
-            self.PMC_BASE_CMD, self.music_url, self.START_PLAY_TIME, play_time)
-
-        sec_part_msg = "%s  CodecType %d --es SampleRate %d" % (
-            first_part_msg, codec_type, sample_rate)
-
-        third_part_msg = "%s --es BitsPerSample %d" % (sec_part_msg,
-                                                       bits_per_sample)
-
-        if codec_type == self.CODEC_LDAC:
-            fourth_part_msg = "%s --es LdacPlaybackQuality %d" % (
-                third_part_msg, ldac_playback_quality)
+        if bt_on_not_play == True:
+            msg = "%s --es BT_ON_NotPlay %d" % (self.PMC_BASE_CMD, 1)
         else:
-            fourth_part_msg = third_part_msg
+            # Get the base name of music file
+            music_name = os.path.basename(music_file)
+            self.music_url = "file:///sdcard/Music/{}".format(music_name)
+            play_time = self.MEASURE_TIME + self.DELAY_MEASURE_TIME
+            +self.DELAY_STOP_TIME
+            play_msg = "%s --es MusicURL %s --es PlayTime %d" % (
+                self.PMC_BASE_CMD, self.music_url, play_time)
 
-        if not_play == True:
-            fifth_part_msg = "%s --es NotPlay %d" % (fourth_part_msg, 1)
-        else:
-            fifth_part_msg = fourth_part_msg
-
-        if mute == True:
-            msg = "%s --es Mute %d" % (fifth_part_msg, 1)
-        else:
-            msg = fifth_part_msg
+            if bt_off_mute == True:
+                msg = "%s --es BT_OFF_Mute %d" % (playing_msg, 1)
+            else:
+                codec1_msg = "%s --es CodecType %d --es SampleRate %d" % (
+                    play_msg, codec_type, sample_rate)
+                codec_msg = "%s --es BitsPerSample %d" % (codec1_msg,
+                                                          bits_per_sample)
+                if codec_type == self.CODEC_LDAC:
+                    msg = "%s --es LdacPlaybackQuality %d" % (
+                        play_msg, ldac_playback_quality)
+                else:
+                    msg = codec_msg
 
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
-        start_measure_time = self.START_PLAY_TIME + self.DELAY_TIME
+        # Check if PMC is ready
+        if not self.check_pmc_status(self.LOG_FILE, "READY",
+                                     "PMC is not ready"):
+            return
+
         # Start the power measurement
         result = self.mon.measure_power(
             self.POWER_SAMPLING_RATE, self.MEASURE_TIME,
-            self.current_test_name, start_measure_time)
-        # Save data into log file
+            self.current_test_name, self.DELAY_MEASURE_TIME)
+        # Sleep to wait for PMC to finish
+        time.sleep(self.DELAY_STOP_TIME)
+        # Check if PMC was successful
+        self.check_pmc_status(self.LOG_FILE, "SUCCEED",
+                              "PMC was not successful")
         self.save_logs_for_power_test(result, self.MEASURE_TIME, 0)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -276,9 +283,9 @@ class A2dpPowerTest(PowerBaseTest):
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='d96080e3-1944-48b8-9655-4a77664a463b')
     def test_power_baseline_play_music_but_disable_bluetooth(self):
-        """Test power usage baseline of playing music but BT is off.
+        """Test power usage baseline of playing music but Bluetooth is off.
 
-        Test power usage baseline of playing music but BT is off
+        Test power usage baseline of playing music but Bluetooth is off
            speaker volume is set to 0.
 
         Steps:
@@ -306,9 +313,9 @@ class A2dpPowerTest(PowerBaseTest):
         if not bluetooth_enabled_check(self.ad):
             self.log.error("Failed to turn Bluetooth on DUT")
 
-        # Because of bug 34933072 BT device may not be able to reconnect
+        # Because of bug 34933072 Bluetooth device may not be able to reconnect
         #  after running this test case
-        # We need manually to turn on BT devices to get it reconnect
+        # We need manually to turn on Bluetooth devices to get it reconnect
         # for the next test case
         # The workaround is to run this test case in the end of test suite
 
