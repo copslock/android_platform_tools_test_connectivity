@@ -745,10 +745,10 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  MAX_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
                  MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 CELL_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
         return True
 
     def _wfc_set_wifi_strong_cell_absent(self):
@@ -765,10 +765,10 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_set_wifi_weak_cell_strong(self):
         self.log.info("--->Setting WiFi weak cell strong<---")
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
                  MAX_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
@@ -777,22 +777,22 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_set_wifi_weak_cell_weak(self):
         self.log.info("--->Setting WiFi weak cell weak<---")
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 CELL_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
         return True
 
     def _wfc_set_wifi_weak_cell_absent(self):
         self.log.info("--->Setting WiFi weak cell absent<---")
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
+                 self.wifi_rssi_with_no_atten, WIFI_WEAK_RSSI_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
                  MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
@@ -817,10 +817,10 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                  MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
                  MIN_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 CELL_WEAK_RSSI_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                 self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE)
         return True
 
     def _wfc_set_wifi_absent_cell_absent(self):
