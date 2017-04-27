@@ -22,6 +22,7 @@ from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
+from acts import tracelogger
 from acts import utils
 
 # Macro strings for test result reporting
@@ -65,6 +66,12 @@ class BaseTestClass(object):
             setattr(self, name, value)
         self.results = records.TestResult()
         self.current_test_name = None
+        self.log = tracelogger.TraceLogger(self.log)
+        if 'self.android_devices' in self.__dict__:
+            for ad in self.android_devices:
+                if ad.droid:
+                    utils.set_location_service(ad, False)
+                    utils.sync_device_time(ad)
 
     def __enter__(self):
         return self
@@ -655,3 +662,42 @@ class BaseTestClass(object):
         This function should clean up objects initialized in the constructor by
         user.
         """
+
+    def _take_bug_report(self, test_name, begin_time):
+        if "no_bug_report_on_fail" in self.user_params:
+            return
+
+        # magical sleep to ensure the runtime restart or reboot begins
+        time.sleep(1)
+        for ad in self.android_devices:
+            try:
+                ad.adb.wait_for_device()
+                ad.take_bug_report(test_name, begin_time)
+                tombstone_path = os.path.join(
+                    ad.log_path, "BugReports", "{},{}".format(
+                        begin_time, ad.serial).replace(' ', '_'))
+                utils.create_dir(tombstone_path)
+                ad.adb.pull('/data/tombstones/', tombstone_path, timeout=1200)
+            except Exception as e:
+                ad.log.error(
+                    "Failed to take a bug report for %s with error %s",
+                    test_name, e)
+
+    def _reboot_device(self, ad):
+        ad.log.info("Rebooting device.")
+        ad = ad.reboot()
+
+    def _cleanup_logger_sessions(self):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Resetting a diagnostic session %s, %s", logger,
+                          session)
+            logger.reset()
+        self.logger_sessions = []
+
+    def _pull_diag_logs(self, test_name, begin_time):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Pulling diagnostic session %s", logger)
+            logger.stop(session)
+            diag_path = os.path.join(self.log_path, begin_time)
+            utils.create_dir(diag_path)
+            logger.pull(session, diag_path)
