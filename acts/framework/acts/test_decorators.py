@@ -105,7 +105,7 @@ class _TestInfoDecoratorFunc(object):
         elif not new_signal.extras:
             new_signal.extras = {}
 
-        gathered_extras = self._gather_local_info(*args, **kwargs)
+        gathered_extras = self._gather_local_info(None, *args, **kwargs)
         for k, v in gathered_extras.items():
             if k not in new_signal.extras:
                 new_signal.extras[k] = v
@@ -130,11 +130,11 @@ class _TestInfoDecoratorFunc(object):
         else:
             extras = {}
 
-        self._gather_local_info(*args, gather_into=extras, **kwargs)
+        self._gather_local_info(extras, *args, **kwargs)
 
         return extras
 
-    def _gather_local_info(self, *args, gather_into=None, **kwargs):
+    def _gather_local_info(self, gather_into, *args, **kwargs):
         """Gathers info from this decorator and ignores children.
 
         Args:
