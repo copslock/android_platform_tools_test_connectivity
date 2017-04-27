@@ -60,6 +60,18 @@ class TelWifiDataTest(TelephonyBaseTest):
             set_rssi(self.log, self.attens[atten_name], 0,
                      MAX_RSSI_RESERVED_VALUE)
 
+    def teardown_test(self):
+        super().teardown_test()
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        return True
+
     def _basic_connectivity_check(self):
         """
         Set Attenuator Value for WiFi and Cell to 0
@@ -180,7 +192,8 @@ class TelWifiDataTest(TelephonyBaseTest):
 
         total_iteration = self.stress_test_number
         ad = self.android_devices[0]
-        ping_task = (adb_shell_ping, (ad, DEFAULT_PING_DURATION))
+        ping_task = (adb_shell_ping, (ad, DEFAULT_PING_DURATION,
+                                      "www.google.com", 200, 40))
         irat_task = (self._wifi_cell_irat_task, (ad, DEFAULT_IRAT_DURATION))
         current_iteration = 1
         while (current_iteration <= total_iteration):

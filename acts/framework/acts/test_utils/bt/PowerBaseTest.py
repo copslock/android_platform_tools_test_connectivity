@@ -45,7 +45,7 @@ class PowerBaseTest(BluetoothBaseTest):
     # Monsoon output max current in A
     MONSOON_MAX_CURRENT = 7.8
     # Power mesaurement sampling rate in Hz
-    POWER_SAMPLING_RATE = 20
+    POWER_SAMPLING_RATE = 10
     SCREEN_TIME_OFF = 10
     # Wait time for PMC to start in seconds
     WAIT_TIME = 10
@@ -103,6 +103,24 @@ class PowerBaseTest(BluetoothBaseTest):
                 break
             except adb.AdbError as e:
                 self.log.info("PMC app is NOT started yet")
+
+    def check_pmc_status(self, log_file, msg, status_msg):
+
+        # Check if PMC is ready
+        start_time = time.time()
+        result = False
+        while time.time() < start_time + self.WAIT_TIME:
+            out = self.ad.adb.shell("cat /mnt/sdcard/Download" + log_file)
+            self.log.info("READ file: " + out)
+            if -1 != out.find(msg):
+                result = True
+                break
+
+        if not result:
+            self.log.error(status_msg)
+            return False
+        else:
+            return True
 
     def save_logs_for_power_test(self, monsoon_result, measure_time,
                                  idle_time):
@@ -269,9 +287,21 @@ class PowerBaseTest(BluetoothBaseTest):
         strs.append("\t\tTime\tAmp")
         # Get the relative time
         start_time = monsoon_data.timestamps[0]
+        t0 = start_time
+        dt = 1.0 / self.POWER_SAMPLING_RATE
+        index = 0
+
         for t, d in zip(monsoon_data.timestamps, monsoon_data.data_points):
-            strs.append("{}\t{}".format(
-                round((t - start_time), 0), round(d, self.ACCURACY)))
+            if t == t0:
+                strs.append("{}\t{}".format(
+                    round((t - start_time + dt * index), 1), round(
+                        d, self.ACCURACY)))
+                index = index + 1
+            else:
+                strs.append("{}\t{}".format(
+                    round((t - start_time), 1), round(d, self.ACCURACY)))
+                t0 = t
+                index = 1
 
         return "\n".join(strs)
 
