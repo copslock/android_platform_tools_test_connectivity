@@ -587,12 +587,13 @@ class BaseTestClass(object):
         if not test_name.startswith("test_"):
             raise Error(("Test case name %s does not follow naming "
                          "convention test_*, abort.") % test_name)
-
         try:
             return test_name, getattr(self, test_name)
         except:
-            raise Error("%s does not have test case %s." % (self.TAG,
-                                                            test_name))
+            def test_skip_func(*args, **kwargs):
+                raise signals.TestSkip("Test %s does not exist" % test_name)
+            self.log.info("Test case %s not found in %s.", test_name, self.TAG)
+            return test_name, test_skip_func
 
     def _block_all_test_cases(self, tests):
         """
