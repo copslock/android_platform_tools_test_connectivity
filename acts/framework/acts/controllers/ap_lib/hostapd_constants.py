@@ -33,6 +33,14 @@ WLAN0_STRING = 'wlan0'
 WLAN1_STRING = 'wlan1'
 WLAN2_STRING = 'wlan2'
 WLAN3_STRING = 'wlan3'
+AP_DEFAULT_CHANNEL_2G = 6
+AP_DEFAULT_CHANNEL_5G = 36
+AP_DEFAULT_MAX_SSIDS_2G = 8
+AP_DEFAULT_MAX_SSIDS_5G = 8
+AP_SSID_LENGTH_2G = 8
+AP_PASSPHRASE_LENGTH_2G = 10
+AP_SSID_LENGTH_5G = 8
+AP_PASSPHRASE_LENGTH_5G = 10
 
 # A mapping of frequency to channel number.  This includes some
 # frequencies used outside the US.

@@ -168,10 +168,11 @@ class AccessPoint(object):
         # one radio to have up to 8 APs on the interface.  The check ensures
         # backwards compatibility since if someone has set the bssid on purpose
         # the bssid will not be changed from what the user set.
+        interface_mac_orig = None
         if not hostapd_config.bssid:
             cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
-            interface_mac = self.ssh.run(cmd)
-            interface_mac = interface_mac.stdout[:-1] + '0'
+            interface_mac_orig = self.ssh.run(cmd)
+            interface_mac = interface_mac_orig.stdout[:-1] + '0'
             hostapd_config.bssid = interface_mac
 
         if interface in self._aps:
@@ -199,6 +200,11 @@ class AccessPoint(object):
             dhcp_bss = {}
             counter = 1
             for bss in hostapd_config.bss_lookup:
+                if not hostapd_config.bss_lookup[bss].bssid:
+                    if interface_mac_orig:
+                        hostapd_config.bss_lookup[
+                            bss].bssid = interface_mac_orig.stdout[:-1] + str(
+                                counter)
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is _AP_2GHZ_INTERFACE:
                     starting_ip_range = _AP_2GHZ_SUBNET_STR
@@ -237,6 +243,21 @@ class AccessPoint(object):
         self._dhcp.start(config=dhcp_config.DhcpConfig(configured_subnets))
 
         return interface
+
+    def get_bssid_from_ssid(self, ssid):
+        """Gets the BSSID from a provided SSID
+
+        Args:
+            ssid: An SSID string
+        Returns: The BSSID if on the AP or None is SSID could not be found.
+        """
+
+        cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" % str(ssid)
+        iw_output = self.ssh.run(cmd)
+        if 'command failed: No such device' in iw_output.stderr:
+            return None
+        else:
+            return iw_output.stdout
 
     def stop_ap(self, identifier):
         """Stops a running ap on this controller.
