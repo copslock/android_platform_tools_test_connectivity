@@ -26,6 +26,7 @@ import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
@@ -35,7 +36,7 @@ BAND_2GHZ = 0
 BAND_5GHZ = 1
 
 
-class WifiManagerTest(acts.base_test.BaseTestClass):
+class WifiManagerTest(WifiBaseTest):
     """Tests for APIs in Android's WifiManager class.
 
     Test Bed Requirement:
@@ -43,6 +44,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
+
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -52,25 +56,17 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         if getattr(self, "attenuators", []):
             for a in self.attenuators:
                 a.set_atten(0)
-        req_params = ("iot_networks", "open_network", "config_store_networks",
-                      "iperf_server_address", "reference_networks")
-        opt_param = ("additional_energy_info_models", "additional_tdls_models")
+        req_params = []
+        opt_param = [
+            "additional_energy_info_models", "additional_tdls_models",
+            "iot_networks", "open_network", "config_store_networks",
+            "reference_networks", "iperf_server_address"
+        ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
-        capablity_of_devices = acts.utils.CapablityPerDevice
-        if "additional_energy_info_models" in self.user_params:
-            self.energy_info_models = (capablity_of_devices.energy_info_models
-                                       + self.additional_energy_info_models)
-        else:
-            self.energy_info_models = capablity_of_devices.energy_info_models
-        self.user_params["energy_info_models"] = self.energy_info_models
 
-        if "additional_tdls_models" in self.user_params:
-            self.tdls_models = (capablity_of_devices.energy_info_models +
-                                self.additional_tdls_models)
-        else:
-            self.tdls_models = capablity_of_devices.energy_info_models
-        self.user_params["tdls_models"] = self.tdls_models
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -80,7 +76,8 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
             "Need at least one iot network with psk.")
         wutils.wifi_toggle_state(self.dut, True)
         self.iot_networks = self.iot_networks + [self.open_network]
-        self.iperf_server = self.iperf_servers[0]
+        if "iperf_server_address" in self.user_params:
+            self.iperf_server = self.iperf_servers[0]
         self.iot_test_prefix = "test_connection_to-"
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
@@ -89,17 +86,20 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         if self.iot_test_prefix in self.current_test_name:
-            self.iperf_server.start()
+            if "iperf_server_address" in self.user_params:
+                self.iperf_server.start()
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        if self.current_test_name and self.iot_test_prefix in self.current_test_name:
-            self.iperf_server.stop()
+        if self.iot_test_prefix in self.current_test_name:
+            if "iperf_server_address" in self.user_params:
+                self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
+        self.dut.cat_adb_log(test_name, begin_time)
 
     """Helper Functions"""
 
@@ -224,8 +224,9 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         self.dut.ed.clear_all_events()
         wutils.start_wifi_connection_scan(self.dut)
         scan_results = self.dut.droid.wifiGetScanResults()
-        wutils.assert_network_in_list({WifiEnums.SSID_KEY: network_ssid},
-                                      scan_results)
+        wutils.assert_network_in_list({
+            WifiEnums.SSID_KEY: network_ssid
+        }, scan_results)
         wutils.wifi_connect_by_id(self.dut, network_id)
         connect_data = self.dut.droid.wifiGetConnectionInfo()
         connect_ssid = connect_data[WifiEnums.SSID_KEY]
@@ -241,16 +242,17 @@ class WifiManagerTest(acts.base_test.BaseTestClass):
         Args:
             params: A tuple of network info and AndroidDevice object.
         """
-        wait_time = 5
-        network, ad = params
-        SSID = network[WifiEnums.SSID_KEY]
-        self.log.info("Starting iperf traffic through {}".format(SSID))
-        time.sleep(wait_time)
-        port_arg = "-p {}".format(self.iperf_server.port)
-        success, data = ad.run_iperf_client(self.iperf_server_address,
-                                            port_arg)
-        self.log.debug(pprint.pformat(data))
-        asserts.assert_true(success, "Error occurred in iPerf traffic.")
+        if "iperf_server_address" in self.user_params:
+            wait_time = 5
+            network, ad = params
+            SSID = network[WifiEnums.SSID_KEY]
+            self.log.info("Starting iperf traffic through {}".format(SSID))
+            time.sleep(wait_time)
+            port_arg = "-p {}".format(self.iperf_server.port)
+            success, data = ad.run_iperf_client(self.iperf_server_address,
+                                                port_arg)
+            self.log.debug(pprint.pformat(data))
+            asserts.assert_true(success, "Error occurred in iPerf traffic.")
 
     def connect_to_wifi_network_and_run_iperf(self, params):
         """Connection logic for open and psk wifi networks.
