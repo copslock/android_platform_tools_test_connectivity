@@ -477,8 +477,10 @@ class BaseTestClass(object):
             try:
                 test_funcs.append((test_name, getattr(self, test_name)))
             except AttributeError:
-                self.log.warning("%s does not have test case %s.", self.TAG,
-                                 test_name)
+                def test_skip_func(*args, **kwargs):
+                    raise signals.TestSkip("Test %s does not exist in %s" %
+                                           (test_name, self.TAG))
+                test_funcs.append((test_name, test_skip_func))
             except BaseTestError as e:
                 self.log.warning(str(e))
         return test_funcs

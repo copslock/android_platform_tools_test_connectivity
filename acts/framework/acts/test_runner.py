@@ -346,9 +346,12 @@ class TestRunner(object):
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise USERError(("Unable to locate class %s in any of the test "
-                "paths specified.") % test_cls_name)
-
+            self.log.info(
+                "Cannot find test class %s skipping for now." % test_cls_name)
+            record = records.TestResultRecord("*all*", test_cls_name)
+            record.test_skip(signals.TestSkip("Test class does not exist."))
+            self.results.add_record(record)
+            return
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
