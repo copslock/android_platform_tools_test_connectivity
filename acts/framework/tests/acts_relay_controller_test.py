@@ -22,6 +22,7 @@ import unittest
 
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.relay import Relay
+from acts.controllers.relay_lib.relay import RelayDict
 from acts.controllers.relay_lib.relay import RelayState
 from acts.controllers.relay_lib.relay import SynchronizeRelays
 from acts.controllers.relay_lib.relay_board import RelayBoard
@@ -684,23 +685,14 @@ class TestFuguRemote(unittest.TestCase):
         })
         self.mock_board = self.mock_rig.boards['MockBoard']
         self.fugu_config = {
-            'type':
-            'GenericRelayDevice',
-            'name':
-            'UniqueDeviceName',
-            'relays': [{
-                'name': 'Power',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': fugu_remote.Buttons.BACK.value,
-                'pos': 'MockBoard/1'
-            }, {
-                'name': fugu_remote.Buttons.HOME.value,
-                'pos': 'MockBoard/2'
-            }, {
-                'name': fugu_remote.Buttons.PLAY_PAUSE.value,
-                'pos': 'MockBoard/3'
-            }]
+            'type': 'GenericRelayDevice',
+            'name': 'UniqueDeviceName',
+            'relays': {
+                'Power': 'MockBoard/0',
+                fugu_remote.Buttons.BACK.value: 'MockBoard/1',
+                fugu_remote.Buttons.HOME.value: 'MockBoard/2',
+                fugu_remote.Buttons.PLAY_PAUSE.value: 'MockBoard/3'
+            }
         }
         Relay.button_press_time = 0
 
@@ -711,8 +703,8 @@ class TestFuguRemote(unittest.TestCase):
     def test_config_missing_button(self):
         """FuguRemote __init__ should throw an error if a relay is missing."""
         flawed_config = copy.deepcopy(self.fugu_config)
-        del flawed_config['relays'][1]
-        del flawed_config['relays'][0]
+        del flawed_config['relays']['Power']
+        del flawed_config['relays'][fugu_remote.Buttons.BACK.value]
         with self.assertRaises(errors.RelayConfigError):
             fugu_remote.FuguRemote(flawed_config, self.mock_rig)
 
@@ -754,6 +746,43 @@ class TestFuguRemote(unittest.TestCase):
         fugu.enter_pairing_mode()
         self.press_button_success(2)
         self.press_button_success(1)
+
+
+class TestRelayDict(unittest.TestCase):
+    def test_init(self):
+        mock_device = object()
+        blank_dict = dict()
+        relay_dict = RelayDict(mock_device, blank_dict)
+        self.assertEqual(relay_dict._store, blank_dict)
+        self.assertEqual(relay_dict.relay_device, mock_device)
+
+    def test_get_item_valid_key(self):
+        mock_device = object()
+        blank_dict = {'key': 'value'}
+        relay_dict = RelayDict(mock_device, blank_dict)
+        self.assertEqual(relay_dict['key'], 'value')
+
+    def test_get_item_invalid_key(self):
+        # Create an object with a single attribute 'name'
+        mock_device = type('', (object, ), {'name': 'name'})()
+        blank_dict = {'key': 'value'}
+        relay_dict = RelayDict(mock_device, blank_dict)
+        with self.assertRaises(errors.RelayConfigError):
+            value = relay_dict['not_key']
+
+    def test_iter(self):
+        mock_device = type('', (object, ), {'name': 'name'})()
+        data_dict = {'a': '1', 'b': '2', 'c': '3'}
+        relay_dict = RelayDict(mock_device, data_dict)
+
+        rd_set = set()
+        for key in relay_dict:
+            rd_set.add(key)
+        dd_set = set()
+        for key in data_dict:
+            dd_set.add(key)
+
+        self.assertSetEqual(rd_set, dd_set)
 
 
 if __name__ == "__main__":
