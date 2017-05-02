@@ -129,6 +129,21 @@ class BaseTestClass(object):
                 self.log.warning(("Missing optional user param '%s' in "
                                   "configuration, continue."), name)
 
+        capablity_of_devices = utils.CapablityPerDevice
+        if "additional_energy_info_models" in self.user_params:
+            self.energy_info_models = (capablity_of_devices.energy_info_models
+                                       + self.additional_energy_info_models)
+        else:
+            self.energy_info_models = capablity_of_devices.energy_info_models
+        self.user_params["energy_info_models"] = self.energy_info_models
+
+        if "additional_tdls_models" in self.user_params:
+            self.tdls_models = (capablity_of_devices.energy_info_models +
+                                self.additional_tdls_models)
+        else:
+            self.tdls_models = capablity_of_devices.energy_info_models
+        self.user_params["tdls_models"] = self.tdls_models
+
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
@@ -572,12 +587,13 @@ class BaseTestClass(object):
         if not test_name.startswith("test_"):
             raise Error(("Test case name %s does not follow naming "
                          "convention test_*, abort.") % test_name)
-
         try:
             return test_name, getattr(self, test_name)
         except:
-            raise Error("%s does not have test case %s." % (self.TAG,
-                                                            test_name))
+            def test_skip_func(*args, **kwargs):
+                raise signals.TestSkip("Test %s does not exist" % test_name)
+            self.log.info("Test case %s not found in %s.", test_name, self.TAG)
+            return test_name, test_skip_func
 
     def _block_all_test_cases(self, tests):
         """

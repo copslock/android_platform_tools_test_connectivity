@@ -310,17 +310,12 @@ class ActsRelayRigTest(unittest.TestCase):
                 'base_url': 'http://192.168.1.4/30000/'
             }],
             'devices': [{
-                'type':
-                'GenericRelayDevice',
-                'name':
-                'device',
-                'relays': [{
-                    'name': 'Relay00',
-                    'pos': 'ss_control/0'
-                }, {
-                    'name': 'Relay10',
-                    'pos': 'ss_control/1'
-                }]
+                'type': 'GenericRelayDevice',
+                'name': 'device',
+                'relays': {
+                    'Relay00': 'ss_control/0',
+                    'Relay10': 'ss_control/1'
+                }
             }]
         }
 
@@ -344,9 +339,7 @@ class ActsRelayRigTest(unittest.TestCase):
 
     def test_init_relay_rig_device_gets_relays(self):
         modded_config = copy.deepcopy(self.config)
-        modded_config['devices'][0]['relays'] = [
-            modded_config['devices'][0]['relays'][0]
-        ]
+        del modded_config['devices'][0]['relays']['Relay00']
         relay_rig = RelayRigMock(modded_config)
         self.assertEqual(len(relay_rig.relays), 4)
         self.assertEqual(len(relay_rig.devices['device'].relays), 1)
@@ -398,15 +391,11 @@ class ActsGenericRelayDeviceTest(unittest.TestCase):
         self.r1 = self.board.relays[1]
 
         self.device_config = {
-            'name':
-            'MockDevice',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'name': 'MockDevice',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         config = {
             'boards': [self.board_config],
@@ -422,7 +411,7 @@ class ActsGenericRelayDeviceTest(unittest.TestCase):
         self.r1.set(RelayState.NC)
 
         modified_config = copy.deepcopy(self.device_config)
-        del modified_config['relays'][1]
+        del modified_config['relays']['r1']
 
         generic_relay_device = GenericRelayDevice(modified_config, self.rig)
         generic_relay_device.setup()
@@ -474,17 +463,12 @@ class ActsRelayDeviceTest(unittest.TestCase):
         self.rig.relays[self.r1.relay_id] = self.r1
 
         self.device_config = {
-            "type":
-            "GenericRelayDevice",
-            "name":
-            "device",
-            "relays": [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            "type": "GenericRelayDevice",
+            "name": "device",
+            "relays": {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
 
     def test_init_raise_on_name_missing(self):
@@ -573,15 +557,11 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'name':
-            'name',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'name': 'name',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         relay_device = rig.create_relay_device(config)
         self.assertIsInstance(relay_device, GenericRelayDevice)
@@ -591,17 +571,12 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'type':
-            'GenericRelayDevice',
-            'name':
-            '.',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'type': 'GenericRelayDevice',
+            'name': '.',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         relay_device = rig.create_relay_device(config)
         self.assertIsInstance(relay_device, GenericRelayDevice)

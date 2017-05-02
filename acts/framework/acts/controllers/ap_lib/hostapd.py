@@ -78,10 +78,10 @@ class Hostapd(object):
 
         self.config = config
 
-        self._write_configs(additional_parameters=additional_parameters)
-
         self._shell.delete_file(self._ctrl_file)
         self._shell.delete_file(self._log_file)
+        self._shell.delete_file(self._config_file)
+        self._write_configs(additional_parameters=additional_parameters)
 
         hostapd_command = '%s -dd -t "%s"' % (self.PROGRAM_FILE,
                                               self._config_file)

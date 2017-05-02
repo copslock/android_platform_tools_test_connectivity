@@ -170,10 +170,12 @@ def two_phone_call_short_seq(log,
     """
     ads = [phone_a, phone_b]
 
-    call_params = [(ads[0], ads[1], ads[0], phone_a_in_call_check_func,
-                    phone_b_in_call_check_func),
-                   (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
-                    phone_b_in_call_check_func), ]
+    call_params = [
+        (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+        (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+    ]
 
     for param in call_params:
         # Make sure phones are idle.
@@ -239,14 +241,16 @@ def two_phone_call_long_seq(log,
     """
     ads = [phone_a, phone_b]
 
-    call_params = [(ads[0], ads[1], ads[0], phone_a_in_call_check_func,
-                    phone_b_in_call_check_func),
-                   (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
-                    phone_b_in_call_check_func),
-                   (ads[1], ads[0], ads[0], phone_b_in_call_check_func,
-                    phone_a_in_call_check_func),
-                   (ads[1], ads[0], ads[1], phone_b_in_call_check_func,
-                    phone_a_in_call_check_func), ]
+    call_params = [
+        (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+        (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+        (ads[1], ads[0], ads[0], phone_b_in_call_check_func,
+         phone_a_in_call_check_func),
+        (ads[1], ads[0], ads[1], phone_b_in_call_check_func,
+         phone_a_in_call_check_func),
+    ]
 
     for param in call_params:
         # Make sure phones are idle.
@@ -297,9 +301,10 @@ def phone_setup_iwlan(log,
     Returns:
         True if success. False if fail.
     """
-    return phone_setup_iwlan_for_subscription(
-        log, ad, get_outgoing_voice_sub_id(ad), is_airplane_mode, wfc_mode,
-        wifi_ssid, wifi_pwd)
+    return phone_setup_iwlan_for_subscription(log, ad,
+                                              get_outgoing_voice_sub_id(ad),
+                                              is_airplane_mode, wfc_mode,
+                                              wifi_ssid, wifi_pwd)
 
 
 def phone_setup_iwlan_for_subscription(log,
@@ -387,13 +392,17 @@ def phone_setup_iwlan_cellular_preferred(log,
         True if success. False if fail.
     """
     toggle_airplane_mode(log, ad, False, strict_checking=False)
-    toggle_volte(log, ad, True)
-    if not wait_for_network_generation(
-            log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
-        if not ensure_network_generation(
+    try:
+        toggle_volte(log, ad, True)
+        if not wait_for_network_generation(
                 log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
-            ad.log.error("Fail to ensure data in 4G")
-            return False
+            if not ensure_network_generation(
+                    log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+                ad.log.error("Fail to ensure data in 4G")
+                return False
+    except Exception as e:
+        ad.log.error(e)
+        ad.droid.telephonyToggleDataConnection(True)
     if not set_wfc_mode(log, ad, WFC_MODE_CELLULAR_PREFERRED):
         ad.log.error("Set WFC mode failed.")
         return False
@@ -875,6 +884,7 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
         return False
     return True
 
+
 def phone_idle_not_iwlan(log, ad):
     """Return if phone is idle for non WiFi calling call test.
 
@@ -882,7 +892,8 @@ def phone_idle_not_iwlan(log, ad):
         ad: Android device object.
     """
     return phone_idle_not_iwlan_for_subscription(log, ad,
-                                             get_outgoing_voice_sub_id(ad))
+                                                 get_outgoing_voice_sub_id(ad))
+
 
 def phone_idle_not_iwlan_for_subscription(log, ad, sub_id):
     """Return if phone is idle for non WiFi calling call test for sub id.
@@ -892,14 +903,12 @@ def phone_idle_not_iwlan_for_subscription(log, ad, sub_id):
         sub_id: subscription id.
     """
     if not wait_for_not_network_rat_for_subscription(
-            log,
-            ad,
-            sub_id,
-            RAT_FAMILY_WLAN,
+            log, ad, sub_id, RAT_FAMILY_WLAN,
             voice_or_data=NETWORK_SERVICE_DATA):
         log.error("{} data rat in iwlan mode.".format(ad.serial))
         return False
     return True
+
 
 def phone_idle_csfb(log, ad):
     """Return if phone is idle for CSFB call test.

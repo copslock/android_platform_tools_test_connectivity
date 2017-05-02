@@ -158,10 +158,9 @@ class ActsBaseClassTest(unittest.TestCase):
             pass
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ".* does not have test case test_something"
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
-            bt_cls.run(test_names=["test_something"])
+        bt_cls.run(test_names=["test_something"])
         self.assertFalse(bt_cls.results.executed)
+        self.assertTrue(bt_cls.results.skipped)
 
     def test_setup_class_fail_by_exception(self):
         call_check = mock.MagicMock()
