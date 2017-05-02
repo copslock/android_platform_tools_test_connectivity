@@ -1659,12 +1659,13 @@ def active_data_transfer_task(log, ad, file_name="5MB"):
         }
         if file_name in file_map_dict:
             file_size = file_map_dict[file_name]
+            timeout = file_size / 100000
         else:
             ad.log.warning("file_size provided for DL is not available")
             return False
         output_path = "/sdcard/Download/" + file_name + ".zip"
         return (http_file_download_by_adb, (log, ad, url, output_path,
-                                            file_size))
+                                            file_size, True, timeout))
 
 
 def active_data_transfer_test(log, ad, file_name="5MB"):
