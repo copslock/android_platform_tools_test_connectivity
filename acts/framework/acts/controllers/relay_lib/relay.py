@@ -69,12 +69,13 @@ class Relay(object):
     """
     """How long to wait for relays to transition state."""
     transition_wait_time = .2
+    button_press_time = .25
 
     def __init__(self, relay_board, position):
         self.relay_board = relay_board
         self.position = position
         self._original_state = relay_board.get_relay_status(self.position)
-        self.relay_id = "{}/{}".format(self.relay_board.name, self.position)
+        self.relay_id = "%s/%s" % (self.relay_board.name, self.position)
 
     def set_no(self):
         """Sets the relay to the 'NO' state. Shorthand for set(RelayState.NO).
@@ -121,7 +122,7 @@ class Relay(object):
             SynchronizeRelays._sync_sleep_flag = True
             sleep(Relay.transition_wait_time)
 
-    def set_no_for(self, seconds=.25):
+    def set_no_for(self, seconds=button_press_time):
         """Sets the relay to 'NORMALLY_OPEN' for seconds. Blocks the thread.
 
         Args:
@@ -131,7 +132,7 @@ class Relay(object):
         sleep(seconds)
         self.set_nc()
 
-    def set_nc_for(self, seconds=.25):
+    def set_nc_for(self, seconds=button_press_time):
         """Sets the relay to 'NORMALLY_CLOSED' for seconds. Blocks the thread.
 
         Respects Relay.transition_wait_time for toggling state.
