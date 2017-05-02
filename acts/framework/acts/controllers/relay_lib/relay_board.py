@@ -21,7 +21,6 @@ from __future__ import print_function
 from acts.controllers.relay_lib.errors import RelayConfigError
 from acts.controllers.relay_lib.helpers import validate_key
 from acts.controllers.relay_lib.relay import Relay
-from acts.controllers.relay_lib.relay import RelayState
 
 
 class RelayBoard(object):
