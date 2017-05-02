@@ -75,13 +75,10 @@ class RelayRig:
         else:
             device_config = dict()
             device_config['name'] = 'GenericRelayDevice'
-            device_config['relays'] = list()
+            device_config['relays'] = dict()
             for relay_id in self.relays:
-                device_config['relays'].append({
-                    'name': str(relay_id),
-                    'pos': relay_id
-                })
-            self.devices['device'] = (self.create_relay_device(device_config))
+                device_config['relays'][relay_id] = relay_id
+            self.devices['device'] = self.create_relay_device(device_config)
 
     def create_relay_board(self, config):
         """Builds a RelayBoard from the given config.

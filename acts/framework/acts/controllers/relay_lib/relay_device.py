@@ -44,25 +44,13 @@ class RelayDevice(object):
         validate_key('name', config, str, '"devices" element')
         self.name = config['name']
 
-        validate_key('relays', config, list, '"devices list element')
-        if len(config['relays']) < 1:
+        relays = validate_key('relays', config, dict, '"devices" list element')
+        if len(relays) < 1:
             raise RelayConfigError(
                 'Key "relays" must have at least 1 element.')
 
-        for relay_config in config['relays']:
-            if isinstance(relay_config, dict):
-                name = validate_key('name', relay_config, str,
-                                    '"relays" element in "devices"')
-                if 'pos' in relay_config:
-                    self.relays[name] = relay_rig.relays[relay_config['pos']]
-                else:
-                    validate_key('pos', relay_config, int,
-                                 '"relays" element in "devices"')
-            else:
-                raise TypeError('Key "relay" is of type {}. Expecting {}. '
-                                'Offending object:\n {}'.format(
-                                    type(relay_config['relay']), dict,
-                                    relay_config))
+        for name, relay_id in relays.items():
+            self.relays[name] = relay_rig.relays[relay_id]
 
     def setup(self):
         """Sets up the relay device to be ready for commands."""

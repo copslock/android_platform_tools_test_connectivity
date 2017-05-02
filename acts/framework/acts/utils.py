@@ -739,22 +739,34 @@ def bypass_setup_wizard(ad, bypass_wait_time=3):
     try:
         ad.adb.shell("am start -n \"com.google.android.setupwizard/"
                      ".SetupWizardExitActivity\"")
+        logging.debug("No error during default bypass call.")
     except adb.AdbError as adb_error:
         if adb_error.stdout == "ADB_CMD_OUTPUT:0":
             if adb_error.stderr and \
                     not adb_error.stderr.startswith("Error type 3\n"):
+                logging.error(
+                    "ADB_CMD_OUTPUT:0, but error is %s " % adb_error.stderr)
                 raise adb_error
+            logging.debug("Bypass wizard call received harmless error 3: "
+                          "No setup to bypass.")
         elif adb_error.stdout == "ADB_CMD_OUTPUT:255":
             # Run it again as root.
             ad.adb.root_adb()
+            logging.debug("Need root access to bypass setup wizard.")
             try:
                 ad.adb.shell("am start -n \"com.google.android.setupwizard/"
                              ".SetupWizardExitActivity\"")
+                logging.debug("No error during rooted bypass call.")
             except adb.AdbError as adb_error:
                 if adb_error.stdout == "ADB_CMD_OUTPUT:0":
                     if adb_error.stderr and \
-                            not adb_error.stderr.startswith("Error type 3"):
+                            not adb_error.stderr.startswith("Error type 3\n"):
+                        logging.error("Rooted ADB_CMD_OUTPUT:0, but error is "
+                                      "%s " % adb_error.stderr)
                         raise adb_error
+                    logging.debug(
+                        "Rooted bypass wizard call received harmless "
+                        "error 3: No setup to bypass.")
 
     # magical sleep to wait for the gservices override broadcast to complete
     time.sleep(bypass_wait_time)
@@ -764,6 +776,7 @@ def bypass_setup_wizard(ad, bypass_wait_time=3):
     if provisioned_state != 1:
         logging.error("Failed to bypass setup wizard.")
         return False
+    logging.debug("Setup wizard successfully bypassed.")
     return True
 
 
