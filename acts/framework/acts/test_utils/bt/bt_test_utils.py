@@ -261,7 +261,10 @@ def setup_multiple_devices_for_bt_test(android_devices):
                 a.log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
-            if not a.adb.shell("setprop persist.bluetooth.btsnoopenable true"):
+            a.adb.shell("setprop persist.bluetooth.btsnoopenable true")
+            getprop_result = bool(
+                a.adb.shell("getprop persist.bluetooth.btsnoopenable"))
+            if not getprop_result:
                 a.log.warning("Failed to enable Bluetooth Hci Snoop Logging.")
     except Exception as err:
         log.error("Something went wrong in multi device setup: {}".format(err))
@@ -285,7 +288,8 @@ def bluetooth_enabled_check(ad):
         try:
             ad.ed.pop_event(expected_bluetooth_on_event_name, DEFAULT_TIMEOUT)
         except Empty:
-            ad.log.info("Failed to toggle Bluetooth on(no broadcast received).")
+            ad.log.info(
+                "Failed to toggle Bluetooth on(no broadcast received).")
             # Try one more time to poke at the actual state.
             if ad.droid.bluetoothCheckState():
                 ad.log.info(".. actual state is ON")
@@ -311,7 +315,8 @@ def reset_bluetooth(android_devices):
             droid.bluetoothToggleState(False)
             expected_bluetooth_off_event_name = bluetooth_off
             try:
-                ed.pop_event(expected_bluetooth_off_event_name, DEFAULT_TIMEOUT)
+                ed.pop_event(expected_bluetooth_off_event_name,
+                             DEFAULT_TIMEOUT)
             except Exception:
                 a.log.error("Failed to toggle Bluetooth off.")
                 return False
@@ -515,8 +520,8 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     filter_list = scan_ad.droid.bleGenFilterList()
     scan_settings = scan_ad.droid.bleBuildScanSetting()
     scan_callback = scan_ad.droid.bleGenScanCallback()
-    scan_ad.droid.bleSetScanFilterDeviceName(adv_ad.droid.bluetoothGetLocalName(
-    ))
+    scan_ad.droid.bleSetScanFilterDeviceName(
+        adv_ad.droid.bluetoothGetLocalName())
     scan_ad.droid.bleBuildScanFilter(filter_list)
     scan_ad.droid.bleStartBleScan(filter_list, scan_settings, scan_callback)
     try:
@@ -723,13 +728,15 @@ def _wait_for_passkey_match(pri_ad, sec_ad):
     pri_pairing_req, sec_pairing_req = None, None
     try:
         pri_pairing_req = pri_ad.ed.pop_event(
-            event_name="BluetoothActionPairingRequest", timeout=DEFAULT_TIMEOUT)
+            event_name="BluetoothActionPairingRequest",
+            timeout=DEFAULT_TIMEOUT)
         pri_variant = pri_pairing_req["data"]["PairingVariant"]
         pri_pin = pri_pairing_req["data"]["Pin"]
         pri_ad.log.info("Primary device received Pin: {}, Variant: {}"
                         .format(pri_pin, pri_variant))
         sec_pairing_req = sec_ad.ed.pop_event(
-            event_name="BluetoothActionPairingRequest", timeout=DEFAULT_TIMEOUT)
+            event_name="BluetoothActionPairingRequest",
+            timeout=DEFAULT_TIMEOUT)
         sec_variant = sec_pairing_req["data"]["PairingVariant"]
         sec_pin = sec_pairing_req["data"]["Pin"]
         sec_ad.log.info("Secondary device received Pin: {}, Variant: {}"
@@ -855,7 +862,8 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
 
     # Now try to connect them, the following call will try to initiate all
     # connections.
-    pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress())
+    pri_ad.droid.bluetoothConnectBonded(sec_ad.droid.bluetoothGetLocalAddress(
+    ))
 
     end_time = time.time() + 10
     profile_connected = set()
@@ -1001,8 +1009,8 @@ def take_btsnoop_log(ad, testcase, testname):
     out_name = ','.join((testname, device_model, serial))
     snoop_path = ad.log_path + "/BluetoothSnoopLogs"
     utils.create_dir(snoop_path)
-    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE, " ",
-                   snoop_path + '/' + out_name, ".btsnoop_hci.log"))
+    cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE,
+                   " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
                       .format(device_model, serial))
     exe_cmd(cmd)
@@ -1022,7 +1030,8 @@ def kill_bluetooth_process(ad):
 
 def orchestrate_rfcomm_connection(client_ad,
                                   server_ad,
-                                  accept_timeout_ms=DEFAULT_RFCOMM_TIMEOUT):
+                                  accept_timeout_ms=DEFAULT_RFCOMM_TIMEOUT,
+                                  uuid=None):
     """Sets up the RFCOMM connection between two Android devices.
 
     Args:
@@ -1033,10 +1042,17 @@ def orchestrate_rfcomm_connection(client_ad,
     """
     server_ad.droid.bluetoothStartPairingHelper()
     client_ad.droid.bluetoothStartPairingHelper()
-    server_ad.droid.bluetoothRfcommBeginAcceptThread(
-        RfcommUuid.DEFAULT_UUID.value, accept_timeout_ms)
-    client_ad.droid.bluetoothRfcommBeginConnectThread(
-        server_ad.droid.bluetoothGetLocalAddress())
+    if not uuid:
+        server_ad.droid.bluetoothRfcommBeginAcceptThread(
+            RfcommUuid.DEFAULT_UUID.value, accept_timeout_ms)
+        client_ad.droid.bluetoothRfcommBeginConnectThread(
+            server_ad.droid.bluetoothGetLocalAddress(),
+            RfcommUuid.DEFAULT_UUID.value)
+    else:
+        server_ad.droid.bluetoothRfcommBeginAcceptThread(uuid,
+                                                         accept_timeout_ms)
+        client_ad.droid.bluetoothRfcommBeginConnectThread(
+            server_ad.droid.bluetoothGetLocalAddress(), uuid)
     end_time = time.time() + DEFAULT_TIMEOUT
     result = False
     test_result = True
@@ -1110,7 +1126,7 @@ def clear_bonded_devices(ad):
     return True
 
 
-def verify_server_and_client_connected(client_ad, server_ad):
+def verify_server_and_client_connected(client_ad, server_ad, log=True):
     """Verify that input server and client Android devices are connected.
 
     This code is under the assumption that there will only be
@@ -1126,10 +1142,12 @@ def verify_server_and_client_connected(client_ad, server_ad):
     """
     test_result = True
     if len(server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-        server_ad.log.error("No rfcomm connections found on server.")
+        if log:
+            server_ad.log.error("No rfcomm connections found on server.")
         test_result = False
     if len(client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
-        client_ad.log.error("No rfcomm connections found on client.")
+        if log:
+            client_ad.log.error("No rfcomm connections found on client.")
         test_result = False
     return test_result
 
