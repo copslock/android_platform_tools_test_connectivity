@@ -40,3 +40,15 @@ class GenericRelayDevice(RelayDevice):
         with SynchronizeRelays():
             for relay in self.relays.values():
                 relay.set_no()
+
+    def press(self, button_name):
+        """Presses the button with name 'button_name'."""
+        self.relays[button_name].set_nc_for()
+
+    def hold_down(self, button_name):
+        """Holds down the button with name 'button_name'."""
+        self.relays[button_name].set_nc()
+
+    def release(self, button_name):
+        """Releases the held down button with name 'button_name'."""
+        self.relays[button_name].set_no()
