@@ -594,6 +594,9 @@ def video_call_setup_teardown_for_subscription(
         if verify_caller_func and not verify_caller_func(log, ad_caller):
             raise _CallSequenceException("Caller not in correct state!")
 
+        ad_caller.adb.shell("input keyevent 22",timeout=5)
+        ad_callee.adb.shell("input keyevent 66",timeout=5)
+
         # TODO: b/26291165 Replace with reducing the volume as we want
         # to test route switching
         ad_caller.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
