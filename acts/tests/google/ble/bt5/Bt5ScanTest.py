@@ -34,6 +34,8 @@ from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import scan_result
+from acts.test_utils.bt.bt_test_utils import advertising_set_on_own_address_read
+from acts.test_utils.bt.bt_test_utils import advertising_set_started
 from acts import signals
 
 
@@ -369,6 +371,63 @@ class Bt5ScanTest(BluetoothBaseTest):
             self.log.error("Scan result not found")
             self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
             return False
+
+        self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    def test_get_own_address(self):
+        """Test obtaining own address for PTS.
+
+        Steps:
+        1. Start advertising set dut1
+        2. Grab address
+        3. Stop advertising
+
+        Expected Result:
+        Callback with address is received.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE Advertising Extension, BT5, LE, Advertising
+        Priority: 1
+        """
+        adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
+            {"connectable": False,
+             "anonymous": True,
+             "legacyMode": False,
+             "primaryPhy": "PHY_LE_1M",
+             "secondaryPhy": "PHY_LE_2M",
+             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
+            adv_callback)
+
+        set_id = -1
+
+        try:
+            evt = self.adv_ad.ed.pop_event(
+                advertising_set_started.format(adv_callback), self.default_timeout)
+            self.log.info("data: " + str(evt['data']))
+            set_id = evt['data']['setId']
+        except Empty:
+            self.log.error("did not receive the set started event!")
+            self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
+            return False
+
+        self.adv_ad.droid.bleAdvSetGetOwnAddress(set_id)
+
+        try:
+            evt = self.adv_ad.ed.pop_event(
+                advertising_set_on_own_address_read.format(set_id), self.default_timeout)
+            address = evt['data']['address']
+            self.log.info("Advertiser address is: " + str(address))
+        except Empty:
+            self.log.error("onOwnAddressRead not received.")
+            self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
+            return False
+
 
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
