@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import time
 import traceback
 
 from acts import asserts
@@ -590,8 +591,10 @@ class BaseTestClass(object):
         try:
             return test_name, getattr(self, test_name)
         except:
+
             def test_skip_func(*args, **kwargs):
                 raise signals.TestSkip("Test %s does not exist" % test_name)
+
             self.log.info("Test case %s not found in %s.", test_name, self.TAG)
             return test_name, test_skip_func
 
@@ -611,7 +614,7 @@ class BaseTestClass(object):
             self.results.add_record(record)
             self._on_blocked(record)
 
-    def run(self, test_names=None):
+    def run(self, test_names=None, test_case_iterations=1):
         """Runs test cases within a test class by the order they appear in the
         execution list.
 
@@ -657,7 +660,8 @@ class BaseTestClass(object):
         # Run tests in order.
         try:
             for test_name, test_func in tests:
-                self.exec_one_testcase(test_name, test_func, self.cli_args)
+                for _ in range(test_case_iterations):
+                    self.exec_one_testcase(test_name, test_func, self.cli_args)
             return self.results
         except signals.TestAbortClass:
             return self.results
