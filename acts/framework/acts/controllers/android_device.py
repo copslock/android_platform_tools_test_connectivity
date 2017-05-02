@@ -24,6 +24,7 @@ import time
 
 from acts import logger as acts_logger
 from acts import signals
+from acts import tracelogger
 from acts import utils
 from acts.controllers import adb
 from acts.controllers import event_dispatcher
@@ -360,8 +361,9 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {"serial": self.serial})
+        self.log = tracelogger.TraceLogger(
+            AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                       {"serial": self.serial}))
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
