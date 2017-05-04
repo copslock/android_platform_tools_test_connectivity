@@ -21,6 +21,7 @@ import collections
 import time
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -30,6 +31,7 @@ from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -40,6 +42,10 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_video_utils import phone_setup_video
+from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts.test_utils.tel.tel_video_utils import \
+    is_phone_in_call_video_bidirectional
 from acts.utils import rand_ascii_str
 
 
@@ -85,6 +91,15 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             ad.log.info("Phone is in WFC enabled state.")
         return True
 
+    def _setup_vt(self):
+        ads = self.android_devices
+        tasks = [(phone_setup_video, (self.log, ads[0])),
+                 (phone_setup_video, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        return True
+
     def _setup_lte_volte_enabled(self):
         for ad in self.android_devices:
             if not phone_setup_volte(self.log, ad):
@@ -117,11 +132,24 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
-    def _setup_phone_call(self):
-        if not call_setup_teardown(
-                self.log, self.caller, self.callee, ad_hangup=None):
-            self.log.error("Setup Call failed.")
-            return False
+    def _setup_phone_call(self, test_video):
+        if test_video:
+            if not video_call_setup_teardown(
+                    self.log,
+                    self.android_devices[0],
+                    self.android_devices[1],
+                    self.android_devices[0],
+                    video_state=VT_STATE_BIDIRECTIONAL,
+                    verify_caller_func=is_phone_in_call_video_bidirectional,
+                    verify_callee_func=is_phone_in_call_video_bidirectional,
+                    wait_time_in_call=self.phone_call_duration):
+                self.log.error("Failed to setup+teardown a call")
+                return False
+        else:
+            if not call_setup_teardown(
+                    self.log, self.caller, self.callee, ad_hangup=None):
+                self.log.error("Setup Call failed.")
+                return False
         self.log.info("Setup call successfully.")
         return True
 
@@ -132,7 +160,8 @@ class TelLiveStressCallTest(TelephonyBaseTest):
     def stress_test(self,
                     setup_func=None,
                     network_check_func=None,
-                    test_sms=False):
+                    test_sms=False,
+                    test_video=False):
         for ad in self.android_devices:
             #check for sim and service
             ensure_phone_subscription(self.log, ad)
@@ -147,11 +176,12 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             self.log.info(msg)
             iteration_result = True
             ensure_phones_idle(self.log, self.android_devices)
-            if not self._setup_phone_call():
+
+            if not self._setup_phone_call(test_video):
                 fail_count["dialing"] += 1
                 iteration_result = False
                 self.log.error("%s call dialing failure.", msg)
-            else:
+            elif not test_video:
                 if network_check_func and not network_check_func(self.log,
                                                                  self.caller):
                     fail_count["caller_network_check"] += 1
@@ -340,5 +370,26 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         """
         return self.stress_test(
             setup_func=self._setup_2g, network_check_func=is_phone_in_call_2g)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_video_stress(self):
+        """ VT call stress test
+
+        Steps:
+        1. Make Sure PhoneA and PhoneB in VoLTE mode (ViLTE provisioned).
+        2. Call from PhoneA to PhoneB, hang up on PhoneA.
+        3, Repeat 2 around N times based on the config setup
+
+        Expected Results:
+        1, Verify phone is at IDLE state
+        2, Verify the phone is at ACTIVE, if it is in dialing, then we retry
+        3, Verify the phone is IDLE after hung up
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self.stress_test(
+            setup_func=self._setup_vt, test_video=True)
+
 
     """ Tests End """
