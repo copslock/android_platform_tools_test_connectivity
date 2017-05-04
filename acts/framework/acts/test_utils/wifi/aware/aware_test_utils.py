@@ -39,4 +39,26 @@ def wait_for_event(ad, event_name, message=None):
   except queue.Empty:
     if message is None:
       message = "Timed out while waiting for %s"
-    asserts.fail(message % event_name)
+    ad.log.info(message % event_name)
+    asserts.fail(event_name)
+
+
+def fail_on_event(ad, event_name, message=None):
+  """Wait for a timeout period and looks for the specified event - fails if it
+  is observed.
+
+  Args:
+    ad: The android device
+    event_name: The event to wait for (and fail on its appearance)
+    message: Optional message to print out on error (should include 2 '%s'
+    place-holders for the event name and the event data)
+  """
+  try:
+    event = ad.ed.pop_event(event_name, EVENT_TIMEOUT)
+    if message is None:
+      message = "Received unwanted %s: %s"
+    ad.log.info(message, event_name, event['data'])
+    asserts.fail(event_name, extras=event)
+  except queue.Empty:
+    ad.log.info('%s not seen (as expected)', event_name)
+    return

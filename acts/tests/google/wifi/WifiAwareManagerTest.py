@@ -211,7 +211,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
             name: An arbitary name used for logging.
             config: An optional ConfigRequest (JSON-configured) structure.
         """
-        session_id = device.droid.wifiAwareAttach(config)
+        session_id = device.droid.wifiAwareAttach(False, config)
         try:
             event = device.ed.pop_event(aware_const.EVENT_CB_ON_ATTACHED,
                                         EVENT_TIMEOUT)

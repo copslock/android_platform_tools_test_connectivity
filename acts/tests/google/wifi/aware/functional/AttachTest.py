@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -30,5 +31,30 @@ class AttachTest(AwareBaseTest):
     the expected callback).
     """
     dut = self.android_devices[0]
-    dut.droid.wifiAwareAttach()
+    dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+    autils.fail_on_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+
+  def test_attach_with_identity(self):
+    """Functional test case / Attach test cases / attach with identity callback
+
+    Validates that attaching to the Wi-Fi Aware service works (receive
+    the expected callbacks).
+    """
+    dut = self.android_devices[0]
+    dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+
+  def test_attach_with_no_wifi(self):
+    """Function test case / Attach test cases / attempt to attach with wifi off
+
+    Validates that if trying to attach with Wi-Fi disabled will receive the
+    expected failure callback. As a side-effect also validates that the broadcast
+    for Aware unavailable is received.
+    """
+    dut = self.android_devices[0]
+    wutils.wifi_toggle_state(dut, False)
+    autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
+    dut.droid.wifiAwareAttach()
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
