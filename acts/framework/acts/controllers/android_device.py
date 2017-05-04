@@ -46,8 +46,10 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS")
 BUG_REPORT_TIMEOUT = 1200
+PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
 IPERF_TIMEOUT = 60
+SL4A_APK_NAME = "com.googlecode.android_scripting"
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -132,7 +134,7 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
-        if not sl4a_client.is_sl4a_installed(ad.adb):
+        if not ad.is_sl4a_installed():
             ad.log.info("sl4a.apk is not installed")
             if not ad.skip_sl4a:
                 ad.log.exception("The required sl4a.apk is not installed")
@@ -421,7 +423,7 @@ class AndroidDevice:
         if self.is_adb_logcat_on:
             self.stop_adb_logcat()
         self.terminate_all_sessions()
-        sl4a_client.stop_sl4a(self.adb)
+        self.stop_sl4a()
 
     def is_connected(self):
         out = self.adb.devices()
@@ -624,14 +626,14 @@ class AndroidDevice:
             raise last_error
 
         # TODO(bpeake) b/33470152 Fixup SL4A connection code
-        if sl4a_client.is_sl4a_running(self.adb):
-            sl4a_client.stop_sl4a(self.adb)
-        sl4a_client.start_sl4a(self.adb)
+        if self.is_sl4a_running():
+            self.stop_sl4a()
+        self.start_sl4a()
         try:
             droid = self.start_new_session()
         except:
-            sl4a_client.stop_sl4a(self.adb)
-            sl4a_client.start_sl4a(self.adb)
+            self.stop_sl4a()
+            self.start_sl4a()
             droid = self.start_new_session()
 
         if handle_event:
@@ -735,8 +737,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.warning('Restarting logcat on file %s' %
-                             self.adb_logcat_file_path)
+            self.log.warning(
+                'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -760,6 +762,62 @@ class AndroidDevice:
                 % self.serial)
         utils.stop_standing_subprocess(self.adb_logcat_process)
         self.adb_logcat_process = None
+
+    def is_apk_installed(self, package_name):
+        """Check if the given apk is already installed.
+
+        Args:
+        package_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+        True if package is installed. False otherwise.
+        """
+        try:
+            self.adb.shell(
+                'pm list packages | grep -w "package:%s"' % package_name)
+            return True
+        except:
+            return False
+
+    def is_sl4a_installed(self):
+        return self.is_apk_installed(SL4A_APK_NAME)
+
+    def is_apk_running(self, package_name):
+        """Check if the given apk is running.
+
+        Args:
+        package_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+        True if package is installed. False otherwise.
+        """
+        for cmd in ("ps -A", "ps"):
+            try:
+                self.adb.shell('%s | grep "S %s"' % (cmd, package_name))
+                return True
+            except Exception:
+                continue
+        return False
+
+    def is_sl4a_running(self):
+        return self.is_apk_running(SL4A_APK_NAME)
+
+    def force_stop_apk(self, package_name):
+        """Force stop the given apk.
+
+        Args:
+        package_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+        True if package is installed. False otherwise.
+        """
+        self.adb.shell('am force-stop %s' % package_name, ignore_status=True)
+
+    def stop_sl4a(self):
+        return self.force_stop_apk(SL4A_APK_NAME)
+
+    def start_sl4a(self):
+        sl4a_client.start_sl4a(self.adb)
 
     def take_bug_report(self, test_name, begin_time):
         """Takes a bug report on the device and stores it in a file.
@@ -801,27 +859,36 @@ class AndroidDevice:
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
 
+    def get_file_names(self, directory):
+        """Get files names with provided directory."""
+        file_names = []
+        out = self.adb.shell("ls %s" % directory, ignore_status=True)
+        if out and "No such" not in out:
+            return out.split('\n')
+        else:
+            return []
+
+    def pull_files(self, files, remote_path=None):
+        """Pull files from devies."""
+        if not remote_path:
+            remote_path = self.log_path
+        for file_name in files:
+            self.adb.pull(
+                "%s %s" % (file_name, remote_path), timeout=PULL_TIMEOUT)
+
     def check_crash_report(self, log_crash_report=False):
-        """check crash report on the device.
-        """
+        """check crash report on the device."""
         crash_reports = []
-        crash_log_path = os.path.join(self.log_path, "CrashReports",
-                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
-        for report_path in CRASH_REPORT_PATHS:
-            out = self.adb.shell("ls %s" % report_path, ignore_status=True)
-            if out and "No such" not in out:
-                reports = out.split('\n')
-                if log_crash_report:
-                    utils.create_dir(crash_log_path)
-                for report in reports:
-                    if report in CRASH_REPORT_SKIPS:
-                        continue
-                    crash_report = os.path.join(report_path, report)
-                    crash_reports.append(crash_report)
-                    if log_crash_report:
-                        self.adb.pull(
-                            "%s %s" % (crash_report, crash_log_path),
-                            timeout=BUG_REPORT_TIMEOUT)
+        for crash_path in CRASH_REPORT_PATHS:
+            for report in self.get_file_names(crash_path):
+                if report in CRASH_REPORT_SKIPS:
+                    continue
+                crash_reports.append(os.path.join(crash_path, report))
+        if log_crash_report:
+            crash_log_path = os.path.join(self.log_path, "CrashReports",
+                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+            utils.create_dir(crash_log_path)
+            self.pull_files(crash_reports, crash_log_path)
         return crash_reports
 
     def start_new_session(self):
@@ -963,8 +1030,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError("Device %s booting process timed out." %
-                                 self.serial)
+        raise AndroidDeviceError(
+            "Device %s booting process timed out." % self.serial)
 
     def reboot(self):
         """Reboots the device.
@@ -1010,8 +1077,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning('Unable to find IP address for %s.' %
-                                     interface)
+                    self.log.warning(
+                        'Unable to find IP address for %s.' % interface)
                     return None
                 else:
                     time.sleep(1)
