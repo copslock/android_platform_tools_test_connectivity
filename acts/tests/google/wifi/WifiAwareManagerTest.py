@@ -27,7 +27,7 @@ from acts.signals import generated_test
 from acts.test_utils.net import connectivity_const as con_const
 from acts.test_utils.net import nsd_const as nsd_const
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi import wifi_aware_const as aware_const
+from acts.test_utils.wifi.aware import aware_const as aware_const
 
 # arbitrary timeout for events
 EVENT_TIMEOUT = 30
