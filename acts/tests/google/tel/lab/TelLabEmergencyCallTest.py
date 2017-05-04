@@ -52,6 +52,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
+from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
@@ -98,10 +99,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
-        try:
-            self.ad.droid.telephonyFactoryReset()
-        except Exception as e:
-            self.ad.log.error(e)
+        ensure_phone_default_state(self.log, self.ad, check_subscription=False)
         toggle_airplane_mode_by_adb(self.log, self.ad, True)
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
@@ -289,6 +287,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
     def _phone_setup_airplane_mode(self, ad):
         return toggle_airplane_mode_by_adb(self.log, ad, True)
+
+    def _phone_disable_airplane_mode(self, ad):
+        return toggle_airplane_mode_by_adb(self.log, ad, False)
 
     def _phone_setup_volte_airplane_mode(self, ad):
         toggle_volte(self.log, ad, True)
@@ -808,7 +809,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         """
         return self._setup_emergency_call(
             set_system_model_wcdma,
-            None,
+            self._phone_disable_airplane_mode,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
@@ -833,7 +834,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         """
         return self._setup_emergency_call(
             set_system_model_1x,
-            None,
+            self._phone_disable_airplane_mode,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
@@ -858,7 +859,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         """
         return self._setup_emergency_call(
             set_system_model_gsm,
-            None,
+            self._phone_disable_airplane_mode,
             emergency_number=self.emergency_call_number,
             is_wait_for_registration=False)
 
@@ -883,7 +884,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         """
         return self._setup_emergency_call(
             set_system_model_lte,
-            None,
+            self._phone_disable_airplane_mode,
             is_wait_for_registration=False,
             is_ims_call=True,
             emergency_number=self.emergency_call_number,
@@ -917,7 +918,7 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         """
         if not self._setup_emergency_call(
                 set_system_model_1x,
-                None,
+                self._phone_disable_airplane_mode,
                 emergency_number=self.emergency_call_number,
                 is_wait_for_registration=False):
             self.log.error("Failed to make 911 call.")
