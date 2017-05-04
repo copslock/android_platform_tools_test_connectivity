@@ -24,12 +24,15 @@ from acts.asserts import fail
 class TelLivePostflightTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
+        msg = ""
         for ad in self.android_devices:
             post_crash = ad.check_crash_report()
             pre_crash = getattr(ad, "crash_report_preflight", [])
-            crash_diff = set(post_crash).difference(set(pre_crash))
+            crash_diff = list(set(post_crash).difference(set(pre_crash)))
             if crash_diff:
-                msg = "Find new crash reports %s" % list(crash_diff)
-                ad.log.error(msg)
-                fail(msg)
+                msg += "%s find new crash reports %s" % (ad.serial, crash_diff)
+                ad.pull_files(crash_diff)
+                ad.log.error("Find new crash reports %s", crash_diff)
+        if msg:
+            fail(msg)
         return True
