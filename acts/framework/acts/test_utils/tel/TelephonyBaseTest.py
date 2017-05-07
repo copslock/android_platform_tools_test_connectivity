@@ -167,11 +167,9 @@ class TelephonyBaseTest(BaseTestClass):
                                    sim_conf_file)
                     return False
 
-        setattr(
-            self,
-            "diag_logger",
-            self.register_controller(
-                acts.controllers.diag_logger, required=False))
+        setattr(self, "diag_logger",
+                self.register_controller(
+                    acts.controllers.diag_logger, required=False))
         is_mobility_setup = self.user_params.get("Attenuator")
         if not is_mobility_setup:
             ensure_phones_default_state(self.log, self.android_devices)
@@ -182,17 +180,18 @@ class TelephonyBaseTest(BaseTestClass):
             build_id = ad.build_info["build_id"]
             if "vzw" in [
                     sub["operator"] for sub in ad.cfg["subscription"].values()
-            ]:
-                try:
-                    ad.adb.shell("pm path com.google.android.wfcactivation")
-                    ad.log.info("setup VoWiFi MDN per b/33187374")
-                    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-                    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                                 "\"com.google.android.wfcactivation/"
-                                 ".VzwEmergencyAddressActivity\"")
-                except Exception:
-                    ad.log.info(
-                        "com.google.android.wfcactivation not installed")
+            ] and ad.is_apk_installed("com.google.android.wfcactivation"):
+                ad.log.info("setup VoWiFi MDN per b/33187374")
+                ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+                ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
+                             "\"com.google.android.wfcactivation/"
+                             ".VzwEmergencyAddressActivity\"")
+            if not ad.is_apk_running("com.google.telephonymonitor"):
+                ad.log.info("TelephonyMonitor is not running, start it now")
+                ad.adb.shell(
+                    'am broadcast -a '
+                    'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
+                    '"ce.telephony_monitor_enable" "true"')
 
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
