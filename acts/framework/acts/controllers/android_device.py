@@ -16,6 +16,7 @@
 
 from builtins import str
 from builtins import open
+from datetime import datetime
 
 import logging
 import os
@@ -1069,6 +1070,36 @@ class AndroidDevice:
         if has_adb_log:
             self.start_adb_logcat()
         return droid, ed
+
+    def search_logcat(self, matching_string):
+        """Search logcat message with given string.
+
+        Args:
+            matching_string: matching_string to search.
+
+        Returns:
+            A list of dictionaries with full log message, time stamp string
+            and time object. For example:
+            [{"log_message": "05-03 17:39:29.898   968  1001 D"
+                              "ActivityManager: Sending BOOT_COMPLETE user #0",
+              "time_stamp": "2017-05-03 17:39:29.898",
+              "datetime_obj": datetime object}]
+        """
+        out = self.adb.logcat(
+            '-d | grep "%s"' % matching_string, ignore_status=True)
+        if not out: return []
+        result = []
+        logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),
+                          out)
+        for log in logs:
+            time_stamp = "%s-%s" % (datetime.now().year, log[0])
+            time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+            result.append({
+                "log_message": "".join(log),
+                "time_stamp": time_stamp,
+                "datetime_obj": time_obj
+            })
+        return result
 
     def get_ipv4_address(self, interface='wlan0', timeout=5):
         for timer in range(0, timeout):
