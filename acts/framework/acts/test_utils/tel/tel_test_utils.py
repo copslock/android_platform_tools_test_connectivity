@@ -1524,7 +1524,7 @@ def phone_number_formatter(input_string, formatter=None):
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(
-        ".", "").strip("0")
+        ".", "").lstrip("0")
     if not formatter:
         return input_string
     # Remove "1"  or "+1"from front
