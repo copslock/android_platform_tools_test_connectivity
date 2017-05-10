@@ -43,7 +43,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
-from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
+from acts.test_utils.tel.tel_video_utils import video_call_setup
 from acts.test_utils.tel.tel_video_utils import \
     is_phone_in_call_video_bidirectional
 from acts.utils import rand_ascii_str
@@ -134,16 +134,11 @@ class TelLiveStressCallTest(TelephonyBaseTest):
 
     def _setup_phone_call(self, test_video):
         if test_video:
-            if not video_call_setup_teardown(
+            if not video_call_setup(
                     self.log,
                     self.android_devices[0],
-                    self.android_devices[1],
-                    self.android_devices[0],
-                    video_state=VT_STATE_BIDIRECTIONAL,
-                    verify_caller_func=is_phone_in_call_video_bidirectional,
-                    verify_callee_func=is_phone_in_call_video_bidirectional,
-                    wait_time_in_call=self.phone_call_duration):
-                self.log.error("Failed to setup+teardown a call")
+                    self.android_devices[1],):
+                self.log.error("Failed to setup Video call")
                 return False
         else:
             if not call_setup_teardown(
@@ -181,7 +176,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                 fail_count["dialing"] += 1
                 iteration_result = False
                 self.log.error("%s call dialing failure.", msg)
-            elif not test_video:
+            else:
                 if network_check_func and not network_check_func(self.log,
                                                                  self.caller):
                     fail_count["caller_network_check"] += 1
@@ -389,7 +384,9 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         return self.stress_test(
-            setup_func=self._setup_vt, test_video=True)
+            setup_func=self._setup_vt,
+            network_check_func=is_phone_in_call_video_bidirectional,
+            test_video=True)
 
 
     """ Tests End """
