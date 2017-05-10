@@ -18,8 +18,13 @@ Sanity tests for connectivity tests in telephony
 """
 
 import time
+import json
+import logging
+import os
+
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
+from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
 from acts.controllers.anritsu_lib.md8475a import VirtualPhoneStatus
 from acts.test_utils.tel.anritsu_utils import cb_serial_number
 from acts.test_utils.tel.anritsu_utils import set_system_model_1x
@@ -58,6 +63,7 @@ from acts.controllers import iperf_server
 from acts.utils import exe_cmd
 
 DEFAULT_PING_DURATION = 30
+MAX_ITERATIONS = 10
 
 class TelLabDataTest(TelephonyBaseTest):
     SETTLING_TIME = 30
@@ -103,9 +109,10 @@ class TelLabDataTest(TelephonyBaseTest):
                    set_simulation_func,
                    rat):
         try:
-            set_simulation_func(self.anritsu, self.user_params,
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
                                 self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -153,11 +160,35 @@ class TelLabDataTest(TelephonyBaseTest):
                 self.log.error("Pings failed to Destination.")
                 return False
 
-            self.ip_server.start()
-            if not iperf_test_by_adb(self.log, self.ad, destination_ip,
-                                     self.port_num, True, 60):
-                self.log.error("iperf failed to Destination.")
-            self.ip_server.stop()
+            # Power, iperf, file output, power change
+            for iteration in range (1, MAX_ITERATIONS+1):
+                self.log.info("------- Current Iteration: %d / %d -------",
+                               iteration, MAX_ITERATIONS)
+                current_power = self.bts1.output_level
+                self.log.info("Current Power Level is %s", current_power)
+
+                self.ip_server.start()
+                tput_dict = {"Uplink" : 0, "Downlink" : 0}
+                if iperf_test_by_adb(self.log, self.ad, destination_ip,
+                                 self.port_num, True, 10, rate_dict=tput_dict):
+                    uplink = tput_dict["Uplink"]
+                    downlink = tput_dict["Downlink"]
+                else:
+                    self.log.error("iperf failed to Destination.")
+                    self.log.info("Iteration %d Failed", iteration)
+                    return False
+                self.ip_server.stop()
+
+                self.log.info("Iteration %d Passed", iteration)
+                self.logpath = os.path.join(logging.log_path, "power_tput.txt")
+                line = "Power " + current_power + " DL TPUT " + str(downlink)
+                with open (self.logpath, "a") as tput_file:
+                    tput_file.write(line)
+                    tput_file.write("\n")
+                current_power = float(current_power)
+                new_power = current_power - 5.0
+                self.log.info("Setting Power Level to %f", new_power)
+                self.bts1.output_level = new_power
 
         except AnritsuError as e:
             self.log.error("Error in connection with Anritsu Simulator: " +
