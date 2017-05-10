@@ -18,6 +18,7 @@ import enum
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.relay import SynchronizeRelays
 from acts.controllers.relay_lib.errors import RelayConfigError
+from acts.controllers.relay_lib.helpers import validate_key
 
 PAIRING_MODE_WAIT_TIME = 5.2
 MISSING_RELAY_MSG = 'Relay config for FuguRemote "%s" missing relay "%s".'
@@ -37,6 +38,10 @@ class FuguRemote(GenericRelayDevice):
 
     def __init__(self, config, relay_rig):
         GenericRelayDevice.__init__(self, config, relay_rig)
+
+        self.mac_address = validate_key('mac_address', config, str,
+                                        'FuguRemote')
+
         for button in Buttons:
             self.ensure_config_contains_relay(button.value)
 

@@ -687,6 +687,7 @@ class TestFuguRemote(unittest.TestCase):
         self.fugu_config = {
             'type': 'GenericRelayDevice',
             'name': 'UniqueDeviceName',
+            'mac_address': '00:00:00:00:00:00',
             'relays': {
                 'Power': 'MockBoard/0',
                 fugu_remote.Buttons.BACK.value: 'MockBoard/1',
@@ -705,6 +706,13 @@ class TestFuguRemote(unittest.TestCase):
         flawed_config = copy.deepcopy(self.fugu_config)
         del flawed_config['relays']['Power']
         del flawed_config['relays'][fugu_remote.Buttons.BACK.value]
+        with self.assertRaises(errors.RelayConfigError):
+            fugu_remote.FuguRemote(flawed_config, self.mock_rig)
+
+    def test_config_missing_mac_address(self):
+        """FuguRemote __init__ should throw an error without a mac address."""
+        flawed_config = copy.deepcopy(self.fugu_config)
+        del flawed_config['mac_address']
         with self.assertRaises(errors.RelayConfigError):
             fugu_remote.FuguRemote(flawed_config, self.mock_rig)
 
