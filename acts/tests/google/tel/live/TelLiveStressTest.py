@@ -62,9 +62,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
-        self.max_run_time = int(self.user_params.get("max_run_time", 1800))
+        self.max_run_time = int(self.user_params.get("max_run_time", 18000))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
+        self.crash_check_interval = int(
+            self.user_params.get("crash_check_interval", 300))
 
         return True
 
@@ -163,6 +165,28 @@ class TelLiveStressTest(TelephonyBaseTest):
         return active_data_transfer_test(self.log, self.dut,
                                          file_names[selection])
 
+    def check_crash(self):
+        new_crash = self.dut.check_crash_report()
+        crash_diff = set(new_crash).difference(set(self.dut.crash_report))
+        self.dut.crash_report = new_crash
+        if crash_diff:
+            self.dut.log.error("Find new crash reports %s", list(crash_diff))
+            self.dut.pull_files(list(crash_diff))
+            return False
+        return True
+
+    def crash_check_test(self):
+        failure = 0
+        while time.time() < self.finishing_time:
+            if not self.check_crash():
+                failure += 1
+                self.log.error("Crash found count: %s", failure)
+                self._take_bug_report("%s_crash_found" % self.test_name,
+                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+            self.dut.droid.goToSleepNow()
+            time.sleep(self.crash_check_interval)
+        return failure
+
     def call_test(self):
         failure = 0
         while time.time() < self.finishing_time:
@@ -170,6 +194,9 @@ class TelLiveStressTest(TelephonyBaseTest):
             random.shuffle(ads)
             if not self._make_phone_call(ads):
                 failure += 1
+                self.log.error("Call test failure count: %s", failure)
+                self._take_bug_report("%s_call_failure" % self.test_name,
+                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
@@ -181,6 +208,9 @@ class TelLiveStressTest(TelephonyBaseTest):
             random.shuffle(ads)
             if not self._send_message(ads):
                 failure += 1
+                self.log.error("Messaging test failure count: %s", failure)
+                self._take_bug_report("%s_messaging_failure" % self.test_name,
+                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
@@ -190,6 +220,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             if not self._transfer_data():
                 failure += 1
+                self.log.error("Data test failure count: %s", failure)
+                self._take_bug_report("%s_data_failure" % self.test_name,
+                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
@@ -200,10 +233,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log, [(self.call_test, []), (
-            self.message_test, []), (self.data_test, [])])
+            self.message_test, []), (self.data_test, []),
+                                                  (self.crash_check_test, [])])
         self.log.info("Call failures: %s", results[0])
-        self.log.info("Message failures: %s", results[1])
+        self.log.info("Messaging failures: %s", results[1])
         self.log.info("Data failures: %s", results[2])
+        self.log.info("Crash failures: %s", results[3])
         for result in results:
             if result: return False
 
