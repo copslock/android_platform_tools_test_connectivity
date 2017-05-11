@@ -1794,8 +1794,6 @@ def http_file_download_by_chrome(ad,
     Args:
         ad: Android Device Object.
         url: The url that file to be downloaded from".
-        out_path: Optional. Where to download file to.
-                  out_path is /sdcard/Download/ by default.
         expected_file_size: Optional. Provided if checking the download file meet
                             expected file size in unit of byte.
         remove_file_after_check: Whether to remove the downloaded file after
