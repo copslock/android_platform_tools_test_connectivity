@@ -199,7 +199,7 @@ CELL_WEAK_RSSI_VALUE = -105
 # cellular strong RSSI value
 CELL_STRONG_RSSI_VALUE = -70
 # WiFi weak RSSI value
-WIFI_WEAK_RSSI_VALUE = -65
+WIFI_WEAK_RSSI_VALUE = -63
 
 # Emergency call number
 DEFAULT_EMERGENCY_CALL_NUMBER = "911"
