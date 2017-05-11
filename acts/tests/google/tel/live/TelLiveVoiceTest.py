@@ -58,14 +58,12 @@ from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
-from acts.test_utils.tel.tel_test_utils import active_data_transfer_task
+from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import http_file_download_by_adb
-from acts.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
@@ -3031,7 +3029,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
                                             ad_caller, None, None, 60))
-        download_task = active_data_transfer_task(self.log, ad_download)
+        download_task = active_file_download_task(self.log, ad_download)
         results = run_multithread_func(self.log, [download_task, call_task])
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")
