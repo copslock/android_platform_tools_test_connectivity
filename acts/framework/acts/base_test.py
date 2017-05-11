@@ -68,7 +68,7 @@ class BaseTestClass(object):
         self.results = records.TestResult()
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
-        if 'self.android_devices' in self.__dict__:
+        if 'android_devices' in self.__dict__:
             for ad in self.android_devices:
                 if ad.droid:
                     utils.set_location_service(ad, False)
