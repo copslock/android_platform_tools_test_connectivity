@@ -19,6 +19,7 @@
 
 import collections
 import time
+from acts.test_decorators import test_tracker_info
 from acts.controllers.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
@@ -81,8 +82,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
         self.dut = self.android_devices[0]
-        self.ad_reference = self.android_devices[1] if len(
-            self.android_devices) > 1 else None
+        self.ad_reference = self.android_devices[
+            1] if len(self.android_devices) > 1 else None
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
 
@@ -275,8 +276,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if method in kwargs: required_methods.append(method)
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".format(
-                self.test_name, i, self.stress_test_number))
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".
+                          format(self.test_name, i, self.stress_test_number))
 
             self.log.info("{} reboot!".format(self.dut.serial))
             self.dut.reboot()
@@ -288,8 +289,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 if not test_method_mapping[check]():
                     fail_count[check] += 1
                     iteration_result = "fail"
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".format(
-                self.test_name, i, self.stress_test_number, iteration_result))
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".
+                          format(self.test_name, i, self.stress_test_number,
+                                 iteration_result))
 
             # TODO: Check if crash happens.
 
@@ -302,6 +304,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="4d9b425b-f804-45f4-8f47-0ba3f01a426b")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress(self):
         """Reboot Reliability Test
@@ -340,6 +343,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_data_roaming=False,
             clear_provision=True)
 
+    @test_tracker_info(uuid="39a822e5-0360-44ce-97c7-f75468eba8d7")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_without_clear_provisioning(self):
         """Reboot Reliability Test without Clear Provisioning
@@ -377,6 +381,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_data_roaming=False,
             clear_provision=False)
 
+    @test_tracker_info(uuid="8b0e2c06-02bf-40fd-a374-08860e482757")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_check_phone_call_only(self):
         """Reboot Reliability Test
@@ -394,8 +399,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._stress_test(check_provision=True, check_call_setup_teardown=True)
+        return self._stress_test(
+            check_provision=True, check_call_setup_teardown=True)
 
+    @test_tracker_info(uuid="6c243b53-379a-4cda-9848-84fcec4019bd")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_data_roaming(self):
         """Reboot Reliability Test
@@ -417,4 +424,3 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
 
 """ Tests End """
-
