@@ -22,7 +22,7 @@ import random
 import time
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_test_utils import active_data_transfer_test
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -159,10 +159,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         ads[0].log.info("Setup call successfully.")
         return True
 
-    def _transfer_data(self):
+    def _download_file(self):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         selection = random.randrange(0, 7)
-        return active_data_transfer_test(self.log, self.dut,
+        return active_file_download_test(self.log, self.dut,
                                          file_names[selection])
 
     def check_crash(self):
@@ -218,10 +218,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def data_test(self):
         failure = 0
         while time.time() < self.finishing_time:
-            if not self._transfer_data():
+            if not self._download_file():
                 failure += 1
-                self.log.error("Data test failure count: %s", failure)
-                self._take_bug_report("%s_data_failure" % self.test_name,
+                self.log.error("File download test failure count: %s", failure)
+                self._take_bug_report("%s_download_failure" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
