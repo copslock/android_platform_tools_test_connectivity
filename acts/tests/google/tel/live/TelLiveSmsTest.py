@@ -1423,7 +1423,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_sms_in_csfb_call(ads)
 
-    @test_tracker_info(uuid="5a0db8b5-102c-4aa8-ab6b-3148f5524866")
+    @test_tracker_info(uuid="bd8e9e80-1955-429f-b122-96b127771bbb")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_csfb(self):
         """ Test MO MMS during a MO csfb wcdma/gsm call.
@@ -1449,7 +1449,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_csfb_call(ads)
 
-    @test_tracker_info(uuid="a9f74f7a-0ef3-4a98-b252-5efd1191209b")
+    @test_tracker_info(uuid="89d65fd2-fc75-4fc5-a018-2d05a4364304")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb(self):
         """ Test MT MMS during a MO csfb wcdma/gsm call.
@@ -1612,7 +1612,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads)
 
-    @test_tracker_info(uuid="4311cb8c-626d-48a9-955b-6505b41c7519")
+    @test_tracker_info(uuid="42fc8c16-4a30-4f63-9728-2639f2b79c4c")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_1x(self):
         """ Test MT MMS during a MO 1x call.
@@ -1773,7 +1773,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_1x_call(ads)
 
-    @test_tracker_info(uuid="29ed3fea-0409-4b43-9caf-dbbaac7d430f")
+    @test_tracker_info(uuid="4311cb8c-626d-48a9-955b-6505b41c7519")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_csfb_1x(self):
         """ Test MT MMS during a MO csfb 1x call.
@@ -2269,7 +2269,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._sms_test_mt(ads)
 
-    @test_tracker_info(uuid="80254125-861f-4f3d-9164-eb9a2699152e")
+    @test_tracker_info(uuid="55d70548-6aee-40e9-b94d-d10de84fb50f")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_vt(self):
         """ Test MO MMS, Phone in ongoing VT call.
@@ -2302,7 +2302,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
-    @test_tracker_info(uuid="a46074f0-304b-4bb0-a2da-5102ee2be619")
+    @test_tracker_info(uuid="75f97c9a-4397-42f1-bb00-8fc6d04fdf6d")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_vt(self):
         """ Test MT MMS, Phone in ongoing VT call.
