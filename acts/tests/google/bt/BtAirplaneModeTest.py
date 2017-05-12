@@ -21,7 +21,7 @@ affects Bluetooth state.
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from queue import Empty
 import time
 
@@ -38,7 +38,7 @@ class BtAirplaneModeTest(BluetoothBaseTest):
     def setup_test(self):
         super(BluetoothBaseTest, self).setup_test()
         # Ensure testcase starts with Airplane mode off
-        if not toggle_airplane_mode(self.log, self.dut, False):
+        if not toggle_airplane_mode_by_adb(self.log, self.dut, False):
             return False
         time.sleep(self.WAIT_TIME_ANDROID_STATE_SETTLING)
         return True
@@ -69,7 +69,7 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         if not bluetooth_enabled_check(self.dut):
             self.log.error("Failed to set Bluetooth state to enabled")
             return False
-        if not toggle_airplane_mode(self.log, self.dut, True):
+        if not toggle_airplane_mode_by_adb(self.log, self.dut, True):
             self.log.error("Failed to toggle airplane mode on")
             return False
         return not self.dut.droid.bluetoothCheckState()
@@ -102,12 +102,13 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         if not bluetooth_enabled_check(self.dut):
             self.log.error("Failed to set Bluetooth state to enabled")
             return False
-        if not toggle_airplane_mode(self.log, self.dut, True):
+        if not toggle_airplane_mode_by_adb(self.log, self.dut, True):
             self.log.error("Failed to toggle airplane mode on")
             return False
         toggle_timeout = 60
-        self.log.info("Waiting {} seconds until verifying Bluetooth state.".
-                      format(toggle_timeout))
+        self.log.info(
+            "Waiting {} seconds until verifying Bluetooth state.".format(
+                toggle_timeout))
         time.sleep(toggle_timeout)
         return not self.dut.droid.bluetoothCheckState()
 
@@ -140,10 +141,10 @@ class BtAirplaneModeTest(BluetoothBaseTest):
         if not bluetooth_enabled_check(self.dut):
             self.log.error("Failed to set Bluetooth state to enabled")
             return False
-        if not toggle_airplane_mode(self.log, self.dut, True):
+        if not toggle_airplane_mode_by_adb(self.log, self.dut, True):
             self.log.error("Failed to toggle airplane mode on")
             return False
-        if not toggle_airplane_mode(self.log, self.dut, False):
+        if not toggle_airplane_mode_by_adb(self.log, self.dut, False):
             self.log.error("Failed to toggle airplane mode off")
             return False
         time.sleep(self.WAIT_TIME_ANDROID_STATE_SETTLING)
