@@ -61,6 +61,7 @@ class TelLabSmsTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
 
     def setup_class(self):
         try:
@@ -95,7 +96,8 @@ class TelLabSmsTest(TelephonyBaseTest):
         try:
             self.anritsu.reset()
             self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
-            set_simulation_func(self.anritsu, self.user_params)
+            set_simulation_func(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -114,11 +116,12 @@ class TelLabSmsTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for SMS test.")
                 return False
 
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))
@@ -145,8 +148,8 @@ class TelLabSmsTest(TelephonyBaseTest):
                            str(e))
             return False
         except Exception as e:
-            self.log.error("Exception during emergency call procedure: " + str(
-                e))
+            self.log.error("Exception during emergency call procedure: " +
+                           str(e))
             return False
         return True
 
@@ -499,7 +502,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             rand_ascii_str(MULTI_PART_LEN),
             "multi part contains é in first part", 10)
         return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
-                               self.phoneNumber, text, DIRECTION_MOBILE_ORIGINATED)
+                               self.phoneNumber, text,
+                               DIRECTION_MOBILE_ORIGINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mt_sms_multipart1_eacute_wcdma(self):
@@ -629,7 +633,8 @@ class TelLabSmsTest(TelephonyBaseTest):
             rand_ascii_str(SINGLE_PART_LEN_75),
             "single part more than 71 characters with é", 72)
         return self._setup_sms(set_system_model_wcdma, RAT_WCDMA,
-                               self.phoneNumber, text, DIRECTION_MOBILE_TERMINATED)
+                               self.phoneNumber, text,
+                               DIRECTION_MOBILE_TERMINATED)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_mo_sms_singlepart_gsm(self):
