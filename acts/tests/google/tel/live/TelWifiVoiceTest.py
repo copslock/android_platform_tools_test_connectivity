@@ -107,7 +107,7 @@ WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_NOT_HAND_IN = -80
 WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN = -50
 
 # WiFi RSSI settings for HAND_OUT test
-WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT = -70
+WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT = -60
 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT = -85
 
 
@@ -2360,13 +2360,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
             self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_wfc_disabled, None,
             self._is_phone_in_call_not_iwlan, None, True)
 
         mt_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED,
             self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_wfc_disabled, None,
             self._is_phone_in_call_not_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2390,13 +2390,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
             self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_wfc_disabled, None,
             self._is_phone_in_call_not_iwlan, None, True)
 
         mt_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED,
             self._wfc_set_wifi_strong_cell_weak,
-            self._wfc_phone_setup_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_wfc_disabled, None,
             self._is_phone_in_call_not_iwlan, None, True)
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2420,15 +2420,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
             self._wfc_set_wifi_strong_cell_absent,
-            self._wfc_phone_setup_cellular_absent_wfc_disabled,
-            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
+            self._wfc_phone_setup_cellular_absent_wfc_disabled, None,
+            self._is_phone_not_in_call, None,
             "initiate_call fail.")
 
         mt_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED,
             self._wfc_set_wifi_strong_cell_absent,
-            self._wfc_phone_setup_cellular_absent_wfc_disabled,
-            self._phone_idle_not_iwlan, self._is_phone_not_in_call, None,
+            self._wfc_phone_setup_cellular_absent_wfc_disabled, None,
+            self._is_phone_not_in_call, None,
             "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
@@ -2452,13 +2452,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         mo_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED,
             self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_apm_wfc_disabled, None,
             self._is_phone_not_in_call, None, "initiate_call fail.")
 
         mt_result = self._wfc_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED,
             self._wfc_set_wifi_strong_cell_strong,
-            self._wfc_phone_setup_apm_wfc_disabled, self._phone_idle_not_iwlan,
+            self._wfc_phone_setup_apm_wfc_disabled, None,
             self._is_phone_not_in_call, None, "wait_and_answer_call fail.")
 
         self.log.info("MO: {}, MT: {}".format(mo_result, mt_result))
