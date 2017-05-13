@@ -339,7 +339,7 @@ class TelWifiDataTest(TelephonyBaseTest):
     @test_tracker_info(uuid="696f22ef-39cd-4e15-bbb2-f836d2ee47f1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_only_http_dl(self):
-        """Test for 1GB file download on WiFi Only
+        """Test for 10MB file download on WiFi Only
 
         Steps:
         1. Set WiFi atten to MIN and Cellular to MAX
@@ -361,7 +361,7 @@ class TelWifiDataTest(TelephonyBaseTest):
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
             return False
-        if not active_file_download_test(self.log, ad, "1GB"):
+        if not active_file_download_test(self.log, ad, "10MB"):
             ad.log.error("HTTP file download failed on WiFi")
             return False
         return True
