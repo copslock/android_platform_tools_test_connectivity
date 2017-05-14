@@ -1622,7 +1622,7 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
         out_path = os.path.join(out_path, file_name)
     out = ad.adb.shell("ls -l %s" % out_path, ignore_status=True)
     # Handle some old version adb returns error message "No such" into std_out
-    if "No such" not in out and file_name in out:
+    if out and "No such" not in out and file_name in out:
         if expected_file_size:
             file_size = int(out.split(" ")[4])
             if file_size >= expected_file_size:
@@ -1630,7 +1630,7 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
                             file_size, out_path)
                 return True
             else:
-                ad.log.error(
+                ad.log.info(
                     "File size for %s in %s is %s does not meet expected %s",
                     file_name, out_path, file_size, expected_file_size)
                 return False
@@ -1638,11 +1638,11 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
             ad.log.info("File %s is in %s", file_name, out_path)
             return True
     else:
-        ad.log.error("File %s does not exist in %s.", file_name, out_path)
+        ad.log.info("File %s does not exist in %s.", file_name, out_path)
         return False
 
 
-def active_data_transfer_task(log, ad, file_name="5MB"):
+def active_file_download_task(log, ad, file_name="5MB"):
     curl_capable = True
     try:
         out = ad.adb.shell("curl --version")
@@ -1650,35 +1650,35 @@ def active_data_transfer_task(log, ad, file_name="5MB"):
             curl_capable = False
     except AdbError:
         curl_capable = False
+    # files available for download on the same website:
+    # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
+    # download file by adb command, as phone call will use sl4a
+    url = "http://download.thinkbroadband.com/" + file_name + ".zip"
+    file_map_dict = {
+        '5MB': 5000000,
+        '10MB': 10000000,
+        '20MB': 20000000,
+        '50MB': 50000000,
+        '200MB': 200000000,
+        '512MB': 512000000,
+        '1GB': 1000000000
+    }
+    file_size = file_map_dict.get(file_name)
+    if not file_size:
+        log.warning("file_name %s for download is not available", file_name)
+        return False
+    timeout = min(max(file_size / 100000, 60), 3600)
+    output_path = "/sdcard/Download/" + file_name + ".zip"
     if not curl_capable:
-        return (iperf_test_by_adb, (log, ad, "ikoula.testdebit.info"))
+        return (http_file_download_by_chrome, (ad, url, file_size, True,
+                                               timeout))
     else:
-        # files available for download on the same website:
-        # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
-        # download file by adb command, as phone call will use sl4a
-        url = "http://download.thinkbroadband.com/" + file_name + ".zip"
-        file_map_dict = {
-            '5MB': 5000000,
-            '10MB': 10000000,
-            '20MB': 20000000,
-            '50MB': 50000000,
-            '200MB': 200000000,
-            '512MB': 512000000,
-            '1GB': 1000000000
-        }
-        if file_name in file_map_dict:
-            file_size = file_map_dict[file_name]
-            timeout = file_size / 100000
-        else:
-            ad.log.warning("file_size provided for DL is not available")
-            return False
-        output_path = "/sdcard/Download/" + file_name + ".zip"
-        return (http_file_download_by_adb, (log, ad, url, output_path,
-                                            file_size, True, timeout))
+        return (http_file_download_by_curl, (ad, url, output_path, file_size,
+                                             True, timeout))
 
 
-def active_data_transfer_test(log, ad, file_name="5MB"):
-    task = active_data_transfer_task(log, ad, file_name)
+def active_file_download_test(log, ad, file_name="5MB"):
+    task = active_file_download_task(log, ad, file_name)
     return task[0](*task[1])
 
 
@@ -1742,19 +1742,17 @@ def iperf_test_by_adb(log,
         return False
 
 
-def http_file_download_by_adb(log,
-                              ad,
-                              url,
-                              out_path=None,
-                              expected_file_size=None,
-                              remove_file_after_check=True,
-                              timeout=900,
-                              limit_rate=None,
-                              retry=3):
+def http_file_download_by_curl(ad,
+                               url,
+                               out_path=None,
+                               expected_file_size=None,
+                               remove_file_after_check=True,
+                               timeout=900,
+                               limit_rate=None,
+                               retry=3):
     """Download http file by adb curl.
 
     Args:
-        log: log object
         ad: Android Device Object.
         url: The url that file to be downloaded from".
         out_path: Optional. Where to download file to.
@@ -1793,6 +1791,51 @@ def http_file_download_by_adb(log,
         if remove_file_after_check:
             ad.log.info("Remove the downloaded file %s", out_path)
             ad.adb.shell("rm %s" % out_path, ignore_status=True)
+
+
+def http_file_download_by_chrome(ad,
+                                 url,
+                                 expected_file_size=None,
+                                 remove_file_after_check=True,
+                                 timeout=900):
+    """Download http file by chrome.
+
+    Args:
+        ad: Android Device Object.
+        url: The url that file to be downloaded from".
+        expected_file_size: Optional. Provided if checking the download file meet
+                            expected file size in unit of byte.
+        remove_file_after_check: Whether to remove the downloaded file after
+                                 check.
+        timeout: timeout for file download to complete.
+    """
+    file_name, out_path = _generate_file_name_and_out_path(url,
+                                                           "/sdcard/Download/")
+    for cmd in ("am set-debug-app --persistent com.android.chrome",
+                'echo "chrome --no-default-browser-check --no-first-run '
+                '--disable-fre" > /data/local/chrome-command-line',
+                "pm grant com.android.chrome "
+                "android.permission.READ_EXTERNAL_STORAGE",
+                "pm grant com.android.chrome "
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                'am start -a android.intent.action.VIEW -d "%s"' % url):
+        ad.adb.shell(cmd)
+    ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
+    elapse_time = 0
+    while elapse_time < timeout:
+        time.sleep(30)
+        if _check_file_existance(ad, file_name, out_path, expected_file_size):
+            ad.log.info("File %s is downloaded from %s successfully",
+                        file_name, url)
+            if remove_file_after_check:
+                ad.log.info("Remove the downloaded file %s", out_path)
+                ad.adb.shell("rm %s" % out_path, ignore_status=True)
+            return True
+        else:
+            elapse_time += 30
+    ad.log.warning("Fail to download file from %s", url)
+    ad.adb.shell("rm %s" % out_path, ignore_status=True)
+    return False
 
 
 def http_file_download_by_sl4a(log,
@@ -1850,7 +1893,8 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data'][
+            'isConnected'] == target_state:
         return True
     return False
 
@@ -1877,8 +1921,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
+                                                          state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -3679,7 +3723,8 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4118,8 +4163,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data']
-                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data'][
+                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 

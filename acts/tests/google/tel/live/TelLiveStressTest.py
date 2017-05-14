@@ -20,9 +20,10 @@
 import collections
 import random
 import time
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_test_utils import active_data_transfer_test
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -159,10 +160,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         ads[0].log.info("Setup call successfully.")
         return True
 
-    def _transfer_data(self):
+    def _download_file(self):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         selection = random.randrange(0, 7)
-        return active_data_transfer_test(self.log, self.dut,
+        return active_file_download_test(self.log, self.dut,
                                          file_names[selection])
 
     def check_crash(self):
@@ -218,10 +219,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def data_test(self):
         failure = 0
         while time.time() < self.finishing_time:
-            if not self._transfer_data():
+            if not self._download_file():
                 failure += 1
-                self.log.error("Data test failure count: %s", failure)
-                self._take_bug_report("%s_data_failure" % self.test_name,
+                self.log.error("File download test failure count: %s", failure)
+                self._take_bug_report("%s_download_failure" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
@@ -244,33 +245,39 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
     @TelephonyBaseTest.tel_test_wrap
     def test_default_parallel_stress(self):
         """ Default state stress test"""
         return self.parallel_tests()
 
+    @test_tracker_info(uuid="c21e1f17-3282-4f0b-b527-19f048798098")
     @TelephonyBaseTest.tel_test_wrap
-    def test_lte_volte_stress(self):
+    def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
         return self.parallel_tests(setup_func=self._setup_lte_volte_enabled)
 
+    @test_tracker_info(uuid="a317c23a-41e0-4ef8-af67-661451cfefcf")
     @TelephonyBaseTest.tel_test_wrap
-    def test_lte_volte_disabled_stress(self):
+    def test_csfb_parallel_stress(self):
         """ LTE non-VoLTE stress test"""
         return self.parallel_tests(setup_func=self._setup_lte_volte_disabled)
 
+    @test_tracker_info(uuid="fdb791bf-c414-4333-9fa3-cc18c9b3b234")
     @TelephonyBaseTest.tel_test_wrap
-    def test_wifi_calling_stress(self):
+    def test_wfc_parallel_stress(self):
         """ Wifi calling on stress test"""
         return self.parallel_tests(setup_func=self._setup_wfc)
 
+    @test_tracker_info(uuid="4566eef6-55de-4ac8-87ee-58f2ef41a3e8")
     @TelephonyBaseTest.tel_test_wrap
-    def test_3g_stress(self):
+    def test_3g_parallel_stress(self):
         """ 3G stress test"""
         return self.parallel_tests(setup_func=self._setup_3g)
 
+    @test_tracker_info(uuid="f34f1a31-3948-4675-8698-372a83b8088d")
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_stress(self):
+    def test_call_2g_parallel_stress(self):
         """ 2G call stress test"""
         return self.parallel_tests(setup_func=self._setup_2g)
 

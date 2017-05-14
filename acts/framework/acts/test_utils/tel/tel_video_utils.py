@@ -511,7 +511,6 @@ def video_call_setup_teardown(log,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display)
 
-
 # TODO: b/26337151 Might be able to re-factor call_setup_teardown and add.
 # Minimal changes.
 def video_call_setup_teardown_for_subscription(
@@ -594,8 +593,13 @@ def video_call_setup_teardown_for_subscription(
         if verify_caller_func and not verify_caller_func(log, ad_caller):
             raise _CallSequenceException("Caller not in correct state!")
 
-        ad_caller.adb.shell("input keyevent 22",timeout=5)
-        ad_callee.adb.shell("input keyevent 66",timeout=5)
+        time.sleep(5)
+        ad_caller.adb.shell("input keyevent 22",timeout=3)
+        ad_callee.adb.shell("input keyevent 22",timeout=3)
+        ad_caller.adb.shell("input keyevent 22",timeout=3)
+        ad_callee.adb.shell("input keyevent 22",timeout=3)
+        ad_caller.adb.shell("input keyevent 66",timeout=3)
+        ad_callee.adb.shell("input keyevent 66",timeout=3)
 
         # TODO: b/26291165 Replace with reducing the volume as we want
         # to test route switching
@@ -648,6 +652,113 @@ def video_call_setup_teardown_for_subscription(
                 except Exception as e:
                     log.error(str(e))
 
+def video_call_setup(log,
+                     ad_caller,
+                     ad_callee,
+                     video_state=VT_STATE_BIDIRECTIONAL,
+                     incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+    """ Call process, including make a phone call from caller,
+    accept from callee, and hang up. The call is on default subscription
+
+    In call process, call from <droid_caller> to <droid_callee>,
+    accept the call, (optional)then hang up from <droid_hangup>.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        incall_ui_display: after answer the call, bring in-call UI to foreground or
+            background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+    return video_call_setup_for_subscription(
+        log, ad_caller, ad_callee,
+        get_outgoing_voice_sub_id(ad_caller),
+        get_incoming_voice_sub_id(ad_callee),
+        video_state, incall_ui_display)
+
+def video_call_setup_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        subid_caller,
+        subid_callee,
+        video_state=VT_STATE_BIDIRECTIONAL,
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+    """ Call process, including make a phone call from caller,
+    accept from callee, and hang up. The call is on specified subscription
+
+    In call process, call from <droid_caller> to <droid_callee>,
+    accept the call, (optional)then hang up from <droid_hangup>.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        subid_caller: Caller subscription ID
+        subid_callee: Callee subscription ID
+        ad_hangup: Android Device Object end the phone call.
+            Optional. Default value is None, and phone call will continue.
+        incall_ui_display: after answer the call, bring in-call UI to foreground or
+            background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+
+    class _CallSequenceException(Exception):
+        pass
+
+    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
+    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+
+    log.info("Call from {} to {}".format(caller_number, callee_number))
+
+    try:
+        if not initiate_video_call(log, ad_caller, callee_number):
+            raise _CallSequenceException("Initiate call failed.")
+
+        if not wait_and_answer_video_call_for_subscription(
+                log,
+                ad_callee,
+                subid_callee,
+                incoming_number=caller_number,
+                video_state=video_state,
+                incall_ui_display=incall_ui_display):
+            raise _CallSequenceException("Answer call fail.")
+
+        # ensure that all internal states are updated in telecom
+        time.sleep(WAIT_TIME_ACCEPT_VIDEO_CALL_TO_CHECK_STATE)
+
+        # Below step is needed for allow camera pop-up
+        time.sleep(5)
+        ad_caller.adb.shell("input keyevent 22",timeout=3)
+        ad_callee.adb.shell("input keyevent 22",timeout=3)
+        ad_caller.adb.shell("input keyevent 22",timeout=3)
+        ad_callee.adb.shell("input keyevent 22",timeout=3)
+        ad_caller.adb.shell("input keyevent 66",timeout=3)
+        ad_callee.adb.shell("input keyevent 66",timeout=3)
+
+        # TODO: b/26291165 Replace with reducing the volume as we want
+        # to test route switching
+        ad_caller.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
+        ad_callee.droid.telecomCallSetAudioRoute(AUDIO_ROUTE_EARPIECE)
+
+        return True
+
+    except _CallSequenceException as e:
+        log.error(e)
+        return False
 
 def video_call_modify_video(log,
                             ad_requester,
