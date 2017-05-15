@@ -17,7 +17,11 @@
 Python script for wrappers to various libraries.
 """
 
+from acts.test_utils.bt.GattEnum import GattServerResponses
 from gattc_lib import GattClientLib
+from gatts_lib import GattServerLib
+
+import gatt_test_database
 
 import cmd
 """Various Global Strings"""
@@ -39,6 +43,7 @@ class CmdInput(cmd.Cmd):
 
         # Initialize libraries
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
+        self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
 
     def emptyline(self):
         pass
@@ -312,3 +317,155 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End GATT Client wrappers"""
+    """Begin GATT Server wrappers"""
+
+    def do_gatts_close_bluetooth_gatt_servers(self, line):
+        """Close Bluetooth Gatt Servers"""
+        cmd = "Close Bluetooth Gatt Servers"
+        try:
+            self.gatts_lib.close_bluetooth_gatt_servers()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def complete_gatts_setup_database(self, text, line, begidx, endidx):
+        if not text:
+            completions = list(
+                gatt_test_database.GATT_SERVER_DB_MAPPING.keys())[:]
+        else:
+            completions = [
+                s for s in gatt_test_database.GATT_SERVER_DB_MAPPING.keys()
+                if s.startswith(text)
+            ]
+        return completions
+
+    def complete_gatts_send_response(self, text, line, begidx, endidx):
+        """GATT Server database name completion"""
+        if not text:
+            completions = list(GattServerResponses.keys())[:]
+        else:
+            completions = [
+                s for s in GattServerResponses.keys() if s.startswith(text)
+            ]
+        return completions
+
+    def complete_gatts_send_continuous_response(self, text, line, begidx,
+                                                endidx):
+        """GATT Server database name completion"""
+        if not text:
+            completions = list(GattServerResponses.keys())[:]
+        else:
+            completions = [
+                s for s in GattServerResponses.keys() if s.startswith(text)
+            ]
+        return completions
+
+    def complete_gatts_send_continuous_response_data(self, text, line, begidx,
+                                                     endidx):
+        """GATT Server database name completion"""
+        if not text:
+            completions = list(GattServerResponses.keys())[:]
+        else:
+            completions = [
+                s for s in GattServerResponses.keys() if s.startswith(text)
+            ]
+        return completions
+
+    def do_gatts_list_all_uuids(self, line):
+        """From the GATT Client, discover services and list all services,
+        chars and descriptors
+        """
+        cmd = "Discovery Services and list all UUIDS"
+        try:
+            self.gatts_lib.list_all_uuids()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_send_response(self, line):
+        """Send a response to the GATT Client"""
+        cmd = "GATT server send response"
+        try:
+            self.gatts_lib.send_response(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_notify_characteristic_changed(self, line):
+        """Notify char changed by instance id [instance_id] [true|false]"""
+        cmd = "Notify characteristic changed by instance id"
+        try:
+            info = line.split()
+            instance_id = info[0]
+            confirm_str = info[1]
+            confirm = False
+            if confirm_str.lower() == 'true':
+                confirm = True
+            self.gatts_lib.notify_characteristic_changed(instance_id, confirm)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_setup_database(self, line):
+        cmd = "Setup GATT Server database: {}".format(line)
+        try:
+            self.gatts_lib.setup_gatts_db(
+                gatt_test_database.GATT_SERVER_DB_MAPPING.get(line))
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_characteristic_set_value_by_instance_id(self, line):
+        """Set Characteristic value by instance id"""
+        cmd = "Change value of a characteristic by instance id"
+        try:
+            info = line.split()
+            instance_id = info[0]
+            size = int(info[1])
+            value = []
+            for i in range(size):
+                value.append(i % 256)
+            self.gatts_lib.gatt_server_characteristic_set_value_by_instance_id(
+                instance_id, value)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_notify_characteristic_changed(self, line):
+        """Notify characteristic changed [instance_id] [confirm]"""
+        cmd = "Notify characteristic changed"
+        try:
+            info = line.split()
+            instance_id = info[0]
+            confirm = bool(info[1])
+            self.gatts_lib.notify_characteristic_changed(instance_id, confirm)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_open(self, line):
+        """Open a GATT Server instance"""
+        cmd = "Open an empty GATT Server"
+        try:
+            self.gatts_lib.open()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_clear_services(self, line):
+        """Clear BluetoothGattServices from BluetoothGattServer"""
+        cmd = "Clear BluetoothGattServices from BluetoothGattServer"
+        try:
+            self.gatts_lib.gatt_server_clear_services()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_send_continuous_response(self, line):
+        """Send continous response with random data"""
+        cmd = "Send continous response with random data"
+        try:
+            self.gatts_lib.send_continuous_response(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gatts_send_continuous_response_data(self, line):
+        """Send continous response including requested data"""
+        cmd = "Send continous response including requested data"
+        try:
+            self.gatts_lib.send_continuous_response_data(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End GATT Server wrappers"""
