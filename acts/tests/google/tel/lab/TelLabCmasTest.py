@@ -43,6 +43,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_1x_evdo
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.anritsu_utils import set_usim_parameters
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
@@ -70,6 +71,7 @@ class TelLabCmasTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
@@ -111,9 +113,9 @@ class TelLabCmasTest(TelephonyBaseTest):
             c2k_urgency=CMAS_C2K_URGENCY_IMMEDIATE,
             c2k_certainty=CMAS_C2K_CERTIANTY_OBSERVED):
         try:
-            [self.bts1] = set_simulation_func(self.anritsu, self.user_params)
-            if self.ad.sim_card == "P0250Ax":
-                self.anritsu.usim_key = "000102030405060708090A0B0C0D0E0F"
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
+                                              self.ad.sim_card)
+            set_usim_parameters(self.anritsu, self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
