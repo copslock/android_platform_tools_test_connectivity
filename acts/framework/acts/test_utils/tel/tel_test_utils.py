@@ -3926,7 +3926,7 @@ def run_multithread_func(log, tasks):
     Returns:
         results for tasks.
     """
-    MAX_NUMBER_OF_WORKERS = 4
+    MAX_NUMBER_OF_WORKERS = 5
     number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
     executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=number_of_workers)
