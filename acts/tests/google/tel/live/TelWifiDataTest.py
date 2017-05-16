@@ -29,7 +29,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
-from acts.test_utils.tel.tel_test_utils import active_data_transfer_test
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.utils import adb_shell_ping
 
 # Attenuator name
@@ -40,6 +40,7 @@ ATTEN_NAME_FOR_CELL_4G = 'cell1'
 
 DEFAULT_PING_DURATION = 120
 DEFAULT_IRAT_DURATION = 60
+
 
 class TelWifiDataTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -52,10 +53,10 @@ class TelWifiDataTest(TelephonyBaseTest):
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
-        attentuator_name_list = [ATTEN_NAME_FOR_WIFI_2G,
-                                 ATTEN_NAME_FOR_WIFI_5G,
-                                 ATTEN_NAME_FOR_CELL_3G,
-                                 ATTEN_NAME_FOR_CELL_4G]
+        attentuator_name_list = [
+            ATTEN_NAME_FOR_WIFI_2G, ATTEN_NAME_FOR_WIFI_5G,
+            ATTEN_NAME_FOR_CELL_3G, ATTEN_NAME_FOR_CELL_4G
+        ]
         for atten_name in attentuator_name_list:
             set_rssi(self.log, self.attens[atten_name], 0,
                      MAX_RSSI_RESERVED_VALUE)
@@ -86,8 +87,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         if not ensure_wifi_connected(self.log, self.android_devices[0],
                                      self.live_network_ssid,
                                      self.live_network_pwd):
-            self.log.error("%s connect WiFI failed",
-                           self.android_devices[0].serial)
+            ad.log.error("%s connect WiFI failed")
             return False
         return True
 
@@ -148,18 +148,18 @@ class TelWifiDataTest(TelephonyBaseTest):
         WiFi --> Cellular
         """
         self._atten_setup_wifi_cell()
-        if (not wait_for_wifi_data_connection(
-                self.log, ad, True, irat_wait_time) or
+        if (not wait_for_wifi_data_connection(self.log, ad, True,
+                                              irat_wait_time) or
                 not verify_http_connection(self.log, ad)):
-            self.log.error("Data not on WiFi")
+            ad.log.error("Data not on WiFi")
             return False
 
-        self.log.info("Triggering WiFi to Cellular IRAT")
+        ad.log.info("Triggering WiFi to Cellular IRAT")
         self._atten_setup_cell_only()
-        if (not wait_for_cell_data_connection(
-                self.log, ad, True, irat_wait_time) or
+        if (not wait_for_cell_data_connection(self.log, ad, True,
+                                              irat_wait_time) or
                 not verify_http_connection(self.log, ad)):
-            self.log.error("Data not on Cell")
+            ad.log.error("Data not on Cell")
             return False
         return True
 
@@ -201,12 +201,12 @@ class TelWifiDataTest(TelephonyBaseTest):
                           current_iteration, total_iteration)
             results = run_multithread_func(self.log, [ping_task, irat_task])
             if not results[1]:
-                self.log.error("Data IRAT failed in active ICMP transfer")
+                ad.log.error("Data IRAT failed in active ICMP transfer")
                 break
             if results[0]:
-                self.log.info("ICMP transfer succeeded with parallel IRAT")
+                ad.log.info("ICMP transfer succeeded with parallel IRAT")
             else:
-                self.log.error("ICMP transfer failed with parallel IRAT")
+                ad.log.error("ICMP transfer failed with parallel IRAT")
                 break
             self.log.info(">----Iteration : %d/%d succeed.----<",
                           current_iteration, total_iteration)
@@ -247,29 +247,26 @@ class TelWifiDataTest(TelephonyBaseTest):
             return False
 
         total_iteration = self.stress_test_number
-        self.log.info("Stress test. Total iteration = %d.",
-                      total_iteration)
+        self.log.info("Stress test. Total iteration = %d.", total_iteration)
         current_iteration = 1
         while (current_iteration <= total_iteration):
             self.log.info(">----Current iteration = %d/%d----<",
                           current_iteration, total_iteration)
 
             self._atten_setup_wifi_cell()
-            if (not wait_for_wifi_data_connection(
-                    self.log, ad, True)):
-                self.log.error("Data not on WiFi")
+            if (not wait_for_wifi_data_connection(self.log, ad, True)):
+                ad.log.error("Data not on WiFi")
                 break
-            if not active_data_transfer_test(self.log, ad):
-                self.log.error("%s HTTP DL Failed on WiFi", ad)
+            if not active_file_download_test(self.log, ad):
+                ad.log.error("HTTP file download failed on WiFi")
                 break
 
             self._atten_setup_cell_only()
-            if (not wait_for_cell_data_connection(
-                    self.log, ad, True)):
-                self.log.error("Data not on Cell")
+            if (not wait_for_cell_data_connection(self.log, ad, True)):
+                ad.log.error("Data not on Cell")
                 break
-            if not active_data_transfer_test(self.log, ad):
-                self.log.error("%s HTTP DL Failed on Cell", ad)
+            if not active_file_download_test(self.log, ad):
+                ad.log.error("HTTP file download failed on cell")
                 break
 
             self.log.info(">----Iteration : %d/%d succeed.----<",
@@ -312,25 +309,22 @@ class TelWifiDataTest(TelephonyBaseTest):
             return False
 
         total_iteration = self.stress_test_number
-        self.log.info("Stress test. Total iteration = %d.",
-                      total_iteration)
+        self.log.info("Stress test. Total iteration = %d.", total_iteration)
         current_iteration = 1
         while (current_iteration <= total_iteration):
             self.log.info(">----Current iteration = %d/%d----<",
                           current_iteration, total_iteration)
 
             self._atten_setup_wifi_cell()
-            if (not wait_for_wifi_data_connection(
-                    self.log, ad, True) or
+            if (not wait_for_wifi_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
-                self.log.error("Data not on WiFi")
+                ad.log.error("Data not on WiFi")
                 break
 
             self._atten_setup_cell_only()
-            if (not wait_for_cell_data_connection(
-                    self.log, ad, True) or
+            if (not wait_for_cell_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
-                self.log.error("Data not on Cell")
+                ad.log.error("Data not on Cell")
                 break
             self.log.info(">----Iteration : %d/%d succeed.----<",
                           current_iteration, total_iteration)
@@ -345,7 +339,7 @@ class TelWifiDataTest(TelephonyBaseTest):
     @test_tracker_info(uuid="696f22ef-39cd-4e15-bbb2-f836d2ee47f1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wifi_only_http_dl(self):
-        """Test for 1GB file download on WiFi Only
+        """Test for 10MB file download on WiFi Only
 
         Steps:
         1. Set WiFi atten to MIN and Cellular to MAX
@@ -363,13 +357,12 @@ class TelWifiDataTest(TelephonyBaseTest):
             self.log.error("Basic Connectivity Check Failed")
             return False
         self._atten_setup_wifi_only()
-        if (not wait_for_wifi_data_connection(
-                self.log, ad, True) or
+        if (not wait_for_wifi_data_connection(self.log, ad, True) or
                 not verify_http_connection(self.log, ad)):
-            self.log.error("Data not on WiFi")
+            ad.log.error("Data not on WiFi")
             return False
-        if not active_data_transfer_test(self.log, ad, "1GB"):
-            self.log.error("%s HTTP DL Failed on WiFi", ad)
+        if not active_file_download_test(self.log, ad, "10MB"):
+            ad.log.error("HTTP file download failed on WiFi")
             return False
         return True
 
@@ -394,15 +387,15 @@ class TelWifiDataTest(TelephonyBaseTest):
             self.log.error("Basic Connectivity Check Failed")
             return False
         self._atten_setup_lte_only()
-        if (not wait_for_cell_data_connection(
-                self.log, ad, True) or
+        if (not wait_for_cell_data_connection(self.log, ad, True) or
                 not verify_http_connection(self.log, ad)):
-            self.log.error("Data not on LTE")
+            ad.log.error("Data not on LTE")
             return False
-        if not active_data_transfer_test(self.log, ad, "1GB"):
-            self.log.error("%s HTTP DL Failed on LTE", ad)
+        if not active_file_download_test(self.log, ad, "1GB"):
+            ad.log.error("HTTP file download failed on LTE")
             return False
         return True
+
 
 if __name__ == "__main__":
     raise Exception("Cannot run this class directly")
