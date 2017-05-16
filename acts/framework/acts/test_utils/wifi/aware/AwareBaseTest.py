@@ -25,6 +25,9 @@ class AwareBaseTest(BaseTestClass):
   def __init__(self, controllers):
     BaseTestClass.__init__(self, controllers)
 
+  # message ID counter to make sure all uses are unique
+  msg_id = 0
+
   def setup_test(self):
     for ad in self.android_devices:
       wutils.wifi_toggle_state(ad, True)
@@ -36,3 +39,12 @@ class AwareBaseTest(BaseTestClass):
   def teardown_test(self):
     for ad in self.android_devices:
       ad.droid.wifiAwareDestroyAll()
+
+  def get_next_msg_id(self):
+    """Increment the message ID and returns the new value. Guarantees that
+    each call to the method returns a unique value.
+
+    Returns: a new message id value.
+    """
+    self.msg_id =+ 1
+    return self.msg_id

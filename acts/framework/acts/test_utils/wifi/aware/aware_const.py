@@ -31,29 +31,22 @@ CONFIG_KEY_CLUSTER_HIGH = "ClusterHigh"
 CONFIG_KEY_ENABLE_IDEN_CB = "EnableIdentityChangeCallback"
 
 ######################################################
-# PublishConfig keys
+# Publish & Subscribe Config keys
 ######################################################
 
-PUBLISH_KEY_SERVICE_NAME = "ServiceName"
-PUBLISH_KEY_SSI = "ServiceSpecificInfo"
-PUBLISH_KEY_MATCH_FILTER = "MatchFilter"
-PUBLISH_KEY_TYPE = "PublishType"
-PUBLISH_KEY_COUNT = "PublishCount"
-PUBLISH_KEY_TTL = "TtlSec"
-PUBLISH_KEY_TERM_CB_ENABLED = "TerminateNotificationEnabled"
+DISCOVERY_KEY_SERVICE_NAME = "ServiceName"
+DISCOVERY_KEY_SSI = "ServiceSpecificInfo"
+DISCOVERY_KEY_MATCH_FILTER = "MatchFilter"
+DISCOVERY_KEY_MATCH_FILTER_LIST = "MatchFilterList"
+DISCOVERY_KEY_DISCOVERY_TYPE = "DiscoveryType"
+DISCOVERY_KEY_TTL = "TtlSec"
+DISCOVERY_KEY_TERM_CB_ENABLED = "TerminateNotificationEnabled"
 
-######################################################
-# SubscribeConfig keys
-######################################################
+PUBLISH_TYPE_UNSOLICITED = 0
+PUBLISH_TYPE_SOLICITED = 1
 
-SUBSCRIBE_KEY_SERVICE_NAME = "ServiceName"
-SUBSCRIBE_KEY_SSI = "ServiceSpecificInfo"
-SUBSCRIBE_KEY_MATCH_FILTER = "MatchFilter"
-SUBSCRIBE_KEY_TYPE = "SubscribeType"
-SUBSCRIBE_KEY_COUNT = "SubscribeCount"
-SUBSCRIBE_KEY_TTL = "TtlSec"
-SUBSCRIBE_KEY_STYLE = "MatchStyle"
-SUBSCRIBE_KEY_ENABLE_TERM_CB = "EnableTerminateNotification"
+SUBSCRIBE_TYPE_PASSIVE = 0
+SUBSCRIBE_TYPE_ACTIVE = 1
 
 ######################################################
 # WifiAwareAttachCallback events
@@ -92,6 +85,7 @@ SESSION_CB_KEY_REASON = "reason"
 SESSION_CB_KEY_PEER_ID = "peerId"
 SESSION_CB_KEY_SERVICE_SPECIFIC_INFO = "serviceSpecificInfo"
 SESSION_CB_KEY_MATCH_FILTER = "matchFilter"
+SESSION_CB_KEY_MATCH_FILTER_LIST = "matchFilterList"
 SESSION_CB_KEY_MESSAGE = "message"
 SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"

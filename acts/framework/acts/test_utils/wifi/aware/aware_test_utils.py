@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import base64
 import queue
 from acts import asserts
 
@@ -65,3 +66,36 @@ def fail_on_event(ad, event_name, message=None):
   except queue.Empty:
     ad.log.info('%s not seen (as expected)', event_name)
     return
+
+def encode_list(list_of_objects):
+  """Converts the list of strings or bytearrays to a list of b64 encoded
+  bytearrays.
+
+  A None object is treated as a zero-length bytearray.
+
+  Args:
+    list_of_objects: A list of strings or bytearray objects
+  Returns: A list of the same objects, converted to bytes and b64 encoded.
+  """
+  encoded_list = []
+  for obj in list_of_objects:
+    if obj is None:
+      obj = bytes()
+    if isinstance(obj, str):
+      encoded_list.append(base64.b64encode(bytes(obj, 'utf-8')).decode("utf-8"))
+    else:
+      encoded_list.append(base64.b64encode(obj).decode("utf-8"))
+  return encoded_list
+
+def decode_list(list_of_b64_strings):
+  """Converts the list of b64 encoded strings to a list of bytearray.
+
+  Args:
+    list_of_b64_strings: list of strings, each of which is b64 encoded array
+  Returns: a list of bytearrays.
+  """
+  decoded_list = []
+  for str in list_of_b64_strings:
+    decoded_list.append(base64.b64decode(str))
+  return decoded_list
+
