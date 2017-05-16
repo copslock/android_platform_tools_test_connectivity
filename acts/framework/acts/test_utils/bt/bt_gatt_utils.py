@@ -23,6 +23,7 @@ from acts.test_utils.bt.GattEnum import GattCbStrings
 from acts.test_utils.bt.GattEnum import GattConnectionState
 from acts.test_utils.bt.GattEnum import GattCharacteristic
 from acts.test_utils.bt.GattEnum import GattDescriptor
+from acts.test_utils.bt.GattEnum import GattPhyMask
 from acts.test_utils.bt.GattEnum import GattService
 from acts.test_utils.bt.GattEnum import GattTransport
 import pprint
@@ -43,7 +44,8 @@ def setup_gatt_connection(cen_ad,
     gatt_callback = cen_ad.droid.gattCreateGattCallback()
     log.info("Gatt Connect to mac address {}.".format(mac_address))
     bluetooth_gatt = cen_ad.droid.gattClientConnectGatt(
-        gatt_callback, mac_address, autoconnect, transport)
+        gatt_callback, mac_address, autoconnect, transport,
+        GattPhyMask.PHY_LE_1M_MASK)
     expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(gatt_callback)
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
