@@ -18,6 +18,7 @@ Python script for wrappers to various libraries.
 """
 
 from acts.test_utils.bt.GattEnum import GattServerResponses
+from ble_lib import BleLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 
@@ -42,6 +43,7 @@ class CmdInput(cmd.Cmd):
         self.log = log
 
         # Initialize libraries
+        self.ble_lib = BleLib(log, mac_addr, self.pri_dut)
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
         self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
 
@@ -469,3 +471,116 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End GATT Server wrappers"""
+    """Begin Ble wrappers"""
+
+    def complete_ble_adv_data_include_local_name(self, text, line, begidx,
+                                                 endidx):
+        options = ['true', 'false']
+        if not text:
+            completions = list(options)[:]
+        else:
+            completions = [s for s in options if s.startswith(text)]
+        return completions
+
+    def complete_ble_adv_data_include_tx_power_level(self, text, line, begidx,
+                                                     endidx):
+        options = ['true', 'false']
+        if not text:
+            completions = list(options)[:]
+        else:
+            completions = [s for s in options if s.startswith(text)]
+        return completions
+
+    def complete_ble_stop_advertisement(self, text, line, begidx, endidx):
+        str_adv_list = list(map(str, self.ble_lib.ADVERTISEMENT_LIST))
+        if not text:
+            completions = str_adv_list[:]
+        else:
+            completions = [s for s in str_adv_list if s.startswith(text)]
+        return completions
+
+    def do_ble_start_generic_connectable_advertisement(self, line):
+        """Start a connectable LE advertisement"""
+        cmd = "Start a connectable LE advertisement"
+        try:
+            self.ble_lib.start_generic_connectable_advertisement(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_start_connectable_advertisement_set(self, line):
+        """Start a connectable advertisement set"""
+        try:
+            self.ble_lib.start_connectable_advertisement_set(line)
+        except Exception as err:
+            self.log.error("Failed to start advertisement: {}".format(err))
+
+    def do_ble_stop_all_advertisement_set(self, line):
+        """Stop all advertisement sets"""
+        try:
+            self.ble_lib.stop_all_advertisement_set(line)
+        except Exception as err:
+            self.log.error("Failed to stop advertisement: {}".format(err))
+
+    def do_ble_adv_add_service_uuid_list(self, line):
+        """Add service UUID to the LE advertisement inputs:
+         [uuid1 uuid2 ... uuidN]"""
+        cmd = "Add a valid service UUID to the advertisement."
+        try:
+            self.ble_lib.adv_add_service_uuid_list(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_include_local_name(self, line):
+        """Include local name in the advertisement. inputs: [true|false]"""
+        cmd = "Include local name in the advertisement."
+        try:
+            self.ble_lib.adv_data_include_local_name(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_include_tx_power_level(self, line):
+        """Include tx power level in the advertisement. inputs: [true|false]"""
+        cmd = "Include local name in the advertisement."
+        try:
+            self.ble_lib.adv_data_include_tx_power_level(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_add_manufacturer_data(self, line):
+        """Include manufacturer id and data to the advertisment:
+        [id data1 data2 ... dataN]"""
+        cmd = "Include manufacturer id and data to the advertisment."
+        try:
+            self.ble_lib.adv_data_add_manufacturer_data(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_start_generic_nonconnectable_advertisement(self, line):
+        """Start a nonconnectable LE advertisement"""
+        cmd = "Start a nonconnectable LE advertisement"
+        try:
+            self.ble_lib.start_generic_connectable_advertisement(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_list_active_advertisement_ids(self, line):
+        """List all active BLE advertisements"""
+        self.log.info("IDs: {}".format(self.ble_lib.advertisement_list))
+
+    def do_ble_stop_all_advertisements(self, line):
+        """Stop all LE advertisements"""
+        cmd = "Stop all LE advertisements"
+        try:
+            self.ble_lib.stop_all_advertisements(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_stop_advertisement(self, line):
+        """Stop an LE advertisement"""
+        cmd = "Stop a connectable LE advertisement"
+        try:
+            self.do_ble_stop_advertisement(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End Ble wrappers"""
