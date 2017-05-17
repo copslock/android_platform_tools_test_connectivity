@@ -17,6 +17,8 @@
 from enum import Enum
 from time import sleep
 
+from acts.controllers.relay_lib.errors import RelayConfigError
+
 
 class RelayState(Enum):
     """Enum for possible Relay States."""
@@ -69,12 +71,13 @@ class Relay(object):
     """
     """How long to wait for relays to transition state."""
     transition_wait_time = .2
+    button_press_time = .25
 
     def __init__(self, relay_board, position):
         self.relay_board = relay_board
         self.position = position
         self._original_state = relay_board.get_relay_status(self.position)
-        self.relay_id = "{}/{}".format(self.relay_board.name, self.position)
+        self.relay_id = "%s/%s" % (self.relay_board.name, self.position)
 
     def set_no(self):
         """Sets the relay to the 'NO' state. Shorthand for set(RelayState.NO).
@@ -121,7 +124,7 @@ class Relay(object):
             SynchronizeRelays._sync_sleep_flag = True
             sleep(Relay.transition_wait_time)
 
-    def set_no_for(self, seconds=.25):
+    def set_no_for(self, seconds=button_press_time):
         """Sets the relay to 'NORMALLY_OPEN' for seconds. Blocks the thread.
 
         Args:
@@ -131,7 +134,7 @@ class Relay(object):
         sleep(seconds)
         self.set_nc()
 
-    def set_nc_for(self, seconds=.25):
+    def set_nc_for(self, seconds=button_press_time):
         """Sets the relay to 'NORMALLY_CLOSED' for seconds. Blocks the thread.
 
         Respects Relay.transition_wait_time for toggling state.
@@ -157,3 +160,41 @@ class Relay(object):
         """
 
         self.set(self._original_state)
+
+
+class RelayDict(object):
+    """A wrapped dictionary that gives config errors upon failure.
+
+    Has the same interface as a dictionary, but when getting the key fails, the
+    dictionary returns a RelayConfigError, letting the user know that the reason
+    the dict failed to return a relay is because the relay was not found in the
+    config.
+
+    Also prevents modification of elements, because changing the relays here
+    does not change what they are in hardware.
+    """
+    ERROR_MESSAGE = ('Error: Attempted to get relay "%s" in %s "%s" but the '
+                     'relay does not exist.\nExisting relays are: %s.\nMake '
+                     'sure the missing relay is added to the config file, and '
+                     'is properly setup.')
+
+    def __init__(self, relay_device, input_dict):
+        self.relay_device = relay_device
+        self._store = input_dict
+
+    def __getitem__(self, key):
+        try:
+            return self._store[key]
+        except KeyError:
+            raise RelayConfigError(self.ERROR_MESSAGE %
+                                   (key, type(self.relay_device),
+                                    self.relay_device.name, self._store))
+
+    def __iter__(self):
+        return iter(self._store)
+
+    def __len__(self):
+        return len(self._store)
+
+    def __repr__(self):
+        return repr(self._store)

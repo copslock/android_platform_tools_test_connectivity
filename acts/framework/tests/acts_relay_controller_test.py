@@ -20,15 +20,18 @@ import tempfile
 import shutil
 import unittest
 
-import acts.controllers.relay_lib.errors as errors
+from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.relay import Relay
+from acts.controllers.relay_lib.relay import RelayDict
 from acts.controllers.relay_lib.relay import RelayState
 from acts.controllers.relay_lib.relay import SynchronizeRelays
 from acts.controllers.relay_lib.relay_board import RelayBoard
-from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
-from acts.controllers.relay_lib.relay_rig import RelayRig
-from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.relay_device import RelayDevice
+from acts.controllers.relay_lib.relay_rig import RelayRig
+from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
+
+import acts.controllers.relay_lib.errors as errors
+import acts.controllers.relay_lib.fugu_remote as fugu_remote
 
 
 class MockBoard(RelayBoard):
@@ -56,6 +59,7 @@ class MockBoard(RelayBoard):
 class ActsRelayTest(unittest.TestCase):
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
         self.config = {
             'name': 'MockBoard',
             'relays': [{
@@ -66,6 +70,10 @@ class ActsRelayTest(unittest.TestCase):
         self.board = MockBoard(self.config)
         self.relay = Relay(self.board, 'Relay')
         self.board.set(self.relay.position, RelayState.NO)
+
+    def tearDown(self):
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
 
     def test_turn_on_from_off(self):
         self.board.set(self.relay.position, RelayState.NO)
@@ -177,6 +185,7 @@ class ActsSainSmartBoardTest(unittest.TestCase):
 
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
         self.test_dir = 'file://' + tempfile.mkdtemp() + '/'
 
         # Creates the files used for testing
@@ -209,6 +218,8 @@ class ActsSainSmartBoardTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.test_dir[7:])
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
 
     def test_get_url_code(self):
         result = self.ss_board._get_relay_url_code(self.r0.position,
@@ -299,6 +310,7 @@ class ActsSainSmartBoardTest(unittest.TestCase):
 class ActsRelayRigTest(unittest.TestCase):
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
         self.config = {
             'boards': [{
                 'type': 'SainSmartBoard',
@@ -310,19 +322,18 @@ class ActsRelayRigTest(unittest.TestCase):
                 'base_url': 'http://192.168.1.4/30000/'
             }],
             'devices': [{
-                'type':
-                'GenericRelayDevice',
-                'name':
-                'device',
-                'relays': [{
-                    'name': 'Relay00',
-                    'pos': 'ss_control/0'
-                }, {
-                    'name': 'Relay10',
-                    'pos': 'ss_control/1'
-                }]
+                'type': 'GenericRelayDevice',
+                'name': 'device',
+                'relays': {
+                    'Relay00': 'ss_control/0',
+                    'Relay10': 'ss_control/1'
+                }
             }]
         }
+
+    def tearDown(self):
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
 
     def test_init_relay_rig_missing_boards(self):
         flawed_config = copy.deepcopy(self.config)
@@ -344,9 +355,7 @@ class ActsRelayRigTest(unittest.TestCase):
 
     def test_init_relay_rig_device_gets_relays(self):
         modded_config = copy.deepcopy(self.config)
-        modded_config['devices'][0]['relays'] = [
-            modded_config['devices'][0]['relays'][0]
-        ]
+        del modded_config['devices'][0]['relays']['Relay00']
         relay_rig = RelayRigMock(modded_config)
         self.assertEqual(len(relay_rig.relays), 4)
         self.assertEqual(len(relay_rig.devices['device'].relays), 1)
@@ -374,6 +383,7 @@ class RelayRigMock(RelayRig):
 
     _board_constructors = {
         'SainSmartBoard': lambda x: MockBoard(x),
+        'FuguMockBoard': lambda x: FuguMockBoard(x)
     }
 
     def __init__(self, config=None):
@@ -391,6 +401,7 @@ class RelayRigMock(RelayRig):
 class ActsGenericRelayDeviceTest(unittest.TestCase):
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
         self.board_config = {'name': 'MockBoard', 'type': 'SainSmartBoard'}
 
         self.board = MockBoard(self.board_config)
@@ -398,15 +409,11 @@ class ActsGenericRelayDeviceTest(unittest.TestCase):
         self.r1 = self.board.relays[1]
 
         self.device_config = {
-            'name':
-            'MockDevice',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'name': 'MockDevice',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         config = {
             'boards': [self.board_config],
@@ -417,12 +424,16 @@ class ActsGenericRelayDeviceTest(unittest.TestCase):
         self.rig.relays[self.r0.relay_id] = self.r0
         self.rig.relays[self.r1.relay_id] = self.r1
 
+    def tearDown(self):
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
+
     def test_setup_single_relay(self):
         self.r0.set(RelayState.NC)
         self.r1.set(RelayState.NC)
 
         modified_config = copy.deepcopy(self.device_config)
-        del modified_config['relays'][1]
+        del modified_config['relays']['r1']
 
         generic_relay_device = GenericRelayDevice(modified_config, self.rig)
         generic_relay_device.setup()
@@ -446,10 +457,41 @@ class ActsGenericRelayDeviceTest(unittest.TestCase):
     def test_cleanup_multiple_relays(self):
         self.test_setup_multiple_relays()
 
+    def change_state(self, begin_state, call, end_state, previous_state=None):
+        self.board.set(self.r0.position, begin_state)
+        generic_relay_device = GenericRelayDevice(self.device_config, self.rig)
+        call(generic_relay_device)
+        self.assertEqual(self.r0.get_status(), end_state)
+        if previous_state:
+            self.assertEqual(
+                self.board.relay_previous_states[self.r0.position],
+                previous_state)
+
+    def test_press_while_no(self):
+        self.change_state(RelayState.NO, lambda x: x.press('r0'),
+                          RelayState.NO, RelayState.NC)
+
+    def test_press_while_nc(self):
+        self.change_state(RelayState.NC, lambda x: x.press('r0'),
+                          RelayState.NO, RelayState.NC)
+
+    def test_hold_down_while_no(self):
+        self.change_state(RelayState.NO, lambda x: x.hold_down('r0'),
+                          RelayState.NC)
+
+    def test_hold_down_while_nc(self):
+        self.change_state(RelayState.NC, lambda x: x.hold_down('r0'),
+                          RelayState.NC)
+
+    def test_release_while_nc(self):
+        self.change_state(RelayState.NC, lambda x: x.release('r0'),
+                          RelayState.NO)
+
 
 class ActsRelayDeviceTest(unittest.TestCase):
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
 
         self.board_config = {
             'name': 'MockBoard',
@@ -474,18 +516,17 @@ class ActsRelayDeviceTest(unittest.TestCase):
         self.rig.relays[self.r1.relay_id] = self.r1
 
         self.device_config = {
-            "type":
-            "GenericRelayDevice",
-            "name":
-            "device",
-            "relays": [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            "type": "GenericRelayDevice",
+            "name": "device",
+            "relays": {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
+
+    def tearDown(self):
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
 
     def test_init_raise_on_name_missing(self):
         flawed_config = copy.deepcopy(self.device_config)
@@ -536,6 +577,7 @@ class ActsRelayDeviceTest(unittest.TestCase):
 class TestRelayRigParser(unittest.TestCase):
     def setUp(self):
         Relay.transition_wait_time = 0
+        Relay.button_press_time = 0
         self.board_config = {
             'name': 'MockBoard',
             'relays': [{
@@ -550,6 +592,10 @@ class TestRelayRigParser(unittest.TestCase):
         self.r1 = self.board_config['relays'][1]
         self.board = MockBoard(self.board_config)
 
+    def tearDown(self):
+        Relay.transition_wait_time = .2
+        Relay.button_press_time = .25
+
     def test_create_relay_board_raise_on_missing_type(self):
         with self.assertRaises(errors.RelayConfigError):
             RelayRigMock().create_relay_board(self.board_config)
@@ -557,9 +603,6 @@ class TestRelayRigParser(unittest.TestCase):
     def test_create_relay_board_valid_config(self):
         config = copy.deepcopy(self.board_config)
         config['type'] = 'SainSmartBoard'
-        # Note: we use a raise here because SainSmartBoard requires us to
-        # connect to the status page upon creation. SainSmartBoard is the
-        # only valid board at the moment.
         RelayRigMock().create_relay_board(config)
 
     def test_create_relay_board_raise_on_type_not_found(self):
@@ -573,15 +616,11 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'name':
-            'name',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'name': 'name',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         relay_device = rig.create_relay_device(config)
         self.assertIsInstance(relay_device, GenericRelayDevice)
@@ -591,17 +630,12 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'type':
-            'GenericRelayDevice',
-            'name':
-            '.',
-            'relays': [{
-                'name': 'r0',
-                'pos': 'MockBoard/0'
-            }, {
-                'name': 'r1',
-                'pos': 'MockBoard/1'
-            }]
+            'type': 'GenericRelayDevice',
+            'name': '.',
+            'relays': {
+                'r0': 'MockBoard/0',
+                'r1': 'MockBoard/1'
+            }
         }
         relay_device = rig.create_relay_device(config)
         self.assertIsInstance(relay_device, GenericRelayDevice)
@@ -633,6 +667,130 @@ class TestSynchronizeRelays(unittest.TestCase):
         with SynchronizeRelays():
             self.assertEqual(Relay.transition_wait_time, 0)
         self.assertEqual(Relay.transition_wait_time, .1)
+
+
+class FuguMockBoard(MockBoard):
+    def get_relay_position_list(self):
+        return range(4)
+
+
+class TestFuguRemote(unittest.TestCase):
+    def setUp(self):
+        Relay.transition_wait_time = 0
+        self.mock_rig = RelayRigMock({
+            "boards": [{
+                'name': 'MockBoard',
+                'type': 'FuguMockBoard'
+            }]
+        })
+        self.mock_board = self.mock_rig.boards['MockBoard']
+        self.fugu_config = {
+            'type': 'GenericRelayDevice',
+            'name': 'UniqueDeviceName',
+            'mac_address': '00:00:00:00:00:00',
+            'relays': {
+                'Power': 'MockBoard/0',
+                fugu_remote.Buttons.BACK.value: 'MockBoard/1',
+                fugu_remote.Buttons.HOME.value: 'MockBoard/2',
+                fugu_remote.Buttons.PLAY_PAUSE.value: 'MockBoard/3'
+            }
+        }
+        Relay.button_press_time = 0
+
+    def tearDown(self):
+        Relay.button_press_time = .25
+        Relay.transition_wait_time = .2
+
+    def test_config_missing_button(self):
+        """FuguRemote __init__ should throw an error if a relay is missing."""
+        flawed_config = copy.deepcopy(self.fugu_config)
+        del flawed_config['relays']['Power']
+        del flawed_config['relays'][fugu_remote.Buttons.BACK.value]
+        with self.assertRaises(errors.RelayConfigError):
+            fugu_remote.FuguRemote(flawed_config, self.mock_rig)
+
+    def test_config_missing_mac_address(self):
+        """FuguRemote __init__ should throw an error without a mac address."""
+        flawed_config = copy.deepcopy(self.fugu_config)
+        del flawed_config['mac_address']
+        with self.assertRaises(errors.RelayConfigError):
+            fugu_remote.FuguRemote(flawed_config, self.mock_rig)
+
+    def test_config_no_issues(self):
+        """FuguRemote __init__ should not throw errors for a correct config."""
+        fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+
+    def test_power_nc_after_setup(self):
+        """Power should be NORMALLY_CLOSED after calling setup if it exists."""
+        fugu = fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+        fugu.setup()
+        self.assertEqual(self.mock_board.get_relay_status(0), RelayState.NC)
+        pass
+
+    def press_button_success(self, relay_position):
+        self.assertEqual(self.mock_board.relay_states[relay_position],
+                         RelayState.NO)
+        self.assertEqual(self.mock_board.relay_previous_states[relay_position],
+                         RelayState.NC)
+
+    def test_press_play_pause(self):
+        fugu = fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+        fugu.press_play_pause()
+        self.press_button_success(3)
+
+    def test_press_back(self):
+        fugu = fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+        fugu.press_back()
+        self.press_button_success(1)
+
+    def test_press_home(self):
+        fugu = fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+        fugu.press_home()
+        self.press_button_success(2)
+
+    def test_enter_pairing_mode(self):
+        fugu = fugu_remote.FuguRemote(self.fugu_config, self.mock_rig)
+        fugu_remote.PAIRING_MODE_WAIT_TIME = 0
+        fugu.enter_pairing_mode()
+        self.press_button_success(2)
+        self.press_button_success(1)
+
+
+class TestRelayDict(unittest.TestCase):
+    def test_init(self):
+        mock_device = object()
+        blank_dict = dict()
+        relay_dict = RelayDict(mock_device, blank_dict)
+        self.assertEqual(relay_dict._store, blank_dict)
+        self.assertEqual(relay_dict.relay_device, mock_device)
+
+    def test_get_item_valid_key(self):
+        mock_device = object()
+        blank_dict = {'key': 'value'}
+        relay_dict = RelayDict(mock_device, blank_dict)
+        self.assertEqual(relay_dict['key'], 'value')
+
+    def test_get_item_invalid_key(self):
+        # Create an object with a single attribute 'name'
+        mock_device = type('', (object, ), {'name': 'name'})()
+        blank_dict = {'key': 'value'}
+        relay_dict = RelayDict(mock_device, blank_dict)
+        with self.assertRaises(errors.RelayConfigError):
+            value = relay_dict['not_key']
+
+    def test_iter(self):
+        mock_device = type('', (object, ), {'name': 'name'})()
+        data_dict = {'a': '1', 'b': '2', 'c': '3'}
+        relay_dict = RelayDict(mock_device, data_dict)
+
+        rd_set = set()
+        for key in relay_dict:
+            rd_set.add(key)
+        dd_set = set()
+        for key in data_dict:
+            dd_set.add(key)
+
+        self.assertSetEqual(rd_set, dd_set)
 
 
 if __name__ == "__main__":

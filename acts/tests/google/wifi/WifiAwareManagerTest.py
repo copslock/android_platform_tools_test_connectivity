@@ -27,7 +27,7 @@ from acts.signals import generated_test
 from acts.test_utils.net import connectivity_const as con_const
 from acts.test_utils.net import nsd_const as nsd_const
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi import wifi_aware_const as aware_const
+from acts.test_utils.wifi.aware import aware_const as aware_const
 
 # arbitrary timeout for events
 EVENT_TIMEOUT = 30
@@ -211,7 +211,7 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
             name: An arbitary name used for logging.
             config: An optional ConfigRequest (JSON-configured) structure.
         """
-        session_id = device.droid.wifiAwareAttach(config)
+        session_id = device.droid.wifiAwareAttach(False, config)
         try:
             event = device.ed.pop_event(aware_const.EVENT_CB_ON_ATTACHED,
                                         EVENT_TIMEOUT)

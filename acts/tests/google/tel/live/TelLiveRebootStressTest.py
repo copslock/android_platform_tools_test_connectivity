@@ -19,6 +19,7 @@
 
 import collections
 import time
+from acts.test_decorators import test_tracker_info
 from acts.controllers.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
@@ -81,8 +82,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.wifi_network_pass = None
 
         self.dut = self.android_devices[0]
-        self.ad_reference = self.android_devices[1] if len(
-            self.android_devices) > 1 else None
+        self.ad_reference = self.android_devices[
+            1] if len(self.android_devices) > 1 else None
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
 
@@ -119,6 +120,13 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.log.error("Phone Call Failed.")
             return False
         return True
+
+    def _get_list_average(self, input_list):
+        total_sum = float(sum(input_list))
+        total_count = float(len(input_list))
+        if input_list == []:
+            return False
+        return float(total_sum/total_count)
 
     def _check_lte_data(self):
         self.log.info("Check LTE data.")
@@ -275,8 +283,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if method in kwargs: required_methods.append(method)
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".format(
-                self.test_name, i, self.stress_test_number))
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".
+                          format(self.test_name, i, self.stress_test_number))
 
             self.log.info("{} reboot!".format(self.dut.serial))
             self.dut.reboot()
@@ -288,8 +296,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 if not test_method_mapping[check]():
                     fail_count[check] += 1
                     iteration_result = "fail"
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".format(
-                self.test_name, i, self.stress_test_number, iteration_result))
+            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".
+                          format(self.test_name, i, self.stress_test_number,
+                                 iteration_result))
 
             # TODO: Check if crash happens.
 
@@ -300,8 +309,99 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 test_result = False
         return test_result
 
+    def _telephony_bootup_time_test(self, **kwargs):
+        """Telephony Bootup Perf Test
+
+        Arguments:
+            check_lte_data: whether to check the LTE data.
+            check_volte: whether to check Voice over LTE.
+            check_wfc: whether to check Wifi Calling.
+
+        Expected Results:
+            Time
+
+        Returns:
+            True is pass, False if fail.
+        """
+        ad = self.dut
+        toggle_airplane_mode(self.log, ad, False)
+        if not phone_setup_volte(self.log, ad):
+            ad.log.error("Failed to setup VoLTE.")
+            return False
+        fail_count = collections.defaultdict(int)
+        test_result = True
+        keyword_time_dict = {}
+
+        for i in range(1, self.stress_test_number + 1):
+            ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d",
+                self.test_name, i, self.stress_test_number)
+            ad.log.info("reboot!")
+            ad.reboot()
+            iteration_result = "pass"
+
+            time.sleep(30)
+            text_search_mapping = {
+            'boot_complete' : "processing action (sys.boot_completed=1)",
+            'Voice_Reg' : "< VOICE_REGISTRATION_STATE {.regState = REG_HOME",
+            'Data_Reg' : "< DATA_REGISTRATION_STATE {.regState = REG_HOME",
+            'Data_Call_Up' : "onSetupConnectionCompleted result=SUCCESS",
+            'VoLTE_Enabled' : "isVolteEnabled=true",
+            }
+
+            text_obj_mapping = {"boot_complete" : None,
+                                "Voice_Reg" : None,
+                                "Data_Reg" : None,
+                                "Data_Call_Up" : None,
+                                "VoLTE_Enabled" : None,}
+            blocked_for_calculate = ["boot_complete"]
+
+            for tel_state in text_search_mapping:
+                dict_match = ad.search_logcat(text_search_mapping[tel_state])
+                if len(dict_match) != 0:
+                    text_obj_mapping[tel_state] = dict_match[0]['datetime_obj']
+                else:
+                    ad.log.error("Cannot Find Text %s in logcat",
+                                   text_search_mapping[tel_state])
+                    blocked_for_calculate.append(tel_state)
+                    fail_count[tel_state] += 1
+
+            for tel_state in text_search_mapping:
+                if tel_state not in blocked_for_calculate:
+                    time_diff = text_obj_mapping[tel_state] - \
+                                text_obj_mapping['boot_complete']
+                    if time_diff.seconds > 100:
+                        continue
+                    if tel_state in keyword_time_dict:
+                        keyword_time_dict[tel_state].append(time_diff.seconds)
+                    else:
+                        keyword_time_dict[tel_state] = [time_diff.seconds,]
+
+            ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d %s",
+                self.test_name, i, self.stress_test_number, iteration_result)
+
+        for tel_state in text_search_mapping:
+            if tel_state not in blocked_for_calculate:
+                avg_time = self._get_list_average(keyword_time_dict[tel_state])
+                if avg_time < 12.0:
+                    ad.log.info("Average %s for %d iterations = %.2f seconds",
+                                tel_state, self.stress_test_number, avg_time)
+                else:
+                    ad.log.error("Average %s for %d iterations = %.2f seconds",
+                                tel_state, self.stress_test_number, avg_time)
+                    fail_count[tel_state] += 1
+
+        ad.log.info("Bootup Time Dict {}".format(keyword_time_dict))
+        for failure, count in fail_count.items():
+            if count:
+                ad.log.error("%d %d failures in %d iterations",
+                              count, failure, self.stress_test_number)
+                test_result = False
+        return test_result
+
+
     """ Tests Begin """
 
+    @test_tracker_info(uuid="4d9b425b-f804-45f4-8f47-0ba3f01a426b")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress(self):
         """Reboot Reliability Test
@@ -340,6 +440,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_data_roaming=False,
             clear_provision=True)
 
+    @test_tracker_info(uuid="39a822e5-0360-44ce-97c7-f75468eba8d7")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_without_clear_provisioning(self):
         """Reboot Reliability Test without Clear Provisioning
@@ -377,6 +478,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_data_roaming=False,
             clear_provision=False)
 
+    @test_tracker_info(uuid="8b0e2c06-02bf-40fd-a374-08860e482757")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_check_phone_call_only(self):
         """Reboot Reliability Test
@@ -394,8 +496,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._stress_test(check_provision=True, check_call_setup_teardown=True)
+        return self._stress_test(
+            check_provision=True, check_call_setup_teardown=True)
 
+    @test_tracker_info(uuid="6c243b53-379a-4cda-9848-84fcec4019bd")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress_data_roaming(self):
         """Reboot Reliability Test
@@ -415,6 +519,34 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """
         return self._reboot_stress_test(check_data_roaming=True)
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_bootup_optimized_stress(self):
+        """Bootup Optimized Reliability Test
+
+        Steps:
+            1. Reboot DUT.
+            2. Check Provisioning bit (if support provisioning)
+            3. Wait for DUT to camp on LTE, Verify Data.
+            4. Enable VoLTE, check IMS registration. Wait for DUT report VoLTE
+                enabled, make VoLTE call. And verify VoLTE SMS.
+                (if support VoLTE)
+            5. Connect WiFi, enable WiFi Calling, wait for DUT report WiFi
+                Calling enabled and make a WFC call and verify SMS.
+                Disconnect WiFi. (if support WFC)
+            6. Wait for DUT to camp on 3G, Verify Data.
+            7. Make CS call and verify SMS.
+            8. Verify Tethering Entitlement Check and Verify WiFi Tethering.
+            9. Check crashes.
+            10. Repeat Step 1~9 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._telephony_bootup_time_test()
+
 
 """ Tests End """
-

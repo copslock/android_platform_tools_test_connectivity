@@ -58,14 +58,12 @@ from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
-from acts.test_utils.tel.tel_test_utils import active_data_transfer_task
+from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import http_file_download_by_adb
-from acts.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
@@ -2599,7 +2597,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return two_phone_call_leave_voice_mail(self.log, ads[0], None, None,
                                                ads[1], phone_idle_iwlan)
 
-    @test_tracker_info(uuid="cfc94b2c-8e28-4e6f-b4d3-1cc8af18a52b")
+    @test_tracker_info(uuid="6bd5cf0f-522e-4e4a-99bf-92ae46261d8c")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_2g_to_2g(self):
         """ Test 2g<->2g call functionality.
@@ -2624,7 +2622,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
 
-    @test_tracker_info(uuid="057a2213-8b78-497b-8d65-e6ed87d337cb")
+    @test_tracker_info(uuid="6e24e64f-aa0e-4101-89ed-4cc30c738c7e")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_2g_to_2g_long(self):
         """ Test 2g<->2g call functionality.
@@ -2650,60 +2648,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return two_phone_call_long_seq(
             self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
-
-    @test_tracker_info(uuid="6e24e64f-aa0e-4101-89ed-4cc30c738c7e")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_3g_to_2g_long(self):
-        """ Test 3g<->2g call functionality.
-
-        Make Sure PhoneA is in 3g mode.
-        Make Sure PhoneB is in 2g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
-                 (phone_setup_voice_2g, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        return two_phone_call_long_seq(
-            self.log, ads[0], phone_idle_2g, is_phone_in_call_3g, ads[1],
-            phone_idle_2g, is_phone_in_call_2g, None)
-
-    @test_tracker_info(uuid="0db7fc8b-4f83-4e30-80ab-cc53c8eff99f")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_to_3g_long(self):
-        """ Test 2g<->3g call functionality.
-
-        Make Sure PhoneA is in 2g mode.
-        Make Sure PhoneB is in 3g mode.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
-        Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
-        Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-
-        tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
-                 (phone_setup_voice_3g, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-
-        return two_phone_call_long_seq(
-            self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
-            phone_idle_2g, is_phone_in_call_3g, None)
 
     @test_tracker_info(uuid="d109df55-ac2f-493f-9324-9be1d3d7d6d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -3031,7 +2975,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
                                             ad_caller, None, None, 60))
-        download_task = active_data_transfer_task(self.log, ad_download)
+        download_task = active_file_download_task(self.log, ad_download)
         results = run_multithread_func(self.log, [download_task, call_task])
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")

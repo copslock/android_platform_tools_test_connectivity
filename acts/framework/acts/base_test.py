@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import os
+import time
 import traceback
 
 from acts import asserts
@@ -67,7 +68,7 @@ class BaseTestClass(object):
         self.results = records.TestResult()
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
-        if 'self.android_devices' in self.__dict__:
+        if 'android_devices' in self.__dict__:
             for ad in self.android_devices:
                 if ad.droid:
                     utils.set_location_service(ad, False)
@@ -587,12 +588,15 @@ class BaseTestClass(object):
         if not test_name.startswith("test_"):
             raise Error(("Test case name %s does not follow naming "
                          "convention test_*, abort.") % test_name)
-
         try:
             return test_name, getattr(self, test_name)
         except:
-            raise Error("%s does not have test case %s." % (self.TAG,
-                                                            test_name))
+
+            def test_skip_func(*args, **kwargs):
+                raise signals.TestSkip("Test %s does not exist" % test_name)
+
+            self.log.info("Test case %s not found in %s.", test_name, self.TAG)
+            return test_name, test_skip_func
 
     def _block_all_test_cases(self, tests):
         """
@@ -610,7 +614,7 @@ class BaseTestClass(object):
             self.results.add_record(record)
             self._on_blocked(record)
 
-    def run(self, test_names=None):
+    def run(self, test_names=None, test_case_iterations=1):
         """Runs test cases within a test class by the order they appear in the
         execution list.
 
@@ -656,7 +660,8 @@ class BaseTestClass(object):
         # Run tests in order.
         try:
             for test_name, test_func in tests:
-                self.exec_one_testcase(test_name, test_func, self.cli_args)
+                for _ in range(test_case_iterations):
+                    self.exec_one_testcase(test_name, test_func, self.cli_args)
             return self.results
         except signals.TestAbortClass:
             return self.results

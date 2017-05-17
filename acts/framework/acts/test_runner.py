@@ -201,7 +201,17 @@ class TestRunner(object):
         self.log = logging.getLogger()
         self.controller_registry = {}
         self.controller_destructors = {}
-        self.run_list = run_list
+        if self.test_configs.get(keys.Config.key_random.value):
+            test_case_iterations = self.test_configs.get(
+                keys.Config.key_test_case_iterations.value, 10)
+            self.log.info(
+                "Campaign randomizer is enabled with test_case_iterations %s",
+                test_case_iterations)
+            self.run_list = config_parser.test_randomizer(
+                run_list, test_case_iterations=test_case_iterations)
+            self.write_test_campaign()
+        else:
+            self.run_list = run_list
         self.results = records.TestResult()
         self.running = False
 
@@ -505,13 +515,23 @@ class TestRunner(object):
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise ValueError(("Unable to locate class %s in any of the test "
-                              "paths specified in the given config. Are you "
-                              "running the tests from the correct directory?")
-                             % test_cls_name)
+            self.log.info(
+                "Cannot find test class %s skipping for now." % test_cls_name)
+            record = records.TestResultRecord("*all*", test_cls_name)
+            record.test_skip(signals.TestSkip("Test class does not exist."))
+            self.results.add_record(record)
+            return
+        if self.test_configs.get(keys.Config.key_random.value) or (
+                "Preflight" in test_cls_name) or "Postflight" in test_cls_name:
+            test_case_iterations = 1
+        else:
+            test_case_iterations = self.test_configs.get(
+                keys.Config.key_test_case_iterations.value, 1)
+
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
-                cls_result = test_cls_instance.run(test_cases)
+                cls_result = test_cls_instance.run(test_cases,
+                                                   test_case_iterations)
                 self.results += cls_result
             except signals.TestAbortAll as e:
                 self.results += e.results
@@ -586,3 +606,11 @@ class TestRunner(object):
         path = os.path.join(self.log_path, "test_run_summary.json")
         with open(path, 'w') as f:
             f.write(self.results.json_str())
+
+    def write_test_campaign(self):
+        """Log test campaign file."""
+        path = os.path.join(self.log_path, "test_campaign.log")
+        with open(path, 'w') as f:
+            for test_class, test_cases in self.run_list:
+                f.write("%s:\n%s" % (test_class, ",\n".join(test_cases)))
+                f.write("\n\n")
