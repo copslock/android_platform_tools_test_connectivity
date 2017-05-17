@@ -1086,7 +1086,7 @@ class AndroidDevice:
               "datetime_obj": datetime object}]
         """
         out = self.adb.logcat(
-            '-d | grep "%s"' % matching_string, ignore_status=True)
+            '-b all -d | grep "%s"' % matching_string, ignore_status=True)
         if not out: return []
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),
