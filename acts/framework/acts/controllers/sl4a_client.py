@@ -35,7 +35,9 @@ DEFAULT_DEVICE_SIDE_PORT = 8080
 
 UNKNOWN_UID = -1
 
-MAX_SL4A_WAIT_TIME = 10
+MAX_SL4A_START_RETRY = 3
+MAX_SL4A_WAIT_TIME = 30
+
 _SL4A_LAUNCH_CMD = (
     "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
     "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
@@ -63,7 +65,8 @@ class Sl4aProtocolError(Sl4aException):
 
 def start_sl4a(adb_proxy,
                device_side_port=DEFAULT_DEVICE_SIDE_PORT,
-               wait_time=MAX_SL4A_WAIT_TIME):
+               wait_time=MAX_SL4A_WAIT_TIME,
+               retries=MAX_SL4A_START_RETRY):
     """Starts sl4a server on the android device.
 
     Args:
@@ -71,18 +74,19 @@ def start_sl4a(adb_proxy,
         device_side_port: int, The port number to open on the device side.
         wait_time: float, The time to wait for sl4a to come up before raising
                    an error.
+        retries: number of sl4a start command retries.
 
     Raises:
         Sl4aException: Raised when SL4A was not able to be started.
     """
     if not is_sl4a_installed(adb_proxy):
         raise Sl4aStartError("SL4A is not installed on %s" % adb_proxy.serial)
-    MAX_SL4A_WAIT_TIME = 10
-    adb_proxy.shell(_SL4A_LAUNCH_CMD.format(device_side_port))
-    for _ in range(wait_time):
-        time.sleep(1)
-        if is_sl4a_running(adb_proxy):
-            return
+    for _ in range(retries):
+        adb_proxy.shell(_SL4A_LAUNCH_CMD.format(device_side_port))
+        for _ in range(wait_time):
+            time.sleep(1)
+            if is_sl4a_running(adb_proxy):
+                return
     raise Sl4aStartError("SL4A failed to start on %s." % adb_proxy.serial)
 
 
