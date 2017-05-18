@@ -46,6 +46,45 @@ class AttachTest(AwareBaseTest):
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
 
+  def test_attach_multiple_sessions(self):
+    """Functional test case / Attach test cases / multiple attach sessions
+
+    Validates that when creating multiple attach sessions each can be
+    configured independently as to whether or not to receive an identity
+    callback.
+    """
+    dut = self.android_devices[0]
+
+    # Create 3 attach sessions: 2 without identity callback, 1 with
+    id1 = dut.droid.wifiAwareAttach(False, None, True)
+    id2 = dut.droid.wifiAwareAttach(True, None, True)
+    id3 = dut.droid.wifiAwareAttach(False, None, True)
+    dut.log.info('id1=%d, id2=%d, id3=%d', id1, id2, id3)
+
+    # Attach session 1: wait for attach, should not get identity
+    autils.wait_for_event(dut,
+                          autils.decorate_event(aconsts.EVENT_CB_ON_ATTACHED,
+                                                id1))
+    autils.fail_on_event(dut,
+                         autils.decorate_event(
+                             aconsts.EVENT_CB_ON_IDENTITY_CHANGED, id1))
+
+    # Attach session 2: wait for attach and for identity callback
+    autils.wait_for_event(dut,
+                          autils.decorate_event(aconsts.EVENT_CB_ON_ATTACHED,
+                                                id2))
+    autils.wait_for_event(dut,
+                          autils.decorate_event(
+                              aconsts.EVENT_CB_ON_IDENTITY_CHANGED, id2))
+
+    # Attach session 3: wait for attach, should not get identity
+    autils.wait_for_event(dut,
+                          autils.decorate_event(aconsts.EVENT_CB_ON_ATTACHED,
+                                                id3))
+    autils.fail_on_event(dut,
+                         autils.decorate_event(
+                             aconsts.EVENT_CB_ON_IDENTITY_CHANGED, id3))
+
   def test_attach_with_no_wifi(self):
     """Function test case / Attach test cases / attempt to attach with wifi off
 
