@@ -143,7 +143,8 @@ def is_sl4a_running(adb_proxy, use_new_ps=True):
         else:
             out = adb_proxy.shell(
                 'ps | grep "S com.googlecode.android_scripting"')
-    except adb.AdbError as e:
+    except Exception as e:
+        logging.error("is_sl4a_running with exception %s", e)
         out = None
     if not out:
         if use_new_ps:
