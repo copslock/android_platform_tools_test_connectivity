@@ -21,6 +21,9 @@ from acts import asserts
 EVENT_TIMEOUT = 10
 
 
+def decorate_event(event_name, id):
+  return "%s_%d" % (event_name, id)
+
 def wait_for_event(ad, event_name, message=None):
   """Wait for the specified event or timeout.
 
@@ -38,7 +41,7 @@ def wait_for_event(ad, event_name, message=None):
     return event
   except queue.Empty:
     if message is None:
-      message = "Timed out while waiting for %s"
+      message = 'Timed out while waiting for %s'
     ad.log.info(message % event_name)
     asserts.fail(event_name)
 
@@ -56,7 +59,7 @@ def fail_on_event(ad, event_name, message=None):
   try:
     event = ad.ed.pop_event(event_name, EVENT_TIMEOUT)
     if message is None:
-      message = "Received unwanted %s: %s"
+      message = 'Received unwanted %s: %s'
     ad.log.info(message, event_name, event['data'])
     asserts.fail(event_name, extras=event)
   except queue.Empty:
