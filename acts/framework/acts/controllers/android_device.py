@@ -629,11 +629,13 @@ class AndroidDevice:
         # TODO(bpeake) b/33470152 Fixup SL4A connection code
         if self.is_sl4a_running():
             self.stop_sl4a()
+            time.sleep(30)
         self.start_sl4a()
         try:
             droid = self.start_new_session()
         except:
             self.stop_sl4a()
+            time.sleep(30)
             self.start_sl4a()
             droid = self.start_new_session()
 
@@ -797,6 +799,8 @@ class AndroidDevice:
                 self.adb.shell('%s | grep "S %s"' % (cmd, package_name))
                 return True
             except Exception:
+                self.log.warn("Device fails to check is %s running by %s",
+                              package_name, cmd)
                 continue
         return False
 
