@@ -812,7 +812,11 @@ class AndroidDevice:
         Returns:
         True if package is installed. False otherwise.
         """
-        self.adb.shell('am force-stop %s' % package_name, ignore_status=True)
+        try:
+            self.adb.shell(
+                'am force-stop %s' % package_name, ignore_status=True)
+        except Exception as e:
+            self.log.warn("Fail to stop package %s: %s", package_name, e)
 
     def stop_sl4a(self):
         return self.force_stop_apk(SL4A_APK_NAME)
@@ -1086,7 +1090,7 @@ class AndroidDevice:
               "datetime_obj": datetime object}]
         """
         out = self.adb.logcat(
-            '-d | grep "%s"' % matching_string, ignore_status=True)
+            '-b all -d | grep "%s"' % matching_string, ignore_status=True)
         if not out: return []
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),

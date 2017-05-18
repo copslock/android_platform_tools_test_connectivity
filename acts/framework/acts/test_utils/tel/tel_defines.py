@@ -94,7 +94,7 @@ MAX_WAIT_TIME_USER_PLANE_DATA = 20
 MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 15
 
 # Max time to wait for voice mail count report correct result.
-MAX_WAIT_TIME_VOICE_MAIL_COUNT = 30
+MAX_WAIT_TIME_VOICE_MAIL_COUNT = 90
 
 # Max time to wait for data SIM change
 MAX_WAIT_TIME_DATA_SUB_CHANGE = 150

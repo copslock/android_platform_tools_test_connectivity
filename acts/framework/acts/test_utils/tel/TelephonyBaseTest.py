@@ -235,10 +235,9 @@ class TelephonyBaseTest(BaseTestClass):
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
+            return True
         except Exception as e:
             self.log.error("Failure with %s", e)
-
-        return True
 
     def setup_test(self):
         if getattr(self, "diag_logger", None):

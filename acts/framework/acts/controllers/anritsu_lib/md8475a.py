@@ -32,8 +32,8 @@ TERMINATOR = "\0"
 # the times for socket to time out. Increasing them is to make sure there is
 # enough time for MD8475A operation to be completed in some cases.
 # It won't increase test execution time.
-SMARTSTUDIO_LAUNCH_WAIT_TIME = 180  # was 90
-SMARTSTUDIO_SIMULATION_START_WAIT_TIME = 180  # was 120
+SMARTSTUDIO_LAUNCH_WAIT_TIME = 300  # was 90
+SMARTSTUDIO_SIMULATION_START_WAIT_TIME = 300  # was 120
 REGISTRATION_STATE_WAIT_TIME = 240
 LOAD_SIMULATION_PARAM_FILE_WAIT_TIME = 30
 COMMUNICATION_STATE_WAIT_TIME = 240
@@ -383,7 +383,7 @@ class MD8475A(object):
                       "Signaling Tester ({}) ".format(self._ipaddr))
         try:
             self._sock = socket.create_connection(
-                (self._ipaddr, 28002), timeout=30)
+                (self._ipaddr, 28002), timeout=120)
             self.send_query("*IDN?", 60)
             self.log.info("Communication with Signaling Tester OK.")
             self.log.info("Opened Socket connection to ({})"
@@ -800,11 +800,11 @@ class MD8475A(object):
             else:
                 break
 
-    def wait_for_registration_state(self):
+    def wait_for_registration_state(self, bts=1):
         """ Waits for UE registration state on Anritsu
 
         Args:
-          None
+          bts: index of MD8475A BTS, eg 1, 2
 
         Returns:
             None
@@ -812,19 +812,21 @@ class MD8475A(object):
         self.log.info("wait for IDLE/COMMUNICATION state on anritsu.")
         time_to_wait = REGISTRATION_STATE_WAIT_TIME
         sleep_interval = 1
-        waiting_time = 0
         sim_model = (self.get_simulation_model()).split(",")
         #wait 1 more round for GSM because of PS attach
-        loop = 2 if sim_model[0] == "GSM" else 1
-        for i in range(loop):
-            callstat = self.send_query("CALLSTAT? BTS1").split(",")
-            while callstat[0] != "IDLE" and callstat[1] != "COMMUNICATION":
+        registration_check_iterations = 2 if sim_model[bts - 1] == "GSM" else 1
+        for _ in range(registration_check_iterations):
+            waiting_time = 0
+            while waiting_time <= time_to_wait:
+                callstat = self.send_query(
+                    "CALLSTAT? BTS{}".format(bts)).split(",")
+                if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
+                    break
                 time.sleep(sleep_interval)
                 waiting_time += sleep_interval
-                if waiting_time <= time_to_wait:
-                    callstat = self.send_query("CALLSTAT? BTS1").split(",")
-                else:
-                    raise AnritsuError("UE failed to register on network")
+            else:
+                raise AnritsuError(
+                    "UE failed to register in {} seconds".format(time_to_wait))
             time.sleep(sleep_interval)
 
     def wait_for_communication_state(self):

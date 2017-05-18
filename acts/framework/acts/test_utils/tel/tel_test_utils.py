@@ -116,6 +116,7 @@ from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preferen
 from acts.test_utils.tel.tel_lookup_tables import \
     get_voice_mail_count_check_function
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_number_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
 from acts.test_utils.tel.tel_lookup_tables import \
     network_preference_for_generaton
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
@@ -884,7 +885,7 @@ def wait_and_reject_call_for_subscription(log,
 
     if not wait_for_ringing_call_for_subscription(log, ad, sub_id,
                                                   incoming_number):
-        log.error("Could not reject a call: phone never rang.")
+        ad.log.error("Could not reject a call: phone never rang.")
         return False
 
     ad.ed.clear_all_events()
@@ -892,7 +893,6 @@ def wait_and_reject_call_for_subscription(log,
     if reject is True:
         # Delay between ringing and reject.
         time.sleep(delay_reject)
-        log.info("Reject on callee.")
         is_find = False
         # Loop the call list and find the matched one to disconnect.
         for call in ad.droid.telecomCallGetCallIds():
@@ -900,13 +900,14 @@ def wait_and_reject_call_for_subscription(log,
                     get_number_from_tel_uri(get_call_uri(ad, call)),
                     incoming_number):
                 ad.droid.telecomCallDisconnect(call)
+                ad.log.info("Callee reject the call")
                 is_find = True
         if is_find is False:
-            log.error("Did not find matching call to reject.")
+            ad.log.error("Callee did not find matching call to reject.")
             return False
     else:
         # don't reject on callee. Just ignore the incoming call.
-        log.info("Received incoming call. Ignore it.")
+        ad.log.info("Callee received incoming call. Ignore it.")
     try:
         ad.ed.wait_for_event(
             EventCallStateChanged,
@@ -915,7 +916,7 @@ def wait_and_reject_call_for_subscription(log,
             field=CallStateContainer.CALL_STATE,
             value_list=[TELEPHONY_STATE_IDLE, TELEPHONY_STATE_OFFHOOK])
     except Empty:
-        log.error("No onCallStateChangedIdle event received.")
+        ad.log.error("No onCallStateChangedIdle event received.")
         return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
@@ -1202,6 +1203,13 @@ def call_reject_leave_message_for_subscription(
     ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
 
     try:
+        voice_mail_count_before = ad_callee.droid.telephonyGetVoiceMailCountForSubscription(
+            subid_callee)
+        ad_callee.log.info("voice mail count is %s", voice_mail_count_before)
+        # -1 means there are unread voice mail, but the count is unknown
+        # 0 means either this API not working (VZW) or no unread voice mail.
+        if voice_mail_count_before != 0:
+            log.warning("--Pending new Voice Mail, please clear on phone.--")
 
         if not initiate_call(log, ad_caller, callee_number):
             raise _CallSequenceException("Initiate call failed.")
@@ -1212,13 +1220,6 @@ def call_reject_leave_message_for_subscription(
 
         ad_callee.droid.telephonyStartTrackingVoiceMailStateChangeForSubscription(
             subid_callee)
-        voice_mail_count_before = ad_callee.droid.telephonyGetVoiceMailCountForSubscription(
-            subid_callee)
-
-        # -1 means there are unread voice mail, but the count is unknown
-        # 0 means either this API not working (VZW) or no unread voice mail.
-        if voice_mail_count_before != 0:
-            log.warning("--Pending new Voice Mail, please clear on phone.--")
 
         # ensure that all internal states are updated in telecom
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
@@ -1229,7 +1230,6 @@ def call_reject_leave_message_for_subscription(
 
         # TODO: b/26293512 Need to play some sound to leave message.
         # Otherwise carrier voice mail server may drop this voice mail.
-
         time.sleep(wait_time_in_call)
 
         if not verify_caller_func:
@@ -1238,8 +1238,8 @@ def call_reject_leave_message_for_subscription(
             caller_state_result = verify_caller_func(log, ad_caller)
         if not caller_state_result:
             raise _CallSequenceException(
-                "Caller not in correct state after {} seconds".format(
-                    wait_time_in_call))
+                "Caller %s not in correct state after %s seconds" %
+                (ad_caller.serial, wait_time_in_call))
 
         if not hangup_call(log, ad_caller):
             raise _CallSequenceException("Error in Hanging-Up Call")
@@ -1251,6 +1251,8 @@ def call_reject_leave_message_for_subscription(
                 _is_on_message_waiting_event_true)
             log.info(event)
         except Empty:
+            ad_callee.log.warning("No expected event %s",
+                                  EventMessageWaitingIndicatorChanged)
             raise _CallSequenceException("No expected event {}.".format(
                 EventMessageWaitingIndicatorChanged))
         voice_mail_count_after = ad_callee.droid.telephonyGetVoiceMailCountForSubscription(
@@ -1265,7 +1267,7 @@ def call_reject_leave_message_for_subscription(
         # -1 means there are unread voice mail, but the count is unknown
         if not check_voice_mail_count(log, ad_callee, voice_mail_count_before,
                                       voice_mail_count_after):
-            log.error("telephonyGetVoiceMailCount output is incorrect.")
+            log.error("before and after voice mail count is not incorrect.")
             return False
 
     except _CallSequenceException as e:
@@ -1303,26 +1305,33 @@ def call_voicemail_erase_all_pending_voicemail(log, ad):
         False if error happens. True is succeed.
     """
     log.info("Erase all pending voice mail.")
-    if ad.droid.telephonyGetVoiceMailCount() == 0:
-        log.info("No Pending voice mail.")
+    count = ad.droid.telephonyGetVoiceMailCount()
+    if count == 0:
+        ad.log.info("No Pending voice mail.")
         return True
+    if count == -1:
+        ad.log.info("There is pending voice mail, but the count is unknown")
+        count = MAX_SAVED_VOICE_MAIL
+    else:
+        ad.log.info("There are %s voicemails", count)
 
     voice_mail_number = get_voice_mail_number(log, ad)
-
+    delete_digit = get_voice_mail_delete_digit(get_operator_name(log, ad))
     if not initiate_call(log, ad, voice_mail_number):
-        log.error("Initiate call failed.")
+        log.error("Initiate call to voice mail failed.")
         return False
     time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
     callId = ad.droid.telecomCallGetCallIds()[0]
     time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
-    count = MAX_SAVED_VOICE_MAIL
     while (is_phone_in_call(log, ad) and (count > 0)):
-        log.info("Press 7 to delete voice mail.")
-        ad.droid.telecomCallPlayDtmfTone(callId, VOICEMAIL_DELETE_DIGIT)
+        ad.log.info("Press %s to delete voice mail.", delete_digit)
+        ad.droid.telecomCallPlayDtmfTone(callId, delete_digit)
         ad.droid.telecomCallStopDtmfTone(callId)
         time.sleep(WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE)
         count -= 1
-    log.info("Voice mail server dropped this call.")
+    if is_phone_in_call(log, ad):
+        hangup_call(log, ad)
+
     # wait for telephonyGetVoiceMailCount to update correct result
     remaining_time = MAX_WAIT_TIME_VOICE_MAIL_COUNT
     while ((remaining_time > 0) and
