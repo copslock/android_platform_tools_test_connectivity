@@ -99,3 +99,21 @@ def decode_list(list_of_b64_strings):
     decoded_list.append(base64.b64decode(str))
   return decoded_list
 
+def assert_equal_strings(first, second, msg=None, extras=None):
+  """Assert equality of the string operands - where None is treated as equal to
+  an empty string (''), otherwise fail the test.
+
+  Error message is "first != second" by default. Additional explanation can
+  be supplied in the message.
+
+  Args:
+      first, seconds: The strings that are evaluated for equality.
+      msg: A string that adds additional info about the failure.
+      extras: An optional field for extra information to be included in
+              test result.
+  """
+  if first == None:
+    first = ''
+  if second == None:
+    second = ''
+  asserts.assert_equal(first, second, msg, extras)

@@ -66,7 +66,7 @@ class DiscoveryTest(AwareBaseTest):
     if payload_size == self.PAYLOAD_SIZE_MIN:
       config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = "a"
       config[aconsts.DISCOVERY_KEY_SSI] = None
-      config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST] = None
+      config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST] = []
     elif payload_size == self.PAYLOAD_SIZE_TYPICAL:
       config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = "GoogleTestServiceX"
       if is_publish:
@@ -155,7 +155,7 @@ class DiscoveryTest(AwareBaseTest):
 
     # Subscriber: validate contents of discovery (specifically that getting the
     # Publisher's SSI and MatchFilter!)
-    asserts.assert_equal(
+    autils.assert_equal_strings(
         bytes(discovery_event["data"][
             aconsts.SESSION_CB_KEY_SERVICE_SPECIFIC_INFO]).decode("utf-8"),
         p_config[aconsts.DISCOVERY_KEY_SSI],
@@ -197,7 +197,7 @@ class DiscoveryTest(AwareBaseTest):
         sub_rx_msg_event["data"][aconsts.SESSION_CB_KEY_PEER_ID],
         peer_id_on_sub,
         "Subscriber received message from different peer ID then discovery!?")
-    asserts.assert_equal(
+    autils.assert_equal_strings(
         sub_rx_msg_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING],
         self.response_msg, "Publisher -> Subscriber message corrupted")
 
@@ -214,7 +214,7 @@ class DiscoveryTest(AwareBaseTest):
         s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
 
     # Subscriber: validate contents of discovery
-    asserts.assert_equal(
+    autils.assert_equal_strings(
         bytes(discovery_event["data"][
             aconsts.SESSION_CB_KEY_SERVICE_SPECIFIC_INFO]).decode("utf-8"),
         p_config[aconsts.DISCOVERY_KEY_SSI],
@@ -278,5 +278,50 @@ class DiscoveryTest(AwareBaseTest):
         ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         payload_size=self.PAYLOAD_SIZE_TYPICAL,
+        ttl=0,
+        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+
+  def test_positive_unsolicited_passive_min_ongoing(self):
+    """Functional test case / Discovery test cases / positive test case:
+    - Solicited publish + passive subscribe
+    - Minimal payload fields size
+    - Ongoing lifetime (i.e. no TTL specified)
+
+    Verifies that discovery and message exchange succeeds.
+    """
+    self.positive_discovery_test_utility(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        payload_size=self.PAYLOAD_SIZE_MIN,
+        ttl=0,
+        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+
+  def test_positive_solicited_active_typical_ongoing(self):
+    """Functional test case / Discovery test cases / positive test case:
+    - Unsolicited publish + active subscribe
+    - Typical payload fields size
+    - Ongoing lifetime (i.e. no TTL specified)
+
+    Verifies that discovery and message exchange succeeds.
+    """
+    self.positive_discovery_test_utility(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        payload_size=self.PAYLOAD_SIZE_TYPICAL,
+        ttl=0,
+        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+
+  def test_positive_solicited_active_min_ongoing(self):
+    """Functional test case / Discovery test cases / positive test case:
+    - Unsolicited publish + active subscribe
+    - Minimal payload fields size
+    - Ongoing lifetime (i.e. no TTL specified)
+
+    Verifies that discovery and message exchange succeeds.
+    """
+    self.positive_discovery_test_utility(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        payload_size=self.PAYLOAD_SIZE_MIN,
         ttl=0,
         term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
