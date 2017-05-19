@@ -82,8 +82,9 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
             ret = ad.droid.wifiAddNetwork(network)
             asserts.assert_true(ret != -1, "Failed to add network %s" %
                                 network)
-            configured_networks = ad.droid.wifiGetConfiguredNetworks()
-            logging.debug("Configured networks: %s", configured_networks)
+            ad.droid.wifiEnableNetwork(ret, 0)
+        configured_networks = ad.droid.wifiGetConfiguredNetworks()
+        logging.debug("Configured networks: %s", configured_networks)
 
     def connect_and_verify_connected_bssid(self, expected_bssid):
         """Start a scan to get the DUT connected to an AP and verify the DUT
@@ -132,7 +133,10 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
             3. Verify the DUT is connected to the 5G BSSID.
         """
         #add a saved network with both 2G and 5G BSSIDs to DUT
-        networks = [self.reference_networks[AP_1]['2g']]
+        # TODO: bmahadev Change this to a single SSID once we migrate tests to
+        # use dynamic AP.
+        networks = [self.reference_networks[AP_1]['2g'],
+                    self.reference_networks[AP_1]['5g']]
         self.add_networks(self.dut, networks)
         #move the DUT in range
         self.attenuators[AP_1_2G_ATTENUATOR].set_atten(0)
