@@ -23,6 +23,7 @@ Shield box one: Android Device, Android Device
 
 from queue import Empty
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
@@ -76,6 +77,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6bccfbea-3734-4504-8ea9-3511ad17a3e0')
     def test_scan_result_no_advertisement(self):
         """Test opportunistic scan with no advertisement.
 
@@ -110,6 +112,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='8430bc57-925c-4b70-a62e-cd34df264ca1')
     def test_batch_scan_result_no_advertisement(self):
         """Test batch opportunistic scan without an advertisement.
 
@@ -149,6 +152,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4613cb67-0f54-494e-8a56-2e8ce56fad41')
     def test_scan_result(self):
         """Test opportunistic scan with an advertisement.
 
@@ -207,6 +211,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5b46fefc-70ef-48a0-acf4-35077cd72202')
     def test_batch_scan_result(self):
         """Test batch opportunistic scan with advertisement.
 
@@ -273,6 +278,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='fd85d95e-dc8c-48c1-8d8a-83c3475755ff')
     def test_batch_scan_result_not_expected(self):
         """Test opportunistic batch scan without expecting an event.
 
@@ -334,6 +340,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             batch_scan_result.format(scan_callback))
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6138592e-8fd5-444f-9a7c-25cd9695644a')
     def test_scan_result_not_expected(self):
         """Test opportunistic scan without expecting an event.
 
@@ -389,6 +396,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return self._verify_no_events_found(scan_result.format(scan_callback))
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='f7aba3d9-d3f7-4b2f-976e-441772705613')
     def test_max_opportunistic_scan_instances(self):
         """Test max number of opportunistic scan instances.
 
@@ -444,6 +452,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cf971f08-4d92-4046-bba6-b86a75aa773c')
     def test_max_opportunistic_batch_scan_instances(self):
         """Test max opportunistic batch scan instances.
 
@@ -503,6 +512,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='965d84ef-11a7-418a-97e9-2a441c6de776')
     def test_discover_opportunistic_scan_result_off_secondary_scan_filter(
             self):
         """Test opportunistic scan result from secondary scan filter.
@@ -565,6 +575,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='13b0a83f-e96e-4d64-84ef-66351ec5054c')
     def test_negative_opportunistic_scan_filter_result_off_secondary_scan_result(
             self):
         """Test opportunistic scan not found scenario.
@@ -623,6 +634,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         return self._verify_no_events_found(scan_result.format(scan_callback))
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='087f60b2-f6a1-4919-b4c5-cdf3debcfeff')
     def test_opportunistic_scan_filter_result_off_secondary_scan_result(self):
         """Test opportunistic scan from a secondary scan result.
 

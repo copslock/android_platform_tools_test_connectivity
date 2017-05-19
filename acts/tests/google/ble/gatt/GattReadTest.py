@@ -17,6 +17,7 @@
 This test script exercises different GATT read procedures.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -29,6 +30,7 @@ from math import ceil
 
 class GattReadTest(GattConnectedBaseTest):
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='ed8523f4-0eb8-4d14-b558-d3c28902f8bb')
     def test_read_char(self):
         """Test read characteristic value.
 
@@ -78,6 +80,7 @@ class GattReadTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5916a78d-3db8-4df2-9b96-b25e99096e0d')
     def test_read_long_char(self):
         """Test read long characteristic value.
 

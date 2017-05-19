@@ -17,6 +17,7 @@
 This test script exercises GATT notify/indicate procedures.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -29,6 +30,7 @@ from math import ceil
 
 class GattNotifyTest(GattConnectedBaseTest):
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='e0ba60af-c1f2-4516-a5d5-89e2def0c757')
     def test_notify_char(self):
         """Test notify characteristic value.
 

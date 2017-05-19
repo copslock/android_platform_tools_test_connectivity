@@ -21,6 +21,7 @@ import pprint
 from queue import Empty
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BtEnum import BluetoothProfile
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -128,6 +129,7 @@ class GattConnectTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='8a3530a3-c8bb-466b-9710-99e694c38618')
     def test_gatt_connect(self):
         """Test GATT connection over LE.
 
@@ -169,6 +171,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='a839b505-03ac-4783-be7e-1d43129a1948')
     def test_gatt_connect_stop_advertising(self):
         """Test GATT connection over LE then stop advertising
 
@@ -225,6 +228,7 @@ class GattConnectTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b82f91a8-54bb-4779-a117-73dc7fdb28cc')
     def test_gatt_connect_autoconnect(self):
         """Test GATT connection over LE.
 
@@ -291,6 +295,7 @@ class GattConnectTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='1e01838e-c4de-4720-9adf-9e0419378226')
     def test_gatt_request_min_mtu(self):
         """Test GATT connection over LE and exercise MTU sizes.
 
@@ -340,6 +345,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c1fa3a2d-fb47-47db-bdd1-458928cd6a5f')
     def test_gatt_request_max_mtu(self):
         """Test GATT connection over LE and exercise MTU sizes.
 
@@ -389,6 +395,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4416d483-dec3-46cb-8038-4d82620f873a')
     def test_gatt_request_out_of_bounds_mtu(self):
         """Test GATT connection over LE and exercise an out of bound MTU size.
 
@@ -439,6 +446,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='31ffb9ca-cc75-43fb-9802-c19f1c5856b6')
     def test_gatt_connect_trigger_on_read_rssi(self):
         """Test GATT connection over LE read RSSI.
 
@@ -489,6 +497,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dee9ef28-b872-428a-821b-cc62f27ba936')
     def test_gatt_connect_trigger_on_services_discovered(self):
         """Test GATT connection and discover services of peripheral.
 
@@ -541,6 +550,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='01883bdd-0cf8-48fb-bf15-467bbd4f065b')
     def test_gatt_connect_trigger_on_services_discovered_iterate_attributes(
             self):
         """Test GATT connection and iterate peripherals attributes.
@@ -601,6 +611,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d4277bee-da99-4f48-8a4d-f81b5389da18')
     def test_gatt_connect_with_service_uuid_variations(self):
         """Test GATT connection with multiple service uuids.
 
@@ -659,6 +670,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='7d3442c5-f71f-44ae-bd35-f2569f01b3b8')
     def test_gatt_connect_in_quick_succession(self):
         """Test GATT connections multiple times.
 
@@ -710,6 +722,7 @@ class GattConnectTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='148469d9-7ab0-4c08-b2e9-7e49e88da1fc')
     def test_gatt_connect_mitm_attack(self):
         """Test GATT connection with permission write encrypted mitm.
 
@@ -816,6 +829,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cc3fc361-7bf1-4ee2-9e46-4a27c88ce6a8')
     def test_gatt_connect_get_connected_devices(self):
         """Test GATT connections show up in getConnectedDevices
 
