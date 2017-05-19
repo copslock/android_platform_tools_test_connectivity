@@ -78,6 +78,8 @@ class TelLabEtwsTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
+        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
+                          ignore_status=True)
         return True
 
     def teardown_test(self):
