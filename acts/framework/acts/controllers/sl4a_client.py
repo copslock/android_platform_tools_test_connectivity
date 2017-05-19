@@ -86,6 +86,7 @@ def start_sl4a(adb_proxy,
         for _ in range(wait_time):
             time.sleep(1)
             if is_sl4a_running(adb_proxy):
+                logging.debug("SL4A is running")
                 return
     raise Sl4aStartError("SL4A failed to start on %s." % adb_proxy.serial)
 

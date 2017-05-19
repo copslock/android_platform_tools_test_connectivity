@@ -776,9 +776,16 @@ class AndroidDevice:
         True if package is installed. False otherwise.
         """
         try:
-            self.adb.shell(
-                'pm list packages | grep -w "package:%s"' % package_name)
-            return True
+            out = self.adb.shell(
+                'pm list packages | grep -w "package:%s"' % package_name,
+                ignore_status=False)
+            if package_name in out:
+                self.log.debug("apk %s is installed", package_name)
+                return True
+            else:
+                self.log.debug("apk %s is not installed, query returns %s",
+                               package_name, out)
+                return False
         except:
             return False
 
@@ -796,12 +803,17 @@ class AndroidDevice:
         """
         for cmd in ("ps -A", "ps"):
             try:
-                self.adb.shell('%s | grep "S %s"' % (cmd, package_name))
-                return True
-            except Exception:
-                self.log.warn("Device fails to check is %s running by %s",
-                              package_name, cmd)
+                out = self.adb.shell(
+                    '%s | grep "S %s"' % (cmd, package_name),
+                    ignore_status=True)
+                if package_name in out:
+                    self.log.info("apk %s is running", package_name)
+                    return True
+            except Exception as e:
+                self.log.warn("Device fails to check is %s running by %s "
+                              "Exception %s", package_name, cmd, e)
                 continue
+        self.log.debug("apk %s is not running", package_name)
         return False
 
     def is_sl4a_running(self):
