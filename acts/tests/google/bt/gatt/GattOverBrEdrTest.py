@@ -19,6 +19,7 @@ Test suite for GATT over BR/EDR.
 
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -99,6 +100,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='32d32c87-911e-4f14-9654-29fe1431e995')
     def test_gatt_bredr_connect(self):
         """Test GATT connection over BR/EDR.
 
@@ -141,6 +143,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='357b697b-a52c-4c2a-997c-00876a018f37')
     def test_gatt_bredr_connect_trigger_on_read_rssi(self):
         """Test GATT connection over BR/EDR read RSSI.
 
@@ -188,6 +191,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dee9ef28-b872-428a-821b-cc62f27ba936')
     def test_gatt_bredr_connect_trigger_on_services_discovered(self):
         """Test GATT connection and discover services of peripheral.
 
@@ -237,6 +241,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='01883bdd-0cf8-48fb-bf15-467bbd4f065b')
     def test_gatt_bredr_connect_trigger_on_services_discovered_iterate_attributes(
             self):
         """Test GATT connection and iterate peripherals attributes.
@@ -293,6 +298,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d4277bee-da99-4f48-8a4d-f81b5389da18')
     def test_gatt_bredr_connect_with_service_uuid_variations(self):
         """Test GATT connection with multiple service uuids.
 
@@ -351,6 +357,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='15c726dc-788a-4400-9a90-8c6866b24a3a')
     def test_gatt_bredr_connect_multiple_iterations(self):
         """Test GATT connections multiple times.
 
@@ -402,6 +409,7 @@ class GattOverBrEdrTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6ec766ca-6358-48ff-9d85-ede4d2756546')
     def test_bredr_write_descriptor_stress(self):
         """Test GATT connection writing and reading descriptors.
 
