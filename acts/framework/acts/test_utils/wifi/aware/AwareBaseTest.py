@@ -35,6 +35,7 @@ class AwareBaseTest(BaseTestClass):
       if not aware_avail:
         self.log.info('Aware not available. Waiting ...')
         autils.wait_for_event(ad, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+      ad.aware_capabilities = autils.get_aware_capabilities(ad)
 
   def teardown_test(self):
     for ad in self.android_devices:

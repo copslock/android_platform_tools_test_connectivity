@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import base64
+import json
 import queue
 from acts import asserts
 
@@ -117,3 +118,13 @@ def assert_equal_strings(first, second, msg=None, extras=None):
   if second == None:
     second = ''
   asserts.assert_equal(first, second, msg, extras)
+
+def get_aware_capabilities(ad):
+  """Get the Wi-Fi Aware capabilities from the specified device. The
+  capabilities are a dictionary keyed by aware_const.CAP_* keys.
+
+  Args:
+    ad: the Android device
+  Returns: the capability dictionary.
+  """
+  return json.loads(ad.adb.shell("cmd wifiaware state_mgr get_capabilities"))

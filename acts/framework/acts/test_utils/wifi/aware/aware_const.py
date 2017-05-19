@@ -107,6 +107,25 @@ RTT_LISTENER_CB_KEY_REASON = "reason"
 RTT_LISTENER_CB_KEY_DESCRIPTION = "description"
 
 ######################################################
+# Capabilities keys
+######################################################
+
+CAP_MAX_CONCURRENT_AWARE_CLUSTERS = "maxConcurrentAwareClusters"
+CAP_MAX_PUBLISHES = "maxPublishes"
+CAP_MAX_SUBSCRIBES = "maxSubscribes"
+CAP_MAX_SERVICE_NAME_LEN = "maxServiceNameLen"
+CAP_MAX_MATCH_FILTER_LEN = "maxMatchFilterLen"
+CAP_MAX_TOTAL_MATCH_FILTER_LEN = "maxTotalMatchFilterLen"
+CAP_MAX_SERVICE_SPECIFIC_INFO_LEN = "maxServiceSpecificInfoLen"
+CAP_MAX_EXTENDED_SERVICE_SPECIFIC_INFO_LEN = "maxExtendedServiceSpecificInfoLen"
+CAP_MAX_NDI_INTERFACES = "maxNdiInterfaces"
+CAP_MAX_NDP_SESSIONS = "maxNdpSessions"
+CAP_MAX_APP_INFO_LEN = "maxAppInfoLen"
+CAP_MAX_QUEUED_TRANSMIT_MESSAGES = "maxQueuedTransmitMessages"
+CAP_MAX_SUBSCRIBE_INTERFACE_ADDRESSES = "maxSubscribeInterfaceAddresses"
+CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
+
+######################################################
 
 # Aware Data-Path Constants
 DATA_PATH_INITIATOR = 0
