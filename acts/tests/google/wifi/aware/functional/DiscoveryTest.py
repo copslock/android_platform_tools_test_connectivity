@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import string
+import time
 
 from acts import asserts
 from acts.test_utils.wifi.aware import aware_const as aconsts
@@ -41,11 +42,12 @@ class DiscoveryTest(AwareBaseTest):
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
 
-  def create_base_config(self, is_publish, ptype, stype, payload_size, ttl,
-                         term_ind_on, null_match):
+  def create_base_config(self, caps, is_publish, ptype, stype, payload_size,
+                         ttl, term_ind_on, null_match):
     """Create a base configuration based on input parameters.
 
     Args:
+      caps: device capability dictionary
       is_publish: True if a publish config, else False
       ptype: unsolicited or solicited (used if is_publish is True)
       stype: passive or active (used if is_publish is False)
@@ -80,11 +82,12 @@ class DiscoveryTest(AwareBaseTest):
            bytes(range(40))])
     return config
 
-  def create_publish_config(self, ptype, payload_size, ttl, term_ind_on,
+  def create_publish_config(self, caps, ptype, payload_size, ttl, term_ind_on,
                             null_match):
     """Create a publish configuration based on input parameters.
 
     Args:
+      caps: device capability dictionary
       ptype: unsolicited or solicited
       payload_size: min, typical, max (PAYLOAD_SIZE_xx)
       ttl: time-to-live configuration (0 - forever)
@@ -93,14 +96,15 @@ class DiscoveryTest(AwareBaseTest):
     Returns:
       publish discovery configuration object.
     """
-    return self.create_base_config(True, ptype, None, payload_size, ttl,
+    return self.create_base_config(caps, True, ptype, None, payload_size, ttl,
                                    term_ind_on, null_match)
 
-  def create_subscribe_config(self, stype, payload_size, ttl, term_ind_on,
+  def create_subscribe_config(self, caps, stype, payload_size, ttl, term_ind_on,
                               null_match):
     """Create a subscribe configuration based on input parameters.
 
     Args:
+      caps: device capability dictionary
       stype: passive or active
       payload_size: min, typical, max (PAYLOAD_SIZE_xx)
       ttl: time-to-live configuration (0 - forever)
@@ -109,13 +113,12 @@ class DiscoveryTest(AwareBaseTest):
     Returns:
       subscribe discovery configuration object.
     """
-    return self.create_base_config(False, None, stype, payload_size, ttl,
+    return self.create_base_config(caps, False, None, stype, payload_size, ttl,
                                    term_ind_on, null_match)
 
-  def positive_discovery_test_utility(self, ptype, stype, payload_size, ttl,
-                                      term_ind_on):
+  def positive_discovery_test_utility(self, ptype, stype, payload_size):
     """Utility which runs a positive discovery test:
-    - Discovery (publish/subscribe)
+    - Discovery (publish/subscribe) with TTL=0 (non-self-terminating)
     - Exchange messages
     - Update publish/subscribe
     - Terminate
@@ -124,11 +127,11 @@ class DiscoveryTest(AwareBaseTest):
       ptype: Publish discovery type
       stype: Subscribe discovery type
       payload_size: One of PAYLOAD_SIZE_* constants - MIN, TYPICAL, MAX
-      ttl: Duration of discovery session, 0 for unlimited
-      term_ind_on: True if a termination indication is wanted, False otherwise
     """
     p_dut = self.android_devices[0]
+    p_dut.pretty_name = "Publisher"
     s_dut = self.android_devices[1]
+    s_dut.pretty_name = "Subscriber"
 
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
@@ -137,14 +140,24 @@ class DiscoveryTest(AwareBaseTest):
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 
     # Publisher: start publish and wait for confirmation
-    p_config = self.create_publish_config(ptype, payload_size, ttl, term_ind_on,
-                                          null_match=False)
+    p_config = self.create_publish_config(
+        p_dut.aware_capabilities,
+        ptype,
+        payload_size,
+        ttl=0,
+        term_ind_on=False,
+        null_match=False)
     p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
     autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
     # Subscriber: start subscribe and wait for confirmation
-    s_config = self.create_subscribe_config(stype, payload_size, ttl,
-                                            term_ind_on, null_match=True)
+    s_config = self.create_subscribe_config(
+        s_dut.aware_capabilities,
+        stype,
+        payload_size,
+        ttl=0,
+        term_ind_on=False,
+        null_match=True)
     s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
     autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
 
@@ -226,102 +239,98 @@ class DiscoveryTest(AwareBaseTest):
         "Discovery mismatch: match filter")
 
     # Subscribe: update subscribe and wait for confirmation
-    s_config = self.create_subscribe_config(stype, payload_size, ttl,
-                                            term_ind_on, null_match=False)
+    s_config = self.create_subscribe_config(
+        s_dut.aware_capabilities,
+        stype,
+        payload_size,
+        ttl=0,
+        term_ind_on=False,
+        null_match=False)
     s_dut.droid.wifiAwareUpdateSubscribe(s_disc_id, s_config)
     autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SESSION_CONFIG_UPDATED)
-
-    # Subscriber: should not get a new service discovery (no new information)
-    autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
-
-    # Publisher: should never get a service discovery event!
-    autils.fail_on_event(p_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
 
     # Publisher+Subscriber: Terminate sessions
     p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
     s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
 
-    # Publisher+Subscriber: Expect (or not) to receive termination indication
-    # Note: if TTL is 0 (i.e. continuous session - which we terminate
-    # explicitly) then do not expect indications no matter the configuration
-    if term_ind_on and ttl != 0:
-      autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED)
-      autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED)
-    else:
-      autils.fail_on_event(p_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED)
-      autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED)
+    # sleep for timeout period and then verify all 'fail_on_event' together
+    time.sleep(autils.EVENT_TIMEOUT)
+
+    # Subscriber: should not get a new service discovery (no new information)
+    autils.fail_on_event(
+        s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, timeout=0)
+
+    # Publisher: should never get a service discovery event!
+    autils.fail_on_event(
+        p_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, timeout=0)
+
+    # Publisher+Subscriber: should not get termination indication (since we're
+    # destroying sessions explicitly)
+    autils.fail_on_event(
+        p_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED, timeout=0)
+    autils.fail_on_event(
+        s_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED, timeout=0)
+
+    # verify that there were no other events
+    autils.verify_no_more_events(p_dut)
+    autils.verify_no_more_events(s_dut)
 
   #######################################
   # Positive tests key:
   #
-  # names is: test_<pub_type>_<sub_type>_<size>_<lifetime>_<term_ind>,
+  # names is: test_<pub_type>_<sub_type>_<size>
   # where:
   #
   # pub_type: Type of publish discovery session: unsolicited or solicited.
   # sub_type: Type of subscribe discovery session: passive or active.
   # size: Size of payload fields (service name, service specific info, and match
   # filter: typical, max, or min.
-  # lifetime: Discovery session lifetime: ongoing or limited.
-  # term_ind: Termination indication enabled or disabled: termind or "".
-  #           Only relevant for limited lifetime (i.e. TTL != 0).
   #######################################
 
-  def test_positive_unsolicited_passive_typical_ongoing(self):
+  def test_positive_unsolicited_passive_typical(self):
     """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
     - Typical payload fields size
-    - Ongoing lifetime (i.e. no TTL specified)
 
     Verifies that discovery and message exchange succeeds.
     """
     self.positive_discovery_test_utility(
         ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
-        payload_size=self.PAYLOAD_SIZE_TYPICAL,
-        ttl=0,
-        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+        payload_size=self.PAYLOAD_SIZE_TYPICAL)
 
-  def test_positive_unsolicited_passive_min_ongoing(self):
+  def test_positive_unsolicited_passive_min(self):
     """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
     - Minimal payload fields size
-    - Ongoing lifetime (i.e. no TTL specified)
 
     Verifies that discovery and message exchange succeeds.
     """
     self.positive_discovery_test_utility(
         ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
-        payload_size=self.PAYLOAD_SIZE_MIN,
-        ttl=0,
-        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+        payload_size=self.PAYLOAD_SIZE_MIN)
 
-  def test_positive_solicited_active_typical_ongoing(self):
+  def test_positive_solicited_active_typical(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
     - Typical payload fields size
-    - Ongoing lifetime (i.e. no TTL specified)
 
     Verifies that discovery and message exchange succeeds.
     """
     self.positive_discovery_test_utility(
         ptype=aconsts.PUBLISH_TYPE_SOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-        payload_size=self.PAYLOAD_SIZE_TYPICAL,
-        ttl=0,
-        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+        payload_size=self.PAYLOAD_SIZE_TYPICAL)
 
-  def test_positive_solicited_active_min_ongoing(self):
+  def test_positive_solicited_active_min(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
     - Minimal payload fields size
-    - Ongoing lifetime (i.e. no TTL specified)
 
     Verifies that discovery and message exchange succeeds.
     """
     self.positive_discovery_test_utility(
         ptype=aconsts.PUBLISH_TYPE_SOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-        payload_size=self.PAYLOAD_SIZE_MIN,
-        ttl=0,
-        term_ind_on=True)  # term_ind_on is irrelevant since ttl=0
+        payload_size=self.PAYLOAD_SIZE_MIN)
