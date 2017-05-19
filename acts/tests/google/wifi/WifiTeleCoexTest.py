@@ -285,5 +285,5 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         """
         self.setup_cellular_voice_calling()
         self.connect_to_wifi(self.dut, self.network)
-        stress_toggle_airplane_and_wifi(self.stress_count)
+        self.stress_toggle_airplane_and_wifi(self.stress_count)
         self.validate_cellular_and_wifi()
