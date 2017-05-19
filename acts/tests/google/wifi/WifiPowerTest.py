@@ -75,7 +75,7 @@ class WifiPowerTest(base_test.BaseTestClass):
         set_location_service(self.dut, False)
         set_adaptive_brightness(self.dut, False)
         set_ambient_display(self.dut, False)
-        self.ad.adb.shell("settings put system screen_brightness 0")
+        self.dut.adb.shell("settings put system screen_brightness 0")
         set_auto_rotate(self.dut, False)
         required_userparam_names = (
             # These two params should follow the format of
