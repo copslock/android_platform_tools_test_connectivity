@@ -67,6 +67,7 @@ def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
     ad.log.info('%s%s not seen (as expected)', prefix, event_name)
     return
 
+
 def verify_no_more_events(ad):
   """Verify that there are no more events in the queue.
   """
@@ -84,6 +85,7 @@ def verify_no_more_events(ad):
       asserts.fail('%sEvent queue not empty' % prefix)
     ad.log.info('%sNo events in the queue (as expected)', prefix)
     return
+
 
 def encode_list(list_of_objects):
   """Converts the list of strings or bytearrays to a list of b64 encoded
@@ -117,6 +119,28 @@ def decode_list(list_of_b64_strings):
   for str in list_of_b64_strings:
     decoded_list.append(base64.b64decode(str))
   return decoded_list
+
+
+def construct_max_match_filter(max_size):
+  """Constructs a maximum size match filter that fits into the 'max_size' bytes.
+
+  Match filters are a set of LVs (Length, Value pairs) where L is 1 byte. The
+  maximum size match filter will contain max_size/2 LVs with all Vs (except
+  possibly the last one) of 1 byte, the last V may be 2 bytes for odd max_size.
+
+  Args:
+    max_size: Maximum size of the match filter.
+  Returns: an array of bytearrays.
+  """
+  mf_list = []
+  num_lvs = max_size // 2
+  for i in range(num_lvs - 1):
+    mf_list.append(bytes([i]))
+  if (max_size % 2 == 0):
+    mf_list.append(bytes([255]))
+  else:
+    mf_list.append(bytes([254, 255]))
+  return mf_list
 
 
 def assert_equal_strings(first, second, msg=None, extras=None):

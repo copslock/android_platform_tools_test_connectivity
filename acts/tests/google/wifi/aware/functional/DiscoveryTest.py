@@ -80,6 +80,17 @@ class DiscoveryTest(AwareBaseTest):
           [(10).to_bytes(1, byteorder="big"), "hello there string"
           if not null_match else None,
            bytes(range(40))])
+    else: # PAYLOAD_SIZE_MAX
+      config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = "VeryLong" + "X" * (
+        caps[aconsts.CAP_MAX_SERVICE_NAME_LEN] - 8)
+      config[aconsts.DISCOVERY_KEY_SSI] = ("P" if is_publish else "S") * caps[
+        aconsts.CAP_MAX_SERVICE_SPECIFIC_INFO_LEN]
+      mf = autils.construct_max_match_filter(
+          caps[aconsts.CAP_MAX_MATCH_FILTER_LEN])
+      if null_match:
+        mf[2] = None
+      config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST] = autils.encode_list(mf)
+
     return config
 
   def create_publish_config(self, caps, ptype, payload_size, ttl, term_ind_on,
@@ -311,6 +322,19 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         payload_size=self.PAYLOAD_SIZE_MIN)
 
+  def test_positive_unsolicited_passive_max(self):
+    """Functional test case / Discovery test cases / positive test case:
+    - Solicited publish + passive subscribe
+    - Maximal payload fields size
+
+    Verifies that discovery and message exchange succeeds.
+    """
+    self.positive_discovery_test_utility(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        payload_size=self.PAYLOAD_SIZE_MAX)
+
+
   def test_positive_solicited_active_typical(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
@@ -334,3 +358,15 @@ class DiscoveryTest(AwareBaseTest):
         ptype=aconsts.PUBLISH_TYPE_SOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         payload_size=self.PAYLOAD_SIZE_MIN)
+
+  def test_positive_solicited_active_max(self):
+    """Functional test case / Discovery test cases / positive test case:
+    - Unsolicited publish + active subscribe
+    - Maximal payload fields size
+
+    Verifies that discovery and message exchange succeeds.
+    """
+    self.positive_discovery_test_utility(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        payload_size=self.PAYLOAD_SIZE_MAX)
