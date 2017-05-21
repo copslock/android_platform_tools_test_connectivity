@@ -103,6 +103,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phone_default_state(self.log, self.ad, check_subscription=False)
         toggle_airplane_mode_by_adb(self.log, self.ad, True)
+        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
+                          ignore_status=True)
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
         return True
