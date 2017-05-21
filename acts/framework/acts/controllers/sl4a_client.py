@@ -86,6 +86,7 @@ def start_sl4a(adb_proxy,
         for _ in range(wait_time):
             time.sleep(1)
             if is_sl4a_running(adb_proxy):
+                logging.debug("SL4A is running")
                 return
     raise Sl4aStartError("SL4A failed to start on %s." % adb_proxy.serial)
 
@@ -143,7 +144,8 @@ def is_sl4a_running(adb_proxy, use_new_ps=True):
         else:
             out = adb_proxy.shell(
                 'ps | grep "S com.googlecode.android_scripting"')
-    except adb.AdbError as e:
+    except Exception as e:
+        logging.error("is_sl4a_running with exception %s", e)
         out = None
     if not out:
         if use_new_ps:

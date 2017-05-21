@@ -195,6 +195,8 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         ensure_phones_idle(self.log, self.android_devices)
         self.ad.droid.connectivityToggleAirplaneMode(True)
         self.ad.droid.telephonyToggleDataConnection(True)
+        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
+                          ignore_status=True)
         return True
 
     def teardown_test(self):
