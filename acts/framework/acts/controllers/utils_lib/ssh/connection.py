@@ -28,11 +28,11 @@ from acts.libs.proc import job
 
 
 class Error(Exception):
-    """An error occured during an ssh operation."""
+    """An error occurred during an ssh operation."""
 
 
 class CommandError(Exception):
-    """An error occured with the command.
+    """An error occurred with the command.
 
     Attributes:
         result: The results of the ssh command that had the error.
@@ -46,8 +46,9 @@ class CommandError(Exception):
         self.result = result
 
     def __str__(self):
-        return 'cmd: %s\nstdout: %s\nstderr: %s' % (
-            self.result.command, self.result.stdout, self.result.stderr)
+        return 'cmd: %s\nstdout: %s\nstderr: %s' % (self.result.command,
+                                                    self.result.stdout,
+                                                    self.result.stderr)
 
 
 _Tunnel = collections.namedtuple('_Tunnel',
@@ -71,7 +72,7 @@ class SshConnection(object):
     def __init__(self, settings):
         """
         Args:
-            settings: The ssh settings to use for this conneciton.
+            settings: The ssh settings to use for this connection.
             formatter: The object that will handle formatting ssh command
                        for use with the background job.
         """
@@ -88,11 +89,12 @@ class SshConnection(object):
     def setup_master_ssh(self, timeout_seconds=5):
         """Sets up the master ssh connection.
 
-        Sets up the inital master ssh connection if it has not already been
+        Sets up the initial master ssh connection if it has not already been
         started.
 
         Args:
-            timeout_seconds: The time to wait for the master ssh connection to be made.
+            timeout_seconds: The time to wait for the master ssh connection to
+            be made.
 
         Raises:
             Error: When setting up the master ssh connection fails.
@@ -159,7 +161,7 @@ class SshConnection(object):
             ignore_status: bool True to ignore the exit code of the remote
                            subprocess.  Note that if you do ignore status codes,
                            you should handle non-zero exit codes explicitly.
-            env: dict enviroment variables to setup on the remote host.
+            env: dict environment variables to setup on the remote host.
             io_encoding: str unicode encoding of command output.
 
         Returns:
@@ -191,9 +193,8 @@ class SshConnection(object):
 
         dns_retry_count = 2
         while True:
-            result = job.run(terminal_command,
-                             ignore_status=True,
-                             timeout=timeout)
+            result = job.run(
+                terminal_command, ignore_status=True, timeout=timeout)
             output = result.stdout
 
             # Check for a connected message to prevent false negatives.
@@ -261,7 +262,7 @@ class SshConnection(object):
         Args:
             command: The command to execute over ssh. Can be either a string
                      or a list.
-            env: A dictonary of enviroment variables to setup on the remote
+            env: A dictonary of environment variables to setup on the remote
                  host.
 
         Returns:
