@@ -22,6 +22,11 @@ from acts import utils
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.tel import tel_test_utils as tel_utils
+from acts.utils import force_airplane_mode
+from acts.utils import set_adaptive_brightness
+from acts.utils import set_ambient_display
+from acts.utils import set_auto_rotate
+from acts.utils import set_location_service
 
 pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
@@ -71,6 +76,14 @@ class WifiPowerTest(acts.base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
         asserts.assert_true(self.mon.usb("auto"),
                          "Failed to turn USB mode to auto on monsoon.")
+        asserts.assert_true(
+            force_airplane_mode(self.dut, True),
+            "Can not turn on airplane mode on: %s" % self.dut.serial)
+        set_location_service(self.dut, False)
+        set_adaptive_brightness(self.dut, False)
+        set_ambient_display(self.dut, False)
+        self.dut.adb.shell("settings put system screen_brightness 0")
+        set_auto_rotate(self.dut, False)
         required_userparam_names = (
             # These two params should follow the format of
             # {"SSID": <SSID>, "password": <Password>}
