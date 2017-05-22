@@ -267,24 +267,155 @@ class DiscoveryTest(AwareBaseTest):
     # sleep for timeout period and then verify all 'fail_on_event' together
     time.sleep(autils.EVENT_TIMEOUT)
 
-    # Subscriber: should not get a new service discovery (no new information)
-    autils.fail_on_event(
-        s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, timeout=0)
+    # verify that there were no other events
+    autils.verify_no_more_events(p_dut, 0)
+    autils.verify_no_more_events(s_dut, 0)
 
-    # Publisher: should never get a service discovery event!
-    autils.fail_on_event(
-        p_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, timeout=0)
+  def verify_discovery_session_term(self, dut, disc_id, config, is_publish,
+                                    term_ind_on):
+    """Utility to verify that the specified discovery session has terminated (by
+    waiting for the TTL and then attempting to reconfigure).
 
-    # Publisher+Subscriber: should not get termination indication (since we're
-    # destroying sessions explicitly)
-    autils.fail_on_event(
-        p_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED, timeout=0)
-    autils.fail_on_event(
-        s_dut, aconsts.SESSION_CB_ON_SESSION_TERMINATED, timeout=0)
+    Args:
+      dut: device under test
+      disc_id: discovery id for the existing session
+      config: configuration of the existing session
+      is_publish: True if the configuration was publish, False if subscribe
+      term_ind_on: True if a termination indication is expected, False otherwise
+    """
+    # Wait for session termination
+    if term_ind_on:
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_TERMINATED,
+                                disc_id))
+    else:
+      # can't defer wait to end since in any case have to wait for session to
+      # expire
+      autils.fail_on_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_TERMINATED,
+                                disc_id))
+
+    # Validate that session expired by trying to configure it (expect failure)
+    config[aconsts.DISCOVERY_KEY_SSI] = "something else"
+    if is_publish:
+      dut.droid.wifiAwareUpdatePublish(disc_id, config)
+    else:
+      dut.droid.wifiAwareUpdateSubscribe(disc_id, config)
+    # failure expected - should verify that SESSION_CB_ON_SESSION_CONFIG_UPDATED
+    # not received but instead will verify_no_more_events at end of test
+
+  def positive_ttl_test_utility(self, is_publish, ptype, stype, term_ind_on):
+    """Utility which runs a positive discovery session TTL configuration test
+
+    Iteration 1: Verify session started with TTL
+    Iteration 2: Verify session started without TTL and reconfigured with TTL
+    Iteration 3: Verify session started with (long) TTL and reconfigured with
+                 (short) TTL
+
+    Args:
+      is_publish: True if testing publish, False if testing subscribe
+      ptype: Publish discovery type (used if is_publish is True)
+      stype: Subscribe discovery type (used if is_publish is False)
+      term_ind_on: Configuration of termination indication
+    """
+    SHORT_TTL = 5  # 5 seconds
+    LONG_TTL = 100  # 100 seconds
+    dut = self.android_devices[0]
+
+    # Attach and wait for confirmation
+    id = dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Iteration 1: Start discovery session with TTL
+    config = self.create_base_config(dut.aware_capabilities, is_publish, ptype,
+                                     stype, self.PAYLOAD_SIZE_TYPICAL,
+                                     SHORT_TTL, term_ind_on, False)
+    if is_publish:
+      disc_id = dut.droid.wifiAwarePublish(id, config, True)
+      autils.wait_for_event(dut,
+                            autils.decorate_event(
+                                aconsts.SESSION_CB_ON_PUBLISH_STARTED, disc_id))
+    else:
+      disc_id = dut.droid.wifiAwareSubscribe(id, config, True)
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                                disc_id))
+
+    # Wait for session termination & verify
+    self.verify_discovery_session_term(dut, disc_id, config, is_publish,
+                                       term_ind_on)
+
+    # Iteration 2: Start a discovery session without TTL
+    config = self.create_base_config(dut.aware_capabilities, is_publish, ptype,
+                                     stype, self.PAYLOAD_SIZE_TYPICAL, 0,
+                                     term_ind_on, False)
+    if is_publish:
+      disc_id = dut.droid.wifiAwarePublish(id, config, True)
+      autils.wait_for_event(dut,
+                            autils.decorate_event(
+                                aconsts.SESSION_CB_ON_PUBLISH_STARTED, disc_id))
+    else:
+      disc_id = dut.droid.wifiAwareSubscribe(id, config, True)
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                                disc_id))
+
+    # Update with a TTL
+    config = self.create_base_config(dut.aware_capabilities, is_publish, ptype,
+                                     stype, self.PAYLOAD_SIZE_TYPICAL,
+                                     SHORT_TTL, term_ind_on, False)
+    if is_publish:
+      dut.droid.wifiAwareUpdatePublish(disc_id, config)
+    else:
+      dut.droid.wifiAwareUpdateSubscribe(disc_id, config)
+    autils.wait_for_event(
+        dut,
+        autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_CONFIG_UPDATED,
+                              disc_id))
+
+    # Wait for session termination & verify
+    self.verify_discovery_session_term(dut, disc_id, config, is_publish,
+                                       term_ind_on)
+
+    # Iteration 3: Start a discovery session with (long) TTL
+    config = self.create_base_config(dut.aware_capabilities, is_publish, ptype,
+                                     stype, self.PAYLOAD_SIZE_TYPICAL, LONG_TTL,
+                                     term_ind_on, False)
+    if is_publish:
+      disc_id = dut.droid.wifiAwarePublish(id, config, True)
+      autils.wait_for_event(dut,
+                            autils.decorate_event(
+                                aconsts.SESSION_CB_ON_PUBLISH_STARTED, disc_id))
+    else:
+      disc_id = dut.droid.wifiAwareSubscribe(id, config, True)
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                                disc_id))
+
+    # Update with a TTL
+    config = self.create_base_config(dut.aware_capabilities, is_publish, ptype,
+                                     stype, self.PAYLOAD_SIZE_TYPICAL,
+                                     SHORT_TTL, term_ind_on, False)
+    if is_publish:
+      dut.droid.wifiAwareUpdatePublish(disc_id, config)
+    else:
+      dut.droid.wifiAwareUpdateSubscribe(disc_id, config)
+    autils.wait_for_event(
+        dut,
+        autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_CONFIG_UPDATED,
+                              disc_id))
+
+    # Wait for session termination & verify
+    self.verify_discovery_session_term(dut, disc_id, config, is_publish,
+                                       term_ind_on)
 
     # verify that there were no other events
-    autils.verify_no_more_events(p_dut)
-    autils.verify_no_more_events(s_dut)
+    autils.verify_no_more_events(dut)
 
   #######################################
   # Positive tests key:
@@ -370,3 +501,25 @@ class DiscoveryTest(AwareBaseTest):
         ptype=aconsts.PUBLISH_TYPE_SOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         payload_size=self.PAYLOAD_SIZE_MAX)
+
+  #######################################
+  # TTL tests key:
+  #
+  # names is: test_ttl_<pub_type|sub_type>_<term_ind>
+  # where:
+  #
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  # term_ind: ind_on or ind_off
+  #######################################
+
+  def test_ttl_unsolicited_ind_on(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Unsolicited publish
+    - Termination indication enabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=True,
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=None,
+        term_ind_on=True)
