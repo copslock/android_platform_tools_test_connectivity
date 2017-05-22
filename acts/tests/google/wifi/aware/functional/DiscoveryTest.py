@@ -523,3 +523,80 @@ class DiscoveryTest(AwareBaseTest):
         ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
         stype=None,
         term_ind_on=True)
+
+  def test_ttl_unsolicited_ind_off(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Unsolicited publish
+    - Termination indication disabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=True,
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=None,
+        term_ind_on=False)
+
+  def test_ttl_solicited_ind_on(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Solicited publish
+    - Termination indication enabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=True,
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=None,
+        term_ind_on=True)
+
+  def test_ttl_solicited_ind_off(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Solicited publish
+    - Termination indication disabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=True,
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=None,
+        term_ind_on=False)
+
+  def test_ttl_passive_ind_on(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Passive subscribe
+    - Termination indication enabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=False,
+        ptype=None,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        term_ind_on=True)
+
+  def test_ttl_passive_ind_off(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Passive subscribe
+    - Termination indication disabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=False,
+        ptype=None,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        term_ind_on=False)
+
+  def test_ttl_active_ind_on(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Active subscribe
+    - Termination indication enabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=False,
+        ptype=None,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        term_ind_on=True)
+
+  def test_ttl_active_ind_off(self):
+    """Functional test case / Discovery test cases / TTL test case:
+    - Active subscribe
+    - Termination indication disabled
+    """
+    self.positive_ttl_test_utility(
+        is_publish=False,
+        ptype=None,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        term_ind_on=False)
