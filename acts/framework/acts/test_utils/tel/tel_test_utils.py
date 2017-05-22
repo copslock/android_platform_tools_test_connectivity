@@ -3757,7 +3757,10 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             return True
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
-            ad.droid.wifiConnectByConfig(network)
+            try:
+                ad.droid.wifiConnectByConfig(network)
+            except Exception:
+                ad.droid.wifiConnect(network)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 ad.log.info("Connected to Wifi %s", wifi_ssid)
