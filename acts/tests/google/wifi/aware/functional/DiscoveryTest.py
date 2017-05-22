@@ -465,8 +465,8 @@ class DiscoveryTest(AwareBaseTest):
     Args:
       p_type: Publish discovery type
       s_type: Subscribe discovery type
-      p_service_name: Publish service name
-      s_service_name: Subscribe service name
+      p_service_name: Publish service name (or None to leave unchanged)
+      s_service_name: Subscribe service name (or None to leave unchanged)
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -481,7 +481,8 @@ class DiscoveryTest(AwareBaseTest):
         ttl=0,
         term_ind_on=False,
         null_match=False)
-    p_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = p_service_name
+    if p_service_name is not None:
+      p_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = p_service_name
     s_config = self.create_publish_config(
         s_dut.aware_capabilities,
         s_type,
@@ -489,7 +490,8 @@ class DiscoveryTest(AwareBaseTest):
         ttl=0,
         term_ind_on=False,
         null_match=False)
-    s_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = s_service_name
+    if s_service_name is not None:
+      s_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = s_service_name
 
     self.negative_discovery_test_utility(p_dut, s_dut, p_config, s_config)
 
@@ -709,3 +711,35 @@ class DiscoveryTest(AwareBaseTest):
         s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         p_service_name="GoogleTestServiceXXX",
         s_service_name="GoogleTestServiceYYY")
+
+  #######################################
+  # Mismatched discovery session type tests key:
+  #
+  # names is: test_mismatch_service_type_<pub_type>_<sub_type>
+  # where:
+  #
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  #######################################
+
+  def test_mismatch_service_type_unsolicited_active(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Unsolicited publish
+    - Active subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        p_service_name=None,
+        s_service_name=None)
+
+  def test_mismatch_service_type_solicited_passive(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Unsolicited publish
+    - Active subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_SOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        p_service_name=None,
+        s_service_name=None)
