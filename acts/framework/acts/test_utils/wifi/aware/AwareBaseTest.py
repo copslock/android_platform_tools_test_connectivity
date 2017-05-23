@@ -47,5 +47,5 @@ class AwareBaseTest(BaseTestClass):
 
     Returns: a new message id value.
     """
-    self.msg_id =+ 1
+    self.msg_id = self.msg_id + 1
     return self.msg_id
