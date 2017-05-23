@@ -39,13 +39,13 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
                       "ServiceSpecificInfo": "Data XYZ",
                       "MatchFilter": {"int0": 14,
                                       "data0": "MESSAGE_ALL"},
-                      "PublishType": 0,
+                      "DiscoveryType": 0,
                       "TtlSec": 0}
     subscribe_config = {"ServiceName": "GoogleTestServiceX",
                         "ServiceSpecificInfo": "Data ABC",
                         "MatchFilter": {"int0": 14,
                                         "data0": "MESSAGE_ALL"},
-                        "SubscribeType": 0,
+                        "DiscoveryType": 0,
                         "TtlSec": 0}
     rtt_24_20 = {"deviceType": 5,
                  "requestType": 2,
@@ -491,9 +491,9 @@ class WifiAwareManagerTest(base_test.BaseTestClass):
              'PublishConfig': self.publish_config,
              'SubscribeConfig': self.subscribe_config},
             {'Title': 'ActiveSub',
-             'PublishConfig': dict(self.publish_config, **{'PublishType': 1}),
+             'PublishConfig': dict(self.publish_config, **{'DiscoveryType': 1}),
              'SubscribeConfig': dict(self.subscribe_config,
-                                     **{'SubscribeType': 1})},
+                                     **{'DiscoveryType': 1})},
             {'Title': 'ActivePub-LimitedTtl',
              'PublishConfig': dict(self.publish_config, **{"TtlSec": 20}),
              'SubscribeConfig': dict(self.subscribe_config, **{"TtlSec": 20})})
