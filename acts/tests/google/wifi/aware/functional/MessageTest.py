@@ -169,6 +169,107 @@ class MessageTest(AwareBaseTest):
     autils.verify_no_more_events(p_dut, timeout=0)
     autils.verify_no_more_events(s_dut, timeout=0)
 
+  def wait_for_messages(self, tx_msgs, tx_msg_ids, tx_dut, rx_dut):
+    """Validate that all expected messages are transmitted correctly and
+    received as expected. Method is called after the messages are sent into
+    the transmission queue.
+
+    Note: that message can be transmitted and received out-of-order (which is
+    acceptable and the method handles that correctly).
+
+    Args:
+      tx_msgs: dictionary of transmitted messages
+      tx_msg_ids: dictionary of transmitted message ids
+      tx_dut: transmitter device
+      rx_dut: receiver device
+
+    Returns: the peer ID from any of the received messages
+    """
+    # peer id on receiver
+    peer_id_on_rx = None
+
+    # wait for all messages to be transmitted
+    still_to_be_tx = len(tx_msg_ids)
+    while still_to_be_tx != 0:
+      tx_event = autils.wait_for_event(tx_dut,
+                                       aconsts.SESSION_CB_ON_MESSAGE_SENT)
+      tx_msg_id = tx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_ID]
+      tx_msg_ids[tx_msg_id] = tx_msg_ids[tx_msg_id] + 1
+      if tx_msg_ids[tx_msg_id] == 1:
+        still_to_be_tx = still_to_be_tx - 1
+
+    # check for any duplicate transmit notifications
+    asserts.assert_equal(
+        len(tx_msg_ids),
+        sum(tx_msg_ids.values()),
+        "Duplicate transmit message IDs: " + tx_msg_ids)
+
+    # wait for all messages to be received
+    still_to_be_rx = len(tx_msgs)
+    while still_to_be_rx != 0:
+      rx_event = autils.wait_for_event(rx_dut,
+                                       aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
+      peer_id_on_rx = rx_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
+      rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
+      asserts.assert_true(
+          rx_msg not in tx_msgs,
+          "Received a message we did not send!? -- '%s'" % rx_msg)
+      tx_msgs[rx_msg] = tx_msgs[rx_msg] + 1
+      if tx_msgs[rx_msg] == 1:
+        still_to_be_rx = still_to_be_rx - 1
+
+    # check for any duplicate received messages
+    asserts.assert_equal(
+        len(tx_msgs),
+        sum(tx_msgs.values()), "Duplicate transmit messages: " + tx_msgs)
+
+    return peer_id_on_rx
+
+  def run_message_with_queue(self, payload_size):
+    """Validate L2 message exchange between publisher & subscriber with
+    queueing - i.e. transmit all messages and then wait for ACKs.
+
+    Args:
+      payload_size: min, typical, or max (PAYLOAD_SIZE_xx).
+    """
+    discovery_info = self.prep_message_exchange()
+    p_dut = discovery_info["p_dut"]
+    s_dut = discovery_info["s_dut"]
+    p_disc_id = discovery_info["p_disc_id"]
+    s_disc_id = discovery_info["s_disc_id"]
+    peer_id_on_sub = discovery_info["peer_id_on_sub"]
+
+    msgs = {}
+    msg_ids = {}
+    for i in range(
+        self.NUM_MSGS_QUEUE_DEPTH_MULT *
+        s_dut.aware_capabilities[aconsts.CAP_MAX_QUEUED_TRANSMIT_MESSAGES]):
+      msg = self.create_msg(s_dut.aware_capabilities, payload_size, i)
+      msg_id = self.get_next_msg_id()
+      msgs[msg] = 0
+      msg_ids[msg_id] = 0
+      s_dut.droid.wifiAwareSendMessage(s_disc_id, peer_id_on_sub, msg_id, msg,
+                                       0)
+    peer_id_on_pub = self.wait_for_messages(msgs, msg_ids, s_dut, p_dut)
+
+    msgs = {}
+    msg_ids = {}
+    for i in range(
+            self.NUM_MSGS_QUEUE_DEPTH_MULT *
+            p_dut.aware_capabilities[aconsts.CAP_MAX_QUEUED_TRANSMIT_MESSAGES]):
+      msg = self.create_msg(p_dut.aware_capabilities, payload_size, i)
+      msg_id = self.get_next_msg_id()
+      msgs[msg] = 0
+      msg_ids[msg_id] = 0
+      p_dut.droid.wifiAwareSendMessage(p_disc_id, peer_id_on_pub, msg_id, msg,
+                                       0)
+    self.wait_for_messages(msgs, msg_ids, p_dut, s_dut)
+
+    # verify there are no more events
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
+
   ############################################################################
 
   def test_message_no_queue_min(self):
@@ -188,3 +289,21 @@ class MessageTest(AwareBaseTest):
     - Max payload size (based on device capabilities)
     """
     self.run_message_no_queue(self.PAYLOAD_SIZE_MAX)
+
+  def test_message_with_queue_min(self):
+    """Functional / Message / With queue
+    - Minimal payload size (none or "")
+    """
+    self.run_message_with_queue(self.PAYLOAD_SIZE_MIN)
+
+  def test_message_with_queue_typical(self):
+    """Functional / Message / With queue
+    - Typical payload size
+    """
+    self.run_message_with_queue(self.PAYLOAD_SIZE_TYPICAL)
+
+  def test_message_with_queue_max(self):
+    """Functional / Message / With queue
+    - Max payload size (based on device capabilities)
+    """
+    self.run_message_with_queue(self.PAYLOAD_SIZE_MAX)
