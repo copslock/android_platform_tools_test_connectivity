@@ -1809,8 +1809,8 @@ def http_file_download_by_chrome(ad,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_name, out_path = _generate_file_name_and_out_path(url,
-                                                           "/sdcard/Download/")
+    file_name, out_path = _generate_file_name_and_out_path(
+        url, "/sdcard/Download/")
     for cmd in ("am set-debug-app --persistent com.android.chrome",
                 'echo "chrome --no-default-browser-check --no-first-run '
                 '--disable-fre" > /data/local/chrome-command-line',
@@ -1893,8 +1893,7 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data'][
-            'isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
         return True
     return False
 
@@ -1921,8 +1920,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
-                                                          state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(
+        log, ad, sub_id, state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -3657,6 +3656,7 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     """
     result = True
 
+    set_wifi_to_default(log, ad)
     try:
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
@@ -3673,7 +3673,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
-    set_wifi_to_default(log, ad)
 
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
@@ -3723,8 +3722,7 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info[
-            "SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -3759,7 +3757,10 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             return True
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
-            ad.droid.wifiConnectByConfig(network)
+            try:
+                ad.droid.wifiConnectByConfig(network)
+            except Exception:
+                ad.droid.wifiConnect(network)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 ad.log.info("Connected to Wifi %s", wifi_ssid)
@@ -4163,8 +4164,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data'][
-                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data']
+                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
