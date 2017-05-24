@@ -177,8 +177,9 @@ class DiscoveryTest(AwareBaseTest):
         s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
     peer_id_on_sub = discovery_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
 
-    # Subscriber: validate contents of discovery (specifically that getting the
-    # Publisher's SSI and MatchFilter!)
+    # Subscriber: validate contents of discovery:
+    # - SSI: publisher's
+    # - Match filter: UNSOLICITED - publisher, SOLICITED - subscriber
     autils.assert_equal_strings(
         bytes(discovery_event["data"][
             aconsts.SESSION_CB_KEY_SERVICE_SPECIFIC_INFO]).decode("utf-8"),
@@ -187,7 +188,9 @@ class DiscoveryTest(AwareBaseTest):
     asserts.assert_equal(
         autils.decode_list(
             discovery_event["data"][aconsts.SESSION_CB_KEY_MATCH_FILTER_LIST]),
-        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
+        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]
+                           if ptype == aconsts.PUBLISH_TYPE_UNSOLICITED else
+                           s_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
         "Discovery mismatch: match filter")
 
     # Subscriber: send message to peer (Publisher)
@@ -246,7 +249,9 @@ class DiscoveryTest(AwareBaseTest):
     asserts.assert_equal(
         autils.decode_list(
             discovery_event["data"][aconsts.SESSION_CB_KEY_MATCH_FILTER_LIST]),
-        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
+        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]
+                           if ptype == aconsts.PUBLISH_TYPE_UNSOLICITED else
+                           s_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
         "Discovery mismatch: match filter")
 
     # Subscribe: update subscribe and wait for confirmation
