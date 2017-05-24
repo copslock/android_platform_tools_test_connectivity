@@ -308,8 +308,18 @@ class DiscoveryTest(AwareBaseTest):
       dut.droid.wifiAwareUpdatePublish(disc_id, config)
     else:
       dut.droid.wifiAwareUpdateSubscribe(disc_id, config)
-    # failure expected - should verify that SESSION_CB_ON_SESSION_CONFIG_UPDATED
-    # not received but instead will verify_no_more_events at end of test
+
+    # The response to update discovery session is:
+    # term_ind_on=True: session was cleaned-up so won't get an explicit failure, but won't get a
+    #                   success either. Can check for no SESSION_CB_ON_SESSION_CONFIG_UPDATED but
+    #                   will defer to the end of the test (no events on queue).
+    # term_ind_on=False: session was not cleaned-up (yet). So expect
+    #                    SESSION_CB_ON_SESSION_CONFIG_FAILED.
+    if not term_ind_on:
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_CONFIG_FAILED,
+                                disc_id))
 
   def positive_ttl_test_utility(self, is_publish, ptype, stype, term_ind_on):
     """Utility which runs a positive discovery session TTL configuration test
