@@ -43,6 +43,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
@@ -80,7 +81,7 @@ class TelephonyBaseTest(BaseTestClass):
                     )
 
         self.skip_reset_between_cases = self.user_params.get(
-            "skip_reset_between_cases", False)
+            "skip_reset_between_cases", True)
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -246,7 +247,7 @@ class TelephonyBaseTest(BaseTestClass):
                 self.logger_sessions.append((logger, logger.start()))
 
         if self.skip_reset_between_cases:
-            return True
+            return ensure_phones_idle(self.log, self.android_devices)
         return ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
