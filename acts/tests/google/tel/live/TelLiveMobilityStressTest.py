@@ -20,6 +20,7 @@
 import collections
 import random
 import time
+from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_atten_utils import set_rssi
@@ -74,7 +75,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.user_params.get("crash_check_interval", 300))
         self.signal_change_interval = int(
             self.user_params.get("signal_change_interval", 10))
-        self.singal_change_step = int(
+        self.signal_change_step = int(
             self.user_params.get("signal_change_step", 5))
         self.dut = self.android_devices[0]
         self.helper = self.android_devices[1]
@@ -113,12 +114,13 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.log.error("%s of length %s from %s to %s fails",
                            message_type_map[selection], length, ads[0].serial,
                            ads[1].serial)
+            self.result_info["%s failure" % message_type_map[selection]] += 1
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
                           message_type_map[selection], length, ads[0].serial,
                           ads[1].serial)
-            return False
+            return True
 
     def _make_phone_call(self, ads):
         if not call_setup_teardown(
@@ -135,30 +137,18 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         ads[0].log.info("Setup call successfully.")
         return True
 
-    def _download_file(self):
-        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
-        #wifi download is very slow in lab, limit the file size upto 200MB
-        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
-        selection = random.randrange(0, 7)
-        return active_file_download_test(self.log, self.dut,
-                                         file_names[selection])
-
-    def check_crash(self):
-        new_crash = self.dut.check_crash_report()
-        crash_diff = set(new_crash).difference(set(self.dut.crash_report))
-        self.dut.crash_report = new_crash
-        if crash_diff:
-            self.dut.log.error("Find new crash reports %s", list(crash_diff))
-            self.dut.pull_files(list(crash_diff))
-            return False
-        return True
-
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
-            if not self.check_crash():
+            new_crash = self.dut.check_crash_report()
+            crash_diff = set(new_crash).difference(set(self.dut.crash_report))
+            self.dut.crash_report = new_crash
+            if crash_diff:
+                self.dut.log.error("Find new crash reports %s",
+                                   list(crash_diff))
+                self.dut.pull_files(list(crash_diff))
                 failure += 1
-                self.log.error("Crash found count: %s", failure)
+                self.result_info["Crashes"] += 1
                 self._take_bug_report("%s_crash_found" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
@@ -196,6 +186,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
                      MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
+        return 0
 
     def call_test(self):
         failure = 0
@@ -208,6 +199,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 failure += 1
                 self.log.error("New call test failure: %s/%s", failure,
                                total_count)
+                self.result_info["Call failure"] += 1
                 self._take_bug_report("%s_call_failure" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
@@ -233,33 +225,35 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
 
     def data_test(self):
         failure = 0
-        total_count = 0
+        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
+        #wifi download is very slow in lab, limit the file size upto 200MB
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
         while time.time() < self.finishing_time:
-            total_count += 1
-            if not self._download_file():
-                failure += 1
-                self.log.error("New file download test failure: %s/%s",
-                               failure, total_count)
+            self.dut.log.info(dict(self.result_info))
+            self.result_info["Total file download"] += 1
+            selection = random.randrange(0, 5)
+            file_name = file_names[selection]
+            if not active_file_download_test(self.log, self.dut, file_name):
+                self.result_info["%s file download failure" % file_name] += 1
                 #self._take_bug_report("%s_download_failure" % self.test_name,
                 #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
-            self.dut.droid.goToSleepNow()
-            time.sleep(random.randrange(0, self.max_sleep_time))
+                failure += 1
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
 
     def parallel_tests(self, setup_func=None):
         if setup_func and not setup_func():
             self.log.error("Test setup %s failed", setup_func.__name__)
             return False
+        self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []), (
                 self.change_environment, []), (self.crash_check_test, [])])
-        self.log.info("Call failures: %s", results[0])
-        self.log.info("Messaging failures: %s", results[1])
-        self.log.info("Data failures: %s", results[2])
-        self.log.info("Crash failures: %s", results[4])
-        for result in results:
-            if result: return False
+        self.log.info(dict(self.result_info))
+        if sum(results):
+            fail(str(dict(self.result_info)))
 
     """ Tests Begin """
 
