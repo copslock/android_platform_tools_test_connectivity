@@ -190,12 +190,15 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def call_test(self):
         failure = 0
+        total_count = 0
         while time.time() < self.finishing_time:
             ads = [self.dut, self.helper]
             random.shuffle(ads)
+            total_count += 1
             if not self._make_phone_call(ads):
                 failure += 1
-                self.log.error("Call test failure count: %s", failure)
+                self.log.error("New call test failure: %s/%s", failure,
+                               total_count)
                 self._take_bug_report("%s_call_failure" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
@@ -204,26 +207,31 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def message_test(self):
         failure = 0
+        total_count = 0
         while time.time() < self.finishing_time:
             ads = [self.dut, self.helper]
             random.shuffle(ads)
+            total_count += 1
             if not self._send_message(ads):
                 failure += 1
-                self.log.error("Messaging test failure count: %s", failure)
-                self._take_bug_report("%s_messaging_failure" % self.test_name,
-                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                self.log.error("New messaging test failure: %s/%s", failure,
+                               total_count)
+                #self._take_bug_report("%s_messaging_failure" % self.test_name,
+                #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
 
     def data_test(self):
         failure = 0
+        total_count = 0
         while time.time() < self.finishing_time:
             if not self._download_file():
                 failure += 1
-                self.log.error("File download test failure count: %s", failure)
-                self._take_bug_report("%s_download_failure" % self.test_name,
-                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                self.log.error("New file download test failure: %s/%s",
+                               failure, total_count)
+                #self._take_bug_report("%s_download_failure" % self.test_name,
+                #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
