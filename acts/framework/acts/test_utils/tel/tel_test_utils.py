@@ -3494,15 +3494,17 @@ def is_droid_in_network_generation_for_subscription(log, ad, sub_id, nw_gen,
 
     for service in service_list:
         nw_rat = get_network_rat_for_subscription(log, ad, sub_id, service)
-        ad.log.info("network rat for %s is %s", service, nw_rat)
+        ad.log.info("%s network rat is %s", service, nw_rat)
         if nw_rat == RAT_UNKNOWN or not is_valid_rat(nw_rat):
             continue
 
         if rat_generation_from_rat(nw_rat) == nw_gen:
-            ad.log.info("network rat %s is expected %s", nw_rat, nw_gen)
+            ad.log.info("%s network rat %s is expected %s", service, nw_rat,
+                        nw_gen)
             return True
         else:
-            ad.log.info("network rat %s is %s, expecting %s", nw_rat,
+            ad.log.info("%s network rat %s is %s, does not meet expected %s",
+                        service, nw_rat,
                         rat_generation_from_rat(nw_rat), nw_gen)
             return False
 
