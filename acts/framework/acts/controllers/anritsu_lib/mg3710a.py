@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """
 Controller interface for Anritsu Signal Generator MG3710A.
 """
@@ -29,6 +28,7 @@ from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
 
 TERMINATOR = "\n"
 
+
 def create(configs, logger):
     objs = []
     for c in configs:
@@ -36,8 +36,10 @@ def create(configs, logger):
         objs.append(MG3710A(ip_address, logger))
     return objs
 
+
 def destroy(objs):
     return
+
 
 class MG3710A(object):
     """Class to communicate with Anritsu Signal Generator MG3710A.
@@ -49,14 +51,14 @@ class MG3710A(object):
 
         # Open socket connection to Signaling Tester
         self.log.info("Opening Socket Connection with "
-              "Signal Generator MG3710A ({}) ".format(self._ipaddr))
+                      "Signal Generator MG3710A ({}) ".format(self._ipaddr))
         try:
-            self._sock = socket.create_connection((self._ipaddr, 49158),
-                                                  timeout=30)
+            self._sock = socket.create_connection(
+                (self._ipaddr, 49158), timeout=30)
             self.send_query("*IDN?", 60)
             self.log.info("Communication Signal Generator MG3710A OK.")
             self.log.info("Opened Socket connection to ({})"
-                  "with handle ({})".format(self._ipaddr, self._sock))
+                          "with handle ({})".format(self._ipaddr, self._sock))
         except socket.timeout:
             raise AnritsuError("Timeout happened while conencting to"
                                " Anritsu MG3710A")
@@ -72,6 +74,7 @@ class MG3710A(object):
         Returns:
             None
         """
+        self.send_command(":SYST:COMM:GTL", opc=False)
         self._sock.close()
 
     def send_query(self, query, sock_timeout=10):
@@ -97,7 +100,7 @@ class MG3710A(object):
         except socket.error:
             raise AnritsuError("Socket Error")
 
-    def send_command(self, command, sock_timeout=30):
+    def send_command(self, command, sock_timeout=30, opc=True):
         """ Sends a Command message to Anritsu MG3710A
 
         Args:
@@ -111,10 +114,11 @@ class MG3710A(object):
         self._sock.settimeout(sock_timeout)
         try:
             self._sock.send(cmdToSend)
-            # check operation status
-            status = self.send_query("*OPC?")
-            if int(status) != OPERATION_COMPLETE:
-                raise AnritsuError("Operation not completed")
+            if opc:
+                # check operation status
+                status = self.send_query("*OPC?")
+                if int(status) != OPERATION_COMPLETE:
+                    raise AnritsuError("Operation not completed")
         except socket.timeout:
             raise AnritsuError("Timeout for Command Response from Anritsu")
         except socket.error:
@@ -498,7 +502,7 @@ class MG3710A(object):
             None
         """
         cmd = "MMEM{}:LOAD:WAV:WM{} '{}','{}'".format(sg, memory, package_name,
-                                                      pattern_name )
+                                                      pattern_name)
         self.send_command(cmd)
 
     def select_waveform(self, package_name, pattern_name, memory, sg=1):
@@ -514,8 +518,8 @@ class MG3710A(object):
         Returns:
             None
         """
-        cmd = "SOUR{}:RAD:ARB:WM{}:WAV '{}','{}'".format(sg, memory, package_name,
-                                                         pattern_name )
+        cmd = "SOUR{}:RAD:ARB:WM{}:WAV '{}','{}'".format(
+            sg, memory, package_name, pattern_name)
         self.send_command(cmd)
 
     def get_freq_relative_display_status(self, sg=1):
@@ -665,7 +669,7 @@ class MG3710A(object):
         """
         return self.send_query("SOUR{}:RAD:ARB:FREQ:OFFS?".format(sg))
 
-    def set_arb_freq_offset(self,  offset, sg=1):
+    def set_arb_freq_offset(self, offset, sg=1):
         """ Sets the frequency offset between Pattern A and Patten B when
             CenterSignal is A or B.
 
@@ -691,7 +695,8 @@ class MG3710A(object):
         Returns:
             frequency offset
         """
-        return self.send_query("SOUR{}:RAD:ARB:WM{}:FREQ:OFFS?".format(sg, a_or_b))
+        return self.send_query("SOUR{}:RAD:ARB:WM{}:FREQ:OFFS?".format(sg,
+                                                                       a_or_b))
 
     def set_arb_freq_offset_aorb(self, a_or_b, offset, sg=1):
         """ Sets the frequency offset of Pattern A/Pattern B based on Baseband
