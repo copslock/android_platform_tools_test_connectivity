@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 """
-    Test Script for Telephony Mobility Stress Test
+    Test Script for Telephony Stress Call Test
 """
 
 import collections
@@ -22,25 +22,21 @@ import random
 import time
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_atten_utils import set_rssi
-from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
-from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
-from acts.test_utils.tel.tel_test_utils import is_voice_attached
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -52,52 +48,79 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import rand_ascii_str
-from TelWifiVoiceTest import TelWifiVoiceTest
-from TelWifiVoiceTest import ATTEN_NAME_FOR_WIFI_2G
-from TelWifiVoiceTest import ATTEN_NAME_FOR_WIFI_5G
-from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_3G
-from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_4G
 
 
-class TelLiveMobilityStressTest(TelWifiVoiceTest):
+class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
     def setup_class(self):
-        super().setup_class()
-        #super(TelWifiVoiceTest, self).setup_class()
+        super(TelLiveSinglePhoneStressTest, self).setup_class()
+        self.dut = self.android_devices[0]
+        self.call_server_number = self.user_params.get("call_server_number",
+                                                       "9523521350")
         self.user_params["telephony_auto_rerun"] = False
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.max_phone_call_duration = int(
-            self.user_params.get("max_phone_call_duration", 600))
-        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
+            self.user_params.get("max_phone_call_duration", 3600))
+        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 1200))
         self.max_run_time = int(self.user_params.get("max_run_time", 18000))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
-        self.signal_change_interval = int(
-            self.user_params.get("signal_change_interval", 10))
-        self.singal_change_step = int(
-            self.user_params.get("signal_change_step", 5))
-        self.dut = self.android_devices[0]
-        self.helper = self.android_devices[1]
 
         return True
 
-    def _setup_volte_wfc_wifi_preferred(self):
-        return self._wfc_phone_setup(
-            False, WFC_MODE_WIFI_PREFERRED, volte_mode=True)
+    def _setup_wfc(self):
+        if not ensure_wifi_connected(
+                self.log,
+                self.dut,
+                self.wifi_network_ssid,
+                self.wifi_network_pass,
+                retry=3):
+            self.dut.log.error("Phone Wifi connection fails.")
+            return False
+        self.dut.log.info("Phone WIFI is connected successfully.")
+        if not set_wfc_mode(self.log, self.dut, WFC_MODE_WIFI_PREFERRED):
+            self.dut.log.error("Phone failed to enable Wifi-Calling.")
+            return False
+        self.dut.log.info("Phone is set in Wifi-Calling successfully.")
+        if not phone_idle_iwlan(self.log, self.dut):
+            self.dut.log.error("Phone is not in WFC enabled state.")
+            return False
+        self.dut.log.info("Phone is in WFC enabled state.")
+        return True
 
-    def _setup_volte_wfc_cell_preferred(self):
-        return self._wfc_phone_setup(
-            False, WFC_MODE_CELLULAR_PREFERRED, volte_mode=True)
+    def _setup_lte_volte_enabled(self):
+        if not phone_setup_volte(self.log, self.dut):
+            self.dut.log.error("Phone failed to enable VoLTE.")
+            return False
+        self.dut.log.info("Phone VOLTE is enabled successfully.")
+        return True
 
-    def _setup_csfb_wfc_wifi_preferred(self):
-        return self._wfc_phone_setup(
-            False, WFC_MODE_WIFI_PREFERRED, volte_mode=False)
+    def _setup_lte_volte_disabled(self):
+        if not phone_setup_csfb(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup CSFB.")
+            return False
+        self.dut.log.info("Phone VOLTE is disabled successfully.")
+        return True
 
-    def _setup_csfb_wfc_cell_preferred(self):
-        return self._wfc_phone_setup(
-            False, WFC_MODE_CELLULAR_PREFERRED, volte_mode=False)
+    def _setup_3g(self):
+        if not phone_setup_voice_3g(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup 3g.")
+            return False
+        self.dut.log.info("Phone RAT 3G is enabled successfully.")
+        return True
 
-    def _send_message(self, ads):
+    def _setup_2g(self):
+        if not phone_setup_voice_2g(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup 2g.")
+            return False
+        self.dut.log.info("RAT 2G is enabled successfully.")
+        return True
+
+    def _send_message(self):
         selection = random.randrange(0, 2)
         message_type_map = {0: "SMS", 1: "MMS"}
         max_length_map = {0: self.max_sms_length, 1: self.max_mms_length}
@@ -108,37 +131,36 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
-        if not message_func_map[selection](self.log, ads[0], ads[1],
+        if not message_func_map[selection](self.log, self.dut, self.dut,
                                            message_content_map[selection]):
-            self.log.error("%s of length %s from %s to %s fails",
-                           message_type_map[selection], length, ads[0].serial,
-                           ads[1].serial)
+            self.log.error("%s of length %s from self to self fails",
+                           message_type_map[selection], length)
             return False
         else:
-            self.log.info("%s of length %s from %s to %s succeed",
-                          message_type_map[selection], length, ads[0].serial,
-                          ads[1].serial)
-            return False
+            self.dut.log.info("%s of length %s from self to self succeed",
+                              message_type_map[selection], length)
+            return True
 
-    def _make_phone_call(self, ads):
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=ads[random.randrange(0, 2)],
-                verify_caller_func=is_voice_attached,
-                verify_callee_func=is_voice_attached,
-                wait_time_in_call=random.randrange(
-                    1, self.max_phone_call_duration)):
-            ads[0].log.error("Setup phone Call failed.")
+    def _make_phone_call(self):
+        duration = random.randrange(1, self.max_phone_call_duration)
+        self.dut.log.info("Make call to %s with call duration %s",
+                          self.call_server_number, duration)
+        if not initiate_call(self.log, self.dut, self.call_server_number):
+            self.dut.log.error("Initiate phone Call to %s failed.",
+                               self.call_server_number)
             return False
-        ads[0].log.info("Setup call successfully.")
-        return True
+        time.sleep(duration)
+        if not is_phone_in_call(self.log, self.dut):
+            self.dut.log.error("Call droped.")
+            return False
+        else:
+            hangup_call(self.log, self.dut)
+            self.dut.log.info("Call test succeed.")
+            ensure_phone_idle(self.log, self.dut)
+            return True
 
     def _download_file(self):
-        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
-        #wifi download is very slow in lab, limit the file size upto 200MB
-        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         selection = random.randrange(0, 7)
         return active_file_download_test(self.log, self.dut,
                                          file_names[selection])
@@ -165,46 +187,12 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             time.sleep(self.crash_check_interval)
         return failure
 
-    def change_environment(self):
-        while time.time() < self.finishing_time:
-            self._wfc_set_wifi_strong_cell_strong()
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                     MIN_RSSI_RESERVED_VALUE)
-            #gratually decrease wifi 5g
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
-                     self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-            #gratually increase wifi 5g
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
-                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-
-            self._wfc_set_wifi_strong_cell_strong()
-            #gratually decrease cell 4G
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                     self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-            #gratually decrease cell 3G
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
-                     self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-            #gradtually increase cell 3G
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
-                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-            #gradtually increase cell 4G
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
-
     def call_test(self):
         failure = 0
         total_count = 0
         while time.time() < self.finishing_time:
-            ads = [self.dut, self.helper]
-            random.shuffle(ads)
             total_count += 1
-            if not self._make_phone_call(ads):
+            if not self._make_phone_call():
                 failure += 1
                 self.log.error("New call test failure: %s/%s", failure,
                                total_count)
@@ -218,10 +206,8 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         failure = 0
         total_count = 0
         while time.time() < self.finishing_time:
-            ads = [self.dut, self.helper]
-            random.shuffle(ads)
             total_count += 1
-            if not self._send_message(ads):
+            if not self._send_message():
                 failure += 1
                 self.log.error("New messaging test failure: %s/%s", failure,
                                total_count)
@@ -235,7 +221,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         failure = 0
         total_count = 0
         while time.time() < self.finishing_time:
-            total_count += 1
             if not self._download_file():
                 failure += 1
                 self.log.error("New file download test failure: %s/%s",
@@ -252,39 +237,51 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             return False
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log, [(self.call_test, []), (
-            self.message_test, []), (self.data_test, []), (
-                self.change_environment, []), (self.crash_check_test, [])])
+            self.message_test, []), (self.data_test, []),
+                                                  (self.crash_check_test, [])])
         self.log.info("Call failures: %s", results[0])
         self.log.info("Messaging failures: %s", results[1])
         self.log.info("Data failures: %s", results[2])
-        self.log.info("Crash failures: %s", results[4])
+        self.log.info("Crash failures: %s", results[3])
         for result in results:
             if result: return False
 
     """ Tests Begin """
 
-    @test_tracker_info(uuid="6fcba97c-3572-47d7-bcac-9608f1aa5304")
+    @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_wfc_wifi_preferred_parallel_stress(self):
-        return self.parallel_tests(
-            setup_func=self._setup_volte_wfc_wifi_preferred)
+    def test_default_parallel_stress(self):
+        """ Default state stress test"""
+        return self.parallel_tests()
 
-    @test_tracker_info(uuid="df78a9a8-2a14-40bf-a7aa-719502f975be")
+    @test_tracker_info(uuid="c21e1f17-3282-4f0b-b527-19f048798098")
     @TelephonyBaseTest.tel_test_wrap
-    def test_volte_wfc_cell_preferred_parallel_stress(self):
-        return self.parallel_tests(
-            setup_func=self._setup_volte_wfc_cell_preferred)
+    def test_lte_volte_parallel_stress(self):
+        """ VoLTE on stress test"""
+        return self.parallel_tests(setup_func=self._setup_lte_volte_enabled)
 
-    @test_tracker_info(uuid="4cb47315-c420-44c2-ac47-a8bdca6d0e25")
+    @test_tracker_info(uuid="a317c23a-41e0-4ef8-af67-661451cfefcf")
     @TelephonyBaseTest.tel_test_wrap
-    def test_csfb_wfc_wifi_preferred_parallel_stress(self):
-        return self.parallel_tests(
-            setup_func=self._setup_csfb_wfc_wifi_preferred)
+    def test_csfb_parallel_stress(self):
+        """ LTE non-VoLTE stress test"""
+        return self.parallel_tests(setup_func=self._setup_lte_volte_disabled)
 
-    @test_tracker_info(uuid="92821ef7-542a-4139-b3b0-22278e2b06c4")
+    @test_tracker_info(uuid="fdb791bf-c414-4333-9fa3-cc18c9b3b234")
     @TelephonyBaseTest.tel_test_wrap
-    def test_csfb_wfc_cell_preferred_parallel_stress(self):
-        return self.parallel_tests(
-            setup_func=self._setup_csfb_wfc_cell_preferred)
+    def test_wfc_parallel_stress(self):
+        """ Wifi calling on stress test"""
+        return self.parallel_tests(setup_func=self._setup_wfc)
+
+    @test_tracker_info(uuid="4566eef6-55de-4ac8-87ee-58f2ef41a3e8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_3g_parallel_stress(self):
+        """ 3G stress test"""
+        return self.parallel_tests(setup_func=self._setup_3g)
+
+    @test_tracker_info(uuid="f34f1a31-3948-4675-8698-372a83b8088d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_2g_parallel_stress(self):
+        """ 2G call stress test"""
+        return self.parallel_tests(setup_func=self._setup_2g)
 
     """ Tests End """
