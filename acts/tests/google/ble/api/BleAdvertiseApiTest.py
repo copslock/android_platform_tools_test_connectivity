@@ -763,7 +763,7 @@ class BleAdvertiseApiTest(BluetoothBaseTest):
                                             exp_manu_specific_data)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='386024e2-212e-4eed-8ef3-43d0c0239ea5')
+    @test_tracker_info(uuid='650ceff2-2760-4a34-90fb-e637a2c5ebb5')
     def test_adv_data_set_manu_id_invalid_manu_id(self):
         """Tests advertisement data's manufacturers invalid id.
 
