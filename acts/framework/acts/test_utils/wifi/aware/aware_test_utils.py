@@ -24,49 +24,68 @@ EVENT_TIMEOUT = 10
 
 
 def decorate_event(event_name, id):
-  return "%s_%d" % (event_name, id)
+  return '%s_%d' % (event_name, id)
 
-def wait_for_event(ad, event_name, message=None):
+
+def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
   """Wait for the specified event or timeout.
 
   Args:
     ad: The android device
     event_name: The event to wait on
-    message: Optional message to print out on error (should include '%s' for the
-    event name)
   Returns:
     The event (if available)
   """
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
   try:
-    event = ad.ed.pop_event(event_name, EVENT_TIMEOUT)
-    ad.log.info('%s: %s', event_name, event['data'])
+    event = ad.ed.pop_event(event_name, timeout)
+    ad.log.info('%s%s: %s', prefix, event_name, event['data'])
     return event
   except queue.Empty:
-    if message is None:
-      message = 'Timed out while waiting for %s'
-    ad.log.info(message % event_name)
+    ad.log.info('%sTimed out while waiting for %s', prefix, event_name)
     asserts.fail(event_name)
 
 
-def fail_on_event(ad, event_name, message=None):
+def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
   """Wait for a timeout period and looks for the specified event - fails if it
   is observed.
 
   Args:
     ad: The android device
     event_name: The event to wait for (and fail on its appearance)
-    message: Optional message to print out on error (should include 2 '%s'
-    place-holders for the event name and the event data)
   """
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
   try:
-    event = ad.ed.pop_event(event_name, EVENT_TIMEOUT)
-    if message is None:
-      message = 'Received unwanted %s: %s'
-    ad.log.info(message, event_name, event['data'])
+    event = ad.ed.pop_event(event_name, timeout)
+    ad.log.info('%sReceived unwanted %s: %s', prefix, event_name, event['data'])
     asserts.fail(event_name, extras=event)
   except queue.Empty:
-    ad.log.info('%s not seen (as expected)', event_name)
+    ad.log.info('%s%s not seen (as expected)', prefix, event_name)
     return
+
+
+def verify_no_more_events(ad):
+  """Verify that there are no more events in the queue.
+  """
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
+  should_fail = False
+  try:
+    while True:
+      event = ad.ed.pop_events('.*', timeout=0, freq=0)
+      ad.log.info('%sQueue contains %s', prefix, event)
+      should_fail = True
+  except queue.Empty:
+    if should_fail:
+      asserts.fail('%sEvent queue not empty' % prefix)
+    ad.log.info('%sNo events in the queue (as expected)', prefix)
+    return
+
 
 def encode_list(list_of_objects):
   """Converts the list of strings or bytearrays to a list of b64 encoded
@@ -83,10 +102,11 @@ def encode_list(list_of_objects):
     if obj is None:
       obj = bytes()
     if isinstance(obj, str):
-      encoded_list.append(base64.b64encode(bytes(obj, 'utf-8')).decode("utf-8"))
+      encoded_list.append(base64.b64encode(bytes(obj, 'utf-8')).decode('utf-8'))
     else:
-      encoded_list.append(base64.b64encode(obj).decode("utf-8"))
+      encoded_list.append(base64.b64encode(obj).decode('utf-8'))
   return encoded_list
+
 
 def decode_list(list_of_b64_strings):
   """Converts the list of b64 encoded strings to a list of bytearray.
@@ -99,6 +119,29 @@ def decode_list(list_of_b64_strings):
   for str in list_of_b64_strings:
     decoded_list.append(base64.b64decode(str))
   return decoded_list
+
+
+def construct_max_match_filter(max_size):
+  """Constructs a maximum size match filter that fits into the 'max_size' bytes.
+
+  Match filters are a set of LVs (Length, Value pairs) where L is 1 byte. The
+  maximum size match filter will contain max_size/2 LVs with all Vs (except
+  possibly the last one) of 1 byte, the last V may be 2 bytes for odd max_size.
+
+  Args:
+    max_size: Maximum size of the match filter.
+  Returns: an array of bytearrays.
+  """
+  mf_list = []
+  num_lvs = max_size // 2
+  for i in range(num_lvs - 1):
+    mf_list.append(bytes([i]))
+  if (max_size % 2 == 0):
+    mf_list.append(bytes([255]))
+  else:
+    mf_list.append(bytes([254, 255]))
+  return mf_list
+
 
 def assert_equal_strings(first, second, msg=None, extras=None):
   """Assert equality of the string operands - where None is treated as equal to
@@ -119,6 +162,7 @@ def assert_equal_strings(first, second, msg=None, extras=None):
     second = ''
   asserts.assert_equal(first, second, msg, extras)
 
+
 def get_aware_capabilities(ad):
   """Get the Wi-Fi Aware capabilities from the specified device. The
   capabilities are a dictionary keyed by aware_const.CAP_* keys.
@@ -127,4 +171,4 @@ def get_aware_capabilities(ad):
     ad: the Android device
   Returns: the capability dictionary.
   """
-  return json.loads(ad.adb.shell("cmd wifiaware state_mgr get_capabilities"))
+  return json.loads(ad.adb.shell('cmd wifiaware state_mgr get_capabilities'))
