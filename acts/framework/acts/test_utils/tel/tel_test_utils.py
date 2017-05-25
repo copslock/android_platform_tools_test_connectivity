@@ -1775,7 +1775,11 @@ def _check_file_existance(ad, file_path, expected_file_size=None):
     """Check file existance by file_path. If expected_file_size
        is provided, then also check if the file meet the file size requirement.
     """
-    out = ad.adb.shell('stat -c "%%s" %s' % file_path)
+    out = None
+    try:
+        out = ad.adb.shell('stat -c "%%s" %s' % file_path)
+    except AdbError:
+        pass
     # Handle some old version adb returns error message "No such" into std_out
     if out and "No such" not in out:
         if expected_file_size:
