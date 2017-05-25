@@ -1813,7 +1813,7 @@ def http_file_download_by_chrome(ad,
         url, "/sdcard/Download/")
     for cmd in ("am set-debug-app --persistent com.android.chrome",
                 'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre" > /data/local/chrome-command-line',
+                '--disable-fre > /data/local/chrome-command-line"',
                 "pm grant com.android.chrome "
                 "android.permission.READ_EXTERNAL_STORAGE",
                 "pm grant com.android.chrome "
