@@ -520,6 +520,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return self._reboot_stress_test(check_data_roaming=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="109d59ff-a488-4a68-87fd-2d8d0c035326")
     def test_bootup_optimized_stress(self):
         """Bootup Optimized Reliability Test
 

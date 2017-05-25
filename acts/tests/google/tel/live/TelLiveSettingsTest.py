@@ -18,6 +18,7 @@
 """
 
 import time
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
@@ -205,6 +206,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a3a680ba-d1e0-4770-a38c-4de8f15f9171")
     def test_lte_volte_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WiFi Connected, Toggling WFC
@@ -232,6 +234,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d3ffae75-ae4a-4ed8-9337-9155c413311d")
     def test_lte_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Disabled + WiFi Connected, Toggling WFC
@@ -258,6 +261,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="29d2d7b7-1c31-4a2c-896a-3f6756c620ac")
     def test_3g_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
         3G + WiFi Connected, Toggling WFC
@@ -284,6 +288,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="ce2c0208-9ea0-4b31-91f4-d06a62cb927a")
     def test_apm_wifi_connected_toggle_wfc(self):
         """Test for WiFi Calling settings:
         APM + WiFi Connected, Toggling WFC
@@ -310,6 +315,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="681e2448-32a2-434d-abd6-0bc2ab5afd9c")
     def test_lte_volte_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WFC enabled, Toggling WiFi
@@ -335,6 +341,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="63922066-9caa-42e6-bc9f-49f5ac01cbe2")
     def test_lte_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Disabled + WFC enabled, Toggling WiFi
@@ -359,6 +366,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="8a80a446-2116-4b19-b0ef-f771f30a6d15")
     def test_3g_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
         3G + WFC enabled, Toggling WiFi
@@ -383,6 +391,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="9889eebf-cde6-4f47-aec0-9cb204fdf2e5")
     def test_apm_wfc_enabled_toggle_wifi(self):
         """Test for WiFi Calling settings:
         APM + WFC enabled, Toggling WiFi
@@ -407,6 +416,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             initial_setup_wfc_mode=WFC_MODE_WIFI_PREFERRED)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="9b23e04b-4f70-4e73-88e7-6376262c739d")
     def test_lte_wfc_enabled_wifi_connected_toggle_volte(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WiFi Connected + WFC enabled, toggle VoLTE setting
@@ -450,6 +460,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="04bdfda4-06f7-41df-9352-a8534bc2a67a")
     def test_lte_volte_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WiFi Connected + WiFi Preferred,
@@ -477,6 +488,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="80d26bdb-992a-4b30-ad51-68308d5af168")
     def test_lte_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
         LTE + WiFi Connected + WiFi Preferred, change WFC to Cellular Preferred
@@ -503,6 +515,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=False)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="d486c7e3-3d2b-4552-8af8-7b19f6347427")
     def test_3g_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
         3G + WiFi Connected + WiFi Preferred, change WFC to Cellular Preferred
@@ -525,28 +538,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, False)
 
     @TelephonyBaseTest.tel_test_wrap
-    def test_3g_wfc_wifi_preferred_to_cellular_preferred(self):
-        """Test for WiFi Calling settings:
-        3G + WiFi Connected + WiFi Preferred, change WFC to Cellular Preferred
-
-        Steps:
-        1. Setup DUT Idle, 3G network type.
-        2. Make sure DUT WiFi connected, WFC is set to WiFi Preferred.
-            Verify DUT WFC available, report iwlan rat.
-        3. Change WFC setting to Cellular Preferred.
-        4. Verify DUT report WFC not available.
-
-        Expected Results:
-        2. DUT WiFi Calling feature bit return True, network rat is iwlan.
-        4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
-        """
-        if not phone_setup_voice_3g(self.log, self.ad):
-            self.log.error("Failed to setup 3G.")
-            return False
-        return self._wifi_connected_set_wfc_mode_change_wfc_mode(
-            WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, False)
-
-    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="0feb0add-8e22-4c86-b13e-be68659cdd87")
     def test_apm_wfc_wifi_preferred_to_cellular_preferred(self):
         """Test for WiFi Calling settings:
         APM + WiFi Connected + WiFi Preferred, change WFC to Cellular Preferred
@@ -569,6 +561,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="9c8f359f-a084-4413-b8a9-34771af166c5")
     def test_lte_volte_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WiFi Connected + Cellular Preferred,
@@ -596,6 +589,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="1894e685-63cf-43aa-91ed-938782ca35a9")
     def test_lte_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
         LTE + WiFi Connected + Cellular Preferred, change WFC to WiFi Preferred
@@ -622,6 +616,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             check_volte_after_wfc_disabled=False)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e7fb6a6c-4672-44da-bca2-78b4d96dea9e")
     def test_3g_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
         3G + WiFi Connected + Cellular Preferred, change WFC to WiFi Preferred
@@ -644,6 +639,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, False, True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="46262b2d-5de9-4984-87e8-42f44469289e")
     def test_apm_wfc_cellular_preferred_to_wifi_preferred(self):
         """Test for WiFi Calling settings:
         APM + WiFi Connected + Cellular Preferred, change WFC to WiFi Preferred
@@ -666,6 +662,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, True, True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="5b514f51-fed9-475e-99d3-17d2165e11a1")
     def test_apm_wfc_wifi_preferred_turn_off_apm(self):
         """Test for WiFi Calling settings:
         APM + WiFi Connected + WiFi Preferred + turn off APM
@@ -688,6 +685,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_WIFI_PREFERRED, True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f328cff2-9dec-44b3-ba74-a662b76fcf2a")
     def test_apm_wfc_cellular_preferred_turn_off_apm(self):
         """Test for WiFi Calling settings:
         APM + WiFi Connected + Cellular Preferred + turn off APM
@@ -710,6 +708,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             WFC_MODE_CELLULAR_PREFERRED, False)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="7e30d219-42ee-4309-a95c-2b45b8831d26")
     def test_wfc_setup_timing(self):
         """ Measures the time delay in enabling WiFi calling
 
@@ -829,6 +828,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="4e0bf35f-b4e1-44f8-b657-e9c71878d1f6")
     def test_lte_volte_wfc_enabled_toggle_wifi_stress(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WFC enabled, Toggling WiFi Stress test
@@ -865,6 +865,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="c6ef1dfd-29d4-4fc8-9fc0-27e35bb377fb")
     def test_lte_volte_wfc_enabled_reset_wifi_stress(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WFC enabled, Reset WiFi Stress test
@@ -901,6 +902,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return True
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a7d2b9fc-d676-4ada-84b9-08e99659da78")
     def test_lte_volte_wfc_wifi_preferred_to_cellular_preferred_stress(self):
         """Test for WiFi Calling settings:
         LTE + VoLTE Enabled + WiFi Connected + WiFi Preferred,
