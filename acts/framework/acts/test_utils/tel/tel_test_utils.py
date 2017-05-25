@@ -1813,7 +1813,7 @@ def http_file_download_by_chrome(ad,
                                                            "/sdcard/Download/")
     for cmd in ("am set-debug-app --persistent com.android.chrome",
                 'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre" > /data/local/chrome-command-line',
+                '--disable-fre > /data/local/chrome-command-line"',
                 "pm grant com.android.chrome "
                 "android.permission.READ_EXTERNAL_STORAGE",
                 "pm grant com.android.chrome "
@@ -2451,6 +2451,11 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
     ad.log.info("Sub_id %s network rate is %s for %s", sub_id, rat,
                 voice_or_data)
     return rat != RAT_UNKNOWN
+
+
+def is_voice_attached(log, ad):
+    return _is_attached_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
 
 
 def wait_for_voice_attach(log, ad, max_time):
