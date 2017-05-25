@@ -2452,6 +2452,11 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
     return rat != RAT_UNKNOWN
 
 
+def is_voice_attached(log, ad):
+    return _is_attached_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
+
+
 def wait_for_voice_attach(log, ad, max_time):
     """Wait for android device to attach on voice.
 
