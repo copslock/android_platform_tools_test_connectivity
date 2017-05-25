@@ -58,11 +58,13 @@ class MessageTest(AwareBaseTest):
       return "*** ID=%4d ***" % id + "M" * (
           caps[aconsts.CAP_MAX_SERVICE_SPECIFIC_INFO_LEN] - 15)
 
-  def create_config(self, is_publish):
+  def create_config(self, is_publish, extra_diff=""):
     """Create a base configuration based on input parameters.
 
     Args:
       is_publish: True for publish, False for subscribe sessions.
+      extra_diff: String to add to service name: allows differentiating
+                  discovery sessions.
 
     Returns:
       publish discovery configuration object.
@@ -74,36 +76,58 @@ class MessageTest(AwareBaseTest):
     else:
       config[
           aconsts.DISCOVERY_KEY_DISCOVERY_TYPE] = aconsts.SUBSCRIBE_TYPE_PASSIVE
-    config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = "GoogleTestServiceX"
+    config[
+        aconsts.DISCOVERY_KEY_SERVICE_NAME] = "GoogleTestServiceX" + extra_diff
     return config
 
-  def prep_message_exchange(self):
+  def prep_message_exchange(self, extra_diff=None):
     """Creates a discovery session (publish and subscribe), and waits for
     service discovery - at that point the sessions are ready for message
     exchange.
+
+    Args:
+      extra_diff: String to add to service name: allows differentiating
+                  discovery sessions.
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
     s_dut = self.android_devices[1]
     s_dut.pretty_name = "Subscriber"
 
+    # if differentiating (multiple) sessions then should decorate events with id
+    use_id = extra_diff is not None
+
     # Publisher+Subscriber: attach and wait for confirmation
-    p_id = p_dut.droid.wifiAwareAttach(False)
-    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
-    s_id = s_dut.droid.wifiAwareAttach(False)
-    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    p_id = p_dut.droid.wifiAwareAttach(False, None, use_id)
+    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED
+                          if not use_id else autils.decorate_event(
+                              aconsts.EVENT_CB_ON_ATTACHED, p_id))
+    s_id = s_dut.droid.wifiAwareAttach(False, None, use_id)
+    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED
+                          if not use_id else autils.decorate_event(
+                              aconsts.EVENT_CB_ON_ATTACHED, s_id))
 
     # Publisher: start publish and wait for confirmation
-    p_disc_id = p_dut.droid.wifiAwarePublish(p_id, self.create_config(True))
-    autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+    p_disc_id = p_dut.droid.wifiAwarePublish(p_id,
+                                             self.create_config(True), use_id)
+    autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED
+                          if not use_id else autils.decorate_event(
+                              aconsts.SESSION_CB_ON_PUBLISH_STARTED, p_disc_id))
 
     # Subscriber: start subscribe and wait for confirmation
-    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, self.create_config(False))
-    autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id,
+                                               self.create_config(False),
+                                               use_id)
+    autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED
+                          if not use_id else autils.decorate_event(
+                              aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
+                              s_disc_id))
 
     # Subscriber: wait for service discovery
     discovery_event = autils.wait_for_event(
-        s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+        s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED
+        if not use_id else autils.decorate_event(
+            aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, s_disc_id))
     peer_id_on_sub = discovery_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
 
     return {
@@ -169,7 +193,8 @@ class MessageTest(AwareBaseTest):
     autils.verify_no_more_events(p_dut, timeout=0)
     autils.verify_no_more_events(s_dut, timeout=0)
 
-  def wait_for_messages(self, tx_msgs, tx_msg_ids, tx_dut, rx_dut):
+  def wait_for_messages(self, tx_msgs, tx_msg_ids, tx_disc_id, rx_disc_id,
+                        tx_dut, rx_dut):
     """Validate that all expected messages are transmitted correctly and
     received as expected. Method is called after the messages are sent into
     the transmission queue.
@@ -180,6 +205,8 @@ class MessageTest(AwareBaseTest):
     Args:
       tx_msgs: dictionary of transmitted messages
       tx_msg_ids: dictionary of transmitted message ids
+      tx_disc_id: transmitter discovery session id (None for no decoration)
+      rx_disc_id: receiver discovery session id (None for no decoration)
       tx_dut: transmitter device
       rx_dut: receiver device
 
@@ -191,8 +218,10 @@ class MessageTest(AwareBaseTest):
     # wait for all messages to be transmitted
     still_to_be_tx = len(tx_msg_ids)
     while still_to_be_tx != 0:
-      tx_event = autils.wait_for_event(tx_dut,
-                                       aconsts.SESSION_CB_ON_MESSAGE_SENT)
+      tx_event = autils.wait_for_event(
+          tx_dut, aconsts.SESSION_CB_ON_MESSAGE_SENT
+          if tx_disc_id is None else autils.decorate_event(
+              aconsts.SESSION_CB_ON_MESSAGE_SENT, tx_disc_id))
       tx_msg_id = tx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_ID]
       tx_msg_ids[tx_msg_id] = tx_msg_ids[tx_msg_id] + 1
       if tx_msg_ids[tx_msg_id] == 1:
@@ -207,8 +236,10 @@ class MessageTest(AwareBaseTest):
     # wait for all messages to be received
     still_to_be_rx = len(tx_msgs)
     while still_to_be_rx != 0:
-      rx_event = autils.wait_for_event(rx_dut,
-                                       aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
+      rx_event = autils.wait_for_event(
+          rx_dut, aconsts.SESSION_CB_ON_MESSAGE_RECEIVED
+          if rx_disc_id is None else autils.decorate_event(
+              aconsts.SESSION_CB_ON_MESSAGE_RECEIVED, rx_disc_id))
       peer_id_on_rx = rx_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
       rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
       asserts.assert_true(
@@ -250,20 +281,97 @@ class MessageTest(AwareBaseTest):
       msg_ids[msg_id] = 0
       s_dut.droid.wifiAwareSendMessage(s_disc_id, peer_id_on_sub, msg_id, msg,
                                        0)
-    peer_id_on_pub = self.wait_for_messages(msgs, msg_ids, s_dut, p_dut)
+    peer_id_on_pub = self.wait_for_messages(msgs, msg_ids, None, None, s_dut,
+                                            p_dut)
 
     msgs = {}
     msg_ids = {}
     for i in range(
             self.NUM_MSGS_QUEUE_DEPTH_MULT *
             p_dut.aware_capabilities[aconsts.CAP_MAX_QUEUED_TRANSMIT_MESSAGES]):
-      msg = self.create_msg(p_dut.aware_capabilities, payload_size, i)
+      msg = self.create_msg(p_dut.aware_capabilities, payload_size, 1000 + i)
       msg_id = self.get_next_msg_id()
       msgs[msg] = 0
       msg_ids[msg_id] = 0
       p_dut.droid.wifiAwareSendMessage(p_disc_id, peer_id_on_pub, msg_id, msg,
                                        0)
-    self.wait_for_messages(msgs, msg_ids, p_dut, s_dut)
+    self.wait_for_messages(msgs, msg_ids, None, None, p_dut, s_dut)
+
+    # verify there are no more events
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
+
+  def run_message_multi_session_with_queue(self, payload_size):
+    """Validate L2 message exchange between publishers & subscribers with
+    queueing - i.e. transmit all messages and then wait for ACKs. Uses 2
+    discovery sessions running concurrently and validates that messages
+    arrive at the correct destination.
+
+    Args:
+      payload_size: min, typical, or max (PAYLOAD_SIZE_xx)
+    """
+    discovery_info1 = self.prep_message_exchange(extra_diff="-111")
+    p_dut = discovery_info1["p_dut"] # same for both sessions
+    s_dut = discovery_info1["s_dut"] # same for both sessions
+    p_disc_id1 = discovery_info1["p_disc_id"]
+    s_disc_id1 = discovery_info1["s_disc_id"]
+    peer_id_on_sub1 = discovery_info1["peer_id_on_sub"]
+
+    discovery_info2 = self.prep_message_exchange(extra_diff="-222")
+    p_disc_id2 = discovery_info2["p_disc_id"]
+    s_disc_id2 = discovery_info2["s_disc_id"]
+    peer_id_on_sub2 = discovery_info2["peer_id_on_sub"]
+
+    msgs1 = {}
+    msg_ids1 = {}
+    msgs2 = {}
+    msg_ids2 = {}
+    for i in range(
+            self.NUM_MSGS_QUEUE_DEPTH_MULT *
+            s_dut.aware_capabilities[aconsts.CAP_MAX_QUEUED_TRANSMIT_MESSAGES]):
+      msg1 = self.create_msg(s_dut.aware_capabilities, payload_size, i)
+      msg_id1 = self.get_next_msg_id()
+      msgs1[msg1] = 0
+      msg_ids1[msg_id1] = 0
+      s_dut.droid.wifiAwareSendMessage(s_disc_id1, peer_id_on_sub1, msg_id1,
+                                       msg1, 0)
+      msg2 = self.create_msg(s_dut.aware_capabilities, payload_size, 100 + i)
+      msg_id2 = self.get_next_msg_id()
+      msgs2[msg2] = 0
+      msg_ids2[msg_id2] = 0
+      s_dut.droid.wifiAwareSendMessage(s_disc_id2, peer_id_on_sub2, msg_id2,
+                                       msg2, 0)
+
+    peer_id_on_pub1 = self.wait_for_messages(msgs1, msg_ids1, s_disc_id1,
+                                             p_disc_id1, s_dut, p_dut)
+    peer_id_on_pub2 = self.wait_for_messages(msgs2, msg_ids2, s_disc_id2,
+                                             p_disc_id2, s_dut, p_dut)
+
+    msgs1 = {}
+    msg_ids1 = {}
+    msgs2 = {}
+    msg_ids2 = {}
+    for i in range(
+            self.NUM_MSGS_QUEUE_DEPTH_MULT *
+            p_dut.aware_capabilities[aconsts.CAP_MAX_QUEUED_TRANSMIT_MESSAGES]):
+      msg1 = self.create_msg(p_dut.aware_capabilities, payload_size, 1000 + i)
+      msg_id1 = self.get_next_msg_id()
+      msgs1[msg1] = 0
+      msg_ids1[msg_id1] = 0
+      p_dut.droid.wifiAwareSendMessage(p_disc_id1, peer_id_on_pub1, msg_id1,
+                                       msg1, 0)
+      msg2 = self.create_msg(p_dut.aware_capabilities, payload_size, 1100 + i)
+      msg_id2 = self.get_next_msg_id()
+      msgs2[msg2] = 0
+      msg_ids2[msg_id2] = 0
+      p_dut.droid.wifiAwareSendMessage(p_disc_id2, peer_id_on_pub2, msg_id2,
+                                       msg1, 0)
+
+    self.wait_for_messages(msgs1, msg_ids1, p_disc_id1, s_disc_id1, p_dut,
+                           s_dut)
+    self.wait_for_messages(msgs2, msg_ids2, p_disc_id2, s_disc_id2, p_dut,
+                           s_dut)
 
     # verify there are no more events
     time.sleep(autils.EVENT_TIMEOUT)
@@ -307,3 +415,12 @@ class MessageTest(AwareBaseTest):
     - Max payload size (based on device capabilities)
     """
     self.run_message_with_queue(self.PAYLOAD_SIZE_MAX)
+
+  def test_message_with_multiple_discovery_sessions_typical(self):
+    """Functional / Message / Multiple sessions
+
+     Sets up 2 discovery sessions on 2 devices. Sends a message in each
+     direction on each discovery session and verifies that reaches expected
+     destination.
+    """
+    self.run_message_multi_session_with_queue(self.PAYLOAD_SIZE_TYPICAL)
