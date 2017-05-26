@@ -123,19 +123,19 @@ WCDMA_BAND_2 = 2
 
 # Default Cell Parameters
 DEFAULT_OUTPUT_LEVEL = -30
-DEFAULT_INPUT_LEVEL = -10  # apply to LTE & WCDMA only
+DEFAULT_INPUT_LEVEL = 10  # apply to LTE & WCDMA only
 DEFAULT_LTE_BAND = 2
 DEFAULT_WCDMA_BAND = 1
 DEFAULT_GSM_BAND = GSM_BAND_GSM850
-DEFAULT_CDMA1X_BAND = 1
-DEFAULT_CDMA1X_CH = 0
+DEFAULT_CDMA1X_BAND = 0
+DEFAULT_CDMA1X_CH = 356
 DEFAULT_CDMA1X_SID = 0
 DEFAULT_CDMA1X_NID = 65535
 DEFAULT_EVDO_BAND = 0
 DEFAULT_EVDO_CH = 356
 DEFAULT_EVDO_SECTOR_ID = "00000000,00000000,00000000,00000000"
-VzW_CDMA1x_BAND = 1
-VzW_CDMA1x_CH = 150
+VzW_CDMA1x_BAND = 0
+VzW_CDMA1x_CH = 384
 VzW_CDMA1X_SID = 26
 VzW_CDMA1X_NID = 65535
 VzW_EVDO_BAND = 0
@@ -365,6 +365,7 @@ def _init_1x_bts(bts, user_params, cell_no, sim_card):
     bts.sector1_sid = get_1x_sid(user_params, cell_no, sim_card)
     bts.sector1_nid = get_1x_nid(user_params, cell_no, sim_card)
     bts.output_level = DEFAULT_OUTPUT_LEVEL
+    bts.input_level = DEFAULT_INPUT_LEVEL
 
 
 def _init_evdo_bts(bts, user_params, cell_no, sim_card):
