@@ -3122,36 +3122,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        # Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT
-        # in 10 seconds
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
-                 self.wifi_rssi_with_no_atten,
-                 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT, 2, 1)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
-                 self.wifi_rssi_with_no_atten,
-                 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT, 2, 1)
-        # Make sure WiFi still connected and have data.
-        if (not wait_for_wifi_data_connection(self.log,
-                                              self.android_devices[0], True) or
-                not verify_http_connection(self.log, self.android_devices[0])):
-            self.log.error("No Data on Wifi")
-            return False
-        # Make sure phone not hand-out, not drop call
-        if self._phone_wait_for_not_wfc():
-            self.log.error("Phone should not hand out.")
-            return False
-        if self._is_phone_not_in_call():
-            self.log.error("Phone should not drop call.")
-            return False
-
         # Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT
-        # in 10 seconds
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
                  self.wifi_rssi_with_no_atten,
-                 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, 2, 1)
+                 MAX_RSSI_RESERVED_VALUE, 2, 1)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
                  self.wifi_rssi_with_no_atten,
-                 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT, 2, 1)
+                 MAX_RSSI_RESERVED_VALUE, 2, 1)
         # Make sure WiFi still connected and have data.
         if (not wait_for_wifi_data_connection(self.log,
                                               self.android_devices[0], True) or
@@ -3428,11 +3405,11 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        # Increase Cellular RSSI to CELL_STRONG_RSSI_VALUE in 30 seconds
+        # Increase Cellular RSSI to CELL_STRONG_RSSI_VALUE
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
-                 self.cell_rssi_with_no_atten, CELL_STRONG_RSSI_VALUE, 1, 1)
+                 self.cell_rssi_with_no_atten, MAX_RSSI_RESERVED_VALUE, 1, 1)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                 self.cell_rssi_with_no_atten, CELL_STRONG_RSSI_VALUE, 1, 1)
+                 self.cell_rssi_with_no_atten, MAX_RSSI_RESERVED_VALUE, 1, 1)
         # Make sure phone hand-out, not drop call
         if not self._phone_wait_for_not_wfc():
             self.log.error("Phone should hand out.")
