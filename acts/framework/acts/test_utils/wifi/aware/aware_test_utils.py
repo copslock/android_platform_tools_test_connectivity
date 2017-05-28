@@ -68,7 +68,7 @@ def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
     return
 
 
-def verify_no_more_events(ad):
+def verify_no_more_events(ad, timeout=EVENT_TIMEOUT):
   """Verify that there are no more events in the queue.
   """
   prefix = ''
@@ -77,7 +77,7 @@ def verify_no_more_events(ad):
   should_fail = False
   try:
     while True:
-      event = ad.ed.pop_events('.*', timeout=0, freq=0)
+      event = ad.ed.pop_events('.*', timeout, freq=0)
       ad.log.info('%sQueue contains %s', prefix, event)
       should_fail = True
   except queue.Empty:
