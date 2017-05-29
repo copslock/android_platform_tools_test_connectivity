@@ -20,6 +20,7 @@
 import collections
 import random
 import time
+
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -28,9 +29,11 @@ from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
@@ -49,21 +52,20 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import rand_ascii_str
 
 
-class TelLiveStressTest(TelephonyBaseTest):
+class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
     def setup_class(self):
-        super(TelLiveStressTest, self).setup_class()
+        super(TelLiveSinglePhoneStressTest, self).setup_class()
         self.dut = self.android_devices[0]
-        self.helper = self.android_devices[1]
+        self.call_server_number = self.user_params.get("call_server_number",
+                                                       "9523521350")
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
-        self.phone_call_iteration = int(
-            self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
-            self.user_params.get("max_phone_call_duration", 600))
-        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
+            self.user_params.get("max_phone_call_duration", 3600))
+        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 1200))
         self.max_run_time = int(self.user_params.get("max_run_time", 18000))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
@@ -73,93 +75,51 @@ class TelLiveStressTest(TelephonyBaseTest):
         return True
 
     def _setup_wfc(self):
-        for ad in self.android_devices:
-            if not ensure_wifi_connected(
-                    self.log,
-                    ad,
-                    self.wifi_network_ssid,
-                    self.wifi_network_pass,
-                    retry=3):
-                ad.log.error("Phone Wifi connection fails.")
-                return False
-            ad.log.info("Phone WIFI is connected successfully.")
-            if not set_wfc_mode(self.log, ad, WFC_MODE_WIFI_PREFERRED):
-                ad.log.error("Phone failed to enable Wifi-Calling.")
-                return False
-            ad.log.info("Phone is set in Wifi-Calling successfully.")
-            if not phone_idle_iwlan(self.log, ad):
-                ad.log.error("Phone is not in WFC enabled state.")
-                return False
-            ad.log.info("Phone is in WFC enabled state.")
+        if not ensure_wifi_connected(
+                self.log,
+                self.dut,
+                self.wifi_network_ssid,
+                self.wifi_network_pass,
+                retry=3):
+            self.dut.log.error("Phone Wifi connection fails.")
+            return False
+        self.dut.log.info("Phone WIFI is connected successfully.")
+        if not set_wfc_mode(self.log, self.dut, WFC_MODE_WIFI_PREFERRED):
+            self.dut.log.error("Phone failed to enable Wifi-Calling.")
+            return False
+        self.dut.log.info("Phone is set in Wifi-Calling successfully.")
+        if not phone_idle_iwlan(self.log, self.dut):
+            self.dut.log.error("Phone is not in WFC enabled state.")
+            return False
+        self.dut.log.info("Phone is in WFC enabled state.")
         return True
 
     def _setup_lte_volte_enabled(self):
-        for ad in self.android_devices:
-            if not phone_setup_volte(self.log, ad):
-                ad.log.error("Phone failed to enable VoLTE.")
-                return False
-            ad.log.info("Phone VOLTE is enabled successfully.")
+        if not phone_setup_volte(self.log, self.dut):
+            self.dut.log.error("Phone failed to enable VoLTE.")
+            return False
+        self.dut.log.info("Phone VOLTE is enabled successfully.")
         return True
 
     def _setup_lte_volte_disabled(self):
-        for ad in self.android_devices:
-            if not phone_setup_csfb(self.log, ad):
-                ad.log.error("Phone failed to setup CSFB.")
-                return False
-            ad.log.info("Phone VOLTE is disabled successfully.")
+        if not phone_setup_csfb(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup CSFB.")
+            return False
+        self.dut.log.info("Phone VOLTE is disabled successfully.")
         return True
 
     def _setup_3g(self):
-        for ad in self.android_devices:
-            if not phone_setup_voice_3g(self.log, ad):
-                ad.log.error("Phone failed to setup 3g.")
-                return False
-            ad.log.info("Phone RAT 3G is enabled successfully.")
+        if not phone_setup_voice_3g(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup 3g.")
+            return False
+        self.dut.log.info("Phone RAT 3G is enabled successfully.")
         return True
 
     def _setup_2g(self):
-        for ad in self.android_devices:
-            if not phone_setup_voice_2g(self.log, ad):
-                ad.log.error("Phone failed to setup 2g.")
-                return False
-            ad.log.info("RAT 2G is enabled successfully.")
-        return True
-
-    def _send_message(self, ads):
-        selection = random.randrange(0, 2)
-        message_type_map = {0: "SMS", 1: "MMS"}
-        max_length_map = {0: self.max_sms_length, 1: self.max_mms_length}
-        length = random.randrange(0, max_length_map[selection] + 1)
-        text = rand_ascii_str(length)
-        message_content_map = {0: [text], 1: [("Mms Message", text, None)]}
-        message_func_map = {
-            0: sms_send_receive_verify,
-            1: mms_send_receive_verify
-        }
-        if not message_func_map[selection](self.log, ads[0], ads[1],
-                                           message_content_map[selection]):
-            self.log.error("%s of length %s from %s to %s fails",
-                           message_type_map[selection], length, ads[0].serial,
-                           ads[1].serial)
-            self.result_info["%s failure" % message_type_map[selection]] += 1
+        if not phone_setup_voice_2g(self.log, self.dut):
+            self.dut.log.error("Phone failed to setup 2g.")
             return False
-        else:
-            self.log.info("%s of length %s from %s to %s succeed",
-                          message_type_map[selection], length, ads[0].serial,
-                          ads[1].serial)
-            return True
-
-    def _make_phone_call(self, ads):
-        if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=ads[random.randrange(0, 2)],
-                wait_time_in_call=random.randrange(
-                    1, self.max_phone_call_duration)):
-            ads[0].log.error("Setup phone Call failed.")
-            return False
-        ads[0].log.info("Setup call successfully.")
+        self.dut.log.info("RAT 2G is enabled successfully.")
         return True
 
     def crash_check_test(self):
@@ -182,34 +142,64 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def call_test(self):
         failure = 0
-        total_count = 0
         while time.time() < self.finishing_time:
-            ads = [self.dut, self.helper]
-            random.shuffle(ads)
-            total_count += 1
-            if not self._make_phone_call(ads):
-                failure += 1
-                self.log.error("New call test failure: %s/%s", failure,
-                               total_count)
-                self._take_bug_report("%s_call_failure" % self.test_name,
+            self.dut.log.info(dict(self.result_info))
+            self.result_info["Total Calls"] += 1
+            duration = random.randrange(1, self.max_phone_call_duration)
+            self.dut.log.info("Make call to %s with call duration %s",
+                              self.call_server_number, duration)
+            if not initiate_call(self.log, self.dut, self.call_server_number):
+                self.dut.log.error("Initiate phone call to %s failed.",
+                                   self.call_server_number)
+                self.result_info["Call initiation failure"] += 1
+                self._take_bug_report(
+                    "%s_call_initiation_failure" % self.test_name,
+                    time.strftime("%m-%d-%Y-%H-%M-%S"))
+                continue
+            time.sleep(duration)
+            if not is_phone_in_call(self.log, self.dut):
+                self.dut.log.error("Call droped.")
+                self.result_info["Call drop"] += 1
+                self._take_bug_report("%s_call_drop" % self.test_name,
                                       time.strftime("%m-%d-%Y-%H-%M-%S"))
-            self.dut.droid.goToSleepNow()
-            time.sleep(random.randrange(0, self.max_sleep_time))
+                continue
+            else:
+                hangup_call(self.log, self.dut)
+                self.dut.log.info("Call test succeed.")
+                ensure_phone_idle(self.log, self.dut)
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
 
     def message_test(self):
         failure = 0
         total_count = 0
+        message_type_map = {0: "SMS", 1: "MMS"}
+        max_length_map = {0: self.max_sms_length, 1: self.max_mms_length}
+        message_func_map = {
+            0: sms_send_receive_verify,
+            1: mms_send_receive_verify
+        }
         while time.time() < self.finishing_time:
-            ads = [self.dut, self.helper]
-            random.shuffle(ads)
+            self.dut.log.info(dict(self.result_info))
             total_count += 1
-            if not self._send_message(ads):
-                failure += 1
-                self.log.error("New messaging test failure: %s/%s", failure,
-                               total_count)
+            selection = random.randrange(0, 2)
+            message_type = message_type_map[selection]
+            self.result_info["Total %s" % message_type] += 1
+            length = random.randrange(0, max_length_map[selection] + 1)
+            text = rand_ascii_str(length)
+            message_content_map = {0: [text], 1: [("Mms Message", text, None)]}
+            if not message_func_map[selection](self.log, self.dut, self.dut,
+                                               message_content_map[selection]):
+                self.log.error("%s of length %s from self to self fails",
+                               message_type, length)
+                self.result_info["%s failure" % message_type] += 1
                 #self._take_bug_report("%s_messaging_failure" % self.test_name,
                 #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                failure += 1
+            else:
+                self.dut.log.info("%s of length %s from self to self succeed",
+                                  message_type, length)
             self.dut.droid.goToSleepNow()
             time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
