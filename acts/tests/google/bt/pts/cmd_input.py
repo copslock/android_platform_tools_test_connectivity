@@ -17,14 +17,15 @@
 Python script for wrappers to various libraries.
 """
 
+from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.GattEnum import GattServerResponses
 from ble_lib import BleLib
+from bta_lib import BtaLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 
-import gatt_test_database
-
 import cmd
+import gatt_test_database
 """Various Global Strings"""
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
@@ -43,6 +44,7 @@ class CmdInput(cmd.Cmd):
         self.log = log
 
         # Initialize libraries
+        self.bta_lib = BtaLib(log, mac_addr, self.pri_dut)
         self.ble_lib = BleLib(log, mac_addr, self.pri_dut)
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
         self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
@@ -584,3 +586,141 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End Ble wrappers"""
+    """Begin Bta wrappers"""
+
+    def complete_bta_start_pairing_helper(self, text, line, begidx, endidx):
+        options = ['true', 'false']
+        if not text:
+            completions = list(options)[:]
+        else:
+            completions = [s for s in options if s.startswith(text)]
+        return completions
+
+    def complete_bta_set_scan_mode(self, text, line, begidx, endidx):
+        completions = [e.name for e in BluetoothScanModeType]
+        if not text:
+            completions = completions[:]
+        else:
+            completions = [s for s in completions if s.startswith(text)]
+        return completions
+
+    def do_bta_set_scan_mode(self, line):
+        """Set the Scan mode of the Bluetooth Adapter"""
+        cmd = "Set the Scan mode of the Bluetooth Adapter"
+        try:
+            self.bta_lib.set_scan_mode(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_set_device_name(self, line):
+        """Set Bluetooth Adapter Name"""
+        cmd = "Set Bluetooth Adapter Name"
+        try:
+            self.bta_lib.set_device_name(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_enable(self, line):
+        """Enable Bluetooth Adapter"""
+        cmd = "Enable Bluetooth Adapter"
+        try:
+            self.bta_lib.enable()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_disable(self, line):
+        """Disable Bluetooth Adapter"""
+        cmd = "Disable Bluetooth Adapter"
+        try:
+            self.bta_lib.disable()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_init_bond(self, line):
+        """Initiate bond to PTS device"""
+        cmd = "Initiate Bond"
+        try:
+            self.bta_lib.init_bond()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_start_discovery(self, line):
+        """Start BR/EDR Discovery"""
+        cmd = "Start BR/EDR Discovery"
+        try:
+            self.bta_lib.start_discovery()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_stop_discovery(self, line):
+        """Stop BR/EDR Discovery"""
+        cmd = "Stop BR/EDR Discovery"
+        try:
+            self.bta_lib.stop_discovery()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_get_discovered_devices(self, line):
+        """Get Discovered Br/EDR Devices"""
+        cmd = "Get Discovered Br/EDR Devices\n"
+        try:
+            self.bta_lib.get_discovered_devices()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_bond(self, line):
+        """Bond to PTS device"""
+        cmd = "Bond to the PTS dongle directly"
+        try:
+            self.bta_lib.bond()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_disconnect(self, line):
+        """BTA disconnect"""
+        cmd = "BTA disconnect"
+        try:
+            self.bta_lib.disconnect()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_unbond(self, line):
+        """Unbond from PTS device"""
+        cmd = "Unbond from the PTS dongle"
+        try:
+            self.bta_lib.unbond()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_start_pairing_helper(self, line):
+        """Start or stop Bluetooth Pairing Helper"""
+        cmd = "Start or stop BT Pairing helper"
+        try:
+            self.bta_lib.start_pairing_helper(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_push_pairing_pin(self, line):
+        cmd = "Push the pin to the Android Device"
+        try:
+            self.bta_lib.push_pairing_pin(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_get_pairing_pin(self, line):
+        """Get pairing PIN"""
+        cmd = "Get Pin Info"
+        try:
+            self.bta_lib.get_pairing_pin()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_fetch_uuids_with_sdp(self, line):
+        """BTA fetch UUIDS with SDP"""
+        cmd = "Fetch UUIDS with SDP"
+        try:
+            self.bta_lib.fetch_uuids_with_sdp()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End Bta wrappers"""
