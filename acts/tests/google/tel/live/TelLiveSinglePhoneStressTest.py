@@ -156,13 +156,20 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     "%s_call_initiation_failure" % self.test_name,
                     time.strftime("%m-%d-%Y-%H-%M-%S"))
                 continue
-            time.sleep(duration)
-            if not is_phone_in_call(self.log, self.dut):
-                self.dut.log.error("Call droped.")
-                self.result_info["Call drop"] += 1
-                self._take_bug_report("%s_call_drop" % self.test_name,
-                                      time.strftime("%m-%d-%Y-%H-%M-%S"))
-                continue
+            elapse_time = 0
+            interval = min(60, duration)
+            while elapse_time < duration:
+                interval = min(duration - elapse_time, interval)
+                time.sleep(interval)
+                elapse_time += interval
+                if not is_phone_in_call(self.log, self.dut):
+                    self.dut.log.error("Call droped.")
+                    self.result_info["Call drop"] += 1
+                    self._take_bug_report("%s_call_drop" % self.test_name,
+                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    break
+                else:
+                    self.dut.log.info("DUT is in call")
             else:
                 hangup_call(self.log, self.dut)
                 self.dut.log.info("Call test succeed.")
