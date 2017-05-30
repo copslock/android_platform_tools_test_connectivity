@@ -23,6 +23,7 @@ from ble_lib import BleLib
 from bta_lib import BtaLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
+from rfcomm_lib import RfcommLib
 
 import cmd
 import gatt_test_database
@@ -48,6 +49,7 @@ class CmdInput(cmd.Cmd):
         self.ble_lib = BleLib(log, mac_addr, self.pri_dut)
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
         self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
+        self.rfcomm_lib = RfcommLib(log, mac_addr, self.pri_dut)
 
     def emptyline(self):
         pass
@@ -701,6 +703,7 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     def do_bta_push_pairing_pin(self, line):
+        """Push pairing pin to the Android Device"""
         cmd = "Push the pin to the Android Device"
         try:
             self.bta_lib.push_pairing_pin(line)
@@ -724,3 +727,72 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End Bta wrappers"""
+    """Begin Rfcomm wrappers"""
+
+    def do_rfcomm_connect(self, line):
+        """Perform an RFCOMM connect"""
+        try:
+            self.rfcomm_lib.connect(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_open_rfcomm_socket(self, line):
+        """Open rfcomm socket"""
+        cmd = "Open RFCOMM socket"
+        try:
+            self.rfcomm_lib.open_rfcomm_socket()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_open_l2cap_socket(self, line):
+        """Open L2CAP socket"""
+        cmd = "Open L2CAP socket"
+        try:
+            self.rfcomm_lib.open_l2cap_socket()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_write(self, line):
+        cmd = "Write String data over an RFCOMM connection"
+        try:
+            self.rfcomm_lib.write(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_write_binary(self, line):
+        cmd = "Write String data over an RFCOMM connection"
+        try:
+            self.rfcomm_lib.write_binary(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_end_connect(self, line):
+        cmd = "End RFCOMM connection"
+        try:
+            self.rfcomm_lib.end_connect()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_accept(self, line):
+        cmd = "Accept RFCOMM connection"
+        try:
+            self.rfcomm_lib.accept(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_stop(self, line):
+        cmd = "STOP RFCOMM Connection"
+        try:
+            self.rfcomm_lib.stop()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_rfcomm_open_l2cap_socket(self, line):
+        """Open L2CAP socket"""
+        cmd = "Open L2CAP socket"
+        try:
+            self.rfcomm_lib.open_l2cap_socket()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End Rfcomm wrappers"""
