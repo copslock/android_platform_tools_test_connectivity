@@ -268,8 +268,8 @@ class DiscoveryTest(AwareBaseTest):
     time.sleep(autils.EVENT_TIMEOUT)
 
     # verify that there were no other events
-    autils.verify_no_more_events(p_dut, 0)
-    autils.verify_no_more_events(s_dut, 0)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
 
   def verify_discovery_session_term(self, dut, disc_id, config, is_publish,
                                     term_ind_on):
@@ -416,6 +416,85 @@ class DiscoveryTest(AwareBaseTest):
 
     # verify that there were no other events
     autils.verify_no_more_events(dut)
+
+  def negative_discovery_test_utility(self, p_dut, s_dut, p_config, s_config):
+    """Utility which runs a negative discovery test:
+    - Start discovery (publish/subscribe) with TTL=0 (non-self-terminating)
+    - Validate no service is discovered
+    - Terminate discovery sessions
+
+    Uses typical payload size.
+
+    Args:
+      p_dut: Publish device under test
+      s_dut: Subscribe device under test
+      p_config: Publish discovery configuration
+      s_config: Subscribe discovery configuration
+    """
+    # Publisher+Subscriber: attach and wait for confirmation
+    p_id = p_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    s_id = s_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Publisher: start publish and wait for confirmation
+    p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
+    autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Subscriber: start subscribe and wait for confirmation
+    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
+    autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+    # Subscriber: fail on service discovery
+    autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+
+    # Publisher+Subscriber: Terminate sessions
+    p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
+    s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
+
+    # verify that there were no other events (including terminations)
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
+
+  def negative_discovery_mismatch_name_test_utility(
+      self, p_type, s_type, p_service_name, s_service_name):
+    """Utility which runs the negative discovery test for mismatched service
+    names.
+
+    Args:
+      p_type: Publish discovery type
+      s_type: Subscribe discovery type
+      p_service_name: Publish service name (or None to leave unchanged)
+      s_service_name: Subscribe service name (or None to leave unchanged)
+    """
+    p_dut = self.android_devices[0]
+    p_dut.pretty_name = "Publisher"
+    s_dut = self.android_devices[1]
+    s_dut.pretty_name = "Subscriber"
+
+    # create configurations
+    p_config = self.create_publish_config(
+        p_dut.aware_capabilities,
+        p_type,
+        self.PAYLOAD_SIZE_TYPICAL,
+        ttl=0,
+        term_ind_on=False,
+        null_match=False)
+    if p_service_name is not None:
+      p_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = p_service_name
+    s_config = self.create_publish_config(
+        s_dut.aware_capabilities,
+        s_type,
+        self.PAYLOAD_SIZE_TYPICAL,
+        ttl=0,
+        term_ind_on=False,
+        null_match=False)
+    if s_service_name is not None:
+      s_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = s_service_name
+
+    self.negative_discovery_test_utility(p_dut, s_dut, p_config, s_config)
+
 
   #######################################
   # Positive tests key:
@@ -600,3 +679,67 @@ class DiscoveryTest(AwareBaseTest):
         ptype=None,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         term_ind_on=False)
+
+  #######################################
+  # Mismatched service name tests key:
+  #
+  # names is: test_mismatch_service_name_<pub_type>_<sub_type>
+  # where:
+  #
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  #######################################
+
+  def test_mismatch_service_name_unsolicited_passive(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Unsolicited publish
+    - Passive subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        p_service_name="GoogleTestServiceXXX",
+        s_service_name="GoogleTestServiceYYY")
+
+  def test_mismatch_service_name_solicited_active(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Solicited publish
+    - Active subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_SOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        p_service_name="GoogleTestServiceXXX",
+        s_service_name="GoogleTestServiceYYY")
+
+  #######################################
+  # Mismatched discovery session type tests key:
+  #
+  # names is: test_mismatch_service_type_<pub_type>_<sub_type>
+  # where:
+  #
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  #######################################
+
+  def test_mismatch_service_type_unsolicited_active(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Unsolicited publish
+    - Active subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        p_service_name=None,
+        s_service_name=None)
+
+  def test_mismatch_service_type_solicited_passive(self):
+    """Functional test case / Discovery test cases / Mismatch service name
+    - Unsolicited publish
+    - Active subscribe
+    """
+    self.negative_discovery_mismatch_name_test_utility(
+        p_type=aconsts.PUBLISH_TYPE_SOLICITED,
+        s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        p_service_name=None,
+        s_service_name=None)
