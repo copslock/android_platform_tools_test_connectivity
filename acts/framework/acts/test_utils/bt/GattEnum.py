@@ -281,3 +281,24 @@ class GattPhyMask(IntEnum):
     PHY_LE_1M_MASK = 1
     PHY_LE_2M_MASK = 2
     PHY_LE_CODED_MASK = 4
+
+
+# TODO Decide whether to continue with Enums or move to dictionaries
+GattServerResponses = {
+    "GATT_SUCCESS": 0x0,
+    "GATT_FAILURE": 0x1,
+    "GATT_READ_NOT_PERMITTED": 0x2,
+    "GATT_WRITE_NOT_PERMITTED": 0x3,
+    "GATT_INVALID_PDU": 0x4,
+    "GATT_INSUFFICIENT_AUTHENTICATION": 0x5,
+    "GATT_REQUEST_NOT_SUPPORTED": 0x6,
+    "GATT_INVALID_OFFSET": 0x7,
+    "GATT_INSUFFICIENT_AUTHORIZATION": 0x8,
+    "GATT_INVALID_ATTRIBUTE_LENGTH": 0xD,
+    "GATT_INSUFFICIENT_ENCRYPTION": 0xF,
+    "GATT_CONNECTION_CONGESTED": 0x8F,
+    "GATT_13_ERR": 0x13,
+    "GATT_12_ERR": 0x12,
+    "GATT_0C_ERR": 0x0C,
+    "GATT_16": 0x16
+}
