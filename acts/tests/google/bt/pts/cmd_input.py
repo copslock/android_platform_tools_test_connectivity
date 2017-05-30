@@ -21,6 +21,7 @@ from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.GattEnum import GattServerResponses
 from ble_lib import BleLib
 from bta_lib import BtaLib
+from config_lib import ConfigLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 from rfcomm_lib import RfcommLib
@@ -45,6 +46,7 @@ class CmdInput(cmd.Cmd):
         self.log = log
 
         # Initialize libraries
+        self.config_lib = ConfigLib(log, self.pri_dut)
         self.bta_lib = BtaLib(log, mac_addr, self.pri_dut)
         self.ble_lib = BleLib(log, mac_addr, self.pri_dut)
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
@@ -796,3 +798,30 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End Rfcomm wrappers"""
+    """Begin Config wrappers"""
+
+    def do_config_reset(self, line):
+        """Reset Bluetooth Config file"""
+        cmd = "Reset Bluetooth Config file"
+        try:
+            self.config_lib.reset()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_config_set_nonbond(self, line):
+        """Set NonBondable Mode"""
+        cmd = "Set NonBondable Mode"
+        try:
+            self.config_lib.set_nonbond()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_config_set_disable_mitm(self, line):
+        """Set Disable MITM"""
+        cmd = "Set Disable MITM"
+        try:
+            self.config_lib.set_disable_mitm()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End Config wrappers"""
