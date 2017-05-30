@@ -59,6 +59,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_network_gen_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_network_rat
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
+from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
@@ -443,6 +444,7 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
             sub_id,
             network_generation,
             voice_or_data=NETWORK_SERVICE_DATA):
+        get_telephony_signal_strength(ad)
         return False
     return True
 
