@@ -77,6 +77,8 @@ class ActsInstallDependencies(cmd.Command):
         pass
 
     def run(self):
+        import pip
+        pip.main(['install', '--upgrade', 'pip'])
         required_packages = self.distribution.install_requires
 
         for package in required_packages:
