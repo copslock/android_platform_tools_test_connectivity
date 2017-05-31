@@ -416,6 +416,53 @@ class WifiChannelUS(WifiChannelBase):
                                        5660, 5680, 5700, 5720]
             self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
+class WifiReferenceNetworks:
+    """ Class to parse and return networks of different band and
+        auth type from reference_networks
+    """
+    def __init__(self, obj):
+        self.reference_networks = obj
+        self.WIFI_2G = "2g"
+        self.WIFI_5G = "5g"
+
+        self.secure_networks_2g = []
+        self.secure_networks_5g = []
+        self.open_networks_2g = []
+        self.open_networks_5g = []
+        self._parse_networks()
+
+    def _parse_networks(self):
+        for network in self.reference_networks:
+            for key in network:
+                if key == self.WIFI_2G:
+                    if "password" in network[key]:
+                        self.secure_networks_2g.append(network[key])
+                    else:
+                        self.open_networks_2g.append(network[key])
+                else:
+                    if "password" in network[key]:
+                        self.secure_networks_5g.append(network[key])
+                    else:
+                        self.open_networks_5g.append(network[key])
+
+    def return_2g_secure_networks(self):
+        return self.secure_networks_2g
+
+    def return_5g_secure_networks(self):
+        return self.secure_networks_5g
+
+    def return_2g_open_networks(self):
+        return self.open_networks_2g
+
+    def return_5g_open_networks(self):
+        return self.open_networks_5g
+
+    def return_secure_networks(self):
+        return self.secure_networks_2g + self.secure_networks_5g
+
+    def return_open_networks(self):
+        return self.open_networks_2g + self.open_networks_5g
+
 
 def _assert_on_fail_handler(func, assert_on_fail, *args, **kwargs):
     """Wrapper function that handles the bahevior of assert_on_fail.
