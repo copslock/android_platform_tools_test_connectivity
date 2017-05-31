@@ -177,8 +177,9 @@ class DiscoveryTest(AwareBaseTest):
         s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
     peer_id_on_sub = discovery_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
 
-    # Subscriber: validate contents of discovery (specifically that getting the
-    # Publisher's SSI and MatchFilter!)
+    # Subscriber: validate contents of discovery:
+    # - SSI: publisher's
+    # - Match filter: UNSOLICITED - publisher, SOLICITED - subscriber
     autils.assert_equal_strings(
         bytes(discovery_event["data"][
             aconsts.SESSION_CB_KEY_SERVICE_SPECIFIC_INFO]).decode("utf-8"),
@@ -187,7 +188,9 @@ class DiscoveryTest(AwareBaseTest):
     asserts.assert_equal(
         autils.decode_list(
             discovery_event["data"][aconsts.SESSION_CB_KEY_MATCH_FILTER_LIST]),
-        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
+        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]
+                           if ptype == aconsts.PUBLISH_TYPE_UNSOLICITED else
+                           s_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
         "Discovery mismatch: match filter")
 
     # Subscriber: send message to peer (Publisher)
@@ -246,7 +249,9 @@ class DiscoveryTest(AwareBaseTest):
     asserts.assert_equal(
         autils.decode_list(
             discovery_event["data"][aconsts.SESSION_CB_KEY_MATCH_FILTER_LIST]),
-        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
+        autils.decode_list(p_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]
+                           if ptype == aconsts.PUBLISH_TYPE_UNSOLICITED else
+                           s_config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
         "Discovery mismatch: match filter")
 
     # Subscribe: update subscribe and wait for confirmation
@@ -303,8 +308,18 @@ class DiscoveryTest(AwareBaseTest):
       dut.droid.wifiAwareUpdatePublish(disc_id, config)
     else:
       dut.droid.wifiAwareUpdateSubscribe(disc_id, config)
-    # failure expected - should verify that SESSION_CB_ON_SESSION_CONFIG_UPDATED
-    # not received but instead will verify_no_more_events at end of test
+
+    # The response to update discovery session is:
+    # term_ind_on=True: session was cleaned-up so won't get an explicit failure, but won't get a
+    #                   success either. Can check for no SESSION_CB_ON_SESSION_CONFIG_UPDATED but
+    #                   will defer to the end of the test (no events on queue).
+    # term_ind_on=False: session was not cleaned-up (yet). So expect
+    #                    SESSION_CB_ON_SESSION_CONFIG_FAILED.
+    if not term_ind_on:
+      autils.wait_for_event(
+          dut,
+          autils.decorate_event(aconsts.SESSION_CB_ON_SESSION_CONFIG_FAILED,
+                                disc_id))
 
   def positive_ttl_test_utility(self, is_publish, ptype, stype, term_ind_on):
     """Utility which runs a positive discovery session TTL configuration test
@@ -417,57 +432,19 @@ class DiscoveryTest(AwareBaseTest):
     # verify that there were no other events
     autils.verify_no_more_events(dut)
 
-  def negative_discovery_test_utility(self, p_dut, s_dut, p_config, s_config):
-    """Utility which runs a negative discovery test:
-    - Start discovery (publish/subscribe) with TTL=0 (non-self-terminating)
-    - Validate no service is discovered
-    - Terminate discovery sessions
-
-    Uses typical payload size.
-
-    Args:
-      p_dut: Publish device under test
-      s_dut: Subscribe device under test
-      p_config: Publish discovery configuration
-      s_config: Subscribe discovery configuration
-    """
-    # Publisher+Subscriber: attach and wait for confirmation
-    p_id = p_dut.droid.wifiAwareAttach(False)
-    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
-    s_id = s_dut.droid.wifiAwareAttach(False)
-    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
-
-    # Publisher: start publish and wait for confirmation
-    p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
-    autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
-
-    # Subscriber: start subscribe and wait for confirmation
-    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
-    autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
-
-    # Subscriber: fail on service discovery
-    autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
-
-    # Publisher+Subscriber: Terminate sessions
-    p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
-    s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
-
-    # verify that there were no other events (including terminations)
-    time.sleep(autils.EVENT_TIMEOUT)
-    autils.verify_no_more_events(p_dut, timeout=0)
-    autils.verify_no_more_events(s_dut, timeout=0)
-
-  def negative_discovery_mismatch_test_utility(self,
-                                               p_type,
-                                               s_type,
-                                               p_service_name=None,
-                                               s_service_name=None,
-                                               p_mf_1=None,
-                                               s_mf_1=None):
+  def discovery_mismatch_test_utility(self,
+                                      is_expected_to_pass,
+                                      p_type,
+                                      s_type,
+                                      p_service_name=None,
+                                      s_service_name=None,
+                                      p_mf_1=None,
+                                      s_mf_1=None):
     """Utility which runs the negative discovery test for mismatched service
     configs.
 
     Args:
+      is_expected_to_pass: True if positive test, False if negative
       p_type: Publish discovery type
       s_type: Subscribe discovery type
       p_service_name: Publish service name (or None to leave unchanged)
@@ -510,7 +487,33 @@ class DiscoveryTest(AwareBaseTest):
            s_mf_1,
            bytes(range(40))])
 
-    self.negative_discovery_test_utility(p_dut, s_dut, p_config, s_config)
+    p_id = p_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    s_id = s_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Publisher: start publish and wait for confirmation
+    p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
+    autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Subscriber: start subscribe and wait for confirmation
+    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
+    autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+    # Subscriber: fail on service discovery
+    if is_expected_to_pass:
+      autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+    else:
+      autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+
+    # Publisher+Subscriber: Terminate sessions
+    p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
+    s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
+
+    # verify that there were no other events (including terminations)
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
 
 
   #######################################
@@ -712,7 +715,8 @@ class DiscoveryTest(AwareBaseTest):
     - Unsolicited publish
     - Passive subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=False,
         p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         p_service_name="GoogleTestServiceXXX",
@@ -723,7 +727,8 @@ class DiscoveryTest(AwareBaseTest):
     - Solicited publish
     - Active subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=False,
         p_type=aconsts.PUBLISH_TYPE_SOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         p_service_name="GoogleTestServiceXXX",
@@ -744,7 +749,8 @@ class DiscoveryTest(AwareBaseTest):
     - Unsolicited publish
     - Active subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=True,
         p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE)
 
@@ -753,7 +759,8 @@ class DiscoveryTest(AwareBaseTest):
     - Unsolicited publish
     - Active subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=False,
         p_type=aconsts.PUBLISH_TYPE_SOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE)
 
@@ -772,7 +779,8 @@ class DiscoveryTest(AwareBaseTest):
     - Unsolicited publish
     - Passive subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=False,
         p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         p_mf_1="hello there string",
@@ -783,7 +791,8 @@ class DiscoveryTest(AwareBaseTest):
     - Solicited publish
     - Active subscribe
     """
-    self.negative_discovery_mismatch_test_utility(
+    self.discovery_mismatch_test_utility(
+        is_expected_to_pass=False,
         p_type=aconsts.PUBLISH_TYPE_SOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         p_mf_1="hello there string",
