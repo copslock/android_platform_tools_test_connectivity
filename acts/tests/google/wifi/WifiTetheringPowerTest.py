@@ -143,6 +143,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
 
 
     """ Tests begin """
+    @test_tracker_info(uuid="ebb74144-e22a-46e1-b8c1-9ada22b13133")
     def test_power_wifi_tethering_2ghz_no_devices_connected(self):
         """ Steps:
               1. Start wifi hotspot with 2.4Ghz band
@@ -153,6 +154,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="2560c088-4010-4354-ade3-6aaac83b1cfd")
     def test_power_wifi_tethering_5ghz_no_devices_connected(self):
         """ Steps:
               1. Start wifi hotspot with 5Ghz band
@@ -163,6 +165,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="644795b0-cd30-4a8f-82ee-cc0618c41c6b")
     def test_power_wifi_tethering_2ghz_connect_1device(self):
         """ Steps:
               1. Start wifi hotspot with 2.4GHz band
@@ -174,6 +177,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="8fca9898-f493-44c3-810f-d2262ac72187")
     def test_power_wifi_tethering_5ghz_connect_1device(self):
         """ Steps:
               1. Start wifi hotspot with 5GHz band
@@ -185,6 +189,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="16ef5f63-1a7a-44ae-bf8d-c3a181c89b63")
     def test_power_wifi_tethering_2ghz_connect_5devices(self):
         """ Steps:
               1. Start wifi hotspot with 2GHz band
@@ -197,6 +202,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="769aedfc-d309-40e0-95dd-51ff40f4e097")
     def test_power_wifi_tethering_5ghz_connect_5devices(self):
         """ Steps:
               1. Start wifi hotspot with 5GHz band
@@ -209,6 +215,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._measure_and_process_result()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="e5b71f34-1dc0-4045-a45e-48c1e9426ec3")
     def test_power_wifi_tethering_2ghz_connect_1device_with_traffic(self):
         """ Steps:
               1. Start wifi hotspot with 2GHz band
@@ -220,6 +227,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._start_traffic_measure_power(self.tethered_devices[0:1])
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="29c5cd6e-8df1-46e5-a735-526dc9154f6e")
     def test_power_wifi_tethering_5ghz_connect_1device_with_traffic(self):
         """ Steps:
               1. Start wifi hotspot with 5GHz band
@@ -231,6 +239,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._start_traffic_measure_power(self.tethered_devices[0:1])
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="da71b06f-7b98-4c14-a2e2-361f395b39a8")
     def test_power_wifi_tethering_2ghz_connect_5devices_with_traffic(self):
         """ Steps:
               1. Start wifi hotspot with 2GHz band
@@ -243,6 +252,7 @@ class WifiTetheringPowerTest(base_test.BaseTestClass):
         self._start_traffic_measure_power(self.tethered_devices)
         wutils.stop_wifi_tethering(self.hotspot_device)
 
+    @test_tracker_info(uuid="7f3173ab-fd8f-4579-8c45-f9a8c5cd17f7")
     def test_power_wifi_tethering_5ghz_connect_5devices_with_traffic(self):
         """ Steps:
               1. Start wifi hotspot with 2GHz band
