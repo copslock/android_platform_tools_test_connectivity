@@ -25,14 +25,10 @@ from config_lib import ConfigLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 from rfcomm_lib import RfcommLib
-from acts.test_utils.bt.GattEnum import GattServerResponses
-from gattc_lib import GattClientLib
-from gatts_lib import GattServerLib
 
 import gatt_test_database
 
 import cmd
-import gatt_test_database
 """Various Global Strings"""
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
@@ -57,8 +53,6 @@ class CmdInput(cmd.Cmd):
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
         self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
         self.rfcomm_lib = RfcommLib(log, mac_addr, self.pri_dut)
-        self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
-        self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
 
     def emptyline(self):
         pass
