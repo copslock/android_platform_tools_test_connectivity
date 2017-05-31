@@ -25,6 +25,7 @@ from config_lib import ConfigLib
 from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 from rfcomm_lib import RfcommLib
+from gattc_lib import GattClientLib
 
 import cmd
 import gatt_test_database
@@ -52,6 +53,7 @@ class CmdInput(cmd.Cmd):
         self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
         self.gatts_lib = GattServerLib(log, mac_addr, self.pri_dut)
         self.rfcomm_lib = RfcommLib(log, mac_addr, self.pri_dut)
+        self.gattc_lib = GattClientLib(log, mac_addr, self.pri_dut)
 
     def emptyline(self):
         pass
