@@ -26,9 +26,15 @@ class WifiPnoTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("attn_vals", "pno_network_a", "pno_network_b",
-                      "pno_interval")
+        req_params = ("attn_vals", "reference_networks", "pno_interval")
         self.unpack_userparams(req_params)
+        WifiNetworks = wutils.WifiReferenceNetworks(self.reference_networks)
+        self.secure_networks_2g = WifiNetworks.return_2g_secure_networks()
+        asserts.assert_true(
+            len(self.secure_networks_2g) >= 2,
+            "Need at least two secure 2g networks.")
+        self.pno_network_a = self.secure_networks_2g[0]
+        self.pno_network_b = self.secure_networks_2g[1]
         self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]
