@@ -26,9 +26,8 @@ from gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 from rfcomm_lib import RfcommLib
 
-import gatt_test_database
-
 import cmd
+import gatt_test_database
 """Various Global Strings"""
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
