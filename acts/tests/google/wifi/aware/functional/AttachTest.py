@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
+
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -57,7 +59,9 @@ class AttachTest(AwareBaseTest):
 
     # Create 3 attach sessions: 2 without identity callback, 1 with
     id1 = dut.droid.wifiAwareAttach(False, None, True)
+    time.sleep(10) # to make sure all calls and callbacks are done
     id2 = dut.droid.wifiAwareAttach(True, None, True)
+    time.sleep(10) # to make sure all calls and callbacks are done
     id3 = dut.droid.wifiAwareAttach(False, None, True)
     dut.log.info('id1=%d, id2=%d, id3=%d', id1, id2, id3)
 

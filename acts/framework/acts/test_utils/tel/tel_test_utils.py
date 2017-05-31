@@ -20,6 +20,7 @@ standard_library.install_aliases()
 import concurrent.futures
 import json
 import logging
+import re
 import os
 import urllib.parse
 import time
@@ -393,6 +394,25 @@ def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
     else:
         return toggle_airplane_mode_msim(
             log, ad, new_state, strict_checking=strict_checking)
+
+
+def get_telephony_signal_strength(ad):
+    signal_strength = ad.droid.telephonyGetSignalStrength()
+    #{'evdoEcio': -1, 'asuLevel': 28, 'lteSignalStrength': 14, 'gsmLevel': 0,
+    # 'cdmaAsuLevel': 99, 'evdoDbm': -120, 'gsmDbm': -1, 'cdmaEcio': -160,
+    # 'level': 2, 'lteLevel': 2, 'cdmaDbm': -120, 'dbm': -112, 'cdmaLevel': 0,
+    # 'lteAsuLevel': 28, 'gsmAsuLevel': 99, 'gsmBitErrorRate': 0,
+    # 'lteDbm': -112, 'gsmSignalStrength': 99}
+    if not signal_strength: signal_strength = {}
+    out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
+    signals = re.findall(r"(-*\d+)", out)
+    for i, val in enumerate(
+        ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
+         "evdoDbm", "evdoEcio", "evdoSnr", "lteSignalStrength", "lteRsrp",
+         "lteRsrq", "lteRssnr", "lteCqi", "lteRsrpBoost")):
+        signal_strength[val] = signal_strength.get(val, int(signals[i]))
+    ad.log.info("Telephony Signal strength = %s", signal_strength)
+    return signal_strength
 
 
 def is_expected_event(event_to_check, events_list):
@@ -1813,7 +1833,7 @@ def http_file_download_by_chrome(ad,
         url, "/sdcard/Download/")
     for cmd in ("am set-debug-app --persistent com.android.chrome",
                 'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre" > /data/local/chrome-command-line',
+                '--disable-fre > /data/local/chrome-command-line"',
                 "pm grant com.android.chrome "
                 "android.permission.READ_EXTERNAL_STORAGE",
                 "pm grant com.android.chrome "
@@ -2450,6 +2470,11 @@ def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
     ad.log.info("Sub_id %s network rate is %s for %s", sub_id, rat,
                 voice_or_data)
     return rat != RAT_UNKNOWN
+
+
+def is_voice_attached(log, ad):
+    return _is_attached_for_subscription(
+        log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
 
 
 def wait_for_voice_attach(log, ad, max_time):
@@ -3657,7 +3682,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     Phone not in airplane mode.
     """
     result = True
-
     set_wifi_to_default(log, ad)
     try:
         ad.droid.telephonyFactoryReset()
@@ -3675,6 +3699,8 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
+
+    get_telephony_signal_strength(ad)
 
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
