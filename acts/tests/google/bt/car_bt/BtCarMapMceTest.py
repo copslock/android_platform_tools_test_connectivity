@@ -29,7 +29,7 @@ from acts.test_utils.tel.tel_defines import EventSmsReceived
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
 from acts.test_utils.tel.tel_test_utils import get_phone_number
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 
 EVENT_MAP_MESSAGE_RECEIVED = "MapMessageReceived"
 TIMEOUT = 2000
@@ -116,7 +116,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message_failure_no_cellular(self):
-        if not toggle_airplane_mode(self.log, self.MSE, True):
+        if not toggle_airplane_mode_by_adb(self.log, self.MSE, True):
             return False
         bt_test_utils.reset_bluetooth([self.MSE])
         bt_test_utils.connect_pri_to_sec(
@@ -129,7 +129,7 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message_failure_no_bluetooth(self):
-        if not toggle_airplane_mode(self.log, self.MSE, True):
+        if not toggle_airplane_mode_by_adb(self.log, self.MSE, True):
             return False
         try:
             bt_test_utils.connect_pri_to_sec(
