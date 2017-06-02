@@ -42,7 +42,7 @@ from acts.test_utils.bt.BtEnum import BluetoothProfile
 from acts.test_utils.bt.BtEnum import BluetoothProfileState
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
 from acts.utils import create_dir
@@ -1171,7 +1171,7 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
         True if PAN connection and verification is successful,
         false if unsuccessful.
     """
-    if not toggle_airplane_mode(log, panu_dut, True):
+    if not toggle_airplane_mode_by_adb(log, panu_dut, True):
         panu_dut.log.error("Failed to toggle airplane mode on")
         return False
     if not bluetooth_enabled_check(panu_dut):
