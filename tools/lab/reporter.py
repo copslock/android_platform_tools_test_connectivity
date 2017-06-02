@@ -15,5 +15,24 @@
 #   limitations under the License.
 
 
-class Reporter:
+class Reporter(object):
+    """ Base class for the multiple ways to report the data gathered.
+
+    The method report takes in a dictionary where the key is the class that
+    generated the value, and the value is the actual data gathered from
+    collecting that metric. For example, an UptimeMetric, would have
+    UptimeMetric() as key, and '1-02:22:42' as the value.
+    """
+
+    def report(self, responses):
+        raise NotImplementedError('Must implement this method')
+
+
+class LoggerReporter(Reporter):
+    def report(self, response_dict):
+        for key in response_dict:
+            print(response_dict[key])
+
+
+class FileReporter(Reporter):
     pass
