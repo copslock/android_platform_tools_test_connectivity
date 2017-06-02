@@ -56,6 +56,8 @@ TIMEOUT_SMALL = 0.0001
 PAIRING_VARIANT_PASSKEY_CONFIRMATION = 2
 
 BTSNOOP_LOG_PATH_ON_DEVICE = "/data/misc/bluetooth/logs/btsnoop_hci.log"
+BTSNOOP_LAST_LOG_PATH_ON_DEVICE = \
+    "/data/misc/bluetooth/logs/btsnoop_hci.log.last"
 
 log = logging
 
@@ -1011,9 +1013,15 @@ def take_btsnoop_log(ad, testcase, testname):
     utils.create_dir(snoop_path)
     cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE,
                    " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
-    testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
-                      .format(device_model, serial))
     exe_cmd(cmd)
+    try:
+        cmd = ''.join(
+            ("adb -s ", serial, " pull ", BTSNOOP_LAST_LOG_PATH_ON_DEVICE, " ",
+             snoop_path + '/' + out_name, ".btsnoop_hci.log.last"))
+        exe_cmd(cmd)
+    except Exception as err:
+        testcase.log.info("File does not exist {}".format(
+            BTSNOOP_LAST_LOG_PATH_ON_DEVICE))
 
 
 def kill_bluetooth_process(ad):
