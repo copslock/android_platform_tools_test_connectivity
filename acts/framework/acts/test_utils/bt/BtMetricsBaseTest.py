@@ -26,8 +26,6 @@ class BtMetricsBaseTest(BluetoothBaseTest):
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
-        self.bluetooth_proto_module = None
-        self.metrics_path = None
         self.bluetooth_proto_path = None
 
     def setup_class(self):
@@ -37,8 +35,6 @@ class BtMetricsBaseTest(BluetoothBaseTest):
         :return: True on success, False on failure
         """
         super(BtMetricsBaseTest, self).setup_class()
-        self.metrics_path = os.path.join(self.android_devices[0].log_path,
-                                         "BluetoothMetrics")
         self.bluetooth_proto_path = self.user_params["bluetooth_proto_path"]
         if not os.path.isfile(self.bluetooth_proto_path):
             try:
@@ -50,13 +46,15 @@ class BtMetricsBaseTest(BluetoothBaseTest):
                 self.log.error("Unable to find Bluetooth proto {}."
                                .format(self.bluetooth_proto_path))
                 return False
-        create_dir(self.metrics_path)
-        self.bluetooth_proto_module = \
-            compile_import_proto(self.metrics_path, self.bluetooth_proto_path)
-        if not self.bluetooth_proto_module:
-            self.log.error("Unable to compile bluetooth proto at " +
-                           self.bluetooth_proto_path)
-            return False
+        for ad in self.android_devices:
+            ad.metrics_path = os.path.join(ad.log_path, "BluetoothMetrics")
+            create_dir(ad.metrics_path)
+            ad.bluetooth_proto_module = \
+                compile_import_proto(ad.metrics_path, self.bluetooth_proto_path)
+            if not ad.bluetooth_proto_module:
+                self.log.error("Unable to compile bluetooth proto at " +
+                               self.bluetooth_proto_path)
+                return False
         return True
 
     def setup_test(self):
@@ -67,8 +65,8 @@ class BtMetricsBaseTest(BluetoothBaseTest):
         """
         super(BtMetricsBaseTest, self).setup_test()
         # Clear all metrics
-        get_bluetooth_metrics(self.android_devices[0],
-                              self.bluetooth_proto_module)
+        for ad in self.android_devices:
+            get_bluetooth_metrics(ad, ad.bluetooth_proto_module)
         return True
 
     def collect_bluetooth_manager_metrics_logs(self, ads):
@@ -85,10 +83,10 @@ class BtMetricsBaseTest(BluetoothBaseTest):
             serial = ad.serial
             out_name = "{}_{}".format(serial, "bluetooth_metrics.txt")
             bluetooth_log = get_bluetooth_metrics(ad,
-                                                  self.bluetooth_proto_module)
+                                                  ad.bluetooth_proto_module)
             bluetooth_log_ascii = parse_proto_to_ascii(bluetooth_log)
             dump_string_to_file(bluetooth_log_ascii,
-                                os.path.join(self.metrics_path, out_name))
+                                os.path.join(ad.metrics_path, out_name))
             bluetooth_logs.append(bluetooth_log)
             bluetooth_logs_ascii.append(bluetooth_log_ascii)
         return bluetooth_logs, bluetooth_logs_ascii
