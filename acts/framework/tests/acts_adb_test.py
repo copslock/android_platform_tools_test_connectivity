@@ -16,8 +16,7 @@
 
 import unittest
 import mock
-from acts.controllers.adb import AdbProxy
-from acts.controllers.adb import AdbError
+from acts.controllers import adb
 
 
 class MockJob(object):
@@ -27,7 +26,7 @@ class MockJob(object):
         self.stdout = stdout
 
 
-class MockAdbProxy(AdbProxy):
+class MockAdbProxy(adb.AdbProxy):
     def __init__(self):
         pass
 
@@ -39,7 +38,7 @@ class ADBTest(unittest.TestCase):
         mock_job = MockJob(exit_status=1, stderr='error: device not found')
         cmd = ['adb', '-s', '"SOME_SERIAL"', 'shell', '"SOME_SHELL_CMD"']
         with mock.patch('acts.libs.proc.job.run', return_value=mock_job):
-            with self.assertRaises(AdbError):
+            with self.assertRaises(adb.AdbError):
                 MockAdbProxy()._exec_cmd(cmd)
 
     def test__exec_cmd_failure_new_adb(self):
@@ -47,7 +46,7 @@ class ADBTest(unittest.TestCase):
             exit_status=1, stderr='error: device \'DEADBEEF\' not found')
         cmd = ['adb', '-s', '"SOME_SERIAL"', 'shell', '"SOME_SHELL_CMD"']
         with mock.patch('acts.libs.proc.job.run', return_value=mock_job):
-            with self.assertRaises(AdbError):
+            with self.assertRaises(adb.AdbError):
                 MockAdbProxy()._exec_cmd(cmd)
 
     def test__exec_cmd_pass_ret_1(self):
