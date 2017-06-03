@@ -17,11 +17,13 @@
     Test Script for Telephony Post Flight check.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.asserts import fail
 
 
 class TelLivePostflightTest(TelephonyBaseTest):
+    @test_tracker_info(uuid="ba6e260e-d2e1-4c01-9d51-ef2df1591039")
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
         msg = ""
