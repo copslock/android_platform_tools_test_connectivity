@@ -57,10 +57,6 @@ def main(argv):
 
     result = job.run(FIND_COMMIT_KEYWORDS % grep_args, ignore_status=True)
 
-    if result.stderr:
-        logging.error(result.stderr)
-        exit(1)
-
     if result.stdout:
         logging.error('Your commit message contains at least one keyword.')
         logging.error('Keyword(s) found in the following line(s):')
