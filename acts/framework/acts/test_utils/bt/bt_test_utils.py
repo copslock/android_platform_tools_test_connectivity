@@ -42,7 +42,7 @@ from acts.test_utils.bt.BtEnum import BluetoothProfile
 from acts.test_utils.bt.BtEnum import BluetoothProfileState
 from acts.test_utils.bt.BtEnum import BluetoothScanModeType
 from acts.test_utils.bt.BtEnum import RfcommUuid
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
 from acts.utils import create_dir
@@ -56,6 +56,8 @@ TIMEOUT_SMALL = 0.0001
 PAIRING_VARIANT_PASSKEY_CONFIRMATION = 2
 
 BTSNOOP_LOG_PATH_ON_DEVICE = "/data/misc/bluetooth/logs/btsnoop_hci.log"
+BTSNOOP_LAST_LOG_PATH_ON_DEVICE = \
+    "/data/misc/bluetooth/logs/btsnoop_hci.log.last"
 
 log = logging
 
@@ -1011,9 +1013,15 @@ def take_btsnoop_log(ad, testcase, testname):
     utils.create_dir(snoop_path)
     cmd = ''.join(("adb -s ", serial, " pull ", BTSNOOP_LOG_PATH_ON_DEVICE,
                    " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
-    testcase.log.info("Test failed, grabbing the bt_snoop logs on {} {}."
-                      .format(device_model, serial))
     exe_cmd(cmd)
+    try:
+        cmd = ''.join(
+            ("adb -s ", serial, " pull ", BTSNOOP_LAST_LOG_PATH_ON_DEVICE, " ",
+             snoop_path + '/' + out_name, ".btsnoop_hci.log.last"))
+        exe_cmd(cmd)
+    except Exception as err:
+        testcase.log.info("File does not exist {}".format(
+            BTSNOOP_LAST_LOG_PATH_ON_DEVICE))
 
 
 def kill_bluetooth_process(ad):
@@ -1163,7 +1171,7 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
         True if PAN connection and verification is successful,
         false if unsuccessful.
     """
-    if not toggle_airplane_mode(log, panu_dut, True):
+    if not toggle_airplane_mode_by_adb(log, panu_dut, True):
         panu_dut.log.error("Failed to toggle airplane mode on")
         return False
     if not bluetooth_enabled_check(panu_dut):

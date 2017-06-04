@@ -29,6 +29,9 @@ from acts.libs.proc import job
 
 DEFAULT_ADB_TIMEOUT = 60
 DEFAULT_ADB_PULL_TIMEOUT = 180
+# Uses a regex to be backwards compatible with previous versions of ADB
+# (N and above add the serial to the error msg).
+DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
 
 
 def parsing_parcel_output(output):
@@ -107,31 +110,28 @@ class AdbProxy(object):
     def _exec_cmd(self, cmd, ignore_status=False, timeout=DEFAULT_ADB_TIMEOUT):
         """Executes adb commands in a new shell.
 
-        This is specific to executing adb binary because stderr is not a good
-        indicator of cmd execution status.
+        This is specific to executing adb commands.
 
         Args:
-            cmds: A string that is the adb command to execute.
+            cmd: A string that is the adb command to execute.
 
         Returns:
-            The output of the adb command run if exit code is 0.
+            The stdout of the adb command.
 
         Raises:
-            AdbError is raised if the adb command exit code is not 0.
+            AdbError is raised if adb cannot find the device.
         """
         result = job.run(cmd, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
-
-        if ret == 0 or ignore_status:
-            if "Result: Parcel" in out:
-                return parsing_parcel_output(out)
-            else:
-                return out
-        else:
+        if not ignore_status and ret == 1 and DEVICE_NOT_FOUND_REGEX.match(err):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
+        elif "Result: Parcel" in out:
+            return parsing_parcel_output(out)
+        else:
+            return out
 
     def _exec_adb_cmd(self, name, arg_str, **kwargs):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),

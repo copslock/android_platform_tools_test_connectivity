@@ -775,18 +775,15 @@ class AndroidDevice:
         Returns:
         True if package is installed. False otherwise.
         """
+
         try:
-            out = self.adb.shell(
-                'pm list packages | grep -w "package:%s"' % package_name,
-                ignore_status=False)
-            if package_name in out:
-                self.log.debug("apk %s is installed", package_name)
-                return True
-            else:
-                self.log.debug("apk %s is not installed, query returns %s",
-                               package_name, out)
-                return False
-        except:
+            return bool(
+                self.adb.shell('pm list packages | grep -w "package:%s"' %
+                               package_name))
+
+        except Exception as err:
+            self.log.error('Could not determine if %s is installed. '
+                           'Received error:\n%s', package_name, err)
             return False
 
     def is_sl4a_installed(self):

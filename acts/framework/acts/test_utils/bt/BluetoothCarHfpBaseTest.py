@@ -27,7 +27,6 @@ from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
 
 class BluetoothCarHfpBaseTest(BluetoothBaseTest):
