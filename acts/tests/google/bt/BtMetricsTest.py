@@ -86,8 +86,8 @@ class BtMetricsTest(BtMetricsBaseTest):
                 time.sleep(2)
                 bonded_devices = ad.droid.bluetoothGetBondedDevices()
                 if len(bonded_devices) > 0:
-                    self.log.error(
-                        "Failed to unbond devices: {}".format(bonded_devices))
+                    self.log.error("Failed to unbond devices: {}".format(
+                        bonded_devices))
                     return False
         end_time = get_current_epoch_time()
         bluetooth_logs, bluetooth_logs_ascii = \
@@ -104,10 +104,9 @@ class BtMetricsTest(BtMetricsBaseTest):
                                 (t, start_time, end_time))
             device_info = pair_event.device_paired_with
             asserts.assert_true(device_info, "Device info is none")
-            asserts.assert_equal(
-                device_info.device_type,
-                self.bluetooth_proto_module.DeviceInfo.DEVICE_TYPE_BREDR,
-                "Device type does not match")
+            asserts.assert_equal(device_info.device_type, self.android_devices[
+                0].bluetooth_proto_module.DeviceInfo.DEVICE_TYPE_BREDR,
+                                 "Device type does not match")
 
     def test_bluetooth_metrics_parsing(self):
         """Test if metrics could be dumped and parsed
