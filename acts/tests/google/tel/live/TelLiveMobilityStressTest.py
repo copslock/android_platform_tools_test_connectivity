@@ -29,6 +29,7 @@ from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -68,7 +69,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
-        self.max_run_time = int(self.user_params.get("max_run_time", 18000))
+        self.max_run_time = int(self.user_params.get("max_run_time", 3600))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
         self.crash_check_interval = int(

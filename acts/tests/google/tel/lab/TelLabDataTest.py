@@ -63,7 +63,6 @@ from acts.controllers import iperf_server
 from acts.utils import exe_cmd
 
 DEFAULT_PING_DURATION = 30
-MAX_ITERATIONS = 10
 
 class TelLabDataTest(TelephonyBaseTest):
     SETTLING_TIME = 30
@@ -80,6 +79,13 @@ class TelLabDataTest(TelephonyBaseTest):
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        self.step_size = self.user_params.get("power_step_size", 5)
+        self.start_power_level = self.user_params.get("start_power_level", -40)
+        self.stop_power_level = self.user_params.get("stop_power_level", -100)
+        self.lte_bandwidth = self.user_params.get("lte_bandwidth", 20)
+        self.MAX_ITERATIONS = abs(int((self.stop_power_level - \
+                                 self.start_power_level) / self.step_size))
+        self.log.info("Max iterations is %d", self.MAX_ITERATIONS)
 
     def setup_class(self):
         try:
@@ -93,8 +99,8 @@ class TelLabDataTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
-        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
-                          ignore_status=True)
+        self.ad.adb.shell(
+            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -107,14 +113,20 @@ class TelLabDataTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def _setup_data(self,
-                   set_simulation_func,
-                   rat):
+    def _setup_data(self, set_simulation_func, rat):
         try:
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
-                                self.ad.sim_card)
+                                              self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
-            self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
+            if self.lte_bandwidth == 20:
+                self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
+            elif self.lte_bandwidth == 15:
+                self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_15MHz
+            elif self.lte_bandwidth == 10:
+                self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_10MHz
+            else:
+                self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_5MHz
+
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -133,11 +145,12 @@ class TelLabDataTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for SMS test.")
                 return False
 
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))
@@ -145,14 +158,14 @@ class TelLabDataTest(TelephonyBaseTest):
 
             self.anritsu.wait_for_registration_state()
             time.sleep(self.SETTLING_TIME)
-            if not ensure_network_generation(self.log, self.ad,
-                                             GEN_4G, NETWORK_SERVICE_DATA):
+            if not ensure_network_generation(self.log, self.ad, GEN_4G,
+                                             NETWORK_SERVICE_DATA):
                 self.log.error("Device not in 4G Connected Mode.")
                 return False
 
             # Fetch IP address of the host machine
             cmd = "|".join(("ifconfig", "grep eth0 -A1", "grep inet",
-                           "cut -d ':' -f2", "cut -d ' ' -f 1"))
+                            "cut -d ':' -f2", "cut -d ' ' -f 1"))
             destination_ip = exe_cmd(cmd)
             destination_ip = (destination_ip.decode("utf-8")).split("\n")[0]
             self.log.info("Dest IP is %s", destination_ip)
@@ -161,34 +174,44 @@ class TelLabDataTest(TelephonyBaseTest):
                                   destination_ip):
                 self.log.error("Pings failed to Destination.")
                 return False
+            self.bts1.output_level = self.start_power_level
 
             # Power, iperf, file output, power change
-            for iteration in range (1, MAX_ITERATIONS+1):
+            for iteration in range(1, self.MAX_ITERATIONS + 1):
                 self.log.info("------- Current Iteration: %d / %d -------",
-                               iteration, MAX_ITERATIONS)
+                              iteration, self.MAX_ITERATIONS)
                 current_power = self.bts1.output_level
                 self.log.info("Current Power Level is %s", current_power)
 
                 self.ip_server.start()
-                tput_dict = {"Uplink" : 0, "Downlink" : 0}
-                if iperf_test_by_adb(self.log, self.ad, destination_ip,
-                                 self.port_num, True, 10, rate_dict=tput_dict):
+                tput_dict = {"Uplink": 0, "Downlink": 0}
+                if iperf_test_by_adb(
+                        self.log,
+                        self.ad,
+                        destination_ip,
+                        self.port_num,
+                        True,
+                        10,
+                        rate_dict=tput_dict):
                     uplink = tput_dict["Uplink"]
                     downlink = tput_dict["Downlink"]
                 else:
                     self.log.error("iperf failed to Destination.")
                     self.log.info("Iteration %d Failed", iteration)
-                    return False
+                    if float(current_power) < -55.0 :
+                        return True
+                    else:
+                        return False
                 self.ip_server.stop()
 
                 self.log.info("Iteration %d Passed", iteration)
                 self.logpath = os.path.join(logging.log_path, "power_tput.txt")
                 line = "Power " + current_power + " DL TPUT " + str(downlink)
-                with open (self.logpath, "a") as tput_file:
+                with open(self.logpath, "a") as tput_file:
                     tput_file.write(line)
                     tput_file.write("\n")
                 current_power = float(current_power)
-                new_power = current_power - 5.0
+                new_power = current_power - self.step_size
                 self.log.info("Setting Power Level to %f", new_power)
                 self.bts1.output_level = new_power
 
