@@ -156,6 +156,19 @@ class DataPathTest(AwareBaseTest):
 
     # TODO: possibly send messages back and forth, prefer to use netcat/nc
 
+    # terminate sessions and wait for ON_LOST callbacks
+    p_dut.droid.wifiAwareDestroy(p_id)
+    s_dut.droid.wifiAwareDestroy(s_id)
+
+    autils.wait_for_event_with_keys(
+        p_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+    autils.wait_for_event_with_keys(
+        s_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
     # clean-up
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
@@ -233,6 +246,19 @@ class DataPathTest(AwareBaseTest):
                   resp_ipv6)
 
     # TODO: possibly send messages back and forth, prefer to use netcat/nc
+
+    # terminate sessions and wait for ON_LOST callbacks
+    init_dut.droid.wifiAwareDestroy(init_id)
+    resp_dut.droid.wifiAwareDestroy(resp_id)
+
+    autils.wait_for_event_with_keys(
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+    autils.wait_for_event_with_keys(
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
     # clean-up
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
