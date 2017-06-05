@@ -33,6 +33,7 @@ def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
   Args:
     ad: The android device
     event_name: The event to wait on
+    timeout: Number of seconds to wait
   Returns:
     The event (if available)
   """
@@ -47,6 +48,25 @@ def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
     ad.log.info('%sTimed out while waiting for %s', prefix, event_name)
     asserts.fail(event_name)
 
+def wait_for_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT, *keyvalues):
+  """Wait for the specified event contain the key/value pairs or timeout
+
+  Args:
+    ad: The android device
+    event_name: The event to wait on
+    timeout: Number of seconds to wait
+    keyvalues: (kay, value) pairs
+  Returns:
+    The event (if available)
+  """
+  def filter_callbacks(event, keyvalues):
+    for keyvalue in keyvalues:
+      key, value = keyvalue
+      if event['data'][key] != value:
+        return False
+    return True
+
+  return ad.ed.wait_for_event(event_name, filter_callbacks, timeout, keyvalues)
 
 def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
   """Wait for a timeout period and looks for the specified event - fails if it
@@ -172,3 +192,4 @@ def get_aware_capabilities(ad):
   Returns: the capability dictionary.
   """
   return json.loads(ad.adb.shell('cmd wifiaware state_mgr get_capabilities'))
+
