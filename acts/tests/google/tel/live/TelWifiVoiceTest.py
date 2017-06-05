@@ -3122,13 +3122,13 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         PhoneA should have data on WiFi.
         """
-        # Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT
+        # Decrease WiFi RSSI to MIN_RSSI_RESERVED_VALUE
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
                  self.wifi_rssi_with_no_atten,
-                 MAX_RSSI_RESERVED_VALUE, 2, 1)
+                 MIN_RSSI_RESERVED_VALUE, 2, 1)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
                  self.wifi_rssi_with_no_atten,
-                 MAX_RSSI_RESERVED_VALUE, 2, 1)
+                 MIN_RSSI_RESERVED_VALUE, 2, 1)
         # Make sure WiFi still connected and have data.
         if (not wait_for_wifi_data_connection(self.log,
                                               self.android_devices[0], True) or
