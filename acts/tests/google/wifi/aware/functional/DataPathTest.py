@@ -37,6 +37,11 @@ class DataPathTest(AwareBaseTest):
   # Note: reliability of message transmission is tested elsewhere
   MSG_RETX_COUNT = 5  # hard-coded max value, internal API
 
+  # number of second to 'reasonably' wait to make sure that devices synchronize
+  # with each other - useful for OOB test cases, where the OOB discovery would
+  # take some time
+  WAIT_FOR_CLUSTER = 5
+
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
 
@@ -155,6 +160,85 @@ class DataPathTest(AwareBaseTest):
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
+  def run_oob_data_path_test(self, encr_type, use_peer_id):
+    """Runs the out-of-band data-path tests.
+
+    Args:
+      encr_type: Encryption type, one of ENCR_TYPE_*
+      use_peer_id: On Responder: True to use peer ID, False to accept any
+                   request
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    # Publisher+Subscriber: attach and wait for confirmation & identity
+    init_id = init_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    init_ident_event = autils.wait_for_event(
+        init_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    init_mac = init_ident_event["data"]["mac"]
+    resp_id = resp_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    resp_ident_event = autils.wait_for_event(
+        resp_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    resp_mac = resp_ident_event["data"]["mac"]
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(self.WAIT_FOR_CLUSTER)
+
+    # Responder: request network
+    resp_req_key = self.request_network(
+        resp_dut,
+        resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+            resp_id, aconsts.DATA_PATH_RESPONDER, init_mac
+            if use_peer_id else None, self.PASSPHRASE
+            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+
+    # Initiator: request network
+    init_req_key = self.request_network(
+        init_dut,
+        init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, self.PASSPHRASE
+            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+
+    # Initiator & Responder: wait for network formation
+    init_net_event = autils.wait_for_event_with_keys(
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+    resp_net_event = autils.wait_for_event_with_keys(
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+    init_aware_if = init_net_event["data"][
+        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    resp_aware_if = resp_net_event["data"][
+        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
+
+    init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
+        init_aware_if).split("%")[0]
+    resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
+        resp_aware_if).split("%")[0]
+    self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
+                  resp_ipv6)
+
+    # TODO: possibly send messages back and forth, prefer to use netcat/nc
+
+    # clean-up
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+
   #######################################
   # Positive In-Band (IB) tests key:
   #
@@ -215,46 +299,94 @@ class DataPathTest(AwareBaseTest):
         use_peer_id=False)
 
   def test_ib_solicited_active_open_specific(self):
-      """Data-path: in-band, solicited/active, open encryption, specific peer
+    """Data-path: in-band, solicited/active, open encryption, specific peer
 
-      Verifies end-to-end discovery + data-path creation.
-      """
-      self.run_ib_data_path_test(
-          ptype=aconsts.PUBLISH_TYPE_SOLICITED,
-          stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-          encr_type=self.ENCR_TYPE_OPEN,
-          use_peer_id=True)
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True)
 
   def test_ib_solicited_active_open_any(self):
-      """Data-path: in-band, solicited/active, open encryption, any peer
+    """Data-path: in-band, solicited/active, open encryption, any peer
 
-      Verifies end-to-end discovery + data-path creation.
-      """
-      self.run_ib_data_path_test(
-          ptype=aconsts.PUBLISH_TYPE_SOLICITED,
-          stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-          encr_type=self.ENCR_TYPE_OPEN,
-          use_peer_id=False)
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False)
 
   def test_ib_solicited_active_passphrase_specific(self):
-      """Data-path: in-band, solicited/active, passphrase, specific peer
+    """Data-path: in-band, solicited/active, passphrase, specific peer
 
-      Verifies end-to-end discovery + data-path creation.
-      """
-      self.run_ib_data_path_test(
-          ptype=aconsts.PUBLISH_TYPE_SOLICITED,
-          stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-          encr_type=self.ENCR_TYPE_PASSPHRASE,
-          use_peer_id=True)
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=True)
 
   def test_ib_solicited_active_passphrase_any(self):
-      """Data-path: in-band, solicited/active, passphrase, any peer
+    """Data-path: in-band, solicited/active, passphrase, any peer
 
-      Verifies end-to-end discovery + data-path creation.
-      """
-      self.run_ib_data_path_test(
-          ptype=aconsts.PUBLISH_TYPE_SOLICITED,
-          stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
-          encr_type=self.ENCR_TYPE_PASSPHRASE,
-          use_peer_id=False)
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=False)
 
+  #######################################
+  # Positive Out-of-Band (OOB) tests key:
+  #
+  # names is: test_oob_<encr_type>_<peer_spec>
+  # where:
+  #
+  # encr_type: Encription type: open, passphrase
+  # peer_spec: Peer specification method: any or specific
+  #
+  # Note: Out-of-Band means using a non-Wi-Fi Aware mechanism for discovery and
+  # exchange of MAC addresses and then Wi-Fi Aware for data-path.
+  #######################################
+
+  def test_oob_open_specific(self):
+    """Data-path: out-of-band, open encryption, specific peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True)
+
+  def test_oob_open_any(self):
+    """Data-path: out-of-band, open encryption, any peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False)
+
+  def test_oob_passphrase_specific(self):
+    """Data-path: out-of-band, passphrase, specific peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=True)
+
+  def test_oob_passphrase_any(self):
+    """Data-path: out-of-band, passphrase, any peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=False)
