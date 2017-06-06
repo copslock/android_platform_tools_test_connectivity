@@ -14,8 +14,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from reporter import Reporter
+from metrics.metric import Metric
+import job
 
 
-class InstantReporter(Reporter):
-    pass
+class UsbMetric(Metric):
+    def check_usbmon(self):
+        try:
+            job.run('grep usbmon /proc/modules')
+        except job.Error:
+            print('Kernel module not loaded, attempting to load usbmon')
+            result = job.run('modprobe usbmon', ignore_status=True)
+            if result.exit_status != 0:
+                print result.stderr
+
+    def gather_metric(self):
+        self.check_usbmon()
