@@ -1,4 +1,5 @@
 AttachTest,
 DiscoveryTest,
 MessageTest,
-DataPathTest
+DataPathTest,
+MacRandomTest
