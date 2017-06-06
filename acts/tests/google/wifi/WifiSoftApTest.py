@@ -142,50 +142,6 @@ class WifiSoftApTest(base_test.BaseTestClass):
 
 
     """ Tests Begin """
-    @test_tracker_info(uuid="6437727d-7db1-4f69-963e-f26a7797e47f")
-    def test_switch_to_softap_mode(self):
-        """Test switch to softap mode.
-
-         1. Report current state.
-         2. Switch to AP mode.
-         3. Switch back to previous state.
-        """
-        success = True
-        initial_wifi_state = self.dut.droid.wifiCheckState()
-        initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
-        self.dut.log.info("current state: %s", initial_wifi_state)
-        self.dut.log.info("is sim ready? %s", initial_cell_state)
-        if initial_cell_state:
-            self.dut.log.info("cell is on")
-            self.check_cell_data_and_enable()
-
-        config = self.create_softap_config()
-        try:
-            self.dut.droid.wifiStartTrackingTetherStateChange()
-            success = self.dut.droid.wifiSetApEnabled(True, config)
-            asserts.assert_true(success, "switch to softap mode failed")
-            curr_state = "waiting for WifiManagerApEnabled"
-            event = self.dut.ed.pop_event("WifiManagerApEnabled", 5)
-            self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
-            success = self.dut.droid.wifiSetApEnabled(False, None)
-            asserts.assert_true(success, "turn off softap mode failed")
-            asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
-                                 "SoftAp is still reported as running")
-            curr_state = "waiting for WifiManagerApDisabled"
-            event = self.dut.ed.pop_event("WifiManagerApDisabled", 5)
-            if initial_wifi_state:
-                self.verify_return_to_wifi_enabled()
-            elif self.dut.droid.wifiCheckState():
-                # really need to verify that wifi did not come back up, and will not
-                # TODO(silberst): look at alternatives to this simple check
-                asserts.fail("Wifi was disabled before softap and now it is enabled")
-        except queue.Empty:
-            self.log.exception("Failed to fully start/stop softap mode: current state = %s",
-                               curr_state)
-        finally:
-            #self.dut.droid.wifiStopTrackingTetherStateChange()
-            self.dut.droid.wifiStopTrackingTetherStateChange()
-            self.dut_client.droid.wifiStopTrackingStateChange()
 
     @test_tracker_info(uuid="495f1252-e440-461c-87a7-2c45f369e129")
     def test_check_wifi_tethering_supported(self):
