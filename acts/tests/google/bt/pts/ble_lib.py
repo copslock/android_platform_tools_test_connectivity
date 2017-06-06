@@ -126,7 +126,7 @@ class BleLib():
         for uuid in uuids:
             if len(uuid) == 4:
                 uuid = self.generic_uuid.format(line)
-            uuid_list.append(service.format(uuid))
+            uuid_list.append(uuid)
         self.dut.droid.bleSetAdvertiseDataSetServiceUuids(uuid_list)
 
     def adv_data_include_local_name(self, is_included):
