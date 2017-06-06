@@ -23,7 +23,7 @@ from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 
 
 class DataPathTest(AwareBaseTest):
-  """Set of tests for Wi-Fi Aware discovery."""
+  """Set of tests for Wi-Fi Aware data-path."""
 
   # configuration parameters used by tests
   ENCR_TYPE_OPEN = 0
@@ -218,7 +218,7 @@ class DataPathTest(AwareBaseTest):
     resp_dut = self.android_devices[1]
     resp_dut.pretty_name = "Responder"
 
-    # Publisher+Subscriber: attach and wait for confirmation & identity
+    # Initiator+Responder: attach and wait for confirmation & identity
     init_id = init_dut.droid.wifiAwareAttach(True)
     autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
     init_ident_event = autils.wait_for_event(
@@ -356,7 +356,7 @@ class DataPathTest(AwareBaseTest):
     resp_dut = self.android_devices[1]
     resp_dut.pretty_name = "Responder"
 
-    # Publisher+Subscriber: attach and wait for confirmation & identity
+    # Initiator+Responder: attach and wait for confirmation & identity
     init_id = init_dut.droid.wifiAwareAttach(True)
     autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
     init_ident_event = autils.wait_for_event(
