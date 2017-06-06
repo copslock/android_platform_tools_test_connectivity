@@ -36,30 +36,30 @@ class RfcommLib():
         if len(line) > 0:
             uuid = line
         if uuid:
-            self.pri_dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr,
+            self.dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr,
                                                                  uuid)
         else:
-            self.pri_dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr)
+            self.dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr)
 
     def open_rfcomm_socket(self):
         """Open rfcomm socket"""
-        self.pri_dut.droid.rfcommCreateRfcommSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateRfcommSocket(self.mac_addr, 1)
 
     def open_l2cap_socket(self):
         """Open L2CAP socket"""
-        self.pri_dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
 
     def write(self, line):
         """Write String data over an RFCOMM connection"""
-        self.pri_dut.droid.bluetoothRfcommWrite(line)
+        self.dut.droid.bluetoothRfcommWrite(line)
 
     def write_binary(self, line):
         """Write String data over an RFCOMM connection"""
-        self.pri_dut.droid.bluetoothRfcommWriteBinary(line)
+        self.dut.droid.bluetoothRfcommWriteBinary(line)
 
     def end_connect(self):
         """End RFCOMM connection"""
-        self.pri_dut.droid.bluetoothRfcommEndConnectThread()
+        self.dut.droid.bluetoothRfcommEndConnectThread()
 
     def accept(self, line):
         """Accept RFCOMM connection"""
@@ -67,15 +67,15 @@ class RfcommLib():
         if len(line) > 0:
             uuid = line
         if uuid:
-            self.pri_dut.droid.bluetoothRfcommBeginAcceptThread(uuid)
+            self.dut.droid.bluetoothRfcommBeginAcceptThread(uuid)
         else:
-            self.pri_dut.droid.bluetoothRfcommBeginAcceptThread(
+            self.dut.droid.bluetoothRfcommBeginAcceptThread(
                 RfcommUuid.BASE_UUID.value)
 
     def stop(self):
         """Stop RFCOMM Connection"""
-        self.pri_dut.droid.bluetoothRfcommStop()
+        self.dut.droid.bluetoothRfcommStop()
 
     def open_l2cap_socket(self):
         """Open L2CAP socket"""
-        self.pri_dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
