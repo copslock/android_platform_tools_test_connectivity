@@ -34,6 +34,8 @@ class DataPathTest(AwareBaseTest):
   PASSPHRASE_MIN = "01234567"
   PASSPHRASE_MAX = "012345678901234567890123456789012345678901234567890123456789012"
   PMK = "ODU0YjE3YzdmNDJiNWI4NTQ2NDJjNDI3M2VkZTQyZGU="
+  PASSPHRASE2 = "This is some random passphrase - very very secure - but diff!!"
+  PMK2 = "NjRhZGJiMmJkZWQyYTZhNjZhMmZjYzVlNTA3MmM3YTANCg=="
 
   PING_MSG = "ping"
 
@@ -75,11 +77,11 @@ class DataPathTest(AwareBaseTest):
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
   def run_ib_data_path_test(self,
-                            ptype,
-                            stype,
-                            encr_type,
-                            use_peer_id,
-                            passphrase_to_use=None):
+      ptype,
+      stype,
+      encr_type,
+      use_peer_id,
+      passphrase_to_use=None):
     """Runs the in-band data-path tests.
 
     Args:
@@ -137,7 +139,7 @@ class DataPathTest(AwareBaseTest):
     p_req_key = self.request_network(
         p_dut,
         p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub if
-                                                    use_peer_id else None, key))
+        use_peer_id else None, key))
 
     # Subscriber: request network
     s_req_key = self.request_network(
@@ -252,9 +254,9 @@ class DataPathTest(AwareBaseTest):
         (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
     init_aware_if = init_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
     resp_aware_if = resp_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
     self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
 
     init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
@@ -278,6 +280,81 @@ class DataPathTest(AwareBaseTest):
         resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+    # clean-up
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  def run_mismatched_oob_data_path_test(self,
+      init_mismatch_mac=False,
+      resp_mismatch_mac=False,
+      init_encr_type=ENCR_TYPE_OPEN,
+      resp_encr_type=ENCR_TYPE_OPEN):
+    """Runs the negative out-of-band data-path tests: mismatched information
+    between Responder and Initiator.
+
+    Args:
+      init_mismatch_mac: True to mismatch the Initiator MAC address
+      resp_mismatch_mac: True to mismatch the Responder MAC address
+      init_encr_type: Encryption type of Initiator - ENCR_TYPE_*
+      resp_encr_type: Encryption type of Responder - ENCR_TYPE_*
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    # Publisher+Subscriber: attach and wait for confirmation & identity
+    init_id = init_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    init_ident_event = autils.wait_for_event(
+        init_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    init_mac = init_ident_event["data"]["mac"]
+    resp_id = resp_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    resp_ident_event = autils.wait_for_event(
+        resp_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    resp_mac = resp_ident_event["data"]["mac"]
+
+    if init_mismatch_mac: # assumes legit ones don't start with "00"
+      init_mac = "00" + init_mac[2:]
+    if resp_mismatch_mac:
+      resp_mac = "00" + resp_mac[2:]
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(self.WAIT_FOR_CLUSTER)
+
+    # set up separate keys: even if types are the same we want a mismatch
+    init_key = None
+    if init_encr_type == self.ENCR_TYPE_PASSPHRASE:
+      init_key = self.PASSPHRASE
+    elif init_encr_type == self.ENCR_TYPE_PMK:
+      init_key = self.PMK
+
+    resp_key = None
+    if resp_encr_type == self.ENCR_TYPE_PASSPHRASE:
+      resp_key = self.PASSPHRASE2
+    elif resp_encr_type == self.ENCR_TYPE_PMK:
+      resp_key = self.PMK2
+
+    # Responder: request network
+    resp_req_key = self.request_network(
+        resp_dut,
+        resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+            resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, resp_key))
+
+    # Initiator: request network
+    init_req_key = self.request_network(
+        init_dut,
+        init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, init_key))
+
+    # Initiator & Responder: fail on network formation
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.fail_on_event(init_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
+    autils.fail_on_event(resp_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
 
     # clean-up
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
@@ -521,3 +598,63 @@ class DataPathTest(AwareBaseTest):
                                encr_type=self.ENCR_TYPE_PASSPHRASE,
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MAX)
+
+  def test_negative_mismatch_init_mac(self):
+    """Data-path: failure when Initiator MAC address mismatch"""
+    self.run_mismatched_oob_data_path_test(
+        init_mismatch_mac=True,
+        resp_mismatch_mac=False)
+
+  def test_negative_mismatch_resp_mac(self):
+    """Data-path: failure when Responder MAC address mismatch"""
+    self.run_mismatched_oob_data_path_test(
+        init_mismatch_mac=False,
+        resp_mismatch_mac=True)
+
+  def test_negative_mismatch_passphrase(self):
+    """Data-path: failure when passphrases mismatch"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PASSPHRASE,
+        resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
+
+  def test_negative_mismatch_pmk(self):
+    """Data-path: failure when PMK mismatch"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PMK,
+        resp_encr_type=self.ENCR_TYPE_PMK)
+
+  def test_negative_mismatch_open_passphrase(self):
+    """Data-path: failure when initiator is open, and responder passphrase"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_OPEN,
+        resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
+
+  def test_negative_mismatch_open_pmk(self):
+    """Data-path: failure when initiator is open, and responder PMK"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_OPEN,
+        resp_encr_type=self.ENCR_TYPE_PMK)
+
+  def test_negative_mismatch_pmk_passphrase(self):
+    """Data-path: failure when initiator is pmk, and responder passphrase"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PMK,
+        resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
+
+  def test_negative_mismatch_passphrase_open(self):
+    """Data-path: failure when initiator is passphrase, and responder open"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PASSPHRASE,
+        resp_encr_type=self.ENCR_TYPE_OPEN)
+
+  def test_negative_mismatch_pmk_open(self):
+    """Data-path: failure when initiator is PMK, and responder open"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PMK,
+        resp_encr_type=self.ENCR_TYPE_OPEN)
+
+  def test_negative_mismatch_passphrase_pmk(self):
+    """Data-path: failure when initiator is passphrase, and responder pmk"""
+    self.run_mismatched_oob_data_path_test(
+        init_encr_type=self.ENCR_TYPE_PASSPHRASE,
+        resp_encr_type=self.ENCR_TYPE_OPEN)
