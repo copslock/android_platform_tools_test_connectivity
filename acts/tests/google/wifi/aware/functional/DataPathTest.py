@@ -76,22 +76,13 @@ class DataPathTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-  def run_ib_data_path_test(self,
-      ptype,
-      stype,
-      encr_type,
-      use_peer_id,
-      passphrase_to_use=None):
-    """Runs the in-band data-path tests.
+  def set_up_discovery(self, ptype, stype, get_peer_id):
+    """Set up discovery sessions and wait for service discovery.
 
     Args:
       ptype: Publish discovery type
       stype: Subscribe discovery type
-      encr_type: Encryption type, one of ENCR_TYPE_*
-      use_peer_id: On Responder (publisher): True to use peer ID, False to
-                   accept any request
-      passphrase_to_use: The passphrase to use if encr_type=ENCR_TYPE_PASSPHRASE
-                         If None then use self.PASSPHRASE
+      get_peer_id: Send a message across to get the peer's id
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -117,7 +108,8 @@ class DataPathTest(AwareBaseTest):
         s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
     peer_id_on_sub = discovery_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
 
-    if use_peer_id: # only need message to receive peer ID
+    peer_id_on_pub = None
+    if get_peer_id: # only need message to receive peer ID
       # Subscriber: send message to peer (Publisher - so it knows our address)
       s_dut.droid.wifiAwareSendMessage(s_disc_id, peer_id_on_sub,
                                        self.get_next_msg_id(), self.PING_MSG,
@@ -128,6 +120,29 @@ class DataPathTest(AwareBaseTest):
       pub_rx_msg_event = autils.wait_for_event(
           p_dut, aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
       peer_id_on_pub = pub_rx_msg_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
+
+    return (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
+            peer_id_on_pub)
+
+  def run_ib_data_path_test(self,
+      ptype,
+      stype,
+      encr_type,
+      use_peer_id,
+      passphrase_to_use=None):
+    """Runs the in-band data-path tests.
+
+    Args:
+      ptype: Publish discovery type
+      stype: Subscribe discovery type
+      encr_type: Encryption type, one of ENCR_TYPE_*
+      use_peer_id: On Responder (publisher): True to use peer ID, False to
+                   accept any request
+      passphrase_to_use: The passphrase to use if encr_type=ENCR_TYPE_PASSPHRASE
+                         If None then use self.PASSPHRASE
+    """
+    (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
+     peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id)
 
     key = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
@@ -284,6 +299,43 @@ class DataPathTest(AwareBaseTest):
     # clean-up
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  def run_mismatched_ib_data_path_test(self, pub_mismatch, sub_mismatch):
+    """Runs the negative in-band data-path tests: mismatched peer ID.
+
+    Args:
+      pub_mismatch: Mismatch the publisher's ID
+      sub_mismatch: Mismatch the subscriber's ID
+    """
+    (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id,
+     peer_id_on_sub, peer_id_on_pub) = self.set_up_discovery(
+         aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE, True)
+
+    if pub_mismatch:
+      peer_id_on_pub = peer_id_on_pub -1
+    if sub_mismatch:
+      peer_id_on_sub = peer_id_on_sub - 1
+
+    # Publisher: request network
+    p_req_key = self.request_network(
+        p_dut,
+        p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub,
+                                                    None))
+
+    # Subscriber: request network
+    s_req_key = self.request_network(
+        s_dut,
+        s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub,
+                                                    None))
+
+    # Publisher & Subscriber: fail on network formation
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.fail_on_event(p_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
+    autils.fail_on_event(s_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
+
+    # clean-up
+    p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
+    s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
   def run_mismatched_oob_data_path_test(self,
       init_mismatch_mac=False,
@@ -598,6 +650,14 @@ class DataPathTest(AwareBaseTest):
                                encr_type=self.ENCR_TYPE_PASSPHRASE,
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MAX)
+
+  def test_negative_mismatch_publisher_peer_id(self):
+    """Data-path: failure when publisher peer ID is mismatched"""
+    self.run_mismatched_ib_data_path_test(pub_mismatch=True, sub_mismatch=False)
+
+  def test_negative_mismatch_subscriber_peer_id(self):
+    """Data-path: failure when subscriber peer ID is mismatched"""
+    self.run_mismatched_ib_data_path_test(pub_mismatch=False, sub_mismatch=True)
 
   def test_negative_mismatch_init_mac(self):
     """Data-path: failure when Initiator MAC address mismatch"""
