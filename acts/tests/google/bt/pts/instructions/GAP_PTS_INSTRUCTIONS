@@ -107,7 +107,28 @@ TC_IDLE_NAMP_BV_02_C
   gatts_open
   ble_start_generic_connectable_advertisement
 
+TC_GAP_IDLE_DED_BV_01_C
+  [PTS Interaction] Yes
+  bta_start_discovery
+  bta_get_discovered_devices
+  [PTS Interaction]
+
+TC_GAP_IDLE_DED_BV_02_C
+  [PTS Interaction] Yes
+  [PTS Interaction] Yes
+  bta_start_discovery
+  bta_get_discovered_devices
+  [PTS Interaction}
+
 TC_CONN_NCON_BV_01_C
+  ble_start_generic_nonconnectable_advertisement
+
+TC_CONN_NCON_BV_02_C
+  [PTS Interaction] Answer NO
+  [PTS Interaction] Press OK
+  ble_start_generic_nonconnectable_advertisement
+
+TC_CONN_UCON_BV_01_C
   ble_start_generic_connectable_advertisement
 
 TC_CONN_UCON_BV_02_C
