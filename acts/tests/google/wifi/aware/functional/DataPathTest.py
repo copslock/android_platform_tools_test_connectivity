@@ -31,6 +31,8 @@ class DataPathTest(AwareBaseTest):
   ENCR_TYPE_PMK = 2
 
   PASSPHRASE = "This is some random passphrase - very very secure!!"
+  PASSPHRASE_MIN = "01234567"
+  PASSPHRASE_MAX = "012345678901234567890123456789012345678901234567890123456789012"
   PMK = "ODU0YjE3YzdmNDJiNWI4NTQ2NDJjNDI3M2VkZTQyZGU="
 
   PING_MSG = "ping"
@@ -72,7 +74,12 @@ class DataPathTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-  def run_ib_data_path_test(self, ptype, stype, encr_type, use_peer_id):
+  def run_ib_data_path_test(self,
+                            ptype,
+                            stype,
+                            encr_type,
+                            use_peer_id,
+                            passphrase_to_use=None):
     """Runs the in-band data-path tests.
 
     Args:
@@ -81,6 +88,8 @@ class DataPathTest(AwareBaseTest):
       encr_type: Encryption type, one of ENCR_TYPE_*
       use_peer_id: On Responder (publisher): True to use peer ID, False to
                    accept any request
+      passphrase_to_use: The passphrase to use if encr_type=ENCR_TYPE_PASSPHRASE
+                         If None then use self.PASSPHRASE
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -120,7 +129,7 @@ class DataPathTest(AwareBaseTest):
 
     key = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
-      key = self.PASSPHRASE
+      key = self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use
     elif encr_type == self.ENCR_TYPE_PMK:
       key = self.PMK
 
@@ -488,3 +497,27 @@ class DataPathTest(AwareBaseTest):
     self.run_oob_data_path_test(
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
+
+  ##############################################################
+
+  def test_passphrase_min(self):
+    """Data-path: minimum passphrase length
+
+    Use in-band, unsolicited/passive, any peer combination
+    """
+    self.run_ib_data_path_test(ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+                               stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                               encr_type=self.ENCR_TYPE_PASSPHRASE,
+                               use_peer_id=False,
+                               passphrase_to_use=self.PASSPHRASE_MIN)
+
+  def test_passphrase_max(self):
+    """Data-path: maximum passphrase length
+
+    Use in-band, unsolicited/passive, any peer combination
+    """
+    self.run_ib_data_path_test(ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+                               stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                               encr_type=self.ENCR_TYPE_PASSPHRASE,
+                               use_peer_id=False,
+                               passphrase_to_use=self.PASSPHRASE_MAX)
