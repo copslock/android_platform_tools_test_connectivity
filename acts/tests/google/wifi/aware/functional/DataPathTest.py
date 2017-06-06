@@ -28,8 +28,10 @@ class DataPathTest(AwareBaseTest):
   # configuration parameters used by tests
   ENCR_TYPE_OPEN = 0
   ENCR_TYPE_PASSPHRASE = 1
+  ENCR_TYPE_PMK = 2
 
   PASSPHRASE = "This is some random passphrase - very very secure!!"
+  PMK = "ODU0YjE3YzdmNDJiNWI4NTQ2NDJjNDI3M2VkZTQyZGU="
 
   PING_MSG = "ping"
 
@@ -116,19 +118,23 @@ class DataPathTest(AwareBaseTest):
           p_dut, aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
       peer_id_on_pub = pub_rx_msg_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
 
+    key = None
+    if encr_type == self.ENCR_TYPE_PASSPHRASE:
+      key = self.PASSPHRASE
+    elif encr_type == self.ENCR_TYPE_PMK:
+      key = self.PMK
+
     # Publisher: request network
     p_req_key = self.request_network(
         p_dut,
-        p_dut.droid.wifiAwareCreateNetworkSpecifier(
-            p_disc_id, peer_id_on_pub if use_peer_id else None, self.PASSPHRASE
-            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+        p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub if
+                                                    use_peer_id else None, key))
 
     # Subscriber: request network
     s_req_key = self.request_network(
         s_dut,
-        s_dut.droid.wifiAwareCreateNetworkSpecifier(
-            s_disc_id, peer_id_on_sub, self.PASSPHRASE
-            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+        s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub,
+                                                    key))
 
     # Publisher & Subscriber: wait for network formation
     p_net_event = autils.wait_for_event_with_keys(
@@ -203,20 +209,24 @@ class DataPathTest(AwareBaseTest):
     # to execute the data-path request)
     time.sleep(self.WAIT_FOR_CLUSTER)
 
+    key = None
+    if encr_type == self.ENCR_TYPE_PASSPHRASE:
+      key = self.PASSPHRASE
+    elif encr_type == self.ENCR_TYPE_PMK:
+      key = self.PMK
+
     # Responder: request network
     resp_req_key = self.request_network(
         resp_dut,
         resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
             resp_id, aconsts.DATA_PATH_RESPONDER, init_mac
-            if use_peer_id else None, self.PASSPHRASE
-            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+            if use_peer_id else None, key))
 
     # Initiator: request network
     init_req_key = self.request_network(
         init_dut,
         init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, self.PASSPHRASE
-            if encr_type == self.ENCR_TYPE_PASSPHRASE else None))
+            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, key))
 
     # Initiator & Responder: wait for network formation
     init_net_event = autils.wait_for_event_with_keys(
@@ -324,6 +334,28 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  def test_ib_unsolicited_passive_pmk_specific(self):
+    """Data-path: in-band, unsolicited/passive, PMK, specific peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_PMK,
+        use_peer_id=True)
+
+  def test_ib_unsolicited_passive_pmk_any(self):
+    """Data-path: in-band, unsolicited/passive, PMK, any peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_PMK,
+        use_peer_id=False)
+
   def test_ib_solicited_active_open_specific(self):
     """Data-path: in-band, solicited/active, open encryption, specific peer
 
@@ -366,6 +398,28 @@ class DataPathTest(AwareBaseTest):
         ptype=aconsts.PUBLISH_TYPE_SOLICITED,
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=False)
+
+  def test_ib_solicited_active_pmk_specific(self):
+    """Data-path: in-band, solicited/active, PMK, specific peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_PMK,
+        use_peer_id=True)
+
+  def test_ib_solicited_active_pmk_any(self):
+    """Data-path: in-band, solicited/active, PMK, any peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_SOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
+        encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
 
   #######################################
@@ -415,4 +469,22 @@ class DataPathTest(AwareBaseTest):
     """
     self.run_oob_data_path_test(
         encr_type=self.ENCR_TYPE_PASSPHRASE,
+        use_peer_id=False)
+
+  def test_oob_pmk_specific(self):
+    """Data-path: out-of-band, PMK, specific peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_PMK,
+        use_peer_id=True)
+
+  def test_oob_pmk_any(self):
+    """Data-path: out-of-band, PMK, any peer
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)

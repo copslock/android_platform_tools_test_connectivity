@@ -66,7 +66,18 @@ def wait_for_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT, *keyvalues):
         return False
     return True
 
-  return ad.ed.wait_for_event(event_name, filter_callbacks, timeout, keyvalues)
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
+  try:
+    event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+                                 keyvalues)
+    ad.log.info('%s%s: %s', prefix, event_name, event['data'])
+    return event
+  except queue.Empty:
+    ad.log.info('%sTimed out while waiting for %s (%s)', prefix, event_name,
+                keyvalues)
+    asserts.fail(event_name)
 
 def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
   """Wait for a timeout period and looks for the specified event - fails if it
@@ -192,4 +203,3 @@ def get_aware_capabilities(ad):
   Returns: the capability dictionary.
   """
   return json.loads(ad.adb.shell('cmd wifiaware state_mgr get_capabilities'))
-
