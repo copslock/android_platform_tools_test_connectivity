@@ -1,3 +1,4 @@
 AttachTest,
 DiscoveryTest,
-MessageTest
+MessageTest,
+DataPathTest

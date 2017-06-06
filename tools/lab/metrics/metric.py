@@ -15,5 +15,11 @@
 #   limitations under the License.
 
 
-class Metric:
-    pass
+class Metric(object):
+    """
+    This is a base class for a computer statistic to be measured. Metrics
+    should only extend this.
+    """
+
+    def gather_metric(self):
+        raise NotImplementedError('Must override this function')

@@ -28,6 +28,8 @@ from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import CELL_STRONG_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
@@ -99,6 +101,13 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         return self._wfc_phone_setup(
             False, WFC_MODE_CELLULAR_PREFERRED, volte_mode=False)
 
+    def _setup_volte_wfc_disabled(self):
+        return self._wfc_phone_setup(False, WFC_MODE_DISABLED, volte_mode=True)
+
+    def _setup_csfb_wfc_disabled(self):
+        return self._wfc_phone_setup(
+            False, WFC_MODE_DISABLED, volte_mode=False)
+
     def _send_message(self, ads):
         selection = random.randrange(0, 2)
         message_type_map = {0: "SMS", 1: "MMS"}
@@ -156,11 +165,18 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             time.sleep(self.crash_check_interval)
         return failure
 
-    def change_environment(self):
+    def environment_change_4g_wifi(self):
+        #block cell 3G, WIFI 2G
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
         while time.time() < self.finishing_time:
-            self._wfc_set_wifi_strong_cell_strong()
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                     MIN_RSSI_RESERVED_VALUE)
+            #set strong wifi 5G and LTE
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
             #gratually decrease wifi 5g
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
                      self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE,
@@ -170,10 +186,35 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                      MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
 
-            self._wfc_set_wifi_strong_cell_strong()
             #gratually decrease cell 4G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
                      self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
+                     self.signal_change_step, self.signal_change_interval)
+            #gradtually increase cell 4G
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
+                     self.signal_change_step, self.signal_change_interval)
+        return 0
+
+    def environment_change_4g_3g(self):
+        #block wifi 2G and 5G
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        while time.time() < self.finishing_time:
+            #set strong cell 4G and 3G
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            #gratually decrease cell 4G
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                     self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
+                     self.signal_change_step, self.signal_change_interval)
+            #gradtually increase cell 4G
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
+                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
             #gratually decrease cell 3G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
@@ -183,10 +224,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
                      MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
-            #gradtually increase cell 4G
-            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                     MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
-                     self.signal_change_step, self.signal_change_interval)
+
         return 0
 
     def call_test(self):
@@ -243,7 +281,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 time.sleep(random.randrange(0, self.max_sleep_time))
         return failure
 
-    def parallel_tests(self, setup_func=None):
+    def parallel_tests(self, change_env_func, setup_func=None):
         if setup_func and not setup_func():
             self.log.error("Test setup %s failed", setup_func.__name__)
             return False
@@ -251,7 +289,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []), (
-                self.change_environment, []), (self.crash_check_test, [])])
+                change_env_func, []), (self.crash_check_test, [])])
         self.log.info(dict(self.result_info))
         if sum(results):
             fail(str(dict(self.result_info)))
@@ -262,24 +300,42 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_wfc_wifi_preferred_parallel_stress(self):
         return self.parallel_tests(
+            self.environment_change_4g_wifi,
             setup_func=self._setup_volte_wfc_wifi_preferred)
 
     @test_tracker_info(uuid="df78a9a8-2a14-40bf-a7aa-719502f975be")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_wfc_cell_preferred_parallel_stress(self):
         return self.parallel_tests(
+            self.environment_change_4g_wifi,
             setup_func=self._setup_volte_wfc_cell_preferred)
 
     @test_tracker_info(uuid="4cb47315-c420-44c2-ac47-a8bdca6d0e25")
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wfc_wifi_preferred_parallel_stress(self):
         return self.parallel_tests(
+            self.environment_change_4g_wifi,
             setup_func=self._setup_csfb_wfc_wifi_preferred)
 
     @test_tracker_info(uuid="92821ef7-542a-4139-b3b0-22278e2b06c4")
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_wfc_cell_preferred_parallel_stress(self):
         return self.parallel_tests(
+            self.self.environment_change_4g_wifi,
             setup_func=self._setup_csfb_wfc_cell_preferred)
+
+    @test_tracker_info(uuid="dd23923e-ebbc-461e-950a-0657e845eacf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_4g_volte_3g_parallel_stress(self):
+        return self.parallel_tests(
+            self.environment_change_4g_3g,
+            setup_func=self._setup_volte_wfc_disabled)
+
+    @test_tracker_info(uuid="faef9384-a5b0-4640-8cfa-f9f34ce6d977")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_4g_csfb_3g_parallel_stress(self):
+        return self.parallel_tests(
+            self.environment_change_4g_3g,
+            setup_func=self._setup_csfb_wfc_disabled)
 
     """ Tests End """
