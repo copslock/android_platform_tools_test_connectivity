@@ -589,7 +589,7 @@ class CmdInput(cmd.Cmd):
         """Start a nonconnectable LE advertisement"""
         cmd = "Start a nonconnectable LE advertisement"
         try:
-            self.ble_lib.start_generic_connectable_advertisement(line)
+            self.ble_lib.start_generic_nonconnectable_advertisement(line)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
