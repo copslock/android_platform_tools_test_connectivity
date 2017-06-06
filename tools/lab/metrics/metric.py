@@ -14,12 +14,30 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from utils import job
+from utils import shell
+
 
 class Metric(object):
-    """
-    This is a base class for a computer statistic to be measured. Metrics
-    should only extend this.
+    """Interface class for metric gathering.
+
+    Attributes:
+        _shell: a shell.ShellCommand object
     """
 
+    def __init__(self, shell=shell.ShellCommand(job)):
+        self._shell = shell
+
     def gather_metric(self):
-        raise NotImplementedError('Must override this function')
+        """Gathers all values that this metric watches.
+
+        Mandatory for every class that extends Metric. Should always return.
+
+        Returns:
+          A dict mapping keys (class level constant strings representing
+          fields of a metric) to their statistics.
+
+        Raises:
+          NotImplementedError: A metric did not implement this function.
+        """
+        raise NotImplementedError()
