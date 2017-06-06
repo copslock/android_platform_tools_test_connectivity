@@ -37,8 +37,7 @@ class BtCmdLineTest(BluetoothBaseTest):
             self.log.error(
                 "Missing mandatory user config \"target_mac_address\"!")
             return False
-        self.target_mac_address = self.user_params["target_mac_address"].upper(
-        )
+        self.target_mac_address = self.user_params["target_mac_address"].upper()
 
         self.android_devices[0].droid.bluetoothSetLocalName("CMD LINE Test")
         if len(self.android_devices) > 1:
@@ -75,8 +74,8 @@ class BtCmdLineTest(BluetoothBaseTest):
             for filename in filenames:
                 file = os.path.join(dirname, filename)
                 #TODO: Handle file paths with spaces
-                self.android_devices[0].adb.push("{} {}".format(
-                    file, android_music_path))
+                self.android_devices[0].adb.push(
+                    "{} {}".format(file, android_music_path))
 
     def setup_class(self):
         return True
