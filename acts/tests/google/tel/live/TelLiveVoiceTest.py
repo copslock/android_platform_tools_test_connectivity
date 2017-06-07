@@ -2986,7 +2986,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         elif not allow_data_transfer_interruption:
             self.log.error("Data transfer failed with parallel phone call.")
             return False
-        self.log.info("Retry data transfer after call hung up")
+        ad_download.log.info("Retry data transfer after call hung up")
         return download_task[0](*download_task[1])
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
