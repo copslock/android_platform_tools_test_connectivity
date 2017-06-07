@@ -23,21 +23,34 @@ import sys
 
 from runner import InstantRunner
 from metrics.usb_metric import UsbMetric
+from metrics.disk_metric import DiskMetric
+from metrics.uptime_metric import UptimeMetric
+from metrics.verify_metric import VerifyMetric
+from metrics.hash_metric import HashMetric
+from metrics.ram_metric import RamMetric
+from metrics.cpu_metric import CpuMetric
+from metrics.network_metric import NetworkMetric
 from reporter import LoggerReporter
+from reporter import ProtoReporter
+from reporter import JsonReporter
 
 
 class RunnerFactory(object):
     _reporter_constructor = {
-        'logger': lambda: LoggerReporter(),
+        'logger': lambda: [LoggerReporter()],
+        'proto': lambda: [ProtoReporter()],
+        'json': lambda: [JsonReporter()],
     }
 
     _metric_constructor = {
-        'usb_io': lambda param: UsbMetric(),
-        'disk': lambda param: DiskMetric(),
-        'uptime': lambda param: UptimeMetric(),
-        'verify_devices': lambda param: VerifyMetric(),
-        'ram': lambda param: RamMetric(),
-        'cpu': lambda param: CpuMetric(),
+        'usb_io': lambda param: [UsbMetric()],
+        'disk': lambda param: [DiskMetric()],
+        'uptime': lambda param: [UptimeMetric()],
+        'verify_devices':
+        lambda param: [VerifyMetric(), HashMetric()],
+        'ram': lambda param: [RamMetric()],
+        'cpu': lambda param: [CpuMetric()],
+        'network': lambda param: [NetworkMetric()],
     }
 
     @classmethod
@@ -54,17 +67,21 @@ class RunnerFactory(object):
         """
         arg_dict = arguments
         metrics = []
+        reporters = []
 
-        # If no reporter specified, default to logger.
-        reporters = arg_dict.pop('reporter')
-        if reporters is None:
-            reporters = ['logger']
+        rep_list = arg_dict.pop('reporter')
+        if rep_list is not None:
+            for rep_type in rep_list:
+                reporters += cls._reporter_constructor[rep_type]()
+        else:
+            # If no reporter specified, default to logger.
+            reporters += [LoggerReporter()]
 
         # Check keys and values to see what metrics to include.
         for key in arg_dict:
             val = arg_dict[key]
             if val is not None:
-                metrics.append(cls._metric_constructor[key](val))
+                metrics += cls._metric_constructor[key](val)
 
         return InstantRunner(metrics, reporters)
 
@@ -128,6 +145,12 @@ def _argparse():
         choices=['python', 'adb', 'fastboot', 'os', 'kernel'],
         nargs='*',
         help='display the versions of chosen programs (default = all)')
+    parser.add_argument(
+        '-n',
+        '--network',
+        action='store_true',
+        default=None,
+        help='retrieve status of network')
 
     return parser
 
