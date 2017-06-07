@@ -16,16 +16,6 @@
 
 import unittest
 
-from tests import metric_test
-
-
-def suite():
-    """Gather all metric tests into this test suite.
-    """
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(metric_test.DiskMetricTest))
-    return test_suite
-
-
-runner = unittest.TextTestRunner()
-runner.run(suite())
+if __name__ == "__main__":
+    suite = unittest.TestLoader().discover('.', pattern="*_test.py")
+    unittest.TextTestRunner().run(suite)
