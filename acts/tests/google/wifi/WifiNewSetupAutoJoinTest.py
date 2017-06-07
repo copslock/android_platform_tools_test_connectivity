@@ -56,10 +56,9 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
         """
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("reference_networks", "other_network", "atten_val",
-                      "ping_addr", "max_bugreports")
+        req_params = ("reference_networks", "atten_val", "ping_addr",
+                      "max_bugreports")
         self.unpack_userparams(req_params)
-        self.log.debug("Connect networks :: {}".format(self.other_network))
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug("Configured networks :: {}".format(configured_networks))
         count_confnet = 0
@@ -102,13 +101,6 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
                         wifi_constants.CONNECT_BY_CONFIG_SUCCESS, 1)
                     self.log.info(connect_result)
                     time.sleep(wait_time)
-                self.dut.droid.wifiConnectByConfig(self.other_network)
-                connect_result = self.dut.ed.pop_event(
-                    wifi_constants.CONNECT_BY_CONFIG_SUCCESS)
-                self.log.info(connect_result)
-                wutils.track_connection(self.dut, self.other_network["SSID"], 1)
-                wutils.wifi_forget_network(self.dut, self.other_network["SSID"])
-                time.sleep(wait_time)
                 current_network = self.dut.droid.wifiGetConnectionInfo()
                 self.log.info("Current network: {}".format(current_network))
                 asserts.assert_true('network_id' in current_network,
