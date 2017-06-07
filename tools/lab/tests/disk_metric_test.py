@@ -31,9 +31,9 @@ class DiskMetricTest(unittest.TestCase):
         stdout_string = ('Filesystem     1K-blocks     Used Available Use% '
                          'mounted on\n/dev/dm-1       57542652 18358676 '
                          '36237928  34% /')
-        self.FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
-        fake_shell = fake.MockShellCommand(fake_result=self.FAKE_RESULT)
-        self.metric_obj = disk_metric.DiskMetric(shell=fake_shell)
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = disk_metric.DiskMetric(shell=fake_shell)
 
         expected_result = {
             disk_metric.DiskMetric.TOTAL: 57542652,
@@ -41,7 +41,7 @@ class DiskMetricTest(unittest.TestCase):
             disk_metric.DiskMetric.AVAIL: 36237928,
             disk_metric.DiskMetric.PERCENT_USED: 34
         }
-        self.assertEqual(expected_result, self.metric_obj.gather_metric())
+        self.assertEqual(expected_result, metric_obj.gather_metric())
 
 
 if __name__ == '__main__':
