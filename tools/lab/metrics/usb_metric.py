@@ -14,19 +14,142 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import subprocess
+
 from metrics.metric import Metric
-import job
+from utils import time_limit
+from utils import job
 
 
 class UsbMetric(Metric):
+    """Class to determine all USB Device traffic over a timeframe."""
+
     def check_usbmon(self):
+        """Checks if the kernel module 'usbmon' is installed.
+
+        Runs the command using shell.py.
+
+        Raises:
+            job.Error: When the module could not be loaded.
+        """
         try:
-            job.run('grep usbmon /proc/modules')
+            self._shell.run('grep usbmon /proc/modules')
         except job.Error:
             print('Kernel module not loaded, attempting to load usbmon')
-            result = job.run('modprobe usbmon', ignore_status=True)
-            if result.exit_status != 0:
-                print result.stderr
+            try:
+                self._shell.run('modprobe usbmon')
+            except job.Error as error:
+                raise job.Error('Cannot load usbmon: %s' % error.result.stderr)
+
+    def get_bytes(self, time=5):
+        """Gathers data about USB Busses in a given timeframe.
+
+        When ran, must have super user privileges as well as having the module
+        'usbmon' installed. Since .../0u is a stream-file, we must read it in
+        as a stream in the off chance of reading in too much data to buffer.
+
+        Args:
+            time: The amount of time data will be gathered in seconds.
+
+        Returns:
+            A dictionary where the key is the device's bus and device number,
+            and value is the amount of bytes transferred in the timeframe.
+        """
+        bytes_sent = {}
+        with time_limit.TimeLimit(time):
+            process = subprocess.Popen(
+                'cat /sys/kernel/debug/usb/usbmon/0u',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True)
+            for line in iter(process.stdout.readline, ''):
+                spl_line = line.split(' ')
+                # Example line                  spl_line[3]   " "[5]
+                # ffff88080bb00780 2452973093 C Ii:2:003:1 0:8 8 = 00000000
+
+                # Splits from whole line, into Ii:2:003:1, and then cuts it
+                # down to 2:003, this is for consistency as keys in dicts.
+                dev_id = ':'.join(spl_line[3].split(':')[1:3])
+                if dev_id in bytes_sent:
+                    # spl_line[5] is the number of bytes transferred from a
+                    # device, in the example line, spl_line[5] == 8
+                    bytes_sent[dev_id] += int(spl_line[5])
+                else:
+                    bytes_sent[dev_id] = int(spl_line[5])
+        return bytes_sent
+
+    def match_device_id(self):
+        """ Matches a device's id with its name according to lsusb.
+
+        Returns:
+            A dictionary with the devices 'bus:device' as key, and name of the
+            device as a string. 'bus:device', the bus number is stripped of
+            leading 0's because that is how 'usbmon' formats it.
+        """
+        devices = {}
+        result = self._shell.run('lsusb').stdout.encode('ascii', 'ignore')
+
+        if result:
+            # Example line
+            # Bus 003 Device 048: ID 18d1:4ee7 Device Name
+            for line in result.split('\n'):
+                line_list = line.split(' ')
+                # Gets bus number, strips leading 0's, adds a ':', and then adds
+                # the device, without its ':'. Example line output: 3:048
+                dev_id = line_list[1].strip('0') + ':' + line_list[3].strip(':')
+                # Parses the device name, example line output: 'Device Name'
+                dev_name = ' '.join(line_list[6:])
+                devices[dev_id] = dev_name
+        return devices
+
+    def gen_output(self, dev_name_dict, dev_byte_dict):
+        """ Combines all information about device for returning.
+
+        Args:
+            dev_name_dict: A dictionary with the key as 'bus:device', leading
+            0's stripped from bus, and value as the device's name.
+            dev_byte_dict: A dictionary with the key as 'bus:device', leading
+            0's stripped from bus, and value as the number of bytes transferred.
+        Returns:
+            List of populated Device object. Only devices that have transferred
+            data in the timeframe calculated are added.
+        """
+        devices = []
+        for dev in dev_byte_dict:
+            devices.append(Device(dev, dev_byte_dict[dev], dev_name_dict[dev]))
+        return devices
 
     def gather_metric(self):
+        """ Gathers the usb bus metric
+
+        Returns:
+            A dictionary, with a single entry, 'devices', and the value of a
+            list of Device objects. This is to fit with the formatting of other
+            metrics.
+        """
         self.check_usbmon()
+        dev_byte_dict = self.get_bytes()
+        dev_name_dict = self.match_device_id()
+        return {'devices': self.gen_output(dev_name_dict, dev_byte_dict)}
+
+
+class Device:
+    """USB Device Information
+
+    Contains information about bytes transferred in timeframe for a device.
+
+    Attributes:
+        dev_id: The device id, usuall in form BUS:DEVICE
+        trans_bytes: The number of bytes transferred in timeframe.
+        name: The device's name according to lsusb.
+    """
+
+    def __init__(self, dev_id, trans_bytes, name):
+        self.dev_id = dev_id
+        self.trans_bytes = trans_bytes
+        self.name = name
+
+    def __eq__(self, other):
+        return self.dev_id == other.dev_id and \
+               self.trans_bytes == other.trans_bytes and \
+               self.name == other.name
