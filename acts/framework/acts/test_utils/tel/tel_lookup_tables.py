@@ -94,31 +94,8 @@ def check_spt_voice_mail_count(voice_mail_count_before,
     return (voice_mail_count_after == (voice_mail_count_before + 1))
 
 
-# For TMO, get the voice mail number
-def get_tmo_voice_mail_number():
-    return "123"
-
-
-def get_vzw_voice_mail_number():
-    return "*86"
-
-
-# For ATT, get the voice mail number
-def get_att_voice_mail_number():
-    return None
-
-
-# For SPT, get the voice mail number
-def get_spt_voice_mail_number():
-    return None
-
-
-def get_ee_voice_mail_number():
-    return "+447953222222"
-
-
-def get_voice_mail_number_function(operator):
-    return _TelTables.voice_mail_number_get_function_tbl.get(operator)
+def get_voice_mail_check_number(operator):
+    return _TelTables.voice_mail_number_tbl.get(operator)
 
 
 def get_voice_mail_count_check_function(operator):
@@ -632,12 +609,12 @@ class _TelTables():
         tel_defines.PHONE_TYPE_CDMA: cdma_allowable_network_preference_tbl
     }
 
-    voice_mail_number_get_function_tbl = {
-        tel_defines.CARRIER_TMO: get_tmo_voice_mail_number,
-        tel_defines.CARRIER_VZW: get_vzw_voice_mail_number,
-        tel_defines.CARRIER_ATT: get_att_voice_mail_number,
-        tel_defines.CARRIER_SPT: get_spt_voice_mail_number,
-        tel_defines.CARRIER_EEUK: get_ee_voice_mail_number
+    voice_mail_number_tbl = {
+        tel_defines.CARRIER_TMO: "123",
+        tel_defines.CARRIER_VZW: "*86",
+        tel_defines.CARRIER_ATT: None,
+        tel_defines.CARRIER_SPT: None,
+        tel_defines.CARRIER_EEUK: "+447953222222"
     }
 
     voice_mail_count_check_function_tbl = {
