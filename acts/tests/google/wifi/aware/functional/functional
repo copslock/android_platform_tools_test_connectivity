@@ -1,5 +1,6 @@
-AttachTest,
-DiscoveryTest,
-MessageTest,
-DataPathTest,
+AttachTest
+DiscoveryTest
+MessageTest
+DataPathTest
 MacRandomTest
+CapabilitiesTest
