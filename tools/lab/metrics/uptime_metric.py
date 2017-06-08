@@ -14,30 +14,31 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from utils import job
-from utils import shell
+import metric
 
 
-class Metric(object):
-    """Interface class for metric gathering.
+class UptimeMetric(metric.Metric):
 
-    Attributes:
-        _shell: a shell.ShellCommand object
-    """
-
-    def __init__(self, shell=shell.ShellCommand(job)):
-        self._shell = shell
+    COMMAND = "cat /proc/uptime"
+    # Fields for response dictionary
+    TIME_SECONDS = 'time_seconds'
 
     def gather_metric(self):
-        """Gathers all values that this metric watches.
-
-        Mandatory for every class that extends Metric. Should always return.
+        """Tells how long system has been running
 
         Returns:
-          A dict mapping keys (class level constant strings representing
-          fields of a metric) to their statistics.
+            A dict with the following fields:
+              time_seconds: float uptime in total seconds
 
-        Raises:
-          NotImplementedError: A metric did not implement this function.
         """
-        raise NotImplementedError()
+        # Run shell command
+        result = self._shell.run(self.COMMAND).stdout
+        # Example stdout:
+        # 358350.70 14241538.06
+
+        # Get only first number (total time)
+        seconds = float(result.split()[0])
+        response = {
+            self.TIME_SECONDS: seconds,
+        }
+        return (response)

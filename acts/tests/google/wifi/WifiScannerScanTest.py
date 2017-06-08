@@ -37,7 +37,7 @@ NETWORK_ERROR = "Device is not connected to reference network"
 INVALID_RESULT = "Test fail because scan result reported are not valid"
 EMPTY_RESULT = "Test fail because empty scan result reported"
 KEY_RET = "ResultElapsedRealtime"
-
+ATTENUATOR = 0
 
 class WifiScannerScanError(Exception):
     pass
@@ -74,7 +74,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("connect_network", "run_extended_test", "ping_addr",
+        req_params = ("reference_networks", "run_extended_test", "ping_addr",
                       "max_bugreports")
         self.unpack_userparams(req_params)
         self.leeway = 10
@@ -527,12 +527,12 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         try:
-            self.dut.droid.wifiConnectByConfig(self.connect_network)
+            self.dut.droid.wifiConnectByConfig(self.reference_networks[0]["2g"])
             connect_result = self.dut.ed.pop_event(
                 wifi_constants.CONNECT_BY_CONFIG_SUCCESS, SHORT_TIMEOUT)
             self.log.info(connect_result)
             return wutils.track_connection(self.dut,
-                                           self.connect_network["SSID"], 1)
+                self.reference_networks[0]["2g"]["SSID"], 1)
         except Exception as error:
             self.log.exception(traceback.format_exc())
             self.log.error("Connection to network fail because %s", error)
@@ -837,7 +837,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
          3. Verify that connection to reference network occurred.
          2. Verify that scanner report single scan results.
         """
-        self.attenuators[self.connect_network["attenuator"]].set_atten(0)
+        self.attenuators[ATTENUATOR].set_atten(0)
         data = wutils.start_wifi_single_scan(self.dut,
                                              self.default_scan_setting)
         idx = data["Index"]
@@ -889,11 +889,11 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         asserts.assert_true('network_id' in current_network, NETWORK_ID_ERROR)
         asserts.assert_true(current_network['network_id'] >= 0, NETWORK_ERROR)
         self.log.info("Kicking PNO for reference network")
-        self.attenuators[self.connect_network["attenuator"]].set_atten(90)
+        self.attenuators[ATTENUATOR].set_atten(90)
         time.sleep(10)  #wait for PNO to be kicked
         self.log.info("Starting single scan while PNO")
         self.wifi_scanner_single_scan(self.default_scan_setting)
-        self.attenuators[self.connect_network["attenuator"]].set_atten(0)
+        self.attenuators[ATTENUATOR].set_atten(0)
         self.log.info("Check connection through PNO for reference network")
         time.sleep(30)  #wait for connection through PNO
         current_network = self.dut.droid.wifiGetConnectionInfo()
@@ -904,7 +904,8 @@ class WifiScannerScanTest(base_test.BaseTestClass):
         asserts.assert_true(
             wutils.validate_connection(self.dut, self.ping_addr),
             "Error, No internet connection for current network")
-        wutils.wifi_forget_network(self.dut, self.connect_network["SSID"])
+        wutils.wifi_forget_network(self.dut,
+            self.reference_networks[0]["2g"]["SSID"])
 
     @test_tracker_info(uuid="fc18d947-0b5a-42b4-98f3-dd1f2b52a7af")
     def test_wifi_connection_and_pno_while_batch_scan(self):
@@ -924,7 +925,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
          11. Attenuate the signal to move in range.
          12. Verify connection occurred through PNO.
         """
-        self.attenuators[self.connect_network["attenuator"]].set_atten(0)
+        self.attenuators[ATTENUATOR].set_atten(0)
         data = wutils.start_wifi_background_scan(
             self.dut, self.default_batch_scan_setting)
         idx = data["Index"]
@@ -970,8 +971,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         "Error, No internet connection for current network")
                 elif snumber == 3:
                     self.log.info("Kicking PNO for reference network")
-                    self.attenuators[self.connect_network[
-                        "attenuator"]].set_atten(90)
+                    self.attenuators[ATTENUATOR].set_atten(90)
                 elif snumber == 4:
                     self.log.info("Bring back device for PNO connection")
                     current_network = self.dut.droid.wifiGetConnectionInfo()
@@ -983,8 +983,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         current_network['network_id'] == -1,
                         "Device is still connected to network  {}".format(
                             current_network[wutils.WifiEnums.SSID_KEY]))
-                    self.attenuators[self.connect_network[
-                        "attenuator"]].set_atten(0)
+                    self.attenuators[ATTENUATOR].set_atten(0)
                     time.sleep(
                         10
                     )  #wait for connection to take place before waiting for scan result
@@ -1003,7 +1002,7 @@ class WifiScannerScanTest(base_test.BaseTestClass):
                         wutils.validate_connection(self.dut, self.ping_addr),
                         "Error, No internet connection for current network")
                     wutils.wifi_forget_network(self.dut,
-                                               self.connect_network["SSID"])
+                        self.reference_networks[0]["2g"]["SSID"])
         except queue.Empty as error:
             raise AssertionError(
                 "Event did not triggered for batch scan {}".format(error))

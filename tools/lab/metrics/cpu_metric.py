@@ -14,30 +14,28 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from utils import job
-from utils import shell
+import psutil
+
+from metrics import metric
 
 
-class Metric(object):
-    """Interface class for metric gathering.
+class CPUMetric(metric.Metric):
 
-    Attributes:
-        _shell: a shell.ShellCommand object
-    """
-
-    def __init__(self, shell=shell.ShellCommand(job)):
-        self._shell = shell
+    # Fields for response dictionary
+    USAGE_PER_CORE = 'usage_per_core'
 
     def gather_metric(self):
-        """Gathers all values that this metric watches.
+        """Finds CPU usage in percentage per core
 
-        Mandatory for every class that extends Metric. Should always return.
+        Blocks processes for 0.1 seconds for an accurate CPU usage percentage
 
         Returns:
-          A dict mapping keys (class level constant strings representing
-          fields of a metric) to their statistics.
-
-        Raises:
-          NotImplementedError: A metric did not implement this function.
+            A dict with the following fields:
+                usage_per_core: a list of floats corresponding to CPU usage
+                per core
         """
-        raise NotImplementedError()
+        # Create response dictionary
+        response = {
+            self.USAGE_PER_CORE: psutil.cpu_percent(interval=0.1, percpu=True)
+        }
+        return (response)
