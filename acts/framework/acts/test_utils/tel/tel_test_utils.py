@@ -116,7 +116,7 @@ from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
 from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
 from acts.test_utils.tel.tel_lookup_tables import \
     get_voice_mail_count_check_function
-from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_number_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
 from acts.test_utils.tel.tel_lookup_tables import \
     network_preference_for_generaton
@@ -1462,7 +1462,8 @@ def call_setup_teardown_for_subscription(
     try:
         if not initiate_call(log, ad_caller, callee_number):
             raise _CallSequenceException("Initiate call failed.")
-
+        else:
+            ad_caller.log.info("Caller initate call successfully")
         if not wait_and_answer_call_for_subscription(
                 log,
                 ad_callee,
@@ -1471,7 +1472,8 @@ def call_setup_teardown_for_subscription(
                 caller=ad_caller,
                 incall_ui_display=incall_ui_display):
             raise _CallSequenceException("Answer call fail.")
-
+        else:
+            ad_callee.log.info("Callee answered the call successfully")
         # ensure that all internal states are updated in telecom
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
@@ -1486,29 +1488,38 @@ def call_setup_teardown_for_subscription(
                                  wait_time_in_call - elapsed_time)
             time.sleep(CHECK_INTERVAL)
             elapsed_time += CHECK_INTERVAL
+            time_message = "at <%s>/<%s> second." % (elapsed_time,
+                                                     wait_time_in_call)
             if not verify_caller_func:
-                caller_state_result = ad_caller.droid.telecomIsInCall()
+                if not ad_caller.droid.telecomIsInCall():
+                    ad_caller.log.error("Caller not in call state %s",
+                                        time_message)
+                    raise _CallSequenceException(
+                        "Caller not in correct state %s.".format(time_message))
             else:
-                caller_state_result = verify_caller_func(log, ad_caller)
-            if not caller_state_result:
-                raise _CallSequenceException(
-                    "Caller not in correct state at <{}>/<{}> second.".format(
-                        elapsed_time, wait_time_in_call))
+                if not verify_caller_func(log, ad_caller):
+                    ad_caller.log.error("Caller %s return False",
+                                        verify_caller_func.__name__)
+                    raise _CallSequenceException(
+                        "Caller not in correct state %s.".format(time_message))
             if not verify_callee_func:
-                callee_state_result = ad_callee.droid.telecomIsInCall()
+                if not ad_callee.droid.telecomIsInCall():
+                    ad_callee.log.error("Callee not in call state %s",
+                                        time_message)
+                    raise _CallSequenceException(
+                        "Callee not in correct state %s.".format(time_message))
             else:
-                callee_state_result = verify_callee_func(log, ad_callee)
-            if not callee_state_result:
-                raise _CallSequenceException(
-                    "Callee not in correct state at <{}>/<{}> second.".format(
-                        elapsed_time, wait_time_in_call))
+                if not verify_callee_func(log, ad_callee):
+                    ad_callee.log.error("Callee %s return False",
+                                        verify_callee_func.__name__)
+                    raise _CallSequenceException(
+                        "Callee not in correct state %s.".format(time_message))
 
         if not ad_hangup:
             return True
-
         if not hangup_call(log, ad_hangup):
+            ad_hangup.log.info("Failed to hang up the call")
             raise _CallSequenceException("Error in Hanging-Up Call")
-
         return True
 
     except _CallSequenceException as e:
@@ -2313,15 +2324,16 @@ def set_wfc_mode(log, ad, wfc_mode):
             if wfc_mode == WFC_MODE_DISABLED:
                 return True
             else:
-                log.error("WFC not supported by platform.")
+                ad.log.error("WFC not supported by platform.")
                 return False
-
         ad.droid.imsSetWfcMode(wfc_mode)
-
+        mode = ad.droid.imsGetWfcMode()
+        if mode != wfc_mode:
+            ad.log.error("WFC mode is %s, not in %s", mode, wfc_mode)
+            return False
     except Exception as e:
         log.error(e)
         return False
-
     return True
 
 
@@ -2409,8 +2421,14 @@ def is_phone_not_in_call(log, ad):
         log: log object.
         ad:  android device.
     """
-    return ((not ad.droid.telecomIsInCall()) and
-            (ad.droid.telephonyGetCallState() == TELEPHONY_STATE_IDLE))
+    in_call = ad.droid.telecomIsInCall()
+    call_state = ad.droid.telephonyGetCallState()
+    if in_call:
+        ad.log.info("Device is In Call")
+    if call_state != TELEPHONY_STATE_IDLE:
+        ad.log.info("Call_state is %s, not %s", call_state,
+                    TELEPHONY_STATE_IDLE)
+    return ((not in_call) and (call_state == TELEPHONY_STATE_IDLE))
 
 
 def wait_for_droid_in_call(log, ad, max_time):
@@ -2592,11 +2610,15 @@ def is_volte_enabled(log, ad):
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
-    volte_status = ad.droid.telephonyIsVolteAvailable()
-    if volte_status is True and is_ims_registered(log, ad) is False:
-        ad.log.error("Error! VoLTE is Available, but IMS is not registered.")
+    if not ad.droid.telephonyIsVolteAvailable():
+        ad.log.info("IsVolteCallingAvailble is False")
         return False
-    return volte_status
+    else:
+        ad.log.info("IsVolteCallingAvailble is True")
+        if not is_ims_registered(log, ad):
+            ad.log.info("VoLTE is Available, but IMS is not registered.")
+            return False
+        return True
 
 
 def is_video_enabled(log, ad):
@@ -2658,12 +2680,16 @@ def is_wfc_enabled(log, ad):
         Return True if WiFi Calling feature bit is True and IMS registered.
         Return False if WiFi Calling feature bit is False or IMS not registered.
     """
-    wfc_status = ad.droid.telephonyIsWifiCallingAvailable()
-    if wfc_status is True and is_ims_registered(log, ad) is False:
-        log.error(
-            "Error! WiFi Calling is Available, but IMS is not registered.")
+    if not ad.droid.telephonyIsWifiCallingAvailable():
+        ad.log.info("IsWifiCallingAvailble is False")
         return False
-    return wfc_status
+    else:
+        ad.log.info("IsWifiCallingAvailble is True")
+        if not is_ims_registered(log, ad):
+            ad.log.info(
+                "WiFi Calling is Available, but IMS is not registered.")
+            return False
+        return True
 
 
 def wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
@@ -3625,8 +3651,7 @@ def check_voice_mail_count(log, ad, voice_mail_count_before,
 def get_voice_mail_number(log, ad):
     """function to get the voice mail number
     """
-    voice_mail_number = get_voice_mail_number_function(
-        get_operator_name(log, ad))()
+    voice_mail_number = get_voice_mail_check_number(get_operator_name(log, ad))
     if voice_mail_number is None:
         return get_phone_number(log, ad)
     return voice_mail_number
@@ -3648,7 +3673,7 @@ def ensure_phone_idle(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP):
     if ad.droid.telecomIsInCall():
         ad.droid.telecomEndCall()
     if not wait_for_droid_not_in_call(log, ad, max_time=max_time):
-        ad.log.error("Failed to end call on %s")
+        ad.log.error("Failed to end call")
         return False
     return True
 
@@ -3682,23 +3707,23 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     Phone not in airplane mode.
     """
     result = True
-    set_wifi_to_default(log, ad)
-    try:
-        ad.droid.telephonyFactoryReset()
-        ad.droid.imsFactoryReset()
-        if ad.droid.telecomIsInCall():
-            ad.droid.telecomEndCall()
-        if not wait_for_droid_not_in_call(log, ad):
-            ad.log.error("Failed to end call on %s")
-    except Exception as e:
-        ad.log.error("Failure %s, toggle APM instead", e)
-        toggle_airplane_mode(log, ad, True, False)
-        ad.droid.telephonyToggleDataConnection(True)
-        set_wfc_mode(log, ad, WFC_MODE_DISABLED)
-
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
+    set_wifi_to_default(log, ad)
+    try:
+        if ad.droid.telecomIsInCall():
+            ad.droid.telecomEndCall()
+            if not wait_for_droid_not_in_call(log, ad):
+                ad.log.error("Failed to end call")
+        ad.droid.telephonyFactoryReset()
+        ad.droid.imsFactoryReset()
+    except Exception as e:
+        ad.log.error("%s failure, toggle APM instead", e)
+        toggle_airplane_mode(log, ad, True, False)
+        toggle_airplane_mode(log, ad, False, False)
+        ad.droid.telephonyToggleDataConnection(True)
+        set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
     get_telephony_signal_strength(ad)
 
@@ -3788,6 +3813,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             try:
                 ad.droid.wifiConnectByConfig(network)
             except Exception:
+                ad.log.info("Connecting to wifi by wifiConnect instead")
                 ad.droid.wifiConnect(network)
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
