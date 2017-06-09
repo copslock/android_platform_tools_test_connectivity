@@ -49,13 +49,16 @@ class Bt5ScanTest(BluetoothBaseTest):
     big_adv_data = {
         "includeDeviceName": True,
         "manufacturerData": [0x0123, "00112233445566778899AABBCCDDEE"],
-        "manufacturerData2": [0x2540, [0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
-                                       0x66, 0x77, 0x88, 0xFF]],
-        "serviceData": ["b19d42dc-58ba-4b20-b6c1-6628e7d21de4",
-                        "00112233445566778899AABBCCDDEE"],
-        "serviceData2":
-        ["000042dc-58ba-4b20-b6c1-6628e7d21de4",
-         [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]]
+        "manufacturerData2":
+        [0x2540, [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]],
+        "serviceData": [
+            "b19d42dc-58ba-4b20-b6c1-6628e7d21de4",
+            "00112233445566778899AABBCCDDEE"
+        ],
+        "serviceData2": [
+            "000042dc-58ba-4b20-b6c1-6628e7d21de4",
+            [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]
+        ]
     }
 
     def __init__(self, controllers):
@@ -83,7 +86,25 @@ class Bt5ScanTest(BluetoothBaseTest):
     # This one does not relly test anything, but display very helpful
     # information that might help with debugging.
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='787e0877-269f-4b9b-acb0-b98a8bb3770a')
     def test_capabilities(self):
+        """Test capabilities
+
+        Test BT 5.0 scan scapabilities
+
+        Steps:
+        1. Test various vapabilities.
+
+        Expected Result:
+        Pass
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BT5.0, Scanning
+        Priority: 2
+        """
         d = self.scn_ad.droid
         sup2M = d.bluetoothIsLe2MPhySupported()
         supCoded = d.bluetoothIsLeCodedPhySupported()
@@ -91,9 +112,9 @@ class Bt5ScanTest(BluetoothBaseTest):
         supPeriodic = d.bluetoothIsLePeriodicAdvertisingSupported()
         maxDataLen = d.bluetoothGetLeMaximumAdvertisingDataLength()
         self.log.info("Scanner capabilities:")
-        self.log.info("LE 2M: " + str(sup2M) + ", LE Coded: " + str(supCoded) +
-                      ", LE Extended Advertising: " + str(supExt) +
-                      ", LE Periodic Advertising: " + str(supPeriodic) +
+        self.log.info("LE 2M: " + str(sup2M) + ", LE Coded: " + str(
+            supCoded) + ", LE Extended Advertising: " + str(
+                supExt) + ", LE Periodic Advertising: " + str(supPeriodic) +
                       ", maximum advertising data length: " + str(maxDataLen))
         d = self.adv_ad.droid
         sup2M = d.bluetoothIsLe2MPhySupported()
@@ -102,12 +123,14 @@ class Bt5ScanTest(BluetoothBaseTest):
         supPeriodic = d.bluetoothIsLePeriodicAdvertisingSupported()
         maxDataLen = d.bluetoothGetLeMaximumAdvertisingDataLength()
         self.log.info("Advertiser capabilities:")
-        self.log.info("LE 2M: " + str(sup2M) + ", LE Coded: " + str(supCoded) +
-                      ", LE Extended Advertising: " + str(supExt) +
-                      ", LE Periodic Advertising: " + str(supPeriodic) +
+        self.log.info("LE 2M: " + str(sup2M) + ", LE Coded: " + str(
+            supCoded) + ", LE Extended Advertising: " + str(
+                supExt) + ", LE Periodic Advertising: " + str(supPeriodic) +
                       ", maximum advertising data length: " + str(maxDataLen))
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='62d36679-bb91-465e-897f-2635433aac2f')
     def test_1m_1m_extended_scan(self):
         """Test scan on LE 1M PHY using LE 1M PHY as secondary.
 
@@ -131,13 +154,13 @@ class Bt5ScanTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": True,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_1M",
-             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_1M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, 0, 0, adv_callback)
 
         self.scn_ad.droid.bleSetScanSettingsLegacy(False)
         self.scn_ad.droid.bleSetScanSettingsPhy(
@@ -164,6 +187,8 @@ class Bt5ScanTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
 
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='3e3c9757-f7b6-4d1d-a2d6-8e2330d1a18e')
     def test_1m_2m_extended_scan(self):
         """Test scan on LE 1M PHY using LE 2M PHY as secondary.
 
@@ -187,13 +212,13 @@ class Bt5ScanTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": True,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_2M",
-             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_2M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, 0, 0, adv_callback)
 
         self.scn_ad.droid.bleSetScanSettingsLegacy(False)
         self.scn_ad.droid.bleSetScanSettingsPhy(
@@ -220,9 +245,13 @@ class Bt5ScanTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
 
-
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='236e9e5b-3853-4762-81ae-e88db03d74f3')
     def test_legacy_scan_result_raw_length(self):
-        """Test that raw scan record data in legacy scan is 62 bytes long. This is required for compability with older apps that make this assumption.
+        """Test that raw scan record data in legacy scan is 62 bytes long.
+
+        This is required for compability with older apps that make this
+        assumption.
 
         Steps:
         1. Start legacy advertising set on dut1
@@ -241,12 +270,12 @@ class Bt5ScanTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": True,
-             "scannable": True,
-             "legacyMode": True,
-             "interval": 320}, {"includeDeviceName": True}, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": True,
+            "scannable": True,
+            "legacyMode": True,
+            "interval": 320
+        }, {"includeDeviceName": True}, None, None, None, 0, 0, adv_callback)
 
         self.scn_ad.droid.bleSetScanSettingsLegacy(True)
         self.scn_ad.droid.bleSetScanSettingsPhy(
@@ -266,9 +295,8 @@ class Bt5ScanTest(BluetoothBaseTest):
             evt = self.scn_ad.ed.pop_event(
                 scan_result.format(scan_callback), self.default_timeout)
             rawData = evt['data']['Result']['scanRecord']
-            asserts.assert_true(
-                62 == len(rawData.split(",")),
-                "Raw data should be 62 bytes long.")
+            asserts.assert_true(62 == len(rawData.split(",")),
+                                "Raw data should be 62 bytes long.")
         except Empty:
             self.log.error("Scan result not found")
             self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
@@ -277,16 +305,36 @@ class Bt5ScanTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
 
-
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='04632d8d-4303-476f-8f83-52c16be3713a')
     def test_duration(self):
+        """Test scanning duration
+
+        Tests BT5.0 scanning duration
+
+        Steps:
+        1. Start advertising set
+        2. Start 5.0 scan
+        3. Scan for advertisement event
+
+        Expected Result:
+        Scan finds a legacy advertisement of proper size
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BT5.0, LE, Advertising, Scanning
+        Priority: 1
+        """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": True,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_2M",
-             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_2M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, 0, 0, adv_callback)
 
         self.scn_ad.droid.bleSetScanSettingsLegacy(False)
         self.scn_ad.droid.bleSetScanSettingsPhy(
@@ -313,7 +361,8 @@ class Bt5ScanTest(BluetoothBaseTest):
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
 
-
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='a3704083-0f5c-4a46-b979-32ebc594d6ee')
     def test_anonymous_advertising(self):
         """Test anonymous advertising.
 
@@ -337,14 +386,14 @@ class Bt5ScanTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": False,
-             "anonymous": True,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_2M",
-             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": False,
+            "anonymous": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_2M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, 0, 0, adv_callback)
 
         self.scn_ad.droid.bleSetScanSettingsLegacy(False)
         self.scn_ad.droid.bleSetScanSettingsPhy(
@@ -366,7 +415,8 @@ class Bt5ScanTest(BluetoothBaseTest):
             address = evt['data']['Result']['deviceInfo']['address']
             asserts.assert_true(
                 '00:00:00:00:00:00' == address,
-                "Anonymous address should be 00:00:00:00:00:00, but was " + str(address))
+                "Anonymous address should be 00:00:00:00:00:00, but was " +
+                str(address))
         except Empty:
             self.log.error("Scan result not found")
             self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
@@ -376,8 +426,11 @@ class Bt5ScanTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='e3277355-eebf-4760-9502-e49a9289f6ab')
     def test_get_own_address(self):
         """Test obtaining own address for PTS.
+
+        Test obtaining own address.
 
         Steps:
         1. Start advertising set dut1
@@ -395,20 +448,21 @@ class Bt5ScanTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": False,
-             "anonymous": True,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_2M",
-             "interval": 320}, self.big_adv_data, None, None, None, 0, 0,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": False,
+            "anonymous": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_2M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, 0, 0, adv_callback)
 
         set_id = -1
 
         try:
             evt = self.adv_ad.ed.pop_event(
-                advertising_set_started.format(adv_callback), self.default_timeout)
+                advertising_set_started.format(adv_callback),
+                self.default_timeout)
             self.log.info("data: " + str(evt['data']))
             set_id = evt['data']['setId']
         except Empty:
@@ -420,14 +474,14 @@ class Bt5ScanTest(BluetoothBaseTest):
 
         try:
             evt = self.adv_ad.ed.pop_event(
-                advertising_set_on_own_address_read.format(set_id), self.default_timeout)
+                advertising_set_on_own_address_read.format(set_id),
+                self.default_timeout)
             address = evt['data']['address']
             self.log.info("Advertiser address is: " + str(address))
         except Empty:
             self.log.error("onOwnAddressRead not received.")
             self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
             return False
-
 
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
         return True
