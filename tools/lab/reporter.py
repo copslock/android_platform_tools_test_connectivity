@@ -36,3 +36,11 @@ class LoggerReporter(Reporter):
 
 class FileReporter(Reporter):
     pass
+
+
+class ProtoReporter(Reporter):
+    pass
+
+
+class JsonReporter(Reporter):
+    pass
