@@ -26,7 +26,7 @@ from metrics.usb_metric import UsbMetric
 from metrics.disk_metric import DiskMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.verify_metric import VerifyMetric
-from metrics.hash_metric import HashMetric
+from metrics.adb_hash_metric import AdbHashMetric
 from metrics.ram_metric import RamMetric
 from metrics.cpu_metric import CpuMetric
 from metrics.network_metric import NetworkMetric
@@ -47,7 +47,7 @@ class RunnerFactory(object):
         'disk': lambda param: [DiskMetric()],
         'uptime': lambda param: [UptimeMetric()],
         'verify_devices':
-        lambda param: [VerifyMetric(), HashMetric()],
+        lambda param: [VerifyMetric(), AdbHashMetric()],
         'ram': lambda param: [RamMetric()],
         'cpu': lambda param: [CpuMetric()],
         'network': lambda param: [NetworkMetric()],
@@ -162,7 +162,8 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    RunnerFactory().create(vars(parser.parse_args()))
+    r = RunnerFactory().create(vars(parser.parse_args()))
+    r.run()
 
 
 if __name__ == '__main__':

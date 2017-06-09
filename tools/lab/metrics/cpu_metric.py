@@ -19,7 +19,7 @@ import psutil
 from metrics import metric
 
 
-class CPUMetric(metric.Metric):
+class CpuMetric(metric.Metric):
 
     # Fields for response dictionary
     USAGE_PER_CORE = 'usage_per_core'
