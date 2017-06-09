@@ -18,20 +18,24 @@ import unittest
 
 from main import RunnerFactory
 from metrics.usb_metric import UsbMetric
+from metrics.verify_metric import VerifyMetric
+from metrics.hash_metric import HashMetric
+from reporter import ProtoReporter
+from reporter import LoggerReporter
 
 
 class RunnerFactoryTestCase(unittest.TestCase):
     def test_create_with_reporter(self):
-        self.assertEqual(
+        self.assertIsInstance(
             RunnerFactory.create({
                 'reporter': ['proto']
-            }).reporter_list, ['proto'])
+            }).reporter_list[0], ProtoReporter)
 
     def test_create_without_reporter(self):
-        self.assertEqual(
+        self.assertIsInstance(
             RunnerFactory.create({
                 'reporter': None
-            }).reporter_list, ['logger'])
+            }).reporter_list[0], LoggerReporter)
 
     def test_metric_none(self):
         self.assertEqual(
@@ -46,6 +50,12 @@ class RunnerFactoryTestCase(unittest.TestCase):
                 'usb_io': True,
                 'reporter': None
             }).metric_list[0], UsbMetric)
+
+    def test_verify(self):
+        run = RunnerFactory.create({'reporter': None, 'verify_devices': True})
+        self.assertIsInstance(run.metric_list[0], VerifyMetric)
+        self.assertIsInstance(run.metric_list[1], HashMetric)
+        self.assertEquals(len(run.metric_list), 2)
 
 
 if __name__ == '__main__':
