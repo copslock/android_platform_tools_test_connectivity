@@ -19,7 +19,7 @@ import unittest
 from main import RunnerFactory
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
-from metrics.hash_metric import HashMetric
+from metrics.adb_hash_metric import AdbHashMetric
 from reporter import ProtoReporter
 from reporter import LoggerReporter
 
@@ -54,7 +54,7 @@ class RunnerFactoryTestCase(unittest.TestCase):
     def test_verify(self):
         run = RunnerFactory.create({'reporter': None, 'verify_devices': True})
         self.assertIsInstance(run.metric_list[0], VerifyMetric)
-        self.assertIsInstance(run.metric_list[1], HashMetric)
+        self.assertIsInstance(run.metric_list[1], AdbHashMetric)
         self.assertEquals(len(run.metric_list), 2)
 
 
