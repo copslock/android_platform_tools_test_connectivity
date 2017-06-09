@@ -36,10 +36,22 @@ class AwareBaseTest(BaseTestClass):
         self.log.info('Aware not available. Waiting ...')
         autils.wait_for_event(ad, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
       ad.aware_capabilities = autils.get_aware_capabilities(ad)
+      self.reset_device(ad)
 
   def teardown_test(self):
     for ad in self.android_devices:
       ad.droid.wifiAwareDestroyAll()
+      self.reset_device(ad)
+
+  def reset_device(self, ad):
+    """Reset device configurations which may have been set by tests. Should be
+    done before tests start (in case previous one was killed without tearing
+    down) and after they end (to leave device in usable state).
+
+    Args:
+      ad: device to be reset
+    """
+    ad.adb.shell("cmd wifiaware native_api set mac_random_interval_sec 1800")
 
   def get_next_msg_id(self):
     """Increment the message ID and returns the new value. Guarantees that
