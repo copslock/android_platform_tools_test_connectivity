@@ -17,6 +17,7 @@
 This test script for GATT longevity tests.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -32,6 +33,7 @@ from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 class GattLongevityTest(GattConnectedBaseTest):
     longevity_iterations = 1100000
 
+    @test_tracker_info(uuid='d7d378f4-89d8-4330-bb80-0054b92020bb')
     def test_write_characteristic_no_resp_longevity(self):
         """Longevity test write characteristic value
 
