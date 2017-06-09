@@ -45,7 +45,7 @@ $(WTS_ACTS_DISTRO): $(SOONG_ZIP)
 	@mkdir -p $(WTS_ACTS_DISTRO_DIR)
 	# grab the files from local acts framework and zip them up
 	$(hide) find $(WTS_LOCAL_ACTS_DIR) | sort >$@.list
-	$(hide) $(SOONG_ZIP) -d -P acts -o $@ -C tools/test/connectivity/acts/framework/acts/ -l $@.list
+	$(hide) $(SOONG_ZIP) -d -P acts -o $(WTS_ACTS_DISTRO_ARCHIVE) -C tools/test/connectivity/acts/framework/acts/ -l $@.list
 	# add in the local wts py files for use with the prebuilt
 	$(hide) zip -r $(WTS_ACTS_DISTRO_ARCHIVE) -j tools/test/connectivity/wts-acts/*.py
 	# create executable tool from the archive
