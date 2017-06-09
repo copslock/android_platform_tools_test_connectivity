@@ -51,13 +51,16 @@ class AdvertisingSetTest(BluetoothBaseTest):
     big_adv_data = {
         "includeDeviceName": True,
         "manufacturerData": [0x0123, "00112233445566778899AABBCCDDEE"],
-        "manufacturerData2": [0x2540, [0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
-                                       0x66, 0x77, 0x88, 0xFF]],
-        "serviceData": ["b19d42dc-58ba-4b20-b6c1-6628e7d21de4",
-                        "00112233445566778899AABBCCDDEE"],
-        "serviceData2":
-        ["000042dc-58ba-4b20-b6c1-6628e7d21de4",
-         [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]]
+        "manufacturerData2":
+        [0x2540, [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]],
+        "serviceData": [
+            "b19d42dc-58ba-4b20-b6c1-6628e7d21de4",
+            "00112233445566778899AABBCCDDEE"
+        ],
+        "serviceData2": [
+            "000042dc-58ba-4b20-b6c1-6628e7d21de4",
+            [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xFF]
+        ]
     }
 
     def __init__(self, controllers):
@@ -76,15 +79,35 @@ class AdvertisingSetTest(BluetoothBaseTest):
         reset_bluetooth(self.android_devices)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='58182f7e-443f-47fb-b718-1be3ac850287')
     def test_reenabling(self):
+        """Test re-enabling an Advertising Set
+
+        Test GATT notify characteristic value.
+
+        Steps:
+        1. Start an advertising set that only lasts for a few seconds
+        2. Restart advertising set
+        3. Repeat steps 1-2
+
+        Expected Result:
+        Verify that advertising set re-enables
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, GATT, Characteristic
+        Priority: 1
+        """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
-        self.adv_ad.droid.bleAdvSetStartAdvertisingSet(
-            {"connectable": False,
-             "legacyMode": False,
-             "primaryPhy": "PHY_LE_1M",
-             "secondaryPhy": "PHY_LE_1M",
-             "interval": 320}, self.big_adv_data, None, None, None,
-            adv_callback)
+        self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
+            "connectable": False,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_1M",
+            "interval": 320
+        }, self.big_adv_data, None, None, None, adv_callback)
 
         set_started_evt = self.adv_ad.ed.pop_event(
             advertising_set_started.format(adv_callback), self.default_timeout)
