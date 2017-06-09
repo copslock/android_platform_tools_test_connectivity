@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import DataPathTest
 import time
 
 from acts import asserts
@@ -76,6 +75,41 @@ class MacRandomTest(AwareBaseTest):
       if mac_addresses[mac] != 1:
         asserts.fail("Mac address %s repeated %d times (all=%s)" % (mac,
                      mac_addresses[mac], mac_addresses))
+
+  def test_nmi_randomization_on_interval(self):
+    """Validate randomization of the NMI (NAN management interface) on a set
+    interval. Default value is 30 minutes - change to a small value to allow
+    testing in real-time"""
+    RANDOM_INTERVAL = 120 # minimal value in current implementation
+
+    dut = self.android_devices[0]
+
+    # set randomization interval to 5 seconds
+    dut.adb.shell("cmd wifiaware native_api set mac_random_interval_sec %d" %
+                  RANDOM_INTERVAL)
+
+    # attach and wait for first identity
+    id = dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+    ident_event = autils.wait_for_event(dut,
+                                        aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    mac1 = ident_event["data"]["mac"]
+
+    # wait for second identity callback
+    # Note: exact randomization interval is not critical, just approximate,
+    # hence giving a few more seconds.
+    ident_event = autils.wait_for_event(dut,
+                                        aconsts.EVENT_CB_ON_IDENTITY_CHANGED,
+                                        timeout=RANDOM_INTERVAL + 5)
+    mac2 = ident_event["data"]["mac"]
+
+    # validate MAC address is randomized
+    asserts.assert_false(
+        mac1 == mac2,
+        "Randomized MAC addresses (%s, %s) should be different" % (mac1, mac2))
+
+    # clean-up
+    dut.droid.wifiAwareDestroy(id)
 
   def test_ndi_randomization_on_enable(self):
     """Validate randomization of the NDI (NAN data interface) on each
