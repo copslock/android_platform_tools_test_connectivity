@@ -20,6 +20,8 @@ import queue
 import statistics
 from acts import asserts
 
+from acts.test_utils.wifi.aware import aware_const as aconsts
+
 # arbitrary timeout for events
 EVENT_TIMEOUT = 10
 
@@ -253,3 +255,101 @@ def extract_stats(ad, data, results, key_prefix, log_prefix):
   else:
     ad.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f', log_prefix,
                 num_samples, data_min, data_max, data_mean)
+
+#########################################################
+# Aware primitives
+#########################################################
+
+def create_discovery_config(service_name,
+                          d_type,
+                          ssi=None,
+                          match_filter=None,
+                          match_filter_list=None,
+                          ttl=0,
+                          term_cb_enable=True):
+  """Create a publish discovery configuration based on input parameters.
+
+  Args:
+    service_name: Service name - required
+    d_type: Discovery type (publish or subscribe constants)
+    ssi: Supplemental information - defaults to None
+    match_filter, match_filter_list: The match_filter, only one mechanism can
+                                     be used to specify. Defaults to None.
+    ttl: Time-to-live - defaults to 0 (i.e. non-self terminating)
+    term_cb_enable: True (default) to enable callback on termination, False
+                    means that no callback is called when session terminates.
+  Returns:
+    publish discovery configuration object.
+  """
+  config = {}
+  config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = service_name
+  config[aconsts.DISCOVERY_KEY_DISCOVERY_TYPE] = d_type
+  if ssi is not None:
+    config[aconsts.DISCOVERY_KEY_SSI] = ssi
+  if match_filter is not None:
+    config[aconsts.DISCOVERY_KEY_MATCH_FILTER] = match_filter
+  if match_filter_list is not None:
+    config[aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST] = match_filter_list
+  config[aconsts.DISCOVERY_KEY_TTL] = ttl
+  config[aconsts.DISCOVERY_KEY_TERM_CB_ENABLED] = term_cb_enable
+  return config
+
+def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
+  """Creates a discovery session (publish and subscribe), and waits for
+  service discovery - at that point the sessions are connected and ready for
+  further messaging of data-path setup.
+
+  Args:
+    p_dut: Device to use as publisher.
+    s_dut: Device to use as subscriber.
+    p_config: Publish configuration.
+    s_config: Subscribe configuration.
+    msg_id: Controls whether a message is sent from Subscriber to Publisher
+            (so that publisher has the sub's peer ID). If None then not sent,
+            otherwise should be an int for the message id.
+  """
+  p_dut.pretty_name = 'Publisher'
+  s_dut.pretty_name = 'Subscriber'
+
+  # Publisher+Subscriber: attach and wait for confirmation
+  p_id = p_dut.droid.wifiAwareAttach()
+  wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  s_id = s_dut.droid.wifiAwareAttach()
+  wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+  # Publisher: start publish and wait for confirmation
+  p_disc_id = p_dut.droid.wifiAwarePublish(p_id, p_config)
+  wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+  # Subscriber: start subscribe and wait for confirmation
+  s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, s_config)
+  wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+
+  # Subscriber: wait for service discovery
+  discovery_event = wait_for_event(s_dut,
+                                   aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+  peer_id_on_sub = discovery_event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+
+  # Optionally send a message from Subscriber to Publisher
+  peer_id_on_pub = None
+  if msg_id is not None:
+    ping_msg = 'PING'
+
+    # Subscriber: send message to peer (Publisher)
+    s_dut.droid.wifiAwareSendMessage(s_disc_id, peer_id_on_sub, msg_id,
+                                     ping_msg, aconsts.MAX_TX_RETRIES)
+    sub_tx_msg_event = wait_for_event(s_dut, aconsts.SESSION_CB_ON_MESSAGE_SENT)
+    asserts.assert_equal(
+        msg_id, sub_tx_msg_event['data'][aconsts.SESSION_CB_KEY_MESSAGE_ID],
+        'Subscriber -> Publisher message ID corrupted')
+
+    # Publisher: wait for received message
+    pub_rx_msg_event = wait_for_event(p_dut,
+                                      aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
+    peer_id_on_pub = pub_rx_msg_event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+    asserts.assert_equal(
+        ping_msg,
+        pub_rx_msg_event['data'][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING],
+        'Subscriber -> Publisher message corrupted')
+
+  return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub, peer_id_on_pub
