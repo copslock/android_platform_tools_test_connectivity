@@ -105,6 +105,7 @@ class PhyTest(GattConnectedBaseTest):
         return (event['data']['TxPhy'], event['data']['RxPhy'])
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='edb95ae1-97e5-4337-9a60-1e113aa43a4d')
     def test_phy_read(self):
         """Test LE read PHY.
 
@@ -159,6 +160,7 @@ class PhyTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6b66af0a-35eb-42af-acd5-9634684f275d')
     def test_phy_change_20_times(self):
         """Test PHY update.
 
@@ -195,12 +197,13 @@ class PhyTest(GattConnectedBaseTest):
             rxPhy = (i & 1) and rxPhyB or rxPhyA
 
             self.log.info("Will try to set PHY to: " + lfmt(txPhy, rxPhy))
-            self.cen_ad.droid.gattClientSetPreferredPhy(
-                self.bluetooth_gatt, txPhy, rxPhy, 0)
+            self.cen_ad.droid.gattClientSetPreferredPhy(self.bluetooth_gatt,
+                                                        txPhy, rxPhy, 0)
             self.ensure_both_updated_phy(txPhy, rxPhy)
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='13f28de4-07f4-458c-a3e5-3ba95318616f')
     def test_phy_change_asym(self):
         """Test PHY update with asymetric rx and tx PHY.
 
