@@ -44,7 +44,8 @@ ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
-CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/ramdumps/", "/data/ramdump/")
+CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
+                      "/data/ramdump/")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS")
 BUG_REPORT_TIMEOUT = 1200
 PULL_TIMEOUT = 300
@@ -856,14 +857,12 @@ class AndroidDevice:
                 new_br = False
         except adb.AdbError:
             new_br = False
-        br_path = os.path.join(self.log_path, "BugReports")
+        br_path = os.path.join(self.log_path, test_name)
         utils.create_dir(br_path)
-        base_name = ",{},{}.txt".format(begin_time, self.serial)
-        if new_br:
-            base_name = base_name.replace(".txt", ".zip")
-        test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
-        out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(br_path, out_name.replace(' ', '_'))
+        out_name = "AndroidDevice%s_%s" % (self.serial, begin_time.replace(
+            " ", "_").replace(":", "-"))
+        out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
+        full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
@@ -897,7 +896,7 @@ class AndroidDevice:
             self.adb.pull(
                 "%s %s" % (file_name, remote_path), timeout=PULL_TIMEOUT)
 
-    def check_crash_report(self, log_crash_report=False):
+    def check_crash_report(self, log_crash_report=False, test_name=None):
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
@@ -906,8 +905,10 @@ class AndroidDevice:
                     continue
                 crash_reports.append(os.path.join(crash_path, report))
         if log_crash_report:
-            crash_log_path = os.path.join(self.log_path, "CrashReports",
-                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+            if not test_name:
+                test_name = time.strftime("%m-%d-%Y-%H-%M-%S")
+            crash_log_path = os.path.join(self.log_path, test_name,
+                                          "CrashReports")
             utils.create_dir(crash_log_path)
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
