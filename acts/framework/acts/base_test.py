@@ -696,11 +696,13 @@ class BaseTestClass(object):
             try:
                 ad.adb.wait_for_device()
                 ad.take_bug_report(test_name, begin_time)
-                tombstone_path = os.path.join(
-                    ad.log_path, "BugReports", "{},{}".format(
-                        begin_time, ad.serial).replace(' ', '_'))
-                utils.create_dir(tombstone_path)
-                ad.adb.pull('/data/tombstones/', tombstone_path, timeout=1200)
+                bugreport_path = os.path.join(ad.log_path, test_name)
+                utils.create_dir(bugreport_path)
+                ad.check_crash_report(True, test_name)
+                if getattr(ad, "qxdm_always_on", False):
+                    ad.log.info("Pull QXDM Logs")
+                    ad.pull_files(["/data/vendor/radio/diag_logs/logs/"],
+                                  bugreport_path)
             except Exception as e:
                 ad.log.error(
                     "Failed to take a bug report for %s with error %s",
