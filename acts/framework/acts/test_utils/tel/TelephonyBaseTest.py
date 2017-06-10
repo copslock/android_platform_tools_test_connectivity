@@ -32,30 +32,24 @@ from acts.signals import TestAbortAll
 from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
-    get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_message
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import check_qxdm_logger_always_on
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import \
-    reset_preferred_network_type_to_allowable_range
+from acts.test_utils.tel.tel_test_utils import refresh_droid_config
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts.test_utils.tel.tel_test_utils import refresh_droid_config
+from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_always_on
+from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
-from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
+
+QXDM_LOG_PATH = "/data/vendor/radio/diag_logs/logs/"
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -65,6 +59,15 @@ class TelephonyBaseTest(BaseTestClass):
         self.logger_sessions = []
 
         for ad in self.android_devices:
+            if getattr(ad, "qxdm_always_on", False):
+                #this is only supported on 2017 devices
+                ad.log.info("qxdm_always_on is set in config file")
+                mask = getattr(ad, "qxdm_mask", "Radio-general.cfg")
+                if not check_qxdm_logger_always_on(ad, mask):
+                    ad.log.info("qxdm always on is not set, turn it on")
+                    set_qxdm_logger_always_on(ad, mask)
+                else:
+                    ad.log.info("qxdm always on is already set")
             #The puk and pin should be provided in testbed config file.
             #"AndroidDevice": [{"serial": "84B5T15A29018214",
             #                   "adb_logcat_param": "-b all",
