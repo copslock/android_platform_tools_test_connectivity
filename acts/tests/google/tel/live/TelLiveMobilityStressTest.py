@@ -71,7 +71,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
-        self.max_run_time = int(self.user_params.get("max_run_time", 3600))
+        self.max_run_time = int(self.user_params.get("max_run_time", 7200))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
         self.crash_check_interval = int(
@@ -141,7 +141,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 verify_caller_func=is_voice_attached,
                 verify_callee_func=is_voice_attached,
                 wait_time_in_call=random.randrange(
-                    1, self.max_phone_call_duration)):
+                    30, self.max_phone_call_duration)):
             ads[0].log.error("Setup phone Call failed.")
             return False
         ads[0].log.info("Setup call successfully.")
@@ -210,7 +210,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                      MAX_RSSI_RESERVED_VALUE)
             #gratually decrease cell 4G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                     self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
+                     self.cell_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
             #gradtually increase cell 4G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
@@ -218,7 +218,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                      self.signal_change_step, self.signal_change_interval)
             #gratually decrease cell 3G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
-                     self.cell_rssi_with_no_atten, CELL_WEAK_RSSI_VALUE,
+                     self.cell_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
             #gradtually increase cell 3G
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
