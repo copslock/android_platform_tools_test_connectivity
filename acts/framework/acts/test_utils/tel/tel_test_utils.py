@@ -4321,3 +4321,35 @@ def get_number_from_tel_uri(uri):
         return uri_number
     else:
         return None
+
+
+def set_qxdm_logger_always_on(ad, mask_file="Radio-general.cfg"):
+    """Set QXDM logger always on.
+
+    Args:
+        ad: android device object.
+
+    """
+    ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
+    ad.adb.shell("setprop persist.radio.smlog_switch false")
+    ad.adb.shell('echo "diag_mdlog -f /data/vendor/radio/diag_logs/cfg/%s'
+                 ' -o /data/vendor/radio/diag_logs/logs -s 500 -n 10 -b -c > '
+                 '/data/vendor/radio/diag_logs/diag.conf"' % mask_file)
+    ad.reboot()
+
+
+def check_qxdm_logger_always_on(ad, mask_file="Radio-general.cfg"):
+    """Check if QXDM logger always on is set.
+
+    Args:
+        ad: android device object.
+
+    """
+    if ad.adb.shell("getprop persist.sys.modem.diag.mdlog") != 'true':
+        return False
+    if ad.adb.shell("getprop persist.radio.smlog_switch") != 'false':
+        return False
+    if mask_file not in ad.adb.shell(
+            "cat /data/vendor/radio/diag_logs/diag.conf", ignore_status=True):
+        return False
+    return True
