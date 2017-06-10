@@ -1910,6 +1910,11 @@ def http_file_download_by_sl4a(log,
             ad.log.info("Remove the downloaded file %s", out_path)
             ad.adb.shell("rm %s" % out_path, ignore_status=True)
 
+def trigger_modem_crash(log, ad, timeout=10):
+    cmd = "echo restart > /sys/kernel/debug/msm_subsys/modem"
+    ad.log.info("Triggering Modem Crash using adb command %s", cmd)
+    ad.adb.shell(cmd, timeout=timeout)
+    return True
 
 def _connection_state_change(_event, target_state, connection_type):
     if connection_type:
