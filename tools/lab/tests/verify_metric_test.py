@@ -16,27 +16,32 @@
 
 import unittest
 
-from metrics import uptime_metric
+from metrics import verify_metric
 from tests import fake
 
 
 class UptimeMetricTest(unittest.TestCase):
-    """Class for testing UptimeMetric."""
-
-    def setUp(self):
-        pass
-
-    def test_correct_uptime(self):
-        # Create sample stdout string ShellCommand.run() would return
-        stdout_string = "358350.70 14241538.06"
-        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+    def test_gather_device_empty(self):
+        mock_output = ''
+        FAKE_RESULT = fake.FakeResult(stdout=mock_output)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
-        metric_obj = uptime_metric.UptimeMetric(shell=fake_shell)
+        metric_obj = verify_metric.VerifyMetric(shell=fake_shell)
+
+        expected_result = {}
+        self.assertEquals(metric_obj.gather_devices(), expected_result)
+
+    def test_gather_device_two(self):
+        mock_output = '00serial01\toffline\n' \
+                      '01serial00\tdevice'
+        FAKE_RESULT = fake.FakeResult(stdout=mock_output)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = verify_metric.VerifyMetric(shell=fake_shell)
 
         expected_result = {
-            uptime_metric.UptimeMetric.TIME_SECONDS: 358350.70,
+            '00serial01': 'offline',
+            '01serial00': 'device',
         }
-        self.assertEqual(expected_result, metric_obj.gather_metric())
+        self.assertEquals(metric_obj.gather_devices(), expected_result)
 
 
 if __name__ == '__main__':

@@ -14,28 +14,28 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import psutil
-
-from metrics import metric
+import metric
 
 
-class CpuMetric(metric.Metric):
+class NameMetric(metric.Metric):
 
+    COMMAND = 'hostname'
     # Fields for response dictionary
-    USAGE_PER_CORE = 'usage_per_core'
+    NAME = 'name'
 
     def gather_metric(self):
-        """Finds CPU usage in percentage per core
-
-        Blocks processes for 0.1 seconds for an accurate CPU usage percentage
+        """Returns the name of system
 
         Returns:
             A dict with the following fields:
-                usage_per_core: a list of floats corresponding to CPU usage
-                per core
+              name: a string representing the system's hostname
+
         """
-        # Create response dictionary
+        # Run shell command
+        result = self._shell.run(self.COMMAND).stdout
+        # Example stdout:
+        # android1759-test-server-14
         response = {
-            self.USAGE_PER_CORE: psutil.cpu_percent(interval=0.1, percpu=True)
+            self.NAME: result,
         }
-        return (response)
+        return response
