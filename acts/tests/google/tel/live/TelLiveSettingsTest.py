@@ -92,29 +92,33 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         # Tear Down WFC based on tear_down_operation
         if tear_down_operation == self._TEAR_DOWN_OPERATION_DISCONNECT_WIFI:
             if not wifi_toggle_state(self.log, self.ad, False):
-                self.log.error("Failed to turn off WiFi.")
+                self.ad.log.error("Failed to turn off WiFi.")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_RESET_WIFI:
             if not wifi_reset(self.log, self.ad, False):
-                self.log.error("Failed to reset WiFi")
+                self.ad.log.error("Failed to reset WiFi")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_DISABLE_WFC:
             if not set_wfc_mode(self.log, self.ad, WFC_MODE_DISABLED):
-                self.log.error("Failed to turn off WFC.")
+                self.ad.log.error("Failed to turn off WFC.")
                 return False
         else:
             self.log.info("No tear down operation")
             return True
 
-        if not wait_for_not_network_rat(
-                self.log,
-                self.ad,
-                RAT_FAMILY_WLAN,
-                voice_or_data=NETWORK_SERVICE_DATA):
-            self.log.error("Data Rat is still iwlan.")
-            return False
         if not wait_for_wfc_disabled(self.log, self.ad):
-            self.log.error("WFC is still available after turn off WFC.")
+            self.log.error(
+                "WFC is still available after turn off WFC or WiFi.")
+            return False
+
+        #For SMS over Wifi, data will be in IWLAN with WFC off
+        if tear_down_operation != self._TEAR_DOWN_OPERATION_DISABLE_WFC and (
+                not wait_for_not_network_rat(
+                    self.log,
+                    self.ad,
+                    RAT_FAMILY_WLAN,
+                    voice_or_data=NETWORK_SERVICE_DATA)):
+            self.log.error("Data Rat is still iwlan.")
             return False
 
         # If VoLTE was previous available, after tear down WFC, DUT should have
