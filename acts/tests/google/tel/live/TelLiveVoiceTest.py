@@ -108,7 +108,8 @@ from acts.test_utils.tel.tel_voice_utils import two_phone_call_long_seq
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
-DEFAULT_PING_DURATION = 120 # in seconds
+DEFAULT_PING_DURATION = 120  # in seconds
+
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -223,14 +224,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                        7)
         try:
             set_phone_number(self.log, ads[1], caller_dialing_number)
-            result = call_setup_teardown(
+            return call_setup_teardown(
                 self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
                 is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
         except Exception as e:
             self.log.error("Exception happened: {}".format(e))
         finally:
             set_phone_number(self.log, ads[1], callee_default_number)
-        return result
 
     @test_tracker_info(uuid="721ef935-a03c-4d0f-85b9-4753d857162f")
     @TelephonyBaseTest.tel_test_wrap
@@ -257,14 +257,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                        10)
         try:
             set_phone_number(self.log, ads[1], caller_dialing_number)
-            result = call_setup_teardown(
+            return call_setup_teardown(
                 self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
                 is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
         except Exception as e:
             self.log.error("Exception happened: {}".format(e))
         finally:
             set_phone_number(self.log, ads[1], callee_default_number)
-        return result
 
     @test_tracker_info(uuid="4fd3aa62-2398-4cee-994e-7fc5cadbcbc1")
     @TelephonyBaseTest.tel_test_wrap
@@ -291,14 +290,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                        11)
         try:
             set_phone_number(self.log, ads[1], caller_dialing_number)
-            result = call_setup_teardown(
+            return call_setup_teardown(
                 self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
                 is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
         except Exception as e:
             self.log.error("Exception happened: {}".format(e))
         finally:
             set_phone_number(self.log, ads[1], callee_default_number)
-        return result
 
     @test_tracker_info(uuid="969abdac-6a57-442a-9c40-48199bd8d556")
     @TelephonyBaseTest.tel_test_wrap
@@ -325,14 +323,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                        12)
         try:
             set_phone_number(self.log, ads[1], caller_dialing_number)
-            result = call_setup_teardown(
+            return call_setup_teardown(
                 self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
                 is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
         except Exception as e:
             self.log.error("Exception happened: {}".format(e))
         finally:
             set_phone_number(self.log, ads[1], callee_default_number)
-        return result
 
     @test_tracker_info(uuid="6b13a03d-c9ff-43d7-9798-adbead7688a4")
     @TelephonyBaseTest.tel_test_wrap
@@ -584,10 +581,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], apm_mode, wfc_mode, wifi_ssid, wifi_pwd)),
-                 (phone_setup_iwlan,
-                  (self.log, ads[1], apm_mode, wfc_mode, wifi_ssid, wifi_pwd))]
+        tasks = [(phone_setup_iwlan, (self.log, ads[0], apm_mode, wfc_mode,
+                                      wifi_ssid, wifi_pwd)),
+                 (phone_setup_iwlan, (self.log, ads[1], apm_mode, wfc_mode,
+                                      wifi_ssid, wifi_pwd))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
@@ -1360,8 +1357,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1419,8 +1416,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1478,8 +1475,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1537,8 +1534,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1596,8 +1593,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1649,8 +1646,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1702,8 +1699,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -2983,18 +2980,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")
             return False
-        if not allow_data_transfer_interruption:
-            if results[0]:
-                self.log.info(
-                    "Data transfer succeeded with parallel phone call.")
-                return True
-            else:
-                self.log.error(
-                    "Data transfer failed with parallel phone call.")
-                return False
-        self.log.info("Retry data transfer after call hung up")
-        #return http_file_download_by_adb(self.log, self.android_devices[0],
-        #                                 url, output_path, file_size)
+        if results[0]:
+            self.log.info("Data transfer succeeded.")
+            return True
+        elif not allow_data_transfer_interruption:
+            self.log.error("Data transfer failed with parallel phone call.")
+            return False
+        ad_download.log.info("Retry data transfer after call hung up")
         return download_task[0](*download_task[1])
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")

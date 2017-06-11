@@ -92,29 +92,33 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         # Tear Down WFC based on tear_down_operation
         if tear_down_operation == self._TEAR_DOWN_OPERATION_DISCONNECT_WIFI:
             if not wifi_toggle_state(self.log, self.ad, False):
-                self.log.error("Failed to turn off WiFi.")
+                self.ad.log.error("Failed to turn off WiFi.")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_RESET_WIFI:
             if not wifi_reset(self.log, self.ad, False):
-                self.log.error("Failed to reset WiFi")
+                self.ad.log.error("Failed to reset WiFi")
                 return False
         elif tear_down_operation == self._TEAR_DOWN_OPERATION_DISABLE_WFC:
             if not set_wfc_mode(self.log, self.ad, WFC_MODE_DISABLED):
-                self.log.error("Failed to turn off WFC.")
+                self.ad.log.error("Failed to turn off WFC.")
                 return False
         else:
-            self.log.error("No tear down operation")
+            self.log.info("No tear down operation")
+            return True
+
+        if not wait_for_wfc_disabled(self.log, self.ad):
+            self.log.error(
+                "WFC is still available after turn off WFC or WiFi.")
             return False
 
-        if not wait_for_not_network_rat(
-                self.log,
-                self.ad,
-                RAT_FAMILY_WLAN,
-                voice_or_data=NETWORK_SERVICE_DATA):
+        #For SMS over Wifi, data will be in IWLAN with WFC off
+        if tear_down_operation != self._TEAR_DOWN_OPERATION_DISABLE_WFC and (
+                not wait_for_not_network_rat(
+                    self.log,
+                    self.ad,
+                    RAT_FAMILY_WLAN,
+                    voice_or_data=NETWORK_SERVICE_DATA)):
             self.log.error("Data Rat is still iwlan.")
-            return False
-        if not wait_for_wfc_disabled(self.log, self.ad):
-            self.log.error("WFC is still available after turn off WFC.")
             return False
 
         # If VoLTE was previous available, after tear down WFC, DUT should have
@@ -752,8 +756,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         wifi_toggle_state(self.log, ad, True)
         time_values['wifi_enabled'] = time.time()
-        self.log.info("WiFi Enabled After {}s".format(time_values[
-            'wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Enabled After {}s".format(
+            time_values['wifi_enabled'] - time_values['start']))
 
         ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                               self.wifi_network_pass)
@@ -765,8 +769,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
         time_values['wifi_connected'] = time.time()
 
-        self.log.info("WiFi Connected After {}s".format(time_values[
-            'wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WiFi Connected After {}s".format(
+            time_values['wifi_connected'] - time_values['wifi_enabled']))
 
         if not verify_http_connection(self.log, ad, 'http://www.google.com',
                                       100, .1):
@@ -774,8 +778,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
 
         time_values['wifi_data'] = time.time()
-        self.log.info("WifiData After {}s".format(time_values[
-            'wifi_data'] - time_values['wifi_connected']))
+        self.log.info("WifiData After {}s".format(
+            time_values['wifi_data'] - time_values['wifi_connected']))
 
         if not wait_for_network_rat(
                 self.log, ad, RAT_FAMILY_WLAN,
@@ -787,16 +791,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             else:
                 return False
         time_values['iwlan_rat'] = time.time()
-        self.log.info("iWLAN Reported After {}s".format(time_values[
-            'iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("iWLAN Reported After {}s".format(
+            time_values['iwlan_rat'] - time_values['wifi_data']))
 
         if not wait_for_ims_registered(self.log, ad,
                                        MAX_WAIT_TIME_IMS_REGISTRATION):
             self.log.error("Never received IMS registered, aborting")
             return False
         time_values['ims_registered'] = time.time()
-        self.log.info("Ims Registered After {}s".format(time_values[
-            'ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("Ims Registered After {}s".format(
+            time_values['ims_registered'] - time_values['iwlan_rat']))
 
         if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
             self.log.error("Never received WFC feature, aborting")
@@ -812,16 +816,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
 
         self.log.info("\n\n------------------summary-----------------")
-        self.log.info("WiFi Enabled After {0:.2f} s".format(time_values[
-            'wifi_enabled'] - time_values['start']))
-        self.log.info("WiFi Connected After {0:.2f} s".format(time_values[
-            'wifi_connected'] - time_values['wifi_enabled']))
-        self.log.info("WifiData After {0:.2f} s".format(time_values[
-            'wifi_data'] - time_values['wifi_connected']))
-        self.log.info("iWLAN Reported After {0:.2f} s".format(time_values[
-            'iwlan_rat'] - time_values['wifi_data']))
-        self.log.info("Ims Registered After {0:.2f} s".format(time_values[
-            'ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("WiFi Enabled After {0:.2f} s".format(
+            time_values['wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Connected After {0:.2f} s".format(
+            time_values['wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WifiData After {0:.2f} s".format(
+            time_values['wifi_data'] - time_values['wifi_connected']))
+        self.log.info("iWLAN Reported After {0:.2f} s".format(
+            time_values['iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("Ims Registered After {0:.2f} s".format(
+            time_values['ims_registered'] - time_values['iwlan_rat']))
         self.log.info("Wifi Calling Feature Enabled After {0:.2f} s".format(
             time_values['wfc_enabled'] - time_values['ims_registered']))
         self.log.info("\n\n")
