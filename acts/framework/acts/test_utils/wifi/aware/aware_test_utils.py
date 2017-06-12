@@ -260,6 +260,20 @@ def extract_stats(ad, data, results, key_prefix, log_prefix):
 # Aware primitives
 #########################################################
 
+def configure_dw(device, is_default, is_24_band, value):
+  """Use the command-line API to configure the DW (discovery window) setting
+
+  Args:
+    device: Device on which to perform configuration
+    is_default: True for the default setting, False for the non-interactive
+                setting
+    is_24_band: True for 2.4GHz band, False for 5GHz band
+    value: An integer 0 to 5
+  """
+  variable = 'dw_%s_%sghz' % ('default' if is_default else 'on_inactive', '24'
+                              if is_24_band else '5')
+  device.adb.shell("cmd wifiaware native_api set %s %d" % (variable, value))
+
 def create_discovery_config(service_name,
                           d_type,
                           ssi=None,

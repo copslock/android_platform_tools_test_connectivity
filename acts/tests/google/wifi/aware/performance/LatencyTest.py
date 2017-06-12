@@ -26,8 +26,6 @@ from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 class LatencyTest(AwareBaseTest):
   """Set of tests for Wi-Fi Aware to measure latency of Aware operations."""
 
-  NUM_ITERATIONS = 100
-
   # number of second to 'reasonably' wait to make sure that devices synchronize
   # with each other - useful for OOB test cases, where the OOB discovery would
   # take some time
@@ -63,7 +61,7 @@ class LatencyTest(AwareBaseTest):
     return disc_id, event
 
   def run_discovery_latency(self, results, do_unsolicited_passive, dw_24ghz,
-                            dw_5ghz):
+                            dw_5ghz, num_iterations):
     """Run the service discovery latency test with the specified DW intervals.
 
     Args:
@@ -77,26 +75,32 @@ class LatencyTest(AwareBaseTest):
         "unsolicited_passive"
         if do_unsolicited_passive else "solicited_active", dw_24ghz, dw_5ghz)
     results[key] = {}
-    results[key]["num_iterations"] = self.NUM_ITERATIONS
+    results[key]["num_iterations"] = num_iterations
 
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
     s_dut = self.android_devices[1]
     s_dut.pretty_name = "Subscriber"
 
+    # override the default DW configuration
+    autils.configure_dw(p_dut, is_default=True, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        p_dut, is_default=False, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(p_dut, is_default=True, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(
+        p_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(s_dut, is_default=True, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        s_dut, is_default=False, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(s_dut, is_default=True, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(
+        s_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
     s_id = s_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
-
-    # override the default DW configuration
-    p_dut.adb.shell(
-        "cmd wifiaware native_api set dw_default_24ghz %d" % dw_24ghz)
-    p_dut.adb.shell("cmd wifiaware native_api set dw_default_5ghz %d" % dw_5ghz)
-    s_dut.adb.shell(
-        "cmd wifiaware native_api set dw_default_24ghz %d" % dw_24ghz)
-    s_dut.adb.shell("cmd wifiaware native_api set dw_default_5ghz %d" % dw_5ghz)
 
     # start publish
     p_disc_event = self.start_discovery_session(
@@ -110,7 +114,7 @@ class LatencyTest(AwareBaseTest):
     # loop, perform discovery, and collect latency information
     latencies = []
     failed_discoveries = 0
-    for i in range(self.NUM_ITERATIONS):
+    for i in range(num_iterations):
       # start subscribe
       s_disc_id, s_session_event = self.start_discovery_session(
           s_dut, s_id, False, aconsts.SUBSCRIBE_TYPE_PASSIVE
@@ -147,6 +151,10 @@ class LatencyTest(AwareBaseTest):
          if do_unsolicited_passive else "Solicited/Active", dw_24ghz, dw_5ghz))
     results[key]["num_failed_discovery"] = failed_discoveries
 
+    # clean up
+    p_dut.droid.wifiAwareDestroyAll()
+    s_dut.droid.wifiAwareDestroyAll()
+
   ########################################################################
 
   def test_discovery_latency_default_dws(self):
@@ -154,7 +162,8 @@ class LatencyTest(AwareBaseTest):
     """
     results = {}
     self.run_discovery_latency(
-        results=results, do_unsolicited_passive=True, dw_24ghz=-1, dw_5ghz=-1)
+        results=results, do_unsolicited_passive=True, dw_24ghz=1, dw_5ghz=1,
+        num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_default_parameters finished", extras=results)
 
@@ -163,6 +172,22 @@ class LatencyTest(AwareBaseTest):
     -interactive mode (lower power)."""
     results = {}
     self.run_discovery_latency(
-        results=results, do_unsolicited_passive=True, dw_24ghz=4, dw_5ghz=0)
+        results=results, do_unsolicited_passive=True, dw_24ghz=4, dw_5ghz=0,
+        num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_non_interactive_dws finished", extras=results)
+
+  def test_discovery_latency_all_dws(self):
+    """Measure the service discovery latency with all DW combinations (low
+    iteration count)"""
+    results = {}
+    for dw24 in range(1, 6):  # permitted values: 1-5
+      for dw5 in range(0, 6): # permitted values: 0, 1-5
+        self.run_discovery_latency(
+            results=results,
+            do_unsolicited_passive=True,
+            dw_24ghz=dw24,
+            dw_5ghz=dw5,
+            num_iterations=10)
+    asserts.explicit_pass(
+        "test_discovery_latency_all_dws finished", extras=results)

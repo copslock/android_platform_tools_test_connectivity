@@ -52,8 +52,10 @@ class AwareBaseTest(BaseTestClass):
       ad: device to be reset
     """
     ad.adb.shell("cmd wifiaware native_api set mac_random_interval_sec 1800")
-    ad.adb.shell("cmd wifiaware native_api set dw_default_24ghz -1")
-    ad.adb.shell("cmd wifiaware native_api set dw_default_5ghz -1")
+    autils.configure_dw(ad, is_default=True, is_24_band=True, value=-1)
+    autils.configure_dw(ad, is_default=True, is_24_band=False, value=-1)
+    autils.configure_dw(ad, is_default=False, is_24_band=True, value=4)
+    autils.configure_dw(ad, is_default=False, is_24_band=False, value=0)
 
   def get_next_msg_id(self):
     """Increment the message ID and returns the new value. Guarantees that
