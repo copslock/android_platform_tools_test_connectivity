@@ -573,6 +573,7 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dd5529b7-6774-4580-8b29-d84568c15442')
     def test_timeout(self):
         """Test starting advertiser with timeout.
 
@@ -612,7 +613,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
                 self.adv_ad.ed.pop_event(
                     adv_succ.format(advertise_callback), self.default_timeout)
             except Empty as error:
-                self.log.error("Test failed with Empty error: {}".format(error))
+                self.log.error("Test failed with Empty error: {}".format(
+                    error))
                 test_result = False
             except concurrent.futures._base.TimeoutError as error:
                 self.log.debug(
