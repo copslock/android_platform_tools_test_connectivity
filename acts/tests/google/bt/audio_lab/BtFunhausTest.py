@@ -18,6 +18,7 @@ Test script to automate the Bluetooth Audio Funhaus.
 """
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
 
 
@@ -28,6 +29,7 @@ class BtFunhausTest(BtFunhausBaseTest):
     def __init__(self, controllers):
         BtFunhausBaseTest.__init__(self, controllers)
 
+    @test_tracker_info(uuid='80a4cc4c-7c2a-428d-9eaf-46239a7926df')
     def test_run_bt_audio_12_hours(self):
         """Test audio quality over 12 hours.
 
@@ -73,6 +75,7 @@ class BtFunhausTest(BtFunhausBaseTest):
             return False
         return True
 
+    @test_tracker_info(uuid='285be86d-f00f-4924-a206-e0a590b87b67')
     def test_setup_fail_if_devices_not_connected(self):
         """Test for devices connected or not during setup.
 
