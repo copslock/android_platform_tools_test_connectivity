@@ -24,6 +24,7 @@ from acts import asserts
 from acts import base_test
 from acts import test_runner
 from acts.controllers import adb
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.net import connectivity_const
 
@@ -170,6 +171,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
 
     """ Test Cases """
 
+    @test_tracker_info(uuid="d2ac5a65-41fb-48de-a0a9-37e589b5456b")
     def test_connection_to_legacy_vpn(self):
         """ Verify VPN connection for all configurations.
             Supported VPN configurations are
