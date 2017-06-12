@@ -30,6 +30,7 @@ from metrics.adb_hash_metric import AdbHashMetric
 from metrics.ram_metric import RamMetric
 from metrics.cpu_metric import CpuMetric
 from metrics.network_metric import NetworkMetric
+from metrics.name_metric import NameMetric
 from reporter import LoggerReporter
 from reporter import ProtoReporter
 from reporter import JsonReporter
@@ -47,10 +48,14 @@ class RunnerFactory(object):
         'disk': lambda param: [DiskMetric()],
         'uptime': lambda param: [UptimeMetric()],
         'verify_devices':
-        lambda param: [VerifyMetric(), AdbHashMetric()],
+            lambda param: [VerifyMetric(), AdbHashMetric()],
         'ram': lambda param: [RamMetric()],
         'cpu': lambda param: [CpuMetric()],
         'network': lambda param: [NetworkMetric()],
+        'hostname': lambda param: [NameMetric()],
+        'all': lambda param: [DiskMetric(), UptimeMetric(),
+                              AdbHashMetric(), RamMetric(), CpuMetric(),
+                              NetworkMetric(), NameMetric(), UsbMetric],
     }
 
     @classmethod
@@ -151,6 +156,18 @@ def _argparse():
         action='store_true',
         default=None,
         help='retrieve status of network')
+    parser.add_argument(
+        '-a',
+        '--all',
+        action='store_true',
+        default=None,
+        help='Display every metric available')
+    parser.add_argument(
+        '-hn',
+        '--hostname',
+        action='store_true',
+        default=None,
+        help='Display the hostname of the current system')
 
     return parser
 
