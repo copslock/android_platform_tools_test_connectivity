@@ -30,6 +30,7 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import ScanSettingsPhy
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
 from acts.test_utils.bt.bt_test_utils import advertising_set_started
+from acts.test_utils.bt.bt_test_utils import advertising_set_stopped
 from acts.test_utils.bt.bt_test_utils import advertising_set_enabled
 from acts.test_utils.bt.bt_test_utils import advertising_set_data_set
 from acts.test_utils.bt.bt_test_utils import advertising_set_scan_response_set
@@ -101,13 +102,16 @@ class AdvertisingSetTest(BluetoothBaseTest):
         Priority: 1
         """
         adv_callback = self.adv_ad.droid.bleAdvSetGenCallback()
+        duration = 0
+        max_ext_adv_events = 0
         self.adv_ad.droid.bleAdvSetStartAdvertisingSet({
             "connectable": False,
             "legacyMode": False,
             "primaryPhy": "PHY_LE_1M",
             "secondaryPhy": "PHY_LE_1M",
             "interval": 320
-        }, self.big_adv_data, None, None, None, adv_callback)
+        }, self.big_adv_data, None, None, None, duration, max_ext_adv_events,
+                                                       adv_callback)
 
         set_started_evt = self.adv_ad.ed.pop_event(
             advertising_set_started.format(adv_callback), self.default_timeout)
@@ -117,7 +121,8 @@ class AdvertisingSetTest(BluetoothBaseTest):
 
         self.log.info("Successfully started set " + str(set_id))
 
-        self.adv_ad.droid.bleAdvSetEnableAdvertising(set_id, False, 0)
+        self.adv_ad.droid.bleAdvSetEnableAdvertising(set_id, False, duration,
+                                                     max_ext_adv_events)
         enable_evt = self.adv_ad.ed.pop_event(
             advertising_set_enabled.format(adv_callback), self.default_timeout)
         assert_equal(set_id, enable_evt['data']['setId'])
@@ -126,7 +131,9 @@ class AdvertisingSetTest(BluetoothBaseTest):
         self.log.info("Successfully disabled advertising set " + str(set_id))
 
         self.log.info("Enabling advertising for 2 seconds... ")
-        self.adv_ad.droid.bleAdvSetEnableAdvertising(set_id, True, 2000)
+        duration_200 = 200
+        self.adv_ad.droid.bleAdvSetEnableAdvertising(
+            set_id, True, duration_200, max_ext_adv_events)
         enable_evt = self.adv_ad.ed.pop_event(
             advertising_set_enabled.format(adv_callback), self.default_timeout)
         assert_equal(set_id, enable_evt['data']['setId'])
@@ -183,4 +190,11 @@ class AdvertisingSetTest(BluetoothBaseTest):
             self.log.info("Data change failed as expected.")
 
         self.adv_ad.droid.bleAdvSetStopAdvertisingSet(adv_callback)
+        try:
+            self.adv_ad.ed.pop_event(
+                advertising_set_stopped.format(adv_callback),
+                self.default_timeout)
+        except Empty:
+            self.log.error("Failed to find advertising set stopped event.")
+            return False
         return True
