@@ -18,12 +18,19 @@ import base64
 import json
 import queue
 import statistics
+import time
 from acts import asserts
 
+from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 
 # arbitrary timeout for events
 EVENT_TIMEOUT = 10
+
+# number of second to 'reasonably' wait to make sure that devices synchronize
+# with each other - useful for OOB test cases, where the OOB discovery would
+# take some time
+WAIT_FOR_CLUSTER = 5
 
 
 def decorate_event(event_name, id):
@@ -260,6 +267,17 @@ def extract_stats(ad, data, results, key_prefix, log_prefix):
 # Aware primitives
 #########################################################
 
+def request_network(dut, ns):
+  """Request a Wi-Fi Aware network.
+
+  Args:
+    dut: Device
+    ns: Network specifier
+  Returns: the request key
+  """
+  network_req = {"TransportType": 5, "NetworkSpecifier": ns}
+  return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
+
 def configure_dw(device, is_default, is_24_band, value):
   """Use the command-line API to configure the DW (discovery window) setting
 
@@ -375,3 +393,110 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
     return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub, peer_id_on_pub
 
   return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub
+
+def create_ib_ndp(p_dut, s_dut, p_config, s_config):
+  """Create an NDP (using in-band discovery)
+
+  Args:
+    p_dut: Device to use as publisher.
+    s_dut: Device to use as subscriber.
+    p_config: Publish configuration.
+    s_config: Subscribe configuration.
+  """
+  (p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
+   peer_id_on_pub) = create_discovery_pair(
+       p_dut, s_dut, p_config, s_config, msg_id=9999)
+
+  # Publisher: request network
+  p_req_key = request_network(p_dut,
+                              p_dut.droid.wifiAwareCreateNetworkSpecifier(
+                                  p_disc_id, peer_id_on_pub, None))
+
+  # Subscriber: request network
+  s_req_key = request_network(s_dut,
+                              s_dut.droid.wifiAwareCreateNetworkSpecifier(
+                                  s_disc_id, peer_id_on_sub, None))
+
+  # Publisher & Subscriber: wait for network formation
+  p_net_event = wait_for_event_with_keys(
+      p_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+      (cconsts.NETWORK_CB_KEY_EVENT,
+       cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED), (cconsts.NETWORK_CB_KEY_ID,
+                                                     p_req_key))
+  s_net_event = wait_for_event_with_keys(
+      s_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+      (cconsts.NETWORK_CB_KEY_EVENT,
+       cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED), (cconsts.NETWORK_CB_KEY_ID,
+                                                     s_req_key))
+
+  p_aware_if = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+  s_aware_if = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
+  p_ipv6 = p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split(
+      "%")[0]
+  s_ipv6 = s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split(
+      "%")[0]
+
+  return p_req_key, s_req_key, p_aware_if, s_aware_if, p_ipv6, s_ipv6
+
+def create_oob_ndp(init_dut, resp_dut):
+  """Create an NDP (using OOB discovery)
+
+  Args:
+    init_dut: Initiator device
+    resp_dut: Responder device
+  """
+  init_dut.pretty_name = 'Initiator'
+  resp_dut.pretty_name = 'Responder'
+
+  # Initiator+Responder: attach and wait for confirmation & identity
+  init_id = init_dut.droid.wifiAwareAttach(True)
+  wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  init_ident_event = wait_for_event(init_dut,
+                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+  init_mac = init_ident_event['data']['mac']
+  resp_id = resp_dut.droid.wifiAwareAttach(True)
+  wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  resp_ident_event = wait_for_event(resp_dut,
+                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+  resp_mac = resp_ident_event['data']['mac']
+
+  # wait for for devices to synchronize with each other - there are no other
+  # mechanisms to make sure this happens for OOB discovery (except retrying
+  # to execute the data-path request)
+  time.sleep(WAIT_FOR_CLUSTER)
+
+  # Responder: request network
+  resp_req_key = request_network(
+      resp_dut,
+      resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+          resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
+
+  # Initiator: request network
+  init_req_key = request_network(
+      init_dut,
+      init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+          init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
+
+  # Initiator & Responder: wait for network formation
+  init_net_event = wait_for_event_with_keys(
+      init_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+      (cconsts.NETWORK_CB_KEY_EVENT,
+       cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED), (cconsts.NETWORK_CB_KEY_ID,
+                                                     init_req_key))
+  resp_net_event = wait_for_event_with_keys(
+      resp_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+      (cconsts.NETWORK_CB_KEY_EVENT,
+       cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED), (cconsts.NETWORK_CB_KEY_ID,
+                                                     resp_req_key))
+
+  init_aware_if = init_net_event['data'][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+  resp_aware_if = resp_net_event['data'][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
+  init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
+      init_aware_if).split('%')[0]
+  resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
+      resp_aware_if).split('%')[0]
+
+  return (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+          resp_ipv6)
