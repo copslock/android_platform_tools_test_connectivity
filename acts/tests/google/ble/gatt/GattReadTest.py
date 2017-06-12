@@ -150,6 +150,7 @@ class GattReadTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='12498522-cac5-478b-a0cd-faa542832fa8')
     def test_read_using_char_uuid(self):
         """Test read using characteristic UUID.
 
