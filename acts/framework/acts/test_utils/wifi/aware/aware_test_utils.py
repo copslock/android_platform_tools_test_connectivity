@@ -321,6 +321,14 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
     msg_id: Controls whether a message is sent from Subscriber to Publisher
             (so that publisher has the sub's peer ID). If None then not sent,
             otherwise should be an int for the message id.
+  Returns: variable size list of:
+    p_id: Publisher attach session id
+    s_id: Subscriber attach session id
+    p_disc_id: Publisher discovery session id
+    s_disc_id: Subscriber discovery session id
+    peer_id_on_sub: Peer ID of the Publisher as seen on the Subscriber
+    peer_id_on_pub: Peer ID of the Subscriber as seen on the Publisher. Only
+                    included if |msg_id| is not None.
   """
   p_dut.pretty_name = 'Publisher'
   s_dut.pretty_name = 'Subscriber'
@@ -345,7 +353,6 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
   peer_id_on_sub = discovery_event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
 
   # Optionally send a message from Subscriber to Publisher
-  peer_id_on_pub = None
   if msg_id is not None:
     ping_msg = 'PING'
 
@@ -365,5 +372,6 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
         ping_msg,
         pub_rx_msg_event['data'][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING],
         'Subscriber -> Publisher message corrupted')
+    return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub, peer_id_on_pub
 
-  return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub, peer_id_on_pub
+  return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub
