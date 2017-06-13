@@ -16,7 +16,7 @@
 
 import os
 
-from metric import Metric
+from metrics.metric import Metric
 
 
 class AdbHashMetric(Metric):

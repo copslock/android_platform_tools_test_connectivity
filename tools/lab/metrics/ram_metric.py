@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class RamMetric(metric.Metric):
+class RamMetric(Metric):
 
     COMMAND = "free"
     # Fields for response dictionary

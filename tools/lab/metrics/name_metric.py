@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class NameMetric(metric.Metric):
+class NameMetric(Metric):
 
     COMMAND = 'hostname'
     # Fields for response dictionary

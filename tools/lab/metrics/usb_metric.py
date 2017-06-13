@@ -17,8 +17,8 @@
 import subprocess
 
 from metrics.metric import Metric
-from utils import time_limit
 from utils import job
+from utils import time_limit
 
 
 class UsbMetric(Metric):
@@ -57,12 +57,14 @@ class UsbMetric(Metric):
         """
         bytes_sent = {}
         with time_limit.TimeLimit(time):
+            # Lines matching 'S Ci' do not match output, and only 4 bytes/sec
             process = subprocess.Popen(
-                'cat /sys/kernel/debug/usb/usbmon/0u',
+                'cat /sys/kernel/debug/usb/usbmon/0u | grep -v \'S Ci\'',
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=True)
             for line in iter(process.stdout.readline, ''):
+                line = line.decode('utf-8')
                 spl_line = line.split(' ')
                 # Example line                  spl_line[3]   " "[5]
                 # ffff88080bb00780 2452973093 C Ii:2:003:1 0:8 8 = 00000000
@@ -87,7 +89,7 @@ class UsbMetric(Metric):
             leading 0's because that is how 'usbmon' formats it.
         """
         devices = {}
-        result = self._shell.run('lsusb').stdout.encode('ascii', 'ignore')
+        result = self._shell.run('lsusb').stdout
 
         if result:
             # Example line
@@ -96,7 +98,8 @@ class UsbMetric(Metric):
                 line_list = line.split(' ')
                 # Gets bus number, strips leading 0's, adds a ':', and then adds
                 # the device, without its ':'. Example line output: 3:048
-                dev_id = line_list[1].strip('0') + ':' + line_list[3].strip(':')
+                dev_id = line_list[1].lstrip('0') + ':' + line_list[3].strip(
+                    ':')
                 # Parses the device name, example line output: 'Device Name'
                 dev_name = ' '.join(line_list[6:])
                 devices[dev_id] = dev_name
