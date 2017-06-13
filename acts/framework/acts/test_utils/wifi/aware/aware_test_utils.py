@@ -17,6 +17,7 @@
 import base64
 import json
 import queue
+import statistics
 from acts import asserts
 
 # arbitrary timeout for events
@@ -213,3 +214,42 @@ def get_wifi_mac_address(ad):
   """
   return ad.droid.wifiGetConnectionInfo()['mac_address'].upper().replace(
       ':', '')
+
+def extract_stats(ad, data, results, key_prefix, log_prefix):
+  """Extract statistics from the data, store in the results dictionary, and
+  output to the info log.
+
+  Args:
+    ad: Android device (for logging)
+    data: A list containing the data to be analyzed.
+    results: A dictionary into which to place the statistics.
+    key_prefix: A string prefix to use for the dict keys storing the
+                extracted stats.
+    log_prefix: A string prefix to use for the info log.
+    include_data: If True includes the raw data in the dictionary,
+                  otherwise just the stats.
+  """
+  num_samples = len(data)
+  results['%snum_samples' % key_prefix] = num_samples
+
+  if not data:
+    return
+
+  data_min = min(data)
+  data_max = max(data)
+  data_mean = statistics.mean(data)
+
+  results['%smin' % key_prefix] = data_min
+  results['%smax' % key_prefix] = data_max
+  results['%smean' % key_prefix] = data_mean
+  results['%sraw_data' % key_prefix] = data
+
+  if num_samples > 1:
+    data_stdev = statistics.stdev(data)
+    results['%sstdev' % key_prefix] = data_stdev
+    ad.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f, stdev=%.2f',
+                log_prefix, num_samples, data_min, data_max, data_mean,
+                data_stdev)
+  else:
+    ad.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f', log_prefix,
+                num_samples, data_min, data_max, data_mean)
