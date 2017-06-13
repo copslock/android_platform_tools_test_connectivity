@@ -99,9 +99,8 @@ class MockAdbProxy():
         return "\t".join([str(self.serial), "device"])
 
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
-        expected = os.path.join(
-            logging.log_path, "AndroidDevice%s" % self.serial,
-            "test_something", "AndroidDevice%s_sometime" % self.serial)
+        expected = os.path.join(logging.log_path,
+                                "AndroidDevice%s" % self.serial)
         assert expected in params, "Expected '%s', got '%s'." % (expected,
                                                                  params)
 
@@ -276,8 +275,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         ad.take_bug_report("test_something", "sometime")
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
+        expected_path = os.path.join(ad.log_path)
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch(
@@ -316,8 +314,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         ad.take_bug_report("test_something", "sometime")
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
+        expected_path = os.path.join(logging.log_path,
+                                     "AndroidDevice%s" % ad.serial)
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
@@ -339,26 +337,17 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = ("Android device .* does not have an ongoing adb logcat"
                         " collection.")
         # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
                                          "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
+                                         "adblog_fakemodel_%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -v threadtime -b all >> %s'
+        adb_cmd = 'adb -s %s logcat -v threadtime -b all > %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = ("Android device .* already has an adb logcat thread "
-                        "going on. Cannot start another one.")
-        # Expect error if start is called back to back.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.start_adb_logcat()
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
         stop_proc_mock.assert_called_with("process")
@@ -382,20 +371,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         ad.adb_logcat_param = "-b radio"
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
                                          "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
+                                         "adblog_fakemodel_%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -v threadtime -b radio >> %s'
+        adb_cmd = 'adb -s %s logcat -v threadtime -b radio > %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
@@ -419,22 +402,17 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = ("Attempting to cat adb log when none has been "
-                        "collected on Android device .*")
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
-        ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
-        mock_adb_log_path = os.path.join(ad.log_path, "adblog,%s,%s.txt" %
+        mock_adb_log_path = os.path.join(ad.log_path, "adblog_%s_%s.txt" %
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:
             f.write(MOCK_ADB_LOGCAT)
         ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
         cat_file_path = os.path.join(
             ad.log_path, "AdbLogExcerpts",
-            ("some_test,02-29 14:02:20.123,%s,%s.txt") % (ad.model, ad.serial))
+            ("some_test,02-29 14:02:20.123,adblog_%s_%s.txt") % (ad.model,
+                                                                 ad.serial))
         with open(cat_file_path, 'r') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))

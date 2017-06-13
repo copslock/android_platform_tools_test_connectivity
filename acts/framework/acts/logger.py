@@ -235,17 +235,25 @@ def normalize_log_line_timestamp(log_line_timestamp):
     return norm_tp
 
 
-def create_test_case_logger(log_path, test_case_name):
+def create_test_case_logger(test_case_log_path):
+    create_dir(test_case_log_path)
     log = logging.getLogger()
-    th = logging.FileHandler(os.path.join(log_path, '%s.txt' % test_case_name))
-    th.setFormatter(logging.Formatter(log_line_format, log_line_time_format))
-    th.setLevel(logging.INFO)
-    log.addHandler(th)
-    return th
+    for log_level, file_name, log_handle in zip(
+        [logging.INFO,
+         logging.DEBUG], ["test_run_info.txt", "test_run_details.txt"],
+        ["test_case_info_handle", "test_case_debug_handle"]):
+        th = logging.FileHandler(os.path.join(test_case_log_path, file_name))
+        th.setFormatter(
+            logging.Formatter(log_line_format, log_line_time_format))
+        th.setLevel(log_level)
+        log.addHandler(th)
+        setattr(log, log_handle, th)
 
 
-def remove_test_case_logger(th):
+def remove_test_case_logger():
     log = logging.getLogger()
-    log.removeHandler(th)
-    if isinstance(th, logging.FileHandler):
-        th.close()
+    for handle_name in ("test_case_info_handle", "test_case_debug_handle"):
+        th = getattr(log, handle_name)
+        log.removeHandler(th)
+        if isinstance(th, logging.FileHandler):
+            th.close()
