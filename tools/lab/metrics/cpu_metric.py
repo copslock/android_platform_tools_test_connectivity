@@ -14,12 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from metrics.metric import Metric
 import psutil
 
-from metrics import metric
 
-
-class CpuMetric(metric.Metric):
+class CpuMetric(Metric):
 
     # Fields for response dictionary
     USAGE_PER_CORE = 'usage_per_core'
