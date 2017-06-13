@@ -142,3 +142,4 @@ class DataPathStressTest(AwareBaseTest):
         0,
         'test_oob_ndp_stress finished',
         extras=results)
+    asserts.explicit_pass("test_oob_ndp_stress done", extras=results)
