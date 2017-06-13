@@ -14,8 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
 import unittest
 
 if __name__ == "__main__":
-    suite = unittest.TestLoader().discover('.', pattern="*_test.py")
-    unittest.TextTestRunner().run(suite)
+    suite = unittest.TestLoader().discover(
+        start_dir='./tools/lab', pattern='*_test.py')
+    runner = unittest.TextTestRunner()
+
+    # Return exit code of tests, so preupload hook fails if tests don't pass
+    ret = not runner.run(suite).wasSuccessful()
+    sys.exit(ret)
