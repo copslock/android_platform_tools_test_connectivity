@@ -45,6 +45,8 @@ class BleScanPowerTest(PowerBaseTest):
     IDLE_TIME_5 = 5
 
     PMC_BASE_CMD = ("am broadcast -a com.android.pmc.BLESCAN --es ScanMode ")
+    # Log file name
+    LOG_FILE = "BLEPOWER.log"
 
     def setup_class(self):
         super(BleScanPowerTest, self).setup_class()
@@ -59,12 +61,8 @@ class BleScanPowerTest(PowerBaseTest):
                                      power_test_device_serial[0])
                     disable_bluetooth(ad.droid)
 
-    def _measure_power_for_scan_n_log_data(self,
-                                           scan_mode,
-                                           scan_time,
-                                           idle_time,
-                                           repetitions,
-                                           remove_idle_data=True):
+    def _measure_power_for_scan_n_log_data(self, scan_mode, scan_time,
+                                           idle_time, repetitions):
         """utility function for power test with BLE scan.
 
         Steps:
@@ -80,8 +78,6 @@ class BleScanPowerTest(PowerBaseTest):
             scan_time: Time duration for scanning
             idle_time: Time duration for idle after scanning
             repetitions:  The number of cycles of scanning/idle
-            remove_idle_data: Boolean to indicate whether to include idle data
-                              in average calculation
 
         Returns:
             None
@@ -94,16 +90,30 @@ class BleScanPowerTest(PowerBaseTest):
 
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
+
+        # Check if PMC is ready
+        if not self.check_pmc_status(self.LOG_FILE, "READY",
+                                     "PMC is not ready"):
+            return
+
         # Start the power measurement
         sample_time = (scan_time + idle_time) * repetitions
         result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
                                         self.current_test_name,
                                         self.SCAN_START_TIME)
 
-        if remove_idle_data:
-            self.save_logs_for_power_test(result, scan_time, idle_time)
-        else:
-            self.save_logs_for_power_test(result, scan_time, 0)
+        self.ad.log.info("Monsoon start_time: {}".format(result.timestamps[0]))
+
+        start_times = []
+        end_times = []
+        json_data = self.check_pmc_timestamps(self.LOG_FILE)
+        for timestamp in json_data:
+            start_times.append(timestamp["StartTime"])
+            end_times.append(timestamp["EndTime"])
+
+        self.ad.log.info("Number of test cycles: {}".format(len(start_times)))
+
+        self.save_logs_for_power_test(result, start_times, end_times, False)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_low_latency(self):
