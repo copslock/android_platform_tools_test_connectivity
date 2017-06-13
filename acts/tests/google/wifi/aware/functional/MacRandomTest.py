@@ -73,8 +73,15 @@ class MacRandomTest(AwareBaseTest):
     # Test for uniqueness
     for mac in mac_addresses.keys():
       if mac_addresses[mac] != 1:
-        asserts.fail("Mac address %s repeated %d times (all=%s)" % (mac,
+        asserts.fail("MAC address %s repeated %d times (all=%s)" % (mac,
                      mac_addresses[mac], mac_addresses))
+
+    # Verify that infra interface (e.g. wlan0) MAC address is not used for NMI
+    infra_mac = autils.get_wifi_mac_address(dut)
+    asserts.assert_false(
+        infra_mac in mac_addresses,
+        "Infrastructure MAC address (%s) is used for Aware NMI (all=%s)" %
+        (infra_mac, mac_addresses))
 
   def test_nmi_randomization_on_interval(self):
     """Validate randomization of the NMI (NAN management interface) on a set
