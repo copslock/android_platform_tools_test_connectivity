@@ -21,19 +21,19 @@ from __future__ import print_function
 import argparse
 import sys
 
-from runner import InstantRunner
-from metrics.usb_metric import UsbMetric
-from metrics.disk_metric import DiskMetric
-from metrics.uptime_metric import UptimeMetric
-from metrics.verify_metric import VerifyMetric
 from metrics.adb_hash_metric import AdbHashMetric
-from metrics.ram_metric import RamMetric
 from metrics.cpu_metric import CpuMetric
-from metrics.network_metric import NetworkMetric
+from metrics.disk_metric import DiskMetric
 from metrics.name_metric import NameMetric
+from metrics.network_metric import NetworkMetric
+from metrics.ram_metric import RamMetric
+from metrics.uptime_metric import UptimeMetric
+from metrics.usb_metric import UsbMetric
+from metrics.verify_metric import VerifyMetric
+from reporter import JsonReporter
 from reporter import LoggerReporter
 from reporter import ProtoReporter
-from reporter import JsonReporter
+from runner import InstantRunner
 
 
 class RunnerFactory(object):

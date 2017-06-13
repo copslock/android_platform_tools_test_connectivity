@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class DiskMetric(metric.Metric):
+class DiskMetric(Metric):
 
     COMMAND = "df /var/tmp"
     # Fields for response dictionary
