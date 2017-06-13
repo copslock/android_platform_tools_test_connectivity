@@ -133,7 +133,9 @@ def _argparse():
         '--verify-devices',
         action='store_true',
         default=None,
-        help='verify all devices connected are in \'device\' mode')
+        help=('verify all devices connected are in \'device\' mode, '
+              'environment variables set properly, '
+              'and hash of directory is correct'))
     parser.add_argument(
         '-r',
         '--reporter',
