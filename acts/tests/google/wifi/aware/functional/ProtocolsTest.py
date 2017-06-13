@@ -14,9 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
-
 from acts import asserts
+from acts.test_utils.net import nsd_const as nconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -119,3 +118,74 @@ class ProtocolsTest(AwareBaseTest):
     # clean-up
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
+
+  def test_nsd_oob(self):
+    """Validate that NSD (mDNS) works correctly on an NDP created using OOB
+    (out-of band) discovery"""
+    init_dut = self.android_devices[0]
+    resp_dut = self.android_devices[1]
+
+    # create NDP
+    (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+     resp_ipv6) = autils.create_oob_ndp(init_dut, resp_dut)
+    self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
+    self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
+                  resp_ipv6)
+
+    # run NSD
+    nsd_service_info = {
+        "serviceInfoServiceName": "sl4aTestAwareNsd",
+        "serviceInfoServiceType": "_simple-tx-rx._tcp.",
+        "serviceInfoPort": 2257
+    }
+    nsd_reg = None
+    nsd_discovery = None
+    try:
+      # Initiator registers an NSD service
+      nsd_reg = init_dut.droid.nsdRegisterService(nsd_service_info)
+      event_nsd = autils.wait_for_event_with_keys(
+          init_dut, nconsts.REG_LISTENER_EVENT, autils.EVENT_TIMEOUT,
+          (nconsts.REG_LISTENER_CALLBACK,
+           nconsts.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED))
+      self.log.info("Initiator %s: %s",
+                    nconsts.REG_LISTENER_EVENT_ON_SERVICE_REGISTERED,
+                    event_nsd["data"])
+
+      # Responder starts an NSD discovery
+      nsd_discovery = resp_dut.droid.nsdDiscoverServices(
+          nsd_service_info[nconsts.NSD_SERVICE_INFO_SERVICE_TYPE])
+      event_nsd = autils.wait_for_event_with_keys(
+          resp_dut, nconsts.DISCOVERY_LISTENER_EVENT, autils.EVENT_TIMEOUT,
+          (nconsts.DISCOVERY_LISTENER_DATA_CALLBACK,
+           nconsts.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND))
+      self.log.info("Responder %s: %s",
+                    nconsts.DISCOVERY_LISTENER_EVENT_ON_SERVICE_FOUND,
+                    event_nsd["data"])
+
+      # Responder resolves IP address of Initiator from NSD service discovery
+      resp_dut.droid.nsdResolveService(event_nsd["data"])
+      event_nsd = autils.wait_for_event_with_keys(
+          resp_dut, nconsts.RESOLVE_LISTENER_EVENT, autils.EVENT_TIMEOUT,
+          (nconsts.RESOLVE_LISTENER_DATA_CALLBACK,
+           nconsts.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED))
+      self.log.info("Responder %s: %s",
+                    nconsts.RESOLVE_LISTENER_EVENT_ON_SERVICE_RESOLVED,
+                    event_nsd["data"])
+
+      # mDNS returns first character as '/' - strip
+      # out to get clean IPv6
+      init_ipv6_nsd = event_nsd["data"][nconsts.NSD_SERVICE_INFO_HOST][1:]
+
+      asserts.assert_equal(
+          init_ipv6, init_ipv6_nsd,
+          "Initiator's IPv6 address obtained through NSD doesn't match!?")
+    finally:
+      # Stop NSD
+      if nsd_reg is not None:
+        init_dut.droid.nsdUnregisterService(nsd_reg)
+      if nsd_discovery is not None:
+        resp_dut.droid.nsdStopServiceDiscovery(nsd_discovery)
+
+    # clean-up
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
