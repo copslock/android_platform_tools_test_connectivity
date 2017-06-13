@@ -18,7 +18,7 @@
 class FakeResult(object):
     """A fake version of the object returned from ShellCommand.run. """
 
-    def __init__(self, exit_status=1, stdout='', stderr=''):
+    def __init__(self, exit_status=0, stdout='', stderr=''):
         self.exit_status = exit_status
         self.stdout = stdout
         self.stderr = stderr
