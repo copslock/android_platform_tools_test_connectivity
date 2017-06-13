@@ -203,3 +203,13 @@ def get_aware_capabilities(ad):
   Returns: the capability dictionary.
   """
   return json.loads(ad.adb.shell('cmd wifiaware state_mgr get_capabilities'))
+
+def get_wifi_mac_address(ad):
+  """Get the Wi-Fi interface MAC address as a upper-case string of hex digits
+  without any separators (e.g. ':').
+
+  Args:
+    ad: Device on which to run.
+  """
+  return ad.droid.wifiGetConnectionInfo()['mac_address'].upper().replace(
+      ':', '')
