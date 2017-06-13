@@ -28,20 +28,43 @@ class MockShellCommand(object):
     """A fake ShellCommand object.
 
     Attributes:
-        fake_result: a FakeResult object
+        fake_result: a FakeResult object, or a list of FakeResult objects
+        fake_pids: a dictionary that maps string identifier to list of pids
     """
 
-    def __init__(self, fake_result):
+    def __init__(self, fake_result=None, fake_pids=[]):
         self._fake_result = fake_result
-
-    """Returns a FakeResult object.
-
-    Args:
-        Same as ShellCommand.run, but none are used in function
-
-    Returns:
-        The FakeResult object it was initalized with
-    """
+        self._fake_pids = fake_pids
+        self._counter = 0
 
     def run(self, command, timeout=3600):
-        return self._fake_result
+        """Returns a FakeResult object.
+
+        Args:
+            Same as ShellCommand.run, but none are used in function
+
+        Returns:
+            The FakeResult object it was initalized with. If it was initialized
+            with a list, returns the next element in list and increments counter
+
+        Raises:
+          IndexError: Function was called more times than num elements in list
+
+        """
+        if isinstance(self._fake_result, list):
+            self._counter += 1
+            return self._fake_result[self._counter - 1]
+        else:
+            return self._fake_result
+
+    def get_pids(self, identifier):
+        """Returns a generator of fake pids
+
+        Args:
+          Same as ShellCommand.get_pids, but none are used in the function
+        Returns:
+          A generator of the fake pids it was initialized with
+        """
+
+        for pid in self._fake_pids[identifier]:
+            yield pid
