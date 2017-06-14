@@ -291,8 +291,10 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.message_test, []), (self.data_test, []), (
                 change_env_func, []), (self.crash_check_test, [])])
         self.log.info(dict(self.result_info))
-        if sum(results):
+        if results[0]:
             fail(str(dict(self.result_info)))
+        else:
+            return True
 
     """ Tests Begin """
 
