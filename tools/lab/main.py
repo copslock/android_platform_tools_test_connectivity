@@ -25,7 +25,7 @@ from metrics.adb_hash_metric import AdbHashMetric
 from metrics.cpu_metric import CpuMetric
 from metrics.disk_metric import DiskMetric
 from metrics.name_metric import NameMetric
-from metrics.network_metric import NetworkMetric
+# from metrics.network_metric import NetworkMetric
 from metrics.ram_metric import RamMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
@@ -51,7 +51,7 @@ class RunnerFactory(object):
             lambda param: [VerifyMetric(), AdbHashMetric()],
         'ram': lambda param: [RamMetric()],
         'cpu': lambda param: [CpuMetric()],
-        'network': lambda param: [NetworkMetric()],
+        # 'network': lambda param: [NetworkMetric()],
         'hostname': lambda param: [NameMetric()],
         'all': lambda param: [DiskMetric(), UptimeMetric(),
                               AdbHashMetric(), RamMetric(), CpuMetric(),
@@ -150,12 +150,12 @@ def _argparse():
         choices=['python', 'adb', 'fastboot', 'os', 'kernel'],
         nargs='*',
         help='display the versions of chosen programs (default = all)')
-    parser.add_argument(
-        '-n',
-        '--network',
-        action='store_true',
-        default=None,
-        help='retrieve status of network')
+    # parser.add_argument(
+    # '-n',
+    # '--network',
+    # action='store_true',
+    # default=None,
+    # help='retrieve status of network')
     parser.add_argument(
         '-a',
         '--all',
