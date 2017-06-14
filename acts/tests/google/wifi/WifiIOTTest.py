@@ -43,7 +43,7 @@ class WifiIOTTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
 
-        req_params = [ "reference_networks", "iperf_server_address" ]
+        req_params = [ "iot_networks", "iperf_server_address" ]
         self.unpack_userparams(req_param_names=req_params)
 
         WifiNetworks = wutils.WifiReferenceNetworks(self.reference_networks)
