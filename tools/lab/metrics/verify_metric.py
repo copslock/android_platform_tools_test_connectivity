@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from metric import Metric
+from metrics.metric import Metric
 
 
 class VerifyMetric(Metric):

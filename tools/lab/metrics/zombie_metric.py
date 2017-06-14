@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class ZombieMetric(metric.Metric):
+class ZombieMetric(Metric):
 
     COMMAND = "ps axo pid=,stat=,comm= | awk '$2~/^Z { print }'"
     # Fields for response dictionary

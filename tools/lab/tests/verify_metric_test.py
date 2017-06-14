@@ -20,7 +20,7 @@ from metrics import verify_metric
 from tests import fake
 
 
-class UptimeMetricTest(unittest.TestCase):
+class VerifyMetricTest(unittest.TestCase):
     def test_gather_device_empty(self):
         mock_output = ''
         FAKE_RESULT = fake.FakeResult(stdout=mock_output)
