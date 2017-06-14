@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 import itertools
-from metrics import metric
+from metrics.metric import Metric
 
 
-class ProcessTimeMetric(metric.Metric):
+class ProcessTimeMetric(Metric):
     TIME_COMMAND = 'ps -p %s -o etime='
 
     # Fields for response dictionary

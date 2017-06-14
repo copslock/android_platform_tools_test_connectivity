@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class ReadMetric(metric.Metric):
+class ReadMetric(Metric):
     """Find read speed of /dev/sda using hdparm
 
     Attributes:
