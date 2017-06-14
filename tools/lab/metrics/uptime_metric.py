@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class UptimeMetric(metric.Metric):
+class UptimeMetric(Metric):
 
     COMMAND = "cat /proc/uptime"
     # Fields for response dictionary

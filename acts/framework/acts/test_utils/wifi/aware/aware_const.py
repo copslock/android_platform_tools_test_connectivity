@@ -127,6 +127,10 @@ CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
 
 ######################################################
 
+# Aware discovery channels
+AWARE_DISCOVERY_CHANNEL_24_BAND = 6
+AWARE_DISCOVERY_CHANNEL_5_BAND = 149
+
 # Aware Data-Path Constants
 DATA_PATH_INITIATOR = 0
 DATA_PATH_RESPONDER = 1

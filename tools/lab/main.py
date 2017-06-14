@@ -21,19 +21,19 @@ from __future__ import print_function
 import argparse
 import sys
 
-from runner import InstantRunner
-from metrics.usb_metric import UsbMetric
-from metrics.disk_metric import DiskMetric
-from metrics.uptime_metric import UptimeMetric
-from metrics.verify_metric import VerifyMetric
 from metrics.adb_hash_metric import AdbHashMetric
-from metrics.ram_metric import RamMetric
 from metrics.cpu_metric import CpuMetric
-from metrics.network_metric import NetworkMetric
+from metrics.disk_metric import DiskMetric
 from metrics.name_metric import NameMetric
+# from metrics.network_metric import NetworkMetric
+from metrics.ram_metric import RamMetric
+from metrics.uptime_metric import UptimeMetric
+from metrics.usb_metric import UsbMetric
+from metrics.verify_metric import VerifyMetric
+from reporter import JsonReporter
 from reporter import LoggerReporter
 from reporter import ProtoReporter
-from reporter import JsonReporter
+from runner import InstantRunner
 
 
 class RunnerFactory(object):
@@ -51,7 +51,7 @@ class RunnerFactory(object):
             lambda param: [VerifyMetric(), AdbHashMetric()],
         'ram': lambda param: [RamMetric()],
         'cpu': lambda param: [CpuMetric()],
-        'network': lambda param: [NetworkMetric()],
+        # 'network': lambda param: [NetworkMetric()],
         'hostname': lambda param: [NameMetric()],
         'all': lambda param: [DiskMetric(), UptimeMetric(),
                               AdbHashMetric(), RamMetric(), CpuMetric(),
@@ -150,12 +150,12 @@ def _argparse():
         choices=['python', 'adb', 'fastboot', 'os', 'kernel'],
         nargs='*',
         help='display the versions of chosen programs (default = all)')
-    parser.add_argument(
-        '-n',
-        '--network',
-        action='store_true',
-        default=None,
-        help='retrieve status of network')
+    # parser.add_argument(
+    # '-n',
+    # '--network',
+    # action='store_true',
+    # default=None,
+    # help='retrieve status of network')
     parser.add_argument(
         '-a',
         '--all',

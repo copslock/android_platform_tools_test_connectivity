@@ -20,6 +20,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import signals
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -186,6 +187,8 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
 
     """ Tests Begin """
 
+    # TODO: gmoturu Move run_generated_testcases to individual tests
+    @test_tracker_info(uuid="dd8899d7-e1c8-4066-b5c0-fd80b88e20ee")
     @signals.generated_test
     def test_roaming_with_different_auth_method(self):
         eap_configs = self.gen_eap_configs()

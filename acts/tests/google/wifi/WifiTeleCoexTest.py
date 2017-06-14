@@ -10,6 +10,7 @@ import acts.utils
 
 from acts import asserts
 from acts import signals
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
@@ -164,6 +165,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
     """Tests"""
 
 
+    @test_tracker_info(uuid="8b9b6fb9-964b-43e7-b75f-675774ee346f")
     @TelephonyBaseTest.tel_test_wrap
     def test_toggle_wifi_call(self):
         """Test to toggle WiFi and then perform WiFi connection and
@@ -184,6 +186,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.validate_cellular_and_wifi()
 
 
+    @test_tracker_info(uuid="caf22447-6354-4a2e-99e5-0ff235fc8f20")
     @TelephonyBaseTest.tel_test_wrap
     def test_toggle_airplane_call(self):
         """Test to toggle Airplane mode and perform WiFi connection and
@@ -204,6 +207,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.validate_cellular_and_wifi()
 
 
+    @test_tracker_info(uuid="dd888b35-f820-409a-89af-4b0f6551e4d6")
     @TelephonyBaseTest.tel_test_wrap
     def test_toggle_airplane_and_wifi_call(self):
         """Test to toggle WiFi in a loop and perform WiFi connection and
@@ -226,6 +230,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.validate_cellular_and_wifi()
 
 
+    @test_tracker_info(uuid="15db5b7e-827e-4bc8-8e77-7fcce343a323")
     @TelephonyBaseTest.tel_test_wrap
     def test_stress_toggle_wifi_call(self):
         """Stress test to toggle WiFi in a loop, then perform WiFi connection
@@ -246,6 +251,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.validate_cellular_and_wifi()
 
 
+    @test_tracker_info(uuid="80a2f1bf-5e41-453a-9b8e-be3b41d4d313")
     @TelephonyBaseTest.tel_test_wrap
     def test_stress_toggle_airplane_call(self):
         """Stress test to toggle Airplane mode in a loop, then perform WiFi and
@@ -266,6 +272,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.validate_cellular_and_wifi()
 
 
+    @test_tracker_info(uuid="b88ad3e7-6462-4280-ad57-22d0ac91fdd8")
     @TelephonyBaseTest.tel_test_wrap
     def test_stress_toggle_airplane_and_wifi_call(self):
         """Stress test to toggle Airplane and WiFi mode in a loop, then perform
