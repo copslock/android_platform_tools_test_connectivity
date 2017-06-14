@@ -31,15 +31,18 @@ class AwareBaseTest(BaseTestClass):
   def setup_test(self):
     for ad in self.android_devices:
       wutils.wifi_toggle_state(ad, True)
+      ad.droid.wifiP2pClose()
       aware_avail = ad.droid.wifiIsAwareAvailable()
       if not aware_avail:
         self.log.info('Aware not available. Waiting ...')
         autils.wait_for_event(ad, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+      ad.ed.pop_all(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE) # clear-out extras
       ad.aware_capabilities = autils.get_aware_capabilities(ad)
       self.reset_device_parameters(ad)
 
   def teardown_test(self):
     for ad in self.android_devices:
+      ad.droid.wifiP2pClose()
       ad.droid.wifiAwareDestroyAll()
       self.reset_device_parameters(ad)
 
