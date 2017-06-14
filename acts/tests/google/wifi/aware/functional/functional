@@ -4,3 +4,4 @@ MessageTest
 DataPathTest
 MacRandomTest
 CapabilitiesTest
+ProtocolsTest
