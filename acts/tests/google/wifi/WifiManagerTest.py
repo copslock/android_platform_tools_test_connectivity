@@ -59,8 +59,7 @@ class WifiManagerTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "additional_energy_info_models", "additional_tdls_models",
-            "iot_networks", "open_network", "config_store_networks",
-            "reference_networks", "iperf_server_address"
+            "open_network", "reference_networks", "iperf_server_address"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -71,11 +70,7 @@ class WifiManagerTest(WifiBaseTest):
         asserts.assert_true(
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
-        asserts.assert_true(
-            len(self.iot_networks) > 0,
-            "Need at least one iot network with psk.")
         wutils.wifi_toggle_state(self.dut, True)
-        self.iot_networks = self.iot_networks + [self.open_network]
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
         self.iot_test_prefix = "test_connection_to-"
@@ -93,7 +88,7 @@ class WifiManagerTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        if self.iot_test_prefix in self.current_test_name:
+        if self.current_test_name and self.iot_test_prefix in self.current_test_name:
             if "iperf_server_address" in self.user_params:
                 self.iperf_server.stop()
 
@@ -253,19 +248,6 @@ class WifiManagerTest(WifiBaseTest):
                                                 port_arg)
             self.log.debug(pprint.pformat(data))
             asserts.assert_true(success, "Error occurred in iPerf traffic.")
-
-    def connect_to_wifi_network_and_run_iperf(self, params):
-        """Connection logic for open and psk wifi networks.
-
-        Logic steps are
-        1. Connect to the network.
-        2. Run iperf traffic.
-
-        Args:
-            params: A tuple of network info and AndroidDevice object.
-        """
-        self.connect_to_wifi_network(params)
-        self.run_iperf_client(params)
 
     def connect_to_wifi_network_toggle_wifi_and_run_iperf(self, params):
         """ Connect to the provided network and then toggle wifi mode and wait
@@ -573,23 +555,11 @@ class WifiManagerTest(WifiBaseTest):
                    " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
 
-    @test_tracker_info(uuid="cfc0084d-8fe4-4d19-8af2-6c9a8d1e2b6b")
-    @acts.signals.generated_test
-    def test_iot_with_password(self):
-        params = list(
-            itertools.product(self.iot_networks, self.android_devices))
-        name_gen = lambda p: "test_connection_to-%s" % p[0][WifiEnums.SSID_KEY]
-        failed = self.run_generated_testcases(
-            self.connect_to_wifi_network_and_run_iperf,
-            params,
-            name_func=name_gen)
-        asserts.assert_true(not failed, "Failed ones: {}".format(failed))
-
     @test_tracker_info(uuid="117b1d1c-963d-40f1-bf50-7cbc8b5e1c69")
     @acts.signals.generated_test
     def test_config_store(self):
         params = list(
-            itertools.product(self.config_store_networks,
+            itertools.product([self.wpapsk_2g, self.wpapsk_5g],
                               self.android_devices))
 
         def name_gen(p):
