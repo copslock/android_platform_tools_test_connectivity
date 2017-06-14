@@ -21,6 +21,7 @@ from acts import asserts
 from acts import base_test
 from acts.controllers import android_device
 from acts.controllers import attenuator
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -111,6 +112,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="ffa5e278-db3f-4e17-af11-6c7a3e7c5cc2")
     def test_network_selector_automatic_connection(self):
         """
             1. Add one saved network to DUT.
@@ -126,6 +128,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="3ea818f2-10d7-4aad-bfab-7d8fb25aae78")
     def test_network_selector_basic_connection_prefer_5g(self):
         """
             1. Add one saved SSID with 2G and 5G BSSIDs of similar RSSI.
@@ -145,6 +148,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="bebb29ca-4486-4cde-b390-c5f8f2e1580c")
     def test_network_selector_prefer_stronger_rssi(self):
         """
             1. Add two saved SSIDs to DUT, same band, one has stronger RSSI
@@ -165,6 +169,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '2g']['bssid'])
 
+    @test_tracker_info(uuid="f9f72dc5-034f-4fe2-a27d-df1b6cae76cd")
     def test_network_selector_prefer_secure_over_open_network(self):
         """
             1. Add two saved networks to DUT, same band, similar RSSI, one uses
@@ -184,6 +189,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="ab2c527c-0f9c-4f09-a13f-e3f461b7da52")
     def test_network_selector_blacklist_by_connection_failure(self):
         """
             1. Add two saved secured networks X and Y to DUT. X has stronger
@@ -209,6 +215,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_2][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="71d88fcf-c7b8-4fd2-a7cb-84ac4a130ecf")
     def test_network_selector_2g_to_5g_prefer_same_SSID(self):
         """
             1. Add SSID_A and SSID_B to DUT. Both SSIDs have both 2G and 5G
@@ -238,6 +245,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="c1243cf4-d96e-427e-869e-3d640bee3f28")
     def test_network_selector_2g_to_5g_different_ssid(self):
         """
             1. Add SSID_A and SSID_B to DUT. Both SSIDs have both 2G and 5G
@@ -270,6 +278,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_2][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="10da95df-83ed-4447-89f8-735b08dbe2eb")
     def test_network_selector_5g_to_2g_same_ssid(self):
         """
             1. Add one SSID that has both 2G and 5G to the DUT.
@@ -297,6 +306,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '2g']['bssid'])
 
+    @test_tracker_info(uuid="ead78ae0-27ab-4bb8-ae77-0b9fe588436a")
     def test_network_selector_stay_on_sufficient_network(self):
         """
             1. Add two 5G WPA2 BSSIDs X and Y to the DUT. X has higher RSSI
@@ -326,6 +336,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="5470010f-8b62-4b1c-8b83-1f91422eced0")
     def test_network_selector_stay_on_user_selected_network(self):
         """
             1. Connect the DUT to SSID_A with a very low RSSI via the user select code path.
@@ -351,6 +362,7 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_1][
             '5g']['bssid'])
 
+    @test_tracker_info(uuid="f08d8f73-8c94-42af-bba9-4c49bbf16420")
     def test_network_selector_reselect_after_forget_network(self):
         """
             1. Add two 5G BSSIDs X and Y to the DUT. X has higher RSSI
@@ -378,11 +390,3 @@ class WifiNetworkSelectorTest(base_test.BaseTestClass):
         #verify
         self.connect_and_verify_connected_bssid(self.reference_networks[AP_2][
             '5g']['bssid'])
-
-    # def test_network_selector_2g_to_5g_same_SSID_roaming(self):
-    #     """ Implement this in HAL test suite when it's ready.
-    #         1. Add one SSID that has both 2G and 5G to the DUT.
-    #         2. Attenuate the networks so that the DUT is connected to 2G.
-    #         3. Increase the RSSI of 5G and lower the RSSI of 2G.
-    #         4. Verify DUT switches to 5G without waking up.
-    #     """
