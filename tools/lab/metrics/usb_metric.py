@@ -14,15 +14,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import io
 import subprocess
+
+import sys
 
 from metrics.metric import Metric
 from utils import job
 from utils import time_limit
 
 
+def _get_output(stdout):
+    if sys.version_info[0] == 2:
+        return iter(stdout.readline, '')
+    else:
+        return io.TextIOWrapper(stdout, encoding="utf-8")
+
+
 class UsbMetric(Metric):
     """Class to determine all USB Device traffic over a timeframe."""
+    USB_IO_COMMAND = 'cat /sys/kernel/debug/usb/usbmon/0u | grep -v \'S Ci\''
+    USBMON_CHECK_COMMAND = 'grep usbmon /proc/modules'
+    USBMON_INSTALL_COMMAND = 'modprobe usbmon'
+    DEVICES = 'devices'
 
     def check_usbmon(self):
         """Checks if the kernel module 'usbmon' is installed.
@@ -33,11 +47,11 @@ class UsbMetric(Metric):
             job.Error: When the module could not be loaded.
         """
         try:
-            self._shell.run('grep usbmon /proc/modules')
+            self._shell.run(self.USBMON_CHECK_COMMAND)
         except job.Error:
             print('Kernel module not loaded, attempting to load usbmon')
             try:
-                self._shell.run('modprobe usbmon')
+                self._shell.run(self.USBMON_INSTALL_COMMAND)
             except job.Error as error:
                 raise job.Error('Cannot load usbmon: %s' % error.result.stderr)
 
@@ -59,12 +73,12 @@ class UsbMetric(Metric):
         with time_limit.TimeLimit(time):
             # Lines matching 'S Ci' do not match output, and only 4 bytes/sec
             process = subprocess.Popen(
-                'cat /sys/kernel/debug/usb/usbmon/0u | grep -v \'S Ci\'',
+                self.USB_IO_COMMAND,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=True)
-            for line in iter(process.stdout.readline, ''):
-                line = line.decode('utf-8')
+
+            for line in _get_output(process.stdout):
                 spl_line = line.split(' ')
                 # Example line                  spl_line[3]   " "[5]
                 # ffff88080bb00780 2452973093 C Ii:2:003:1 0:8 8 = 00000000
@@ -114,12 +128,15 @@ class UsbMetric(Metric):
             dev_byte_dict: A dictionary with the key as 'bus:device', leading
             0's stripped from bus, and value as the number of bytes transferred.
         Returns:
-            List of populated Device object. Only devices that have transferred
-            data in the timeframe calculated are added.
+            List of populated Device objects.
         """
         devices = []
-        for dev in dev_byte_dict:
-            devices.append(Device(dev, dev_byte_dict[dev], dev_name_dict[dev]))
+        for dev in dev_name_dict:
+            if dev in dev_byte_dict:
+                devices.append(
+                    Device(dev, dev_byte_dict[dev], dev_name_dict[dev]))
+            else:
+                devices.append(Device(dev, 0, dev_name_dict[dev]))
         return devices
 
     def gather_metric(self):
@@ -133,7 +150,7 @@ class UsbMetric(Metric):
         self.check_usbmon()
         dev_byte_dict = self.get_bytes()
         dev_name_dict = self.match_device_id()
-        return {'devices': self.gen_output(dev_name_dict, dev_byte_dict)}
+        return {self.DEVICES: self.gen_output(dev_name_dict, dev_byte_dict)}
 
 
 class Device:
@@ -153,6 +170,7 @@ class Device:
         self.name = name
 
     def __eq__(self, other):
-        return self.dev_id == other.dev_id and \
+        return isinstance(other, Device) and \
+               self.dev_id == other.dev_id and \
                self.trans_bytes == other.trans_bytes and \
                self.name == other.name
