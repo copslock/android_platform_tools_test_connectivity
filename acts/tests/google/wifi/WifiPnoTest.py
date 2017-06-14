@@ -17,6 +17,7 @@ import time
 
 from acts import asserts
 from acts import base_test
+from acts.test_decorators import test_tracker_info
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -117,6 +118,7 @@ class WifiPnoTest(base_test.BaseTestClass):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="33d3cae4-5fa7-4e90-b9e2-5d3747bba64c")
     def test_simple_pno_connection(self):
         """Test PNO triggered autoconnect to a network.
 
@@ -143,6 +145,7 @@ class WifiPnoTest(base_test.BaseTestClass):
         self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
         self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
 
+    @test_tracker_info(uuid="844b15be-ff45-4b09-a11b-0b2b4bb13b22")
     def test_pno_connection_with_multiple_saved_networks(self):
         """Test PNO triggered autoconnect to a network when there are more
         than 16 networks saved in the device.
