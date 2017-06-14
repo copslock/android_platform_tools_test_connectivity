@@ -703,6 +703,7 @@ class BaseTestClass(object):
         for ad in self.android_devices:
             try:
                 ad.adb.wait_for_device()
+                ad.cat_adb_log(test_name, begin_time)
                 ad.take_bug_report(test_name, begin_time)
                 ad.check_crash_report(log_crash_report=True)
                 if getattr(ad, "qxdm_always_on", False):
