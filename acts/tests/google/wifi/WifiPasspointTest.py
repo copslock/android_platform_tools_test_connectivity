@@ -22,9 +22,11 @@ import time
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+
 import WifiManagerTest
 from acts import asserts
 from acts import signals
+from acts.test_decorators import test_tracker_info
 from acts.utils import force_airplane_mode
 
 WifiEnums = wutils.WifiEnums
@@ -125,6 +127,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
 
     """Tests"""
 
+    @test_tracker_info(uuid="b0bc0153-77bb-4594-8f19-cea2c6bd2f43")
     def test_add_passpoint_network(self):
         """Add a Passpoint network and verify device connects to it.
 
@@ -144,6 +147,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         wutils.wait_for_disconnect(self.dut)
 
 
+    @test_tracker_info(uuid="eb29d6e2-a755-4c9c-9e4e-63ea2277a64a")
     def test_update_passpoint_network(self):
         """Update a previous Passpoint network and verify device still connects
            to it.
@@ -175,6 +179,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         wutils.wait_for_disconnect(self.dut)
 
 
+    @test_tracker_info(uuid="b6e8068d-faa1-49f2-b421-c60defaed5f0")
     def test_add_delete_list_of_passpoint_network(self):
         """Add multiple passpoint networks, list them and delete one by one.
 
@@ -198,6 +203,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                                           config)
 
 
+    @test_tracker_info(uuid="a53251be-7aaf-41fc-a5f3-63984269d224")
     def test_delete_unknown_fqdn(self):
         """Negative test to delete Passpoint profile using an unknown FQDN.
 
@@ -210,6 +216,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                                       " was successfully deleted.")
 
 
+    @test_tracker_info(uuid="bf03c03a-e649-4e2b-a557-1f791bd98951")
     def test_passpoint_failover(self):
         """Add a pair of passpoint networks and test failover when one of the"
            profiles is removed.

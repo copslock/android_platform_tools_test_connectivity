@@ -22,6 +22,7 @@ import time
 from acts import base_test
 from acts import signals
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -123,6 +124,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
 
 
     """ Tests Begin """
+    @test_tracker_info(uuid="f4df08c2-d3d5-4032-a433-c15f55130d4a")
     def test_remove_config_wifi_enabled(self):
         """ Test if config can be deleted when wifi is enabled.
 
@@ -144,6 +146,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
             raise signals.TestFailure(
                     "Deleted network was in configured networks list.")
 
+    @test_tracker_info(uuid="9af96c7d-a316-4d57-ba5f-c992427c237b")
     def test_remove_config_wifi_disabled(self):
         """ Test if config can be deleted when wifi is disabled.
 
@@ -166,6 +169,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
             raise signals.TestFailure(
                     "Test network was found in list of configured networks.")
 
+    @test_tracker_info(uuid="79204ae6-323b-4257-a2cb-2225d44199d4")
     def test_retrieve_config_wifi_enabled(self):
         """ Test if config can be retrieved when wifi is enabled.
 
@@ -183,6 +187,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
         if not self.forget_network(test_network[self.NETWORK_ID_ELEMENT]):
             raise signals.TestFailure("Failed to delete network.")
 
+    @test_tracker_info(uuid="58fb4f81-bc19-43e1-b0af-89dbd17f45b2")
     def test_retrieve_config_wifi_disabled(self):
         """ Test if config can be retrieved when wifi is disabled.
 

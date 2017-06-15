@@ -43,15 +43,13 @@ class WifiIOTTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
 
-        req_params = [ "reference_networks", "iperf_server_address" ]
+        req_params = [ "iot_networks", "open_network", "iperf_server_address" ]
         self.unpack_userparams(req_param_names=req_params)
 
-        WifiNetworks = wutils.WifiReferenceNetworks(self.reference_networks)
-        self.iot_networks = WifiNetworks.return_secure_networks()
         asserts.assert_true(
             len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
-        self.iot_networks.extend(WifiNetworks.return_open_networks())
+        self.iot_networks.extend(self.open_network)
 
         wutils.wifi_toggle_state(self.dut, True)
         if "iperf_server_address" in self.user_params:
