@@ -19,8 +19,11 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
+import os
 import sys
 
+import health_checker
 from metrics.adb_hash_metric import AdbHashMetric
 from metrics.cpu_metric import CpuMetric
 from metrics.disk_metric import DiskMetric
@@ -46,8 +49,8 @@ from runner import InstantRunner
 
 class RunnerFactory(object):
     _reporter_constructor = {
-        'logger': lambda: [LoggerReporter()],
-        'json': lambda: [JsonReporter()]
+        'logger': lambda param: [LoggerReporter(param)],
+        'json': lambda param: [JsonReporter(param)]
     }
 
     _metric_constructor = {
@@ -86,13 +89,29 @@ class RunnerFactory(object):
         metrics = []
         reporters = []
 
+        # Get health config file, if specified
+        config_file = arg_dict.pop('config', None)
+        # If not specified, default to 'config.json'
+        if not config_file:
+            config_file = os.path.join(sys.path[0], 'config.json')
+        else:
+            config_file = config_file[0]
+        try:
+            with open(config_file) as json_data:
+                health_config = json.load(json_data)
+        except IOError:
+            sys.exit('Config file does not exist')
+        # Create health checker
+        checker = health_checker.HealthChecker(health_config)
+
+        # Get reporters
         rep_list = arg_dict.pop('reporter')
         if rep_list is not None:
             for rep_type in rep_list:
-                reporters += cls._reporter_constructor[rep_type]()
+                reporters += cls._reporter_constructor[rep_type](checker)
         else:
             # If no reporter specified, default to logger.
-            reporters += [LoggerReporter()]
+            reporters += [LoggerReporter(checker)]
 
         # Check keys and values to see what metrics to include.
         for key in arg_dict:
@@ -139,7 +158,7 @@ def _argparse():
         default=None,
         help='display the current RAM usage')
     parser.add_argument(
-        '-c',
+        '-cp',
         '--cpu',
         action='count',
         default=None,
@@ -182,6 +201,13 @@ def _argparse():
         action='store_true',
         default=None,
         help='Display the hostname of the current system')
+    parser.add_argument(
+        '-c',
+        '--config',
+        nargs=1,
+        default=None,
+        metavar="<PATH>",
+        help='Path to health configuration file, defaults to `config.json`')
 
     return parser
 
