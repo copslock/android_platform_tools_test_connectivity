@@ -533,6 +533,7 @@ class TestRunner(object):
                 cls_result = test_cls_instance.run(test_cases,
                                                    test_case_iterations)
                 self.results += cls_result
+                self._write_results_json_str()
             except signals.TestAbortAll as e:
                 self.results += e.results
                 raise e
