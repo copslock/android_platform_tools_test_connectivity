@@ -28,7 +28,7 @@ class RamMetric(Metric):
     CACHED = 'cached'
 
     def gather_metric(self):
-        """Finds RAM statistics in mb
+        """Finds RAM statistics in KB
 
         Returns:
             A dict with the following fields:
