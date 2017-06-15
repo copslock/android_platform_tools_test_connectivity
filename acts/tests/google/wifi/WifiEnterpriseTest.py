@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import signals
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -353,6 +354,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
 
     """Tests"""
 
+    @test_tracker_info(uuid="d1e897d4-9813-4b49-93e5-eb3970113be8")
     @signals.generated_test
     def test_eap_connect(self):
         """Test connecting to enterprise networks of different authentication
@@ -384,6 +386,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             len(failed), 0, "The following configs failed EAP connect test: %s"
             % pprint.pformat(failed))
 
+    @test_tracker_info(uuid="10d78928-e6bf-4c75-a5d3-aae05f0d6a04")
     @signals.generated_test
     def test_eap_connect_negative(self):
         """Test connecting to enterprise networks.
@@ -412,6 +415,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
                pprint.pformat(failed))
         asserts.assert_equal(len(failed), 0, msg)
 
+    @test_tracker_info(uuid="f79e6063-5615-4399-b618-86968d5445c8")
     @signals.generated_test
     def test_eap_connect_config_store(self):
         """Test connecting to enterprise networks of different authentication
@@ -445,6 +449,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             len(failed), 0, "The following configs failed EAP connect test: %s"
             % pprint.pformat(failed))
 
+    @test_tracker_info(uuid="85b7950f-c36e-44b1-939b-509550db5918")
     @signals.generated_test
     def test_passpoint_connect(self):
         """Test connecting to enterprise networks of different authentication
@@ -480,6 +485,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             "The following configs failed passpoint connect test: %s" %
             pprint.pformat(failed))
 
+    @test_tracker_info(uuid="0e068a2f-cc7b-4c11-ada1-d0d1b0f4163b")
     @signals.generated_test
     def test_passpoint_connect_negative(self):
         """Test connecting to enterprise networks.
@@ -513,6 +519,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             "The following configs failed negative passpoint connect test: %s"
             % pprint.pformat(failed))
 
+    @test_tracker_info(uuid="a17347e0-4b0e-49ae-8bd2-60ba185e1c35")
     @signals.generated_test
     def test_passpoint_connect_config_store(self):
         """Test connecting to enterprise networks of different authentication
