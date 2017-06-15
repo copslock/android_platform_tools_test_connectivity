@@ -68,6 +68,7 @@ WAIT_TIME_IN_ALERT = 5
 # SIM card names
 P0250Ax = "P0250Ax"
 VzW12349 = "VzW12349"
+P0135Ax = "P0135Ax"
 
 # Test PLMN information
 TEST_PLMN_LTE_NAME = "MD8475A_LTE"
@@ -82,6 +83,8 @@ DEFAULT_RAC = 1
 DEFAULT_LAC = 1
 VzW_MCC = "311"
 VzW_MNC = "480"
+TMO_MCC = "310"
+TMO_MNC = "260"
 
 # IP address information for internet sharing
 #GATEWAY_IPV4_ADDR = "192.168.137.1"
@@ -141,6 +144,8 @@ VzW_CDMA1X_NID = 65535
 VzW_EVDO_BAND = 0
 VzW_EVDO_CH = 384
 VzW_EVDO_SECTOR_ID = "12345678,00000000,00000000,00000000"
+DEFAULT_T_MODE = "TM1"
+DEFAULT_DL_ANTENNA = 1
 
 # CMAS Message IDs
 CMAS_MESSAGE_PRESIDENTIAL_ALERT = hex(0x1112)
@@ -202,6 +207,7 @@ PDN_NO_3 = 3
 DEFAULT_VNID = 1
 NDP_NIC_NAME = '"Intel(R) 82577LM Gigabit Network Connection"'
 CSCF_Monitoring_UA_URI = '"sip:+11234567890@test.3gpp.com"'
+TMO_CSCF_Monitoring_UA_URI = '"sip:310260123456789@msg.lab.t-mobile.com"'
 
 #Cell Numbers
 CELL_1 = 1
@@ -231,6 +237,8 @@ def set_usim_parameters(anritsu_handle, sim_card):
     """
     if sim_card == P0250Ax:
         anritsu_handle.usim_key = "000102030405060708090A0B0C0D0E0F"
+    elif sim_card == P0135Ax:
+        anritsu_handle.usim_key = "00112233445566778899AABBCCDDEEFF"
     elif sim_card == VzW12349:
         anritsu_handle.usim_key = "465B5CE8B199B49FAA5F0A2EE238A6BC"
         anritsu_handle.send_command("IMSI 311480012345678")
@@ -295,6 +303,8 @@ def _init_lte_bts(bts, user_params, cell_no, sim_card):
     bts.mcc = get_lte_mcc(user_params, cell_no, sim_card)
     bts.mnc = get_lte_mnc(user_params, cell_no, sim_card)
     bts.band = get_lte_band(user_params, cell_no)
+    bts.transmode = get_transmission_mode(user_params, cell_no)
+    bts.dl_antenna = get_dl_antenna(user_params, cell_no)
     bts.output_level = DEFAULT_OUTPUT_LEVEL
     bts.input_level = DEFAULT_INPUT_LEVEL
 
@@ -413,7 +423,7 @@ def _init_PDN(anritsu_handle, pdn, ipv4, ipv6, ims_binding):
         pdn.cscf_address_ipv4 = CSCF_IPV4_ADDR
 
 
-def _init_IMS(anritsu_handle, vnid):
+def _init_IMS(anritsu_handle, vnid, sim_card=None):
     """ initializes the IMS VNID parameters
         All IMS parameters should be set here
 
@@ -429,7 +439,10 @@ def _init_IMS(anritsu_handle, vnid):
     vnid.cscf_address_ipv6 = CSCF_IPV6_ADDR
     vnid.dns = Switch.DISABLE
     vnid.ndp_nic = NDP_NIC_NAME
-    vnid.cscf_monitoring_ua = CSCF_Monitoring_UA_URI
+    if sim_card == P0135Ax:
+        vnid.cscf_monitoring_ua = TMO_CSCF_Monitoring_UA_URI
+    else:
+        vnid.cscf_monitoring_ua = CSCF_Monitoring_UA_URI
     vnid.psap = Switch.ENABLE
     vnid.psap_auto_answer = Switch.ENABLE
 
@@ -458,7 +471,7 @@ def set_system_model_lte_lte(anritsu_handle, user_params, sim_card):
     _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDR_2, UE_IPV6_ADDR_2, False)
     _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDR_3, UE_IPV6_ADDR_3, True)
     vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
-    _init_IMS(anritsu_handle, vnid1)
+    _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte1_bts, lte2_bts]
 
 
@@ -509,7 +522,7 @@ def set_system_model_lte_wcdma(anritsu_handle, user_params, sim_card):
     _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDR_2, UE_IPV6_ADDR_2, False)
     _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDR_3, UE_IPV6_ADDR_3, True)
     vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
-    _init_IMS(anritsu_handle, vnid1)
+    _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, wcdma_bts]
 
 
@@ -537,7 +550,7 @@ def set_system_model_lte_gsm(anritsu_handle, user_params, sim_card):
     _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDR_2, UE_IPV6_ADDR_2, False)
     _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDR_3, UE_IPV6_ADDR_3, True)
     vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
-    _init_IMS(anritsu_handle, vnid1)
+    _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, gsm_bts]
 
 
@@ -566,7 +579,7 @@ def set_system_model_lte_1x(anritsu_handle, user_params, sim_card):
     _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDR_2, UE_IPV6_ADDR_2, False)
     _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDR_3, UE_IPV6_ADDR_3, True)
     vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
-    _init_IMS(anritsu_handle, vnid1)
+    _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, cdma1x_bts]
 
 
@@ -636,7 +649,7 @@ def set_system_model_lte(anritsu_handle, user_params, sim_card):
     _init_PDN(anritsu_handle, pdn2, UE_IPV4_ADDR_2, UE_IPV6_ADDR_2, False)
     _init_PDN(anritsu_handle, pdn3, UE_IPV4_ADDR_3, UE_IPV6_ADDR_3, True)
     vnid1 = anritsu_handle.get_IMS(DEFAULT_VNID)
-    _init_IMS(anritsu_handle, vnid1)
+    _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts]
 
 
@@ -1421,6 +1434,38 @@ def read_ue_identity(log, ad, anritsu_handle, identity_type):
     return anritsu_handle.get_ue_identity(identity_type)
 
 
+def get_transmission_mode(user_params, cell_no):
+    """ Returns the TRANSMODE to be used from the user specified parameters
+        or default value
+
+    Args:
+        user_params: pointer to user supplied parameters
+        cell_no: specify the cell number this BTS is configured
+        Anritsu supports two cells. so cell_1 or cell_2
+
+    Returns:
+        TM to be used
+    """
+    key = "cell{}_transmission_mode".format(cell_no)
+    transmission_mode = user_params.get(key, DEFAULT_T_MODE)
+    return transmission_mode
+
+def get_dl_antennas(user_params, cell_no):
+    """ Returns the DL ANTENNA to be used from the user specified parameters
+        or default value
+
+    Args:
+        user_params: pointer to user supplied parameters
+        cell_no: specify the cell number this BTS is configured
+        Anritsu supports two cells. so cell_1 or cell_2
+
+    Returns:
+        number of DL ANTENNAS to be used
+    """
+    key = "cell{}_dl_antenna".format(cell_no)
+    dl_antenna = user_params.get(key, DEFAULT_DL_ANTENNA)
+    return dl_antenna
+
 def get_lte_band(user_params, cell_no):
     """ Returns the LTE BAND to be used from the user specified parameters
         or default value
@@ -1434,10 +1479,7 @@ def get_lte_band(user_params, cell_no):
         LTE BAND to be used
     """
     key = "cell{}_lte_band".format(cell_no)
-    try:
-        lte_band = user_params[key]
-    except KeyError:
-        lte_band = DEFAULT_LTE_BAND
+    lte_band = user_params.get(key, DEFAULT_LTE_BAND)
     return lte_band
 
 
@@ -1454,10 +1496,7 @@ def get_wcdma_band(user_params, cell_no):
         WCDMA BAND to be used
     """
     key = "cell{}_wcdma_band".format(cell_no)
-    try:
-        wcdma_band = user_params[key]
-    except KeyError:
-        wcdma_band = DEFAULT_WCDMA_BAND
+    wcdma_band = user_params.get(key, DEFAULT_WCDMA_BAND)
     return wcdma_band
 
 
@@ -1474,10 +1513,7 @@ def get_gsm_band(user_params, cell_no):
         GSM BAND to be used
     """
     key = "cell{}_gsm_band".format(cell_no)
-    try:
-        gsm_band = user_params[key]
-    except KeyError:
-        gsm_band = DEFAULT_GSM_BAND
+    gsm_band = user_params.get(key, DEFAULT_GSM_BAND)
     return gsm_band
 
 
