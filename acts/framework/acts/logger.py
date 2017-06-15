@@ -32,6 +32,17 @@ log_line_timestamp_len = 18
 
 logline_timestamp_re = re.compile("\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
 
+TEST_LOG_FILES = {
+    "test_run_info": logging.INFO,
+    "test_run_details": logging.DEBUG,
+    'test_run_error': logging.WARNING
+}
+CASE_LOG_FILES = {
+    "test_case_info": logging.INFO,
+    "test_case_details": logging.DEBUG,
+    "test_case_error": logging.WARNING
+}
+
 
 def _parse_logline_timestamp(t):
     """Parses a logline timestamp into a tuple.
@@ -130,7 +141,7 @@ def get_log_file_timestamp(delta=None):
     return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
 
 
-def _setup_test_logger(log_path, prefix=None, filename=None):
+def _setup_test_logger(log_path, prefix=None):
     """Customizes the root logger for a test run.
 
     The logger object has a stream handler and a file handler. The stream
@@ -155,26 +166,15 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(c_formatter)
     ch.setLevel(logging.INFO)
-    # Log everything to file
-    f_formatter = logging.Formatter(log_line_format, log_line_time_format)
-    # All the logs of this test class go into one directory
-    if filename is None:
-        filename = get_log_file_timestamp()
-        create_dir(log_path)
-    fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
-    fh.setFormatter(f_formatter)
-    fh.setLevel(logging.DEBUG)
-    fh_info = logging.FileHandler(os.path.join(log_path, 'test_run_info.txt'))
-    fh_info.setFormatter(f_formatter)
-    fh_info.setLevel(logging.INFO)
-    fh_error = logging.FileHandler(
-        os.path.join(log_path, 'test_run_error.txt'))
-    fh_error.setFormatter(f_formatter)
-    fh_error.setLevel(logging.WARNING)
     log.addHandler(ch)
-    log.addHandler(fh)
-    log.addHandler(fh_info)
-    log.addHandler(fh_error)
+    create_dir(log_path)
+    # Log everything to file
+    for log_file, log_level in TEST_LOG_FILES.items():
+        fh = logging.FileHandler(os.path.join(log_path, "%s.txt" % log_file))
+        fh.setFormatter(
+            logging.Formatter(log_line_format, log_line_time_format))
+        fh.setLevel(log_level)
+        log.addHandler(fh)
     log.log_path = log_path
     logging.log_path = log_path
 
@@ -203,7 +203,7 @@ def create_latest_log_alias(actual_path):
     os.symlink(actual_path, link_path)
 
 
-def setup_test_logger(log_path, prefix=None, filename=None):
+def setup_test_logger(log_path, prefix=None):
     """Customizes the root logger for a test run.
 
     Args:
@@ -212,10 +212,7 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         filename: Name of the files. The default is the time the objects
             are requested.
     """
-    if filename is None:
-        filename = get_log_file_timestamp()
-    create_dir(log_path)
-    logger = _setup_test_logger(log_path, prefix, filename)
+    logger = _setup_test_logger(log_path, prefix)
     create_latest_log_alias(log_path)
 
 
@@ -235,25 +232,23 @@ def normalize_log_line_timestamp(log_line_timestamp):
     return norm_tp
 
 
-def create_test_case_logger(test_case_log_path):
+def create_test_case_log_handlers(test_case_log_path):
     create_dir(test_case_log_path)
     log = logging.getLogger()
-    for log_level, file_name, log_handle in zip(
-        [logging.INFO,
-         logging.DEBUG], ["test_run_info.txt", "test_run_details.txt"],
-        ["test_case_info_handle", "test_case_debug_handle"]):
-        th = logging.FileHandler(os.path.join(test_case_log_path, file_name))
+    for log_file, log_level in CASE_LOG_FILES.items():
+        th = logging.FileHandler(
+            os.path.join(test_case_log_path, "%s.txt" % log_file))
         th.setFormatter(
             logging.Formatter(log_line_format, log_line_time_format))
         th.setLevel(log_level)
         log.addHandler(th)
-        setattr(log, log_handle, th)
+        setattr(log, log_file, th)
 
 
-def remove_test_case_logger():
+def remove_test_case_log_handlers():
     log = logging.getLogger()
-    for handle_name in ("test_case_info_handle", "test_case_debug_handle"):
+    for handle_name in CASE_LOG_FILES.keys():
         th = getattr(log, handle_name)
-        log.removeHandler(th)
         if isinstance(th, logging.FileHandler):
             th.close()
+            log.removeHandler(th)
