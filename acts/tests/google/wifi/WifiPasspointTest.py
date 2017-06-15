@@ -48,7 +48,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("passpoint_networks")
+        req_params = ("passpoint_networks",)
         self.unpack_userparams(req_params)
         asserts.assert_true(
             len(self.passpoint_networks) > 0,
