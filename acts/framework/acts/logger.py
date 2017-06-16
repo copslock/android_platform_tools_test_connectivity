@@ -233,16 +233,19 @@ def normalize_log_line_timestamp(log_line_timestamp):
 
 
 def create_test_case_log_handlers(test_case_log_path):
-    create_dir(test_case_log_path)
-    log = logging.getLogger()
-    for log_file, log_level in CASE_LOG_FILES.items():
-        th = logging.FileHandler(
-            os.path.join(test_case_log_path, "%s.txt" % log_file))
-        th.setFormatter(
-            logging.Formatter(log_line_format, log_line_time_format))
-        th.setLevel(log_level)
-        log.addHandler(th)
-        setattr(log, log_file, th)
+    try:
+        create_dir(test_case_log_path)
+        log = logging.getLogger()
+        for log_file, log_level in CASE_LOG_FILES.items():
+            th = logging.FileHandler(
+                os.path.join(test_case_log_path, "%s.txt" % log_file))
+            th.setFormatter(
+                logging.Formatter(log_line_format, log_line_time_format))
+            th.setLevel(log_level)
+            log.addHandler(th)
+            setattr(log, log_file, th)
+    except OSError as err:
+        logging.error("Failed to perform OS operations: {}".format(err))
 
 
 def remove_test_case_log_handlers():
