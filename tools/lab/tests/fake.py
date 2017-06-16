@@ -37,7 +37,7 @@ class MockShellCommand(object):
         self._fake_pids = fake_pids
         self._counter = 0
 
-    def run(self, command, timeout=3600):
+    def run(self, command, timeout=3600, ignore_status=False):
         """Returns a FakeResult object.
 
         Args:
