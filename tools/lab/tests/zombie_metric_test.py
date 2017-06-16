@@ -23,35 +23,45 @@ from tests import fake
 class ZombieMetricTest(unittest.TestCase):
     """Class for testing ZombieMetric."""
 
-    def test_return_one_process(self):
+    def test_gather_metric_oob(self):
+        stdout_string = '30888 Z+ adb -s'
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
+
+        expected_result = {'30888': ('adb', None)}
+        self.assertEqual(expected_result, metric_obj.gather_metric())
+
+    def test_gather_metric_no_serial(self):
         stdout_string = '30888 Z+ adb <defunct>'
         FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
-        expected_result = {
-            zombie_metric.ZombieMetric.ADB_ZOMBIES: [(30888, 'Z+',
-                                                      'adb <defunct>')],
-            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [],
-            zombie_metric.ZombieMetric.OTHER_ZOMBIES: []
-        }
+        expected_result = {'30888': ('adb', None)}
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
-    def test_return_one_of_each(self):
-        stdout_string = ('30888 Z+ adb <defunct>\n'
-                         '12345 Z+ fastboot\n'
-                         '99999 Z+ random\n')
+    def test_gather_metric_with_serial(self):
+        stdout_string = ('12345 Z+ fastboot -s M4RKY_M4RK\n'
+                         '99999 Z+ adb -s OR3G4N0\n')
         FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            zombie_metric.ZombieMetric.ADB_ZOMBIES: [(30888, 'Z+',
-                                                      'adb <defunct>')],
-            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [(12345, 'Z+',
-                                                           'fastboot')],
-            zombie_metric.ZombieMetric.OTHER_ZOMBIES: [(99999, 'Z+', 'random')]
+            '12345': ('fastboot', 'M4RKY_M4RK'),
+            '99999': ('adb', 'OR3G4N0')
         }
+        self.assertEquals(metric_obj.gather_metric(), expected_result)
+
+    def test_gather_metric_adb_fastboot_no_s(self):
+        stdout_string = ('12345 Z+ fastboot\n' '99999 Z+ adb\n')
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
+
+        expected_result = {'12345': ('fastboot', None), '99999': ('adb', None)}
+        self.assertEquals(metric_obj.gather_metric(), expected_result)
 
 
 if __name__ == '__main__':
