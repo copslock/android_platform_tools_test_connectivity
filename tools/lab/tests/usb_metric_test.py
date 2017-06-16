@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from StringIO import StringIO
+from io import BytesIO
 import unittest
 
-import fake
+from tests import fake
 from metrics.usb_metric import Device
 from metrics.usb_metric import UsbMetric
 import mock
@@ -32,8 +32,8 @@ class UsbMetricTest(unittest.TestCase):
 
     def test_check_get_bytes_2(self):
         with mock.patch('subprocess.Popen') as mock_popen:
-            mock_popen.return_value.stdout = StringIO(
-                'x x C Ii:2:003:1 0:8 8 = x x\nx x S Ii:2:004:1 -115:8 8 <')
+            mock_popen.return_value.stdout = BytesIO(
+                b'x x C Ii:2:003:1 0:8 8 = x x\nx x S Ii:2:004:1 -115:8 8 <')
 
             self.assertEquals(UsbMetric().get_bytes(0),
                               {'2:003': 8,
@@ -41,11 +41,12 @@ class UsbMetricTest(unittest.TestCase):
 
     def test_check_get_bytes_empty(self):
         with mock.patch('subprocess.Popen') as mock_popen:
-            mock_popen.return_value.stdout = StringIO('')
+            mock_popen.return_value.stdout = BytesIO(b'')
             self.assertEquals(UsbMetric().get_bytes(0), {})
 
     def test_match_device_id(self):
-        mock_lsusb = 'Bus 003 Device 047: ID 18d1:d00d Device 0\nBus 003 Device 001: ID 1d6b:0002 Device 1'
+        mock_lsusb = ('Bus 003 Device 047: ID 18d1:d00d Device 0\n'
+                      'Bus 003 Device 001: ID 1d6b:0002 Device 1')
         exp_res = {'3:047': 'Device 0', '3:001': 'Device 1'}
         fake_result = fake.FakeResult(stdout=mock_lsusb)
         fake_shell = fake.MockShellCommand(fake_result=fake_result)
@@ -61,13 +62,18 @@ class UsbMetricTest(unittest.TestCase):
         self.assertEquals(m.match_device_id(), exp_res)
 
     def test_gen_output(self):
-        dev_name_dict = {'1:001': 'Device 1', '1:002': 'Device 2'}
+        dev_name_dict = {
+            '1:001': 'Device 1',
+            '1:002': 'Device 2',
+            '1:003': 'Device 3'
+        }
         dev_byte_dict = {'1:001': 256, '1:002': 200}
 
-        exp_res = [
-            Device('1:002', 200, 'Device 2'),
-            Device('1:001', 256, 'Device 1'),
-        ]
+        dev_1 = Device('1:002', 200, 'Device 2')
+        dev_2 = Device('1:001', 256, 'Device 1')
+        dev_3 = Device('1:003', 0, 'Device 3')
 
         act_out = UsbMetric().gen_output(dev_name_dict, dev_byte_dict)
-        self.assertListEqual(exp_res, act_out)
+
+        self.assertTrue(dev_1 in act_out and dev_2 in act_out and
+                        dev_3 in act_out)
