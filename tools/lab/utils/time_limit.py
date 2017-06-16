@@ -38,6 +38,7 @@ class TimeLimit:
 
     def handle_timeout(self, signum, frame):
         self.timeout = True
+        raise TimeLimitError
 
     def __enter__(self):
         signal.signal(signal.SIGALRM, self.handle_timeout)
@@ -45,3 +46,7 @@ class TimeLimit:
 
     def __exit__(self, type, value, traceback):
         return self.timeout
+
+
+class TimeLimitError(Exception):
+    pass

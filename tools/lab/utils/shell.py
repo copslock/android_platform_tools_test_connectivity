@@ -40,7 +40,7 @@ class ShellCommand(object):
         self._runner = runner
         self._working_dir = working_dir
 
-    def run(self, command, timeout=3600):
+    def run(self, command, timeout=3600, ignore_status=False):
         """Runs a generic command through the runner.
 
         Takes the command and prepares it to be run in the target shell using
@@ -49,7 +49,7 @@ class ShellCommand(object):
         Args:
             command: The command to run.
             timeout: How long to wait for the command (in seconds).
-
+            ignore_status: Whether or not to throw exception based upon status.
         Returns:
             A CmdResult object containing the results of the shell command.
 
@@ -61,7 +61,8 @@ class ShellCommand(object):
         else:
             command_str = command
 
-        return self._runner.run(command_str, timeout=timeout)
+        return self._runner.run(
+            command_str, timeout=timeout, ignore_status=ignore_status)
 
     def is_alive(self, identifier):
         """Checks to see if a program is alive.
