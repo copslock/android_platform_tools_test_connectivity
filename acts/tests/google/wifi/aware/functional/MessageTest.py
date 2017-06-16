@@ -231,7 +231,7 @@ class MessageTest(AwareBaseTest):
     asserts.assert_equal(
         len(tx_msg_ids),
         sum(tx_msg_ids.values()),
-        "Duplicate transmit message IDs: " + tx_msg_ids)
+        "Duplicate transmit message IDs: %s" % tx_msg_ids)
 
     # wait for all messages to be received
     still_to_be_rx = len(tx_msgs)
@@ -252,7 +252,7 @@ class MessageTest(AwareBaseTest):
     # check for any duplicate received messages
     asserts.assert_equal(
         len(tx_msgs),
-        sum(tx_msgs.values()), "Duplicate transmit messages: " + tx_msgs)
+        sum(tx_msgs.values()), "Duplicate transmit messages: %s" % tx_msgs)
 
     return peer_id_on_rx
 
