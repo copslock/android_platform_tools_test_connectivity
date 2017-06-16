@@ -345,9 +345,6 @@ class LatencyTest(AwareBaseTest):
                          "EVENT_NETWORK_CALLBACK")
           break
 
-        if not got_on_available or not got_on_link_props:
-          continue
-
       # clean-up
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
       resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
