@@ -147,6 +147,7 @@ class DiscoveryTest(AwareBaseTest):
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 
@@ -489,6 +490,7 @@ class DiscoveryTest(AwareBaseTest):
 
     p_id = p_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 

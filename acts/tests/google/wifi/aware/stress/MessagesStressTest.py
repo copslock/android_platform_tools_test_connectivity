@@ -190,15 +190,21 @@ class MessagesStressTest(AwareBaseTest):
     s_dut = self.android_devices[1]
 
     # Start up a discovery session
-    (p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
-     peer_id_on_pub) = autils.create_discovery_pair(
-         p_dut,
-         s_dut,
-         p_config=autils.create_discovery_config(
-             self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
-         s_config=autils.create_discovery_config(
-             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
-         msg_id=self.get_next_msg_id())
+    discovery_data = autils.create_discovery_pair(
+        p_dut,
+        s_dut,
+        p_config=autils.create_discovery_config(
+            self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
+        s_config=autils.create_discovery_config(self.SERVICE_NAME,
+                                                aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        device_startup_offset=self.device_startup_offset,
+        msg_id=self.get_next_msg_id())
+    p_id = discovery_data[0]
+    s_id = discovery_data[1]
+    p_disc_id = discovery_data[2]
+    s_disc_id = discovery_data[3]
+    peer_id_on_sub = discovery_data[4]
+    peer_id_on_pub = discovery_data[5]
 
     # Store information on Tx & Rx messages
     messages_by_msg = {}  # keyed by message text

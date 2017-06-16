@@ -102,6 +102,7 @@ class MessageTest(AwareBaseTest):
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED
                           if not use_id else autils.decorate_event(
                               aconsts.EVENT_CB_ON_ATTACHED, p_id))
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False, None, use_id)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED
                           if not use_id else autils.decorate_event(

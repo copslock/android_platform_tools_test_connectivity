@@ -292,6 +292,22 @@ def configure_dw(device, is_default, is_24_band, value):
                               if is_24_band else '5')
   device.adb.shell("cmd wifiaware native_api set %s %d" % (variable, value))
 
+def config_dw_high_power(device):
+  """Configure device's discovery window (DW) values to high power mode - whether
+  device is in interactive or non-interactive modes"""
+  configure_dw(device, is_default=True, is_24_band=True, value=1)
+  configure_dw(device, is_default=True, is_24_band=False, value=1)
+  configure_dw(device, is_default=False, is_24_band=True, value=1)
+  configure_dw(device, is_default=False, is_24_band=False, value=1)
+
+def config_dw_low_power(device):
+  """Configure device's discovery window (DW) values to low power mode - whether
+  device is in interactive or non-interactive modes"""
+  configure_dw(device, is_default=True, is_24_band=True, value=4)
+  configure_dw(device, is_default=True, is_24_band=False, value=0)
+  configure_dw(device, is_default=False, is_24_band=True, value=4)
+  configure_dw(device, is_default=False, is_24_band=False, value=0)
+
 def create_discovery_config(service_name,
                           d_type,
                           ssi=None,
@@ -326,7 +342,12 @@ def create_discovery_config(service_name,
   config[aconsts.DISCOVERY_KEY_TERM_CB_ENABLED] = term_cb_enable
   return config
 
-def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
+def create_discovery_pair(p_dut,
+                          s_dut,
+                          p_config,
+                          s_config,
+                          device_startup_offset,
+                          msg_id=None):
   """Creates a discovery session (publish and subscribe), and waits for
   service discovery - at that point the sessions are connected and ready for
   further messaging of data-path setup.
@@ -336,6 +357,8 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
     s_dut: Device to use as subscriber.
     p_config: Publish configuration.
     s_config: Subscribe configuration.
+    device_startup_offset: Number of seconds to offset the enabling of NAN on
+                           the two devices.
     msg_id: Controls whether a message is sent from Subscriber to Publisher
             (so that publisher has the sub's peer ID). If None then not sent,
             otherwise should be an int for the message id.
@@ -354,6 +377,7 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
   # Publisher+Subscriber: attach and wait for confirmation
   p_id = p_dut.droid.wifiAwareAttach()
   wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  time.sleep(device_startup_offset)
   s_id = s_dut.droid.wifiAwareAttach()
   wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 
@@ -394,7 +418,7 @@ def create_discovery_pair(p_dut, s_dut, p_config, s_config, msg_id=None):
 
   return p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub
 
-def create_ib_ndp(p_dut, s_dut, p_config, s_config):
+def create_ib_ndp(p_dut, s_dut, p_config, s_config, device_startup_offset):
   """Create an NDP (using in-band discovery)
 
   Args:
@@ -402,10 +426,12 @@ def create_ib_ndp(p_dut, s_dut, p_config, s_config):
     s_dut: Device to use as subscriber.
     p_config: Publish configuration.
     s_config: Subscribe configuration.
+    device_startup_offset: Number of seconds to offset the enabling of NAN on
+                           the two devices.
   """
   (p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
    peer_id_on_pub) = create_discovery_pair(
-       p_dut, s_dut, p_config, s_config, msg_id=9999)
+       p_dut, s_dut, p_config, s_config, device_startup_offset, msg_id=9999)
 
   # Publisher: request network
   p_req_key = request_network(p_dut,

@@ -101,6 +101,7 @@ class LatencyTest(AwareBaseTest):
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 
@@ -194,7 +195,8 @@ class LatencyTest(AwareBaseTest):
          p_config=autils.create_discovery_config(
              self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
          s_config=autils.create_discovery_config(
-             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE))
+             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
+         device_startup_offset=self.device_startup_offset)
 
     latencies = []
     failed_tx = 0
@@ -293,6 +295,7 @@ class LatencyTest(AwareBaseTest):
     init_ident_event = autils.wait_for_event(init_dut,
                                       aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
     init_mac = init_ident_event['data']['mac']
+    time.sleep(self.device_startup_offset)
     resp_id = resp_dut.droid.wifiAwareAttach(True)
     autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
     resp_ident_event = autils.wait_for_event(resp_dut,
