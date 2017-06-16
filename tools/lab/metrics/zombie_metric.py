@@ -18,53 +18,38 @@ from metrics.metric import Metric
 
 
 class ZombieMetric(Metric):
-
-    COMMAND = "ps axo pid=,stat=,comm= | awk '$2~/^Z { print }'"
-    # Fields for response dictionary
-    ADB_ZOMBIES = 'adb_zombies'
-    FASTBOOT_ZOMBIES = 'fastboot_zombies'
-    OTHER_ZOMBIES = 'other_zombies'
+    COMMAND = 'ps -eo pid,stat,comm,args | awk \'$2~/^Z/ { print }\''
 
     def gather_metric(self):
-        """finds PIDs and command names for zombie processes
+        """Gathers the pids, process names, and serial numbers of processes.
+
+        If process does not have serial, None is returned instead.
 
         Returns:
-            A dict with the following fields:
-                adb_zombies: list of zombie processes w/ 'adb' in command name
-                fastboot_zombies: list of zombie processes w/ 'fastboot'
-                  in command name
-                other_zombies: list of zombie processes w/o 'adb'or 'fastboot
-                  in command name
-            all elements in list are formatted as (PID, state, name) tuples
+            A dictionary where the keys are the pids of the processes, and the
+            value is a tuple of (process name, serial number|None)
         """
-        # Initialize empty lists
-        adb_zombies, fastboot_zombies, other_zombies = [], [], []
-        # Run shell command
-        result = self._shell.run(self.COMMAND)
-        """Example stdout:
-        30797 Z+   adb <defunct>
-        30798 Z+   adb <defunct>
-        """
-        # Split output into lines
-        output = result.stdout.splitlines()
-        for ln in output:
-            # Get first two parts of output
-            pid, state = ln.split()[:2]
-            # Rest of line will be the command name, may have spaces
-            name = ' '.join(ln.split()[2:])
-            # Create zombie and append to proper list
-            zombie = (int(pid), state, name)
-            if 'adb' in name:
-                adb_zombies.append(zombie)
-            elif 'fastboot' in name:
-                fastboot_zombies.append(zombie)
-            else:
-                other_zombies.append(zombie)
+        response = {}
+        result = self._shell.run(self.COMMAND).stdout
+        # Example stdout:
+        # 30797 Z+   adb <defunct> adb -s AHDLSERIAL0001
+        # 30798 Z+   adb <defunct> /usr/bin/adb
 
-        # Create response dictionary
-        response = {
-            self.ADB_ZOMBIES: adb_zombies,
-            self.FASTBOOT_ZOMBIES: fastboot_zombies,
-            self.OTHER_ZOMBIES: other_zombies
-        }
+        output = result.splitlines()
+        for ln in output:
+            spl_ln = ln.split()
+            # spl_ln looks like ['1xx', 'Z+', 'adb', '<defunct'>, ...]
+            pid, state, name = spl_ln[:3]
+
+            if '-s' in spl_ln:
+                # Finds the '-s' flag, the index after that is the serial.
+                sn_idx = spl_ln.index('-s')
+                if sn_idx + 1 >= len(spl_ln):
+                    sn = None
+                else:
+                    sn = spl_ln[sn_idx + 1]
+                response[pid] = (name, sn)
+            else:
+                response[pid] = (name, None)
+
         return response
