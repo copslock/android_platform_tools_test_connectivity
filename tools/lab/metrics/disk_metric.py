@@ -18,7 +18,6 @@ from metrics.metric import Metric
 
 
 class DiskMetric(Metric):
-
     COMMAND = "df /var/tmp"
     # Fields for response dictionary
     TOTAL = 'total'
@@ -54,4 +53,4 @@ class DiskMetric(Metric):
             # Strip the percentage symbol
             self.PERCENT_USED: int(fields[4][:-1])
         }
-        return (response)
+        return response
