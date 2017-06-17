@@ -439,33 +439,25 @@ def create_ib_ndp(p_dut, s_dut, p_config, s_config):
 
   return p_req_key, s_req_key, p_aware_if, s_aware_if, p_ipv6, s_ipv6
 
-def create_oob_ndp(init_dut, resp_dut):
-  """Create an NDP (using OOB discovery)
+def create_oob_ndp_on_sessions(init_dut, resp_dut, init_id, init_mac, resp_id,
+                               resp_mac):
+  """Create an NDP on top of existing Aware sessions (using OOB discovery)
 
   Args:
     init_dut: Initiator device
     resp_dut: Responder device
+    init_id: Initiator attach session id
+    init_mac: Initiator discovery MAC address
+    resp_id: Responder attach session id
+    resp_mac: Responder discovery MAC address
+  Returns:
+    init_req_key: Initiator network request
+    resp_req_key: Responder network request
+    init_aware_if: Initiator Aware data interface
+    resp_aware_if: Responder Aware data interface
+    init_ipv6: Initiator IPv6 address
+    resp_ipv6: Responder IPv6 address
   """
-  init_dut.pretty_name = 'Initiator'
-  resp_dut.pretty_name = 'Responder'
-
-  # Initiator+Responder: attach and wait for confirmation & identity
-  init_id = init_dut.droid.wifiAwareAttach(True)
-  wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
-  init_ident_event = wait_for_event(init_dut,
-                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-  init_mac = init_ident_event['data']['mac']
-  resp_id = resp_dut.droid.wifiAwareAttach(True)
-  wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
-  resp_ident_event = wait_for_event(resp_dut,
-                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-  resp_mac = resp_ident_event['data']['mac']
-
-  # wait for for devices to synchronize with each other - there are no other
-  # mechanisms to make sure this happens for OOB discovery (except retrying
-  # to execute the data-path request)
-  time.sleep(WAIT_FOR_CLUSTER)
-
   # Responder: request network
   resp_req_key = request_network(
       resp_dut,
@@ -497,6 +489,40 @@ def create_oob_ndp(init_dut, resp_dut):
       init_aware_if).split('%')[0]
   resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
       resp_aware_if).split('%')[0]
+
+  return (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+          resp_ipv6)
+
+def create_oob_ndp(init_dut, resp_dut):
+  """Create an NDP (using OOB discovery)
+
+  Args:
+    init_dut: Initiator device
+    resp_dut: Responder device
+  """
+  init_dut.pretty_name = 'Initiator'
+  resp_dut.pretty_name = 'Responder'
+
+  # Initiator+Responder: attach and wait for confirmation & identity
+  init_id = init_dut.droid.wifiAwareAttach(True)
+  wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  init_ident_event = wait_for_event(init_dut,
+                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+  init_mac = init_ident_event['data']['mac']
+  resp_id = resp_dut.droid.wifiAwareAttach(True)
+  wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+  resp_ident_event = wait_for_event(resp_dut,
+                                    aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+  resp_mac = resp_ident_event['data']['mac']
+
+  # wait for for devices to synchronize with each other - there are no other
+  # mechanisms to make sure this happens for OOB discovery (except retrying
+  # to execute the data-path request)
+  time.sleep(WAIT_FOR_CLUSTER)
+
+  (init_req_key, resp_req_key, init_aware_if,
+   resp_aware_if, init_ipv6, resp_ipv6) = create_oob_ndp_on_sessions(
+       init_dut, resp_dut, init_id, init_mac, resp_id, resp_mac)
 
   return (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
           resp_ipv6)
