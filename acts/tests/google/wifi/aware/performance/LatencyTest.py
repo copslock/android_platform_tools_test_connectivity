@@ -18,6 +18,7 @@ import queue
 import time
 
 from acts import asserts
+from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -249,6 +250,121 @@ class LatencyTest(AwareBaseTest):
     p_dut.droid.wifiAwareDestroyAll()
     s_dut.droid.wifiAwareDestroyAll()
 
+  def run_ndp_oob_latency(self, results, dw_24ghz, dw_5ghz, num_iterations):
+    """Runs the NDP setup with OOB (out-of-band) discovery latency test.
+
+    Args:
+      results: Result array to be populated - will add results (not erase it)
+      dw_24ghz: DW interval in the 2.4GHz band.
+      dw_5ghz: DW interval in the 5GHz band.
+    """
+    key_avail = "on_avail_dw24_%d_dw5_%d" % (dw_24ghz, dw_5ghz)
+    key_link_props = "link_props_dw24_%d_dw5_%d" % (dw_24ghz, dw_5ghz)
+    results[key_avail] = {}
+    results[key_link_props] = {}
+    results[key_avail]["num_iterations"] = num_iterations
+
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = 'Initiator'
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = 'Responder'
+
+    # override the default DW configuration
+    autils.configure_dw(
+        init_dut, is_default=True, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        init_dut, is_default=False, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        init_dut, is_default=True, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(
+        init_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(
+        resp_dut, is_default=True, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        resp_dut, is_default=False, is_24_band=True, value=dw_24ghz)
+    autils.configure_dw(
+        resp_dut, is_default=True, is_24_band=False, value=dw_5ghz)
+    autils.configure_dw(
+        resp_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+
+    # Initiator+Responder: attach and wait for confirmation & identity
+    init_id = init_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    init_ident_event = autils.wait_for_event(init_dut,
+                                      aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    init_mac = init_ident_event['data']['mac']
+    resp_id = resp_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    resp_ident_event = autils.wait_for_event(resp_dut,
+                                      aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    resp_mac = resp_ident_event['data']['mac']
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    on_available_latencies = []
+    link_props_latencies = []
+    ndp_setup_failures = 0
+    for i in range(num_iterations):
+      # Responder: request network
+      resp_req_key = autils.request_network(
+          resp_dut,
+          resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
+
+      # Initiator: request network
+      init_req_key = autils.request_network(
+          init_dut,
+          init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
+
+      # Initiator & Responder: wait for network formation
+      got_on_available = False
+      got_on_link_props = False
+      while not got_on_available or not got_on_link_props:
+        try:
+          nc_event = init_dut.ed.pop_event(cconsts.EVENT_NETWORK_CALLBACK,
+                                           autils.EVENT_TIMEOUT)
+          if nc_event["data"][
+              cconsts.NETWORK_CB_KEY_EVENT] == cconsts.NETWORK_CB_AVAILABLE:
+            got_on_available = True
+            on_available_latencies.append(
+                nc_event["data"][cconsts.NETWORK_CB_KEY_CURRENT_TS] -
+                nc_event["data"][cconsts.NETWORK_CB_KEY_CREATE_TS])
+          elif (nc_event["data"][cconsts.NETWORK_CB_KEY_EVENT] ==
+                cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED):
+            got_on_link_props = True
+            link_props_latencies.append(
+                nc_event["data"][cconsts.NETWORK_CB_KEY_CURRENT_TS] -
+                nc_event["data"][cconsts.NETWORK_CB_KEY_CREATE_TS])
+        except queue.Empty:
+          ndp_setup_failures = ndp_setup_failures + 1
+          init_dut.log.info("[Initiator] Timed out while waiting for "
+                         "EVENT_NETWORK_CALLBACK")
+          break
+
+      # clean-up
+      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+
+    autils.extract_stats(
+        init_dut,
+        data=on_available_latencies,
+        results=results[key_avail],
+        key_prefix="",
+        log_prefix="NDP setup OnAvailable(dw24=%d, dw5=%d)" % (dw_24ghz,
+                                                               dw_5ghz))
+    autils.extract_stats(
+        init_dut,
+        data=link_props_latencies,
+        results=results[key_link_props],
+        key_prefix="",
+        log_prefix="NDP setup OnLinkProperties (dw24=%d, dw5=%d)" % (dw_24ghz,
+                                                                     dw_5ghz))
+    results[key_avail]["ndp_setup_failures"] = ndp_setup_failures
+
 
   ########################################################################
 
@@ -307,3 +423,22 @@ class LatencyTest(AwareBaseTest):
         results=results, dw_24ghz=4, dw_5ghz=0, num_iterations=100)
     asserts.explicit_pass(
         "test_message_latency_non_interactive_dws finished", extras=results)
+
+  def test_oob_ndp_setup_latency_default_dws(self):
+    """Measure the NDP setup latency with the default DW configuration. The
+    NDP is setup with OOB (out-of-band) configuration."""
+    results = {}
+    self.run_ndp_oob_latency(
+        results=results, dw_24ghz=1, dw_5ghz=1, num_iterations=10)
+    asserts.explicit_pass(
+        "test_ndp_setup_latency_default_dws finished", extras=results)
+
+  def test_oob_ndp_setup_latency_non_interactive_dws(self):
+    """Measure the NDP setup latency with the DW configuration for
+    non-interactive mode. The NDP is setup with OOB (out-of-band)
+    configuration"""
+    results = {}
+    self.run_ndp_oob_latency(
+        results=results, dw_24ghz=4, dw_5ghz=0, num_iterations=10)
+    asserts.explicit_pass(
+        "test_ndp_setup_latency_non_interactive_dws finished", extras=results)
