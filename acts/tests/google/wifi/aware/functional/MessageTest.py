@@ -244,7 +244,7 @@ class MessageTest(AwareBaseTest):
       peer_id_on_rx = rx_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
       rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
       asserts.assert_true(
-          rx_msg not in tx_msgs,
+          rx_msg in tx_msgs,
           "Received a message we did not send!? -- '%s'" % rx_msg)
       tx_msgs[rx_msg] = tx_msgs[rx_msg] + 1
       if tx_msgs[rx_msg] == 1:

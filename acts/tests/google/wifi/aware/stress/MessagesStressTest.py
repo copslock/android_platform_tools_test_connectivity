@@ -72,7 +72,7 @@ class MessagesStressTest(AwareBaseTest):
           if (event["name"] != aconsts.SESSION_CB_ON_MESSAGE_SENT and
               event["name"] != aconsts.SESSION_CB_ON_MESSAGE_SEND_FAILED):
             asserts.fail("Unexpected event: %s" % event)
-          is_tx_ok = event["name"] != aconsts.SESSION_CB_ON_MESSAGE_SENT
+          is_tx_ok = event["name"] == aconsts.SESSION_CB_ON_MESSAGE_SENT
 
           id = event["data"][aconsts.SESSION_CB_KEY_MESSAGE_ID]
           if id in messages_by_id:
