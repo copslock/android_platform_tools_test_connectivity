@@ -20,16 +20,15 @@ from main import RunnerFactory
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
 from metrics.adb_hash_metric import AdbHashMetric
-from reporter import ProtoReporter
-from reporter import LoggerReporter
+from reporters.logger_reporter import LoggerReporter
 
 
 class RunnerFactoryTestCase(unittest.TestCase):
     def test_create_with_reporter(self):
         self.assertIsInstance(
             RunnerFactory.create({
-                'reporter': ['proto']
-            }).reporter_list[0], ProtoReporter)
+                'reporter': ['logger']
+            }).reporter_list[0], LoggerReporter)
 
     def test_create_without_reporter(self):
         self.assertIsInstance(
