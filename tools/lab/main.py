@@ -151,7 +151,7 @@ def _argparse():
     parser.add_argument(
         '-n',
         '--network',
-        action='store_true',
+        nargs='*',
         default=None,
         help='retrieve status of network')
     parser.add_argument(

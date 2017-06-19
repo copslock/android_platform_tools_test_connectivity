@@ -30,25 +30,26 @@ class NetworkMetricTest(unittest.TestCase):
         self.assertEqual(metric_obj.get_prefix_hostname(), expected_result)
 
     def test_connected_empty(self):
-        mock_result = fake.FakeResult(exit_status=0, stdout="not connected")
+        mock_result = fake.FakeResult(exit_status=0, stdout="connected")
         metric_obj = NetworkMetric(shell=fake.MockShellCommand(
             fake_result=mock_result))
-        exp_out = {'8.8.8.8': True}
+        exp_out = {'8.8.8.8': True, '8.8.4.4': True}
         self.assertEquals(metric_obj.check_connected(), exp_out)
 
     def test_connected_false(self):
         mock_result = fake.FakeResult(exit_status=1, stdout="not connected")
         metric_obj = NetworkMetric(shell=fake.MockShellCommand(
             fake_result=mock_result))
-        exp_out = {'8.8.8.8': False}
+        exp_out = {'8.8.8.8': False, '8.8.4.4': False}
         self.assertEquals(metric_obj.check_connected(), exp_out)
 
-    def test_connected_true(self):
+    def test_connected_true_passed_in(self):
         mock_result = fake.FakeResult(exit_status=0, stdout="connected")
-        metric_obj = NetworkMetric(shell=fake.MockShellCommand(
-            fake_result=mock_result))
+        metric_obj = NetworkMetric(
+            ['8.8.8.8'], shell=fake.MockShellCommand(fake_result=mock_result))
         self.assertEquals(
-            metric_obj.check_connected(metric_obj.ips), {'8.8.8.8': True})
+            metric_obj.check_connected(metric_obj.ip_list), {'8.8.8.8': True})
 
-    if __name__ == '__main__':
-        unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()

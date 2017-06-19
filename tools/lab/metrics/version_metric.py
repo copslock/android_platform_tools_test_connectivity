@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 
 
-class FastbootVersionMetric(metric.Metric):
+class FastbootVersionMetric(Metric):
 
     FASTBOOT_COMMAND = 'fastboot --version'
     FASTBOOT_VERSION = 'fastboot_version'
@@ -49,7 +49,7 @@ class FastbootVersionMetric(metric.Metric):
         return response
 
 
-class AdbVersionMetric(metric.Metric):
+class AdbVersionMetric(Metric):
 
     ADB_COMMAND = 'adb version'
     ADB_VERSION = 'adb_version'
@@ -77,7 +77,7 @@ class AdbVersionMetric(metric.Metric):
         return response
 
 
-class PythonVersionMetric(metric.Metric):
+class PythonVersionMetric(Metric):
 
     PYTHON_COMMAND = 'python -V'
     PYTHON_VERSION = 'python_version'
@@ -98,7 +98,7 @@ class PythonVersionMetric(metric.Metric):
         return response
 
 
-class KernelVersionMetric(metric.Metric):
+class KernelVersionMetric(Metric):
 
     KERNEL_COMMAND = 'uname -r'
     KERNEL_RELEASE = 'kernel_release'
