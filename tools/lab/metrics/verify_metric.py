@@ -29,7 +29,7 @@ class VerifyMetric(Metric):
         """
         device_dict = {}
         # Delete first and last line of output of adb.
-        output = self._shell.run('adb devices | sed \$d | sed \\1d').stdout
+        output = self._shell.run(r"adb devices | sed '1d;$d'").stdout
 
         # Example Line, Device Serial Num TAB Phone Status
         # 00bd977c7f504caf	offline
