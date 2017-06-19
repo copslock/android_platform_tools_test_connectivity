@@ -16,7 +16,7 @@
 
 
 class Reporter(object):
-    """ Base class for the multiple ways to report the data gathered.
+    """Base class for the multiple ways to report the data gathered.
 
     The method report takes in a dictionary where the key is the class that
     generated the value, and the value is the actual data gathered from
@@ -26,21 +26,3 @@ class Reporter(object):
 
     def report(self, responses):
         raise NotImplementedError('Must implement this method')
-
-
-class LoggerReporter(Reporter):
-    def report(self, response_dict):
-        for key in response_dict:
-            print(response_dict[key])
-
-
-class FileReporter(Reporter):
-    pass
-
-
-class ProtoReporter(Reporter):
-    pass
-
-
-class JsonReporter(Reporter):
-    pass
