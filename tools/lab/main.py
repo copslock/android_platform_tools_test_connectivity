@@ -30,17 +30,13 @@ from metrics.ram_metric import RamMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
-from reporter import JsonReporter
-from reporter import LoggerReporter
-from reporter import ProtoReporter
+from reporters.logger_reporter import LoggerReporter
 from runner import InstantRunner
 
 
 class RunnerFactory(object):
     _reporter_constructor = {
         'logger': lambda: [LoggerReporter()],
-        'proto': lambda: [ProtoReporter()],
-        'json': lambda: [JsonReporter()],
     }
 
     _metric_constructor = {
@@ -141,7 +137,7 @@ def _argparse():
     parser.add_argument(
         '-r',
         '--reporter',
-        choices=['logger', 'proto', 'json'],
+        choices=['logger'],
         nargs='+',
         help='choose the reporting method needed')
     parser.add_argument(
