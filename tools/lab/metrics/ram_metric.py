@@ -19,7 +19,7 @@ from metrics.metric import Metric
 
 class RamMetric(Metric):
 
-    COMMAND = "free"
+    COMMAND = "free -m"
     # Fields for response dictionary
     TOTAL = 'total'
     USED = 'used'
@@ -28,23 +28,23 @@ class RamMetric(Metric):
     CACHED = 'cached'
 
     def gather_metric(self):
-        """Finds RAM statistics in KB
+        """Finds RAM statistics in MB
 
         Returns:
             A dict with the following fields:
-                total: int representing total physical RAM available in KB
-                used: int representing total RAM used by system in KB
-                free: int representing total RAM free for new process in KB
-                buffers: total RAM buffered by different applications in KB
-                cached: total RAM for caching of data in KB
+                total: int representing total physical RAM available in MB
+                used: int representing total RAM used by system in MB
+                free: int representing total RAM free for new process in MB
+                buffers: total RAM buffered by different applications in MB
+                cached: total RAM for caching of data in MB
         """
         # Run shell command
         result = self._shell.run(self.COMMAND)
         # Example stdout:
-        # total       used       free     shared    buffers     cached
-        # Mem:     65894480  35218588  30675892    309024   1779900  24321888
-        # -/+ buffers/cache:    9116800   56777680
-        # Swap:     67031036          0   67031036
+        #           total       used       free     shared    buffers     cached
+        # Mem:      64350      34633      29717        556       1744      24692
+        # -/+ buffers/cache:     8196      56153
+        # Swap:     65459          0      65459
 
         # Get only second line
         output = result.stdout.splitlines()[1]
