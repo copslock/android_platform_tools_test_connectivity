@@ -26,14 +26,23 @@ class AdbHashMetric(Metric):
     return True or False, and then verify that the hash of that directory
     matches the 'golden' directory.
     """
+    _ADV_ENV_VAR = 'ADB_VENDOR_KEYS'
+    _MD5_COMMAND = ('find $ADB_VENDOR_KEYS -not -path \'*/\.*\' -type f '
+                    '-exec md5sum {} + | awk \'{print $1}\' | sort | md5sum')
+    KEYS_PATH = 'keys_path'
+    KEYS_HASH = 'hash'
 
     def _verify_env(self):
-        """Verifies that the $ADB_VENDOR_KEYS variable is set.
+        """Determines the path of ADB_VENDOR_KEYS.
 
         Returns:
-            True if the env variable is set, False otherwise.
+            The path to $ADB_VENDOR_KEYS location, or None if env variable isn't
+            set.
         """
-        return 'ADB_VENDOR_KEYS' in os.environ
+        try:
+            return os.environ[self._ADV_ENV_VAR]
+        except KeyError:
+            return None
 
     def _find_hash(self):
         """Determines the hash of keys in $ADB_VENDOR_KEYS folder.
@@ -43,15 +52,20 @@ class AdbHashMetric(Metric):
         Returns:
             The hash of the $ADB_VENDOR_KEYS directory excluding hidden files.
         """
-        return self._shell.run(
-            'find $ADB_VENDOR_KEYS -not -path \'*/\.*\' -type f -exec md5sum {}'
-            ' + | awk \'{print $1}\' | sort | md5sum').stdout.split(' ')[0]
+        return self._shell.run(self._MD5_COMMAND).stdout.split(' ')[0]
 
     def gather_metric(self):
-        """Gathers data on adb keys environment variable, and the hash of the dir
+        """Gathers data on adb keys environment variable, and the hash of the
+        directory.
 
         Returns:
-            A dictionary with 'env' set to True or False, and key 'hash' with an
-            md5sum as value.
+            A dictionary with 'env' set to the location of adb_vendor_keys, and
+            key 'hash' with an md5sum as value.
         """
-        return {'env': self._verify_env(), 'hash': self._find_hash()}
+        adb_keys_path = self._verify_env()
+        if adb_keys_path is not None:
+            adb_keys_hash = self._find_hash()
+        else:
+            adb_keys_hash = None
+
+        return {self.KEYS_PATH: adb_keys_path, self.KEYS_HASH: adb_keys_hash}
