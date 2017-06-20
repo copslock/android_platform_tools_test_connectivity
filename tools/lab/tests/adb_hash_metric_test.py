@@ -19,15 +19,43 @@ import unittest
 from metrics import adb_hash_metric
 import mock
 
+from tests import fake
+
 
 class HashMetricTest(unittest.TestCase):
     @mock.patch('os.environ', {'ADB_VENDOR_KEYS': '/root/adb/'})
+    def test_gather_metric_env_set(self):
+        # Create sample stdout string ShellCommand.run() would return
+        stdout_string = ('12345abcdef_hash')
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = adb_hash_metric.AdbHashMetric(shell=fake_shell)
+
+        expected_result = {
+            'hash': '12345abcdef_hash',
+            'keys_path': '/root/adb/'
+        }
+        self.assertEqual(expected_result, metric_obj.gather_metric())
+
+    @mock.patch('os.environ', {})
+    def test_gather_metric_env_not_set(self):
+        # Create sample stdout string ShellCommand.run() would return
+        stdout_string = ('12345abcdef_hash')
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = adb_hash_metric.AdbHashMetric(shell=fake_shell)
+
+        expected_result = {'hash': None, 'keys_path': None}
+        self.assertEqual(expected_result, metric_obj.gather_metric())
+
+    @mock.patch('os.environ', {'ADB_VENDOR_KEYS': '/root/adb/'})
     def test_verify_env_set(self):
-        self.assertEquals(adb_hash_metric.AdbHashMetric()._verify_env(), True)
+        self.assertEquals(adb_hash_metric.AdbHashMetric()._verify_env(),
+                          '/root/adb/')
 
     @mock.patch('os.environ', {})
     def test_verify_env_not_set(self):
-        self.assertEquals(adb_hash_metric.AdbHashMetric()._verify_env(), False)
+        self.assertEquals(adb_hash_metric.AdbHashMetric()._verify_env(), None)
 
 
 if __name__ == '__main__':
