@@ -22,6 +22,7 @@ from acts import base_test
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiChannelUS = wutils.WifiChannelUS
 WifiEnums = wutils.WifiEnums
@@ -217,7 +218,7 @@ class WifiScanResultEvents():
                                     batches[0]["ScanResults"][0])
 
 
-class WifiScannerMultiScanTest(base_test.BaseTestClass):
+class WifiScannerMultiScanTest(WifiBaseTest):
     """This class is the WiFi Scanner Multi-Scan Test suite.
     It collects a number of test cases, sets up and executes
     the tests, and validates the scan results.
@@ -230,6 +231,9 @@ class WifiScannerMultiScanTest(base_test.BaseTestClass):
         wifi_chs: WiFi channels according to the device model.
         max_bugreports: Max number of bug reports allowed.
     """
+
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
     def setup_class(self):
         # If running in a setup with attenuators, set attenuation on all
@@ -248,8 +252,14 @@ class WifiScannerMultiScanTest(base_test.BaseTestClass):
         config file.
         """
         req_params = ("bssid_2g", "bssid_5g", "bssid_dfs", "max_bugreports")
+        opt_param = ["reference_networks"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
+
         self.wifi_chs = WifiChannelUS(self.dut.model)
-        self.unpack_userparams(req_params)
 
     def on_fail(self, test_name, begin_time):
         if self.max_bugreports > 0:
