@@ -24,13 +24,14 @@ class NetworkMetric(Metric):
 
     The dev servers pinged is determined by the cli arguments.
     """
-
+    DEFAULT_IPS = ['8.8.8.8', '8.8.4.4']
     HOSTNAME_COMMAND = 'hostname | cut -d- -f1'
     PING_COMMAND = 'ping -c 1 -W 1 {}'
+    CONNECTED = 'connected'
 
-    def __init__(self, ip_list=['8.8.8.8'], shell=shell.ShellCommand(job)):
+    def __init__(self, ip_list=None, shell=shell.ShellCommand(job)):
         Metric.__init__(self, shell=shell)
-        self.ips = ip_list
+        self.ip_list = ip_list
 
     def get_prefix_hostname(self):
         """Gets the hostname prefix of the test station.
@@ -42,31 +43,26 @@ class NetworkMetric(Metric):
         """
         return self._shell.run('hostname | cut -d- -f1').stdout
 
-    def check_connected(self, ip_list=None):
+    def check_connected(self, ips=None):
         """Determines if a network connection can be established to a dev server
 
         Args:
-            ip_list: The list of ip's to ping.
+            ips: The list of ip's to ping.
         Returns:
             A dictionary of ip addresses as keys, and whether they're connected
             as values.
         """
-
-        if ip_list is None:
-            ip_list = self.ips
+        if not ips:
+            ips = self.DEFAULT_IPS
 
         ip_dict = {}
-        for ip in ip_list:
+        for ip in ips:
             # -c 1, ping once, -W 1, set timeout 1 second.
             stat = self._shell.run(
                 self.PING_COMMAND.format(ip), ignore_status=True).exit_status
             ip_dict[ip] = stat == 0
         return ip_dict
 
-    def get_speed(self):
-        # TODO(cjmoberg) need to determine specifics before continuing.
-        raise NotImplementedError
-
     def gather_metric(self):
-        is_connected = self.check_connected(self.ips)
-        return {'connected': is_connected, 'speed': float('inf')}
+        is_connected = self.check_connected(self.ip_list)
+        return {self.CONNECTED: is_connected}

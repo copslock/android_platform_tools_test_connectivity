@@ -29,21 +29,21 @@ class RamMetricTest(unittest.TestCase):
     def test_correct_ram_output(self):
         # Create sample stdout string ShellCommand.run() would return
         stdout_string = ('             total       used       free     shared'
-                         'buffers     cached\nMem:      65894480   35218588   '
-                         '30675892     309024    1779900   24321888\n-/+ '
-                         'buffers/cache:    9116800   56777680\nSwap:     '
-                         '67031036          0   67031036')
+                         'buffers     cached\nMem:      64350   34633   '
+                         '29717     309024    1744   24692\n-/+ '
+                         'buffers/cache:    9116   56777\nSwap:     '
+                         '67031          0   67031')
 
         FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = ram_metric.RamMetric(shell=fake_shell)
 
         expected_result = {
-            ram_metric.RamMetric.TOTAL: 65894480,
-            ram_metric.RamMetric.USED: 35218588,
-            ram_metric.RamMetric.FREE: 30675892,
-            ram_metric.RamMetric.BUFFERS: 1779900,
-            ram_metric.RamMetric.CACHED: 24321888
+            ram_metric.RamMetric.TOTAL: 64350,
+            ram_metric.RamMetric.USED: 34633,
+            ram_metric.RamMetric.FREE: 29717,
+            ram_metric.RamMetric.BUFFERS: 1744,
+            ram_metric.RamMetric.CACHED: 24692
         }
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
