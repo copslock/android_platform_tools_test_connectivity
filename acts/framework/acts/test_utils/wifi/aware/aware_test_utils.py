@@ -308,6 +308,19 @@ def config_dw_low_power(device):
   configure_dw(device, is_default=False, is_24_band=True, value=4)
   configure_dw(device, is_default=False, is_24_band=False, value=0)
 
+def config_dw_all_modes(device, dw_24ghz, dw_5ghz):
+  """Configure device's discovery window (DW) values to the specified values -
+  whether the device is in interactive or non-interactive mode.
+
+  Args:
+    dw_24ghz: DW interval in the 2.4GHz band.
+    dw_5ghz: DW interval in the 5GHz band.
+  """
+  configure_dw(device, is_default=True, is_24_band=True, value=dw_24ghz)
+  configure_dw(device, is_default=True, is_24_band=False, value=dw_5ghz)
+  configure_dw(device, is_default=False, is_24_band=True, value=dw_24ghz)
+  configure_dw(device, is_default=False, is_24_band=False, value=dw_5ghz)
+
 def create_discovery_config(service_name,
                           d_type,
                           ssi=None,
