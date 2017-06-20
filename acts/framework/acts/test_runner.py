@@ -33,7 +33,6 @@ from acts import logger
 from acts import records
 from acts import signals
 from acts import utils
-from acts import tracelogger
 
 
 def main():
@@ -200,7 +199,6 @@ class TestRunner(object):
         self.log_path = os.path.abspath(l_path)
         logger.setup_test_logger(self.log_path, self.testbed_name)
         self.log = logging.getLogger()
-        self.log = tracelogger.TraceLogger(self.log)
         self.controller_registry = {}
         self.controller_destructors = {}
         if self.test_configs.get(keys.Config.key_random.value):

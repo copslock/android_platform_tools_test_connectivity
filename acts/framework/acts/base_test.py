@@ -23,6 +23,7 @@ from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
+from acts import tracelogger
 from acts import utils
 
 # Macro strings for test result reporting
@@ -66,6 +67,7 @@ class BaseTestClass(object):
             setattr(self, name, value)
         self.results = records.TestResult()
         self.current_test_name = None
+        self.log = tracelogger.TraceLogger(self.log)
         if 'android_devices' in self.__dict__:
             for ad in self.android_devices:
                 if ad.droid:
@@ -224,15 +226,6 @@ class BaseTestClass(object):
         test_name = record.test_name
         if record.details:
             self.log.error(record.details)
-        try:
-            fail_path = os.path.join(self.log_path, "failed_test_cases")
-            utils.create_dir(fail_path)
-            if os.path.exists(self.test_case_log_path):
-                os.symlink(self.test_case_log_path,
-                           os.path.join(fail_path, "%s:%s" % (self.TAG,
-                                                              test_name)))
-        except Exception as e:
-            self.log.error(e)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         self.log.info(RESULT_LINE_TEMPLATE, self.TAG, test_name, record.result)
         self.on_fail(test_name, begin_time)
@@ -382,14 +375,13 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.test_case_log_path = os.path.join(self.log_path, "test_case_logs",
+        self.test_case_log_path = os.path.join(self.log_path,
                                                "%s:%s" % (self.TAG, test_name))
-        logger.create_test_case_log_handlers(self.test_case_log_path)
+        logger.create_test_case_logger(self.test_case_log_path)
         self.log.info("%s %s", self.TAG, test_name)
         for ad in getattr(self, "android_devices", []):
             ad.log_path = os.path.join(self.test_case_log_path, ad.serial)
-            if not ad.is_adb_logcat_on:
-                ad.start_adb_logcat(cont_logcat_file=True)
+            ad.start_adb_logcat(cont_logcat_file=True)
         verdict = None
         try:
             try:
@@ -451,7 +443,7 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            logger.remove_test_case_log_handlers()
+            logger.remove_test_case_logger()
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
