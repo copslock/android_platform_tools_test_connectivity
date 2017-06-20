@@ -21,15 +21,16 @@ from acts import base_test
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 NETWORK_ID_ERROR = "Network don't have ID"
 NETWORK_ERROR = "Device is not connected to reference network"
 
 
-class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
+class WifiNewSetupAutoJoinTest(WifiBaseTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        WifiBaseTest.__init__(self, controllers)
         self.tests = ("test_autojoin_out_of_range",
                       "test_autojoin_Ap1_2g",
                       "test_autojoin_Ap1_2gto5g",
@@ -56,9 +57,14 @@ class WifiNewSetupAutoJoinTest(base_test.BaseTestClass):
         """
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("reference_networks", "atten_val", "ping_addr",
-                      "max_bugreports")
-        self.unpack_userparams(req_params)
+        req_params = ("atten_val", "ping_addr", "max_bugreports")
+        opt_param = ["reference_networks"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(ap_count=2)
+
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug("Configured networks :: {}".format(configured_networks))
         count_confnet = 0

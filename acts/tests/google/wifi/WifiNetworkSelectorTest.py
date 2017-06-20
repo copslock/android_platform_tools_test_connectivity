@@ -23,6 +23,7 @@ from acts.controllers import android_device
 from acts.controllers import attenuator
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 
@@ -37,17 +38,24 @@ ATTENUATOR_INITIAL_SETTING = 60
 NETWORK_SELECTION_TIME_GAP = 12
 
 
-class WifiNetworkSelectorTest(base_test.BaseTestClass):
+class WifiNetworkSelectorTest(WifiBaseTest):
     """These tests verify the behavior of the Android Wi-Fi Network Selector
     feature.
     """
 
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
+
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("reference_networks", "open_network")
-        self.unpack_userparams(req_params)
-        # self.dut.droid.wifiEnableVerboseLogging(1)
+        req_params = []
+        opt_param = ["open_network", "reference_networks"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
 
     def setup_test(self):
         #reset and clear all saved networks on the DUT
