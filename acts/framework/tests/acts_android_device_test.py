@@ -404,7 +404,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         # Expect error if attempted to cat adb log before starting adb logcat.
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
-        ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
         mock_adb_log_path = os.path.join(ad.log_path, "adblog_%s_%s.txt" %
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:

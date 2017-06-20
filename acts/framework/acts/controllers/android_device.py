@@ -730,30 +730,23 @@ class AndroidDevice:
                               logcat is no longer running.
             log_cat_file_path: the file path to collect logcat.
         """
-        if self.is_adb_logcat_on:
-            raise AndroidDeviceError(("Android device {} already has an adb "
-                                      "logcat thread going on. Cannot start "
-                                      "another one.").format(self.serial))
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
+        if self.adb_logcat_process and self.is_adb_logcat_on:
+            self.stop_adb_logcat()
         self.adb.shell("logpersist.stop --clear")
         self.adb.shell("logpersist.start")
         if not logcat_file_path:
-            if self.adb_logcat_file_path:
-                logcat_file_path = self.adb_logcat_file_path
-            else:
-                f_name = "adblog_%s_%s.txt" % (self.model, self.serial)
-                utils.create_dir(self.log_path)
-                logcat_file_path = os.path.join(self.log_path, f_name)
+            logcat_file_path = self.log_path
+        utils.create_dir(logcat_file_path)
+        logcat_output_file = os.path.join(
+            logcat_file_path, "adblog_%s_%s.txt" % (self.model, self.serial))
         extra_params = getattr(self, "adb_logcat_param", "-b all")
         cmd = "adb -s %s logcat -v threadtime %s" % (self.serial, extra_params)
         redirect = ">>" if cont_logcat_file else ">"
-        cmd = " ".join([cmd, redirect, logcat_file_path])
-        if self.droid:
-            self.droid.logI('Restarting logcat')
-        self.log.debug('Restarting logcat on file %s', logcat_file_path)
+        cmd = " ".join([cmd, redirect, logcat_output_file])
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
-        self.adb_logcat_file_path = logcat_file_path
+        self.adb_logcat_file_path = logcat_output_file
 
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.
