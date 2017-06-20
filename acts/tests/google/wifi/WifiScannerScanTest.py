@@ -25,6 +25,7 @@ from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 SCANTIME = 10000  #framework support only 10s as minimum scan interval
 NUMBSSIDPERSCAN = 8
@@ -43,9 +44,9 @@ class WifiScannerScanError(Exception):
     pass
 
 
-class WifiScannerScanTest(base_test.BaseTestClass):
+class WifiScannerScanTest(WifiBaseTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        WifiBaseTest.__init__(self, controllers)
         # TODO(angli): Remove this list.
         # There are order dependencies among these tests so we'll have to leave
         # it here for now. :(
@@ -74,9 +75,14 @@ class WifiScannerScanTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("reference_networks", "run_extended_test", "ping_addr",
-                      "max_bugreports")
-        self.unpack_userparams(req_params)
+        req_params = ("run_extended_test", "ping_addr", "max_bugreports")
+        opt_param = ["reference_networks"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
+
         self.leeway = 10
         self.stime_channel = SCAN_TIME_PASSIVE
         self.default_scan_setting = {
