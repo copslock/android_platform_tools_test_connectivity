@@ -28,7 +28,7 @@ from acts import utils
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
-RESULT_LINE_TEMPLATE = "[TEST CASE %s:%s] %s"
+RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
 
 class Error(Exception):
@@ -227,7 +227,7 @@ class BaseTestClass(object):
         if record.details:
             self.log.error(record.details)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, self.TAG, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
@@ -253,7 +253,7 @@ class BaseTestClass(object):
         msg = record.details
         if msg:
             self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE, self.TAG, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_pass(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
@@ -276,7 +276,7 @@ class BaseTestClass(object):
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, self.TAG, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.log.info("Reason to skip: %s", record.details)
         self.on_skip(test_name, begin_time)
 
@@ -300,7 +300,7 @@ class BaseTestClass(object):
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, self.TAG, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.log.info("Reason to block: %s", record.details)
         self.on_blocked(test_name, begin_time)
 
@@ -375,16 +375,16 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.test_case_log_path = os.path.join(self.log_path,
-                                               "%s:%s" % (self.TAG, test_name))
-        logger.create_test_case_logger(self.test_case_log_path)
-        self.log.info("%s %s", self.TAG, test_name)
-        for ad in getattr(self, "android_devices", []):
-            ad.log_path = os.path.join(self.test_case_log_path, ad.serial)
-            ad.start_adb_logcat(cont_logcat_file=True)
+        self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
+        th = logger.create_test_case_logger(self.log_path,
+                                            "%s:%s" % (self.TAG, test_name))
         verdict = None
         try:
             try:
+                if hasattr(self, 'android_devices'):
+                    for ad in self.android_devices:
+                        if not ad.is_adb_logcat_on:
+                            ad.start_adb_logcat(cont_logcat_file=True)
                 ret = self._setup_test(test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
@@ -443,7 +443,7 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            logger.remove_test_case_logger()
+            logger.remove_test_case_logger(th)
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
@@ -696,12 +696,13 @@ class BaseTestClass(object):
             try:
                 ad.adb.wait_for_device()
                 ad.take_bug_report(test_name, begin_time)
-                ad.check_crash_report(log_crash_report=True)
+                bugreport_path = os.path.join(ad.log_path, test_name)
+                utils.create_dir(bugreport_path)
+                ad.check_crash_report(True, test_name)
                 if getattr(ad, "qxdm_always_on", False):
                     ad.log.info("Pull QXDM Logs")
-                    qxdm_path = os.path.join(ad.log_path, "qxdm")
                     ad.pull_files(["/data/vendor/radio/diag_logs/logs/"],
-                                  qxdm_path)
+                                  bugreport_path)
             except Exception as e:
                 ad.log.error(
                     "Failed to take a bug report for %s with error %s",
