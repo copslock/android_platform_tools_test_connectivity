@@ -81,7 +81,8 @@ class ProtocolsTest(AwareBaseTest):
          p_config=autils.create_discovery_config(
              self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
          s_config=autils.create_discovery_config(
-             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE))
+             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
+         device_startup_offset=self.device_startup_offset)
     self.log.info("Interface names: P=%s, S=%s", p_aware_if, s_aware_if)
     self.log.info("Interface addresses (IPv6): P=%s, S=%s", p_ipv6, s_ipv6)
 
@@ -102,12 +103,13 @@ class ProtocolsTest(AwareBaseTest):
     # create NDP
     (p_req_key, s_req_key, p_aware_if, s_aware_if, p_ipv6,
      s_ipv6) = autils.create_ib_ndp(
-        p_dut,
-        s_dut,
-        p_config=autils.create_discovery_config(
-            self.SERVICE_NAME, aconsts.PUBLISH_TYPE_SOLICITED),
-        s_config=autils.create_discovery_config(
-            self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_ACTIVE))
+         p_dut,
+         s_dut,
+         p_config=autils.create_discovery_config(
+             self.SERVICE_NAME, aconsts.PUBLISH_TYPE_SOLICITED),
+         s_config=autils.create_discovery_config(self.SERVICE_NAME,
+                                                 aconsts.SUBSCRIBE_TYPE_ACTIVE),
+         device_startup_offset=self.device_startup_offset)
     self.log.info("Interface names: P=%s, S=%s", p_aware_if, s_aware_if)
     self.log.info("Interface addresses (IPv6): P=%s, S=%s", p_ipv6, s_ipv6)
 
