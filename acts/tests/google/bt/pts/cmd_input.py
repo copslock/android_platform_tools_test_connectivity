@@ -348,6 +348,14 @@ class CmdInput(cmd.Cmd):
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
+    def do_gattc_read_all_desc(self, line):
+        """Read all Descriptor values"""
+        cmd = "Read all Descriptor values"
+        try:
+            self.gattc_lib.read_all_desc()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
     """End GATT Client wrappers"""
     """Begin GATT Server wrappers"""
 
@@ -361,8 +369,8 @@ class CmdInput(cmd.Cmd):
 
     def complete_gatts_setup_database(self, text, line, begidx, endidx):
         if not text:
-            completions = list(
-                gatt_test_database.GATT_SERVER_DB_MAPPING.keys())[:]
+            completions = list(gatt_test_database.GATT_SERVER_DB_MAPPING.keys(
+            ))[:]
         else:
             completions = [
                 s for s in gatt_test_database.GATT_SERVER_DB_MAPPING.keys()
@@ -920,3 +928,40 @@ class CmdInput(cmd.Cmd):
             self.log.info(FAILURE.format(cmd, err))
 
     """End HFP/HSP wrapper"""
+    """Begin HID wrappers"""
+
+    def do_hid_get_report(self, line):
+        """Get HID Report"""
+        cmd = "Get HID Report"
+        try:
+            self.pri_dut.droid.bluetoothHidGetReport(self.mac_addr, "1", "1",
+                                                     1024)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_hid_set_report(self, line):
+        """Get HID Report"""
+        cmd = "Get HID Report"
+        try:
+            self.pri_dut.droid.bluetoothHidSetReport(self.mac_addr, "1",
+                                                     "Test")
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_hid_virtual_unplug(self, line):
+        """Get HID Report"""
+        cmd = "Get HID Report"
+        try:
+            self.pri_dut.droid.bluetoothHidVirtualUnplug(self.mac_addr)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_hid_send_report(self, line):
+        """Get HID Report"""
+        cmd = "Get HID Report"
+        try:
+            self.pri_dut.droid.bluetoothHidSendData(device_id, "42")
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    """End HID wrappers"""
