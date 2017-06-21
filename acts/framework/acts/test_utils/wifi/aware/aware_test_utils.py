@@ -27,6 +27,10 @@ from acts.test_utils.wifi.aware import aware_const as aconsts
 # arbitrary timeout for events
 EVENT_TIMEOUT = 10
 
+# semi-arbitrary timeout for network formation events. Based on framework
+# timeout for NDP (NAN data-path) negotiation to be completed.
+EVENT_NDP_TIMEOUT = 20
+
 # number of second to 'reasonably' wait to make sure that devices synchronize
 # with each other - useful for OOB test cases, where the OOB discovery would
 # take some time

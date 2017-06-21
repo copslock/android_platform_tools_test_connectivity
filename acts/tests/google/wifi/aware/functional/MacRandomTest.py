@@ -170,13 +170,13 @@ class MacRandomTest(AwareBaseTest):
       # Initiator & Responder: wait for network formation
       init_net_event = autils.wait_for_event_with_keys(
           init_dut, cconsts.EVENT_NETWORK_CALLBACK,
-          autils.EVENT_TIMEOUT,
+          autils.EVENT_NDP_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
           (cconsts.NETWORK_CB_KEY_ID, init_req_key))
       resp_net_event = autils.wait_for_event_with_keys(
           resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
-          autils.EVENT_TIMEOUT,
+          autils.EVENT_NDP_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
           (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
@@ -208,11 +208,11 @@ class MacRandomTest(AwareBaseTest):
       resp_dut.droid.wifiAwareDestroy(resp_id)
 
       autils.wait_for_event_with_keys(
-          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
       autils.wait_for_event_with_keys(
-          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
