@@ -62,6 +62,95 @@ class LatencyTest(AwareBaseTest):
     event = autils.wait_for_event(dut, event_name)
     return disc_id, event
 
+  def run_synchronization_latency(self, results, do_unsolicited_passive,
+                                  dw_24ghz, dw_5ghz, num_iterations,
+                                  startup_offset, timeout_period):
+    """Run the synchronization latency test with the specified DW intervals.
+    There is no direct measure of synchronization. Instead starts a discovery
+    session as soon as possible and measures both probability of discovery
+    within a timeout period and the actual discovery time (not necessarily
+    accurate).
+
+    Args:
+      results: Result array to be populated - will add results (not erase it)
+      do_unsolicited_passive: True for unsolicited/passive, False for
+                              solicited/active.
+      dw_24ghz: DW interval in the 2.4GHz band.
+      dw_5ghz: DW interval in the 5GHz band.
+      startup_offset: The start-up gap (in seconds) between the two devices
+      timeout_period: Time period over which to measure synchronization
+    """
+    key = "%s_dw24_%d_dw5_%d_offset_%d" % (
+        "unsolicited_passive" if do_unsolicited_passive else "solicited_active",
+        dw_24ghz, dw_5ghz, startup_offset)
+    results[key] = {}
+    results[key]["num_iterations"] = num_iterations
+
+    p_dut = self.android_devices[0]
+    p_dut.pretty_name = "Publisher"
+    s_dut = self.android_devices[1]
+    s_dut.pretty_name = "Subscriber"
+
+    # override the default DW configuration
+    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
+
+    latencies = []
+    failed_discoveries = 0
+    for i in range(num_iterations):
+      # Publisher+Subscriber: attach and wait for confirmation
+      p_id = p_dut.droid.wifiAwareAttach(False)
+      autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+      time.sleep(startup_offset)
+      s_id = s_dut.droid.wifiAwareAttach(False)
+      autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+      # start publish
+      p_disc_id, p_disc_event = self.start_discovery_session(
+          p_dut, p_id, True, aconsts.PUBLISH_TYPE_UNSOLICITED
+          if do_unsolicited_passive else aconsts.PUBLISH_TYPE_SOLICITED)
+
+      # start subscribe
+      s_disc_id, s_session_event = self.start_discovery_session(
+          s_dut, s_id, False, aconsts.SUBSCRIBE_TYPE_PASSIVE
+          if do_unsolicited_passive else aconsts.SUBSCRIBE_TYPE_ACTIVE)
+
+      # wait for discovery (allow for failures here since running lots of
+      # samples and would like to get the partial data even in the presence of
+      # errors)
+      try:
+        discovery_event = s_dut.ed.pop_event(
+            aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, timeout_period)
+        s_dut.log.info("[Subscriber] SESSION_CB_ON_SERVICE_DISCOVERED: %s",
+                       discovery_event["data"])
+      except queue.Empty:
+        s_dut.log.info("[Subscriber] Timed out while waiting for "
+                       "SESSION_CB_ON_SERVICE_DISCOVERED")
+        failed_discoveries = failed_discoveries + 1
+        continue
+      finally:
+        # destroy sessions
+        p_dut.droid.wifiAwareDestroyDiscoverySession(p_disc_id)
+        s_dut.droid.wifiAwareDestroyDiscoverySession(s_disc_id)
+        p_dut.droid.wifiAwareDestroy(p_id)
+        s_dut.droid.wifiAwareDestroy(s_id)
+
+      # collect latency information
+      latencies.append(
+          discovery_event["data"][aconsts.SESSION_CB_KEY_TIMESTAMP_MS] -
+          s_session_event["data"][aconsts.SESSION_CB_KEY_TIMESTAMP_MS])
+      self.log.info("Latency #%d = %d" % (i, latencies[-1]))
+
+    autils.extract_stats(
+        s_dut,
+        data=latencies,
+        results=results[key],
+        key_prefix="",
+        log_prefix="Subscribe Session Sync/Discovery (%s, dw24=%d, dw5=%d)" %
+        ("Unsolicited/Passive"
+         if do_unsolicited_passive else "Solicited/Active", dw_24ghz, dw_5ghz))
+    results[key]["num_failed_discovery"] = failed_discoveries
+
   def run_discovery_latency(self, results, do_unsolicited_passive, dw_24ghz,
                             dw_5ghz, num_iterations):
     """Run the service discovery latency test with the specified DW intervals.
@@ -85,22 +174,13 @@ class LatencyTest(AwareBaseTest):
     s_dut.pretty_name = "Subscriber"
 
     # override the default DW configuration
-    autils.configure_dw(p_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        p_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(p_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        p_dut, is_default=False, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(s_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        s_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(s_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        s_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
 
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
 
@@ -173,18 +253,8 @@ class LatencyTest(AwareBaseTest):
     s_dut = self.android_devices[1]
 
     # override the default DW configuration
-    autils.configure_dw(p_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        p_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(p_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        p_dut, is_default=False, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(s_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        s_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(s_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        s_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
 
     # Start up a discovery session
     (p_id, s_id, p_disc_id, s_disc_id,
@@ -194,7 +264,8 @@ class LatencyTest(AwareBaseTest):
          p_config=autils.create_discovery_config(
              self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
          s_config=autils.create_discovery_config(
-             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE))
+             self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
+         device_startup_offset=self.device_startup_offset)
 
     latencies = []
     failed_tx = 0
@@ -270,22 +341,8 @@ class LatencyTest(AwareBaseTest):
     resp_dut.pretty_name = 'Responder'
 
     # override the default DW configuration
-    autils.configure_dw(
-        init_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        init_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        init_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        init_dut, is_default=False, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        resp_dut, is_default=True, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        resp_dut, is_default=False, is_24_band=True, value=dw_24ghz)
-    autils.configure_dw(
-        resp_dut, is_default=True, is_24_band=False, value=dw_5ghz)
-    autils.configure_dw(
-        resp_dut, is_default=False, is_24_band=False, value=dw_5ghz)
+    autils.config_dw_all_modes(init_dut, dw_24ghz, dw_5ghz)
+    autils.config_dw_all_modes(resp_dut, dw_24ghz, dw_5ghz)
 
     # Initiator+Responder: attach and wait for confirmation & identity
     init_id = init_dut.droid.wifiAwareAttach(True)
@@ -293,6 +350,7 @@ class LatencyTest(AwareBaseTest):
     init_ident_event = autils.wait_for_event(init_dut,
                                       aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
     init_mac = init_ident_event['data']['mac']
+    time.sleep(self.device_startup_offset)
     resp_id = resp_dut.droid.wifiAwareAttach(True)
     autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
     resp_ident_event = autils.wait_for_event(resp_dut,
@@ -367,6 +425,38 @@ class LatencyTest(AwareBaseTest):
 
 
   ########################################################################
+
+  def test_synchronization_default_dws(self):
+    """Measure the device synchronization for default dws. Loop over values
+    from 0 to 4 seconds."""
+    results = {}
+    for startup_offset in range(5):
+      self.run_synchronization_latency(
+          results=results,
+          do_unsolicited_passive=True,
+          dw_24ghz=1,
+          dw_5ghz=1,
+          num_iterations=10,
+          startup_offset=startup_offset,
+          timeout_period=20)
+    asserts.explicit_pass(
+        "test_synchronization_default_dws finished", extras=results)
+
+  def test_synchronization_non_interactive_dws(self):
+    """Measure the device synchronization for non-interactive dws. Loop over
+    values from 0 to 4 seconds."""
+    results = {}
+    for startup_offset in range(5):
+      self.run_synchronization_latency(
+          results=results,
+          do_unsolicited_passive=True,
+          dw_24ghz=4,
+          dw_5ghz=0,
+          num_iterations=10,
+          startup_offset=startup_offset,
+          timeout_period=20)
+    asserts.explicit_pass(
+        "test_synchronization_non_interactive_dws finished", extras=results)
 
   def test_discovery_latency_default_dws(self):
     """Measure the service discovery latency with the default DW configuration.

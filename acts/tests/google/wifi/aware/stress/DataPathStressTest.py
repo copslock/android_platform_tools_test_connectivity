@@ -56,6 +56,7 @@ class DataPathStressTest(AwareBaseTest):
       init_ident_event = autils.wait_for_event(
           init_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
       init_mac = init_ident_event['data']['mac']
+      time.sleep(self.device_startup_offset)
       resp_id = resp_dut.droid.wifiAwareAttach(True)
       autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
       resp_ident_event = autils.wait_for_event(
