@@ -21,6 +21,7 @@ from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 from acts.test_utils.bt.GattEnum import GattCbStrings
+from acts.test_utils.bt.GattEnum import GattCharDesc
 from acts.test_utils.bt.GattEnum import GattDescriptor
 from acts.test_utils.bt.GattEnum import GattTransport
 from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
@@ -372,6 +373,32 @@ class GattClientLib():
                     self.bluetooth_gatt, self.discovered_services_index, i, j)
                 time.sleep(1)  # Necessary for PTS
 
+    def read_all_desc(self):
+        """GATT Client read all Descriptor values"""
+        self._setup_discovered_services_index()
+        services_count = self.dut.droid.gattClientGetDiscoveredServicesCount(
+            self.discovered_services_index)
+        for i in range(services_count):
+            characteristic_uuids = (
+                self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
+                    self.discovered_services_index, i))
+            for j in range(len(characteristic_uuids)):
+                descriptor_uuids = (
+                    self.dut.droid.
+                    gattClientGetDiscoveredDescriptorUuidsByIndex(
+                        self.discovered_services_index, i, j))
+                for k in range(len(descriptor_uuids)):
+                    time.sleep(1)
+                    try:
+                        self.log.info("Reading descriptor {}".format(
+                            descriptor_uuids[k]))
+                        self.dut.droid.gattClientReadDescriptorByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, k)
+                    except Exception as err:
+                        self.log.info("Failed to read to descriptor: {}".
+                                      format(descriptor_uuids[k]))
+
     def write_all_char(self, line):
         """Write to every Characteristic on the GATT server"""
         args = line.split()
@@ -386,7 +413,6 @@ class GattClientLib():
                 self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
                     self.discovered_services_index, i))
             for j in range(len(characteristic_uuids)):
-                time.sleep(1)
                 char_inst_id = self.dut.droid.gattClientGetCharacteristicInstanceId(
                     self.bluetooth_gatt, self.discovered_services_index, i, j)
                 self.log.info("Writing to {} {}".format(
