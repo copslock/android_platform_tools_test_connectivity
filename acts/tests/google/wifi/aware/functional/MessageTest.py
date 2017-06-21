@@ -102,6 +102,7 @@ class MessageTest(AwareBaseTest):
     autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED
                           if not use_id else autils.decorate_event(
                               aconsts.EVENT_CB_ON_ATTACHED, p_id))
+    time.sleep(self.device_startup_offset)
     s_id = s_dut.droid.wifiAwareAttach(False, None, use_id)
     autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED
                           if not use_id else autils.decorate_event(
@@ -243,7 +244,7 @@ class MessageTest(AwareBaseTest):
       peer_id_on_rx = rx_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
       rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
       asserts.assert_true(
-          rx_msg not in tx_msgs,
+          rx_msg in tx_msgs,
           "Received a message we did not send!? -- '%s'" % rx_msg)
       tx_msgs[rx_msg] = tx_msgs[rx_msg] + 1
       if tx_msgs[rx_msg] == 1:
