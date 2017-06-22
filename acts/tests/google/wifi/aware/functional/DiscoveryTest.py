@@ -277,6 +277,9 @@ class DiscoveryTest(AwareBaseTest):
     autils.verify_no_more_events(p_dut, timeout=0)
     autils.verify_no_more_events(s_dut, timeout=0)
 
+    # verify that forbidden callbacks aren't called
+    autils.validate_forbidden_callbacks(p_dut, {aconsts.CB_EV_MATCH: 0})
+
   def verify_discovery_session_term(self, dut, disc_id, config, is_publish,
                                     term_ind_on):
     """Utility to verify that the specified discovery session has terminated (by
@@ -432,6 +435,13 @@ class DiscoveryTest(AwareBaseTest):
 
     # verify that there were no other events
     autils.verify_no_more_events(dut)
+
+    # verify that forbidden callbacks aren't called
+    if not term_ind_on:
+      autils.validate_forbidden_callbacks(dut, {
+          aconsts.CB_EV_PUBLISH_TERMINATED: 0,
+          aconsts.CB_EV_SUBSCRIBE_TERMINATED: 0
+      })
 
   def discovery_mismatch_test_utility(self,
                                       is_expected_to_pass,
