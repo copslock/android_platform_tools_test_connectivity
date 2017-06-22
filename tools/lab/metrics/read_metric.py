@@ -24,7 +24,6 @@ class ReadMetric(Metric):
     Attributes:
       NUM_RUNS: number of times hdparm is run
     """
-
     NUM_RUNS = 3
     COMMAND = 'for i in {1..%s}; do hdparm -Tt /dev/sda; done'
     # Fields for response dictionary
@@ -85,4 +84,4 @@ class ReadMetric(Metric):
             self.CACHED_READ_RATE: cached_reads / self.NUM_RUNS,
             self.BUFFERED_READ_RATE: buffered_reads / self.NUM_RUNS
         }
-        return (response)
+        return response

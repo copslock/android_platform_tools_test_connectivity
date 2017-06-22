@@ -38,6 +38,6 @@ class InstantRunner(Runner):
         """Calls all metrics, passes responses to reporters."""
         responses = {}
         for metric in self.metric_list:
-            responses[metric] = metric.gather_metric()
+            responses[metric.__class__.__name__] = metric.gather_metric()
         for reporter in self.reporter_list:
             reporter.report(responses)

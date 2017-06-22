@@ -19,7 +19,6 @@ import psutil
 
 
 class CpuMetric(Metric):
-
     # Fields for response dictionary
     USAGE_PER_CORE = 'usage_per_core'
 
@@ -37,4 +36,4 @@ class CpuMetric(Metric):
         response = {
             self.USAGE_PER_CORE: psutil.cpu_percent(interval=0.1, percpu=True)
         }
-        return (response)
+        return response

@@ -14,27 +14,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from metrics.metric import Metric
+import json
+
+from metrics.usb_metric import Device
+from reporters.reporter import Reporter
 
 
-class NameMetric(Metric):
-    COMMAND = 'hostname'
-    # Fields for response dictionary
-    NAME = 'name'
+class JsonReporter(Reporter):
+    def report(self, metric_responses):
+        print(json.dumps(metric_responses, indent=4, cls=AutoJsonEncoder))
 
-    def gather_metric(self):
-        """Returns the name of system
 
-        Returns:
-            A dict with the following fields:
-              name: a string representing the system's hostname
-
-        """
-        # Run shell command
-        result = self._shell.run(self.COMMAND).stdout
-        # Example stdout:
-        # android1759-test-server-14
-        response = {
-            self.NAME: result,
-        }
-        return response
+class AutoJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Device):
+            return {
+                'name': obj.name,
+                'trans_bytes': obj.trans_bytes,
+                'dev_id': obj.dev_id
+            }
+        else:
+            return json.JSONEncoder.default(self, obj)
