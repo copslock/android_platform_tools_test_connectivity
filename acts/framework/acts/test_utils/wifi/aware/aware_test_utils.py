@@ -17,6 +17,7 @@
 import base64
 import json
 import queue
+import re
 import statistics
 import time
 from acts import asserts
@@ -295,6 +296,22 @@ def extract_stats(ad, data, results, key_prefix, log_prefix):
   else:
     ad.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f', log_prefix,
                 num_samples, data_min, data_max, data_mean)
+
+def get_mac_addr(device, interface):
+  """Get the MAC address of the specified interface. Uses ifconfig and parses
+  its output. Normalizes string to remove ':' and upper case.
+
+  Args:
+    device: Device on which to query the interface MAC address.
+    interface: Name of the interface for which to obtain the MAC address.
+  """
+  out = device.adb.shell("ifconfig %s" % interface)
+  res = re.match(".* HWaddr (\S+).*", out , re.S)
+  asserts.assert_true(
+      res,
+      'Unable to obtain MAC address for interface %s' % interface,
+      extras=out)
+  return res.group(1).upper().replace(':', '')
 
 #########################################################
 # Aware primitives

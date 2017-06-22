@@ -127,6 +127,9 @@ CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
 
 ######################################################
 
+# Aware NDI (NAN data-interface) name prefix
+AWARE_NDI_PREFIX = "aware_data"
+
 # Aware discovery channels
 AWARE_DISCOVERY_CHANNEL_24_BAND = 6
 AWARE_DISCOVERY_CHANNEL_5_BAND = 149
