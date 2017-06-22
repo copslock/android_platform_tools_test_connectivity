@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import os
 
 from metrics.metric import Metric
 
@@ -29,6 +30,15 @@ class ReadMetric(Metric):
     # Fields for response dictionary
     CACHED_READ_RATE = 'cached_read_rate'
     BUFFERED_READ_RATE = 'buffered_read_rate'
+
+    def is_privileged(self):
+        """Checks if this module is being ran as the necessary root user.
+
+        Returns:
+            T if being run as root, F if not.
+        """
+
+        return os.getuid() == 0
 
     def gather_metric(self):
         """Finds read speed of /dev/sda
@@ -56,6 +66,10 @@ class ReadMetric(Metric):
         # /dev/sda:
         # Timing cached reads:   18092 MB in  2.00 seconds = 9067.15 MB/sec
         # Timing buffered disk reads: 416 MB in  3.01 seconds = 138.39 MB/sec
+
+        if not self.is_privileged():
+            return {self.CACHED_READ_RATE: None, self.BUFFERED_READ_RATE: None}
+
         result = self._shell.run(self.COMMAND % self.NUM_RUNS).stdout
 
         cached_reads = 0.0
