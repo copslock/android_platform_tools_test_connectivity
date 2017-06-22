@@ -26,10 +26,20 @@ from metrics.cpu_metric import CpuMetric
 from metrics.disk_metric import DiskMetric
 from metrics.name_metric import NameMetric
 from metrics.network_metric import NetworkMetric
+from metrics.num_users_metric import NumUsersMetric
+from metrics.process_time_metric import ProcessTimeMetric
 from metrics.ram_metric import RamMetric
+from metrics.read_metric import ReadMetric
+from metrics.system_load_metric import SystemLoadMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
+from metrics.version_metric import AdbVersionMetric
+from metrics.version_metric import FastbootVersionMetric
+from metrics.version_metric import KernelVersionMetric
+from metrics.version_metric import PythonVersionMetric
+from metrics.zombie_metric import ZombieMetric
+from reporters.json_reporter import JsonReporter
 from reporters.logger_reporter import LoggerReporter
 from runner import InstantRunner
 
@@ -37,6 +47,7 @@ from runner import InstantRunner
 class RunnerFactory(object):
     _reporter_constructor = {
         'logger': lambda: [LoggerReporter()],
+        'json': lambda: [JsonReporter()]
     }
 
     _metric_constructor = {
@@ -51,7 +62,12 @@ class RunnerFactory(object):
         'hostname': lambda param: [NameMetric()],
         'all': lambda param: [DiskMetric(), UptimeMetric(),
                               AdbHashMetric(), RamMetric(), CpuMetric(),
-                              NameMetric(), UsbMetric(), NetworkMetric()]
+                              NameMetric(), UsbMetric(), NetworkMetric(),
+                              NumUsersMetric(), ReadMetric(),
+                              SystemLoadMetric(), AdbVersionMetric(),
+                              FastbootVersionMetric(), KernelVersionMetric(),
+                              PythonVersionMetric(), ProcessTimeMetric(),
+                              ZombieMetric()]
     }
 
     @classmethod
@@ -139,7 +155,7 @@ def _argparse():
     parser.add_argument(
         '-r',
         '--reporter',
-        choices=['logger'],
+        choices=['logger', 'json'],
         nargs='+',
         help='choose the reporting method needed')
     parser.add_argument(
