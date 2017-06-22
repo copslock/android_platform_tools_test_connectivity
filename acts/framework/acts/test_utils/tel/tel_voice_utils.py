@@ -978,6 +978,24 @@ def phone_idle_2g_for_subscription(log, ad, sub_id):
     return wait_for_network_generation_for_subscription(
         log, ad, sub_id, GEN_2G, voice_or_data=NETWORK_SERVICE_VOICE)
 
+def get_current_voice_rat(log, ad):
+    """Return current Voice RAT
+
+    Args:
+        ad: Android device object.
+    """
+    return get_current_voice_rat_for_subscription(
+        log, ad, get_outgoing_voice_sub_id(ad))
+
+def get_current_voice_rat_for_subscription(log, ad, sub_id):
+    """Return current Voice RAT for subscription id.
+
+    Args:
+        ad: Android device object.
+        sub_id: subscription id.
+    """
+    return get_network_rat_for_subscription(log, ad, sub_id,
+                                           NETWORK_SERVICE_VOICE)
 
 def is_phone_in_call_volte(log, ad):
     """Return if phone is in VoLTE call.
