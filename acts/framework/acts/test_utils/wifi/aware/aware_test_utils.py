@@ -228,6 +228,35 @@ def get_wifi_mac_address(ad):
   return ad.droid.wifiGetConnectionInfo()['mac_address'].upper().replace(
       ':', '')
 
+def validate_forbidden_callbacks(ad, limited_cb=None):
+  """Validate that the specified callbacks have not been called more then permitted.
+
+  In addition to the input configuration also validates that forbidden callbacks
+  have never been called.
+
+  Args:
+    ad: Device on which to run.
+    limited_cb: Dictionary of CB_EV_* ids and maximum permitted calls (0
+                meaning never).
+  """
+  cb_data = json.loads(ad.adb.shell('cmd wifiaware native_cb get_cb_count'))
+
+  if limited_cb is None:
+    limited_cb = {}
+  # add callbacks which should never be called
+  limited_cb[aconsts.CB_EV_MATCH_EXPIRED] = 0
+
+  fail = False
+  for cb_event in limited_cb.keys():
+    if cb_event in cb_data:
+      if cb_data[cb_event] > limited_cb[cb_event]:
+        fail = True
+        ad.log.info(
+            'Callback %s observed %d times: more then permitted %d times',
+            cb_event, cb_data[cb_event], limited_cb[cb_event])
+
+  asserts.assert_false(fail, 'Forbidden callbacks observed', extras=cb_data)
+
 def extract_stats(ad, data, results, key_prefix, log_prefix):
   """Extract statistics from the data, store in the results dictionary, and
   output to the info log.
