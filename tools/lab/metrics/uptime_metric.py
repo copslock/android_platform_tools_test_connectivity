@@ -41,4 +41,4 @@ class UptimeMetric(Metric):
         response = {
             self.TIME_SECONDS: seconds,
         }
-        return (response)
+        return response

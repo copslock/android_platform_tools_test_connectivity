@@ -14,11 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import metric
+from metrics.metric import Metric
 import os
 
 
-class SystemLoadMetric(metric.Metric):
+class SystemLoadMetric(Metric):
 
     # Fields for response dictionary
     LOAD_AVG_1_MIN = 'load_avg_1_min'

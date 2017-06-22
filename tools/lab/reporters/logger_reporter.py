@@ -14,15 +14,38 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from reporters import reporter
+import logging
+
+from reporters.reporter import Reporter
 
 
-class LoggerReporter(reporter.Reporter):
-    def report(self, response_dict):
-        """Prints response_dict to stdout
+class LoggerReporter(Reporter):
+    def report(self, metric_responses):
+        # Extra formatter options.
+        extra = {
+            'metric_name': None,
+            'response_key': None,
+            'response_val': None
+        }
 
-        Args:
-            response_dict: a dictionary w/ metric as key and response as value
-        """
-        for key in response_dict:
-            print(response_dict[key])
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        # Stop logger from print to stdout.
+        logger.propagate = False
+
+        handler = logging.FileHandler('lab_health.log')
+        handler.setLevel(logging.INFO)
+
+        formatter = logging.Formatter(
+            '%(asctime)s: %(metric_name)s (%(response_key)s %(response_val)s)')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        logger = logging.LoggerAdapter(logger, extra)
+        # add the handlers to the logger
+        for metric in metric_responses:
+            extra['metric_name'] = metric
+            for response in metric_responses[metric]:
+                extra['response_key'] = response
+                extra['response_val'] = metric_responses[metric][response]
+                logger.info(None)
