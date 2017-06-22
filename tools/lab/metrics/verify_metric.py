@@ -19,6 +19,7 @@ from metrics.metric import Metric
 
 class VerifyMetric(Metric):
     """Gathers the information of connected devices via ADB"""
+    COMMAND = r"adb devices | sed '1d;$d'"
 
     def gather_devices(self):
         """ Gathers device info based on adb output.
@@ -29,7 +30,7 @@ class VerifyMetric(Metric):
         """
         device_dict = {}
         # Delete first and last line of output of adb.
-        output = self._shell.run(r"adb devices | sed '1d;$d'").stdout
+        output = self._shell.run(self.COMMAND).stdout
 
         # Example Line, Device Serial Num TAB Phone Status
         # 00bd977c7f504caf	offline
