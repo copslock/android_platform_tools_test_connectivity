@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import rand_ascii_str
 
 
@@ -146,6 +147,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.dut.log.info(dict(self.result_info))
             self.result_info["Total Calls"] += 1
             duration = random.randrange(1, self.max_phone_call_duration)
+            # Current Voice RAT
+            self.dut.log.info("Current Voice RAT is %s",
+                              get_current_voice_rat(self.log, self.dut))
             self.dut.log.info("Make call to %s with call duration %s",
                               self.call_server_number, duration)
             if not initiate_call(self.log, self.dut, self.call_server_number):
