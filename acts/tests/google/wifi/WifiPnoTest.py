@@ -19,23 +19,29 @@ from acts import asserts
 from acts import base_test
 from acts.test_decorators import test_tracker_info
 import acts.test_utils.wifi.wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 
 
-class WifiPnoTest(base_test.BaseTestClass):
+class WifiPnoTest(WifiBaseTest):
+
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
+
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("attn_vals", "reference_networks", "pno_interval")
-        self.unpack_userparams(req_params)
-        WifiNetworks = wutils.WifiReferenceNetworks(self.reference_networks)
-        self.secure_networks_2g = WifiNetworks.return_2g_secure_networks()
-        asserts.assert_true(
-            len(self.secure_networks_2g) >= 2,
-            "Need at least two secure 2g networks.")
-        self.pno_network_a = self.secure_networks_2g[0]
-        self.pno_network_b = self.secure_networks_2g[1]
+        req_params = ["attn_vals", "pno_interval"]
+        opt_param = ["reference_networks"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
+
+        self.pno_network_a = self.reference_networks[0]['2g']
+        self.pno_network_b = self.reference_networks[0]['5g']
         self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]

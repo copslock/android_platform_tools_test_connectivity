@@ -28,7 +28,15 @@ class AwareBaseTest(BaseTestClass):
   # message ID counter to make sure all uses are unique
   msg_id = 0
 
+  # offset (in seconds) to separate the start-up of multiple devices.
+  # De-synchronizes the start-up time so that they don't start and stop scanning
+  # at the same time - which can lead to very long clustering times.
+  device_startup_offset = 2
+
   def setup_test(self):
+    required_params = ("default_power_mode", )
+    self.unpack_userparams(required_params)
+
     for ad in self.android_devices:
       wutils.wifi_toggle_state(ad, True)
       ad.droid.wifiP2pClose()
@@ -39,6 +47,7 @@ class AwareBaseTest(BaseTestClass):
       ad.ed.pop_all(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE) # clear-out extras
       ad.aware_capabilities = autils.get_aware_capabilities(ad)
       self.reset_device_parameters(ad)
+      self.set_power_mode_parameters(ad)
 
   def teardown_test(self):
     for ad in self.android_devices:
@@ -55,6 +64,19 @@ class AwareBaseTest(BaseTestClass):
       ad: device to be reset
     """
     ad.adb.shell("cmd wifiaware reset")
+
+  def set_power_mode_parameters(self, ad):
+    """Set the power configuration DW parameters for the device based on any
+    configuration overrides (if provided)"""
+    if self.default_power_mode == "INTERACTIVE":
+      autils.config_dw_high_power(ad)
+    elif self.default_power_mode == "NON_INTERACTIVE":
+      autils.config_dw_low_power(ad)
+    else:
+      asserts.assert_false(
+          "The 'default_power_mode' configuration must be INTERACTIVE or "
+          "NON_INTERACTIVE"
+      )
 
   def get_next_msg_id(self):
     """Increment the message ID and returns the new value. Guarantees that
