@@ -16,6 +16,7 @@
 
 import unittest
 
+import mock
 from metrics import read_metric
 from tests import fake
 
@@ -23,7 +24,9 @@ from tests import fake
 class ReadMetricTest(unittest.TestCase):
     """Class for testing ReadMetric."""
 
-    def test_return_total_used_avail_percent(self):
+    @mock.patch('os.getuid')
+    def test_return_total_used_avail_percent_with_permiss(self, getuid_func):
+        getuid_func.return_value = 0
         # Create sample stdout string ShellCommand.run() would return
         stdout_string = ('/dev/sda:\n'
                          ' Timing cached reads: '
@@ -57,6 +60,17 @@ class ReadMetricTest(unittest.TestCase):
         self.assertAlmostEqual(
             exp_res[read_metric.ReadMetric.BUFFERED_READ_RATE],
             result[metric_obj.BUFFERED_READ_RATE])
+
+    @mock.patch('os.getuid')
+    def test_return_total_used_avail_percent_with_no_permiss(
+            self, getuid_func):
+        getuid_func.return_value = 1
+        exp_res = {
+            read_metric.ReadMetric.CACHED_READ_RATE: None,
+            read_metric.ReadMetric.BUFFERED_READ_RATE: None
+        }
+        result = read_metric.ReadMetric().gather_metric()
+        self.assertEquals(result, exp_res)
 
 
 if __name__ == '__main__':

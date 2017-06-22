@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import io
+import os
 import subprocess
 
 import sys
@@ -37,6 +38,15 @@ class UsbMetric(Metric):
     USBMON_CHECK_COMMAND = 'grep usbmon /proc/modules'
     USBMON_INSTALL_COMMAND = 'modprobe usbmon'
     DEVICES = 'devices'
+
+    def is_privileged(self):
+        """Checks if this module is being ran as the necessary root user.
+
+        Returns:
+            T if being run as root, F if not.
+        """
+
+        return os.getuid() == 0
 
     def check_usbmon(self):
         """Checks if the kernel module 'usbmon' is installed.
@@ -147,10 +157,15 @@ class UsbMetric(Metric):
             list of Device objects. This is to fit with the formatting of other
             metrics.
         """
-        self.check_usbmon()
-        dev_byte_dict = self.get_bytes()
-        dev_name_dict = self.match_device_id()
-        return {self.DEVICES: self.gen_output(dev_name_dict, dev_byte_dict)}
+        if self.is_privileged():
+            self.check_usbmon()
+            dev_byte_dict = self.get_bytes()
+            dev_name_dict = self.match_device_id()
+            return {
+                self.DEVICES: self.gen_output(dev_name_dict, dev_byte_dict)
+            }
+        else:
+            return {self.DEVICES: None}
 
 
 class Device:
