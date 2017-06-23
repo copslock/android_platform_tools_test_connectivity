@@ -47,6 +47,7 @@ class AwareBaseTest(BaseTestClass):
       ad.ed.pop_all(aconsts.BROADCAST_WIFI_AWARE_AVAILABLE) # clear-out extras
       ad.aware_capabilities = autils.get_aware_capabilities(ad)
       self.reset_device_parameters(ad)
+      self.reset_device_statistics(ad)
       self.set_power_mode_parameters(ad)
 
   def teardown_test(self):
@@ -54,6 +55,7 @@ class AwareBaseTest(BaseTestClass):
       ad.droid.wifiP2pClose()
       ad.droid.wifiAwareDestroyAll()
       self.reset_device_parameters(ad)
+      autils.validate_forbidden_callbacks(ad)
 
   def reset_device_parameters(self, ad):
     """Reset device configurations which may have been set by tests. Should be
@@ -64,6 +66,14 @@ class AwareBaseTest(BaseTestClass):
       ad: device to be reset
     """
     ad.adb.shell("cmd wifiaware reset")
+
+  def reset_device_statistics(self, ad):
+    """Reset device statistics.
+
+    Args:
+        ad: device to be reset
+    """
+    ad.adb.shell("cmd wifiaware native_cb get_cb_count --reset")
 
   def set_power_mode_parameters(self, ad):
     """Set the power configuration DW parameters for the device based on any
