@@ -1562,6 +1562,58 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def transmode(self):
+        """ Gets the Transmission Mode of the cell
+
+        Args:
+            None
+
+        Returns:
+            Transmission mode
+        """
+        cmd = "TRANSMODE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @transmode.setter
+    def transmode(self, tm_mode):
+        """ Sets the TM of the cell
+
+        Args:
+            TM: TM of the cell
+
+        Returns:
+            None
+        """
+        cmd = "TRANSMODE {},{}".format(tm_mode, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def dl_antenna(self):
+        """ Gets the DL ANTENNA count of the cell
+
+        Args:
+            None
+
+        Returns:
+            No of DL Antenna
+        """
+        cmd = "ANTENNAS? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @dl_antenna.setter
+    def dl_antenna(self, num_antenna):
+        """ Sets the DL ANTENNA of the cell
+
+        Args:
+            c: DL ANTENNA of the cell
+
+        Returns:
+            None
+        """
+        cmd = "ANTENNAS {},{}".format(num_antenna, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def bandwidth(self):
         """ Gets the channel bandwidth of the cell
 
