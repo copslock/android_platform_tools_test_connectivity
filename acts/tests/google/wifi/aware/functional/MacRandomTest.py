@@ -48,12 +48,11 @@ class MacRandomTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-
   ##########################################################################
 
-  def test_nmi_randomization_on_enable(self):
-    """Validate randomization of the NMI (NAN management interface) on each
-    enable/disable cycle"""
+  def test_nmi_ndi_randomization_on_enable(self):
+    """Validate randomization of the NMI (NAN management interface) and all NDIs
+    (NAN data-interface) on each enable/disable cycle"""
     dut = self.android_devices[0]
 
     # DUT: attach and wait for confirmation & identity 10 times
@@ -63,11 +62,26 @@ class MacRandomTest(AwareBaseTest):
       autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
       ident_event = autils.wait_for_event(dut,
                                           aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+
+      # process NMI
       mac = ident_event["data"]["mac"]
+      dut.log.info("NMI=%s", mac)
       if mac in mac_addresses:
         mac_addresses[mac] = mac_addresses[mac] + 1
       else:
         mac_addresses[mac] = 1
+
+      # process NDIs
+      time.sleep(5) # wait for NDI creation to complete
+      for j in range(dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]):
+        ndi_interface = "%s%d" % (aconsts.AWARE_NDI_PREFIX, j)
+        ndi_mac = autils.get_mac_addr(dut, ndi_interface)
+        dut.log.info("NDI %s=%s", ndi_interface, ndi_mac)
+        if ndi_mac in mac_addresses:
+          mac_addresses[ndi_mac] = mac_addresses[ndi_mac] + 1
+        else:
+          mac_addresses[ndi_mac] = 1
+
       dut.droid.wifiAwareDestroy(id)
 
     # Test for uniqueness
@@ -117,115 +131,3 @@ class MacRandomTest(AwareBaseTest):
 
     # clean-up
     dut.droid.wifiAwareDestroy(id)
-
-  def test_ndi_randomization_on_enable(self):
-    """Validate randomization of the NDI (NAN data interface) on each
-    enable/disable cycle
-
-    Notes:
-      1. Currently assumes a single NDI in the system (doesn't try to force
-         each NDP on a particular NDI).
-      2. There's no API to obtain the actual NDI MAC address. However, the IPv6
-         is obtainable and is a good proxy for the MAC since it is link-local
-         (i.e. most likely uses the bits of the MAC address).
-    """
-    init_dut = self.android_devices[0]
-    init_dut.pretty_name = "Initiator"
-    resp_dut = self.android_devices[1]
-    resp_dut.pretty_name = "Responder"
-
-    init_ipv6_addresses = {}
-    resp_ipv6_addresses = {}
-    for i in range(self.NUM_ITERATIONS):
-      # Initiator+Responder: attach and wait for confirmation & identity
-      init_id = init_dut.droid.wifiAwareAttach(True)
-      autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
-      init_ident_event = autils.wait_for_event(
-          init_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-      init_mac = init_ident_event["data"]["mac"]
-      time.sleep(self.device_startup_offset)
-      resp_id = resp_dut.droid.wifiAwareAttach(True)
-      autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
-      resp_ident_event = autils.wait_for_event(
-          resp_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-      resp_mac = resp_ident_event["data"]["mac"]
-
-      # wait for for devices to synchronize with each other - there are no other
-      # mechanisms to make sure this happens for OOB discovery (except retrying
-      # to execute the data-path request)
-      time.sleep(self.WAIT_FOR_CLUSTER)
-
-      # Responder: request network
-      resp_req_key = self.request_network(
-          resp_dut,
-          resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-              resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
-
-      # Initiator: request network
-      init_req_key = self.request_network(
-          init_dut,
-          init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-              init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
-
-      # Initiator & Responder: wait for network formation
-      init_net_event = autils.wait_for_event_with_keys(
-          init_dut, cconsts.EVENT_NETWORK_CALLBACK,
-          autils.EVENT_TIMEOUT,
-          (cconsts.NETWORK_CB_KEY_EVENT,
-           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-      resp_net_event = autils.wait_for_event_with_keys(
-          resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
-          autils.EVENT_TIMEOUT,
-          (cconsts.NETWORK_CB_KEY_EVENT,
-           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
-
-      init_aware_if = init_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-      resp_aware_if = resp_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-      self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
-
-      init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
-          init_aware_if).split("%")[0]
-      resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
-          resp_aware_if).split("%")[0]
-      self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
-                    resp_ipv6)
-
-      if init_ipv6 in init_ipv6_addresses:
-        init_ipv6_addresses[init_ipv6] = init_ipv6_addresses[init_ipv6] + 1
-      else:
-        init_ipv6_addresses[init_ipv6] = 1
-      if resp_ipv6 in resp_ipv6_addresses:
-        resp_ipv6_addresses[resp_ipv6] = resp_ipv6_addresses[resp_ipv6] + 1
-      else:
-        resp_ipv6_addresses[resp_ipv6] = 1
-
-      # terminate sessions and wait for ON_LOST callbacks
-      init_dut.droid.wifiAwareDestroy(init_id)
-      resp_dut.droid.wifiAwareDestroy(resp_id)
-
-      autils.wait_for_event_with_keys(
-          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
-          (cconsts.NETWORK_CB_KEY_EVENT,
-           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-      autils.wait_for_event_with_keys(
-          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
-          (cconsts.NETWORK_CB_KEY_EVENT,
-           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
-
-      # clean-up
-      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
-      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
-
-    # Test for uniqueness
-    for ipv6 in init_ipv6_addresses.keys():
-      if init_ipv6_addresses[ipv6] != 1:
-        asserts.fail("IPv6 of Initiator's NDI %s repeated %d times (all=%s)" %
-                     (ipv6, init_ipv6_addresses[ipv6], init_ipv6_addresses))
-    for ipv6 in resp_ipv6_addresses.keys():
-      if resp_ipv6_addresses[ipv6] != 1:
-        asserts.fail("IPv6 of Responders's NDI %s repeated %d times (all=%s)" %
-                     (ipv6, resp_ipv6_addresses[ipv6], resp_ipv6_addresses))
