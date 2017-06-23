@@ -55,6 +55,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import rand_ascii_str
 from TelWifiVoiceTest import TelWifiVoiceTest
 from TelWifiVoiceTest import ATTEN_NAME_FOR_WIFI_2G
@@ -234,6 +235,11 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             ads = [self.dut, self.helper]
             random.shuffle(ads)
             total_count += 1
+            # Current Voice RAT
+            self.dut.log.info("Current Voice RAT is %s",
+                              get_current_voice_rat(self.log, self.dut))
+            self.helper.log.info("Current Voice RAT is %s",
+                              get_current_voice_rat(self.log, self.helper))
             if not self._make_phone_call(ads):
                 failure += 1
                 self.log.error("New call test failure: %s/%s", failure,
