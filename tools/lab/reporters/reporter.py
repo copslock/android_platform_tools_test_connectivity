@@ -22,7 +22,13 @@ class Reporter(object):
     generated the value, and the value is the actual data gathered from
     collecting that metric. For example, an UptimeMetric, would have
     UptimeMetric() as key, and '1-02:22:42' as the value.
+
+    Attributes:
+      health_checker: a HealthChecker object
     """
+
+    def __init__(self, health_checker):
+        self.health_checker = health_checker
 
     def report(self, responses):
         raise NotImplementedError('Must implement this method')

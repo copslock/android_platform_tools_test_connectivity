@@ -16,12 +16,19 @@
 
 import json
 
+import health_checker
 from metrics.usb_metric import Device
 from reporters.reporter import Reporter
 
 
 class JsonReporter(Reporter):
     def report(self, metric_responses):
+        unhealthy_metrics = self.health_checker.get_unhealthy(metric_responses)
+        for metric_name in metric_responses:
+            if metric_name not in unhealthy_metrics:
+                metric_responses[metric_name]['is_healthy'] = True
+            else:
+                metric_responses[metric_name]['is_healthy'] = False
         print(json.dumps(metric_responses, indent=4, cls=AutoJsonEncoder))
 
 
