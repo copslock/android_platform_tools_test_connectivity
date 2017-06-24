@@ -21,13 +21,22 @@ class ConstantHealthAnalyzer(health_analyzer.HealthAnalyzer):
     """Extends HealthAnalyzer for all HealthAnalyzers that compare to a constant
 
     Attributes:
-        _key: a string representing a key to a response dictionary
+        key: a string representing a key to a response dictionary
         _constant: a constant value to compare metric_results[key] to
     """
 
     def __init__(self, key, constant):
-        self._key = key
+        self.key = key
         self._constant = constant
+
+    def __eq__(self, other):
+        """ Overwrite comparator so tests can check for correct instance
+
+        Returns True if two of same child class instances were intialized
+          with the same key and constant
+        """
+        return self.key == other.key and self._constant == other._constant\
+            and self.__class__.__name__ == other.__class__.__name__
 
 
 class HealthyIfGreaterThanConstantNumber(ConstantHealthAnalyzer):
@@ -40,7 +49,7 @@ class HealthyIfGreaterThanConstantNumber(ConstantHealthAnalyzer):
           True if numeric result is greater than numeric constant
         """
 
-        return metric_results[self._key] > self._constant
+        return metric_results[self.key] > self._constant
 
 
 class HealthyIfLessThanConstantNumber(ConstantHealthAnalyzer):
@@ -53,7 +62,7 @@ class HealthyIfLessThanConstantNumber(ConstantHealthAnalyzer):
           True if numeric result is less than numeric constant
         """
 
-        return metric_results[self._key] < self._constant
+        return metric_results[self.key] < self._constant
 
 
 class HealthyIfEquals(ConstantHealthAnalyzer):
@@ -65,4 +74,4 @@ class HealthyIfEquals(ConstantHealthAnalyzer):
         Returns:
           True if result is equal to constant
         """
-        return metric_results[self._key] == self._constant
+        return metric_results[self.key] == self._constant
