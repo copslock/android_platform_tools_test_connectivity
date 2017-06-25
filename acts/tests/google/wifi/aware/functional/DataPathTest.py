@@ -166,13 +166,13 @@ class DataPathTest(AwareBaseTest):
     # Publisher & Subscriber: wait for network formation
     p_net_event = autils.wait_for_event_with_keys(
         p_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_TIMEOUT,
+        autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, p_req_key))
     s_net_event = autils.wait_for_event_with_keys(
         s_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_TIMEOUT,
+        autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, s_req_key))
@@ -194,11 +194,11 @@ class DataPathTest(AwareBaseTest):
     s_dut.droid.wifiAwareDestroy(s_id)
 
     autils.wait_for_event_with_keys(
-        p_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        p_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, p_req_key))
     autils.wait_for_event_with_keys(
-        s_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        s_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
@@ -259,13 +259,13 @@ class DataPathTest(AwareBaseTest):
     # Initiator & Responder: wait for network formation
     init_net_event = autils.wait_for_event_with_keys(
         init_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_TIMEOUT,
+        autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, init_req_key))
     resp_net_event = autils.wait_for_event_with_keys(
         resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_TIMEOUT,
+        autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
@@ -290,11 +290,11 @@ class DataPathTest(AwareBaseTest):
     resp_dut.droid.wifiAwareDestroy(resp_id)
 
     autils.wait_for_event_with_keys(
-        init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
     autils.wait_for_event_with_keys(
-        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
@@ -331,7 +331,7 @@ class DataPathTest(AwareBaseTest):
                                                     None))
 
     # Publisher & Subscriber: fail on network formation
-    time.sleep(autils.EVENT_TIMEOUT)
+    time.sleep(autils.EVENT_NDP_TIMEOUT)
     autils.fail_on_event(p_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
     autils.fail_on_event(s_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
 
@@ -407,7 +407,7 @@ class DataPathTest(AwareBaseTest):
             init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, init_key))
 
     # Initiator & Responder: fail on network formation
-    time.sleep(autils.EVENT_TIMEOUT)
+    time.sleep(autils.EVENT_NDP_TIMEOUT)
     autils.fail_on_event(init_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
     autils.fail_on_event(resp_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
 

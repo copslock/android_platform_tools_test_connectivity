@@ -195,7 +195,7 @@ class MessageTest(AwareBaseTest):
     autils.verify_no_more_events(s_dut, timeout=0)
 
   def wait_for_messages(self, tx_msgs, tx_msg_ids, tx_disc_id, rx_disc_id,
-                        tx_dut, rx_dut):
+                        tx_dut, rx_dut, are_msgs_empty=False):
     """Validate that all expected messages are transmitted correctly and
     received as expected. Method is called after the messages are sent into
     the transmission queue.
@@ -210,6 +210,7 @@ class MessageTest(AwareBaseTest):
       rx_disc_id: receiver discovery session id (None for no decoration)
       tx_dut: transmitter device
       rx_dut: receiver device
+      are_msgs_empty: True if the messages are None or empty (changes dup detection)
 
     Returns: the peer ID from any of the received messages
     """
@@ -235,25 +236,29 @@ class MessageTest(AwareBaseTest):
         "Duplicate transmit message IDs: %s" % tx_msg_ids)
 
     # wait for all messages to be received
-    still_to_be_rx = len(tx_msgs)
+    still_to_be_rx = len(tx_msg_ids)
     while still_to_be_rx != 0:
       rx_event = autils.wait_for_event(
           rx_dut, aconsts.SESSION_CB_ON_MESSAGE_RECEIVED
           if rx_disc_id is None else autils.decorate_event(
               aconsts.SESSION_CB_ON_MESSAGE_RECEIVED, rx_disc_id))
       peer_id_on_rx = rx_event["data"][aconsts.SESSION_CB_KEY_PEER_ID]
-      rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
-      asserts.assert_true(
-          rx_msg in tx_msgs,
-          "Received a message we did not send!? -- '%s'" % rx_msg)
-      tx_msgs[rx_msg] = tx_msgs[rx_msg] + 1
-      if tx_msgs[rx_msg] == 1:
+      if are_msgs_empty:
         still_to_be_rx = still_to_be_rx - 1
+      else:
+        rx_msg = rx_event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING]
+        asserts.assert_true(
+            rx_msg in tx_msgs,
+            "Received a message we did not send!? -- '%s'" % rx_msg)
+        tx_msgs[rx_msg] = tx_msgs[rx_msg] + 1
+        if tx_msgs[rx_msg] == 1:
+          still_to_be_rx = still_to_be_rx - 1
 
     # check for any duplicate received messages
-    asserts.assert_equal(
-        len(tx_msgs),
-        sum(tx_msgs.values()), "Duplicate transmit messages: %s" % tx_msgs)
+    if not are_msgs_empty:
+      asserts.assert_equal(
+          len(tx_msgs),
+          sum(tx_msgs.values()), "Duplicate transmit messages: %s" % tx_msgs)
 
     return peer_id_on_rx
 
@@ -282,8 +287,9 @@ class MessageTest(AwareBaseTest):
       msg_ids[msg_id] = 0
       s_dut.droid.wifiAwareSendMessage(s_disc_id, peer_id_on_sub, msg_id, msg,
                                        0)
-    peer_id_on_pub = self.wait_for_messages(msgs, msg_ids, None, None, s_dut,
-                                            p_dut)
+    peer_id_on_pub = self.wait_for_messages(
+        msgs, msg_ids, None, None, s_dut, p_dut,
+        payload_size == self.PAYLOAD_SIZE_MIN)
 
     msgs = {}
     msg_ids = {}
@@ -296,7 +302,8 @@ class MessageTest(AwareBaseTest):
       msg_ids[msg_id] = 0
       p_dut.droid.wifiAwareSendMessage(p_disc_id, peer_id_on_pub, msg_id, msg,
                                        0)
-    self.wait_for_messages(msgs, msg_ids, None, None, p_dut, s_dut)
+    self.wait_for_messages(msgs, msg_ids, None, None, p_dut, s_dut,
+                           payload_size == self.PAYLOAD_SIZE_MIN)
 
     # verify there are no more events
     time.sleep(autils.EVENT_TIMEOUT)
@@ -344,10 +351,12 @@ class MessageTest(AwareBaseTest):
       s_dut.droid.wifiAwareSendMessage(s_disc_id2, peer_id_on_sub2, msg_id2,
                                        msg2, 0)
 
-    peer_id_on_pub1 = self.wait_for_messages(msgs1, msg_ids1, s_disc_id1,
-                                             p_disc_id1, s_dut, p_dut)
-    peer_id_on_pub2 = self.wait_for_messages(msgs2, msg_ids2, s_disc_id2,
-                                             p_disc_id2, s_dut, p_dut)
+    peer_id_on_pub1 = self.wait_for_messages(
+        msgs1, msg_ids1, s_disc_id1, p_disc_id1, s_dut, p_dut,
+        payload_size == self.PAYLOAD_SIZE_MIN)
+    peer_id_on_pub2 = self.wait_for_messages(
+        msgs2, msg_ids2, s_disc_id2, p_disc_id2, s_dut, p_dut,
+        payload_size == self.PAYLOAD_SIZE_MIN)
 
     msgs1 = {}
     msg_ids1 = {}
@@ -370,9 +379,9 @@ class MessageTest(AwareBaseTest):
                                        msg1, 0)
 
     self.wait_for_messages(msgs1, msg_ids1, p_disc_id1, s_disc_id1, p_dut,
-                           s_dut)
+                           s_dut, payload_size == self.PAYLOAD_SIZE_MIN)
     self.wait_for_messages(msgs2, msg_ids2, p_disc_id2, s_disc_id2, p_dut,
-                           s_dut)
+                           s_dut, payload_size == self.PAYLOAD_SIZE_MIN)
 
     # verify there are no more events
     time.sleep(autils.EVENT_TIMEOUT)

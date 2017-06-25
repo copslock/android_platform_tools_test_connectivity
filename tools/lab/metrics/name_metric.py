@@ -18,7 +18,6 @@ from metrics.metric import Metric
 
 
 class NameMetric(Metric):
-
     COMMAND = 'hostname'
     # Fields for response dictionary
     NAME = 'name'

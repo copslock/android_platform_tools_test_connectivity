@@ -19,24 +19,38 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
+import os
 import sys
 
+import health_checker
 from metrics.adb_hash_metric import AdbHashMetric
 from metrics.cpu_metric import CpuMetric
 from metrics.disk_metric import DiskMetric
 from metrics.name_metric import NameMetric
 from metrics.network_metric import NetworkMetric
+from metrics.num_users_metric import NumUsersMetric
+from metrics.process_time_metric import ProcessTimeMetric
 from metrics.ram_metric import RamMetric
+from metrics.read_metric import ReadMetric
+from metrics.system_load_metric import SystemLoadMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
+from metrics.version_metric import AdbVersionMetric
+from metrics.version_metric import FastbootVersionMetric
+from metrics.version_metric import KernelVersionMetric
+from metrics.version_metric import PythonVersionMetric
+from metrics.zombie_metric import ZombieMetric
+from reporters.json_reporter import JsonReporter
 from reporters.logger_reporter import LoggerReporter
 from runner import InstantRunner
 
 
 class RunnerFactory(object):
     _reporter_constructor = {
-        'logger': lambda: [LoggerReporter()],
+        'logger': lambda param: [LoggerReporter(param)],
+        'json': lambda param: [JsonReporter(param)]
     }
 
     _metric_constructor = {
@@ -51,7 +65,12 @@ class RunnerFactory(object):
         'hostname': lambda param: [NameMetric()],
         'all': lambda param: [DiskMetric(), UptimeMetric(),
                               AdbHashMetric(), RamMetric(), CpuMetric(),
-                              NameMetric(), UsbMetric(), NetworkMetric()]
+                              NameMetric(), UsbMetric(), NetworkMetric(),
+                              NumUsersMetric(), ReadMetric(),
+                              SystemLoadMetric(), AdbVersionMetric(),
+                              FastbootVersionMetric(), KernelVersionMetric(),
+                              PythonVersionMetric(), ProcessTimeMetric(),
+                              ZombieMetric()]
     }
 
     @classmethod
@@ -70,13 +89,29 @@ class RunnerFactory(object):
         metrics = []
         reporters = []
 
+        # Get health config file, if specified
+        config_file = arg_dict.pop('config', None)
+        # If not specified, default to 'config.json'
+        if not config_file:
+            config_file = os.path.join(sys.path[0], 'config.json')
+        else:
+            config_file = config_file[0]
+        try:
+            with open(config_file) as json_data:
+                health_config = json.load(json_data)
+        except IOError:
+            sys.exit('Config file does not exist')
+        # Create health checker
+        checker = health_checker.HealthChecker(health_config)
+
+        # Get reporters
         rep_list = arg_dict.pop('reporter')
         if rep_list is not None:
             for rep_type in rep_list:
-                reporters += cls._reporter_constructor[rep_type]()
+                reporters += cls._reporter_constructor[rep_type](checker)
         else:
             # If no reporter specified, default to logger.
-            reporters += [LoggerReporter()]
+            reporters += [LoggerReporter(checker)]
 
         # Check keys and values to see what metrics to include.
         for key in arg_dict:
@@ -123,7 +158,7 @@ def _argparse():
         default=None,
         help='display the current RAM usage')
     parser.add_argument(
-        '-c',
+        '-cp',
         '--cpu',
         action='count',
         default=None,
@@ -139,7 +174,7 @@ def _argparse():
     parser.add_argument(
         '-r',
         '--reporter',
-        choices=['logger'],
+        choices=['logger', 'json'],
         nargs='+',
         help='choose the reporting method needed')
     parser.add_argument(
@@ -166,6 +201,13 @@ def _argparse():
         action='store_true',
         default=None,
         help='Display the hostname of the current system')
+    parser.add_argument(
+        '-c',
+        '--config',
+        nargs=1,
+        default=None,
+        metavar="<PATH>",
+        help='Path to health configuration file, defaults to `config.json`')
 
     return parser
 

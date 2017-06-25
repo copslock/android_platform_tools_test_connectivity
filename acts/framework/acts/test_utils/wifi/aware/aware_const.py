@@ -127,6 +127,9 @@ CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
 
 ######################################################
 
+# Aware NDI (NAN data-interface) name prefix
+AWARE_NDI_PREFIX = "aware_data"
+
 # Aware discovery channels
 AWARE_DISCOVERY_CHANNEL_24_BAND = 6
 AWARE_DISCOVERY_CHANNEL_5_BAND = 149
@@ -137,3 +140,16 @@ DATA_PATH_RESPONDER = 1
 
 # Maximum send retry
 MAX_TX_RETRIES = 5
+
+# Callback keys (for 'adb shell cmd wifiaware native_cb get_cb_count')
+CB_EV_CLUSTER = "0"
+CB_EV_DISABLED = "1"
+CB_EV_PUBLISH_TERMINATED = "2"
+CB_EV_SUBSCRIBE_TERMINATED = "3"
+CB_EV_MATCH = "4"
+CB_EV_MATCH_EXPIRED = "5"
+CB_EV_FOLLOWUP_RECEIVED = "6"
+CB_EV_TRANSMIT_FOLLOWUP = "7"
+CB_EV_DATA_PATH_REQUEST = "8"
+CB_EV_DATA_PATH_CONFIRM = "9"
+CB_EV_DATA_PATH_TERMINATED = "10"

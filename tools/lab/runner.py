@@ -13,6 +13,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import re
+
+# Handles edge case of acronyms then another word, eg. CPUMetric -> CPU_Metric
+# or lower camel case, cpuMetric -> cpu_Metric.
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+# Handles CpuMetric -> Cpu_Metric
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
 
 
 class Runner:
@@ -34,10 +41,23 @@ class Runner:
 
 
 class InstantRunner(Runner):
+    def convert_to_snake(self, name):
+        """Converts a CamelCaseName to snake_case_name
+
+        Args:
+            name: The string you want to convert.
+        Returns:
+            snake_case_format of name.
+        """
+        temp_str = first_cap_re.sub(r'\1_\2', name)
+        return all_cap_re.sub(r'\1_\2', temp_str).lower()
+
     def run(self):
         """Calls all metrics, passes responses to reporters."""
         responses = {}
         for metric in self.metric_list:
-            responses[metric] = metric.gather_metric()
+            # [:-7] removes the ending '_metric'.
+            key_name = self.convert_to_snake(metric.__class__.__name__)[:-7]
+            responses[key_name] = metric.gather_metric()
         for reporter in self.reporter_list:
             reporter.report(responses)

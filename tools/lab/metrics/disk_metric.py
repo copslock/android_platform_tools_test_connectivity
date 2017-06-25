@@ -18,8 +18,8 @@ from metrics.metric import Metric
 
 
 class DiskMetric(Metric):
-
-    COMMAND = "df /var/tmp"
+    # This command calls df /var/tmp and ignores line 1.
+    COMMAND = "df /var/tmp | tail -n +2"
     # Fields for response dictionary
     TOTAL = 'total'
     USED = 'used'
@@ -38,14 +38,10 @@ class DiskMetric(Metric):
         """
         # Run shell command
         result = self._shell.run(self.COMMAND)
-        """Example stdout:
-        Filesystem     1K-blocks     Used Available Use% Mounted on
-        /dev/dm-1       57542652 18358676  36237928  34% /
-        """
-        # Get only second line
-        output = result.stdout.splitlines()[1]
-        # Split by space
-        fields = output.split()
+
+        # Example stdout:
+        # /dev/sda1 57542652 18358676  36237928  34% /
+        fields = result.stdout.split()
         # Create response dictionary
         response = {
             self.TOTAL: int(fields[1]),
@@ -54,4 +50,4 @@ class DiskMetric(Metric):
             # Strip the percentage symbol
             self.PERCENT_USED: int(fields[4][:-1])
         }
-        return (response)
+        return response

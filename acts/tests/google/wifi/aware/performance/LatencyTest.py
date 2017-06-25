@@ -384,7 +384,7 @@ class LatencyTest(AwareBaseTest):
       while not got_on_available or not got_on_link_props:
         try:
           nc_event = init_dut.ed.pop_event(cconsts.EVENT_NETWORK_CALLBACK,
-                                           autils.EVENT_TIMEOUT)
+                                           autils.EVENT_NDP_TIMEOUT)
           if nc_event["data"][
               cconsts.NETWORK_CB_KEY_EVENT] == cconsts.NETWORK_CB_AVAILABLE:
             got_on_available = True

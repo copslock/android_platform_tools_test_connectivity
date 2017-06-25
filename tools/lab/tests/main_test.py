@@ -14,9 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import io
+import mock
 import unittest
 
 from main import RunnerFactory
+from health_checker import HealthChecker
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
 from metrics.adb_hash_metric import AdbHashMetric
@@ -55,6 +58,14 @@ class RunnerFactoryTestCase(unittest.TestCase):
         self.assertIsInstance(run.metric_list[0], VerifyMetric)
         self.assertIsInstance(run.metric_list[1], AdbHashMetric)
         self.assertEquals(len(run.metric_list), 2)
+
+    def test_invalid_config_file(self):
+        with self.assertRaises(SystemExit):
+            RunnerFactory.create({
+                'disk': None,
+                'reporter': None,
+                'config': 'not_a_valid_file.json'
+            })
 
 
 if __name__ == '__main__':

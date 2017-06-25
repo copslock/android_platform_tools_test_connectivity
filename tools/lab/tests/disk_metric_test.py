@@ -28,9 +28,7 @@ class DiskMetricTest(unittest.TestCase):
 
     def test_return_total_used_avail_percent(self):
         # Create sample stdout string ShellCommand.run() would return
-        stdout_string = ('Filesystem     1K-blocks     Used Available Use% '
-                         'mounted on\n/dev/dm-1       57542652 18358676 '
-                         '36237928  34% /')
+        stdout_string = '/dev/sda 57542652 18358676 ' '36237928  34% /'
         FAKE_RESULT = fake.FakeResult(stdout=stdout_string)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = disk_metric.DiskMetric(shell=fake_shell)

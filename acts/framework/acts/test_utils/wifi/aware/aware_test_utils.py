@@ -17,6 +17,7 @@
 import base64
 import json
 import queue
+import re
 import statistics
 import time
 from acts import asserts
@@ -26,6 +27,10 @@ from acts.test_utils.wifi.aware import aware_const as aconsts
 
 # arbitrary timeout for events
 EVENT_TIMEOUT = 10
+
+# semi-arbitrary timeout for network formation events. Based on framework
+# timeout for NDP (NAN data-path) negotiation to be completed.
+EVENT_NDP_TIMEOUT = 20
 
 # number of second to 'reasonably' wait to make sure that devices synchronize
 # with each other - useful for OOB test cases, where the OOB discovery would
@@ -224,6 +229,35 @@ def get_wifi_mac_address(ad):
   return ad.droid.wifiGetConnectionInfo()['mac_address'].upper().replace(
       ':', '')
 
+def validate_forbidden_callbacks(ad, limited_cb=None):
+  """Validate that the specified callbacks have not been called more then permitted.
+
+  In addition to the input configuration also validates that forbidden callbacks
+  have never been called.
+
+  Args:
+    ad: Device on which to run.
+    limited_cb: Dictionary of CB_EV_* ids and maximum permitted calls (0
+                meaning never).
+  """
+  cb_data = json.loads(ad.adb.shell('cmd wifiaware native_cb get_cb_count'))
+
+  if limited_cb is None:
+    limited_cb = {}
+  # add callbacks which should never be called
+  limited_cb[aconsts.CB_EV_MATCH_EXPIRED] = 0
+
+  fail = False
+  for cb_event in limited_cb.keys():
+    if cb_event in cb_data:
+      if cb_data[cb_event] > limited_cb[cb_event]:
+        fail = True
+        ad.log.info(
+            'Callback %s observed %d times: more then permitted %d times',
+            cb_event, cb_data[cb_event], limited_cb[cb_event])
+
+  asserts.assert_false(fail, 'Forbidden callbacks observed', extras=cb_data)
+
 def extract_stats(ad, data, results, key_prefix, log_prefix):
   """Extract statistics from the data, store in the results dictionary, and
   output to the info log.
@@ -262,6 +296,22 @@ def extract_stats(ad, data, results, key_prefix, log_prefix):
   else:
     ad.log.info('%s: num_samples=%d, min=%.2f, max=%.2f, mean=%.2f', log_prefix,
                 num_samples, data_min, data_max, data_mean)
+
+def get_mac_addr(device, interface):
+  """Get the MAC address of the specified interface. Uses ifconfig and parses
+  its output. Normalizes string to remove ':' and upper case.
+
+  Args:
+    device: Device on which to query the interface MAC address.
+    interface: Name of the interface for which to obtain the MAC address.
+  """
+  out = device.adb.shell("ifconfig %s" % interface)
+  res = re.match(".* HWaddr (\S+).*", out , re.S)
+  asserts.assert_true(
+      res,
+      'Unable to obtain MAC address for interface %s' % interface,
+      extras=out)
+  return res.group(1).upper().replace(':', '')
 
 #########################################################
 # Aware primitives

@@ -20,7 +20,6 @@ from metrics.metric import Metric
 
 class ProcessTimeMetric(Metric):
     TIME_COMMAND = 'ps -p %s -o etime='
-
     # Fields for response dictionary
     PID_TIMES = 'pid_times'
 
