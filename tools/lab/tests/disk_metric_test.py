@@ -23,9 +23,6 @@ from tests import fake
 class DiskMetricTest(unittest.TestCase):
     """Class for testing DiskMetric."""
 
-    def setUp(self):
-        pass
-
     def test_return_total_used_avail_percent(self):
         # Create sample stdout string ShellCommand.run() would return
         stdout_string = '/dev/sda 57542652 18358676 ' '36237928  34% /'
