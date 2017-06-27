@@ -223,12 +223,10 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the failed test
                     case.
         """
-        test_name = record.test_name
         if record.details:
             self.log.error(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_fail(test_name, begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_fail(record.test_name, record.log_begin_time)
 
     def on_fail(self, test_name, begin_time):
         """A function that is executed upon a test case failure.
@@ -248,13 +246,11 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the passed test
                     case.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         msg = record.details
         if msg:
             self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_pass(test_name, begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_pass(record.test_name, record.log_begin_time)
 
     def on_pass(self, test_name, begin_time):
         """A function that is executed upon a test case passing.
@@ -274,11 +270,9 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the skipped test
                     case.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.log.info("Reason to skip: %s", record.details)
-        self.on_skip(test_name, begin_time)
+        self.on_skip(record.test_name, record.log_begin_time)
 
     def on_skip(self, test_name, begin_time):
         """A function that is executed upon a test case being skipped.
@@ -298,11 +292,9 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the blocked test
                     case.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.log.info("Reason to block: %s", record.details)
-        self.on_blocked(test_name, begin_time)
+        self.on_blocked(record.test_name, record.log_begin_time)
 
     def on_blocked(self, test_name, begin_time):
         """A function that is executed upon a test begin skipped.
@@ -320,10 +312,8 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the failed test
                     case.
         """
-        test_name = record.test_name
         self.log.exception(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.on_exception(test_name, begin_time)
+        self.on_exception(record.test_name, record.log_begin_time)
 
     def on_exception(self, test_name, begin_time):
         """A function that is executed upon an unhandled exception from a test
@@ -375,6 +365,8 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
+        self.begin_time = tr_record.log_begin_time
+        self.test_name = tr_record.test_name
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
@@ -383,7 +375,7 @@ class BaseTestClass(object):
                     for ad in self.android_devices:
                         if not ad.is_adb_logcat_on:
                             ad.start_adb_logcat(cont_logcat_file=True)
-                ret = self._setup_test(test_name)
+                ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
                 if args or kwargs:
@@ -392,7 +384,7 @@ class BaseTestClass(object):
                     verdict = test_func()
             finally:
                 try:
-                    self._teardown_test(test_name)
+                    self._teardown_test(self.test_name)
                 except signals.TestAbortAll:
                     raise
                 except Exception as e:
