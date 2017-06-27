@@ -1677,9 +1677,9 @@ def active_file_download_task(log, ad, file_name="5MB"):
     curl_capable = True
     try:
         out = ad.adb.shell("curl --version")
-        if "not found" in out:
+        if not out or "not found" in out:
             curl_capable = False
-    except AdbError:
+    except Exception:
         curl_capable = False
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
@@ -1698,9 +1698,10 @@ def active_file_download_task(log, ad, file_name="5MB"):
     if not file_size:
         log.warning("file_name %s for download is not available", file_name)
         return False
-    timeout = min(max(file_size / 100000, 60), 3600)
+    timeout = min(max(file_size / 100000, 120), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not curl_capable:
+        ad.log.info("curl is not available, using chrome to download file")
         return (http_file_download_by_chrome, (ad, url, file_size, True,
                                                timeout))
     else:
@@ -1778,7 +1779,7 @@ def http_file_download_by_curl(ad,
                                out_path=None,
                                expected_file_size=None,
                                remove_file_after_check=True,
-                               timeout=900,
+                               timeout=3600,
                                limit_rate=None,
                                retry=3):
     """Download http file by adb curl.
@@ -1828,7 +1829,7 @@ def http_file_download_by_chrome(ad,
                                  url,
                                  expected_file_size=None,
                                  remove_file_after_check=True,
-                                 timeout=900):
+                                 timeout=3600):
     """Download http file by chrome.
 
     Args:
@@ -1842,13 +1843,14 @@ def http_file_download_by_chrome(ad,
     """
     file_name, out_path = _generate_file_name_and_out_path(
         url, "/sdcard/Download/")
-    for cmd in ("am set-debug-app --persistent com.android.chrome",
-                'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre > /data/local/chrome-command-line"',
-                "pm grant com.android.chrome "
+    for cmd in ("pm grant com.android.chrome "
                 "android.permission.READ_EXTERNAL_STORAGE",
                 "pm grant com.android.chrome "
                 "android.permission.WRITE_EXTERNAL_STORAGE",
+                "rm /data/local/chrome-command-line",
+                "am set-debug-app --persistent com.android.chrome",
+                'echo "chrome --no-default-browser-check --no-first-run '
+                '--disable-fre" > /data/local/tmp/chrome-command-line',
                 'am start -a android.intent.action.VIEW -d "%s"' % url):
         ad.adb.shell(cmd)
     ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
