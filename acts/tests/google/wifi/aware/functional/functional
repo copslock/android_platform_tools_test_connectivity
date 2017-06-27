@@ -5,3 +5,5 @@ DataPathTest
 MacRandomTest
 CapabilitiesTest
 ProtocolsTest
+NonConcurrencyTest
+MatchFilterTest
