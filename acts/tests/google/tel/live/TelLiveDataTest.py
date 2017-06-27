@@ -18,7 +18,6 @@
 """
 
 import time
-import os
 from acts.test_decorators import test_tracker_info
 from acts.base_test import BaseTestClass
 from queue import Empty
@@ -2302,74 +2301,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             set_subid_for_data(ad, current_data_sub_id)
 
         return True
-
-    @test_tracker_info(uuid="ef03eff7-ddd3-48e9-8f67-5e271e14048b")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_vzw_embms_services(self):
-        ad = self.android_devices[0]
-        # Install App and Push config
-        self.log.info("Pushing embms config and apk to the Android device.")
-        embms_path_str = "embms_path"
-        android_embms_path = "/sdcard/mobitv"
-        if embms_path_str not in self.user_params:
-            self.log.error("Need vzwdca for embms test in config file")
-            return False
-        embms_path = self.user_params[embms_path_str]
-        ad.adb.shell("mkdir /sdcard/mobitv")
-        dcafile = os.path.join(embms_path,"dca.config")
-        apkfile = os.path.join(embms_path,"VzwDCA-v3035.apk")
-        ad.adb.push("%s %s" % (dcafile, android_embms_path))
-        ad.adb.install("%s" % apkfile)
-
-        # Co-ordinates Mapping
-        agree_y_axis = {'marlin': 1300, 'walleye': 1000, 'sailfish': 1000,
-                        'taimen': 1300}
-        try:
-            # Check if app is installed
-            if ad.is_apk_installed("com.mobitv.vzwdca"):
-                ad.log.info("VZWDCA App is successfully installed")
-            else:
-                ad.log.error("VZWDCA App is not installed")
-                return False
-
-            # Grant Permissions, Start, Agree, Register
-            for cmd in (
-                    "pm grant com.mobitv.vzwdca "
-                    "android.permission.READ_EXTERNAL_STORAGE",
-                    "pm grant com.mobitv.vzwdca "
-                    "android.permission.WRITE_EXTERNAL_STORAGE",
-                    "input keyevent 26",
-                    "input keyevent 82",
-                    "am start -a android.intent.action.VIEW -n "
-                    "com.mobitv.vzwdca/.DcaActivity",
-                    "input tap 500 %d" % agree_y_axis[ad.model],
-                    "input keyevent 66",
-                    "input keyevent 66",
-                    "input keyevent 66"):
-                time.sleep(3)
-                ad.log.info(cmd)
-                ad.adb.shell(cmd)
-
-            # Check Reg-DeReg
-            time.sleep(5)
-            if ad.is_apk_running("com.qualcomm.ltebc_vzw"):
-                ad.log.info("EMBMS Registered successfully")
-                ad.adb.shell("input keyevent 61")
-                time.sleep(3)
-                ad.adb.shell("input keyevent 66")
-                time.sleep(3)
-                if not ad.is_apk_running("com.qualcomm.ltebc_vzw"):
-                    ad.log.info("EMBMS De-Registered successfully")
-                    return True
-                else:
-                    ad.log.error("EMBMS De-Registeration Failed")
-                    return False
-            else:
-                ad.log.error("EMBMS Registeration Failed")
-                return False
-        finally:
-            ad.log.info("Force Close the VZW App")
-            ad.adb.shell("am force-stop com.mobitv.vzwdca")
 
     @test_tracker_info(uuid="8a8cd773-77f5-4802-85ac-1a654bb4743c")
     @TelephonyBaseTest.tel_test_wrap
