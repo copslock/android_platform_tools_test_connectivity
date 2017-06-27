@@ -91,34 +91,22 @@ class TelephonyBaseTest(BaseTestClass):
     @staticmethod
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
-            current_time = time.strftime("%m-%d-%Y-%H-%M-%S")
-            func_name = fn.__name__
-            test_id = "%s:%s:%s" % (self.__class__.__name__, func_name,
-                                    current_time)
+            test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
+                                    self.begin_time.replace(' ', '-'))
             self.test_id = test_id
-            self.begin_time = current_time
-            self.test_name = func_name
             log_string = "[Test ID] %s" % test_id
             self.log.info(log_string)
             try:
                 for ad in self.android_devices:
                     ad.droid.logI("Started %s" % log_string)
-                    ad.crash_report = ad.check_crash_report(
-                        log_crash_report=False)
-                    if ad.crash_report:
-                        ad.log.info("Found crash reports %s before test start",
-                                    ad.crash_report)
-
                 # TODO: b/19002120 start QXDM Logging
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
                     ad.droid.logI("Finished %s" % log_string)
-                    new_crash = ad.check_crash_report()
-                    crash_diff = set(new_crash).difference(
-                        set(ad.crash_report))
-                    if crash_diff:
-                        ad.log.error("Find new crash reports %s",
-                                     list(crash_diff))
+                    new_crash = ad.check_crash_report(self.test_name,
+                                                      self.begin_time, result)
+                    if new_crash:
+                        ad.log.error("Find new crash reports %s", new_crash)
                 if not result and self.user_params.get("telephony_auto_rerun"):
                     self.teardown_test()
                     # re-run only once, if re-run pass, mark as pass
