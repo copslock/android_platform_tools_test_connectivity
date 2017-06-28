@@ -253,11 +253,14 @@ def setup_droid_properties(log, ad, sim_filename=None):
                     sim_data[iccid]["phone_num"], sim_filename,
                     sub_info["phone_num"])
             sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        if sub_info["sim_operator_name"] != sub_info["network_operator_name"]:
+        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
+                "network_plmn"] and (sub_info["sim_operator_name"].strip(
+                ) not in sub_info["network_operator_name"].strip()):
+            ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
-    if getattr(ad, 'roaming', False):
-        ad.log.info("Enable cell data roaming")
-        toggle_cell_data_roaming(ad, True)
+    data_roaming = getattr(ad, 'roaming', False)
+    if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
+        set_cell_data_roaming_state_by_adb(ad, data_roaming)
 
     ad.log.info("cfg = %s", ad.cfg)
 
@@ -1912,11 +1915,13 @@ def http_file_download_by_sl4a(log,
             ad.log.info("Remove the downloaded file %s", out_path)
             ad.adb.shell("rm %s" % out_path, ignore_status=True)
 
+
 def trigger_modem_crash(log, ad, timeout=10):
     cmd = "echo restart > /sys/kernel/debug/msm_subsys/modem"
     ad.log.info("Triggering Modem Crash using adb command %s", cmd)
     ad.adb.shell(cmd, timeout=timeout)
     return True
+
 
 def _connection_state_change(_event, target_state, connection_type):
     if connection_type:
@@ -2181,6 +2186,26 @@ def _wait_for_nw_data_connection(
         return False
     finally:
         ad.droid.connectivityStopTrackingConnectivityStateChange()
+
+
+def get_cell_data_roaming_state_by_adb(ad):
+    """Get Cell Data Roaming state. True for enabled, False for disabled"""
+    adb_str = {"1": True, "0": False}
+    out = ad.adb.shell("settings get global data_roaming")
+    return adb_str[out]
+
+
+def get_cell_data_roaming_state_by_adb(ad):
+    """Get Cell Data Roaming state. True for enabled, False for disabled"""
+    state_mapping = {"1": True, "0": False}
+    return state_mapping[ad.adb.shell("settings get global data_roaming")]
+
+
+def set_cell_data_roaming_state_by_adb(ad, state):
+    """Set Cell Data Roaming state."""
+    state_mapping = {True: "1", False: "0"}
+    ad.log.info("Set data roaming to %s", state)
+    ad.adb.shell("settings put global data_roaming %s" % state_mapping[state])
 
 
 def toggle_cell_data_roaming(ad, state):
@@ -3727,6 +3752,9 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
                 ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
+        data_roaming = getattr(ad, 'roaming', False)
+        if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
+            set_cell_data_roaming_state_by_adb(ad, data_roaming)
     except Exception as e:
         ad.log.error("%s failure, toggle APM instead", e)
         toggle_airplane_mode(log, ad, True, False)
@@ -3741,9 +3769,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
         result = False
 
-    if getattr(ad, 'data_roaming', False):
-        ad.log.info("Enable cell data roaming")
-        toggle_cell_data_roaming(ad, True)
     if check_subscription and not ensure_phone_subscription(log, ad):
         ad.log.error("Unable to find a valid subscription!")
         result = False
