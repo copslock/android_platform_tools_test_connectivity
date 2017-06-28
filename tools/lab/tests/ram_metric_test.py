@@ -23,9 +23,6 @@ from tests import fake
 class RamMetricTest(unittest.TestCase):
     """Class for testing RamMetric."""
 
-    def setUp(self):
-        pass
-
     def test_correct_ram_output(self):
         # Create sample stdout string ShellCommand.run() would return
         stdout_string = ('             total       used       free     shared'

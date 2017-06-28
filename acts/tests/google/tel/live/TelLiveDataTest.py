@@ -2322,8 +2322,24 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad.adb.install("%s" % apkfile)
 
         # Co-ordinates Mapping
-        agree_y_axis = {'marlin': 1300, 'walleye': 1000, 'sailfish': 1000,
-                        'taimen': 1300}
+        lcd_density = ad.adb.shell("getprop ro.sf.lcd_density")
+        ad.log.debug("lcd_density %s" % lcd_density)
+        if "420" in lcd_density:
+            agree_y_axis = 1000
+        else:
+            agree_y_axis = 1300
+
+        # Screen ON needed to open the VZW App
+        if "ON" in \
+        ad.adb.shell(
+               "dumpsys power | grep 'Display Power: state' | cut -d '=' -f2"):
+            ad.log.info("Screen already ON")
+            ad.adb.shell("input keyevent 82")
+        else:
+            ad.log.info("Screen OFF, turning ON")
+            ad.adb.shell("input keyevent 26")
+            ad.adb.shell("input keyevent 82")
+
         try:
             # Check if app is installed
             if ad.is_apk_installed("com.mobitv.vzwdca"):
@@ -2338,15 +2354,13 @@ class TelLiveDataTest(TelephonyBaseTest):
                     "android.permission.READ_EXTERNAL_STORAGE",
                     "pm grant com.mobitv.vzwdca "
                     "android.permission.WRITE_EXTERNAL_STORAGE",
-                    "input keyevent 26",
-                    "input keyevent 82",
                     "am start -a android.intent.action.VIEW -n "
                     "com.mobitv.vzwdca/.DcaActivity",
-                    "input tap 500 %d" % agree_y_axis[ad.model],
+                    "input tap 500 %d" % agree_y_axis,
                     "input keyevent 66",
                     "input keyevent 66",
                     "input keyevent 66"):
-                time.sleep(3)
+                time.sleep(1)
                 ad.log.info(cmd)
                 ad.adb.shell(cmd)
 
@@ -2355,9 +2369,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             if ad.is_apk_running("com.qualcomm.ltebc_vzw"):
                 ad.log.info("EMBMS Registered successfully")
                 ad.adb.shell("input keyevent 61")
-                time.sleep(3)
+                time.sleep(1)
                 ad.adb.shell("input keyevent 66")
-                time.sleep(3)
+                time.sleep(1)
                 if not ad.is_apk_running("com.qualcomm.ltebc_vzw"):
                     ad.log.info("EMBMS De-Registered successfully")
                     return True
