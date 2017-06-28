@@ -896,22 +896,40 @@ class AndroidDevice:
             self.adb.pull(
                 "%s %s" % (file_name, remote_path), timeout=PULL_TIMEOUT)
 
-    def check_crash_report(self, log_crash_report=False, test_name=None):
+    def check_crash_report(self,
+                           test_name=None,
+                           begin_time=None,
+                           log_crash_report=False):
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
             for report in self.get_file_names(crash_path):
                 if report in CRASH_REPORT_SKIPS:
                     continue
-                crash_reports.append(os.path.join(crash_path, report))
-        if log_crash_report:
-            if not test_name:
-                test_name = time.strftime("%m-%d-%Y-%H-%M-%S")
-            crash_log_path = os.path.join(self.log_path, test_name,
-                                          "CrashReports")
+                file_path = os.path.join(crash_path, report)
+                if begin_time:
+                    file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
+                    if begin_time < file_time.split('-', 1)[1]:
+                        crash_reports.append(file_path)
+                else:
+                    crash_reports.append(file_path)
+        if crash_reports and log_crash_report:
+            test_name = test_name or begin_time or time.strftime(
+                "%m-%d-%Y-%H-%M-%S")
+            crash_log_path = os.path.join(self.log_path, test_name, "Crashes")
             utils.create_dir(crash_log_path)
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
+
+    def get_qxdm_logs(self):
+        """Get qxdm logs."""
+        ad.log.info("Pull QXDM Logs")
+        qxdm_logs = self.get_file_names(
+            "/data/vendor/radio/diag_logs/logs/*.qmdl")
+        if qxdm_logs:
+            qxdm_path = os.path.join(ad.log_path, "QXDM_Logs")
+            utils.create_dir(qxdm_path)
+            ad.pull_files(qxdm_logs, qxdm_path)
 
     def start_new_session(self):
         """Start a new session in sl4a.

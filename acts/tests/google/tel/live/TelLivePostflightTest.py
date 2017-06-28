@@ -26,13 +26,15 @@ class TelLivePostflightTest(TelephonyBaseTest):
     def test_check_crash(self):
         msg = ""
         for ad in self.android_devices:
-            post_crash = ad.check_crash_report()
+            post_crash = ad.check_crash_report(self.test_id, None, False)
             pre_crash = getattr(ad, "crash_report_preflight", [])
             crash_diff = list(set(post_crash).difference(set(pre_crash)))
             if crash_diff:
                 msg += "%s find new crash reports %s" % (ad.serial, crash_diff)
-                ad.pull_files(crash_diff)
                 ad.log.error("Find new crash reports %s", crash_diff)
+                crash_path = os.path.join(ad.log_path, self.test_id, "Crashes")
+                utils.create_dir(crash_path)
+                ad.pull_files(crash_diff, crash_path)
         if msg:
             fail(msg)
         return True
