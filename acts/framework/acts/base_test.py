@@ -687,11 +687,9 @@ class BaseTestClass(object):
                 ad.take_bug_report(test_name, begin_time)
                 bugreport_path = os.path.join(ad.log_path, test_name)
                 utils.create_dir(bugreport_path)
-                ad.check_crash_report(True, test_name)
+                ad.check_crash_report(test_name, begin_time, True)
                 if getattr(ad, "qxdm_always_on", False):
-                    ad.log.info("Pull QXDM Logs")
-                    ad.pull_files(["/data/vendor/radio/diag_logs/logs/"],
-                                  bugreport_path)
+                    ad.get_qxdm_logs()
             except Exception as e:
                 ad.log.error(
                     "Failed to take a bug report for %s with error %s",
