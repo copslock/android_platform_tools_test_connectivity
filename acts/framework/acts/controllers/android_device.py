@@ -45,7 +45,7 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
-                      "/data/ramdump/")
+                      "/data/ramdump/", "/data/vendor/ssrdump")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS")
 BUG_REPORT_TIMEOUT = 1200
 PULL_TIMEOUT = 300
