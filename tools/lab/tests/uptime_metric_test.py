@@ -23,9 +23,6 @@ from tests import fake
 class UptimeMetricTest(unittest.TestCase):
     """Class for testing UptimeMetric."""
 
-    def setUp(self):
-        pass
-
     def test_correct_uptime(self):
         # Create sample stdout string ShellCommand.run() would return
         stdout_string = "358350.70 14241538.06"
