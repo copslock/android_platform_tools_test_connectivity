@@ -1654,11 +1654,11 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
     """
     if out_path.endswith("/"):
         out_path = os.path.join(out_path, file_name)
-    out = ad.adb.shell("ls -l %s" % out_path, ignore_status=True)
+    out = ad.adb.shell('stat -c "%%s" %s' % out_path, ignore_status=True)
     # Handle some old version adb returns error message "No such" into std_out
-    if out and "No such" not in out and file_name in out:
+    if out and "No such" not in out:
         if expected_file_size:
-            file_size = int(out.split(" ")[4])
+            file_size = int(out)
             if file_size >= expected_file_size:
                 ad.log.info("File %s of size %s is in %s", file_name,
                             file_size, out_path)
@@ -1701,7 +1701,7 @@ def active_file_download_task(log, ad, file_name="5MB"):
     if not file_size:
         log.warning("file_name %s for download is not available", file_name)
         return False
-    timeout = min(max(file_size / 100000, 120), 3600)
+    timeout = min(max(file_size / 100000, 300), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not curl_capable:
         ad.log.info("curl is not available, using chrome to download file")
@@ -1846,17 +1846,10 @@ def http_file_download_by_chrome(ad,
     """
     file_name, out_path = _generate_file_name_and_out_path(
         url, "/sdcard/Download/")
-    for cmd in ("pm grant com.android.chrome "
-                "android.permission.READ_EXTERNAL_STORAGE",
-                "pm grant com.android.chrome "
-                "android.permission.WRITE_EXTERNAL_STORAGE",
-                "rm /data/local/chrome-command-line",
-                "am set-debug-app --persistent com.android.chrome",
-                'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre" > /data/local/tmp/chrome-command-line',
-                'am start -a android.intent.action.VIEW -d "%s"' % url):
-        ad.adb.shell(cmd)
+    # Remove pre-existing file
+    ad.adb.shell("rm %s" % out_path, ignore_status=True)
     ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
+    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
     elapse_time = 0
     while elapse_time < timeout:
         time.sleep(30)
