@@ -14,5 +14,11 @@
       "constant": 100,
       "compare": "GREATER_THAN"
     }
+  },
+  "name": {
+    "name": {
+      "constant": "None",
+      "compare": "IP_ADDR"
+    }
   }
 }
