@@ -17,6 +17,7 @@
 from health.constant_health_analyzer import HealthyIfGreaterThanConstantNumber
 from health.constant_health_analyzer import HealthyIfLessThanConstantNumber
 from health.constant_health_analyzer import HealthyIfEquals
+from health.custom_health_analyzer import HealthyIfNotIpAddress
 
 
 class HealthChecker(object):
@@ -43,7 +44,8 @@ class HealthChecker(object):
     COMPARER_CONSTRUCTOR = {
         'GREATER_THAN': lambda k, c: HealthyIfGreaterThanConstantNumber(k, c),
         'LESS_THAN': lambda k, c: HealthyIfLessThanConstantNumber(k, c),
-        'EQUALS': lambda k, c: HealthyIfEquals(k, c)
+        'EQUALS': lambda k, c: HealthyIfEquals(k, c),
+        'IP_ADDR': lambda k, c: HealthyIfNotIpAddress(k)
     }
 
     def __init__(self, config):
