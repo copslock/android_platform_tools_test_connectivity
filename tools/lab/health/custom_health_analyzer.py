@@ -35,3 +35,4 @@ class HealthyIfNotIpAddress(health_analyzer.HealthAnalyzer):
             IP(metric_result[self.key])
         except (ValueError, TypeError):
             return True
+        return False
