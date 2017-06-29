@@ -343,20 +343,46 @@ def configure_dw(device, is_default, is_24_band, value):
   device.adb.shell("cmd wifiaware native_api set %s %d" % (variable, value))
 
 def config_dw_high_power(device):
-  """Configure device's discovery window (DW) values to high power mode - whether
-  device is in interactive or non-interactive modes"""
-  configure_dw(device, is_default=True, is_24_band=True, value=1)
-  configure_dw(device, is_default=True, is_24_band=False, value=1)
-  configure_dw(device, is_default=False, is_24_band=True, value=1)
-  configure_dw(device, is_default=False, is_24_band=False, value=1)
+  """Configure device's discovery window (DW) values to high power mode -
+  whether device is in interactive or non-interactive modes"""
+  configure_dw(
+      device, is_default=True, is_24_band=True, value=aconsts.DW_24_INTERACTIVE)
+  configure_dw(
+      device, is_default=True, is_24_band=False, value=aconsts.DW_5_INTERACTIVE)
+  configure_dw(
+      device,
+      is_default=False,
+      is_24_band=True,
+      value=aconsts.DW_24_INTERACTIVE)
+  configure_dw(
+      device,
+      is_default=False,
+      is_24_band=False,
+      value=aconsts.DW_5_INTERACTIVE)
 
 def config_dw_low_power(device):
   """Configure device's discovery window (DW) values to low power mode - whether
   device is in interactive or non-interactive modes"""
-  configure_dw(device, is_default=True, is_24_band=True, value=4)
-  configure_dw(device, is_default=True, is_24_band=False, value=0)
-  configure_dw(device, is_default=False, is_24_band=True, value=4)
-  configure_dw(device, is_default=False, is_24_band=False, value=0)
+  configure_dw(
+      device,
+      is_default=True,
+      is_24_band=True,
+      value=aconsts.DW_24_NON_INTERACTIVE)
+  configure_dw(
+      device,
+      is_default=True,
+      is_24_band=False,
+      value=aconsts.DW_5_NON_INTERACTIVE)
+  configure_dw(
+      device,
+      is_default=False,
+      is_24_band=True,
+      value=aconsts.DW_24_NON_INTERACTIVE)
+  configure_dw(
+      device,
+      is_default=False,
+      is_24_band=False,
+      value=aconsts.DW_5_NON_INTERACTIVE)
 
 def config_dw_all_modes(device, dw_24ghz, dw_5ghz):
   """Configure device's discovery window (DW) values to the specified values -

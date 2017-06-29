@@ -434,8 +434,8 @@ class LatencyTest(AwareBaseTest):
       self.run_synchronization_latency(
           results=results,
           do_unsolicited_passive=True,
-          dw_24ghz=1,
-          dw_5ghz=1,
+          dw_24ghz=aconsts.DW_24_INTERACTIVE,
+          dw_5ghz=aconsts.DW_5_INTERACTIVE,
           num_iterations=10,
           startup_offset=startup_offset,
           timeout_period=20)
@@ -450,8 +450,8 @@ class LatencyTest(AwareBaseTest):
       self.run_synchronization_latency(
           results=results,
           do_unsolicited_passive=True,
-          dw_24ghz=4,
-          dw_5ghz=0,
+          dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
+          dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
           num_iterations=10,
           startup_offset=startup_offset,
           timeout_period=20)
@@ -463,7 +463,10 @@ class LatencyTest(AwareBaseTest):
     """
     results = {}
     self.run_discovery_latency(
-        results=results, do_unsolicited_passive=True, dw_24ghz=1, dw_5ghz=1,
+        results=results,
+        do_unsolicited_passive=True,
+        dw_24ghz=aconsts.DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_default_parameters finished", extras=results)
@@ -473,7 +476,10 @@ class LatencyTest(AwareBaseTest):
     -interactive mode (lower power)."""
     results = {}
     self.run_discovery_latency(
-        results=results, do_unsolicited_passive=True, dw_24ghz=4, dw_5ghz=0,
+        results=results,
+        do_unsolicited_passive=True,
+        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_non_interactive_dws finished", extras=results)
@@ -499,7 +505,10 @@ class LatencyTest(AwareBaseTest):
     of reception (ACK) before sending the next message."""
     results = {}
     self.run_message_latency(
-        results=results, dw_24ghz=1, dw_5ghz=1, num_iterations=100)
+        results=results,
+        dw_24ghz=aconsts.DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_INTERACTIVE,
+        num_iterations=100)
     asserts.explicit_pass(
         "test_message_latency_default_dws finished", extras=results)
 
@@ -510,7 +519,10 @@ class LatencyTest(AwareBaseTest):
     message."""
     results = {}
     self.run_message_latency(
-        results=results, dw_24ghz=4, dw_5ghz=0, num_iterations=100)
+        results=results,
+        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+        num_iterations=100)
     asserts.explicit_pass(
         "test_message_latency_non_interactive_dws finished", extras=results)
 
@@ -519,7 +531,10 @@ class LatencyTest(AwareBaseTest):
     NDP is setup with OOB (out-of-band) configuration."""
     results = {}
     self.run_ndp_oob_latency(
-        results=results, dw_24ghz=1, dw_5ghz=1, num_iterations=10)
+        results=results,
+        dw_24ghz=aconsts.DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_INTERACTIVE,
+        num_iterations=10)
     asserts.explicit_pass(
         "test_ndp_setup_latency_default_dws finished", extras=results)
 
@@ -529,6 +544,9 @@ class LatencyTest(AwareBaseTest):
     configuration"""
     results = {}
     self.run_ndp_oob_latency(
-        results=results, dw_24ghz=4, dw_5ghz=0, num_iterations=10)
+        results=results,
+        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+        num_iterations=10)
     asserts.explicit_pass(
         "test_ndp_setup_latency_non_interactive_dws finished", extras=results)
