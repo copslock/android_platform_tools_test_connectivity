@@ -28,10 +28,7 @@ from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 class ThroughputTest(AwareBaseTest):
   """Set of tests for Wi-Fi Aware to measure latency of Aware operations."""
 
-  # number of second to 'reasonably' wait to make sure that devices synchronize
-  # with each other - useful for OOB test cases, where the OOB discovery would
-  # take some time
-  WAIT_FOR_CLUSTER = 5
+  SERVICE_NAME = "GoogleTestServiceXYZ"
 
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
@@ -47,68 +44,31 @@ class ThroughputTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-  ########################################################################
-
-  def test_iperf_single_ndp_aware_only(self):
+  def run_iperf_single_ndp_aware_only(self, use_ib, results):
     """Measure iperf performance on a single NDP, with Aware enabled and no
-    infrastructure connection - i.e. device is not associated to an AP"""
+    infrastructure connection - i.e. device is not associated to an AP.
+
+    Args:
+      use_ib: True to use in-band discovery, False to use out-of-band discovery.
+      results: Dictionary into which to place test results.
+    """
     init_dut = self.android_devices[0]
-    init_dut.pretty_name = "Initiator"
     resp_dut = self.android_devices[1]
-    resp_dut.pretty_name = "Responder"
 
-    # Initiator+Responder: attach and wait for confirmation & identity
-    init_id = init_dut.droid.wifiAwareAttach(True)
-    autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
-    init_ident_event = autils.wait_for_event(
-        init_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-    init_mac = init_ident_event["data"]["mac"]
-    time.sleep(self.device_startup_offset)
-    resp_id = resp_dut.droid.wifiAwareAttach(True)
-    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
-    resp_ident_event = autils.wait_for_event(
-        resp_dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-    resp_mac = resp_ident_event["data"]["mac"]
-
-    # wait for for devices to synchronize with each other - there are no other
-    # mechanisms to make sure this happens for OOB discovery (except retrying
-    # to execute the data-path request)
-    time.sleep(self.WAIT_FOR_CLUSTER)
-
-    # Responder: request network
-    resp_req_key = self.request_network(
-        resp_dut,
-        resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
-
-    # Initiator: request network
-    init_req_key = self.request_network(
-        init_dut,
-        init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
-
-    # Initiator & Responder: wait for network formation
-    init_net_event = autils.wait_for_event_with_keys(
-        init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-    resp_net_event = autils.wait_for_event_with_keys(
-        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
-
-    init_aware_if = init_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    resp_aware_if = resp_net_event["data"][
-        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    if use_ib:
+      # note: Publisher = Responder, Subscribe = Initiator
+      (resp_req_key, init_req_key, resp_aware_if,
+       init_aware_if, resp_ipv6, init_ipv6) = autils.create_ib_ndp(
+           resp_dut, init_dut,
+           autils.create_discovery_config(self.SERVICE_NAME,
+                                          aconsts.PUBLISH_TYPE_UNSOLICITED),
+           autils.create_discovery_config(self.SERVICE_NAME,
+                                          aconsts.SUBSCRIBE_TYPE_PASSIVE),
+           self.device_startup_offset)
+    else:
+      (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+      resp_ipv6) = autils.create_oob_ndp(init_dut, resp_dut)
     self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
-
-    init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
-        init_aware_if).split("%")[0]
-    resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
-        resp_aware_if).split("%")[0]
     self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
                   resp_ipv6)
 
@@ -128,10 +88,29 @@ class ThroughputTest(AwareBaseTest):
     init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
     # Collect results
-    results = {}
     data_json = json.loads("".join(data))
+    if "error" in data_json:
+      asserts.fail(
+          "iperf run failed: %s" % data_json["error"], extras=data_json)
     results["tx_rate"] = data_json["end"]["sum_sent"]["bits_per_second"]
     results["rx_rate"] = data_json["end"]["sum_received"]["bits_per_second"]
     self.log.info("iPerf3: Sent = %d bps Received = %d bps", results["tx_rate"],
                   results["rx_rate"])
-    asserts.explicit_pass("Aware data-path test passes", extras=results)
+
+  ########################################################################
+
+  def test_iperf_single_ndp_aware_only_ib(self):
+    """Measure throughput using iperf on a single NDP, with Aware enabled and
+    no infrastructure connection. Use in-band discovery."""
+    results = {}
+    self.run_iperf_single_ndp_aware_only(use_ib=True, results=results)
+    asserts.explicit_pass(
+        "test_iperf_single_ndp_aware_only_ib passes", extras=results)
+
+  def test_iperf_single_ndp_aware_only_oob(self):
+    """Measure throughput using iperf on a single NDP, with Aware enabled and
+    no infrastructure connection. Use out-of-band discovery."""
+    results = {}
+    self.run_iperf_single_ndp_aware_only(use_ib=False, results=results)
+    asserts.explicit_pass(
+        "test_iperf_single_ndp_aware_only_ib passes", extras=results)

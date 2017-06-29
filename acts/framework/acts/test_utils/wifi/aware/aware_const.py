@@ -15,6 +15,16 @@
 #   limitations under the License.
 
 ######################################################
+# Aware DW (Discovery Window) power mode values
+######################################################
+
+DW_24_INTERACTIVE = 1
+DW_5_INTERACTIVE = 1
+
+DW_24_NON_INTERACTIVE = 4
+DW_5_NON_INTERACTIVE = 0
+
+######################################################
 # Broadcast events
 ######################################################
 BROADCAST_WIFI_AWARE_AVAILABLE = "WifiAwareAvailable"
