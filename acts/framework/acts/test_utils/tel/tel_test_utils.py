@@ -1849,7 +1849,9 @@ def http_file_download_by_chrome(ad,
     # Remove pre-existing file
     ad.adb.shell("rm %s" % out_path, ignore_status=True)
     ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
-    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+    for cmd in ("input keyevent KEYCODE_WAKEUP", "input swipe 200 400 200 0",
+                'am start -a android.intent.action.VIEW -d "%s"' % url):
+        ad.adb.shell(cmd)
     elapse_time = 0
     while elapse_time < timeout:
         time.sleep(30)
@@ -2510,7 +2512,7 @@ def _is_attached(log, ad, voice_or_data):
 
 def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
     rat = get_network_rat_for_subscription(log, ad, sub_id, voice_or_data)
-    ad.log.info("Sub_id %s network rate is %s for %s", sub_id, rat,
+    ad.log.info("Sub_id %s network RAT is %s for %s", sub_id, rat,
                 voice_or_data)
     return rat != RAT_UNKNOWN
 
