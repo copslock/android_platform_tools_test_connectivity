@@ -92,7 +92,6 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import \
@@ -3160,8 +3159,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
             return False
         return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
@@ -3186,8 +3185,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
             return False
         return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
