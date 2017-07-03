@@ -178,13 +178,24 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
                              "\"com.google.android.wfcactivation/"
                              ".VzwEmergencyAddressActivity\"")
+            # Start telephony monitor
             if not ad.is_apk_running("com.google.telephonymonitor"):
                 ad.log.info("TelephonyMonitor is not running, start it now")
                 ad.adb.shell(
                     'am broadcast -a '
                     'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
                     '"ce.telephony_monitor_enable" "true"')
-
+            # Set chrome browser start with no-first-run verification and
+            # disable-fre. Give permission to read from and write to storage.
+            for cmd in ("pm grant com.android.chrome "
+                    "android.permission.READ_EXTERNAL_STORAGE",
+                    "pm grant com.android.chrome "
+                    "android.permission.WRITE_EXTERNAL_STORAGE",
+                    "rm /data/local/chrome-command-line",
+                    "am set-debug-app --persistent com.android.chrome",
+                    'echo "chrome --no-default-browser-check --no-first-run '
+                    '--disable-fre" > /data/local/tmp/chrome-command-line'):
+                ad.adb.shell(cmd)
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
             # logging.

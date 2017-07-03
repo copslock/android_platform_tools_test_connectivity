@@ -253,11 +253,14 @@ def setup_droid_properties(log, ad, sim_filename=None):
                     sim_data[iccid]["phone_num"], sim_filename,
                     sub_info["phone_num"])
             sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        if sub_info["sim_operator_name"] != sub_info["network_operator_name"]:
+        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
+                "network_plmn"] and (sub_info["sim_operator_name"].strip(
+                ) not in sub_info["network_operator_name"].strip()):
+            ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
-    if getattr(ad, 'roaming', False):
-        ad.log.info("Enable cell data roaming")
-        toggle_cell_data_roaming(ad, True)
+    data_roaming = getattr(ad, 'roaming', False)
+    if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
+        set_cell_data_roaming_state_by_adb(ad, data_roaming)
 
     ad.log.info("cfg = %s", ad.cfg)
 
@@ -1651,11 +1654,11 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
     """
     if out_path.endswith("/"):
         out_path = os.path.join(out_path, file_name)
-    out = ad.adb.shell("ls -l %s" % out_path, ignore_status=True)
+    out = ad.adb.shell('stat -c "%%s" %s' % out_path, ignore_status=True)
     # Handle some old version adb returns error message "No such" into std_out
-    if out and "No such" not in out and file_name in out:
+    if out and "No such" not in out:
         if expected_file_size:
-            file_size = int(out.split(" ")[4])
+            file_size = int(out)
             if file_size >= expected_file_size:
                 ad.log.info("File %s of size %s is in %s", file_name,
                             file_size, out_path)
@@ -1698,7 +1701,7 @@ def active_file_download_task(log, ad, file_name="5MB"):
     if not file_size:
         log.warning("file_name %s for download is not available", file_name)
         return False
-    timeout = min(max(file_size / 100000, 120), 3600)
+    timeout = min(max(file_size / 100000, 300), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not curl_capable:
         ad.log.info("curl is not available, using chrome to download file")
@@ -1843,17 +1846,12 @@ def http_file_download_by_chrome(ad,
     """
     file_name, out_path = _generate_file_name_and_out_path(
         url, "/sdcard/Download/")
-    for cmd in ("pm grant com.android.chrome "
-                "android.permission.READ_EXTERNAL_STORAGE",
-                "pm grant com.android.chrome "
-                "android.permission.WRITE_EXTERNAL_STORAGE",
-                "rm /data/local/chrome-command-line",
-                "am set-debug-app --persistent com.android.chrome",
-                'echo "chrome --no-default-browser-check --no-first-run '
-                '--disable-fre" > /data/local/tmp/chrome-command-line',
+    # Remove pre-existing file
+    ad.adb.shell("rm %s" % out_path, ignore_status=True)
+    ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
+    for cmd in ("input keyevent KEYCODE_WAKEUP", "input swipe 200 400 200 0",
                 'am start -a android.intent.action.VIEW -d "%s"' % url):
         ad.adb.shell(cmd)
-    ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
     elapse_time = 0
     while elapse_time < timeout:
         time.sleep(30)
@@ -1912,11 +1910,13 @@ def http_file_download_by_sl4a(log,
             ad.log.info("Remove the downloaded file %s", out_path)
             ad.adb.shell("rm %s" % out_path, ignore_status=True)
 
+
 def trigger_modem_crash(log, ad, timeout=10):
     cmd = "echo restart > /sys/kernel/debug/msm_subsys/modem"
     ad.log.info("Triggering Modem Crash using adb command %s", cmd)
     ad.adb.shell(cmd, timeout=timeout)
     return True
+
 
 def _connection_state_change(_event, target_state, connection_type):
     if connection_type:
@@ -2181,6 +2181,26 @@ def _wait_for_nw_data_connection(
         return False
     finally:
         ad.droid.connectivityStopTrackingConnectivityStateChange()
+
+
+def get_cell_data_roaming_state_by_adb(ad):
+    """Get Cell Data Roaming state. True for enabled, False for disabled"""
+    adb_str = {"1": True, "0": False}
+    out = ad.adb.shell("settings get global data_roaming")
+    return adb_str[out]
+
+
+def get_cell_data_roaming_state_by_adb(ad):
+    """Get Cell Data Roaming state. True for enabled, False for disabled"""
+    state_mapping = {"1": True, "0": False}
+    return state_mapping[ad.adb.shell("settings get global data_roaming")]
+
+
+def set_cell_data_roaming_state_by_adb(ad, state):
+    """Set Cell Data Roaming state."""
+    state_mapping = {True: "1", False: "0"}
+    ad.log.info("Set data roaming to %s", state)
+    ad.adb.shell("settings put global data_roaming %s" % state_mapping[state])
 
 
 def toggle_cell_data_roaming(ad, state):
@@ -2492,7 +2512,7 @@ def _is_attached(log, ad, voice_or_data):
 
 def _is_attached_for_subscription(log, ad, sub_id, voice_or_data):
     rat = get_network_rat_for_subscription(log, ad, sub_id, voice_or_data)
-    ad.log.info("Sub_id %s network rate is %s for %s", sub_id, rat,
+    ad.log.info("Sub_id %s network RAT is %s for %s", sub_id, rat,
                 voice_or_data)
     return rat != RAT_UNKNOWN
 
@@ -3727,6 +3747,9 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
                 ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
+        data_roaming = getattr(ad, 'roaming', False)
+        if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
+            set_cell_data_roaming_state_by_adb(ad, data_roaming)
     except Exception as e:
         ad.log.error("%s failure, toggle APM instead", e)
         toggle_airplane_mode(log, ad, True, False)
@@ -3741,9 +3764,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
         result = False
 
-    if getattr(ad, 'data_roaming', False):
-        ad.log.info("Enable cell data roaming")
-        toggle_cell_data_roaming(ad, True)
     if check_subscription and not ensure_phone_subscription(log, ad):
         ad.log.error("Unable to find a valid subscription!")
         result = False
