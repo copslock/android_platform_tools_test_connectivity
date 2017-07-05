@@ -17,6 +17,10 @@
     Base Class for Defining Common WiFi Test Functionality
 """
 
+import copy
+import itertools
+import time
+
 from acts import asserts
 from acts import utils
 from acts.base_test import BaseTestClass
@@ -117,8 +121,40 @@ class WifiBaseTest(BaseTestClass):
                 "2g": network_dict_2g,
                 "5g": network_dict_5g
             })
-        self.open_networks = self.user_params["open_network"]
+        self.open_network = self.user_params["open_network"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
+
+
+    def populate_bssid(self, ap, networks_5g, networks_2g):
+        """Get bssid for a given SSID and add it to the network dictionary.
+
+        Args:
+            networks_5g: List of 5g networks configured on the APs.
+            networks_2g: List of 2g networks configured on the APs.
+
+        """
+
+        if not(networks_5g or networks_2g):
+            return
+
+        for network in itertools.chain(networks_5g, networks_2g):
+            if 'channel' in network:
+                continue
+            bssid = ap.get_bssid_from_ssid(network["SSID"])
+            if network["security"] == hostapd_constants.WPA2_STRING:
+                # TODO:(bamahadev) Change all occurances of reference_networks
+                # in to wpa_networks.
+                network_list = self.reference_networks
+            else:
+                network_list = self.open_network
+            if '2g' in network["SSID"]:
+                band = hostapd_constants.BAND_2G
+            else:
+                band = hostapd_constants.BAND_5G
+            # For each network update BSSID if it doesn't already exist.
+            for ref_network in network_list:
+                if not 'bssid' in ref_network[band]:
+                    ref_network[band]["bssid"] = bssid
 
 
     def legacy_configure_ap_and_start(
@@ -156,19 +192,28 @@ class WifiBaseTest(BaseTestClass):
             network_list_2g.append(networks_dict["2g"])
             network_list_5g.append(networks_dict["5g"])
 
+        orig_network_list_5g = copy.copy(network_list_5g)
+        orig_network_list_2g = copy.copy(network_list_2g)
+
         if len(network_list_5g) > 1:
-                self.config_5g = self._generate_legacy_ap_config(network_list_5g)
+            self.config_5g = self._generate_legacy_ap_config(network_list_5g)
         if len(network_list_2g) > 1:
-                self.config_2g = self._generate_legacy_ap_config(network_list_2g)
+            self.config_2g = self._generate_legacy_ap_config(network_list_2g)
 
         for ap in range(ap_count):
             self.access_points[ap].start_ap(self.config_2g)
             self.access_points[ap].start_ap(self.config_5g)
+            self.populate_bssid(self.access_points[ap], orig_network_list_5g,
+                                orig_network_list_2g)
 
 
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
         ap_settings = network_list.pop(0)
+        # TODO:(bmahadev) This is a bug. We should not have to pop the first
+        # network in the list and treat it as a separate case. Instead,
+        # create_ap_preset() should be able to take NULL ssid and security and
+        # build config based on the bss_Settings alone.
         hostapd_config_settings = network_list.pop(0)
         for network in network_list:
             if "password" in network:
@@ -190,13 +235,12 @@ class WifiBaseTest(BaseTestClass):
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["password"]),
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                    bss_settings=bss_settings,
+                    profile_name='whirlwind')
         else:
             config = hostapd_ap_preset.create_ap_preset(
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 bss_settings=bss_settings,
                 profile_name='whirlwind')
-
         return config

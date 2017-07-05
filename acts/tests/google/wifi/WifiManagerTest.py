@@ -76,6 +76,7 @@ class WifiManagerTest(WifiBaseTest):
         self.iot_test_prefix = "test_connection_to-"
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
+        self.open_network = self.open_network[0]["2g"]
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
