@@ -110,15 +110,16 @@ class MessageTest(AwareBaseTest):
 
     # Publisher: start publish and wait for confirmation
     p_disc_id = p_dut.droid.wifiAwarePublish(p_id,
-                                             self.create_config(True), use_id)
+                                             self.create_config(
+                                                 True, extra_diff=extra_diff),
+                                             use_id)
     autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED
                           if not use_id else autils.decorate_event(
                               aconsts.SESSION_CB_ON_PUBLISH_STARTED, p_disc_id))
 
     # Subscriber: start subscribe and wait for confirmation
-    s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id,
-                                               self.create_config(False),
-                                               use_id)
+    s_disc_id = s_dut.droid.wifiAwareSubscribe(
+        s_id, self.create_config(False, extra_diff=extra_diff), use_id)
     autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED
                           if not use_id else autils.decorate_event(
                               aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED,
