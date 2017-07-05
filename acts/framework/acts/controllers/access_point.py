@@ -249,15 +249,26 @@ class AccessPoint(object):
 
         Args:
             ssid: An SSID string
-        Returns: The BSSID if on the AP or None is SSID could not be found.
+        Returns: The BSSID if on the AP or None if SSID could not be found.
         """
 
-        cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" % str(ssid)
-        iw_output = self.ssh.run(cmd)
-        if 'command failed: No such device' in iw_output.stderr:
-            return None
-        else:
-            return iw_output.stdout
+        interfaces = [_AP_2GHZ_INTERFACE, _AP_5GHZ_INTERFACE, ssid]
+        # Get the interface name associated with the given ssid.
+        for interface in interfaces:
+            cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" %(
+                str(interface))
+            iw_output = self.ssh.run(cmd)
+            if 'command failed: No such device' in iw_output.stderr:
+                continue
+            else:
+                # If the configured ssid is equal to the given ssid, we found
+                # the right interface.
+                if iw_output.stdout == ssid:
+                    cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" %(
+                        str(interface))
+                    iw_output = self.ssh.run(cmd)
+                    return iw_output.stdout
+        return None
 
     def stop_ap(self, identifier):
         """Stops a running ap on this controller.
