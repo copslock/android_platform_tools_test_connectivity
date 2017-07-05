@@ -140,6 +140,9 @@ from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
+from acts.utils import create_dir
+from acts.utils import start_standing_subprocess
+from acts.utils import stop_standing_subprocess
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
@@ -254,8 +257,9 @@ def setup_droid_properties(log, ad, sim_filename=None):
                     sub_info["phone_num"])
             sub_info["phone_num"] = sim_data[iccid]["phone_num"]
         if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
-                "network_plmn"] and (sub_info["sim_operator_name"].strip(
-                ) not in sub_info["network_operator_name"].strip()):
+                "network_plmn"] and (
+                    sub_info["sim_operator_name"].strip() not in sub_info[
+                        "network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
     data_roaming = getattr(ad, 'roaming', False)
@@ -1844,8 +1848,8 @@ def http_file_download_by_chrome(ad,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_name, out_path = _generate_file_name_and_out_path(
-        url, "/sdcard/Download/")
+    file_name, out_path = _generate_file_name_and_out_path(url,
+                                                           "/sdcard/Download/")
     # Remove pre-existing file
     ad.adb.shell("rm %s" % out_path, ignore_status=True)
     ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
@@ -1931,7 +1935,8 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data'][
+            'isConnected'] == target_state:
         return True
     return False
 
@@ -1958,8 +1963,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
+                                                          state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -3804,7 +3809,8 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4247,8 +4253,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data']
-                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data'][
+                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
@@ -4379,4 +4385,42 @@ def check_qxdm_logger_always_on(ad, mask_file="Radio-general.cfg"):
     if mask_file not in ad.adb.shell(
             "cat /data/vendor/radio/diag_logs/diag.conf", ignore_status=True):
         return False
+    return True
+
+
+def start_adb_tcpdump(ad, test_name):
+    """Start tcpdump on any iface
+
+    Args:
+        ad: android device object.
+        test_name: tcpdump file name will have this
+
+    """
+    ad.log.debug("Ensuring no tcpdump is running in background")
+    ad.adb.shell("killall -9 tcpdump")
+    file_name = "/sdcard/tcpdump,{},{}.pcap".format(ad.serial, test_name)
+    ad.log.debug("tcpdump file is %s", file_name)
+    cmd = "adb -s {} shell tcpdump -i any -s0 -n -p udp port 500 or \
+          udp port 4500 -w {}".format(ad.serial, file_name)
+    ad.log.debug("%s" % cmd)
+    tcpdump_pid = start_standing_subprocess(cmd, 5)
+    return (tcpdump_pid, file_name)
+
+
+def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file):
+    """Stops tcpdump on any iface
+       Pulls the tcpdump file in the tcpdump dir
+
+    Args:
+        ad: android device object.
+        tcpdump_pid: need to know which pid to stop
+        tcpdump_file: filename needed to pull out
+
+    """
+    stop_standing_subprocess(tcpdump_pid)
+    # Pulling to be done only in failure case
+    tcpdump_path = os.path.join(ad.log_path, "tcpdump")
+    create_dir(tcpdump_path)
+    ad.adb.pull("{} {}".format(tcpdump_file, tcpdump_path))
+    ad.adb.shell("rm -rf {}".format(tcpdump_file))
     return True
