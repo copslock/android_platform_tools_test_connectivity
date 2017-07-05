@@ -34,6 +34,7 @@ from metrics.process_time_metric import ProcessTimeMetric
 from metrics.ram_metric import RamMetric
 from metrics.read_metric import ReadMetric
 from metrics.system_load_metric import SystemLoadMetric
+from metrics.time_sync_metric import TimeSyncMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
 from metrics.verify_metric import VerifyMetric
@@ -63,13 +64,23 @@ class RunnerFactory(object):
         'cpu': lambda param: [CpuMetric()],
         'network': lambda param: [NetworkMetric(param)],
         'hostname': lambda param: [NameMetric()],
-        'all': lambda param: [DiskMetric(), UptimeMetric(),
-                              AdbHashMetric(), RamMetric(), CpuMetric(),
-                              NameMetric(), UsbMetric(), NetworkMetric(),
-                              NumUsersMetric(), ReadMetric(),
-                              SystemLoadMetric(), AdbVersionMetric(),
-                              FastbootVersionMetric(), KernelVersionMetric(),
-                              PythonVersionMetric(), ProcessTimeMetric(),
+        'all': lambda param: [AdbHashMetric(),
+                              AdbVersionMetric(),
+                              CpuMetric(),
+                              DiskMetric(),
+                              FastbootVersionMetric(),
+                              KernelVersionMetric(),
+                              NameMetric(),
+                              NetworkMetric(),
+                              NumUsersMetric(),
+                              ProcessTimeMetric(),
+                              PythonVersionMetric(),
+                              RamMetric(),
+                              ReadMetric(),
+                              TimeSyncMetric(),
+                              SystemLoadMetric(),
+                              UptimeMetric(),
+                              UsbMetric(),
                               ZombieMetric()]
     }
 
