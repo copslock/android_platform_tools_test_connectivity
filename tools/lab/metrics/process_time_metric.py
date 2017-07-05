@@ -19,7 +19,7 @@ from metrics.metric import Metric
 
 
 class ProcessTimeMetric(Metric):
-    TIME_COMMAND = 'ps -p %s -o etime='
+    TIME_COMMAND = 'ps -p %s -o etimes,command | sed 1d'
     # Fields for response dictionary
     PID_TIMES = 'pid_times'
 
@@ -28,9 +28,8 @@ class ProcessTimeMetric(Metric):
 
         Returns:
             A dict with the following fields:
-              pid_times: a list of (time, PID) tuples where time is a string
-              representing time elapsed in D-HR:MM:SS format and PID is a string
-              representing the pid
+              pid_times: a list of (time, PID) tuples where time is int number
+              of seconds elapsed and PID is a string representing the pid
         """
         # Get the process ids
         pids = self.get_adb_fastboot_pids()
@@ -38,8 +37,14 @@ class ProcessTimeMetric(Metric):
         # Get elapsed time for selected pids
         times = []
         for pid in pids:
-            time = self._shell.run(self.TIME_COMMAND % pid).stdout
-            times.append((time, pid))
+            # Sample output:
+            # 1037453 adb
+            output = self._shell.run(self.TIME_COMMAND % pid).stdout
+            # ignore fork-server command, because it's not a problematic process
+            if 'fork-server' not in output:
+                # pull out time in seconds
+                time = int(output.split()[0])
+                times.append((time, str(pid)))
 
         # Create response dictionary
         response = {self.PID_TIMES: times}
