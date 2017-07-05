@@ -346,8 +346,9 @@ class TestRunner(object):
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise USERError(("Unable to locate class %s in any of the test "
-                "paths specified.") % test_cls_name)
+          self.log.warning("Unable to locate class {} in any of the test "
+                           "paths specified.".format(test_cls_name))
+          return True
 
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
