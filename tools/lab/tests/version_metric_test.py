@@ -79,8 +79,8 @@ class VersionMetricTest(unittest.TestCase):
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
     def test_get_python_version(self):
-        stderr_str = 'Python 2.7.6'
-        FAKE_RESULT = fake.FakeResult(stderr=stderr_str)
+        stdout_str = 'Python 2.7.6'
+        FAKE_RESULT = fake.FakeResult(stdout=stdout_str)
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = version_metric.PythonVersionMetric(shell=fake_shell)
 

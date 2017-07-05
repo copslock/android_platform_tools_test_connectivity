@@ -79,7 +79,7 @@ class AdbVersionMetric(Metric):
 
 class PythonVersionMetric(Metric):
 
-    PYTHON_COMMAND = 'python -V'
+    PYTHON_COMMAND = 'python -V 2>&1'
     PYTHON_VERSION = 'python_version'
 
     def gather_metric(self):
@@ -92,7 +92,7 @@ class PythonVersionMetric(Metric):
         """
         result = self._shell.run(self.PYTHON_COMMAND)
         # Python prints this to stderr
-        version = result.stderr.split()[-1]
+        version = result.stdout.split()[-1]
 
         response = {self.PYTHON_VERSION: version}
         return response
