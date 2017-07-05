@@ -76,28 +76,21 @@ class BleLib():
             self.dut.droid.bleStartBleAdvertising(
                 advertise_callback, advertise_data, advertise_settings)
         if self._verify_ble_adv_started(advertise_callback):
-            self.log.info(
-                "Tracking Callback ID: {}".format(advertise_callback))
+            self.log.info("Tracking Callback ID: {}".format(
+                advertise_callback))
             self.advertisement_list.append(advertise_callback)
             self.log.info(self.advertisement_list)
 
     def start_connectable_advertisement_set(self, line):
         """Start Connectable Advertisement Set"""
         adv_callback = self.dut.droid.bleAdvSetGenCallback()
-        adv_data = {
-            "includeDeviceName": True,
-        }
+        adv_data = {"includeDeviceName": True, }
         self.dut.droid.bleAdvSetStartAdvertisingSet({
-            "connectable":
-            True,
-            "legacyMode":
-            False,
-            "primaryPhy":
-            "PHY_LE_1M",
-            "secondaryPhy":
-            "PHY_LE_1M",
-            "interval":
-            320
+            "connectable": True,
+            "legacyMode": False,
+            "primaryPhy": "PHY_LE_1M",
+            "secondaryPhy": "PHY_LE_1M",
+            "interval": 320
         }, adv_data, None, None, None, 0, 0, adv_callback)
         evt = self.dut.ed.pop_event(
             advertising_set_started.format(adv_callback), self.default_timeout)
@@ -158,8 +151,8 @@ class BleLib():
         self.dut.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
         if self._verify_ble_adv_started(advertise_callback):
-            self.log.info(
-                "Tracking Callback ID: {}".format(advertise_callback))
+            self.log.info("Tracking Callback ID: {}".format(
+                advertise_callback))
             self.advertisement_list.append(advertise_callback)
             self.log.info(self.advertisement_list)
 
@@ -171,7 +164,7 @@ class BleLib():
             time.sleep(1)
         self.advertisement_list = []
 
-    def do_ble_stop_advertisement(self, callback_id):
+    def ble_stop_advertisement(self, callback_id):
         """Stop an LE advertisement"""
         if not callback_id:
             self.log.info("Need a callback ID")
