@@ -424,6 +424,7 @@ class GattClientLib():
                     self.dut.droid.gattClientWriteCharacteristicByIndex(
                         self.bluetooth_gatt, self.discovered_services_index, i,
                         j)
+                    time.sleep(1)
                 except Exception as err:
                     self.log.info("Failed to write to characteristic: {}".
                                   format(characteristic_uuids[j]))
