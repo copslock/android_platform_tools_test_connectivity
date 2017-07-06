@@ -617,7 +617,7 @@ class CmdInput(cmd.Cmd):
         """Stop an LE advertisement"""
         cmd = "Stop a connectable LE advertisement"
         try:
-            self.do_ble_stop_advertisement(line)
+            self.ble_lib.ble_stop_advertisement(line)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
@@ -757,6 +757,21 @@ class CmdInput(cmd.Cmd):
         cmd = "Fetch UUIDS with SDP"
         try:
             self.bta_lib.fetch_uuids_with_sdp()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_connect_profiles(self, line):
+        """Connect available profiles"""
+        cmd = "Connect all profiles possible"
+        try:
+            self.bta_lib.connect_profiles()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_bta_tts_speak(self, line):
+        cmd = "Open audio channel by speaking characters"
+        try:
+            self.bta_lib.tts_speak()
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 

@@ -100,3 +100,11 @@ class BtaLib():
     def fetch_uuids_with_sdp(self):
         """BTA fetch UUIDS with SDP"""
         self.log.info(self.dut.droid.bluetoothFetchUuidsWithSdp(self.mac_addr))
+
+    def connect_profiles(self):
+        """Connect available profiles"""
+        self.dut.droid.bluetoothConnectBonded(self.mac_addr)
+
+    def tts_speak(self):
+        """Open audio channel by speaking characters"""
+        self.dut.droid.ttsSpeak(self.mac_addr)
