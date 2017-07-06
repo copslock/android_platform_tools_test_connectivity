@@ -18,6 +18,7 @@
 """
 
 import time
+import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
@@ -81,6 +82,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -89,7 +92,6 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import \
@@ -118,7 +120,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         self.wifi_network_pass = self.user_params.get("wifi_network_pass")
-
         self.long_duration_call_total_duration = self.user_params.get(
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
@@ -581,32 +582,41 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        tasks = [(phone_setup_iwlan, (self.log, ads[0], apm_mode, wfc_mode,
-                                      wifi_ssid, wifi_pwd)),
-                 (phone_setup_iwlan, (self.log, ads[1], apm_mode, wfc_mode,
-                                      wifi_ssid, wifi_pwd))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
+        try:
+            (tcpdump_pid, tcpdump_file) = \
+                                      start_adb_tcpdump(ads[0], self.test_name)
+            tasks = [(phone_setup_iwlan, (self.log, ads[0], apm_mode, wfc_mode,
+                                          wifi_ssid, wifi_pwd)),
+                     (phone_setup_iwlan, (self.log, ads[1], apm_mode, wfc_mode,
+                                          wifi_ssid, wifi_pwd))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
 
-        ad_ping = ads[0]
+            ad_ping = ads[0]
 
-        call_task = (two_phone_call_short_seq,
-                     (self.log, ads[0], phone_idle_iwlan,
-                      is_phone_in_call_iwlan, ads[1], phone_idle_iwlan,
-                      is_phone_in_call_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS))
-        ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
+            call_task = (two_phone_call_short_seq, (
+                self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
+                ads[1], phone_idle_iwlan, is_phone_in_call_iwlan, None,
+                WAIT_TIME_IN_CALL_FOR_IMS))
+            ping_task = (adb_shell_ping, (ad_ping, DEFAULT_PING_DURATION))
 
-        results = run_multithread_func(self.log, [ping_task, call_task])
-        if not results[1]:
-            self.log.error("Call setup failed in active ICMP transfer.")
-            return False
-        if results[0]:
-            self.log.info("ICMP transfer succeeded with parallel phone call.")
-            return True
-        else:
-            self.log.error("ICMP transfer failed with parallel phone call.")
-            return False
+            results = run_multithread_func(self.log, [ping_task, call_task])
+
+            if not results[1]:
+                self.log.error("Call setup failed in active ICMP transfer.")
+                return False
+            if results[0]:
+                self.log.info(
+                    "ICMP transfer succeeded with parallel phone call.")
+                return True
+            else:
+                self.log.error(
+                    "ICMP transfer failed with parallel phone call.")
+                return False
+        finally:
+            if tcpdump_pid is not None:
+                stop_adb_tcpdump(ads[0], tcpdump_pid, tcpdump_file)
 
     @test_tracker_info(uuid="a4a043c0-f4ba-4405-9262-42c752cc4487")
     @TelephonyBaseTest.tel_test_wrap
@@ -1357,8 +1367,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1416,8 +1426,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1475,8 +1485,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1534,8 +1544,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1593,8 +1603,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1646,8 +1656,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1699,8 +1709,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -3149,8 +3159,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
             return False
         return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
@@ -3175,8 +3185,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        if not phone_setup_csfb(self.log, self.android_devices[0]):
-            self.android_devices[0].log.error("Failed to setup VoLTE")
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
             return False
         return self._test_call_setup_in_active_data_transfer(
             GEN_3G,
