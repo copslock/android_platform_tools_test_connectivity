@@ -1177,6 +1177,8 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
         return False
     if not bluetooth_enabled_check(panu_dut):
         return False
+    if not bluetooth_enabled_check(pan_dut):
+        return False
     pan_dut.droid.bluetoothPanSetBluetoothTethering(True)
     if not (pair_pri_to_sec(pan_dut, panu_dut)):
         return False
