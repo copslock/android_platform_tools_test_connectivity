@@ -20,5 +20,11 @@
       "constant": "None",
       "compare": "IP_ADDR"
     }
+  },
+  "time_sync": {
+      "is_synchronized": {
+          "constant": true,
+          "compare":"EQUALS"
+      }
   }
 }
