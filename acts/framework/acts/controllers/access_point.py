@@ -117,9 +117,6 @@ class AccessPoint(object):
         # the hostapd instance running against the interface.
         self._aps = dict()
 
-    def __del__(self):
-        self.close()
-
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.
 
@@ -312,6 +309,3 @@ class AccessPoint(object):
 
         if self._aps:
             self.stop_all_aps()
-            self._dhcp.stop()
-
-        self.ssh.close()
