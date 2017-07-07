@@ -17,12 +17,16 @@
 import setuptools
 import sys
 import subprocess
+import os
+
+README_FILE = os.path.join(os.path.dirname(__file__), 'README.md')
 
 install_requires = [
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'psutil',
     'shellescape',
+    'IPy',
 ]
 
 if sys.version_info < (3, ):
@@ -47,7 +51,7 @@ def main():
         include_package_data=False,
         install_requires=install_requires,
         url="http://www.android.com/",
-        long_description=open('README.md').read())
+        long_description=open(README_FILE).read())
 
 
 if __name__ == '__main__':
