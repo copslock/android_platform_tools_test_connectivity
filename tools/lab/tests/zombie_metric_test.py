@@ -29,7 +29,11 @@ class ZombieMetricTest(unittest.TestCase):
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
-        expected_result = {'30888': ('adb', None)}
+        expected_result = {
+            zombie_metric.ZombieMetric.ZOMBIES: {
+                '30888': ('adb', None)
+            }
+        }
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
     def test_gather_metric_no_serial(self):
@@ -38,7 +42,11 @@ class ZombieMetricTest(unittest.TestCase):
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
-        expected_result = {'30888': ('adb', None)}
+        expected_result = {
+            zombie_metric.ZombieMetric.ZOMBIES: {
+                '30888': ('adb', None)
+            }
+        }
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
     def test_gather_metric_with_serial(self):
@@ -49,8 +57,10 @@ class ZombieMetricTest(unittest.TestCase):
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            '12345': ('fastboot', 'M4RKY_M4RK'),
-            '99999': ('adb', 'OR3G4N0')
+            zombie_metric.ZombieMetric.ZOMBIES: {
+                '12345': ('fastboot', 'M4RKY_M4RK'),
+                '99999': ('adb', 'OR3G4N0')
+            }
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
 
@@ -60,7 +70,12 @@ class ZombieMetricTest(unittest.TestCase):
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
-        expected_result = {'12345': ('fastboot', None), '99999': ('adb', None)}
+        expected_result = {
+            zombie_metric.ZombieMetric.ZOMBIES: {
+                '12345': ('fastboot', None),
+                '99999': ('adb', None)
+            }
+        }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
 
 
