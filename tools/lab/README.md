@@ -4,6 +4,7 @@ Python dependencies:
   - subprocess32
   - shellescape
   - psutil
+  - IPy
 
 Metrics that can be gathered, listed by name of file and then key to response
 dict:
@@ -44,7 +45,8 @@ dict:
 * uptime:
     time_seconds: uptime in seconds (float)
 * usb:
-    TODO
+    devices: a list of Device objects, each with name of device, number of bytes
+    transferred, and the usb bus number/device id.
 * verify:
     device serial number as key: device status as value
 * version:
@@ -56,6 +58,3 @@ dict:
     adb_zombies: list of adb zombie processes (PID, state, name)
     fastboot_zombies: list of fastboot zombie processes (PID, state, name)
     other_zombies: list of other zombie processes (PID, state, name)
-
-
-
