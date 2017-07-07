@@ -19,6 +19,7 @@ from metrics.metric import Metric
 
 class ZombieMetric(Metric):
     COMMAND = 'ps -eo pid,stat,comm,args | awk \'$2~/^Z/ { print }\''
+    ZOMBIES = 'zombies'
 
     def gather_metric(self):
         """Gathers the pids, process names, and serial numbers of processes.
@@ -26,8 +27,9 @@ class ZombieMetric(Metric):
         If process does not have serial, None is returned instead.
 
         Returns:
-            A dictionary where the keys are the pids of the processes, and the
-            value is a tuple of (process name, serial number|None)
+            A dict with the following fields:
+              zombies: a dict where keys are the pids of the processes, and the
+              value is a tuple of (process name, serial number|None)
         """
         response = {}
         result = self._shell.run(self.COMMAND).stdout
@@ -52,4 +54,4 @@ class ZombieMetric(Metric):
             else:
                 response[pid] = (name, None)
 
-        return response
+        return {self.ZOMBIES: response}
