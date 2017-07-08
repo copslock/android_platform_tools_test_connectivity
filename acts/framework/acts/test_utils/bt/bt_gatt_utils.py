@@ -40,36 +40,43 @@ class GattTestUtilsError(Exception):
 def setup_gatt_connection(cen_ad,
                           mac_address,
                           autoconnect,
-                          transport=GattTransport.TRANSPORT_AUTO.value):
+                          transport=GattTransport.TRANSPORT_AUTO.value,
+                          opportunistic=False):
     gatt_callback = cen_ad.droid.gattCreateGattCallback()
     log.info("Gatt Connect to mac address {}.".format(mac_address))
     bluetooth_gatt = cen_ad.droid.gattClientConnectGatt(
-        gatt_callback, mac_address, autoconnect, transport,
+        gatt_callback, mac_address, autoconnect, transport, opportunistic,
         GattPhyMask.PHY_LE_1M_MASK)
     expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(gatt_callback)
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
     except Empty:
-        try:
-            cen_ad.droid.gattClientClose(bluetooth_gatt)
-        except Exception:
-            self.log.debug("Failed to close gatt client.")
+        close_gatt_client(cen_ad, bluetooth_gatt)
         raise GattTestUtilsError(
             "Could not establish a connection to "
             "peripheral. Expected event: {}".format(expected_event))
     if event['data']['State'] != GattConnectionState.STATE_CONNECTED.value:
-        try:
-            cen_ad.droid.gattClientClose(bluetooth_gatt)
-        except Exception:
-            self.log.debug("Failed to close gatt client.")
+        close_gatt_client(cen_ad, bluetooth_gatt)
         raise GattTestUtilsError(
             "Could not establish a connection to "
             "peripheral. Event Details: {}".format(pprint.pformat(event)))
     return bluetooth_gatt, gatt_callback
 
 
+def close_gatt_client(cen_ad, bluetooth_gatt):
+    try:
+        cen_ad.droid.gattClientClose(bluetooth_gatt)
+    except Exception:
+        log.debug("Failed to close gatt client.")
+
+
 def disconnect_gatt_connection(cen_ad, bluetooth_gatt, gatt_callback):
     cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
+    wait_for_gatt_disconnect_event(cen_ad, gatt_callback)
+    return
+
+
+def wait_for_gatt_disconnect_event(cen_ad, gatt_callback):
     expected_event = GattCbStrings.GATT_CONN_CHANGE.value.format(gatt_callback)
     try:
         event = cen_ad.ed.pop_event(expected_event, default_timeout)
@@ -89,7 +96,8 @@ def orchestrate_gatt_connection(cen_ad,
                                 per_ad,
                                 transport=GattTransport.TRANSPORT_LE.value,
                                 mac_address=None,
-                                autoconnect=False):
+                                autoconnect=False,
+                                opportunistic=False):
     adv_callback = None
     if mac_address is None:
         if transport == GattTransport.TRANSPORT_LE.value:
@@ -103,7 +111,7 @@ def orchestrate_gatt_connection(cen_ad,
             mac_address = per_ad.droid.bluetoothGetLocalAddress()
             adv_callback = None
     bluetooth_gatt, gatt_callback = setup_gatt_connection(
-        cen_ad, mac_address, autoconnect, transport)
+        cen_ad, mac_address, autoconnect, transport, opportunistic)
     return bluetooth_gatt, gatt_callback, adv_callback
 
 
@@ -173,44 +181,31 @@ def run_continuous_write_descriptor(cen_droid, cen_ed, per_droid, per_ed,
 def setup_characteristics_and_descriptors(droid):
     characteristic_input = [
         {
-            'uuid':
-            "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property':
-            GattCharacteristic.PROPERTY_WRITE.value |
+            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+            'property': GattCharacteristic.PROPERTY_WRITE.value |
             GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-            'permission':
-            GattCharacteristic.PROPERTY_WRITE.value
+            'permission': GattCharacteristic.PROPERTY_WRITE.value
         },
         {
-            'uuid':
-            "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property':
-            GattCharacteristic.PROPERTY_NOTIFY.value |
+            'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
             GattCharacteristic.PROPERTY_READ.value,
-            'permission':
-            GattCharacteristic.PERMISSION_READ.value
+            'permission': GattCharacteristic.PERMISSION_READ.value
         },
         {
-            'uuid':
-            "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property':
-            GattCharacteristic.PROPERTY_NOTIFY.value |
+            'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
             GattCharacteristic.PROPERTY_READ.value,
-            'permission':
-            GattCharacteristic.PERMISSION_READ.value
+            'permission': GattCharacteristic.PERMISSION_READ.value
         },
     ]
     descriptor_input = [{
-        'uuid':
-        "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-        'property':
-        GattDescriptor.PERMISSION_READ.value |
+        'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+        'property': GattDescriptor.PERMISSION_READ.value |
         GattDescriptor.PERMISSION_WRITE.value,
     }, {
-        'uuid':
-        "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-        'property':
-        GattDescriptor.PERMISSION_READ.value |
+        'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
+        'property': GattDescriptor.PERMISSION_READ.value |
         GattCharacteristic.PERMISSION_WRITE.value,
     }]
     characteristic_list = setup_gatt_characteristics(droid,
@@ -276,44 +271,31 @@ def setup_multiple_services(per_ad):
 def setup_characteristics_and_descriptors(droid):
     characteristic_input = [
         {
-            'uuid':
-            "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-            'property':
-            GattCharacteristic.PROPERTY_WRITE.value |
+            'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+            'property': GattCharacteristic.PROPERTY_WRITE.value |
             GattCharacteristic.PROPERTY_WRITE_NO_RESPONSE.value,
-            'permission':
-            GattCharacteristic.PROPERTY_WRITE.value
+            'permission': GattCharacteristic.PROPERTY_WRITE.value
         },
         {
-            'uuid':
-            "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
-            'property':
-            GattCharacteristic.PROPERTY_NOTIFY.value |
+            'uuid': "21c0a0bf-ad51-4a2d-8124-b74003e4e8c8",
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
             GattCharacteristic.PROPERTY_READ.value,
-            'permission':
-            GattCharacteristic.PERMISSION_READ.value
+            'permission': GattCharacteristic.PERMISSION_READ.value
         },
         {
-            'uuid':
-            "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
-            'property':
-            GattCharacteristic.PROPERTY_NOTIFY.value |
+            'uuid': "6774191f-6ec3-4aa2-b8a8-cf830e41fda6",
+            'property': GattCharacteristic.PROPERTY_NOTIFY.value |
             GattCharacteristic.PROPERTY_READ.value,
-            'permission':
-            GattCharacteristic.PERMISSION_READ.value
+            'permission': GattCharacteristic.PERMISSION_READ.value
         },
     ]
     descriptor_input = [{
-        'uuid':
-        "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
-        'property':
-        GattDescriptor.PERMISSION_READ.value |
+        'uuid': "aa7edd5a-4d1d-4f0e-883a-d145616a1630",
+        'property': GattDescriptor.PERMISSION_READ.value |
         GattDescriptor.PERMISSION_WRITE.value,
     }, {
-        'uuid':
-        "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
-        'property':
-        GattDescriptor.PERMISSION_READ.value |
+        'uuid': "76d5ed92-ca81-4edb-bb6b-9f019665fb32",
+        'property': GattDescriptor.PERMISSION_READ.value |
         GattCharacteristic.PERMISSION_WRITE.value,
     }]
     characteristic_list = setup_gatt_characteristics(droid,
