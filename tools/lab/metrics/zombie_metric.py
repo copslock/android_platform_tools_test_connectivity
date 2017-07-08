@@ -19,7 +19,12 @@ from metrics.metric import Metric
 
 class ZombieMetric(Metric):
     COMMAND = 'ps -eo pid,stat,comm,args | awk \'$2~/^Z/ { print }\''
-    ZOMBIES = 'zombies'
+    ADB_ZOMBIES = 'adb_zombies'
+    NUM_ADB_ZOMBIES = 'num_adb_zombies'
+    FASTBOOT_ZOMBIES = 'fastboot_zombies'
+    NUM_FASTBOOT_ZOMBIES = 'num_fastboot_zombies'
+    OTHER_ZOMBIES = 'other_zombies'
+    NUM_OTHER_ZOMBIES = 'num_other_zombies'
 
     def gather_metric(self):
         """Gathers the pids, process names, and serial numbers of processes.
@@ -28,10 +33,12 @@ class ZombieMetric(Metric):
 
         Returns:
             A dict with the following fields:
-              zombies: a dict where keys are the pids of the processes, and the
-              value is a tuple of (process name, serial number|None)
+              adb_zombies, fastboot_zombies, other_zombies: lists of
+                (PID, serial number) tuples
+              num_adb_zombies, num_fastboot_zombies, num_other_zombies: int
+                representing the number of tuples in the respective list
         """
-        response = {}
+        adb_zombies, fastboot_zombies, other_zombies = [], [], []
         result = self._shell.run(self.COMMAND).stdout
         # Example stdout:
         # 30797 Z+   adb <defunct> adb -s AHDLSERIAL0001
@@ -50,8 +57,21 @@ class ZombieMetric(Metric):
                     sn = None
                 else:
                     sn = spl_ln[sn_idx + 1]
-                response[pid] = (name, sn)
+                zombie = (pid, sn)
             else:
-                response[pid] = (name, None)
+                zombie = (pid, None)
+            if 'adb' in ln:
+                adb_zombies.append(zombie)
+            elif 'fastboot' in ln:
+                fastboot_zombies.append(zombie)
+            else:
+                other_zombies.append(zombie)
 
-        return {self.ZOMBIES: response}
+        return {
+            self.ADB_ZOMBIES: adb_zombies,
+            self.NUM_ADB_ZOMBIES: len(adb_zombies),
+            self.FASTBOOT_ZOMBIES: fastboot_zombies,
+            self.NUM_FASTBOOT_ZOMBIES: len(fastboot_zombies),
+            self.OTHER_ZOMBIES: other_zombies,
+            self.NUM_OTHER_ZOMBIES: len(other_zombies)
+        }

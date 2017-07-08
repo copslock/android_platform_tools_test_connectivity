@@ -38,5 +38,12 @@
       "constant": "device",
       "compare": "EQUALS_DICT"
     }
+  },
+  "zombie": {
+    "num_adb_zombies": {
+      "constant": 0,
+      "compare": "EQUALS"
+    }
   }
+
 }
