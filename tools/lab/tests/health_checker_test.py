@@ -115,6 +115,50 @@ class HealthCheckerTestCase(unittest.TestCase):
             set(checker.get_unhealthy(fake_metric_response)),
             set(expected_unhealthy))
 
+    def test_get_unhealthy_check_vals_metric(self):
+        fake_config = {
+            "verify": {
+                "devices": {
+                    "constant": "device",
+                    "compare": "EQUALS_DICT"
+                }
+            }
+        }
+        checker = HealthChecker(fake_config)
+        fake_metric_response = {
+            'verify': {
+                'devices': {
+                    'serialnumber': 'unauthorized'
+                }
+            }
+        }
+        expected_unhealthy = ['verify']
+        self.assertEqual(
+            set(checker.get_unhealthy(fake_metric_response)),
+            set(expected_unhealthy))
+
+    def test_get_healthy_check_vals_metric(self):
+        fake_config = {
+            "verify": {
+                "devices": {
+                    "constant": "device",
+                    "compare": "EQUALS_DICT"
+                }
+            }
+        }
+        checker = HealthChecker(fake_config)
+        fake_metric_response = {
+            'verify': {
+                'devices': {
+                    'serialnumber': 'device'
+                }
+            }
+        }
+        expected_unhealthy = []
+        self.assertEqual(
+            set(checker.get_unhealthy(fake_metric_response)),
+            set(expected_unhealthy))
+
 
 if __name__ == '__main__':
     unittest.main()

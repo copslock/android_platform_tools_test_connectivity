@@ -26,5 +26,17 @@
           "constant": true,
           "compare":"EQUALS"
       }
+  },
+  "network": {
+      "connected": {
+          "constant": true,
+          "compare": "EQUALS_DICT"
+      }
+  },
+  "verify": {
+    "devices": {
+      "constant": "device",
+      "compare": "EQUALS_DICT"
+    }
   }
 }
