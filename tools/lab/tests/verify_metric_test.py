@@ -27,8 +27,8 @@ class VerifyMetricTest(unittest.TestCase):
         fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
         metric_obj = verify_metric.VerifyMetric(shell=fake_shell)
 
-        expected_result = {}
-        self.assertEquals(metric_obj.gather_devices(), expected_result)
+        expected_result = {verify_metric.VerifyMetric.DEVICES: {}}
+        self.assertEquals(metric_obj.gather_metric(), expected_result)
 
     def test_gather_device_two(self):
         mock_output = '00serial01\toffline\n' \
@@ -38,10 +38,12 @@ class VerifyMetricTest(unittest.TestCase):
         metric_obj = verify_metric.VerifyMetric(shell=fake_shell)
 
         expected_result = {
-            '00serial01': 'offline',
-            '01serial00': 'device',
+            verify_metric.VerifyMetric.DEVICES: {
+                '00serial01': 'offline',
+                '01serial00': 'device',
+            }
         }
-        self.assertEquals(metric_obj.gather_devices(), expected_result)
+        self.assertEquals(metric_obj.gather_metric(), expected_result)
 
 
 if __name__ == '__main__':
