@@ -36,7 +36,7 @@ if sys.version_info < (3, ):
 
 try:
     # Need to install python-dev to work with Python2.7 installing.
-    subprocess.check_call(['apt-get', 'install', 'python-dev'])
+    subprocess.check_call(['apt-get', 'install', '-y', 'python-dev'])
 except subprocess.CalledProcessError as cpe:
     print('Could not install python-dev: %s' % cpe.output)
 
