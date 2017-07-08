@@ -58,7 +58,7 @@ class MessageTest(AwareBaseTest):
       return "*** ID=%4d ***" % id + "M" * (
           caps[aconsts.CAP_MAX_SERVICE_SPECIFIC_INFO_LEN] - 15)
 
-  def create_config(self, is_publish, extra_diff=""):
+  def create_config(self, is_publish, extra_diff=None):
     """Create a base configuration based on input parameters.
 
     Args:
@@ -76,8 +76,8 @@ class MessageTest(AwareBaseTest):
     else:
       config[
           aconsts.DISCOVERY_KEY_DISCOVERY_TYPE] = aconsts.SUBSCRIBE_TYPE_PASSIVE
-    config[
-        aconsts.DISCOVERY_KEY_SERVICE_NAME] = "GoogleTestServiceX" + extra_diff
+    config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = "GoogleTestServiceX" + (
+        extra_diff if extra_diff is not None else "")
     return config
 
   def prep_message_exchange(self, extra_diff=None):
