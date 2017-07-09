@@ -20,12 +20,14 @@ from metrics.metric import Metric
 class VerifyMetric(Metric):
     """Gathers the information of connected devices via ADB"""
     COMMAND = r"adb devices | sed '1d;$d'"
+    DEVICES = 'devices'
 
-    def gather_devices(self):
+    def gather_metric(self):
         """ Gathers device info based on adb output.
 
         Returns:
-            A dictionary with device serial number as key and device status as
+            A dictionary with the field:
+            devices: a dict with device serial number as key and device status as
             value.
         """
         device_dict = {}
@@ -40,7 +42,4 @@ class VerifyMetric(Metric):
                 # spl_line[0] is serial, [1] is status. See example line.
                 device_dict[spl_line[0]] = spl_line[1]
 
-        return device_dict
-
-    def gather_metric(self):
-        return self.gather_devices()
+        return {self.DEVICES: device_dict}
