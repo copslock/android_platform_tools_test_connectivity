@@ -77,10 +77,11 @@ class RunnerFactory(object):
                               PythonVersionMetric(),
                               RamMetric(),
                               ReadMetric(),
-                              TimeSyncMetric(),
                               SystemLoadMetric(),
+                              TimeSyncMetric(),
                               UptimeMetric(),
                               UsbMetric(),
+                              VerifyMetric(),
                               ZombieMetric()]
     }
 
