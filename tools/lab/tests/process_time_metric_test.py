@@ -46,35 +46,46 @@ class ProcessTimeMetricTest(unittest.TestCase):
         self.assertEqual(metric_obj.get_adb_fastboot_pids(),
                          fake_pids['adb'] + fake_pids['fastboot'])
 
-    def test_gather_metric_returns_times(self):
+    def test_gather_metric_returns_only_older_times(self):
         fake_result = [
-            fake.FakeResult(stdout='1037453 command'),
-            fake.FakeResult(stdout='1234 other command')
+            fake.FakeResult(stdout='1234 other command'),
+            fake.FakeResult(stdout='232893 fastboot -s FA6BM0305019 -w')
         ]
         fake_pids = {'adb': ['123'], 'fastboot': ['456']}
         fake_shell = fake.MockShellCommand(
             fake_pids=fake_pids, fake_result=fake_result)
         metric_obj = process_time_metric.ProcessTimeMetric(shell=fake_shell)
         expected_result = {
-            process_time_metric.ProcessTimeMetric.PID_TIMES: [(1037453, '123'),
-                                                              (1234, '456')]
+            process_time_metric.ProcessTimeMetric.ADB_PROCESSES: [],
+            process_time_metric.ProcessTimeMetric.NUM_ADB_PROCESSES:
+            0,
+            process_time_metric.ProcessTimeMetric.FASTBOOT_PROCESSES:
+            [("456", 'FA6BM0305019')],
+            process_time_metric.ProcessTimeMetric.NUM_FASTBOOT_PROCESSES:
+            1
         }
 
         self.assertEqual(metric_obj.gather_metric(), expected_result)
 
     def test_gather_metric_returns_times_no_forkserver(self):
         fake_result = [
-            fake.FakeResult(stdout='1037453 command'),
-            fake.FakeResult(stdout='1234 other command'),
-            fake.FakeResult(stdout='9998 fork-server adb')
+            fake.FakeResult(
+                stdout='198797 /usr/bin/adb -s FAKESN wait-for-device'),
+            fake.FakeResult(stdout='9999999 adb -s FAKESN2'),
+            fake.FakeResult(stdout='9999998 fork-server adb')
         ]
-        fake_pids = {'adb': ['123'], 'fastboot': ['456', '789']}
+        fake_pids = {'adb': ['123', '456', '789'], 'fastboot': []}
         fake_shell = fake.MockShellCommand(
             fake_pids=fake_pids, fake_result=fake_result)
         metric_obj = process_time_metric.ProcessTimeMetric(shell=fake_shell)
         expected_result = {
-            process_time_metric.ProcessTimeMetric.PID_TIMES: [(1037453, '123'),
-                                                              (1234, '456')]
+            process_time_metric.ProcessTimeMetric.ADB_PROCESSES:
+            [('123', 'FAKESN'), ('456', 'FAKESN2')],
+            process_time_metric.ProcessTimeMetric.NUM_ADB_PROCESSES:
+            2,
+            process_time_metric.ProcessTimeMetric.FASTBOOT_PROCESSES: [],
+            process_time_metric.ProcessTimeMetric.NUM_FASTBOOT_PROCESSES:
+            0
         }
 
         self.assertEqual(metric_obj.gather_metric(), expected_result)

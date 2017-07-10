@@ -33,6 +33,12 @@
           "compare": "EQUALS_DICT"
       }
   },
+  "process_time": {
+    "num_adb_processes": {
+      "constant": 0,
+      "compare": "EQUALS"
+    }
+  },
   "verify": {
     "devices": {
       "constant": "device",
