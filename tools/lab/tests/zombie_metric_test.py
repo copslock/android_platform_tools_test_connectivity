@@ -30,9 +30,12 @@ class ZombieMetricTest(unittest.TestCase):
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            zombie_metric.ZombieMetric.ZOMBIES: {
-                '30888': ('adb', None)
-            }
+            zombie_metric.ZombieMetric.ADB_ZOMBIES: [('30888', None)],
+            zombie_metric.ZombieMetric.NUM_ADB_ZOMBIES: 1,
+            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_FASTBOOT_ZOMBIES: 0,
+            zombie_metric.ZombieMetric.OTHER_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_OTHER_ZOMBIES: 0
         }
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
@@ -43,9 +46,12 @@ class ZombieMetricTest(unittest.TestCase):
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            zombie_metric.ZombieMetric.ZOMBIES: {
-                '30888': ('adb', None)
-            }
+            zombie_metric.ZombieMetric.ADB_ZOMBIES: [('30888', None)],
+            zombie_metric.ZombieMetric.NUM_ADB_ZOMBIES: 1,
+            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_FASTBOOT_ZOMBIES: 0,
+            zombie_metric.ZombieMetric.OTHER_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_OTHER_ZOMBIES: 0
         }
         self.assertEqual(expected_result, metric_obj.gather_metric())
 
@@ -57,10 +63,16 @@ class ZombieMetricTest(unittest.TestCase):
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            zombie_metric.ZombieMetric.ZOMBIES: {
-                '12345': ('fastboot', 'M4RKY_M4RK'),
-                '99999': ('adb', 'OR3G4N0')
-            }
+            zombie_metric.ZombieMetric.ADB_ZOMBIES: [('99999', 'OR3G4N0')],
+            zombie_metric.ZombieMetric.NUM_ADB_ZOMBIES:
+            1,
+            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [('12345',
+                                                           'M4RKY_M4RK')],
+            zombie_metric.ZombieMetric.NUM_FASTBOOT_ZOMBIES:
+            1,
+            zombie_metric.ZombieMetric.OTHER_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_OTHER_ZOMBIES:
+            0
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
 
@@ -71,10 +83,12 @@ class ZombieMetricTest(unittest.TestCase):
         metric_obj = zombie_metric.ZombieMetric(shell=fake_shell)
 
         expected_result = {
-            zombie_metric.ZombieMetric.ZOMBIES: {
-                '12345': ('fastboot', None),
-                '99999': ('adb', None)
-            }
+            zombie_metric.ZombieMetric.ADB_ZOMBIES: [('99999', None)],
+            zombie_metric.ZombieMetric.NUM_ADB_ZOMBIES: 1,
+            zombie_metric.ZombieMetric.FASTBOOT_ZOMBIES: [('12345', None)],
+            zombie_metric.ZombieMetric.NUM_FASTBOOT_ZOMBIES: 1,
+            zombie_metric.ZombieMetric.OTHER_ZOMBIES: [],
+            zombie_metric.ZombieMetric.NUM_OTHER_ZOMBIES: 0
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
 
