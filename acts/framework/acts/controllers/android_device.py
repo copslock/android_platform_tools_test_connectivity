@@ -1110,6 +1110,44 @@ class AndroidDevice:
             self.start_adb_logcat()
         return droid, ed
 
+    def fastboot_wipe(self):
+        """Wipe the device in fastboot mode.
+
+        Pull sl4a apk from device. Terminate all sl4a sessions,
+        Reboot the device to bootloader, wipe the device by fastboot.
+        Reboot the device. wait for device to complete booting
+        Re-intall and start an sl4a session.
+
+        """
+        #Pull sl4a apk from device
+        out = self.adb.shell("pm path com.googlecode.android_scripting")
+        result = re.search(r"package:(.*)", out)
+        if not result:
+            self.log.error("Couldn't find sl4a apk")
+        else:
+            sl4a_apk = result.group(1)
+            self.log.info("Get sl4a apk from %s", sl4a_apk)
+            self.pull_files([sl4a_apk], "/tmp/")
+        has_adb_log = self.is_adb_logcat_on
+        if has_adb_log:
+            self.stop_adb_logcat()
+        self.terminate_all_sessions()
+        self.log.info("Reboot to bootloader")
+        self.adb.reboot_bootloader(ignore_status=True)
+        self.log.info("Wipe in fastboot")
+        self.fastboot._w()
+        self.fastboot.reboot()
+        self.log.info("Reboot")
+        self.wait_for_boot_completion()
+        self.root_adb()
+        if result:
+            self.log.info("Re-install sl4a")
+            self.adb.install("-r /tmp/base.apk")
+        droid, ed = self.get_droid()
+        ed.start()
+        if has_adb_log:
+            self.start_adb_logcat()
+
     def search_logcat(self, matching_string):
         """Search logcat message with given string.
 
