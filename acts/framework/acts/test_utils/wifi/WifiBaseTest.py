@@ -21,6 +21,8 @@ import copy
 import itertools
 import time
 
+import acts.controllers.access_point as ap
+
 from acts import asserts
 from acts import utils
 from acts.base_test import BaseTestClass
@@ -35,6 +37,14 @@ from acts.controllers.ap_lib import hostapd_security
 class WifiBaseTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
+
+
+    def teardown_class(self):
+        """Teardown function that will be called after all the test cases in
+        the test class have been executed.
+
+        """
+        ap.destroy(self.access_points)
 
 
     def get_wpa2_network(
