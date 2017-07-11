@@ -35,7 +35,7 @@ class DataPathTest(AwareBaseTest):
   PASSPHRASE_MAX = "012345678901234567890123456789012345678901234567890123456789012"
   PMK = "ODU0YjE3YzdmNDJiNWI4NTQ2NDJjNDI3M2VkZTQyZGU="
   PASSPHRASE2 = "This is some random passphrase - very very secure - but diff!!"
-  PMK2 = "NjRhZGJiMmJkZWQyYTZhNjZhMmZjYzVlNTA3MmM3YTANCg=="
+  PMK2 = "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="
 
   PING_MSG = "ping"
 
@@ -145,23 +145,24 @@ class DataPathTest(AwareBaseTest):
     (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
      peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id)
 
-    key = None
+    passphrase = None
+    pmk = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
-      key = self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use
+      passphrase = self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use
     elif encr_type == self.ENCR_TYPE_PMK:
-      key = self.PMK
+      pmk = self.PMK
 
     # Publisher: request network
     p_req_key = self.request_network(
         p_dut,
         p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub if
-        use_peer_id else None, key))
+        use_peer_id else None, passphrase, pmk))
 
     # Subscriber: request network
     s_req_key = self.request_network(
         s_dut,
         s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub,
-                                                    key))
+                                                    passphrase, pmk))
 
     # Publisher & Subscriber: wait for network formation
     p_net_event = autils.wait_for_event_with_keys(
@@ -237,24 +238,25 @@ class DataPathTest(AwareBaseTest):
     # to execute the data-path request)
     time.sleep(self.WAIT_FOR_CLUSTER)
 
-    key = None
+    passphrase = None
+    pmk = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
-      key = self.PASSPHRASE
+      passphrase = self.PASSPHRASE
     elif encr_type == self.ENCR_TYPE_PMK:
-      key = self.PMK
+      pmk = self.PMK
 
     # Responder: request network
     resp_req_key = self.request_network(
         resp_dut,
         resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
             resp_id, aconsts.DATA_PATH_RESPONDER, init_mac
-            if use_peer_id else None, key))
+            if use_peer_id else None, passphrase, pmk))
 
     # Initiator: request network
     init_req_key = self.request_network(
         init_dut,
         init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, key))
+            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, passphrase, pmk))
 
     # Initiator & Responder: wait for network formation
     init_net_event = autils.wait_for_event_with_keys(
@@ -382,29 +384,33 @@ class DataPathTest(AwareBaseTest):
     time.sleep(self.WAIT_FOR_CLUSTER)
 
     # set up separate keys: even if types are the same we want a mismatch
-    init_key = None
+    init_passphrase = None
+    init_pmk = None
     if init_encr_type == self.ENCR_TYPE_PASSPHRASE:
-      init_key = self.PASSPHRASE
+      init_passphrase = self.PASSPHRASE
     elif init_encr_type == self.ENCR_TYPE_PMK:
-      init_key = self.PMK
+      init_pmk = self.PMK
 
-    resp_key = None
+    resp_passphrase = None
+    resp_pmk = None
     if resp_encr_type == self.ENCR_TYPE_PASSPHRASE:
-      resp_key = self.PASSPHRASE2
+      resp_passphrase = self.PASSPHRASE2
     elif resp_encr_type == self.ENCR_TYPE_PMK:
-      resp_key = self.PMK2
+      resp_pmk = self.PMK2
 
     # Responder: request network
     resp_req_key = self.request_network(
         resp_dut,
         resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, resp_key))
+            resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, resp_passphrase,
+            resp_pmk))
 
     # Initiator: request network
     init_req_key = self.request_network(
         init_dut,
         init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, init_key))
+            init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, init_passphrase,
+            init_pmk))
 
     # Initiator & Responder: fail on network formation
     time.sleep(autils.EVENT_NDP_TIMEOUT)
