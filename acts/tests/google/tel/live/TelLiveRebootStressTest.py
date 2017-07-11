@@ -53,6 +53,7 @@ from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
@@ -373,33 +374,41 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if method in kwargs: required_methods.append(method)
 
         process_list = ("rild", "netmgrd", "com.android.phone", "imsqmidaemon",
-                        "imsdatadaemon", "ims_rtp_daemon",
-                        "com.android.ims.rcsservice", "cnd")
+                        "imsdatadaemon", "ims_rtp_daemon", "netd",
+                        "com.android.ims.rcsservice", "system_server", "cnd",
+                        "modem")
         for service in process_list:
             iteration_result = "pass"
-            self.log.info(
-                "Crash Recover Test for Process <%s>" % service)
-            self.log.info(
-                "%s kill Process %s" % (self.dut.serial, service))
-            process_pid = self.dut.adb.shell("pidof %s" % service)
-            self.log.info("%s is the pidof %s" % (process_pid, service))
-            if not process_pid:
-                self.dut.log.error("Process %s not running" % service)
-                iteration_result = "fail"
-            self.dut.adb.shell("kill -9 %s" % process_pid)
-            self.log.info("%s wait %d sec for radio up." % (self.dut.serial,
-                                                     WAIT_TIME_AFTER_CRASH))
-            time.sleep(WAIT_TIME_AFTER_CRASH)
-            process_pid_new = self.dut.adb.shell("pidof %s" % service)
-            if process_pid == process_pid_new:
-                self.log.error("kill failed old:%s new:%s" % (process_pid,
-                                                         process_pid_new))
+            self.log.info("Crash Recover Test for Process <%s>" % service)
+            self.log.info("%s kill Process %s" % (self.dut.serial, service))
+            if service == "modem":
+                trigger_modem_crash(self.log, self.dut)
+                time.sleep(WAIT_TIME_AFTER_CRASH * 2)
+            else:
+                process_pid = self.dut.adb.shell("pidof %s" % service)
+                self.log.info("%s is the pidof %s" % (process_pid, service))
+                if not process_pid:
+                    self.dut.log.error("Process %s not running" % service)
+                    iteration_result = "fail"
+                if service == "netd" or service == "system_server":
+                    self.dut.stop_services()
+                self.dut.adb.shell(
+                    "kill -9 %s" % process_pid, ignore_status=True)
+                self.log.info("%s wait %d sec for radio up." %
+                              (self.dut.serial, WAIT_TIME_AFTER_CRASH))
+                time.sleep(WAIT_TIME_AFTER_CRASH)
+                if service == "netd" or service == "system_server":
+                    self.dut.start_services()
+                process_pid_new = self.dut.adb.shell("pidof %s" % service)
+                if process_pid == process_pid_new:
+                    self.log.error("kill failed old:%s new:%s" %
+                                   (process_pid, process_pid_new))
             for check in required_methods:
                 if not test_method_mapping[check]():
                     fail_count[check] += 1
                     iteration_result = "fail"
-            self.log.info("Crash Recover Test for Process <%s> %s" % (service,
-                                                           iteration_result))
+            self.log.info("Crash Recover Test for Process <%s> %s" %
+                          (service, iteration_result))
         for failure, count in fail_count.items():
             if count:
                 self.log.error("%d %s failures" % (count, failure))
