@@ -13,21 +13,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
-import time
-import socket
-
 from acts import asserts
 from acts import base_test
-from acts import test_runner
-from acts import utils
 from acts.controllers import adb
-from acts.test_utils.tel import tel_data_utils
-from acts.test_utils.tel import tel_test_utils
-from acts.test_utils.tel import tel_defines
-from acts.test_utils.wifi import wifi_test_utils
+from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
-dum_class = "com.android.uid.DummyActivity"
+dum_class = "com.android.tests.connectivity.uid.DummyActivity"
 
 
 class CoreNetworkingTest(base_test.BaseTestClass):
@@ -36,71 +30,20 @@ class CoreNetworkingTest(base_test.BaseTestClass):
     def setup_class(self):
         """ Setup devices for tests and unpack params """
         self.dut = self.android_devices[0]
-        wifi_test_utils.wifi_toggle_state(self.dut, False)
+        wutils.wifi_toggle_state(self.dut, False)
         self.dut.droid.telephonyToggleDataConnection(True)
-        tel_data_utils.wait_for_cell_data_connection(self.log, self.dut, True)
+        wait_for_cell_data_connection(self.log, self.dut, True)
         asserts.assert_true(
-            tel_test_utils.verify_http_connection(self.log, self.dut),
+            verify_http_connection(self.log, self.dut),
             "HTTP verification failed on cell data connection")
 
     def teardown_class(self):
         """ Reset devices """
-        wifi_test_utils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_toggle_state(self.dut, True)
 
     """ Test Cases """
 
-    def test_uid_derace_doze_mode(self):
-        """ Verify UID de-race doze mode
-
-        Steps:
-            1. Connect to DUT to data network and verify internet
-            2. Enable doze mode
-            3. Launch app and verify internet connectiviy
-            4. Disable doze mode
-        """
-        # Enable doze mode
-        self.log.info("Enable Doze mode")
-        asserts.assert_true(utils.enable_doze(self.dut),
-                            "Could not enable doze mode")
-
-        # Launch app, check internet connectivity and close app
-        res = self.dut.droid.launchForResult(dum_class)
-        self.log.info("Internet connectivity status after app launch: %s "
-                      % res['extras']['result'])
-
-        # Disable doze mode
-        self.log.info("Disable Doze mode")
-        asserts.assert_true(utils.disable_doze(self.dut),
-                            "Could not disable doze mode")
-
-        return res['extras']['result']
-
-    def test_uid_derace_doze_light_mode(self):
-        """ Verify UID de-race doze light mode
-
-        Steps:
-            1. Connect DUT to data network and verify internet
-            2. Enable doze light mode
-            3. Launch app and verify internet connectivity
-            4. Disable doze light mode
-        """
-        # Enable doze light mode
-        self.log.info("Enable doze light mode")
-        asserts.assert_true(utils.enable_doze_light(self.dut),
-                            "Could not enable doze light mode")
-
-        # Launch app, check internet connectivity and close app
-        res = self.dut.droid.launchForResult(dum_class)
-        self.log.info("Internet connectivity status after app launch: %s "
-                      % res['extras']['result'])
-
-        # Disable doze light mode
-        self.log.info("Disable doze light mode")
-        asserts.assert_true(utils.disable_doze_light(self.dut),
-                            "Could not disable doze light mode")
-
-        return res['extras']['result']
-
+    @test_tracker_info(uuid="0c89d632-aafe-4bbd-a812-7b0eca6aafc7")
     def test_uid_derace_data_saver_mode(self):
         """ Verify UID de-race data saver mode
 
