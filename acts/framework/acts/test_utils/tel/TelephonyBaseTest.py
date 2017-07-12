@@ -131,7 +131,6 @@ class TelephonyBaseTest(BaseTestClass):
             except (TestSignal, TestAbortClass, TestAbortAll):
                 raise
             except Exception as e:
-                self.log.error(traceback.format_exc())
                 self.log.error(str(e))
                 return False
             finally:
