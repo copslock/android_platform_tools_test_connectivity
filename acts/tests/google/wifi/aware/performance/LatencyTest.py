@@ -407,6 +407,9 @@ class LatencyTest(AwareBaseTest):
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
       resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
 
+      # wait before trying another iteration (need to let CM clean-up)
+      time.sleep(10)
+
     autils.extract_stats(
         init_dut,
         data=on_available_latencies,

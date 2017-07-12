@@ -377,7 +377,7 @@ class MessageTest(AwareBaseTest):
       msgs2[msg2] = 0
       msg_ids2[msg_id2] = 0
       p_dut.droid.wifiAwareSendMessage(p_disc_id2, peer_id_on_pub2, msg_id2,
-                                       msg1, 0)
+                                       msg2, 0)
 
     self.wait_for_messages(msgs1, msg_ids1, p_disc_id1, s_disc_id1, p_dut,
                            s_dut, payload_size == self.PAYLOAD_SIZE_MIN)
