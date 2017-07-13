@@ -25,6 +25,7 @@ from acts import records
 from acts import signals
 from acts import tracelogger
 from acts import utils
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -675,25 +676,25 @@ class BaseTestClass(object):
         user.
         """
 
+    def _ad_take_reports(self, ad, test_name, begin_time):
+        try:
+            ad.take_bug_report(test_name, begin_time)
+            bugreport_path = os.path.join(ad.log_path, test_name)
+            utils.create_dir(bugreport_path)
+            ad.check_crash_report(test_name, begin_time, True)
+            if getattr(ad, "qxdm_always_on", False):
+                ad.get_qxdm_logs()
+        except Exception as e:
+            ad.log.error("Failed to take a bug report for %s with error %s",
+                         test_name, e)
+
     def _take_bug_report(self, test_name, begin_time):
         if "no_bug_report_on_fail" in self.user_params:
             return
 
-        # magical sleep to ensure the runtime restart or reboot begins
-        time.sleep(1)
-        for ad in self.android_devices:
-            try:
-                ad.adb.wait_for_device()
-                ad.take_bug_report(test_name, begin_time)
-                bugreport_path = os.path.join(ad.log_path, test_name)
-                utils.create_dir(bugreport_path)
-                ad.check_crash_report(test_name, begin_time, True)
-                if getattr(ad, "qxdm_always_on", False):
-                    ad.get_qxdm_logs()
-            except Exception as e:
-                ad.log.error(
-                    "Failed to take a bug report for %s with error %s",
-                    test_name, e)
+        tasks = [(self._ad_take_reports, (ad, test_name, begin_time))
+                 for ad in self.android_devices]
+        run_multithread_func(self.log, tasks)
 
     def _reboot_device(self, ad):
         ad.log.info("Rebooting device.")
