@@ -113,6 +113,35 @@ def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
     ad.log.info('%s%s not seen (as expected)', prefix, event_name)
     return
 
+def fail_on_event_with_keys(ad, event_name, timeout=EVENT_TIMEOUT, *keyvalues):
+  """Wait for a timeout period and looks for the specified event which contains
+  the key/value pairs - fails if it is observed.
+
+  Args:
+    ad: The android device
+    event_name: The event to wait on
+    timeout: Number of seconds to wait
+    keyvalues: (kay, value) pairs
+  """
+  def filter_callbacks(event, keyvalues):
+    for keyvalue in keyvalues:
+      key, value = keyvalue
+      if event['data'][key] != value:
+        return False
+    return True
+
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
+  try:
+    event = ad.ed.wait_for_event(event_name, filter_callbacks, timeout,
+                                 keyvalues)
+    ad.log.info('%sReceived unwanted %s: %s', prefix, event_name, event['data'])
+    asserts.fail(event_name, extras=event)
+  except queue.Empty:
+    ad.log.info('%s%s (%s) not seen (as expected)', prefix, event_name,
+                keyvalues)
+    return
 
 def verify_no_more_events(ad, timeout=EVENT_TIMEOUT):
   """Verify that there are no more events in the queue.
