@@ -1,5 +1,8 @@
 This folder contains tools to be used in the testing lab.
 
+NOTE: The config.json file in this folder contains random values - for the full
+config file, look at the corresponding folder in google3
+
 Python dependencies:
   - subprocess32
   - shellescape
