@@ -15,6 +15,9 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts import signals
+
+from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -23,6 +26,8 @@ from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 class CapabilitiesTest(AwareBaseTest):
   """Set of tests for Wi-Fi Aware Capabilities - verifying that the provided
   capabilities are real (i.e. available)."""
+
+  SERVICE_NAME = "GoogleTestXYZ"
 
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
@@ -132,3 +137,116 @@ class CapabilitiesTest(AwareBaseTest):
     self.start_discovery_session(dut, session_id, False,
                                  aconsts.SUBSCRIBE_TYPE_ACTIVE,
                                  service_name_template % ('pub', 905), True)
+
+  def test_max_ndp(self):
+    """Validate that the device can create as many NDPs as are specified
+    by its capabilities.
+
+    Mechanics:
+    - Publisher on DUT (first device)
+    - Subscribers on all other devices
+    - On discovery set up NDP
+
+    Note: the test requires MAX_NDP + 2 devices to be validated. If these are
+    not available it will be skipped (not failed).
+    """
+    dut = self.android_devices[0]
+
+    # get max NDP: using first available device (assumes all devices are the
+    # same)
+    max_ndp = dut.aware_capabilities[aconsts.CAP_MAX_NDP_SESSIONS]
+
+    if len(self.android_devices) < max_ndp + 2:
+      raise signals.TestSkip('Setup does not contain a sufficient number of '
+                             'devices: need %d, have %d' % (max_ndp + 2,
+                             len(self.android_devices)))
+
+    # attach
+    session_id = dut.droid.wifiAwareAttach()
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # start publisher
+    p_disc_id = self.start_discovery_session(
+        dut,
+        session_id,
+        is_publish=True,
+        dtype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        service_name=self.SERVICE_NAME,
+        expect_success=True)
+
+    # loop over other DUTs
+    for i in range(max_ndp + 1):
+      other_dut = self.android_devices[i + 1]
+
+      # attach
+      other_session_id = other_dut.droid.wifiAwareAttach()
+      autils.wait_for_event(other_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+      # start subscriber
+      s_disc_id = self.start_discovery_session(
+          other_dut,
+          other_session_id,
+          is_publish=False,
+          dtype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+          service_name=self.SERVICE_NAME,
+          expect_success=True)
+
+      discovery_event = autils.wait_for_event(
+          other_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+      peer_id_on_sub = discovery_event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+
+      # Subscriber: send message to peer (Publisher - so it knows our address)
+      other_dut.droid.wifiAwareSendMessage(
+          s_disc_id, peer_id_on_sub,
+          self.get_next_msg_id(), "ping", aconsts.MAX_TX_RETRIES)
+      autils.wait_for_event(other_dut, aconsts.SESSION_CB_ON_MESSAGE_SENT)
+
+      # Publisher: wait for received message
+      pub_rx_msg_event = autils.wait_for_event(
+          dut, aconsts.SESSION_CB_ON_MESSAGE_RECEIVED)
+      peer_id_on_pub = pub_rx_msg_event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+
+      # publisher (responder): request network
+      p_req_key = autils.request_network(
+          dut,
+          dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, peer_id_on_pub))
+
+      # subscriber (initiator): request network
+      s_req_key = autils.request_network(
+          other_dut,
+          other_dut.droid.wifiAwareCreateNetworkSpecifier(
+              s_disc_id, peer_id_on_sub))
+
+      # wait for network (or not - on the last iteration)
+      if i != max_ndp:
+        p_net_event = autils.wait_for_event_with_keys(
+            dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+        s_net_event = autils.wait_for_event_with_keys(
+            other_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+        p_aware_if = p_net_event['data'][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+        s_aware_if = s_net_event['data'][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+        self.log.info('Interface names: p=%s, s=%s', p_aware_if, s_aware_if)
+
+        p_ipv6 = dut.droid.connectivityGetLinkLocalIpv6Address(
+            p_aware_if).split('%')[0]
+        s_ipv6 = other_dut.droid.connectivityGetLinkLocalIpv6Address(
+            s_aware_if).split('%')[0]
+        self.log.info('Interface addresses (IPv6): p=%s, s=%s', p_ipv6, s_ipv6)
+      else:
+        autils.fail_on_event_with_keys(
+            dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+        autils.fail_on_event_with_keys(
+            other_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, s_req_key))
