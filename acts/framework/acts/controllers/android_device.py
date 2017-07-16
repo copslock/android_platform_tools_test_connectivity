@@ -47,7 +47,7 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/ramdump/", "/data/vendor/ssrdump")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS")
-BUG_REPORT_TIMEOUT = 1200
+BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
 IPERF_TIMEOUT = 60
@@ -875,6 +875,7 @@ class AndroidDevice:
                 " > {}".format(full_out_path), timeout=BUG_REPORT_TIMEOUT)
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
+        self.adb.wait_for_device()
 
     def get_file_names(self, directory):
         """Get files names with provided directory."""

@@ -20,34 +20,63 @@ from metrics.metric import Metric
 
 class ProcessTimeMetric(Metric):
     TIME_COMMAND = 'ps -p %s -o etimes,command | sed 1d'
+    # Number of seconds in 24 hours
+    MIN_TIME = 86400
     # Fields for response dictionary
-    PID_TIMES = 'pid_times'
+    ADB_PROCESSES = 'adb_processes'
+    NUM_ADB_PROCESSES = 'num_adb_processes'
+    FASTBOOT_PROCESSES = 'fastboot_processes'
+    NUM_FASTBOOT_PROCESSES = 'num_fastboot_processes'
 
     def gather_metric(self):
         """Returns ADB and Fastboot processes and their time elapsed
 
         Returns:
             A dict with the following fields:
-              pid_times: a list of (time, PID) tuples where time is int number
-              of seconds elapsed and PID is a string representing the pid
+              adb_processes, fastboot_processes: a list of (PID, serialnumber)
+                tuples where PID is a string representing the pid and
+                serialnumber is serial number as a string, or NONE if number
+                wasn't in command
+              num_adb_processes, num_fastboot_processes: the number of tuples
+                in the previous lists
         """
         # Get the process ids
         pids = self.get_adb_fastboot_pids()
 
         # Get elapsed time for selected pids
-        times = []
+        adb_processes, fastboot_processes = [], []
         for pid in pids:
             # Sample output:
-            # 1037453 adb
+            # 232893 fastboot -s FA6BM0305019 -w
+
             output = self._shell.run(self.TIME_COMMAND % pid).stdout
-            # ignore fork-server command, because it's not a problematic process
-            if 'fork-server' not in output:
-                # pull out time in seconds
-                time = int(output.split()[0])
-                times.append((time, str(pid)))
+            spl_ln = output.split()
+            # pull out time in seconds
+            time = int(spl_ln[0])
+            # We only care about processes older than the min time
+            if time > self.MIN_TIME:
+                # ignore fork-server command, because it's not a problematic process
+                if 'fork-server' not in output:
+                    # get serial number, which defaults to none
+                    serial_number = None
+                    if '-s' in spl_ln:
+                        sn_index = spl_ln.index('-s')
+                        # avoid indexing out of range
+                        if sn_index + 1 < len(spl_ln):
+                            serial_number = spl_ln[sn_index + 1]
+                    # append to proper list
+                    if 'fastboot' in output:
+                        fastboot_processes.append((str(pid), serial_number))
+                    elif 'adb' in output:
+                        adb_processes.append((str(pid), serial_number))
 
         # Create response dictionary
-        response = {self.PID_TIMES: times}
+        response = {
+            self.ADB_PROCESSES: adb_processes,
+            self.NUM_ADB_PROCESSES: len(adb_processes),
+            self.FASTBOOT_PROCESSES: fastboot_processes,
+            self.NUM_FASTBOOT_PROCESSES: len(fastboot_processes)
+        }
         return response
 
     def get_adb_fastboot_pids(self):
