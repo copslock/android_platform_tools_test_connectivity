@@ -49,7 +49,8 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
-from socket import BrokenPipeError
+
+import socket
 from acts.controllers.sl4a_clients import Sl4aProtocolError
 
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
