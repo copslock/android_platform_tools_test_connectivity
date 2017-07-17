@@ -1668,7 +1668,7 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
     """
     if out_path.endswith("/"):
         out_path = os.path.join(out_path, file_name)
-    out = ad.adb.shell('stat -c "%%s" %s' % out_path, ignore_status=True)
+    out = ad.adb.shell('stat -c "%%s" %s' % out_path)
     # Handle some old version adb returns error message "No such" into std_out
     if out and "No such" not in out:
         if expected_file_size:
