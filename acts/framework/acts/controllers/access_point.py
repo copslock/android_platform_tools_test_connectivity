@@ -222,8 +222,8 @@ class AccessPoint(object):
             # variables represent the interface name, k, and dhcp info, v.
             for k, v in dhcp_bss.items():
                 bss_interface_ip = ipaddress.ip_interface(
-                    '%s/%s' %
-                    (dhcp_bss[k].router, dhcp_bss[k].network.netmask))
+                    '%s/%s' % (dhcp_bss[k].router,
+                               dhcp_bss[k].network.netmask))
                 self._ip_cmd.set_ipv4_address(str(k), bss_interface_ip)
 
         # Restart the DHCP server with our updated list of subnets.
@@ -247,7 +247,7 @@ class AccessPoint(object):
         interfaces = [_AP_2GHZ_INTERFACE, _AP_5GHZ_INTERFACE, ssid]
         # Get the interface name associated with the given ssid.
         for interface in interfaces:
-            cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" %(
+            cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" % (
                 str(interface))
             iw_output = self.ssh.run(cmd)
             if 'command failed: No such device' in iw_output.stderr:
@@ -256,7 +256,7 @@ class AccessPoint(object):
                 # If the configured ssid is equal to the given ssid, we found
                 # the right interface.
                 if iw_output.stdout == ssid:
-                    cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" %(
+                    cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" % (
                         str(interface))
                     iw_output = self.ssh.run(cmd)
                     return iw_output.stdout
@@ -304,3 +304,4 @@ class AccessPoint(object):
 
         if self._aps:
             self.stop_all_aps()
+        self.ssh.close()
