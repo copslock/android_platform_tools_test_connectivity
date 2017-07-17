@@ -51,8 +51,15 @@ class ProcessTimeMetric(Metric):
 
             output = self._shell.run(self.TIME_COMMAND % pid).stdout
             spl_ln = output.split()
-            # pull out time in seconds
-            time = int(spl_ln[0])
+
+            # There is a potential race condition between getting pids, and the
+            # pid then dying, so we must check that there is output.
+            if spl_ln:
+                # pull out time in seconds
+                time = int(spl_ln[0])
+            else:
+                continue
+
             # We only care about processes older than the min time
             if time > self.MIN_TIME:
                 # ignore fork-server command, because it's not a problematic process
