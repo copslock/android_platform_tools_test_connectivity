@@ -881,6 +881,9 @@ class AndroidDevice:
         """Get files names with provided directory."""
         file_names = []
         out = self.adb.shell("ls %s" % directory, ignore_status=True)
+        if "Permission denied" in out:
+            self.adb.root_adb()
+            out = self.adb.shell("ls %s" % directory, ignore_status=True)
         if out and "No such" not in out:
             return out.split('\n')
         else:
