@@ -218,7 +218,11 @@ def load_config(file_full_path):
         A JSON object.
     """
     with open(file_full_path, 'r') as f:
-        conf = json.load(f)
+        try:
+            conf = json.load(f)
+        except Exception as e:
+            logging.error("Exception error to load %s: %s", f, e)
+            raise
         return conf
 
 
