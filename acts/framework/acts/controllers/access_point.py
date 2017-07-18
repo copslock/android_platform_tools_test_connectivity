@@ -162,15 +162,11 @@ class AccessPoint(object):
         # up to 8 different mac addresses.  The easiest way to do this
         # is to set the last byte to 0.  While technically this could
         # cause a duplicate mac address it is unlikely and will allow for
-        # one radio to have up to 8 APs on the interface.  The check ensures
-        # backwards compatibility since if someone has set the bssid on purpose
-        # the bssid will not be changed from what the user set.
+        # one radio to have up to 8 APs on the interface.
         interface_mac_orig = None
-        if not hostapd_config.bssid:
-            cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
-            interface_mac_orig = self.ssh.run(cmd)
-            interface_mac = interface_mac_orig.stdout[:-1] + '0'
-            hostapd_config.bssid = interface_mac
+        cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
+        interface_mac_orig = self.ssh.run(cmd)
+        hostapd_config.bssid = interface_mac_orig.stdout[:-1] + '0'
 
         if interface in self._aps:
             raise ValueError('No WiFi interface available for AP on '
@@ -197,11 +193,10 @@ class AccessPoint(object):
             dhcp_bss = {}
             counter = 1
             for bss in hostapd_config.bss_lookup:
-                if not hostapd_config.bss_lookup[bss].bssid:
-                    if interface_mac_orig:
-                        hostapd_config.bss_lookup[
-                            bss].bssid = interface_mac_orig.stdout[:-1] + str(
-                                counter)
+                if interface_mac_orig:
+                    hostapd_config.bss_lookup[
+                        bss].bssid = interface_mac_orig.stdout[:-1] + str(
+                            counter)
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is _AP_2GHZ_INTERFACE:
                     starting_ip_range = _AP_2GHZ_SUBNET_STR
