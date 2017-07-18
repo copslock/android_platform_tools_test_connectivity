@@ -4105,6 +4105,17 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setMediaVolume(0)
     ad.droid.setVoiceCallVolume(0)
     ad.droid.setAlarmVolume(0)
+    out = ad.adb.shell("settings list system | grep volume")
+    for attr in re.findall(r"(volume_.*)=\d+", out):
+        ad.adb.shell("settings put system %s 0" % attr)
+    try:
+        if initiate_call(log, ad, "+19523521350"):
+            for _ in range(10):
+                ad.adb.shell("input keyevent 25")
+                time.sleep(1)
+            hangup_call(log, ad)
+    except Exception as e:
+        ad.log.info("fail to turn down voice call volume %s", e)
 
     return silent_mode == ad.droid.checkRingerSilentMode()
 
