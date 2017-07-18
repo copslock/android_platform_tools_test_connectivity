@@ -162,15 +162,11 @@ class AccessPoint(object):
         # up to 8 different mac addresses.  The easiest way to do this
         # is to set the last byte to 0.  While technically this could
         # cause a duplicate mac address it is unlikely and will allow for
-        # one radio to have up to 8 APs on the interface.  The check ensures
-        # backwards compatibility since if someone has set the bssid on purpose
-        # the bssid will not be changed from what the user set.
+        # one radio to have up to 8 APs on the interface.
         interface_mac_orig = None
-        if not hostapd_config.bssid:
-            cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
-            interface_mac_orig = self.ssh.run(cmd)
-            interface_mac = interface_mac_orig.stdout[:-1] + '0'
-            hostapd_config.bssid = interface_mac
+        cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
+        interface_mac_orig = self.ssh.run(cmd)
+        hostapd_config.bssid = interface_mac_orig.stdout[:-1] + '0'
 
         if interface in self._aps:
             raise ValueError('No WiFi interface available for AP on '
@@ -197,11 +193,10 @@ class AccessPoint(object):
             dhcp_bss = {}
             counter = 1
             for bss in hostapd_config.bss_lookup:
-                if not hostapd_config.bss_lookup[bss].bssid:
-                    if interface_mac_orig:
-                        hostapd_config.bss_lookup[
-                            bss].bssid = interface_mac_orig.stdout[:-1] + str(
-                                counter)
+                if interface_mac_orig:
+                    hostapd_config.bss_lookup[
+                        bss].bssid = interface_mac_orig.stdout[:-1] + str(
+                            counter)
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is _AP_2GHZ_INTERFACE:
                     starting_ip_range = _AP_2GHZ_SUBNET_STR
@@ -227,8 +222,8 @@ class AccessPoint(object):
             # variables represent the interface name, k, and dhcp info, v.
             for k, v in dhcp_bss.items():
                 bss_interface_ip = ipaddress.ip_interface(
-                    '%s/%s' %
-                    (dhcp_bss[k].router, dhcp_bss[k].network.netmask))
+                    '%s/%s' % (dhcp_bss[k].router,
+                               dhcp_bss[k].network.netmask))
                 self._ip_cmd.set_ipv4_address(str(k), bss_interface_ip)
 
         # Restart the DHCP server with our updated list of subnets.
@@ -252,7 +247,7 @@ class AccessPoint(object):
         interfaces = [_AP_2GHZ_INTERFACE, _AP_5GHZ_INTERFACE, ssid]
         # Get the interface name associated with the given ssid.
         for interface in interfaces:
-            cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" %(
+            cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" % (
                 str(interface))
             iw_output = self.ssh.run(cmd)
             if 'command failed: No such device' in iw_output.stderr:
@@ -261,7 +256,7 @@ class AccessPoint(object):
                 # If the configured ssid is equal to the given ssid, we found
                 # the right interface.
                 if iw_output.stdout == ssid:
-                    cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" %(
+                    cmd = "iw dev %s info|grep addr|awk -F' ' '{print $2}'" % (
                         str(interface))
                     iw_output = self.ssh.run(cmd)
                     return iw_output.stdout
@@ -309,3 +304,4 @@ class AccessPoint(object):
 
         if self._aps:
             self.stop_all_aps()
+        self.ssh.close()
