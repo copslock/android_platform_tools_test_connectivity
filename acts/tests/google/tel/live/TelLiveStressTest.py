@@ -51,7 +51,7 @@ from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
 import socket
-from acts.controllers.sl4a_clients import Sl4aProtocolError
+from acts.controllers.sl4a_client import Sl4aProtocolError
 
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
 EXCEPTION_TOLERANCE = 20
