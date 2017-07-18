@@ -325,18 +325,25 @@ class Sl4aClient(object):
             Sl4aApiError: The rpc went through, however executed with errors.
         """
         timeout = kwargs.get("timeout")
+        retries = kwargs.get("retries", 3)
         with self._lock:
             apiid = next(self._counter)
         if timeout:
             self.conn.settimeout(timeout)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
-        self.client.write(request.encode("utf8") + b'\n')
-        self.client.flush()
-        response = self.client.readline()
-        if not response:
-            logging.error("No response for RPC method %s", method)
-            raise Sl4aProtocolError(Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
+        for i in range(retries):
+            self.client.write(request.encode("utf8") + b'\n')
+            self.client.flush()
+            response = self.client.readline()
+            if not response:
+                logging.error("No response for RPC method %s on iteration %s",
+                              method, i)
+                if i < retries - 1:
+                    continue
+                else:
+                    raise Sl4aProtocolError(
+                        Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
         if timeout:
             self.conn.settimeout(self._SOCKET_TIMEOUT)
