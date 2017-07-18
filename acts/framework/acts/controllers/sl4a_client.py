@@ -344,6 +344,8 @@ class Sl4aClient(object):
                 else:
                     raise Sl4aProtocolError(
                         Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
+            else:
+                break
         result = json.loads(str(response, encoding="utf8"))
         if timeout:
             self.conn.settimeout(self._SOCKET_TIMEOUT)
