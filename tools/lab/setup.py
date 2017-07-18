@@ -13,7 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from distutils import cmd
+from distutils import log
+import pip
 import setuptools
 import sys
 import subprocess
@@ -41,12 +43,43 @@ except subprocess.CalledProcessError as cpe:
     print('Could not install python-dev: %s' % cpe.output)
 
 
+class LabHealthInstallDependencies(cmd.Command):
+    """Installs only required packages
+
+    Installs all required packages for acts to work. Rather than using the
+    normal install system which creates links with the python egg, pip is
+    used to install the packages.
+    """
+
+    description = 'Install dependencies needed for lab health.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        pip.main(['install', '--upgrade', 'pip'])
+
+        required_packages = self.distribution.install_requires
+        for package in required_packages:
+            self.announce('Installing %s...' % package, log.INFO)
+            pip.main(['install', package])
+
+        self.announce('Dependencies installed.')
+
+
 def main():
     setuptools.setup(
         name='LabHealth',
         version='0.1',
         description='Android Test Lab Health',
         license='Apache2.0',
+        cmdclass={
+            'install_deps': LabHealthInstallDependencies,
+        },
         packages=setuptools.find_packages(),
         include_package_data=False,
         install_requires=install_requires,
