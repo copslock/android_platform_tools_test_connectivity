@@ -267,7 +267,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
 
-    ad.log.info("cfg = %s", ad.cfg)
+    ad.log.debug("cfg = %s", ad.cfg)
 
 
 def refresh_droid_config(log, ad):
@@ -3771,8 +3771,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         ad.droid.telephonyToggleDataConnection(True)
         set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
-    get_telephony_signal_strength(ad)
-
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
         ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
@@ -4111,11 +4109,12 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     for attr in re.findall(r"(volume_.*)=\d+", out):
         ad.adb.shell("settings put system %s 0" % attr)
     try:
-        if initiate_call(log, ad, "+19523521350"):
-            for _ in range(10):
-                ad.adb.shell("input keyevent 25")
-                time.sleep(1)
-            hangup_call(log, ad)
+        if not ad.droid.telecomIsInCall():
+            ad.droid.telecomCallNumber("+19523521350")
+        for _ in range(10):
+            ad.adb.shell("input keyevent 25")
+            time.sleep(1)
+        ad.droid.telecomEndCall()
     except Exception as e:
         ad.log.info("fail to turn down voice call volume %s", e)
 
