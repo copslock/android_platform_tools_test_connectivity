@@ -56,6 +56,7 @@ from acts.utils import rand_ascii_str
 
 import socket
 from acts.controllers.sl4a_client import Sl4aProtocolError
+
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
 EXCEPTION_TOLERANCE = 20
 
