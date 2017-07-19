@@ -1123,16 +1123,16 @@ def ims_call_ho(log,
                                         ims_virtual_network_id,
                                         ImsCscfStatus.CONNECTED.value):
             raise _CallSequenceException("Phone IMS status is not connected.")
-        log.info("Wait for {} seconds before handover".format(
-            wait_time_in_volte))
+        log.info(
+            "Wait for {} seconds before handover".format(wait_time_in_volte))
         time.sleep(wait_time_in_volte)
 
         # Once VoLTE call is connected, then Handover
         log.info("Starting handover procedure...")
         result = handover_tc(anritsu_handle, BtsNumber.BTS1, BtsNumber.BTS2)
         log.info("Handover procedure ends with result code {}".format(result))
-        log.info("Wait for {} seconds after handover".format(
-            wait_time_in_volte))
+        log.info(
+            "Wait for {} seconds after handover".format(wait_time_in_volte))
         time.sleep(wait_time_in_volte)
 
         # check if the phone stay in call
@@ -1719,7 +1719,7 @@ def get_transmission_mode(user_params, cell_no):
     return transmission_mode
 
 
-def get_dl_antennas(user_params, cell_no):
+def get_dl_antenna(user_params, cell_no):
     """ Returns the DL ANTENNA to be used from the user specified parameters
         or default value
 
