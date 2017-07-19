@@ -126,10 +126,12 @@ class AdbProxy(object):
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
-        if not ignore_status and ret == 1 and DEVICE_NOT_FOUND_REGEX.match(err):
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
-        elif "Result: Parcel" in out:
+        if "Result: Parcel" in out:
             return parsing_parcel_output(out)
+        if ignore_status:
+            return out or err
+        if ret == 1 and DEVICE_NOT_FOUND_REGEX.match(err):
+            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         else:
             return out
 

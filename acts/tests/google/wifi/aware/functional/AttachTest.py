@@ -20,6 +20,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts.utils import force_airplane_mode
 
 
 class AttachTest(AwareBaseTest):
@@ -101,3 +102,26 @@ class AttachTest(AwareBaseTest):
     autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
     dut.droid.wifiAwareAttach()
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
+
+  def test_attach_apm_toggle_attach_again(self):
+    """Validates that enabling Airplane mode while Aware is on resets it
+    correctly, and allows it to be re-enabled when Airplane mode is then
+    disabled."""
+    dut = self.android_devices[0]
+
+    # enable Aware (attach)
+    dut.droid.wifiAwareAttach()
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # enable airplane mode
+    force_airplane_mode(dut, True)
+    autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
+
+    # wait a few seconds and disable airplane mode
+    time.sleep(10)
+    force_airplane_mode(dut, False)
+    autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
+
+    # try enabling Aware again (attach)
+    dut.droid.wifiAwareAttach()
+    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
