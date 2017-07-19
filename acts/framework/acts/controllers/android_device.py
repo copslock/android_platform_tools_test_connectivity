@@ -845,6 +845,7 @@ class AndroidDevice:
             test_name: Name of the test case that triggered this bug report.
             begin_time: Logline format timestamp taken when the test started.
         """
+        self.adb.wait_for_device()
         new_br = True
         try:
             stdout = self.adb.shell("bugreportz -v")
@@ -982,15 +983,15 @@ class AndroidDevice:
         Args:
             session_id: UID of the sl4a session to terminate.
         """
+        ed_key = self.serial + str(session_id)
+        if self._event_dispatchers and ed_key in self._event_dispatchers:
+            self._event_dispatchers[ed_key].clean_up()
+            del self._event_dispatchers[ed_key]
         if self._droid_sessions and (session_id in self._droid_sessions):
             for droid in self._droid_sessions[session_id]:
                 droid.closeSl4aSession(timeout=180)
                 droid.close()
             del self._droid_sessions[session_id]
-        ed_key = self.serial + str(session_id)
-        if self._event_dispatchers and ed_key in self._event_dispatchers:
-            self._event_dispatchers[ed_key].clean_up()
-            del self._event_dispatchers[ed_key]
 
     def terminate_all_sessions(self):
         """Terminate all sl4a sessions on the AndroidDevice instance.
@@ -1002,9 +1003,9 @@ class AndroidDevice:
             for session_id in session_ids:
                 try:
                     self.terminate_session(session_id)
-                except:
-                    self.log.exception("Failed to terminate session %d.",
-                                       session_id)
+                except Exception as e:
+                    self.log.exception("Failed to terminate session %d: %s",
+                                       session_id, e)
             if self.h_port:
                 self.adb.remove_tcp_forward(self.h_port)
                 self.h_port = None
