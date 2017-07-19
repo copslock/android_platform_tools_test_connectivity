@@ -333,9 +333,17 @@ class Sl4aClient(object):
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
         for i in range(retries):
-            self.client.write(request.encode("utf8") + b'\n')
-            self.client.flush()
-            response = self.client.readline()
+            try:
+                self.client.write(request.encode("utf8") + b'\n')
+                self.client.flush()
+                response = self.client.readline()
+            except BrokenPipeError as e:
+                logging.error("RPC method %s on iteration %s error: %s",
+                              method, i, e)
+                if i < retries - 1:
+                    continue
+                else:
+                    raise
             if not response:
                 logging.error("No response for RPC method %s on iteration %s",
                               method, i)
