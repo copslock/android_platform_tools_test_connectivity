@@ -286,6 +286,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """
         # Reboot
         ads = self.android_devices
+        ads[0].adb.shell(
+            "am start -n com.android.settings/.DevelopmentSettings",
+            ignore_status=True)
         ads[0].log.info("reboot!")
         ads[0].reboot()
         ads[0].log.info("wait %d secs for radio up." % WAIT_TIME_AFTER_REBOOT)

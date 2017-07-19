@@ -842,7 +842,7 @@ def adb_shell_ping(ad,
             return False
         return True
     except Exception as e:
-        ad.log.warn("Ping Test to %s failed with exception %s", dest_ip, e)
+        ad.log.warning("Ping Test to %s failed with exception %s", dest_ip, e)
         return False
     finally:
         ad.adb.shell("rm /data/ping.txt", timeout=10, ignore_status=True)
