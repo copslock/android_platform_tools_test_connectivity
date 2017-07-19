@@ -18,6 +18,7 @@ This test script exercises different onLost/onFound scenarios.
 """
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
@@ -75,6 +76,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
             return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9bd7fd09-71c9-4623-90f0-9a895eb37409')
     def test_onlost_onfound_defaults(self):
         """Test generic onlost/onfound defaults.
 
@@ -143,6 +145,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='10b48dc9-0c2a-46a3-8890-5cde3004a996')
     def test_onlost_onfound_match_mode_sticky(self):
         """Test generic onlost/onfound in sticky mode.
 
@@ -211,6 +214,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='4fefed82-7800-41be-8272-aac076640fed')
     def test_onlost_onfound_match_num_few(self):
         """Test generic onlost/onfound num few.
 

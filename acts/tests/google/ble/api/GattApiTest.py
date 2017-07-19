@@ -18,6 +18,7 @@ Test script to exercise Gatt Apis.
 """
 
 from acts.controllers.android import SL4AAPIError
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
@@ -40,6 +41,7 @@ class GattApiTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='fffe5c46-eb97-477b-ac3e-3f70700bb84e')
     def test_open_gatt_server(self):
         """Test a gatt server.
 
@@ -64,6 +66,7 @@ class GattApiTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='12828c2c-b6ae-4670-a829-9867e75fb711')
     def test_open_gatt_server_on_same_callback(self):
         """Test repetitive opening of a gatt server.
 
@@ -90,6 +93,7 @@ class GattApiTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='63fc684d-6c1d-455e-afdb-1887123b4d2f')
     def test_open_gatt_server_on_invalid_callback(self):
         """Test gatt server an an invalid callback.
 

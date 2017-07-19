@@ -17,6 +17,7 @@
 This test script exercises different GATT write procedures.
 """
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
 from acts.test_utils.bt.GattEnum import GattCharacteristic
@@ -32,6 +33,7 @@ from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 class GattWriteTest(GattConnectedBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='513f4cef-489e-4bb6-96cc-c298c589225c')
     def test_write_char(self):
         """Test write characteristic value
 
@@ -90,6 +92,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='329dbef8-1b54-47e2-a388-b33ef9384464')
     def test_write_descr(self):
         """Test write descriptor value
 
@@ -144,6 +147,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='85757307-5bb1-43e5-9331-f1d7bdcbd6a0')
     def test_write_char_no_resp(self):
         """Test write characteristic value
 
@@ -194,6 +198,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0bf0182a-c315-4160-81be-9ce09f93608b')
     def test_write_characteristic_long_no_resp(self):
         """Test write characteristic value
 
@@ -249,6 +254,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b80f1b5a-a223-441e-a6ed-d3c284c83cc7')
     def test_write_characteristic_value_longer_than_mtu_request(self):
         """Test writing characteristic value longer than what mtu limts
 
@@ -350,6 +356,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='319eee6d-22d9-4498-bb15-21d0018e45e6')
     def test_write_characteristic_stress(self):
         """Stress test write characteristic value
 
@@ -425,6 +432,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b19d42dc-58ba-4b20-b6c1-6628e7d21de4')
     def test_write_descriptor_stress(self):
         """Stress test write descriptor value
 
@@ -493,6 +501,7 @@ class GattWriteTest(GattConnectedBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='74c147eb-2702-4cd8-be1f-efff3e9eaa6c')
     def test_write_characteristic_no_resp_stress(self):
         """Stress test write characteristic value
 

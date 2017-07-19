@@ -19,6 +19,7 @@ Basic Bluetooth Classic stress tests.
 
 import time
 from acts.base_test import BaseTestClass
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
@@ -39,6 +40,7 @@ class BtStressTest(BluetoothBaseTest):
         self.log_stats()
         return True
 
+    @test_tracker_info(uuid='bbe050f8-7970-42b3-9104-a2cd8f09579c')
     def test_toggle_bluetooth(self):
         """Stress test toggling bluetooth on and off.
 
@@ -67,6 +69,7 @@ class BtStressTest(BluetoothBaseTest):
                 return False
         return True
 
+    @test_tracker_info(uuid='a6fac426-d068-4a86-9d55-00dbe51b2ff0')
     def test_pair_bluetooth_stress(self):
         """Stress test for pairing BT devices.
 

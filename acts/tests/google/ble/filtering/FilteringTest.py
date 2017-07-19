@@ -19,6 +19,7 @@ import pprint
 import time
 
 from queue import Empty
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
 from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
@@ -393,6 +394,7 @@ class FilteringTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='e758bed4-9da0-4c0a-a5c1-a758ccd3c47a')
     def test_default_advertisement(self):
         """Test a default advertisement.
 
@@ -422,6 +424,7 @@ class FilteringTest(BluetoothBaseTest):
         return self._magic(params)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='01743760-7b96-4736-824b-be168aab1f9a')
     def test_settings_in_effect_suite(self):
         """Test combinations of settings with scanning and advertising.
 
@@ -454,6 +457,7 @@ class FilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='42eea443-2465-4858-b1bf-47f2ae8294db')
     def test_filters_suite(self):
         """Test combinations of settings with scanning and advertising.
 
@@ -488,6 +492,7 @@ class FilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='79050573-24c4-4e24-b6b1-f4a774192036')
     def test_filters_suite_opportunistic_scan(self):
         """Test combinations of settings with opportunistic scanning.
 
@@ -525,6 +530,7 @@ class FilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d72c3a12-b9db-4173-a1e6-48e4dde6651a')
     def test_valid_filters(self):
         """Test combinations of settings with scanning and advertising.
 
@@ -559,6 +565,7 @@ class FilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dcf32660-73e6-4736-8a6e-44419bf0ed35')
     def test_valid_filters_opportunistic_scan(self):
         """Test combinations of settings with opportunistic scanning.
 
@@ -594,6 +601,7 @@ class FilteringTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dc2e2543-9e5b-460d-81c8-5203eabfb015')
     def test_non_connectable_advertise_data(self):
         """Test non connectable advertisement data.
 
