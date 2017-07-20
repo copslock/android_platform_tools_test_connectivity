@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
 from health.constant_health_analyzer import HealthyIfGreaterThanConstantNumber
 from health.constant_health_analyzer import HealthyIfLessThanConstantNumber
 from health.constant_health_analyzer import HealthyIfEquals
@@ -77,7 +79,13 @@ class HealthChecker(object):
         # loop through and check if healthy
         unhealthy_metrics = []
         for (metric, analyzer) in self._analyzers:
-            # if not healthy, add to list so value can be reported
-            if not analyzer.is_healthy(response_dict[metric]):
-                unhealthy_metrics.append(metric)
+            try:
+                # if not healthy, add to list so value can be reported
+                if not analyzer.is_healthy(response_dict[metric]):
+                    unhealthy_metrics.append(metric)
+            # don't exit whole program if error in config file, just report
+            except KeyError as e:
+                logging.warning(
+                    'Error in config file, "%s" not a health metric\n' % e)
+
         return unhealthy_metrics
