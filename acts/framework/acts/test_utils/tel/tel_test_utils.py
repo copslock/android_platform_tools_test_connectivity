@@ -1692,12 +1692,18 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
 
 def active_file_download_task(log, ad, file_name="5MB"):
     curl_capable = True
-    try:
-        out = ad.adb.shell("curl --version")
-        if not out or "not found" in out:
-            curl_capable = False
-    except Exception:
-        curl_capable = False
+    if not hasattr(ad, "curl_capable"):
+        try:
+            out = ad.adb.shell("curl --version")
+            if not out or "not found" in out:
+                setattr(ad, "curl_capable", False)
+                ad.log.info("curl is unavailable, use chrome to download file")
+            else:
+                setattr(ad, "curl_capable", True)
+        except Exception:
+            setattr(ad, "curl_capable", False)
+            ad.log.info("curl is unavailable, use chrome to download file")
+
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
@@ -1717,8 +1723,7 @@ def active_file_download_task(log, ad, file_name="5MB"):
         return False
     timeout = min(max(file_size / 100000, 300), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
-    if not curl_capable:
-        ad.log.info("curl is not available, using chrome to download file")
+    if not ad.curl_capable:
         return (http_file_download_by_chrome, (ad, url, file_size, True,
                                                timeout))
     else:
@@ -1877,8 +1882,10 @@ def http_file_download_by_chrome(ad,
                 ad.adb.shell("rm %s" % out_path, ignore_status=True)
             return True
         else:
+            ad.log.info("Wait for file %s be downloaded from %s", file_name,
+                        url)
             elapse_time += 30
-    ad.log.warning("Fail to download file from %s", url)
+    ad.log.error("Fail to download file from %s", url)
     ad.adb.shell("rm %s" % out_path, ignore_status=True)
     return False
 
