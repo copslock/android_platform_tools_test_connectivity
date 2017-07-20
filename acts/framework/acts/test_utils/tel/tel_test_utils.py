@@ -267,7 +267,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
 
-    ad.log.info("cfg = %s", ad.cfg)
+    ad.log.debug("cfg = %s", ad.cfg)
 
 
 def refresh_droid_config(log, ad):
@@ -1668,7 +1668,7 @@ def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
     """
     if out_path.endswith("/"):
         out_path = os.path.join(out_path, file_name)
-    out = ad.adb.shell('stat -c "%%s" %s' % out_path, ignore_status=True)
+    out = ad.adb.shell('stat -c "%%s" %s' % out_path)
     # Handle some old version adb returns error message "No such" into std_out
     if out and "No such" not in out:
         if expected_file_size:
@@ -3769,8 +3769,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         ad.droid.telephonyToggleDataConnection(True)
         set_wfc_mode(log, ad, WFC_MODE_DISABLED)
 
-    get_telephony_signal_strength(ad)
-
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
         ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
@@ -4105,6 +4103,18 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setMediaVolume(0)
     ad.droid.setVoiceCallVolume(0)
     ad.droid.setAlarmVolume(0)
+    out = ad.adb.shell("settings list system | grep volume")
+    for attr in re.findall(r"(volume_.*)=\d+", out):
+        ad.adb.shell("settings put system %s 0" % attr)
+    try:
+        if not ad.droid.telecomIsInCall():
+            ad.droid.telecomCallNumber("+19523521350")
+        for _ in range(10):
+            ad.adb.shell("input keyevent 25")
+            time.sleep(1)
+        ad.droid.telecomEndCall()
+    except Exception as e:
+        ad.log.info("fail to turn down voice call volume %s", e)
 
     return silent_mode == ad.droid.checkRingerSilentMode()
 

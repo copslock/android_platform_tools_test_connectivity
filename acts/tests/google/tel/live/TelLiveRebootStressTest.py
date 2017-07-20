@@ -42,6 +42,10 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import \
+    get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -54,6 +58,8 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
@@ -258,6 +264,76 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                     format(roaming_state, sl4a_network_info.isRoaming))
                 self.log.error(network_info)
                 return False
+        return True
+
+    def _telephony_monitor_test(self):
+        """
+        Steps -
+        1. Reboot the phone
+        2. Start Telephony Monitor using adb/developer options
+        3. Verify if it is running
+        4. Phone Call from A to B
+        5. Answer on B
+        6. Trigger ModemSSR on B
+        7. There will be a call drop with Media Timeout/Server Unreachable
+        8. Parse logcat to confirm that
+
+        Expected Results:
+            UI Notification is received by User
+
+        Returns:
+            True is pass, False if fail.
+        """
+        # Reboot
+        ads = self.android_devices
+        ads[0].adb.shell(
+            "am start -n com.android.settings/.DevelopmentSettings",
+            ignore_status=True)
+        ads[0].log.info("reboot!")
+        ads[0].reboot()
+        ads[0].log.info("wait %d secs for radio up." % WAIT_TIME_AFTER_REBOOT)
+        time.sleep(WAIT_TIME_AFTER_REBOOT)
+
+        # Ensure apk is running
+        if not ads[0].is_apk_running("com.google.telephonymonitor"):
+            ads[0].log.info("TelephonyMonitor is not running, start it now")
+            ads[0].adb.shell(
+                'am broadcast -a '
+                'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
+                '"ce.telephony_monitor_enable" "true"')
+
+        # Setup Phone Call
+        caller_number = ads[0].cfg['subscription'][get_outgoing_voice_sub_id(
+            ads[0])]['phone_num']
+        callee_number = ads[1].cfg['subscription'][get_incoming_voice_sub_id(
+            ads[1])]['phone_num']
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        if not initiate_call(ads[0].log, ads[0], callee_number):
+            ads[0].log.error("Phone was unable to initate a call")
+            return False
+        if not wait_and_answer_call(self.log, ads[1], caller_number):
+            ads[0].log.error("wait_and_answer_call failed")
+            return False
+
+        # Modem SSR
+        time.sleep(5)
+        ads[1].log.info("Triggering ModemSSR")
+        ads[1].adb.shell(
+            "echo restart > /sys/kernel/debug/msm_subsys/modem",
+            ignore_status=True)
+        time.sleep(60)
+
+        # Parse logcat for UI notification
+        if ads[0].search_logcat("Bugreport notification title Call Drop:"):
+            ads[0].log.info("User got the Call Drop Notification")
+        else:
+            ads[0].log.error("User didn't get Call Drop Notification in 1 min")
+            return False
         return True
 
     def _reboot_stress_test(self, **kwargs):
@@ -676,6 +752,24 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """
         return self._crash_recovery_test(
             check_lte_data=True, check_volte=True, check_vt=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b6d2fccd-5dfd-4637-aa3b-257837bfba54")
+    def test_telephonymonitor_functional(self):
+        """Telephony Monitor Functional Test
+
+        Steps:
+            1. Verify Telephony Monitor functionality is working or not
+            2. Force Trigger a call drop : media timeout and ensure it is
+               notified by Telephony Monitor
+
+        Expected Results:
+            feature work fine, and does report to User about Call Drop
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._telephony_monitor_test()
 
 
 """ Tests End """
