@@ -1869,6 +1869,7 @@ def http_file_download_by_chrome(ad,
         url, "/sdcard/Download/")
     file_path = os.path.join(file_directory, file_name)
     # Remove pre-existing file
+    ad.force_stop_apk("com.android.chrome")
     ad.adb.shell("rm %s" % file_path, ignore_status=True)
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
     ad.log.info("Download %s with timeout %s", url, timeout)
@@ -1892,6 +1893,7 @@ def http_file_download_by_chrome(ad,
             break
         elapse_time += 30
     ad.log.error("Fail to download file from %s", url)
+    ad.force_stop_apk("com.android.chrome")
     ad.adb.shell("rm %s" % file_path, ignore_status=True)
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
     return False
@@ -4039,7 +4041,11 @@ def run_multithread_func(log, tasks):
     number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
     executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=number_of_workers)
-    results = list(executor.map(task_wrapper, tasks))
+    try:
+        results = list(executor.map(task_wrapper, tasks))
+    except Exception as e:
+        log.error("Exception error %s", e)
+        raise
     executor.shutdown()
     log.info("multithread_func %s result: %s",
              [task[0].__name__ for task in tasks], results)
