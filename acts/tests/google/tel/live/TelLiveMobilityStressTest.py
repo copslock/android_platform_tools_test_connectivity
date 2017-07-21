@@ -130,6 +130,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
+        self.result_info["Total %s" % message_type_map[selection]] += 1
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             self.log.error("%s of length %s from %s to %s fails",
@@ -144,6 +145,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             return True
 
     def _make_phone_call(self, ads):
+        self.result_info["Total Calls"] += 1
         if not call_setup_teardown(
                 self.log,
                 ads[0],
@@ -154,6 +156,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 wait_time_in_call=random.randrange(
                     30, self.max_phone_call_duration)):
             ads[0].log.error("Setup phone Call failed.")
+            self.result_info["Call Failure"] += 1
             return False
         ads[0].log.info("Setup call successfully.")
         return True
@@ -161,6 +164,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
+            self.dut.log.info(dict(self.result_info))
             try:
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
@@ -178,7 +182,11 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Crashes found: %s", failure)
+        if failure:
+            return "%s crashes" % failure
+        else:
+            return ""
 
     def environment_change_4g_wifi(self):
         #block cell 3G, WIFI 2G
@@ -209,7 +217,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
                      MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
-        return 0
+        return ""
 
     def environment_change_4g_3g(self):
         #block wifi 2G and 5G
@@ -240,7 +248,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                      MIN_RSSI_RESERVED_VALUE, MAX_RSSI_RESERVED_VALUE,
                      self.signal_change_step, self.signal_change_interval)
 
-        return 0
+        return ""
 
     def call_test(self):
         failure = 0
@@ -258,9 +266,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                                          self.log, self.helper))
                 if not self._make_phone_call(ads):
                     failure += 1
-                    self.log.error("New call test failure: %s/%s", failure,
-                                   total_count)
-                    self.result_info["Call failure"] += 1
                     self._take_bug_report("%s_call_failure" % self.test_name,
                                           time.strftime("%m-%d-%Y-%H-%M-%S"))
                 self.dut.droid.goToSleepNow()
@@ -272,7 +277,11 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Call test failure: %s/%s", failure, total_count)
+        if failure:
+            return "Call test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def message_test(self):
         failure = 0
@@ -284,8 +293,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 total_count += 1
                 if not self._send_message(ads):
                     failure += 1
-                    self.log.error("New messaging test failure: %s/%s",
-                                   failure, total_count)
                     #self._take_bug_report("%s_messaging_failure" % self.test_name,
                     #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
                 self.dut.droid.goToSleepNow()
@@ -297,18 +304,25 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Messaging test failure: %s/%s", failure,
+                              total_count)
+        if failure / total_count > 0.1:
+            return "Messaging test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def data_test(self):
         failure = 0
+        total_count = 0
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         #wifi download is very slow in lab, limit the file size upto 200MB
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
         while time.time() < self.finishing_time:
+            total_count += 1
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
-                selection = random.randrange(0, 5)
+                selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
@@ -326,7 +340,12 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("File download test failure: %s/%s", failure,
+                              total_count)
+        if failure / total_count > 0.1:
+            return "File download test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def parallel_tests(self, change_env_func, setup_func=None):
         if setup_func and not setup_func():
@@ -336,12 +355,13 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []), (
-                change_env_func, []), (self.crash_check_test, [])])
+                self.crash_check_test, []), (change_env_func, [])])
         self.log.info(dict(self.result_info))
-        if results[0]:
-            fail(str(dict(self.result_info)))
-        else:
-            return True
+        error_message = " ".join(results)
+        if error_message:
+            self.log.error(error_message)
+            fail(error_message)
+        return True
 
     """ Tests Begin """
 
