@@ -134,6 +134,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
+            self.dut.log.info(dict(self.result_info))
             try:
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
@@ -151,11 +152,17 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Crashes found: %s", failure)
+        if failure:
+            return "%s crashes" % failure
+        else:
+            return ""
 
     def call_test(self):
         failure = 0
+        total_count = 0
         while time.time() < self.finishing_time:
+            total_count += 1
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
@@ -170,6 +177,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self.dut.log.error("Initiate phone call to %s failed.",
                                        self.call_server_number)
                     self.result_info["Call initiation failure"] += 1
+                    failure += 1
                     self._take_bug_report(
                         "%s_call_initiation_failure" % self.test_name,
                         time.strftime("%m-%d-%Y-%H-%M-%S"))
@@ -183,6 +191,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     if not is_phone_in_call(self.log, self.dut):
                         self.dut.log.error("Call droped.")
                         self.result_info["Call drop"] += 1
+                        failure += 1
                         self._take_bug_report(
                             "%s_call_drop" % self.test_name,
                             time.strftime("%m-%d-%Y-%H-%M-%S"))
@@ -202,7 +211,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Call test failure: %s/%s", failure, total_count)
+        if failure:
+            return "Call test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def message_test(self):
         failure = 0
@@ -248,22 +261,30 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("Messaging test failure: %s/%s", failure,
+                              total_count)
+        if failure / total_count > 0.1:
+            return "Messaging test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def data_test(self):
         failure = 0
         total_count = 0
-        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
+        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
+            total_count += 1
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
-                selection = random.randrange(0, 7)
+                selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
                     self.result_info["%s file download failure" %
                                      file_name] += 1
+                    failure += 1
                     #self._take_bug_report("%s_download_failure" % self.test_name,
                     #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
                     self.dut.droid.goToSleepNow()
@@ -275,7 +296,12 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     raise
             except Exception as e:
                 raise
-        return failure
+            self.dut.log.info("File download test failure: %s/%s", failure,
+                              total_count)
+        if failure / total_count > 0.1:
+            return "File download test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
 
     def parallel_tests(self, setup_func=None):
         if setup_func and not setup_func():
@@ -287,8 +313,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info(dict(self.result_info))
-        if sum(results):
-            fail(str(dict(self.result_info)))
+        error_message = " ".join(results)
+        if error_message:
+            self.log.error(error_message)
+            fail(error_message)
+        return True
 
     """ Tests Begin """
 
