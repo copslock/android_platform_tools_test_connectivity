@@ -194,8 +194,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                    self.finishing_time = time.time()
                     raise
             except Exception as e:
+                self.finishing_time = time.time()
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
@@ -221,8 +223,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                    self.finishing_time = time.time()
                     raise
             except Exception as e:
+                self.finishing_time = time.time()
                 raise
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
@@ -248,8 +252,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                    self.finishing_time = time.time()
                     raise
             except Exception as e:
+                self.finishing_time = time.time()
                 raise
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
@@ -283,8 +289,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise
+                    self.finishing_time = time.time()
+                    raise "Too many %s errors" % IGNORE_EXCEPTIONS
             except Exception as e:
+                self.log.error(e)
+                self.finishing_time = time.time()
                 raise
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
@@ -303,7 +312,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info(dict(self.result_info))
-        error_message = " ".join(results)
+        error_message = " ".join(results).strip()
         if error_message:
             self.log.error(error_message)
             fail(error_message)
