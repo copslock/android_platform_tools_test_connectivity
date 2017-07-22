@@ -64,6 +64,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
 
+    def setup_class(self):
+        pass
+
+    def setup_test(self):
+        pass
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")
