@@ -64,6 +64,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
             "wifi_network_pass") or self.user_params.get(
                 "wifi_network_pass_2g")
 
+    def setup_class(self):
+        pass
+
+    def setup_test(self):
+        pass
+
     """ Tests Begin """
 
     @TelephonyBaseTest.tel_test_wrap
