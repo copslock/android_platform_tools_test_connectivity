@@ -234,8 +234,6 @@ class TelephonyBaseTest(BaseTestClass):
 
     def teardown_class(self):
         try:
-            ensure_phones_default_state(self.log, self.android_devices)
-
             for ad in self.android_devices:
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
@@ -251,8 +249,8 @@ class TelephonyBaseTest(BaseTestClass):
                 self.logger_sessions.append((logger, logger.start()))
 
         if self.skip_reset_between_cases:
-            return ensure_phones_idle(self.log, self.android_devices)
-        return ensure_phones_default_state(self.log, self.android_devices)
+            ensure_phones_idle(self.log, self.android_devices)
+        ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
         return True
