@@ -70,6 +70,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
     def setup_test(self):
         pass
 
+    def setup_class(self):
+        pass
+
+    def setup_test(self):
+        pass
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")
