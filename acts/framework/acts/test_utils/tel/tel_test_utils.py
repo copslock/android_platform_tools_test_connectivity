@@ -1651,53 +1651,55 @@ def verify_http_connection(log,
     return False
 
 
-def _generate_file_name_and_out_path(url, out_path):
+def _generate_file_directory_and_file_name(url, out_path):
     file_name = url.split("/")[-1]
     if not out_path:
-        out_path = "/sdcard/Download/%s" % file_name
-    elif out_path.endswith("/"):
-        out_path = os.path.join(out_path, file_name)
+        file_directory = "/sdcard/Download/"
+    elif not out_path.endswith("/"):
+        file_directory, file_name = os.path.split(out_path)
     else:
-        file_name = out_path.split("/")[-1]
-    return file_name, out_path
+        file_directory = out_path
+    return file_directory, file_name
 
 
-def _check_file_existance(ad, file_name, out_path, expected_file_size=None):
-    """Check file existance by file_name and out_path. If expected_file_size
+def _check_file_existance(ad, file_path, expected_file_size=None):
+    """Check file existance by file_path. If expected_file_size
        is provided, then also check if the file meet the file size requirement.
     """
-    if out_path.endswith("/"):
-        out_path = os.path.join(out_path, file_name)
-    out = ad.adb.shell('stat -c "%%s" %s' % out_path)
+    out = ad.adb.shell('stat -c "%%s" %s' % file_path)
     # Handle some old version adb returns error message "No such" into std_out
     if out and "No such" not in out:
         if expected_file_size:
             file_size = int(out)
             if file_size >= expected_file_size:
-                ad.log.info("File %s of size %s is in %s", file_name,
-                            file_size, out_path)
+                ad.log.info("File %s of size %s exists", file_path, file_size)
                 return True
             else:
-                ad.log.info(
-                    "File size for %s in %s is %s does not meet expected %s",
-                    file_name, out_path, file_size, expected_file_size)
+                ad.log.info("File %s is of size %s, does not meet expected %s",
+                            file_path, file_size, expected_file_size)
                 return False
         else:
-            ad.log.info("File %s is in %s", file_name, out_path)
+            ad.log.info("File %s exists", file_path)
             return True
     else:
-        ad.log.info("File %s does not exist in %s.", file_name, out_path)
+        ad.log.info("File %s does not exist.", file_path)
         return False
 
 
 def active_file_download_task(log, ad, file_name="5MB"):
     curl_capable = True
-    try:
-        out = ad.adb.shell("curl --version")
-        if not out or "not found" in out:
-            curl_capable = False
-    except Exception:
-        curl_capable = False
+    if not hasattr(ad, "curl_capable"):
+        try:
+            out = ad.adb.shell("curl --version")
+            if not out or "not found" in out:
+                setattr(ad, "curl_capable", False)
+                ad.log.info("curl is unavailable, use chrome to download file")
+            else:
+                setattr(ad, "curl_capable", True)
+        except Exception:
+            setattr(ad, "curl_capable", False)
+            ad.log.info("curl is unavailable, use chrome to download file")
+
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
@@ -1717,8 +1719,7 @@ def active_file_download_task(log, ad, file_name="5MB"):
         return False
     timeout = min(max(file_size / 100000, 300), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
-    if not curl_capable:
-        ad.log.info("curl is not available, using chrome to download file")
+    if not ad.curl_capable:
         return (http_file_download_by_chrome, (ad, url, file_size, True,
                                                timeout))
     else:
@@ -1814,32 +1815,38 @@ def http_file_download_by_curl(ad,
         limit_rate: download rate in bps. None, if do not apply rate limit.
         retry: the retry request times provided in curl command.
     """
-    file_name, out_path = _generate_file_name_and_out_path(url, out_path)
+    file_directory, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
+    file_path = os.path.join(file_directory, file_name)
     curl_cmd = "curl"
     if limit_rate:
         curl_cmd += " --limit-rate %s" % limit_rate
     if retry:
         curl_cmd += " --retry %s" % retry
-    curl_cmd += " --url %s > %s" % (url, out_path)
+    curl_cmd += " --url %s > %s" % (url, file_path)
     try:
-        ad.log.info("Download file from %s to %s by adb shell command %s", url,
-                    out_path, curl_cmd)
+        ad.log.info("Download %s to %s by adb shell command %s", url,
+                    file_path, curl_cmd)
         ad.adb.shell(curl_cmd, timeout=timeout)
-        if _check_file_existance(ad, file_name, out_path, expected_file_size):
-            ad.log.info("File %s is downloaded from %s successfully",
-                        file_name, url)
+        if _check_file_existance(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded to %s successfully", url, file_path)
             return True
         else:
-            ad.log.warning("Fail to download file from %s", url)
+            ad.log.warning("Fail to download %s", url)
             return False
     except Exception as e:
-        ad.log.warning("Download file from %s failed with exception %s", url,
-                       e)
+        ad.log.warning("Download %s failed with exception %s", url, e)
         return False
     finally:
         if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", out_path)
-            ad.adb.shell("rm %s" % out_path, ignore_status=True)
+            ad.log.info("Remove the downloaded file %s", file_path)
+            ad.adb.shell("rm %s" % file_path, ignore_status=True)
+
+
+def open_url_by_adb(ad, url):
+    for cmd in ("input keyevent KEYCODE_WAKEUP", "input swipe 200 400 200 0",
+                'am start -a android.intent.action.VIEW -d "%s"' % url):
+        ad.adb.shell(cmd)
 
 
 def http_file_download_by_chrome(ad,
@@ -1858,28 +1865,37 @@ def http_file_download_by_chrome(ad,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_name, out_path = _generate_file_name_and_out_path(
+    file_directory, file_name = _generate_file_directory_and_file_name(
         url, "/sdcard/Download/")
+    file_path = os.path.join(file_directory, file_name)
     # Remove pre-existing file
-    ad.adb.shell("rm %s" % out_path, ignore_status=True)
-    ad.log.info("Download %s from %s with timeout %s", file_name, url, timeout)
-    for cmd in ("input keyevent KEYCODE_WAKEUP", "input swipe 200 400 200 0",
-                'am start -a android.intent.action.VIEW -d "%s"' % url):
-        ad.adb.shell(cmd)
+    ad.force_stop_apk("com.android.chrome")
+    ad.adb.shell("rm %s" % file_path, ignore_status=True)
+    ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    ad.log.info("Download %s with timeout %s", url, timeout)
+    open_url_by_adb(ad, url)
     elapse_time = 0
     while elapse_time < timeout:
         time.sleep(30)
-        if _check_file_existance(ad, file_name, out_path, expected_file_size):
-            ad.log.info("File %s is downloaded from %s successfully",
-                        file_name, url)
+        if _check_file_existance(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded successfully", url)
             if remove_file_after_check:
-                ad.log.info("Remove the downloaded file %s", out_path)
-                ad.adb.shell("rm %s" % out_path, ignore_status=True)
+                ad.log.info("Remove the downloaded file %s", file_path)
+                ad.adb.shell("rm %s" % file_path, ignore_status=True)
             return True
+        elif _check_file_existance(ad, "%s.crdownload" % file_path):
+            ad.log.info("Chrome is downloading %s", url)
+        elif elapse_time < 60:
+            # download not started, retry download wit chrome again
+            open_url_by_adb(ad, url)
         else:
-            elapse_time += 30
-    ad.log.warning("Fail to download file from %s", url)
-    ad.adb.shell("rm %s" % out_path, ignore_status=True)
+            ad.log.error("Unable to download file from %s", url)
+            break
+        elapse_time += 30
+    ad.log.error("Fail to download file from %s", url)
+    ad.force_stop_apk("com.android.chrome")
+    ad.adb.shell("rm %s" % file_path, ignore_status=True)
+    ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
     return False
 
 
@@ -1904,25 +1920,26 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_name, out_path = _generate_file_name_and_out_path(url, out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
+    file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
-                    out_path)
-        ad.droid.httpDownloadFile(url, out_path, timeout=timeout)
-        if _check_file_existance(ad, file_name, out_path, expected_file_size):
-            ad.log.info("File %s is downloaded from %s successfully",
-                        file_name, url)
+                    file_path)
+        ad.droid.httpDownloadFile(url, file_path, timeout=timeout)
+        if _check_file_existance(ad, file_path, expected_file_size):
+            ad.log.info("%s is downloaded successfully", url)
             return True
         else:
-            ad.log.warning("Fail to download file from %s", url)
+            ad.log.warning("Fail to download %s", url)
             return False
     except Exception as e:
-        ad.log.error("Download file from %s failed with exception %s", url, e)
+        ad.log.error("Download %s failed with exception %s", url, e)
         raise
     finally:
         if remove_file_after_check:
-            ad.log.info("Remove the downloaded file %s", out_path)
-            ad.adb.shell("rm %s" % out_path, ignore_status=True)
+            ad.log.info("Remove the downloaded file %s", file_path)
+            ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
 def trigger_modem_crash(log, ad, timeout=10):
@@ -4026,7 +4043,11 @@ def run_multithread_func(log, tasks):
     number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
     executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=number_of_workers)
-    results = list(executor.map(task_wrapper, tasks))
+    try:
+        results = list(executor.map(task_wrapper, tasks))
+    except Exception as e:
+        log.error("Exception error %s", e)
+        raise
     executor.shutdown()
     log.info("multithread_func %s result: %s",
              [task[0].__name__ for task in tasks], results)

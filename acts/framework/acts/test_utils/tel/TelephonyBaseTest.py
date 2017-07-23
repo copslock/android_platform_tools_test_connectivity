@@ -68,6 +68,7 @@ class TelephonyBaseTest(BaseTestClass):
                     set_qxdm_logger_always_on(ad, mask)
                 else:
                     ad.log.info("qxdm always on is already set")
+
             #The puk and pin should be provided in testbed config file.
             #"AndroidDevice": [{"serial": "84B5T15A29018214",
             #                   "adb_logcat_param": "-b all",
@@ -161,9 +162,10 @@ class TelephonyBaseTest(BaseTestClass):
         setattr(self, "diag_logger",
                 self.register_controller(
                     acts.controllers.diag_logger, required=False))
-        is_mobility_setup = self.user_params.get("Attenuator")
-        if not is_mobility_setup:
+        if not self.user_params.get("Attenuator"):
             ensure_phones_default_state(self.log, self.android_devices)
+        else:
+            ensure_phones_idle(self.log, self.android_devices)
         for ad in self.android_devices:
             setup_droid_properties(self.log, ad, sim_conf_file)
 
@@ -184,9 +186,21 @@ class TelephonyBaseTest(BaseTestClass):
                     'am broadcast -a '
                     'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
                     '"ce.telephony_monitor_enable" "true"')
+            # Sub ID setup
+            initial_set_up_for_subid_infomation(self.log, ad)
+            if "enable_wifi_verbose_logging" in self.user_params:
+                ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+            # If device is setup already, skip the following setup procedures
+            if getattr(ad, "telephony_test_setup", None):
+                continue
+            # Disable Emergency alerts
             # Set chrome browser start with no-first-run verification and
             # disable-fre. Give permission to read from and write to storage.
-            for cmd in ("pm grant com.android.chrome "
+            for cmd in (
+                    "am start -n com.google.android.setupwizard/."
+                    "SetupWizardExitActivity",
+                    "pm disable com.android.cellbroadcastreceiver",
+                    "pm grant com.android.chrome "
                     "android.permission.READ_EXTERNAL_STORAGE",
                     "pm grant com.android.chrome "
                     "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -195,6 +209,7 @@ class TelephonyBaseTest(BaseTestClass):
                     'echo "chrome --no-default-browser-check --no-first-run '
                     '--disable-fre" > /data/local/tmp/chrome-command-line'):
                 ad.adb.shell(cmd)
+
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
             # logging.
@@ -205,35 +220,21 @@ class TelephonyBaseTest(BaseTestClass):
                 if not set_phone_silent_mode(self.log, ad):
                     self.log.error("Failed to set phone silent mode.")
                     return False
-
                 ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                     PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
                 ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                     PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
                 ad.droid.telephonyAdjustPreciseCallStateListenLevel(
                     PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
-
-                if "enable_wifi_verbose_logging" in self.user_params:
-                    ad.droid.wifiEnableVerboseLogging(
-                        WIFI_VERBOSE_LOGGING_ENABLED)
             except Exception as e:
                 self.log.error("Failure with %s", e)
-        # Sub ID setup
-        for ad in self.android_devices:
-            initial_set_up_for_subid_infomation(self.log, ad)
+            setattr(ad, "telephony_test_setup", True)
+
         return True
 
     def teardown_class(self):
         try:
-            ensure_phones_default_state(self.log, self.android_devices)
-
             for ad in self.android_devices:
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, False)
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, False)
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, False)
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
@@ -248,8 +249,8 @@ class TelephonyBaseTest(BaseTestClass):
                 self.logger_sessions.append((logger, logger.start()))
 
         if self.skip_reset_between_cases:
-            return ensure_phones_idle(self.log, self.android_devices)
-        return ensure_phones_default_state(self.log, self.android_devices)
+            ensure_phones_idle(self.log, self.android_devices)
+        ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
         return True
