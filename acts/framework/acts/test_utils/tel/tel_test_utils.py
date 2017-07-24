@@ -3740,20 +3740,30 @@ def ensure_phone_subscription(log, ad):
     """Ensure Phone Subscription.
     """
     #check for sim and service
-    subInfo = ad.droid.subscriptionGetAllSubInfoList()
-    if not subInfo or len(subInfo) < 1:
+    duration = 0
+    while duration < MAX_WAIT_TIME_NW_SELECTION:
+        subInfo = ad.droid.subscriptionGetAllSubInfoList()
+        if subInfo and len(subInfo) >= 1:
+            ad.log.info("Find valid subcription %s", subInfo)
+            break
+        else:
+            ad.log.info("Did not find a valid subscription")
+            time.sleep(5)
+            duration += 5
+    else:
         ad.log.error("Unable to find A valid subscription!")
         return False
-    if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
-        ad.log.error("No Default Data Sub ID")
+    if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID and (
+            ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID):
+        ad.log.error("No Valid Voice or Data Sub ID")
         return False
-    elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
-        ad.log.error("No Valid Voice Sub ID")
-        return False
-    sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    if not wait_for_voice_attach_for_subscription(log, ad, sub_id,
-                                                  MAX_WAIT_TIME_NW_SELECTION):
-        ad.log.error("Did Not Attach For Voice Services")
+    voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    if not wait_for_voice_attach_for_subscription(
+            log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION -
+            duration) and not wait_for_data_attach_for_subscription(
+                log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
+        ad.log.error("Did Not Attach For Voice or Data Services")
         return False
     return True
 
