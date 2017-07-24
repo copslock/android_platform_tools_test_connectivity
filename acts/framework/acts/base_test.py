@@ -403,6 +403,7 @@ class BaseTestClass(object):
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
+            self._exec_procedure_func(self._on_fail, tr_record)
             raise e
         except signals.TestPass as e:
             # Explicit test pass.
