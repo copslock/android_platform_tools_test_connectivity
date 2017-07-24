@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 from acts import asserts
-from acts import signals
 
 from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
@@ -148,7 +147,7 @@ class CapabilitiesTest(AwareBaseTest):
     - On discovery set up NDP
 
     Note: the test requires MAX_NDP + 2 devices to be validated. If these are
-    not available it will be skipped (not failed).
+    not available the test will fail.
     """
     dut = self.android_devices[0]
 
@@ -156,10 +155,16 @@ class CapabilitiesTest(AwareBaseTest):
     # same)
     max_ndp = dut.aware_capabilities[aconsts.CAP_MAX_NDP_SESSIONS]
 
-    if len(self.android_devices) < max_ndp + 2:
-      raise signals.TestSkip('Setup does not contain a sufficient number of '
-                             'devices: need %d, have %d' % (max_ndp + 2,
-                             len(self.android_devices)))
+    # get number of attached devices: needs to be max_ndp+2 to allow for max_ndp
+    # NDPs + an additional one expected to fail.
+    # However, will run the test with max_ndp+1 devices to verify that at least
+    # that many NDPs can be created. Will still fail at the end to indicate that
+    # full test was not run.
+    num_peer_devices = min(len(self.android_devices) - 1, max_ndp + 1)
+    asserts.assert_true(
+        num_peer_devices >= max_ndp,
+        'A minimum of %d devices is needed to run the test, have %d' %
+        (max_ndp + 1, len(self.android_devices)))
 
     # attach
     session_id = dut.droid.wifiAwareAttach()
@@ -175,7 +180,7 @@ class CapabilitiesTest(AwareBaseTest):
         expect_success=True)
 
     # loop over other DUTs
-    for i in range(max_ndp + 1):
+    for i in range(num_peer_devices):
       other_dut = self.android_devices[i + 1]
 
       # attach
@@ -250,3 +255,7 @@ class CapabilitiesTest(AwareBaseTest):
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+    asserts.assert_true(num_peer_devices > max_ndp,
+                        'Needed %d devices to run the test, have %d' %
+                        (max_ndp + 2, len(self.android_devices)))
