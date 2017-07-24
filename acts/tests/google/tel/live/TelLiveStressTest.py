@@ -65,11 +65,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.helper = self.android_devices[1]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
@@ -184,10 +182,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report("checking_crash",
-                                                           begin_time, True)
+                crash_report = self.dut.check_crash_report(
+                    "checking_crash", begin_time, True)
                 if crash_report:
-                    self.dut.log.error("Find new crash reports %s", crash_diff)
+                    self.dut.log.error("Find new crash reports %s",
+                                       crash_report)
                     failure += 1
                     self.result_info["Crashes"] += 1
             except IGNORE_EXCEPTIONS as e:
