@@ -172,7 +172,8 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 crash_report = self.dut.check_crash_report(
                     "checking_crash", begin_time, True)
                 if crash_report:
-                    self.dut.log.error("Find new crash reports %s", crash_diff)
+                    self.dut.log.error("Find new crash reports %s",
+                                       crash_report)
                     failure += 1
                     self.result_info["Crashes"] += 1
             except IGNORE_EXCEPTION as e:
