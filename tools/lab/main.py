@@ -34,6 +34,7 @@ from metrics.process_time_metric import ProcessTimeMetric
 from metrics.ram_metric import RamMetric
 from metrics.read_metric import ReadMetric
 from metrics.system_load_metric import SystemLoadMetric
+from metrics.time_metric import TimeMetric
 from metrics.time_sync_metric import TimeSyncMetric
 from metrics.uptime_metric import UptimeMetric
 from metrics.usb_metric import UsbMetric
@@ -78,6 +79,7 @@ class RunnerFactory(object):
                               RamMetric(),
                               ReadMetric(),
                               SystemLoadMetric(),
+                              TimeMetric(),
                               TimeSyncMetric(),
                               UptimeMetric(),
                               UsbMetric(),
