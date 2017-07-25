@@ -76,6 +76,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.max_run_time = int(self.user_params.get("max_run_time", 18000))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
+        self.min_sms_length = int(self.user_params.get("min_sms_length", 1))
+        self.min_mms_length = int(self.user_params.get("min_mms_length", 1))
+        self.min_phone_call_duration = int(
+            self.user_params.get("min_phone_call_duration", 10))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
 
@@ -138,7 +142,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         selection = random.randrange(0, 2)
         message_type_map = {0: "SMS", 1: "MMS"}
         max_length_map = {0: self.max_sms_length, 1: self.max_mms_length}
-        length = random.randrange(0, max_length_map[selection] + 1)
+        min_length_map = {0: self.min_sms_length, 1: self.min_mms_length}
+        length = random.randrange(min_length_map[selection],
+                                  max_length_map[selection] + 1)
         text = rand_ascii_str(length)
         message_content_map = {0: [text], 1: [("Mms Message", text, None)]}
         message_func_map = {
@@ -167,11 +173,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ads[1],
                 ad_hangup=ads[random.randrange(0, 2)],
                 wait_time_in_call=random.randrange(
-                    1, self.max_phone_call_duration)):
-            ads[0].log.error("Setup phone Call failed.")
+                    self.min_phone_call_duration,
+                    self.max_phone_call_duration)):
+            self.log.error("Call setup and teardown failed.")
             self.result_info["Call Failure"] += 1
             return False
-        ads[0].log.info("Setup call successfully.")
+        self.log.info("Call setup and teardown succeed.")
         return True
 
     def crash_check_test(self):
