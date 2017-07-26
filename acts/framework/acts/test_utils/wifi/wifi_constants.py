@@ -16,6 +16,7 @@
 
 # Constants for Wifi related events.
 WIFI_CONNECTED = "WifiNetworkConnected"
+WIFI_DISCONNECTED = "WifiNetworkDisconnected"
 SUPPLICANT_CON_CHANGED = "SupplicantConnectionChanged"
 WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
 
