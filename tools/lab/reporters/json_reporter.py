@@ -30,7 +30,9 @@ class JsonReporter(Reporter):
             else:
                 metric_responses[metric_name]['is_healthy'] = False
         # add a total unhealthy score
-        metric_responses["total_unhealthy"] = len(unhealthy_metrics)
+        metric_responses['total_unhealthy'] = {
+            'total_unhealthy': len(unhealthy_metrics)
+        }
         print(json.dumps(metric_responses, indent=4, cls=AutoJsonEncoder))
 
 
