@@ -22,16 +22,16 @@
     }
   },
   "time_sync": {
-      "is_synchronized": {
-          "constant": true,
-          "compare":"EQUALS"
-      }
+    "is_synchronized": {
+      "constant": true,
+      "compare": "EQUALS"
+    }
   },
   "network": {
-      "connected": {
-          "constant": true,
-          "compare": "EQUALS_DICT"
-      }
+    "connected": {
+      "constant": true,
+      "compare": "EQUALS_DICT"
+    }
   },
   "process_time": {
     "num_adb_processes": {
@@ -40,9 +40,9 @@
     }
   },
   "verify": {
-    "devices": {
-      "constant": "device",
-      "compare": "EQUALS_DICT"
+    "total_unhealthy": {
+      "constant": "0",
+      "compare": "EQUALS"
     }
   },
   "zombie": {
@@ -51,5 +51,4 @@
       "compare": "EQUALS"
     }
   }
-
 }
