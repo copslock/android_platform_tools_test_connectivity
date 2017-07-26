@@ -78,6 +78,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         self.max_run_time = int(self.user_params.get("max_run_time", 18000))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
+        self.min_sms_length = int(self.user_params.get("min_sms_length", 1))
+        self.min_mms_length = int(self.user_params.get("min_mms_length", 1))
+        self.min_phone_call_duration = int(
+            self.user_params.get("min_phone_call_duration", 10))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
 
@@ -142,7 +146,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 crash_report = self.dut.check_crash_report(
                     "checking_crash", begin_time, True)
                 if crash_report:
-                    self.dut.log.error("Find new crash reports %s", crash_diff)
+                    self.dut.log.error("Find new crash reports %s",
+                                       crash_report)
                     failure += 1
                     self.result_info["Crashes"] += 1
             except IGNORE_EXCEPTIONS as e:
@@ -168,7 +173,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
-                duration = random.randrange(1, self.max_phone_call_duration)
+                duration = random.randrange(self.min_phone_call_duration,
+                                            self.max_phone_call_duration)
                 # Current Voice RAT
                 self.dut.log.info("Current Voice RAT is %s",
                                   get_current_voice_rat(self.log, self.dut))
@@ -226,6 +232,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         total_count = 0
         message_type_map = {0: "SMS", 1: "MMS"}
         max_length_map = {0: self.max_sms_length, 1: self.max_mms_length}
+        min_length_map = {0: self.min_sms_length, 1: self.min_mms_length}
         message_func_map = {
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
@@ -237,7 +244,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 selection = random.randrange(0, 2)
                 message_type = message_type_map[selection]
                 self.result_info["Total %s" % message_type] += 1
-                length = random.randrange(0, max_length_map[selection] + 1)
+                length = random.randrange(min_length_map[selection],
+                                          max_length_map[selection] + 1)
                 text = rand_ascii_str(length)
                 message_content_map = {
                     0: [text],
