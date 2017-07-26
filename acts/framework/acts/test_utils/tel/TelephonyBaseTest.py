@@ -83,6 +83,12 @@ class TelephonyBaseTest(BaseTestClass):
                         ad.log,
                         "Puk and puk_pin provided in testbed config do NOT work"
                     )
+            # Enable or Disable Device Password
+            device_password = getattr(ad, "device_password", None)
+            if not device_password:
+                ad.droid.disableDevicePassword()
+            else:
+                ad.droid.setDevicePassword(device_password)
 
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
@@ -260,7 +266,8 @@ class TelephonyBaseTest(BaseTestClass):
 
         if self.skip_reset_between_cases:
             ensure_phones_idle(self.log, self.android_devices)
-        ensure_phones_default_state(self.log, self.android_devices)
+        else:
+            ensure_phones_default_state(self.log, self.android_devices)
 
     def teardown_test(self):
         return True
