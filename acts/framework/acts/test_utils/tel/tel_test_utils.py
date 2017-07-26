@@ -976,7 +976,7 @@ def hangup_call(log, ad):
         return True
     ad.ed.clear_all_events()
     ad.droid.telephonyStartTrackingCallState()
-    log.info("Hangup call.")
+    ad.log.info("Hangup call.")
     ad.droid.telecomEndCall()
 
     try:
@@ -1468,17 +1468,25 @@ def call_setup_teardown_for_subscription(
         False if error happened.
 
     """
-    CHECK_INTERVAL = 3
+    CHECK_INTERVAL = 5
     result = True
 
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
 
-    ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
+    if not verify_caller_func:
+        verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
+    result = True
+    ad_caller.log.info("Call from %s to %s with duration %s", caller_number,
+                       callee_number, wait_time_in_call)
 
     try:
         if not initiate_call(log, ad_caller, callee_number):
-            raise _CallSequenceException("Initiate call failed.")
+            ad_caller.log.error("Initiate call failed.")
+            result = False
+            return False
         else:
             ad_caller.log.info("Caller initate call successfully")
         if not wait_and_answer_call_for_subscription(
@@ -1488,16 +1496,11 @@ def call_setup_teardown_for_subscription(
                 incoming_number=caller_number,
                 caller=ad_caller,
                 incall_ui_display=incall_ui_display):
-            raise _CallSequenceException("Answer call fail.")
+            ad_callee.log.error("Answer call fail.")
+            result = False
+            return False
         else:
             ad_callee.log.info("Callee answered the call successfully")
-        # ensure that all internal states are updated in telecom
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        if verify_caller_func and not verify_caller_func(log, ad_caller):
-            raise _CallSequenceException("Caller not in correct state!")
-        if verify_callee_func and not verify_callee_func(log, ad_callee):
-            raise _CallSequenceException("Callee not in correct state!")
 
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
@@ -1507,44 +1510,28 @@ def call_setup_teardown_for_subscription(
             elapsed_time += CHECK_INTERVAL
             time_message = "at <%s>/<%s> second." % (elapsed_time,
                                                      wait_time_in_call)
-            if not verify_caller_func:
-                if not ad_caller.droid.telecomIsInCall():
-                    ad_caller.log.error("Caller not in call state %s",
-                                        time_message)
-                    raise _CallSequenceException(
-                        "Caller not in correct state %s.".format(time_message))
+            if not verify_caller_func(log, ad_caller):
+                ad_caller.log.error("Caller is NOT in correct %s state at %s",
+                                    verify_caller_func.__name__, time_message)
+                result = False
             else:
-                if not verify_caller_func(log, ad_caller):
-                    ad_caller.log.error("Caller %s return False",
-                                        verify_caller_func.__name__)
-                    raise _CallSequenceException(
-                        "Caller not in correct state %s.".format(time_message))
-            if not verify_callee_func:
-                if not ad_callee.droid.telecomIsInCall():
-                    ad_callee.log.error("Callee not in call state %s",
-                                        time_message)
-                    raise _CallSequenceException(
-                        "Callee not in correct state %s.".format(time_message))
+                ad_caller.log.info("Caller is in correct %s state at %s",
+                                   verify_caller_func.__name__, time_message)
+            if not verify_callee_func(log, ad_callee):
+                ad_callee.log.error("Callee is NOT in correct %s state at %s",
+                                    verify_callee_func.__name__, time_message)
+                result = False
             else:
-                if not verify_callee_func(log, ad_callee):
-                    ad_callee.log.error("Callee %s return False",
-                                        verify_callee_func.__name__)
-                    raise _CallSequenceException(
-                        "Callee not in correct state %s.".format(time_message))
-
-        if not ad_hangup:
-            return True
-        if not hangup_call(log, ad_hangup):
-            ad_hangup.log.info("Failed to hang up the call")
-            raise _CallSequenceException("Error in Hanging-Up Call")
-        return True
-
-    except _CallSequenceException as e:
-        log.error(e)
-        result = False
-        return False
+                ad_callee.log.info("Callee is in correct %s state at %s",
+                                   verify_callee_func.__name__, time_message)
+            if not result:
+                return result
+        return result
     finally:
-        if ad_hangup or not result:
+        if result and ad_hangup and not hangup_call(log, ad_hangup):
+            ad_hangup.log.info("Failed to hang up the call")
+            result = False
+        if not result:
             for ad in [ad_caller, ad_callee]:
                 try:
                     if ad.droid.telecomIsInCall():
