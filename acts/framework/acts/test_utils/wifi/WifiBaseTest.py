@@ -37,6 +37,8 @@ from acts.controllers.ap_lib import hostapd_security
 class WifiBaseTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
+        for attenuator in self.attenuators:
+            attenuator.set_atten(0)
 
     def get_wpa2_network(
             self,
