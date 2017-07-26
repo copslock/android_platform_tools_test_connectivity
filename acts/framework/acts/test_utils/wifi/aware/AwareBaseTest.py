@@ -38,6 +38,9 @@ class AwareBaseTest(BaseTestClass):
     self.unpack_userparams(required_params)
 
     for ad in self.android_devices:
+      asserts.skip_if(
+          not ad.droid.doesDeviceSupportWifiAwareFeature(),
+          "Device under test does not support Wi-Fi Aware - skipping test")
       wutils.wifi_toggle_state(ad, True)
       ad.droid.wifiP2pClose()
       aware_avail = ad.droid.wifiIsAwareAvailable()
@@ -52,6 +55,8 @@ class AwareBaseTest(BaseTestClass):
 
   def teardown_test(self):
     for ad in self.android_devices:
+      if not ad.droid.doesDeviceSupportWifiAwareFeature():
+        return
       ad.droid.wifiP2pClose()
       ad.droid.wifiAwareDestroyAll()
       self.reset_device_parameters(ad)
