@@ -17,6 +17,8 @@
     Test Script for Telephony Pre Check In Sanity
 """
 
+import collections
+import random
 import time
 import os
 from acts.test_decorators import test_tracker_info
@@ -57,6 +59,7 @@ from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connecti
 from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -2441,4 +2444,57 @@ class TelLiveDataTest(TelephonyBaseTest):
             ad.droid.telephonyToggleDataConnectionForSubscription(
                 non_active_sub_id, True)
         return True
+
+    def file_download_stress(self):
+        failure = 0
+        total_count = 0
+        self.result_info = collections.defaultdict(int)
+        dut = self.android_devices[0]
+        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 1200))
+        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
+        while total_count < self.stress_test_number:
+            total_count += 1
+            try:
+                dut.log.info(dict(self.result_info))
+                selection = random.randrange(0, len(file_names))
+                file_name = file_names[selection]
+                self.result_info["Total %s file download" % file_name] += 1
+                if not active_file_download_test(self.log, dut, file_name):
+                    self.result_info["%s file download failure" %
+                                     file_name] += 1
+                    failure += 1
+                    dut.take_bug_report("%s_failure_%s" % (self.test_name,
+                                                           failure),
+                                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self.dut.droid.goToSleepNow()
+                    time.sleep(random.randrange(0, self.max_sleep_time))
+            except Exception as e:
+                self.log.error("Exception error %s", str(e))
+                self.result_info["Exception Errors"] += 1
+            dut.log.info("File download test failure: %s/%s", failure,
+                         total_count)
+        if failure / total_count > 0.1:
+            dut.log.error("File download test failure: %s/%s", failure,
+                          total_count)
+            return False
+        return True
+
+    @test_tracker_info(uuid="5381a6fa-6771-4b00-a0d6-4a3891a6dba8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_file_download_stress_default(self):
+        """File download stress test
+
+        Steps:
+        1. Download a file random picked.
+        2. Device sleep for sometime and Repeat 1 .
+
+        Expected Results:
+        Total download failure rate is less than 10%.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self.file_download_stress()
         """ Tests End """
