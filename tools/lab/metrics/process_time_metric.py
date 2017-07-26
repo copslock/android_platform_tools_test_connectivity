@@ -32,13 +32,9 @@ class ProcessTimeMetric(Metric):
         """Returns ADB and Fastboot processes and their time elapsed
 
         Returns:
-            A dict with the following fields:
-              adb_processes, fastboot_processes: a list of (PID, serialnumber)
-                tuples where PID is a string representing the pid and
-                serialnumber is serial number as a string, or NONE if number
-                wasn't in command
-              num_adb_processes, num_fastboot_processes: the number of tuples
-                in the previous lists
+            A dictionary with adb/fastboot_processes as a list of serial nums or
+            NONE if number wasn't in command. num_adb/fastboot_processes as
+            the number of serials in list.
         """
         # Get the process ids
         pids = self.get_adb_fastboot_pids()
@@ -73,9 +69,9 @@ class ProcessTimeMetric(Metric):
                             serial_number = spl_ln[sn_index + 1]
                     # append to proper list
                     if 'fastboot' in output:
-                        fastboot_processes.append((str(pid), serial_number))
+                        fastboot_processes.append(serial_number)
                     elif 'adb' in output:
-                        adb_processes.append((str(pid), serial_number))
+                        adb_processes.append(serial_number)
 
         # Create response dictionary
         response = {
