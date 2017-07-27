@@ -139,6 +139,19 @@ class AdbProxy(object):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
                               **kwargs)
 
+    def _exec_cmd_nb(self, cmd):
+        """Executes adb commands in a new shell, non blocking.
+
+        Args:
+            cmds: A string that is the adb command to execute.
+
+        """
+        job.run_async(cmd)
+
+    def _exec_adb_cmd_nb(self, name, arg_str, **kwargs):
+        return self._exec_cmd_nb(' '.join((self.adb_str, name, arg_str)),
+                                 **kwargs)
+
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding from localhost to this android device.
 
@@ -195,6 +208,9 @@ class AdbProxy(object):
             shellescape.quote(command),
             ignore_status=ignore_status,
             timeout=timeout)
+
+    def shell_nb(self, command):
+        return self._exec_adb_cmd_nb('shell', shellescape.quote(command))
 
     def pull(self,
              command,
