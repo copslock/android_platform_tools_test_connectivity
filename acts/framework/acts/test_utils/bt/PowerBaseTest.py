@@ -49,6 +49,8 @@ class PowerBaseTest(BluetoothBaseTest):
     SCREEN_TIME_OFF = 10
     # Wait time for PMC to start in seconds
     WAIT_TIME = 10
+    # Wait time for PMC to write AlarmTimes
+    ALARM_WAIT_TIME = 600
 
     START_PMC_CMD = ("am start -n com.android.pmc/com.android.pmc."
                      "PMCMainActivity")
@@ -122,6 +124,7 @@ class PowerBaseTest(BluetoothBaseTest):
             if -1 != out.find(label):
                 result = True
                 break
+            time.sleep(1)
 
         if not result:
             self.log.error(status_msg)
@@ -140,12 +143,23 @@ class PowerBaseTest(BluetoothBaseTest):
         """
 
         start_time = time.time()
-        while time.time() < start_time + self.WAIT_TIME:
+        alarm_written = False
+        while time.time() < start_time + self.ALARM_WAIT_TIME:
             out = self.ad.adb.shell("cat /mnt/sdcard/Download/" + log_file)
             self.log.info("READ file: " + out)
-            json_data = json.loads(out)
-            if json_data["AlarmTimes"]:
-                return json_data["AlarmTimes"]
+            if -1 != out.find("READY"):
+                # AlarmTimes has not been written, wait
+                self.log.info("AlarmTimes has not been written, wait")
+            else:
+                alarm_written = True
+                break
+            time.sleep(1)
+
+        if alarm_written is False:
+            self.log.info("PMC never wrote alarm file")
+        json_data = json.loads(out)
+        if json_data["AlarmTimes"]:
+            return json_data["AlarmTimes"]
 
     def save_logs_for_power_test(self,
                                  monsoon_result,
@@ -183,8 +197,10 @@ class PowerBaseTest(BluetoothBaseTest):
             bt_monsoon_result = BtMonsoonDataWithPmcTimes(
                 monsoon_result, time1, time2, self.log)
 
-        bt_monsoon_result.save_to_text_file(
-            bt_monsoon_result, os.path.join(self.monsoon_log_path, file_name))
+        bt_monsoon_result.save_to_text_file(bt_monsoon_result,
+                                            os.path.join(
+                                                self.monsoon_log_path,
+                                                file_name))
 
         self.ad.take_bug_report(self.current_test_name, current_time)
 
@@ -337,10 +353,9 @@ class BtMonsoonData(monsoon.MonsoonData):
         strs.append("\t\tSTD DEV Current: {} mA.".format(stdev))
         strs.append("\t\tVoltage: {} V.".format(self.voltage))
         strs.append("\t\tTotal Power: {} mW.".format(total_power))
-        strs.append((
-            "\t\t{} samples taken at {}Hz, with an offset of {} samples."
-        ).format(
-            len(self.data_points), self.hz, self.offset))
+        strs.append(
+            ("\t\t{} samples taken at {}Hz, with an offset of {} samples."
+             ).format(len(self.data_points), self.hz, self.offset))
         return "\n".join(strs)
 
     def _format_data_point(self):
@@ -405,8 +420,8 @@ class BtMonsoonDataWithPmcTimes(BtMonsoonData):
             end_times: A list of epoch timestamps (int).
             log: log object to log info messages.
         """
-        super(BtMonsoonDataWithPmcTimes, self).__init__(bt_monsoon_data, 0, 0,
-                                                        log)
+        super(BtMonsoonDataWithPmcTimes, self).__init__(
+            bt_monsoon_data, 0, 0, log)
         self.start_times = start_times
         self.end_times = end_times
 
@@ -422,8 +437,8 @@ class BtMonsoonDataWithPmcTimes(BtMonsoonData):
 
         self.log.info(
             "Start times: {} End times: {} Total Data Points: {}".format(
-                len(self.start_times), len(self.end_times), len(
-                    self.data_points)))
+                len(self.start_times),
+                len(self.end_times), len(self.data_points)))
 
         # Index for measure and idle cycle index
         measure_cycle_index = 0
@@ -489,8 +504,8 @@ class BtMonsoonDataWithPmcTimes(BtMonsoonData):
             average_for_a_cycle.append(current_sum / data_point_count)
             total_measured_data_point_count += data_point_count
 
-        self.log.info("Total Number of Cycles: {}".format(len(
-            average_for_a_cycle)))
+        self.log.info(
+            "Total Number of Cycles: {}".format(len(average_for_a_cycle)))
 
         # Calculate the average current and convert it into mA
         current_avg = round(
