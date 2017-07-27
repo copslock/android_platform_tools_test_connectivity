@@ -38,15 +38,6 @@ class WifiBaseTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
 
-
-    def teardown_class(self):
-        """Teardown function that will be called after all the test cases in
-        the test class have been executed.
-
-        """
-        ap.destroy(self.access_points)
-
-
     def get_wpa2_network(
             self,
             ap_count=1,
@@ -54,7 +45,6 @@ class WifiBaseTest(BaseTestClass):
             ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G,
             passphrase_length_2g=hostapd_constants.AP_PASSPHRASE_LENGTH_2G,
             passphrase_length_5g=hostapd_constants.AP_PASSPHRASE_LENGTH_5G):
-
         """Generates SSID and passphrase for a WPA2 network using random
            generator.
 
@@ -95,19 +85,18 @@ class WifiBaseTest(BaseTestClass):
 
         for ap in range(ap_count):
             self.user_params["reference_networks"].append({
-                "2g": network_dict_2g,
-                "5g": network_dict_5g
+                "2g":
+                network_dict_2g,
+                "5g":
+                network_dict_5g
             })
         self.reference_networks = self.user_params["reference_networks"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
 
-
-    def get_open_network(
-            self,
-            ap_count=1,
-            ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
-            ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G):
-
+    def get_open_network(self,
+                         ap_count=1,
+                         ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
+                         ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G):
         """Generates SSIDs for a open network using a random generator.
 
         Args:
@@ -134,7 +123,6 @@ class WifiBaseTest(BaseTestClass):
         self.open_network = self.user_params["open_network"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
 
-
     def populate_bssid(self, ap, networks_5g, networks_2g):
         """Get bssid for a given SSID and add it to the network dictionary.
 
@@ -144,7 +132,7 @@ class WifiBaseTest(BaseTestClass):
 
         """
 
-        if not(networks_5g or networks_2g):
+        if not (networks_5g or networks_2g):
             return
 
         for network in itertools.chain(networks_5g, networks_2g):
@@ -166,7 +154,6 @@ class WifiBaseTest(BaseTestClass):
                 if not 'bssid' in ref_network[band]:
                     ref_network[band]["bssid"] = bssid
 
-
     def legacy_configure_ap_and_start(
             self,
             channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
@@ -181,7 +168,7 @@ class WifiBaseTest(BaseTestClass):
         asserts.assert_true(
             len(self.user_params["AccessPoint"]) == 2,
             "Exactly two access points must be specified. \
-             Each accesspoint has 2 radios, one each for 2.4GHZ \
+             Each access point has 2 radios, one each for 2.4GHZ \
              and 5GHz. A test can choose to use one or both APs.")
         network_list_2g = []
         network_list_5g = []
@@ -216,7 +203,6 @@ class WifiBaseTest(BaseTestClass):
             self.populate_bssid(self.access_points[ap], orig_network_list_5g,
                                 orig_network_list_2g)
 
-
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
         ap_settings = network_list.pop(0)
@@ -245,8 +231,8 @@ class WifiBaseTest(BaseTestClass):
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["password"]),
-                    bss_settings=bss_settings,
-                    profile_name='whirlwind')
+                bss_settings=bss_settings,
+                profile_name='whirlwind')
         else:
             config = hostapd_ap_preset.create_ap_preset(
                 channel=ap_settings["channel"],
