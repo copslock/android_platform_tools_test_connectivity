@@ -16,12 +16,25 @@
 
 import json
 
-import health_checker
 from metrics.usb_metric import Device
 from reporters.reporter import Reporter
 
 
 class JsonReporter(Reporter):
+    """Reporter class that reports information in JSON format to a file.
+
+    This defaults to writing to the current working directory with name
+    output.json
+
+    Attributes:
+      health_checker: a HealthChecker object
+      file_name: Path of file to write to.
+    """
+
+    def __init__(self, h_checker, file_name='output.json'):
+        super(JsonReporter, self).__init__(h_checker)
+        self.file_name = file_name
+
     def report(self, metric_responses):
         unhealthy_metrics = self.health_checker.get_unhealthy(metric_responses)
         for metric_name in metric_responses:
@@ -33,7 +46,9 @@ class JsonReporter(Reporter):
         metric_responses['total_unhealthy'] = {
             'total_unhealthy': len(unhealthy_metrics)
         }
-        print(json.dumps(metric_responses, indent=4, cls=AutoJsonEncoder))
+        with open(self.file_name, 'w') as outfile:
+            json.dump(
+                metric_responses, indent=4, cls=AutoJsonEncoder, fp=outfile)
 
 
 class AutoJsonEncoder(json.JSONEncoder):
