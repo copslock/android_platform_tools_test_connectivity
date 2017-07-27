@@ -43,7 +43,6 @@ from metrics.version_metric import AdbVersionMetric
 from metrics.version_metric import FastbootVersionMetric
 from metrics.version_metric import KernelVersionMetric
 from metrics.version_metric import PythonVersionMetric
-from metrics.vertical_metric import VerticalMetric
 from metrics.zombie_metric import ZombieMetric
 from reporters.json_reporter import JsonReporter
 from reporters.logger_reporter import LoggerReporter
@@ -85,7 +84,6 @@ class RunnerFactory(object):
                               UptimeMetric(),
                               UsbMetric(),
                               VerifyMetric(),
-                              VerticalMetric(),
                               ZombieMetric()]
     }
 
