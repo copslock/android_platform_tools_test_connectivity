@@ -169,15 +169,6 @@ class TelephonyBaseTest(BaseTestClass):
                 self.register_controller(
                     acts.controllers.diag_logger, required=False))
 
-        # Workaround for SIM switch b/63808825. Pls remove once fixed
-        for ad in self.android_devices:
-            if not ad.adb.shell("getprop gsm.sim.operator.alpha"):
-                ad.log.warning("Workaround as per b/63808825")
-                ad.adb.shell(
-                    "am broadcast -a android.provider.Telephony.SECRET_CODE "
-                    "-d android_secret_code://794824746 "
-                    "com.google.android.euicc")
-
         if not self.user_params.get("Attenuator"):
             ensure_phones_default_state(self.log, self.android_devices)
         else:

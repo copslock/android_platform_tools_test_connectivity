@@ -101,14 +101,6 @@ class TelLivePreflightTest(TelephonyBaseTest):
     @test_tracker_info(uuid="7bb23ac7-6b7b-4d5e-b8d6-9dd10032b9ad")
     @TelephonyBaseTest.tel_test_wrap
     def test_pre_flight_check(self):
-        # Workaround for SIM switch b/63808825. Pls remove once fixed
-        for ad in self.android_devices:
-            if not ad.adb.shell("getprop gsm.sim.operator.alpha"):
-                ad.log.warning("Workaround as per b/63808825")
-                ad.adb.shell(
-                    "am broadcast -a android.provider.Telephony.SECRET_CODE "
-                    "-d android_secret_code://794824746 "
-                    "com.google.android.euicc")
         for ad in self.android_devices:
             #check for sim and service
             if not ensure_phone_subscription(self.log, ad):
