@@ -83,12 +83,6 @@ class TelephonyBaseTest(BaseTestClass):
                         ad.log,
                         "Puk and puk_pin provided in testbed config do NOT work"
                     )
-            # Enable or Disable Device Password
-            device_password = getattr(ad, "device_password", None)
-            if not device_password:
-                ad.droid.disableDevicePassword()
-            else:
-                ad.droid.setDevicePassword(device_password)
 
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
@@ -105,11 +99,13 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.info(log_string)
             try:
                 for ad in self.android_devices:
-                    ad.droid.logI("Started %s" % log_string)
+                    if getattr(ad, "droid"):
+                        ad.droid.logI("Started %s" % log_string)
                 # TODO: b/19002120 start QXDM Logging
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
-                    ad.droid.logI("Finished %s" % log_string)
+                    if getattr(ad, "droid"):
+                        ad.droid.logI("Finished %s" % log_string)
                     new_crash = ad.check_crash_report(self.test_name,
                                                       self.begin_time, result)
                     if new_crash:
@@ -121,7 +117,8 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.info(log_string)
                     self.setup_test()
                     for ad in self.android_devices:
-                        ad.droid.logI("Rerun Started %s" % log_string)
+                        if getattr(ad, "droid"):
+                            ad.droid.logI("Rerun Started %s" % log_string)
                     result = fn(self, *args, **kwargs)
                     if result is True:
                         self.log.info("Rerun passed.")
