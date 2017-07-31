@@ -84,6 +84,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -856,7 +857,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -883,7 +885,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -910,7 +913,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -937,7 +941,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -964,7 +969,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -991,7 +997,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -1018,7 +1025,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -1045,7 +1053,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -1072,7 +1081,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1097,7 +1107,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1280,7 +1291,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1307,7 +1319,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-
+        # Turn OFF WiFi for Phone B
+        set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1367,8 +1380,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1426,8 +1439,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1485,8 +1498,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1544,8 +1557,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1603,8 +1616,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1656,8 +1669,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1709,8 +1722,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
