@@ -23,7 +23,7 @@ import json
 import os
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
@@ -138,8 +138,8 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
-            self.SCAN_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40)
+            ble_scan_settings_modes['low_latency'], self.SCAN_TIME_60,
+            self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_power_for_scan_w_balanced(self):
@@ -164,7 +164,7 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_60,
+            ble_scan_settings_modes['balanced'], self.SCAN_TIME_60,
             self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -190,7 +190,7 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_60,
+            ble_scan_settings_modes['low_power'], self.SCAN_TIME_60,
             self.IDLE_TIME_30, self.REPETITIONS_40)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -216,7 +216,7 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_BALANCED.value, self.SCAN_TIME_5,
+            ble_scan_settings_modes['balanced'], self.SCAN_TIME_5,
             self.IDLE_TIME_5, self.REPETITIONS_360)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -242,7 +242,7 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value, self.SCAN_TIME_5,
+            ble_scan_settings_modes['low_latency'], self.SCAN_TIME_5,
             self.IDLE_TIME_5, self.REPETITIONS_360)
 
     @BluetoothBaseTest.bt_test_wrap
@@ -268,5 +268,5 @@ class BleScanPowerTest(PowerBaseTest):
         Priority: 3
         """
         self._measure_power_for_scan_n_log_data(
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, self.SCAN_TIME_5,
+            ble_scan_settings_modes['low_power'], self.SCAN_TIME_5,
             self.IDLE_TIME_5, self.REPETITIONS_360)
