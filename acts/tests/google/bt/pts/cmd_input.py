@@ -16,8 +16,8 @@
 """
 Python script for wrappers to various libraries.
 """
-from acts.test_utils.bt.BtEnum import BluetoothScanModeType
-from acts.test_utils.bt.GattEnum import GattServerResponses
+from acts.test_utils.bt.bt_constants import bt_scan_mode_types
+from acts.test_utils.bt.bt_constants import gatt_server_responses
 from ble_lib import BleLib
 from bta_lib import BtaLib
 from config_lib import ConfigLib
@@ -381,10 +381,10 @@ class CmdInput(cmd.Cmd):
     def complete_gatts_send_response(self, text, line, begidx, endidx):
         """GATT Server database name completion"""
         if not text:
-            completions = list(GattServerResponses.keys())[:]
+            completions = list(gatt_server_responses.keys())[:]
         else:
             completions = [
-                s for s in GattServerResponses.keys() if s.startswith(text)
+                s for s in gatt_server_responses.keys() if s.startswith(text)
             ]
         return completions
 
@@ -392,10 +392,10 @@ class CmdInput(cmd.Cmd):
                                                 endidx):
         """GATT Server database name completion"""
         if not text:
-            completions = list(GattServerResponses.keys())[:]
+            completions = list(gatt_server_responses.keys())[:]
         else:
             completions = [
-                s for s in GattServerResponses.keys() if s.startswith(text)
+                s for s in gatt_server_responses.keys() if s.startswith(text)
             ]
         return completions
 
@@ -403,10 +403,10 @@ class CmdInput(cmd.Cmd):
                                                      endidx):
         """GATT Server database name completion"""
         if not text:
-            completions = list(GattServerResponses.keys())[:]
+            completions = list(gatt_server_responses.keys())[:]
         else:
             completions = [
-                s for s in GattServerResponses.keys() if s.startswith(text)
+                s for s in gatt_server_responses.keys() if s.startswith(text)
             ]
         return completions
 
@@ -633,7 +633,7 @@ class CmdInput(cmd.Cmd):
         return completions
 
     def complete_bta_set_scan_mode(self, text, line, begidx, endidx):
-        completions = [e.name for e in BluetoothScanModeType]
+        completions = [e.name for e in bt_scan_mode_types]
         if not text:
             completions = completions[:]
         else:
