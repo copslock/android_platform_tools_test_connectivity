@@ -33,17 +33,13 @@ PHY_LE_2M = gatt_phy['2m']
 
 
 def lfmt(txPhy, rxPhy):
-    print(txPhy)
-    print(rxPhy)
-    print({k: v for k, v in gatt_phy.items() if v == txPhy}.key())
-    print(gatt_phy.keys()[gatt_phy.values().index(txPhy)])
-    return '(' + gatt_phy.keys()[gatt_phy.values().index(
-        txPhy)] + ', ' + gatt_phy[rxPhy] + ')'
+    return '(' + list(gatt_phy.keys())[list(gatt_phy.values()).index(
+        txPhy)] + ', ' + list(gatt_phy.keys())[list(gatt_phy.values()).index(
+            rxPhy)] + ')'
 
 
 class PhyTest(GattConnectedBaseTest):
     def setup_class(self):
-        input("continue?")
         if not self.cen_ad.droid.bluetoothIsLe2MPhySupported():
             raise signals.TestSkipClass(
                 "Central device does not support LE 2M PHY")
