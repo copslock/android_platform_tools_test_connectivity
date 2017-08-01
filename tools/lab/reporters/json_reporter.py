@@ -44,7 +44,7 @@ class JsonReporter(Reporter):
                 metric_responses[metric_name]['is_healthy'] = False
         # add a total unhealthy score
         metric_responses['total_unhealthy'] = {
-            'total_unhealthy': len(unhealthy_metrics)
+            'total_unhealthy': len(set(unhealthy_metrics))
         }
         with open(self.file_name, 'w') as outfile:
             json.dump(
