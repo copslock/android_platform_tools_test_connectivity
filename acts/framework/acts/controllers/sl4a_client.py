@@ -254,16 +254,18 @@ class Sl4aClient(object):
                 # Will be error handled to make sure this does not happen.
                 resp = self._cmd(cmd, self.uid)
                 break
-            except (socket.timeout):
-                logging.exception("Failed to create socket connection!")
+            except (socket.timeout) as e:
+                logging.warning(
+                    "Sl4aClient failed to open socket connection: %s", e)
                 raise
-            except (socket.error, IOError):
+            except (socket.error, IOError) as e:
                 # TODO: optimize to only forgive some errors here
                 # error values are OS-specific so this will require
                 # additional tuning to fail faster
                 time_left = get_time_left()
                 if time_left <= 0:
-                    logging.exception("Failed to create socket connection!")
+                    logging.warning(
+                        "Sl4aClient failed to create socket connection: %s", e)
                     raise
                 time.sleep(1)
 
@@ -332,24 +334,30 @@ class Sl4aClient(object):
             self.conn.settimeout(timeout)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
-        for i in range(retries):
+        for i in range(1, retries + 1):
             try:
                 self.client.write(request.encode("utf8") + b'\n')
                 self.client.flush()
                 response = self.client.readline()
             except BrokenPipeError as e:
-                logging.error("RPC method %s on iteration %s error: %s",
-                              method, i, e)
-                if i < retries - 1:
+                if i < retries:
+                    logging.warning("RPC method %s on iteration %s error: %s",
+                                    method, i, e)
                     continue
                 else:
+                    logging.error("RPC method %s fail on iteration %s: %s",
+                                  method, i, e)
                     raise
             if not response:
-                logging.error("No response for RPC method %s on iteration %s",
-                              method, i)
-                if i < retries - 1:
+                if i < retries:
+                    logging.warning(
+                        "No response for RPC method %s on iteration %s",
+                        method, i)
                     continue
                 else:
+                    logging.error(
+                        "No response for RPC method %s on iteration %s",
+                        method, i)
                     raise Sl4aProtocolError(
                         Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
             else:
