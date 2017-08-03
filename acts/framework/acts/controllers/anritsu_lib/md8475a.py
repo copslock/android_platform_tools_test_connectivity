@@ -54,6 +54,23 @@ IMEISV_READ_USERDATA_GSM = "081503"
 IDENTITY_REQ_DATA_LEN = 24
 SEQ_LOG_MESSAGE_START_INDEX = 60
 
+WCDMA_BANDS = {
+    "I": "1",
+    "II": "2",
+    "III": "3",
+    "IV": "4",
+    "V": "5",
+    "VI": "6",
+    "VII": "7",
+    "VIII": "8",
+    "IX": "9",
+    "X": "10",
+    "XI": "11",
+    "XII": "12",
+    "XIII": "13",
+    "XIV": "14"
+}
+
 
 def create(configs, logger):
     objs = []
@@ -710,8 +727,13 @@ class MD8475A(object):
         error = int(
             self.send_query("SIMMODEL %s;ERROR?" % sim_model,
                             COMMAND_COMPLETE_WAIT_TIME))
-        if error:
-            return False
+        if error:  # Try again if first set SIMMODEL fails
+            time.sleep(3)
+            error = int(
+                self.send_query("SIMMODEL %s;ERROR?" % sim_model,
+                                COMMAND_COMPLETE_WAIT_TIME))
+            if error:
+                return False
         # Reset every time after SIMMODEL is set because SIMMODEL will load
         # some of the contents from previous parameter files.
         self.reset()
@@ -818,8 +840,8 @@ class MD8475A(object):
         for _ in range(registration_check_iterations):
             waiting_time = 0
             while waiting_time <= time_to_wait:
-                callstat = self.send_query(
-                    "CALLSTAT? BTS{}".format(bts)).split(",")
+                callstat = self.send_query("CALLSTAT? BTS{}".format(
+                    bts)).split(",")
                 if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
                     break
                 time.sleep(sleep_interval)
@@ -864,6 +886,34 @@ class MD8475A(object):
         """
         bts_number, rat_info = self.send_query("CAMPINGCELL?").split(",")
         return bts_number, rat_info
+
+    def get_supported_bands(self, rat):
+        """ Gets the supported bands from UE capability information
+
+        Args:
+          rat: LTE or WCDMA
+
+        Returns:
+            returns a list of bnads
+        """
+        cmd = "UEINFO? "
+        if rat == "LTE":
+            cmd += "L"
+        elif rat == "WCDMA":
+            cmd += "W"
+        else:
+            raise ValueError('The rat argument needs to be "LTE" or "WCDMA"')
+        cmd += "_SupportedBand"
+        result = self.send_query(cmd).split(",")
+        if result == "NONE":
+            return None
+        if rat == "WCDMA":
+            bands = []
+            for band in result:
+                bands.append(WCDMA_BANDS[band])
+            return bands
+        else:
+            return result
 
     def start_testcase(self):
         """ Starts a test case on Anritsu

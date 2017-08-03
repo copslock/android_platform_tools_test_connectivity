@@ -115,7 +115,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
                         phone_idle_func_after_registration=None,
                         volte=True,
                         iperf=True,
-                        all_bands=True,
+                        all_bands=False,
                         is_wait_for_registration=True,
                         voice_number=DEFAULT_CALL_NUMBER,
                         teardown_side=CALL_TEARDOWN_PHONE,
@@ -124,91 +124,98 @@ class TelLabMobilityTest(TelephonyBaseTest):
             bts = set_simulation_func(self.anritsu, self.user_params,
                                       self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
-
             self.anritsu.start_simulation()
             self.anritsu.send_command("IMSSTARTVN 1")
-
-            self.ad.droid.telephonyToggleDataConnection(False)
-
             # turn off all other BTS to ensure UE registers on BTS1
-            sim_model = (self.anritsu.get_simulation_model()).split(",")
-            no_of_bts = len(sim_model)
+            simmodel = self.anritsu.get_simulation_model().split(',')
+            no_of_bts = len(simmodel)
             for i in range(2, no_of_bts + 1):
                 self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(i))
             if phone_setup_func is not None:
                 if not phone_setup_func(self.ad):
                     self.log.error("phone_setup_func failed.")
-
             if is_wait_for_registration:
                 self.anritsu.wait_for_registration_state()
-
             if phone_idle_func_after_registration:
                 if not phone_idle_func_after_registration(self.log, self.ad):
                     self.log.error("phone_idle_func failed.")
-
             for i in range(2, no_of_bts + 1):
                 self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(i))
-
             time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
-
-            if iperf:
+            if iperf:  # setup iPerf server
                 server_ip = self.iperf_setup()
                 if not server_ip:
                     self.log.error("iperf server can not be reached by ping")
                     return False
-
-            if volte:
+            if volte:  # make a VoLTE MO call
                 if not make_ims_call(self.log, self.ad, self.anritsu,
                                      voice_number):
                     self.log.error("Phone {} Failed to make volte call to {}"
                                    .format(self.ad.serial, voice_number))
                     return False
+            if all_bands and (simmodel[1] == "WCDMA"):
+                band = []
+                for rat in simmodel[:2]:
+                    band.append(self.anritsu.get_supported_bands(rat))
+                self.log.info("UE reported LTE bands are {}".format(band[0]))
+                self.log.info("UE reported WCDMA bands are {}".format(band[1]))
+                current_lte_band = bts[0].band
+                # move current LTE band to the last in the list
+                band[0].remove(current_lte_band)
+                band[0].append(current_lte_band)
+                n = max(len(band[0]), len(band[1]))
+            else:
+                n = 1  # n is the number of LTE->WCDMA->LTE handovers
 
-            if not iperf:  # VoLTE only
-                result = handover_tc(self.log, self.anritsu,
-                                     WAITTIME_BEFORE_HANDOVER, BtsNumber.BTS1,
-                                     BtsNumber.BTS2)
-                time.sleep(WAITTIME_AFTER_HANDOVER)
-            else:  # with iPerf
-                iperf_task = (self._iperf_task, (
-                    server_ip,
-                    WAITTIME_BEFORE_HANDOVER + WAITTIME_AFTER_HANDOVER - 10))
-                ho_task = (handover_tc,
-                           (self.log, self.anritsu, WAITTIME_BEFORE_HANDOVER,
-                            BtsNumber.BTS1, BtsNumber.BTS2))
-                result = run_multithread_func(self.log, [ho_task, iperf_task])
-                if not result[1]:
-                    self.log.error("iPerf failed.")
-                    return False
+            for i in range(n):
+                if all_bands:
+                    bts[1].band = band[1][i % len(band[1])]
+                if not iperf:  # VoLTE only
+                    result = handover_tc(self.log, self.anritsu,
+                                         WAITTIME_BEFORE_HANDOVER,
+                                         BtsNumber.BTS1, BtsNumber.BTS2)
+                    time.sleep(WAITTIME_AFTER_HANDOVER)
+                else:  # with iPerf
+                    iperf_task = (self._iperf_task,
+                                  (server_ip, WAITTIME_BEFORE_HANDOVER +
+                                   WAITTIME_AFTER_HANDOVER - 10))
+                    ho_task = (handover_tc, (self.log, self.anritsu,
+                                             WAITTIME_BEFORE_HANDOVER,
+                                             BtsNumber.BTS1, BtsNumber.BTS2))
+                    result = run_multithread_func(self.log,
+                                                  [ho_task, iperf_task])
+                    if not result[1]:
+                        self.log.error("iPerf failed.")
+                        return False
 
-            self.log.info("handover test case result code {}.".format(result[
-                0]))
-
-            if volte:
-                # check if the phone stay in call
-                if not self.ad.droid.telecomIsInCall():
-                    self.log.error("Call is already ended in the phone.")
-                    return False
-
-                if not tear_down_call(self.log, self.ad, self.anritsu):
-                    self.log.error("Phone {} Failed to tear down"
-                                   .format(self.ad.serial, voice_number))
-                    return False
-
-            simmodel = self.anritsu.get_simulation_model().split(',')
-            if simmodel[1] == "WCDMA" and iperf:
-                iperf_task = (self._iperf_task, (
-                    server_ip,
-                    WAITTIME_BEFORE_HANDOVER + WAITTIME_AFTER_HANDOVER - 10))
-                ho_task = (handover_tc,
-                           (self.log, self.anritsu, WAITTIME_BEFORE_HANDOVER,
-                            BtsNumber.BTS2, BtsNumber.BTS1))
-                result = run_multithread_func(self.log, [ho_task, iperf_task])
-                if not result[1]:
-                    self.log.error("iPerf failed.")
-                    return False
                 self.log.info("handover test case result code {}.".format(
                     result[0]))
+                if volte:
+                    # check if the phone stay in call
+                    if not self.ad.droid.telecomIsInCall():
+                        self.log.error("Call is already ended in the phone.")
+                        return False
+
+                    if not tear_down_call(self.log, self.ad, self.anritsu):
+                        self.log.error("Phone {} Failed to tear down"
+                                       .format(self.ad.serial, voice_number))
+                        return False
+                if simmodel[1] == "WCDMA" and iperf:
+                    if all_bands:
+                        bts[0].band = band[0][i % len(band[0])]
+                    iperf_task = (self._iperf_task,
+                                  (server_ip, WAITTIME_BEFORE_HANDOVER +
+                                   WAITTIME_AFTER_HANDOVER - 10))
+                    ho_task = (handover_tc, (self.log, self.anritsu,
+                                             WAITTIME_BEFORE_HANDOVER,
+                                             BtsNumber.BTS2, BtsNumber.BTS1))
+                    result = run_multithread_func(self.log,
+                                                  [ho_task, iperf_task])
+                    if not result[1]:
+                        self.log.error("iPerf failed.")
+                        return False
+                    self.log.info("handover test case result code {}.".format(
+                        result[0]))
 
         except AnritsuError as e:
             self.log.error("Error in connection with Anritsu Simulator: " +
@@ -391,20 +398,21 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_iperf_handover_wcdma(self):
-        """ Test VoLTE to VoLTE Inter-Freq handover with iPerf data
+        """ Test VoLTE to WCDMA to LTE handover with iPerf data
         Steps:
-        1. Setup CallBox for 2 LTE cells with 2 different bands.
+        1. Setup CallBox for LTE and WCDMA simulation.
         2. Turn on DUT and enable VoLTE. Make an voice call to DEFAULT_CALL_NUMBER.
         3. Check if VoLTE voice call connected successfully.
         4. Start iPerf data transfer
-        5. Handover the call to BTS2 and check if the call is still up.
+        5. SRVCC to WCDMA and check if the call is still up.
         6. Check iPerf data throughput
         7. Tear down the call.
+        8. Handover back to LTE with iPerf
 
         Expected Results:
         1. VoLTE Voice call is made successfully.
         2. After handover, the call is not dropped.
-        3. Tear down call succeed.
+        3. iPerf continue after handover
 
         Returns:
             True if pass; False if fail
@@ -418,9 +426,9 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_handover_wcdma(self):
-        """ Test VoLTE to VoLTE Inter-Freq handover with iPerf data
+        """ Test VoLTE to WCDMA handover (SRVCC)
         Steps:
-        1. Setup CallBox for 2 LTE cells with 2 different bands.
+        1. Setup CallBox for LTE and WCDMA simulation.
         2. Turn on DUT and enable VoLTE. Make an voice call to DEFAULT_CALL_NUMBER.
         3. Check if VoLTE voice call connected successfully.
         4. Start iPerf data transfer
@@ -445,20 +453,21 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     @TelephonyBaseTest.tel_test_wrap
     def test_iperf_handover_wcdma(self):
-        """ Test VoLTE to VoLTE Inter-Freq handover with iPerf data
+        """ Test LTE to WCDMA to LTE handovers with iPerf data
         Steps:
-        1. Setup CallBox for 2 LTE cells with 2 different bands.
-        2. Turn on DUT and enable VoLTE. Make an voice call to DEFAULT_CALL_NUMBER.
-        3. Check if VoLTE voice call connected successfully.
-        4. Start iPerf data transfer
-        5. Handover the call to BTS2 and check if the call is still up.
-        6. Check iPerf data throughput
-        7. Tear down the call.
+        1. Setup CallBox for LTE and WCDMA simulation.
+        2. Turn on DUT and register on LTE BTS.
+        3. Start iPerf data transfer
+        4. Handover to WCDMA.
+        5. Stop and check iPerf data throughput
+        6. Start iPerf data transfer
+        7. Handover to WCDMA.
+        8. Stop and check iPerf data throughput
+
 
         Expected Results:
-        1. VoLTE Voice call is made successfully.
-        2. After handover, the call is not dropped.
-        3. Tear down call succeed.
+        1. Each handover is successful
+        2. After each handover, the iPerf continues successfully.
 
         Returns:
             True if pass; False if fail
@@ -469,5 +478,38 @@ class TelLabMobilityTest(TelephonyBaseTest):
             phone_idle_volte,
             volte=False,
             iperf=True)
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_iperf_handover_wcdma_all_bands(self):
+        """ Test LTE->WCDMA->LTE handovers through all bands UE supports with iPerf data
+        Steps:
+        1. Setup CallBox for LTE and WCDMA simulation.
+        2. Turn on DUT and register on LTE BTS.
+        3. Query MD8475A for UE supported bands contained in UE Capability Information
+        4. Set target WCDMA band with first band in WCDMA supported band list
+        5. Start iPerf data transfer
+        6. Handover to WCDMA.
+        7. Stop and check iPerf data throughput
+        8. Set target LTE band with first band in LTE supported band list
+        9. Start iPerf data transfer
+        10. Handover to LTE.
+        11. Stop and check iPerf data throughput
+        12. Repeat step 4-11 with second WCDMA/LTE bands in supported band lists
+        13. Repeat step 12 until all bands are tested. Reuse the begining of the shorter list to match the longer list.
+
+        Expected Results:
+        1. Each handover is successful
+        2. After each handover, the iPerf continues successfully.
+
+        Returns:
+            True if pass; False if fail
+        """
+        return self.active_handover(
+            set_system_model_lte_wcdma,
+            self._phone_setup_volte,
+            phone_idle_volte,
+            volte=False,
+            iperf=True,
+            all_bands=True)
 
     """ Tests End """
