@@ -136,12 +136,17 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
+        if not ad.ensure_screen_on():
+            ad.log.error("User window cannot come up")
+            destroy(running_ads)
+            raise AndroidDeviceError("User window cannot come up")
         if not ad.is_sl4a_installed():
-            ad.log.info("sl4a.apk is not installed")
+            ad.log.error("sl4a.apk is not installed")
             if not ad.skip_sl4a:
                 ad.log.exception("The required sl4a.apk is not installed")
                 destroy(running_ads)
-                raise
+                raise AndroidDeviceError(
+                    "The required sl4a.apk is not installed")
         try:
             ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
@@ -381,6 +386,7 @@ class AndroidDevice:
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
+        self.device_password = None
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -409,13 +415,21 @@ class AndroidDevice:
         except:
             self.log.exception("Failed to start adb logcat!")
             raise
+        self.exit_setup_wizard()
         if not skip_sl4a:
             try:
-                self.get_droid()
-                self.ed.start()
+                droid, ed = self.get_droid()
+                ed.start()
             except:
                 self.log.exception("Failed to start sl4a!")
                 raise
+            # Enable or Disable Device Password per test bed config
+            if self.device_password:
+                self.log.info("Enable device password")
+                droid.setDevicePassword(self.device_password)
+            else:
+                self.log.debug("Disable device password")
+                droid.disableDevicePassword()
 
     def stop_services(self):
         """Stops long running services on the android device.
@@ -543,18 +557,12 @@ class AndroidDevice:
         """
         if self.adb_logcat_process:
             try:
-                ret = self.adb_logcat_process.poll()
-            except AttributeError as e:
-                #This happens if the logcat process is not a Popen object as
-                #would be expected if connected to a real android device.  This
-                #solves the mock test problem.
-                ret = None
-            if ret is None:
+                utils._assert_subprocess_running(self.adb_logcat_process)
                 return True
-            else:
+            except Exception:
                 if self.droid:
                     self.droid.logI('Logcat died')
-                self.log.error('Logcat died on %s' % self.adb_logcat_file_path)
+                self.log.info("Logcat to %s died", self.adb_logcat_file_path)
                 return False
         return False
 
@@ -570,7 +578,7 @@ class AndroidDevice:
         """
         for k, v in config.items():
             # skip_sl4a value can be reset from config file
-            if hasattr(self, k) and k != "skip_sl4a":
+            if hasattr(self, k) and k not in ("skip_sl4a", "device_password"):
                 raise AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
                     (k, self.serial))
@@ -741,7 +749,7 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.warning(
+            self.log.info(
                 'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
@@ -987,10 +995,12 @@ class AndroidDevice:
         """
         ed_key = self.serial + str(session_id)
         if self._event_dispatchers and ed_key in self._event_dispatchers:
+            self.log.info("Clear event dispatcher session %s", session_id)
             self._event_dispatchers[ed_key].clean_up()
             del self._event_dispatchers[ed_key]
         if self._droid_sessions and (session_id in self._droid_sessions):
             for droid in self._droid_sessions[session_id]:
+                self.log.info("Close sl4a session %s", session_id)
                 droid.closeSl4aSession(timeout=180)
                 droid.close()
             del self._droid_sessions[session_id]
@@ -1077,37 +1087,34 @@ class AndroidDevice:
         raise AndroidDeviceError(
             "Device %s booting process timed out." % self.serial)
 
-    def reboot(self):
+    def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
 
         Terminate all sl4a sessions, reboot the device, wait for device to
-        complete booting, and restart an sl4a session.
+        complete booting, and restart an sl4a session if restart_sl4a is True.
 
-        This is a blocking method.
-
-        This is probably going to print some error messages in console. Only
-        use if there's no other option.
-
-        Example:
-            droid, ed = ad.reboot()
+        Args:
+            stop_at_lock_screen: whether to unlock after reboot. Set to False
+                if want to bring the device to reboot up to password locking
+                phase. Sl4a checking need the device unlocked after rebooting.
 
         Returns:
-            An sl4a session with an event_dispatcher.
-
-        Raises:
-            AndroidDeviceError is raised if waiting for completion timed
-            out.
+            None, sl4a session and event_dispatcher.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        has_adb_log = self.is_adb_logcat_on
-        if has_adb_log:
-            self.stop_adb_logcat()
         self.terminate_all_sessions()
+        self.log.info("Reboot")
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
+        if self.is_waiting_for_unlock_pin() and stop_at_lock_screen:
+            return
+        if not self.ensure_screen_on():
+            self.log.error("User window cannot come up")
+            raise AndroidDeviceError("User window cannot come up")
+        self.ensure_screen_on()
         self.start_services(self.skip_sl4a)
 
     def fastboot_wipe(self):
@@ -1129,8 +1136,6 @@ class AndroidDevice:
             self.log.info("Get sl4a apk from %s", sl4a_apk)
             self.pull_files([sl4a_apk], "/tmp/")
         has_adb_log = self.is_adb_logcat_on
-        if has_adb_log:
-            self.stop_adb_logcat()
         self.terminate_all_sessions()
         self.log.info("Reboot to bootloader")
         self.adb.reboot_bootloader(ignore_status=True)
@@ -1220,6 +1225,128 @@ class AndroidDevice:
                 return None
         else:
             return None
+
+    def send_keycode(self, keycode):
+        self.adb.shell("input keyevent KEYCODE_%s" % keycode)
+
+    def get_my_current_focus_window(self):
+        """Get the current focus window on screen"""
+        output = self.adb.shell(
+            'dumpsys window windows | grep -E mCurrentFocus')
+        if not output or "mCurrentFocus=null" in output:
+            result = ''
+        else:
+            result = output.split(' ')[-1].strip("}")
+        self.log.debug("Current focus window is %s", result)
+        return result
+
+    def get_my_current_focus_app(self):
+        """Get the current focus application"""
+        output = self.adb.shell('dumpsys window windows | grep -E mFocusedApp')
+        if not output or "mFocusedApp=null" in output:
+            result = ''
+        else:
+            result = output.split(' ')[-2]
+        self.log.debug("Current focus app is %s", result)
+        return result
+
+    def is_window_ready(self, window_name=None):
+        current_window = self.get_my_current_focus_window()
+        if window_name:
+            return window_name in current_window
+        return current_window and "CryptKeeper" not in current_window and (
+            "FallbackHome" not in self.get_my_current_focus_app())
+
+    def wait_for_window_ready(self,
+                              window_name=None,
+                              check_interval=5,
+                              check_duration=60):
+        elapsed_time = 0
+        while elapsed_time < check_duration:
+            time.sleep(check_interval)
+            elapsed_time += check_interval
+            if self.is_window_ready(window_name=window_name):
+                return True
+        self.log.info("Current focus window is %s",
+                      self.get_my_current_focus_window())
+        return False
+
+    def is_user_setup_complete(self):
+        return "1" in self.adb.shell("settings get secure user_setup_complete")
+
+    def is_screen_awake(self):
+        """Check if device screen is in sleep mode"""
+        output = self.adb.shell("dumpsys power | grep mWakefulness=")
+        return "Awake" in output
+
+    def is_screen_emergency_dialer(self):
+        """Check if device screen is in emergency dialer mode"""
+        return "EmergencyDialer" in self.get_my_current_focus_window()
+
+    def is_screen_in_call_activity(self):
+        """Check if device screen is in in-call activity notification"""
+        return "InCallActivity" in self.get_my_current_focus_window()
+
+    def is_setupwizard_on(self):
+        """Check if device screen is in emergency dialer mode"""
+        return "setupwizard" in self.get_my_current_focus_app()
+
+    def is_waiting_for_unlock_pin(self):
+        """Check if device is waiting for unlock pin to boot up"""
+        if "CryptKeeper" in self.get_my_current_focus_window():
+            self.log.info("Device is in CrpytKeeper window")
+            return True
+        if "FallbackHome" in self.get_my_current_focus_app():
+            self.log.info("Device is locked")
+            return True
+        return False
+
+    def ensure_screen_on(self):
+        """Ensure device screen is powered on"""
+        if not self.is_screen_awake():
+            self.wakeup_screen()
+        if self.is_screen_emergency_dialer(
+        ) or self.is_screen_in_call_activity():
+            # Send two BACK keycodes to get out notification and dialer
+            self.send_keycode("BACK")
+            self.send_keycode("BACK")
+            time.sleep(2)
+        if self.is_waiting_for_unlock_pin():
+            self.unlock_screen()
+            if self.is_waiting_for_unlock_pin():
+                self.unlock_screen()
+            return self.wait_for_window_ready()
+        elif self.device_password and self.get_my_current_focus_window(
+        ) == "StatusBar":
+            self.unlock_screen()
+        return self.is_window_ready()
+
+    def wakeup_screen(self):
+        self.send_keycode("WAKEUP")
+        current_window = self.get_my_current_focus_window()
+        if "NexusLauncherActivity" not in current_window or (
+                "StatusBar" not in current_window):
+            self.send_keycode("MENU")
+
+    def go_to_sleep(self):
+        self.send_keycode("SLEEP")
+
+    def send_keycode_number_pad(self, number):
+        self.send_keycode("NUMPAD_%s" % number)
+
+    def unlock_screen(self, password=None):
+        password = password or self.device_password or "1111"
+        self.log.info("Unlocking screen with pin %s", password)
+        self.wakeup_screen()
+        self.send_keycode("DEL")
+        for number in password:
+            self.send_keycode_number_pad(number)
+        self.send_keycode("ENTER")
+
+    def exit_setup_wizard(self):
+        self.adb.shell(
+            "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
+        )
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
