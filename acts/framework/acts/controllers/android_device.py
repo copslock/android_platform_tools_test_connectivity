@@ -625,25 +625,25 @@ class AndroidDevice:
                 last_error = e
                 pass
         if not forward_success:
+            self.log.error(last_error)
             raise last_error
 
-        # TODO(bpeake) b/33470152 Fixup SL4A connection code
-        if self.is_sl4a_running():
-            self.stop_sl4a()
-            time.sleep(30)
-        self.start_sl4a()
-        try:
-            droid = self.start_new_session()
-        except:
-            self.stop_sl4a()
-            time.sleep(30)
-            self.start_sl4a()
-            droid = self.start_new_session()
-
-        if handle_event:
-            ed = self.get_dispatcher(droid)
-            return droid, ed
-        return droid
+        for i in range(PORT_RETRY_COUNT):
+            try:
+                if not self.is_sl4a_running():
+                    self.start_sl4a()
+                    time.sleep(5)
+                droid = self.start_new_session()
+                if handle_event:
+                    ed = self.get_dispatcher(droid)
+                    return droid, ed
+                return droid
+            except Exception as e:
+                self.log.error("get_droid with exception: %s", e)
+                if i == PORT_RETRY_COUNT - 1:
+                    raise
+                self.stop_sl4a()
+                time.sleep(25)
 
     def get_dispatcher(self, droid):
         """Return an EventDispatcher for an sl4a session
@@ -948,6 +948,7 @@ class AndroidDevice:
         if droid.uid in self._droid_sessions:
             raise sl4a_client.Sl4aException(
                 "SL4A returned an existing uid for a new session. Abort.")
+        self.log.info("Add new sl4a session %s", droid.uid)
         self._droid_sessions[droid.uid] = [droid]
         return droid
 
@@ -968,6 +969,7 @@ class AndroidDevice:
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
         droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
+        self.log.info("Open s4la session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
 
@@ -1103,11 +1105,7 @@ class AndroidDevice:
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
-        droid, ed = self.get_droid()
-        ed.start()
-        if has_adb_log:
-            self.start_adb_logcat()
-        return droid, ed
+        self.start_services(self.skip_sl4a)
 
     def fastboot_wipe(self):
         """Wipe the device in fastboot mode.
@@ -1142,10 +1140,7 @@ class AndroidDevice:
         if result:
             self.log.info("Re-install sl4a")
             self.adb.install("-r /tmp/base.apk")
-        droid, ed = self.get_droid()
-        ed.start()
-        if has_adb_log:
-            self.start_adb_logcat()
+        self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string):
         """Search logcat message with given string.
