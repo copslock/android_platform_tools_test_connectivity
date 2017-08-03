@@ -259,12 +259,22 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="c61eeaf0-af02-46bf-bcec-871e2f9dee71")
-    def test_iot_connection_to_NETGEAR_N900_2G(self):
+    def test_iot_connection_to_WNDR4500v2_AES_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="dcad3474-4022-48bc-8529-07321611b616")
-    def test_iot_connection_to_NETGEAR_N900_5G(self):
+    def test_iot_connection_to_WNDR4500v2_WEP_SHARED128_5G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="3573a880-4542-4dea-9909-aa2f9865a059")
+    def test_iot_connection_to_ARCHER_WEP_OPEN_64_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="9c15c52e-945a-4b9b-bf0e-5bd6293dad1c")
+    def test_iot_connection_to_ARCHER_WEP_OPEN_128_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
