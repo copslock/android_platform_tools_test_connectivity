@@ -928,9 +928,9 @@ def call_mo_setup_teardown(
 def handover_tc(log,
                 anritsu_handle,
                 wait_time=0,
-                timeout=60,
                 s_bts=BtsNumber.BTS1,
-                t_bts=BtsNumber.BTS2):
+                t_bts=BtsNumber.BTS2,
+                timeout=60):
     """ Setup and perform a handover test case in MD8475A
 
     Args:
@@ -943,6 +943,7 @@ def handover_tc(log,
         True for success False for failure
     """
     log.info("Starting HO test case procedure")
+    log.info("Serving BTS = {}, Target BTS = {}".format(s_bts, t_bts))
     time.sleep(wait_time)
     ho_tc = anritsu_handle.get_AnritsuTestCases()
     ho_tc.procedure = TestProcedure.PROCEDURE_HO
@@ -1123,16 +1124,16 @@ def ims_call_ho(log,
                                         ims_virtual_network_id,
                                         ImsCscfStatus.CONNECTED.value):
             raise _CallSequenceException("Phone IMS status is not connected.")
-        log.info(
-            "Wait for {} seconds before handover".format(wait_time_in_volte))
+        log.info("Wait for {} seconds before handover".format(
+            wait_time_in_volte))
         time.sleep(wait_time_in_volte)
 
         # Once VoLTE call is connected, then Handover
         log.info("Starting handover procedure...")
         result = handover_tc(anritsu_handle, BtsNumber.BTS1, BtsNumber.BTS2)
         log.info("Handover procedure ends with result code {}".format(result))
-        log.info(
-            "Wait for {} seconds after handover".format(wait_time_in_volte))
+        log.info("Wait for {} seconds after handover".format(
+            wait_time_in_volte))
         time.sleep(wait_time_in_volte)
 
         # check if the phone stay in call
