@@ -171,8 +171,8 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         finally:
             self.dut.ensure_screen_on()
             self.dut.exit_setup_wizard()
-            if not self.dut.device_password:
-                self.dut.droid.disableDevicePassword()
+            if self.dut.device_password:
+                self.dut.droid.setDevicePassword(self.device_password)
 
 
 """ Tests End """
