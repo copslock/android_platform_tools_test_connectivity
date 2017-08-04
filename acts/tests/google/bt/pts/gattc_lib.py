@@ -20,10 +20,10 @@ GATT Client Libraries
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
-from acts.test_utils.bt.GattEnum import GattCbStrings
-from acts.test_utils.bt.GattEnum import GattCharDesc
-from acts.test_utils.bt.GattEnum import GattDescriptor
-from acts.test_utils.bt.GattEnum import GattTransport
+from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
+from acts.test_utils.bt.bt_constants import gatt_descriptor
+from acts.test_utils.bt.bt_constants import gatt_transport
 from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
 
 import time
@@ -46,16 +46,13 @@ class GattClientLib():
             self.dut,
             self.mac_addr,
             autoconnect,
-            transport=GattTransport.TRANSPORT_LE.value)
+            transport=gatt_transport['le'])
         self.discovered_services_index = None
 
     def connect_over_bredr(self):
         """Perform GATT connection over BREDR"""
         self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
-            self.dut,
-            self.mac_addr,
-            False,
-            transport=GattTransport.TRANSPORT_BREDR.value)
+            self.dut, self.mac_addr, False, transport=gatt_transport['bredr'])
 
     def disconnect(self):
         """Perform GATT disconnect"""
@@ -72,7 +69,7 @@ class GattClientLib():
     def _setup_discovered_services_index(self):
         if not self.discovered_services_index:
             self.dut.droid.gattClientDiscoverServices(self.bluetooth_gatt)
-            expected_event = GattCbStrings.GATT_SERV_DISC.value.format(
+            expected_event = gatt_cb_strings['gatt_serv_disc'].format(
                 self.gatt_callback)
             event = self.dut.ed.pop_event(expected_event, 10)
             self.discovered_services_index = event['data']['ServicesIndex']
@@ -293,7 +290,7 @@ class GattClientLib():
                 self.dut.droid.gattClientWriteDescriptorByInstanceId(
                     self.bluetooth_gatt, self.discovered_services_index,
                     int(instance_id, 16),
-                    GattDescriptor.ENABLE_NOTIFICATION_VALUE.value)))
+                    gatt_descriptor['enable_notification_value'])))
         """
         for i in range(services_count):
             characteristic_uuids = (
@@ -312,7 +309,7 @@ class GattClientLib():
                         self.dut.droid.gattClientDescriptorSetValueByIndex(
                             self.bluetooth_gatt,
                             self.discovered_services_index, i, j, k,
-                            GattDescriptor.ENABLE_NOTIFICATION_VALUE.value)
+                            gatt_descriptor['enable_notification_value'])
                         time.sleep(2)  #Necessary for PTS
                         self.dut.droid.gattClientWriteDescriptorByIndex(
                             self.bluetooth_gatt,
