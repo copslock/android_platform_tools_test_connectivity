@@ -638,10 +638,13 @@ class AndroidDevice:
 
         for i in range(PORT_RETRY_COUNT):
             try:
-                if not self.is_sl4a_running():
-                    self.log.info("Start sl4a apk")
-                    self.start_sl4a()
+                if self.is_sl4a_running():
+                    self.log.info("Stop sl4a apk")
+                    self.stop_sl4a()
                     time.sleep(15)
+                self.log.info("Start sl4a apk")
+                self.start_sl4a()
+                time.sleep(5)
                 droid = self.start_new_session()
                 if handle_event:
                     ed = self.get_dispatcher(droid)
@@ -651,9 +654,6 @@ class AndroidDevice:
                 self.log.warning("get_droid with exception: %s", e)
                 if i == PORT_RETRY_COUNT - 1:
                     raise
-                self.log.info("Stop sl4a apk")
-                self.stop_sl4a()
-                time.sleep(15)
 
     def get_dispatcher(self, droid):
         """Return an EventDispatcher for an sl4a session
@@ -1150,6 +1150,7 @@ class AndroidDevice:
         if result:
             self.log.info("Re-install sl4a")
             self.adb.install("-r /tmp/base.apk")
+            time.sleep(10)
         self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string):
