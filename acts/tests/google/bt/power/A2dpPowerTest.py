@@ -30,7 +30,7 @@ from acts import logger
 from acts.controllers import monsoon
 from acts.keys import Config
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
@@ -154,9 +154,8 @@ class A2dpPowerTest(PowerBaseTest):
             return False
 
         # Verify Bluetooth device is connected
-        self.log.info(
-            "Waiting up to {} seconds for device to reconnect.".format(
-                self.WAIT_TIME))
+        self.log.info("Waiting up to {} seconds for device to reconnect.".
+                      format(self.WAIT_TIME))
         start_time = time.time()
         result = False
         while time.time() < start_time + self.WAIT_TIME:

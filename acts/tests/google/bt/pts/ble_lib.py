@@ -17,12 +17,12 @@
 Ble libraries
 """
 
-from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
-from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
-from acts.test_utils.bt.bt_test_utils import TIMEOUT_SMALL
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.bt.bt_test_utils import adv_fail
-from acts.test_utils.bt.bt_test_utils import adv_succ
+from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_test_utils import advertising_set_on_own_address_read
 from acts.test_utils.bt.bt_test_utils import advertising_set_started
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
@@ -47,7 +47,7 @@ class BleLib():
             adv_succ.format(advertise_callback),
             adv_fail.format(advertise_callback))
         try:
-            event = self.dut.ed.pop_events(regex, 5, TIMEOUT_SMALL)
+            event = self.dut.ed.pop_events(regex, 5, small_timeout)
         except Empty:
             self.dut.log.error("Failed to get success or failed event.")
             return
@@ -64,7 +64,7 @@ class BleLib():
         if line:
             scan_response = bool(line)
         self.dut.droid.bleSetAdvertiseSettingsAdvertiseMode(
-            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+            ble_advertise_settings_modes['low_latency'])
         self.dut.droid.bleSetAdvertiseSettingsIsConnectable(True)
         advertise_callback, advertise_data, advertise_settings = (
             generate_ble_advertise_objects(self.dut.droid))
@@ -144,7 +144,7 @@ class BleLib():
     def start_generic_nonconnectable_advertisement(self, line):
         """Start a nonconnectable LE advertisement"""
         self.dut.droid.bleSetAdvertiseSettingsAdvertiseMode(
-            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
+            ble_advertise_settings_modes['low_latency'])
         self.dut.droid.bleSetAdvertiseSettingsIsConnectable(False)
         advertise_callback, advertise_data, advertise_settings = (
             generate_ble_advertise_objects(self.dut.droid))
