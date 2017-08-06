@@ -1111,7 +1111,7 @@ def initiate_call(log,
                 ) or wait_for_call_offhook_event(log, ad, sub_id, True,
                                                  checking_interval):
                 return True
-        ad.log.error(
+        ad.log.info(
             "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
             " Telephony State:%s", callee_number,
             ad.droid.telecomIsInCall(),
@@ -1119,6 +1119,122 @@ def initiate_call(log,
         return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
+
+
+def dial_phone_number(ad, callee_number):
+    for number in str(callee_number):
+        if number == "#":
+            ad.send_keycode("POUND")
+        elif number == "*":
+            ad.send_keycode("STAR")
+        elif number in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]:
+            ad.send_keycode("%s" % number)
+
+
+def get_call_state_by_adb(ad):
+    return ad.adb.shell("dumpsys telephony.registry | grep mCallState")
+
+
+def check_call_state_connected_by_adb(ad):
+    return "2" in get_call_state_by_adb(ad)
+
+
+def check_call_state_idle_by_adb(ad):
+    return "0" in get_call_state_by_adb(ad)
+
+
+def check_call_state_ring_by_adb(ad):
+    return "1" in get_call_state_by_adb(ad)
+
+
+def get_incoming_call_number_by_adb(ad):
+    output = ad.adb.shell(
+        "dumpsys telephony.registry | grep mCallIncomingNumber")
+    return re.search(r"mCallIncomingNumber=(.*)", output).group(1)
+
+
+def emergency_dialer_call_by_keyevent(ad, callee_number):
+    for i in range(3):
+        if "EmergencyDialer" in ad.get_my_current_focus_window():
+            ad.log.info("EmergencyDialer is the current focus window")
+            break
+        elif i <= 2:
+            ad.adb.shell("am start -a com.android.phone.EmergencyDialer.DIAL")
+            time.sleep(1)
+        else:
+            ad.log.error("Unable to bring up EmergencyDialer")
+            return False
+    ad.log.info("Make a phone call to %s", callee_number)
+    dial_phone_number(ad, callee_number)
+    ad.send_keycode("CALL")
+
+
+def initiate_emergency_dialer_call_by_adb(
+        log,
+        ad,
+        callee_number,
+        timeout=MAX_WAIT_TIME_CALL_INITIATION,
+        checking_interval=5):
+    """Make emergency call by EmergencyDialer.
+
+    Args:
+        ad: Caller android device object.
+        callee_number: Callee phone number.
+        emergency : specify the call is emergency.
+        Optional. Default value is False.
+
+    Returns:
+        result: if phone call is placed successfully.
+    """
+    try:
+        # Make a Call
+        ad.wakeup_screen()
+        ad.log.info("Call %s", callee_number)
+        ad.adb.shell(
+            "am start -a android.intent.action.CALL_EMERGENCY -d tel:%s" %
+            callee_number)
+        ad.log.info("Check call state")
+        # Verify Call State
+        elapsed_time = 0
+        while elapsed_time < timeout:
+            time.sleep(checking_interval)
+            elapsed_time += checking_interval
+            if check_call_state_connected_by_adb(ad):
+                ad.log.info("Call to %s is connected", callee_number)
+                return True
+        ad.log.info("Make call to %s failed", callee_number)
+        return False
+    except Exception as e:
+        ad.log.error("initiate emergency call failed with error %s", e)
+
+
+def hung_up_call_by_adb(ad):
+    """Make emergency call by EmergencyDialer.
+
+    Args:
+        ad: Caller android device object.
+        callee_number: Callee phone number.
+    """
+    ad.log.info("End call by adb")
+    ad.send_keycode("ENDCALL")
+
+
+def dumpsys_telecom_call_info(ad):
+    output = ad.adb.shell("dumpsys telecom")
+    calls = re.findall("Call TC@\d+: {(.*?)}", output, re.DOTALL)
+    calls_info = []
+    for call in calls:
+        call_info = {}
+        for attr in ("endTime", "direction", "isInterrupted",
+                     "callTechnologies", "callTerminationsReason",
+                     "connectionService", "isVedeoCall", "callProperties"):
+            match = re.search(r"%s: (.*)" % attr, call)
+            if match:
+                call_info[attr] = match.group(1)
+        call_info["inCallServices"] = re.findall(r"name: (.*)", call)
+        calls_info.append(call_info)
+    ad.log.debug("calls_info = %s", calls_info)
+    return calls_info
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -1674,7 +1790,7 @@ def _check_file_existance(ad, file_path, expected_file_size=None):
 
 
 def active_file_download_task(log, ad, file_name="5MB"):
-    curl_capable = True
+    ad.curl_capable = False
     if not hasattr(ad, "curl_capable"):
         try:
             out = ad.adb.shell("curl --version")
@@ -1690,15 +1806,15 @@ def active_file_download_task(log, ad, file_name="5MB"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
-    url = "http://download.thinkbroadband.com/" + file_name + ".zip"
+    url = "http://146.148.91.8/download/" + file_name + ".zip"
     file_map_dict = {
         '5MB': 5000000,
         '10MB': 10000000,
         '20MB': 20000000,
         '50MB': 50000000,
+        '100MB': 100000000,
         '200MB': 200000000,
-        '512MB': 512000000,
-        '1GB': 1000000000
+        '512MB': 512000000
     }
     file_size = file_map_dict.get(file_name)
     if not file_size:
@@ -1831,9 +1947,7 @@ def http_file_download_by_curl(ad,
 
 
 def open_url_by_adb(ad, url):
-    for cmd in ("input keyevent KEYCODE_WAKEUP", "input swipe 200 400 200 0",
-                'am start -a android.intent.action.VIEW -d "%s"' % url):
-        ad.adb.shell(cmd)
+    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
 
 
 def http_file_download_by_chrome(ad,
@@ -1859,6 +1973,7 @@ def http_file_download_by_chrome(ad,
     ad.force_stop_apk("com.android.chrome")
     ad.adb.shell("rm %s" % file_path, ignore_status=True)
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
     open_url_by_adb(ad, url)
     elapse_time = 0
@@ -4128,9 +4243,10 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
         if not ad.droid.telecomIsInCall():
             ad.droid.telecomCallNumber("+19523521350")
         for _ in range(10):
-            ad.adb.shell("input keyevent 25")
+            ad.send_keycode("VOLUME_DOWN")
             time.sleep(1)
         ad.droid.telecomEndCall()
+        time.sleep(1)
     except Exception as e:
         ad.log.info("fail to turn down voice call volume %s", e)
 
