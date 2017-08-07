@@ -39,6 +39,8 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -66,12 +68,14 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         super(TelLiveSinglePhoneStressTest, self).setup_class()
         self.dut = self.android_devices[0]
         self.call_server_number = self.user_params.get("call_server_number",
-                                                       "9523521350")
+                                                       "7124325335")
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 3600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 1200))
@@ -143,8 +147,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report(
-                    "checking_crash", begin_time, True)
+                crash_report = self.dut.check_crash_report("checking_crash",
+                                                           begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -186,9 +190,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                        self.call_server_number)
                     self.result_info["Call initiation failure"] += 1
                     failure += 1
-                    self._take_bug_report(
-                        "%s_call_initiation_failure" % self.test_name,
-                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report("%s_call_initiation_failure" %
+                                          self.test_name,
+                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
                     continue
                 elapse_time = 0
                 interval = min(60, duration)
@@ -285,22 +289,28 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
     def data_test(self):
         failure = 0
         total_count = 0
+        tcpdump_pid = None
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
             total_count += 1
+            pull_tcpdump = False
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
+                (tcpdump_pid, tcpdump_file) = \
+                         start_adb_tcpdump(self.dut, self.test_name, mask="all")
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
                     self.result_info["%s file download failure" %
                                      file_name] += 1
                     failure += 1
-                    #self._take_bug_report("%s_download_failure" % self.test_name,
-                    #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    pull_tcpdump = True
+                    self._take_bug_report("%s_download_failure" %
+                                          self.test_name,
+                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
                     self.dut.droid.goToSleepNow()
                     time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
@@ -312,6 +322,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.finishing_time = time.time()
                 raise
+            finally:
+                if tcpdump_pid is not None:
+                    stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
+                                     pull_tcpdump)
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
