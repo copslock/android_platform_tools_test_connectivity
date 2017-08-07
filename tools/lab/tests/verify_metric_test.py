@@ -30,7 +30,9 @@ class VerifyMetricTest(unittest.TestCase):
         expected_result = {
             verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 1,
             verify_metric.VerifyMetric.UNAUTHORIZED: [],
+            verify_metric.VerifyMetric.RECOVERY: [],
             verify_metric.VerifyMetric.OFFLINE: ['00serial01'],
+            verify_metric.VerifyMetric.QUESTION: [],
             verify_metric.VerifyMetric.DEVICE: []
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
@@ -44,7 +46,9 @@ class VerifyMetricTest(unittest.TestCase):
         expected_result = {
             verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 1,
             verify_metric.VerifyMetric.UNAUTHORIZED: ['00serial01'],
+            verify_metric.VerifyMetric.RECOVERY: [],
             verify_metric.VerifyMetric.OFFLINE: [],
+            verify_metric.VerifyMetric.QUESTION: [],
             verify_metric.VerifyMetric.DEVICE: []
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
@@ -58,7 +62,9 @@ class VerifyMetricTest(unittest.TestCase):
         expected_result = {
             verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 0,
             verify_metric.VerifyMetric.UNAUTHORIZED: [],
+            verify_metric.VerifyMetric.RECOVERY: [],
             verify_metric.VerifyMetric.OFFLINE: [],
+            verify_metric.VerifyMetric.QUESTION: [],
             verify_metric.VerifyMetric.DEVICE: ['00serial01']
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
@@ -74,6 +80,8 @@ class VerifyMetricTest(unittest.TestCase):
         expected_result = {
             verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 2,
             verify_metric.VerifyMetric.UNAUTHORIZED: ['01serial00'],
+            verify_metric.VerifyMetric.RECOVERY: [],
+            verify_metric.VerifyMetric.QUESTION: [],
             verify_metric.VerifyMetric.OFFLINE: ['00serial01'],
             verify_metric.VerifyMetric.DEVICE: ['0regan0']
         }
@@ -89,7 +97,25 @@ class VerifyMetricTest(unittest.TestCase):
         expected_result = {
             verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 0,
             verify_metric.VerifyMetric.UNAUTHORIZED: [],
+            verify_metric.VerifyMetric.RECOVERY: [],
             verify_metric.VerifyMetric.OFFLINE: [],
+            verify_metric.VerifyMetric.QUESTION: [],
+            verify_metric.VerifyMetric.DEVICE: []
+        }
+        self.assertEquals(metric_obj.gather_metric(), expected_result)
+
+    def test_gather_device_question(self):
+        mock_output = '00serial01\t???'
+        FAKE_RESULT = fake.FakeResult(stdout=mock_output)
+        fake_shell = fake.MockShellCommand(fake_result=FAKE_RESULT)
+        metric_obj = verify_metric.VerifyMetric(shell=fake_shell)
+
+        expected_result = {
+            verify_metric.VerifyMetric.TOTAL_UNHEALTHY: 1,
+            verify_metric.VerifyMetric.UNAUTHORIZED: [],
+            verify_metric.VerifyMetric.RECOVERY: [],
+            verify_metric.VerifyMetric.OFFLINE: [],
+            verify_metric.VerifyMetric.QUESTION: ['00serial01'],
             verify_metric.VerifyMetric.DEVICE: []
         }
         self.assertEquals(metric_obj.gather_metric(), expected_result)
