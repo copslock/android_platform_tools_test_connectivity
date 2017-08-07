@@ -56,7 +56,12 @@ dict:
     devices: a list of Device objects, each with name of device, number of bytes
     transferred, and the usb bus number/device id.
 * verify:
-    device serial number as key: device status as value
+    unauthorized: list of phone sn's that are unauthorized
+    offline: list of phone sn's that are offline
+    recovery: list of phone sn's that are in recovery mode
+    question: list of phone sn's in ??? mode
+    device: list of phone sn's that are in device mode
+    total: total number of offline, recovery, question or unauthorized devices
 * version:
     fastboot_version: which version of fastboot (string)
     adb_version: which version of adb (string)
