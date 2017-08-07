@@ -22,6 +22,8 @@ class VerifyMetric(Metric):
     COMMAND = r"adb devices | sed '1d;$d'"
     UNAUTHORIZED = 'unauthorized'
     OFFLINE = 'offline'
+    RECOVERY = 'recovery'
+    QUESTION = 'question'
     DEVICE = 'device'
     TOTAL_UNHEALTHY = 'total_unhealthy'
 
@@ -32,11 +34,16 @@ class VerifyMetric(Metric):
             A dictionary with the fields:
             unauthorized: list of phone sn's that are unauthorized
             offline: list of phone sn's that are offline
+            recovery: list of phone sn's that are in recovery mode
+            question: list of phone sn's in ??? mode
             device: list of phone sn's that are in device mode
-            total: total number of offline or unauthorized devices
+            total: total number of offline, recovery, question or unauthorized
+                devices
         """
         offline_list = list()
         unauth_list = list()
+        recovery_list = list()
+        question_list = list()
         device_list = list()
 
         # Delete first and last line of output of adb.
@@ -55,12 +62,25 @@ class VerifyMetric(Metric):
                     device_list.append(phone_sn)
                 elif phone_state == 'unauthorized':
                     unauth_list.append(phone_sn)
+                elif phone_state == 'recovery':
+                    recovery_list.append(phone_sn)
+                elif '?' in phone_state:
+                    question_list.append(phone_sn)
                 elif phone_state == 'offline':
                     offline_list.append(phone_sn)
 
         return {
-            self.UNAUTHORIZED: unauth_list,
-            self.OFFLINE: offline_list,
-            self.DEVICE: device_list,
-            self.TOTAL_UNHEALTHY: len(unauth_list) + len(offline_list)
+            self.UNAUTHORIZED:
+            unauth_list,
+            self.OFFLINE:
+            offline_list,
+            self.RECOVERY:
+            recovery_list,
+            self.QUESTION:
+            question_list,
+            self.DEVICE:
+            device_list,
+            self.TOTAL_UNHEALTHY:
+            len(unauth_list) + len(offline_list) + len(recovery_list) +
+            len(question_list)
         }
