@@ -22,9 +22,11 @@ import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
+from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.tel.tel_test_utils import STORY_LINE
 
 
 class TelLiveNoSimTest(TelephonyBaseTest):
@@ -45,20 +47,24 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             self.dut.start_services()
 
     def change_emergency_number_list(self):
-        cmd = "setprop ril.ecclist 611"
-        self.dut.log.info("Change emergency number list by %s", cmd)
-        self.dut.adb.shell(cmd)
+        existing = self.dut.adb.shell("getprop ril.ecclist")
+        if STORY_LINE in existing: return
+        emergency_numbers = "%s,%s" % (existing, STORY_LINE)
+        self.dut.log.info("Change emergency numbes to %s", emergency_numbers)
+        self.dut.adb.shell("setprop ril.ecclist %s" % emergency_numbers)
 
     def fake_emergency_call_test(self, by_emergency_dialer=True):
         self.change_emergency_number_list()
+        time.sleep(1)
         call_numbers = len(dumpsys_telecom_call_info(self.dut))
         if by_emergency_dialer:
             dialing_func = initiate_emergency_dialer_call_by_adb
         else:
             dialing_func = initiate_call
-        if dialing_func(self.log, self.dut, "611", timeout=10):
+        if dialing_func(self.log, self.dut, STORY_LINE, timeout=10):
+            hung_up_call_by_adb(self.dut)
             self.dut.log.error(
-                "calling to fake emergency number 611 should fail")
+                "calling to the fake emergency number should fail")
         calls_info = dumpsys_telecom_call_info(self.dut)
         if len(calls_info) <= call_numbers:
             self.dut.log.error("New call is not in sysdump telecom")
@@ -142,10 +148,10 @@ class TelLiveNoSimTest(TelephonyBaseTest):
                 return False
         finally:
             if not self.dut.ensure_screen_on():
-                self.dut.log.error("User window cannot come up")
+                self.dut.log.error("User screen cannot come up")
                 return False
             self.dut.start_services(self.dut.skip_sl4a)
-            if not self.dut.device_password and getattr(self.dut, "droid"):
+            if not self.dut.device_password:
                 self.dut.droid.disableDevicePassword()
 
     @test_tracker_info(uuid="50f8b3d9-b126-4419-b5e5-b37b850deb8e")
@@ -172,7 +178,7 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             self.dut.ensure_screen_on()
             self.dut.exit_setup_wizard()
             if self.dut.device_password:
-                self.dut.droid.setDevicePassword(self.device_password)
+                self.dut.droid.setDevicePassword(self.dut.device_password)
 
 
 """ Tests End """
