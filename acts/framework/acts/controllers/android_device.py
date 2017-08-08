@@ -638,7 +638,7 @@ class AndroidDevice:
 
         for i in range(PORT_RETRY_COUNT):
             try:
-                if self.is_sl4a_running():
+                if self.is_rogue_sl4a_running():
                     self.log.info("Stop sl4a apk")
                     self.stop_sl4a()
                     time.sleep(15)
@@ -654,6 +654,68 @@ class AndroidDevice:
                 self.log.warning("get_droid with exception: %s", e)
                 if i == PORT_RETRY_COUNT - 1:
                     raise
+
+    def is_rogue_sl4a_running(self):
+        """Returns true if SL4A was started by a process other than ACTS.
+
+        If SL4A is started by a process other than ACTS, the port will be set to
+        something other than sl4a_client.DEFAULT_DEVICE_SIDE_PORT. This causes
+        SL4A to be up and running, but nearly impossible to talk to.
+        """
+        sl4a_pid = self.get_package_pid(SL4A_APK_NAME)
+        if sl4a_pid is not None:
+            sl4a_port_hex = '{0:02x}'.format(
+                sl4a_client.DEFAULT_DEVICE_SIDE_PORT).upper()
+            port_is_open = (
+                # Get the tcp info
+                'cat /proc/%s/net/tcp | '
+                # Remove the space padding
+                'tr -s " " | '
+                # Grab the 4th column (rem_address)
+                'cut -d " " -f 4 | '
+                # Grab the port from that address
+                'cut -d ":" -f 2 | '
+                # Find the port we are looking for
+                'grep %s')
+            # If the resulting string from the command is empty, SL4A does not
+            # have a port open for ACTS to listen to.
+            return not bool(
+                self.adb.shell(port_is_open % (sl4a_pid, sl4a_port_hex)))
+        return False
+
+    def get_package_pid(self, package_name):
+        """Gets the pid for a given package. Returns None if not running.
+        Args:
+            package_name: The name of the package.
+        Returns:
+            The first pid found under a given package name. None if no process
+            was found running the package.
+        Raises:
+            AndroidDeviceError if the output of the phone's process list was
+            in an unexpected format.
+        """
+        for cmd in ("ps -A", "ps"):
+            try:
+                out = self.adb.shell(
+                    '%s | grep "S %s"' % (cmd, package_name),
+                    ignore_status=True)
+                if package_name not in out:
+                    continue
+                try:
+                    pid = int(out.split()[1])
+                    self.log.info('apk %s is has pid %s.', package_name, pid)
+                    return pid
+                except (IndexError, ValueError) as e:
+                    # Possible ValueError from string to int cast.
+                    # Possible IndexError from split.
+                    self.log.warn('Command \"%s\" returned output line: '
+                                  '\"%s\".\nError: %s', cmd, out, e)
+            except Exception as e:
+                self.log.warn(
+                    'Device fails to check if %s running with \"%s\"\n'
+                    'Exception %s', package_name, cmd, e)
+        self.log.debug("apk %s is not running", package_name)
+        return None
 
     def get_dispatcher(self, droid):
         """Return an EventDispatcher for an sl4a session
@@ -804,7 +866,7 @@ class AndroidDevice:
         """Check if the given apk is running.
 
         Args:
-        package_name: Name of the package, e.g., com.android.phone.
+            package_name: Name of the package, e.g., com.android.phone.
 
         Returns:
         True if package is installed. False otherwise.
@@ -1128,7 +1190,7 @@ class AndroidDevice:
         Re-intall and start an sl4a session.
 
         """
-        #Pull sl4a apk from device
+        # Pull sl4a apk from device
         out = self.adb.shell("pm path com.googlecode.android_scripting")
         result = re.search(r"package:(.*)", out)
         if not result:

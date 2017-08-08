@@ -31,7 +31,6 @@ install_requires = [
     'pyserial',
     'shellescape',
     'protobuf',
-    'bokeh',
 ]
 
 if sys.version_info < (3, ):
@@ -121,7 +120,7 @@ class ActsUninstall(cmd.Command):
     def run(self):
         """Entry point for the uninstaller."""
         # Remove the working directory from the python path. This ensures that
-        # Source code is not accidently tarageted.
+        # Source code is not accidentally targeted.
         our_dir = os.path.abspath(os.path.dirname(__file__))
         if our_dir in sys.path:
             sys.path.remove(our_dir)
