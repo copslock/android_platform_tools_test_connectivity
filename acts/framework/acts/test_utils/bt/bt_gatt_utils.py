@@ -40,7 +40,7 @@ class GattTestUtilsError(Exception):
 def setup_gatt_connection(cen_ad,
                           mac_address,
                           autoconnect,
-                          transport=GattTransport.TRANSPORT_AUTO.value,
+                          transport=gatt_transport['auto'],
                           opportunistic=False):
     gatt_callback = cen_ad.droid.gattCreateGattCallback()
     log.info("Gatt Connect to mac address {}.".format(mac_address))
