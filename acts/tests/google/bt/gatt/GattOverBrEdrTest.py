@@ -18,6 +18,7 @@ Test suite for GATT over BR/EDR.
 """
 
 import time
+from queue import Empty
 
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
