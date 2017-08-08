@@ -57,7 +57,7 @@ class Sl4aApiError(Sl4aException):
 
 
 class Sl4aProtocolError(Sl4aException):
-    """Raised when there is some error in exchanging data with server on device."""
+    """Raised when there an error in exchanging data with server on device."""
     NO_RESPONSE_FROM_HANDSHAKE = "No response from handshake."
     NO_RESPONSE_FROM_SERVER = "No response from server."
     MISMATCHED_API_ID = "Mismatched API id."
