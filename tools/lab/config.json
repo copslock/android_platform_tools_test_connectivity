@@ -45,6 +45,12 @@
       "compare": "EQUALS"
     }
   },
+  "kernel_version": {
+    "kernel_release": {
+      "constant": "3.19",
+      "compare": "STARTS_WITH"
+    }
+  },
   "zombie": {
     "num_adb_zombies": {
       "constant": 0,

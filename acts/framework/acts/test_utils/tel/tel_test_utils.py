@@ -152,6 +152,7 @@ WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
 WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
 WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
 log = logging
+STORY_LINE = "+19523521350"
 
 
 class _CallSequenceException(Exception):
@@ -1222,12 +1223,13 @@ def hung_up_call_by_adb(ad):
 
 
 def dumpsys_telecom_call_info(ad):
+    """ Get call information by dumpsys telecom. """
     output = ad.adb.shell("dumpsys telecom")
     calls = re.findall("Call TC@\d+: {(.*?)}", output, re.DOTALL)
     calls_info = []
     for call in calls:
         call_info = {}
-        for attr in ("endTime", "direction", "isInterrupted",
+        for attr in ("startTime", "endTime", "direction", "isInterrupted",
                      "callTechnologies", "callTerminationsReason",
                      "connectionService", "isVedeoCall", "callProperties"):
             match = re.search(r"%s: (.*)" % attr, call)
@@ -1792,7 +1794,6 @@ def _check_file_existance(ad, file_path, expected_file_size=None):
 
 
 def active_file_download_task(log, ad, file_name="5MB"):
-    ad.curl_capable = False
     if not hasattr(ad, "curl_capable"):
         try:
             out = ad.adb.shell("curl --version")
@@ -4245,7 +4246,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
         ad.adb.shell("settings put system %s 0" % attr)
     try:
         if not ad.droid.telecomIsInCall():
-            ad.droid.telecomCallNumber("+19523521350")
+            ad.droid.telecomCallNumber(STORY_LINE)
         for _ in range(10):
             ad.send_keycode("VOLUME_DOWN")
             time.sleep(1)
