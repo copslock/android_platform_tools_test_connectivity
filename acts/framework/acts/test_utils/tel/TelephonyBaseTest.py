@@ -160,7 +160,6 @@ class TelephonyBaseTest(BaseTestClass):
                 if not os.path.isfile(sim_conf_file):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
-                    return False
 
         setattr(self, "diag_logger",
                 self.register_controller(
