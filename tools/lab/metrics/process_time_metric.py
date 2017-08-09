@@ -89,7 +89,7 @@ class ProcessTimeMetric(Metric):
           A list of PID strings
         """
         # Get ids of processes with 'adb' or 'fastboot' in name
-        adb_result = self._shell.get_pids('adb')
-        fastboot_result = self._shell.get_pids('fastboot')
+        adb_result = self._shell.get_command_pids('adb')
+        fastboot_result = self._shell.get_command_pids('fastboot')
         # concatenate two generator objects, return as list
         return list(itertools.chain(adb_result, fastboot_result))
