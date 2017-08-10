@@ -51,7 +51,7 @@ MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
 MAX_WAIT_TIME_CALL_IDLE_EVENT = 60
 
 # Max time to wait after initiating a call for telecom to report in-call
-MAX_WAIT_TIME_CALL_INITIATION = 25
+MAX_WAIT_TIME_CALL_INITIATION = 90
 
 # Max time to wait after toggle airplane mode and before
 # get expected event
