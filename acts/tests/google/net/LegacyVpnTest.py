@@ -57,6 +57,9 @@ class LegacyVpnTest(base_test.BaseTestClass):
         """
         wifi_test_utils.reset_wifi(self.dut)
 
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+
     def download_load_certs(self, vpn_type, vpn_server_addr, ipsec_server_type):
         """ Download the certificates from VPN server and push to sdcard of DUT
 
@@ -119,18 +122,10 @@ class LegacyVpnTest(base_test.BaseTestClass):
             Args:
                 connected_vpn_info which specifies the VPN connection status
         """
-        try:
-            ping_result = self.dut.adb.shell("ping -c 3 -W 2 %s"
-                                             % self.vpn_verify_address)
-            if not connected_vpn_info and "100% packet loss" \
-                not in "%s" % ping_result:
-                  asserts.fail("VPN is disconnected.\
-                               Ping to the internal IP expected to fail")
-        except adb.AdbError as ping_error:
-            ping_error = "%s" % ping_error
-            if connected_vpn_info and "100% packet loss" in ping_error:
-                asserts.fail("Ping to the internal IP failed.\
-                             Expected to pass as VPN is connected")
+        pkt_loss = "100% packet loss"
+        ping_result = self.dut.adb.shell("ping -c 3 -W 2 %s"
+                                         % self.vpn_verify_address)
+        return pkt_loss not in ping_result
 
     def legacy_vpn_connection_test_logic(self, vpn_profile):
         """ Test logic for each legacy VPN connection
@@ -147,6 +142,9 @@ class LegacyVpnTest(base_test.BaseTestClass):
             Args:
                 VpnProfileType (1 of the 6 types supported by Android)
         """
+        # Wait for sometime so that VPN server flushes all interfaces and
+        # connections after graceful termination
+        time.sleep(10)
         self.dut.adb.shell("ip xfrm state flush")
         logging.info("Connecting to: %s", vpn_profile)
         self.dut.droid.vpnStartLegacyVpn(vpn_profile)
@@ -156,18 +154,20 @@ class LegacyVpnTest(base_test.BaseTestClass):
                              connectivity_const.VPN_STATE_CONNECTED,
                              "Unable to establish VPN connection for %s"
                              % vpn_profile)
-        self.verify_ping_to_vpn_ip(connected_vpn_info)
+        ping_result = self.verify_ping_to_vpn_ip(connected_vpn_info)
         ip_xfrm_state = self.dut.adb.shell("ip xfrm state")
         match_obj = re.search(r'hmac(.*)', "%s" % ip_xfrm_state)
         if match_obj:
             ip_xfrm_state = format(match_obj.group(0)).split()
             self.log.info("HMAC for ESP is %s " % ip_xfrm_state[0])
         self.dut.droid.vpnStopLegacyVpn()
+        asserts.assert_true(ping_result,
+                            "Ping to the internal IP failed. "
+                            "Expected to pass as VPN is connected")
         connected_vpn_info = self.dut.droid.vpnGetLegacyVpnInfo()
         asserts.assert_true(not connected_vpn_info,
                             "Unable to terminate VPN connection for %s"
                             % vpn_profile)
-        self.verify_ping_to_vpn_ip(connected_vpn_info)
 
     """ Test Cases """
     @test_tracker_info(uuid="d2ac5a65-41fb-48de-a0a9-37e589b5456b")
