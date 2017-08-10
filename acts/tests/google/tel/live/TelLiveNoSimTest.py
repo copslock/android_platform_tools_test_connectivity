@@ -36,6 +36,8 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.dut = self.android_devices[0]
+        self.fake_emergency_number = self.user_params.get(
+            "fake_emergency_number", STORY_LINE.strip("+"))
 
     def teardown_class(self):
         super(TelephonyBaseTest, self).teardown_class()
@@ -48,8 +50,8 @@ class TelLiveNoSimTest(TelephonyBaseTest):
 
     def change_emergency_number_list(self):
         existing = self.dut.adb.shell("getprop ril.ecclist")
-        if STORY_LINE in existing: return
-        emergency_numbers = "%s,%s" % (existing, STORY_LINE)
+        if self.fake_emergency_number in existing: return
+        emergency_numbers = "%s,%s" % (existing, self.fake_emergency_number)
         self.dut.log.info("Change emergency numbes to %s", emergency_numbers)
         self.dut.adb.shell("setprop ril.ecclist %s" % emergency_numbers)
 
@@ -61,7 +63,8 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             dialing_func = initiate_emergency_dialer_call_by_adb
         else:
             dialing_func = initiate_call
-        if dialing_func(self.log, self.dut, STORY_LINE, timeout=10):
+        if dialing_func(
+                self.log, self.dut, self.fake_emergency_number, timeout=10):
             hung_up_call_by_adb(self.dut)
             self.dut.log.error(
                 "calling to the fake emergency number should fail")
@@ -119,10 +122,14 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        toggle_airplane_mode_by_adb(self.log, self.dut, True)
-        if self.dut.is_setupwizard_on():
-            self.dut.exit_setup_wizard()
-        return self.fake_emergency_call_test()
+        try:
+            toggle_airplane_mode_by_adb(self.log, self.dut, True)
+            if self.fake_emergency_call_test():
+                return True
+            else:
+                return False
+        finally:
+            toggle_airplane_mode_by_adb(self.log, self.dut, False)
 
     @test_tracker_info(uuid="34068bc8-bfa0-4c7b-9450-e189a0b93c8a")
     @TelephonyBaseTest.tel_test_wrap
@@ -147,6 +154,38 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             else:
                 return False
         finally:
+            if not self.dut.ensure_screen_on():
+                self.dut.log.error("User screen cannot come up")
+                return False
+            self.dut.start_services(self.dut.skip_sl4a)
+            if not self.dut.device_password:
+                self.dut.droid.disableDevicePassword()
+
+    @test_tracker_info(uuid="1ef97f8a-eb3d-45b7-b947-ac409bb70587")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_in_screen_lock_apm(self):
+        """Test emergency call with emergency dialer in screen lock phase.
+
+        Enable device password and then reboot upto password query window.
+        Change system emergency number list to "611".
+        Use the emergency dialer to call "611".
+        Verify DUT has in call activity.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        try:
+            toggle_airplane_mode_by_adb(self.log, self.dut, True)
+            if not self.dut.device_password and getattr(self.dut, "droid"):
+                self.dut.droid.setDevicePassword("1111")
+            self.dut.reboot(stop_at_lock_screen=True)
+            if self.fake_emergency_call_test():
+                return True
+            else:
+                return False
+        finally:
+            toggle_airplane_mode_by_adb(self.log, self.dut, False)
             if not self.dut.ensure_screen_on():
                 self.dut.log.error("User screen cannot come up")
                 return False
