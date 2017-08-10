@@ -1193,6 +1193,7 @@ def initiate_emergency_dialer_call_by_adb(
         # Make a Call
         ad.wakeup_screen()
         ad.log.info("Call %s", callee_number)
+        ad.adb.shell("am start -a com.android.phone.EmergencyDialer.DIAL")
         ad.adb.shell(
             "am start -a android.intent.action.CALL_EMERGENCY -d tel:%s" %
             callee_number)
