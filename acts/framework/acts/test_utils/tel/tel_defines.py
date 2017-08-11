@@ -53,6 +53,9 @@ MAX_WAIT_TIME_CALL_IDLE_EVENT = 60
 # Max time to wait after initiating a call for telecom to report in-call
 MAX_WAIT_TIME_CALL_INITIATION = 90
 
+# Time to wait after change Mode Pref for Stress Test
+WAIT_TIME_AFTER_MODE_CHANGE = 60
+
 # Max time to wait after toggle airplane mode and before
 # get expected event
 MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
