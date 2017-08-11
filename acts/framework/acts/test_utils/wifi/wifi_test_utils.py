@@ -36,13 +36,6 @@ DEFAULT_TIMEOUT = 10
 # change.
 SHORT_TIMEOUT = 30
 
-# The currently supported devices that existed before release
-#TODO: (navtejsingh) Need to clean up the below lists going forward
-K_DEVICES = ["hammerhead", "razor", "razorg"]
-L_DEVICES = ["shamu", "ryu"]
-L_TAP_DEVICES = ["volantis", "volantisg"]
-M_DEVICES = ["angler"]
-
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -391,30 +384,10 @@ class WifiChannelUS(WifiChannelBase):
                         5320, 5520, 5560, 5700, 5745, 5805]
 
     def __init__(self, model=None):
-        if model and utils.trim_model_name(model) in K_DEVICES:
-            self.DFS_5G_FREQUENCIES = []
-            self.ALL_5G_FREQUENCIES = self.NONE_DFS_5G_FREQUENCIES
-            self.MIX_CHANNEL_SCAN = [2412, 2437, 2462, 5180, 5200, 5240, 5745,
-                                     5765]
-        elif model and utils.trim_model_name(model) in L_DEVICES:
-            self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
-                                       5540, 5560, 5580, 5660, 5680, 5700]
-            self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
-        elif model and utils.trim_model_name(model) in L_TAP_DEVICES:
-            self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
-                                       5540, 5560, 5580, 5660, 5680, 5700,
-                                       5720]
-            self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
-        elif model and utils.trim_model_name(model) in M_DEVICES:
-            self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
-                                       5540, 5560, 5580, 5600, 5620, 5640,
-                                       5660, 5680, 5700]
-            self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
-        else:
-            self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
-                                       5540, 5560, 5580, 5600, 5620, 5640,
-                                       5660, 5680, 5700, 5720]
-            self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
+        self.DFS_5G_FREQUENCIES = [5260, 5280, 5300, 5320, 5500, 5520,
+                                   5540, 5560, 5580, 5600, 5620, 5640,
+                                   5660, 5680, 5700, 5720]
+        self.ALL_5G_FREQUENCIES = self.DFS_5G_FREQUENCIES + self.NONE_DFS_5G_FREQUENCIES
 
 class WifiReferenceNetworks:
     """ Class to parse and return networks of different band and
