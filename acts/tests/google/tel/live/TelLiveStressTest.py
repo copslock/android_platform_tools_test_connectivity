@@ -24,6 +24,14 @@ from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
@@ -36,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -47,6 +56,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
@@ -65,9 +75,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.helper = self.android_devices[1]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
@@ -181,6 +193,24 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("Call setup and teardown succeed.")
         return True
 
+    def _make_volte_call(self, ads):
+        self.result_info["Total Calls"] += 1
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=ads[0],
+                verify_caller_func=is_phone_in_call_volte,
+                verify_callee_func=None,
+                wait_time_in_call=random.randrange(
+                    self.min_phone_call_duration,
+                    self.max_phone_call_duration)):
+            self.log.error("Call setup and teardown failed.")
+            self.result_info["Call Failure"] += 1
+            return False
+        self.log.info("Call setup and teardown succeed.")
+        return True
+
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
@@ -189,8 +219,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report(
-                    "checking_crash", begin_time, True)
+                crash_report = self.dut.check_crash_report("checking_crash",
+                                                           begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -237,6 +267,56 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
             return "Call test failure: %s/%s" % (failure, total_count)
+        else:
+            return ""
+
+    def volte_modechange_volte_test(self):
+        failure = 0
+        total_count = 0
+        sub_id = self.dut.droid.subscriptionGetDefaultSubId()
+        while time.time() < self.finishing_time:
+            try:
+                ads = [self.dut, self.helper]
+                total_count += 1
+                if not self._make_volte_call(ads):
+                    failure += 1
+                    self._take_bug_report("%s_call_failure" % self.test_name,
+                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+
+                # ModePref change to non-LTE
+                network_preference_list = [
+                    NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
+                    NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA,
+                    NETWORK_MODE_GSM_ONLY
+                ]
+                network_preference = random.choice(network_preference_list)
+                set_preferred_network_mode_pref(ads[0].log, ads[0], sub_id,
+                                                network_preference)
+                time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
+                self.dut.log.info("Current Voice RAT is %s",
+                                  get_current_voice_rat(self.log, self.dut))
+
+                # ModePref change back to with LTE
+                set_preferred_network_mode_pref(
+                    ads[0].log, ads[0], sub_id,
+                    NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA)
+                time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
+                self.dut.log.info("Current Voice RAT is %s",
+                                  get_current_voice_rat(self.log, self.dut))
+
+            except IGNORE_EXCEPTIONS as e:
+                self.log.error("Exception error %s", str(e))
+                self.result_info["Exception Errors"] += 1
+                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                    self.finishing_time = time.time()
+                    raise
+            except Exception as e:
+                self.finishing_time = time.time()
+                raise
+            self.dut.log.info("VoLTE test failure: %s/%s", failure,
+                              total_count)
+        if failure:
+            return "VoLTE test failure: %s/%s" % (failure, total_count)
         else:
             return ""
 
@@ -324,6 +404,22 @@ class TelLiveStressTest(TelephonyBaseTest):
             fail(error_message)
         return True
 
+    def parallel_volte_tests(self, setup_func=None):
+        if setup_func and not setup_func():
+            self.log.error("Test setup %s failed", setup_func.__name__)
+            return False
+        self.result_info = collections.defaultdict(int)
+        self.finishing_time = time.time() + self.max_run_time
+        results = run_multithread_func(
+            self.log, [(self.volte_modechange_volte_test, []),
+                       (self.message_test, []), (self.crash_check_test, [])])
+        self.log.info(dict(self.result_info))
+        error_message = " ".join(results).strip()
+        if error_message:
+            self.log.error(error_message)
+            fail(error_message)
+        return True
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
@@ -361,5 +457,12 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_call_2g_parallel_stress(self):
         """ 2G call stress test"""
         return self.parallel_tests(setup_func=self._setup_2g)
+
+    @test_tracker_info(uuid="af580fca-fea6-4ca5-b981-b8c710302d37")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_volte_modeprefchange_parallel_stress(self):
+        """ VoLTE Mode Pref call stress test"""
+        return self.parallel_volte_tests(
+            setup_func=self._setup_lte_volte_enabled)
 
     """ Tests End """
