@@ -91,6 +91,38 @@ class ShellCommand(object):
         except job.Error:
             return False
 
+    def get_command_pids(self, identifier):
+        """Gets the pids of a program, based only upon the starting command
+
+        Searches for a program with a specific name and grabs the pids for all
+        programs that match only the command that started it. The arguments of
+        the command are ignored.
+
+        Args:
+          identifier: The search term that identifies the program.
+
+        Returns:
+          An array of ints of all pids that matched the identifier, or None if
+          no pids were found.
+
+        Raises:
+            StopIteration upon unsuccessful run command.
+        """
+        try:
+            result = self.run('ps -C %s --no-heading -o pid:1' % identifier)
+        except job.Error:
+            raise StopIteration
+
+        # Output looks like pids on separate lines:
+        # 1245
+        # 5001
+        pids = result.stdout.splitlines()
+
+        if pids:
+            return [int(pid) for pid in result.stdout.splitlines()]
+        else:
+            return None
+
     def get_pids(self, identifier):
         """Gets the pids of a program.
 
