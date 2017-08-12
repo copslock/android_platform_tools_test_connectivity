@@ -729,6 +729,12 @@ class MD8475A(object):
                             COMMAND_COMPLETE_WAIT_TIME))
         if error:  # Try again if first set SIMMODEL fails
             time.sleep(3)
+            if "WLAN" in sim_model:
+                new_sim_model = sim_model[:-5]
+                error = int(
+                    self.send_query("SIMMODEL %s;ERROR?" % new_sim_model,
+                                    COMMAND_COMPLETE_WAIT_TIME))
+                time.sleep(3)
             error = int(
                 self.send_query("SIMMODEL %s;ERROR?" % sim_model,
                                 COMMAND_COMPLETE_WAIT_TIME))
@@ -840,8 +846,8 @@ class MD8475A(object):
         for _ in range(registration_check_iterations):
             waiting_time = 0
             while waiting_time <= time_to_wait:
-                callstat = self.send_query("CALLSTAT? BTS{}".format(
-                    bts)).split(",")
+                callstat = self.send_query(
+                    "CALLSTAT? BTS{}".format(bts)).split(",")
                 if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
                     break
                 time.sleep(sleep_interval)
