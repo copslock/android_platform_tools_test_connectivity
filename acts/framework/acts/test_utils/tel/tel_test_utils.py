@@ -1193,6 +1193,7 @@ def initiate_emergency_dialer_call_by_adb(
         # Make a Call
         ad.wakeup_screen()
         ad.log.info("Call %s", callee_number)
+        ad.adb.shell("am start -a com.android.phone.EmergencyDialer.DIAL")
         ad.adb.shell(
             "am start -a android.intent.action.CALL_EMERGENCY -d tel:%s" %
             callee_number)
@@ -4256,6 +4257,24 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
         ad.log.info("fail to turn down voice call volume %s", e)
 
     return silent_mode == ad.droid.checkRingerSilentMode()
+
+
+def set_preferred_network_mode_pref(log, ad, sub_id, network_preference):
+    """Set Preferred Network Mode for Sub_id
+    Args:
+        log: Log object.
+        ad: Android device object.
+        sub_id: Subscription ID.
+        network_preference: Network Mode Type
+    """
+    ad.log.info("Setting ModePref to %s for Sub %s", network_preference,
+                sub_id)
+    if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+            network_preference, sub_id):
+        ad.log.error("Set sub_id %s PreferredNetworkType %s failed", sub_id,
+                     network_preference)
+        return False
+    return True
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
