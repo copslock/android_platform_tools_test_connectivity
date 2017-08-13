@@ -556,22 +556,15 @@ class WifiManagerTest(WifiBaseTest):
                    " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
 
-    @test_tracker_info(uuid="117b1d1c-963d-40f1-bf50-7cbc8b5e1c69")
-    @acts.signals.generated_test
-    def test_config_store(self):
-        params = list(
-            itertools.product([self.wpapsk_2g, self.wpapsk_5g],
-                              self.android_devices))
+    @test_tracker_info(uuid="81eb7527-4c92-4422-897a-6b5f6445e84a")
+    def test_config_store_with_wpapsk_2g(self):
+        self.connect_to_wifi_network_toggle_wifi_and_run_iperf(
+            (self.wpapsk_2g, self.dut))
 
-        def name_gen(p):
-            return "test_connection_to-%s-for_config_store" % p[0][
-                WifiEnums.SSID_KEY]
-
-        failed = self.run_generated_testcases(
-            self.connect_to_wifi_network_toggle_wifi_and_run_iperf,
-            params,
-            name_func=name_gen)
-        asserts.assert_false(failed, "Failed ones: {}".format(failed))
+    @test_tracker_info(uuid="8457903d-cb7e-4c89-bcea-7f59585ea6e0")
+    def test_config_store_with_wpapsk_5g(self):
+        self.connect_to_wifi_network_toggle_wifi_and_run_iperf(
+            (self.wpapsk_5g, self.dut))
 
     @test_tracker_info(uuid="b9fbc13a-47b4-4f64-bd2c-e5a3cb24ab2f")
     def test_tdls_supported(self):
