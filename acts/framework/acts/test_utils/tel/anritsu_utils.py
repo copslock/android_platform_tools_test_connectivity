@@ -78,8 +78,8 @@ TEST_PLMN_GSM_NAME = "MD8475A_GSM"
 TEST_PLMN_1X_NAME = "MD8475A_1X"
 TEST_PLMN_1_MCC = "001"
 TEST_PLMN_1_MNC = "01"
-DEFAULT_MCC = "001"
-DEFAULT_MNC = "01"
+DEFAULT_MCC = "310"
+DEFAULT_MNC = "260"
 DEFAULT_RAC = 1
 DEFAULT_LAC = 1
 VzW_MCC = "311"
@@ -126,9 +126,9 @@ WCDMA_BAND_1 = 1
 WCDMA_BAND_2 = 2
 
 # Default Cell Parameters
-DEFAULT_OUTPUT_LEVEL = -30
-# apply to LTE & WCDMA only to reduce UE transmit power if path loss
-DEFAULT_INPUT_LEVEL = -10
+DEFAULT_OUTPUT_LEVEL = -20
+DEFAULT_1X_OUTPUT_LEVEL = -35
+DEFAULT_INPUT_LEVEL = 0
 DEFAULT_LTE_BAND = [2, 4]
 DEFAULT_WCDMA_BAND = 1
 DEFAULT_WCDMA_PACKET_RATE = BtsPacketRate.WCDMA_DLHSAUTO_REL7_ULHSAUTO
@@ -140,8 +140,8 @@ DEFAULT_CDMA1X_NID = 65535
 DEFAULT_EVDO_BAND = 0
 DEFAULT_EVDO_CH = 356
 DEFAULT_EVDO_SECTOR_ID = "00000000,00000000,00000000,00000000"
-VzW_CDMA1x_BAND = 0
-VzW_CDMA1x_CH = 384
+VzW_CDMA1x_BAND = 1
+VzW_CDMA1x_CH = 150
 VzW_CDMA1X_SID = 26
 VzW_CDMA1X_NID = 65535
 VzW_EVDO_BAND = 0
@@ -210,7 +210,7 @@ PDN_NO_3 = 3
 DEFAULT_VNID = 1
 NDP_NIC_NAME = '"Intel(R) 82577LM Gigabit Network Connection"'
 CSCF_Monitoring_UA_URI = '"sip:+11234567890@test.3gpp.com"'
-TMO_CSCF_Monitoring_UA_URI = '"sip:310260123456789@msg.lab.t-mobile.com"'
+TMO_CSCF_Monitoring_UA_URI = '"sip:001010123456789@msg.lab.t-mobile.com"'
 
 #Cell Numbers
 CELL_1 = 1
@@ -358,6 +358,7 @@ def _init_gsm_bts(bts, user_params, cell_no, sim_card):
     bts.rac = get_gsm_rac(user_params, cell_no)
     bts.lac = get_gsm_lac(user_params, cell_no)
     bts.output_level = DEFAULT_OUTPUT_LEVEL
+    bts.input_level = DEFAULT_INPUT_LEVEL
 
 
 def _init_1x_bts(bts, user_params, cell_no, sim_card):
@@ -378,8 +379,7 @@ def _init_1x_bts(bts, user_params, cell_no, sim_card):
     bts.dl_channel = get_1x_channel(user_params, cell_no, sim_card)
     bts.sector1_sid = get_1x_sid(user_params, cell_no, sim_card)
     bts.sector1_nid = get_1x_nid(user_params, cell_no, sim_card)
-    bts.output_level = DEFAULT_OUTPUT_LEVEL
-    bts.input_level = DEFAULT_INPUT_LEVEL
+    bts.output_level = DEFAULT_1X_OUTPUT_LEVEL
 
 
 def _init_evdo_bts(bts, user_params, cell_no, sim_card):
@@ -398,7 +398,7 @@ def _init_evdo_bts(bts, user_params, cell_no, sim_card):
     bts.band = get_evdo_band(user_params, cell_no, sim_card)
     bts.dl_channel = get_evdo_channel(user_params, cell_no, sim_card)
     bts.evdo_sid = get_evdo_sid(user_params, cell_no, sim_card)
-    bts.output_level = DEFAULT_OUTPUT_LEVEL
+    bts.output_level = DEFAULT_1X_OUTPUT_LEVEL
 
 
 def _init_PDN(anritsu_handle, pdn, ipv4, ipv6, ims_binding):
