@@ -260,10 +260,11 @@ def setup_droid_properties(log, ad, sim_filename=None):
                     sim_data[iccid]["phone_num"], sim_filename,
                     sub_info["phone_num"])
             sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
-                "network_plmn"] and (
-                    sub_info["sim_operator_name"].strip() not in sub_info[
-                        "network_operator_name"].strip()):
+        if not hasattr(
+                ad, 'roaming'
+        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
+                sub_info["sim_operator_name"].strip() not in
+                sub_info["network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
     data_roaming = getattr(ad, 'roaming', False)
@@ -2026,8 +2027,8 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_folder, file_name = _generate_file_directory_and_file_name(url,
-                                                                    out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
     file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2068,8 +2069,7 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data'][
-            'isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
         return True
     return False
 
@@ -2096,8 +2096,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
-                                                          state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(
+        log, ad, sub_id, state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -3948,8 +3948,7 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info[
-            "SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4427,8 +4426,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data'][
-                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data']
+                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
@@ -4606,3 +4605,98 @@ def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file, pull_tcpdump=False):
         ad.adb.pull("{} {}".format(tcpdump_file, tcpdump_path))
     ad.adb.shell("rm -rf {}".format(tcpdump_file))
     return True
+
+
+def fastboot_wipe(ad, skip_setup_wizard=True):
+    """Wipe the device in fastboot mode.
+
+    Pull sl4a apk from device. Terminate all sl4a sessions,
+    Reboot the device to bootloader, wipe the device by fastboot.
+    Reboot the device. wait for device to complete booting
+    Re-intall and start an sl4a session.
+    """
+    # Pull sl4a apk from device
+    out = ad.adb.shell("pm path com.googlecode.android_scripting")
+    result = re.search(r"package:(.*)", out)
+    if not result:
+        ad.log.error("Couldn't find sl4a apk")
+    else:
+        sl4a_apk = result.group(1)
+        ad.log.info("Get sl4a apk from %s", sl4a_apk)
+        ad.pull_files([sl4a_apk], "/tmp/")
+    ad.stop_services()
+    ad.log.info("Reboot to bootloader")
+    ad.adb.reboot_bootloader(ignore_status=True)
+    ad.log.info("Wipe in fastboot")
+    ad.fastboot._w()
+    ad.fastboot.reboot()
+    ad.log.info("Reboot")
+    ad.wait_for_boot_completion()
+    ad.root_adb()
+    if result:
+        # Try to reinstall for three times as the device might not be
+        # ready to apk install shortly after boot complete.
+        for _ in range(3):
+            ad.log.info("Re-install sl4a")
+            ad.adb.install("-r /tmp/base.apk")
+            time.sleep(10)
+            if ad.is_sl4a_installed():
+                break
+    ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+
+
+def unlocking_device(ad, device_password=None):
+    """First unlock device attempt, required after reboot"""
+    ad.unlock_screen(device_password)
+    time.sleep(2)
+    ad.adb.wait_for_device(timeout=180)
+    if not ad.is_waiting_for_unlock_pin():
+        return True
+    else:
+        ad.unlock_screen(device_password)
+        time.sleep(2)
+        ad.adb.wait_for_device(timeout=180)
+        if ad.wait_for_window_ready():
+            return True
+    ad.log.error("Unable to unlock to user window")
+    return False
+
+
+def reset_device_password(ad, device_password=None):
+    # Enable or Disable Device Password per test bed config
+    screen_lock = ad.is_screen_lock_enabled()
+    if device_password:
+        ad.droid.setDevicePassword(device_password)
+        time.sleep(2)
+        if screen_lock:
+            # existing password changed
+            return
+        else:
+            # enable device password and log in for the first time
+            ad.log.info("Enable device password")
+            ad.adb.wait_for_device(timeout=180)
+            unlocking_device(ad, device_password)
+    else:
+        if not screen_lock:
+            # no existing password, do not set password
+            return
+        else:
+            # password is enabled on the device
+            # need to disable the password and log in on the first time
+            # with unlocking with a swipe
+            ad.log.info("Disable device password")
+            ad.droid.disableDevicePassword()
+            time.sleep(2)
+            ad.adb.wait_for_device(timeout=180)
+            unlocking_device(ad, None)
+    if not ad.is_adb_logcat_on:
+        ad.start_adb_logcat()
+    try:
+        ad.droid.logI("Checking SL4A connection")
+        ad.log.info("Existing droid is active")
+        return
+    except:
+        ad.terminate_all_sessions()
+        ad.log.info("Open new sl4a connection")
+        droid, ed = ad.get_droid()
+        ed.start()
