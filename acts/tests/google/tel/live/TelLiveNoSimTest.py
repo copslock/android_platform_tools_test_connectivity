@@ -22,11 +22,16 @@ import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
+from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
+from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
+
+DEFAULT_DEVICE_PASSWORD = "1111"
 
 
 class TelLiveNoSimTest(TelephonyBaseTest):
@@ -36,8 +41,8 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.dut = self.android_devices[0]
-        self.fake_emergency_number = self.user_params.get(
-            "fake_emergency_number", STORY_LINE.strip("+"))
+        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
+        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
 
     def teardown_class(self):
         super(TelephonyBaseTest, self).teardown_class()
@@ -45,8 +50,7 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         self.dut.reboot()
 
     def setup_test(self):
-        if not self.dut.skip_sl4a and not getattr(self.dut, "droid"):
-            self.dut.start_services()
+        pass
 
     def change_emergency_number_list(self):
         existing = self.dut.adb.shell("getprop ril.ecclist")
@@ -146,20 +150,19 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             False if failed.
         """
         try:
-            if not self.dut.device_password and getattr(self.dut, "droid"):
-                self.dut.droid.setDevicePassword("1111")
+            toggle_airplane_mode_by_adb(self.log, self.dut, False)
+            reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.reboot(stop_at_lock_screen=True)
             if self.fake_emergency_call_test():
                 return True
             else:
                 return False
         finally:
-            if not self.dut.ensure_screen_on():
-                self.dut.log.error("User screen cannot come up")
-                return False
+            self.dut.send_keycode("BACK")
+            self.dut.send_keycode("BACK")
+            unlocking_device(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.start_services(self.dut.skip_sl4a)
-            if not self.dut.device_password:
-                self.dut.droid.disableDevicePassword()
+            reset_device_password(self.dut, None)
 
     @test_tracker_info(uuid="1ef97f8a-eb3d-45b7-b947-ac409bb70587")
     @TelephonyBaseTest.tel_test_wrap
@@ -177,21 +180,19 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         """
         try:
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            if not self.dut.device_password and getattr(self.dut, "droid"):
-                self.dut.droid.setDevicePassword("1111")
+            reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.reboot(stop_at_lock_screen=True)
             if self.fake_emergency_call_test():
                 return True
             else:
                 return False
         finally:
+            self.dut.send_keycode("BACK")
+            self.dut.send_keycode("BACK")
             toggle_airplane_mode_by_adb(self.log, self.dut, False)
-            if not self.dut.ensure_screen_on():
-                self.dut.log.error("User screen cannot come up")
-                return False
+            unlocking_device(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.start_services(self.dut.skip_sl4a)
-            if not self.dut.device_password:
-                self.dut.droid.disableDevicePassword()
+            reset_device_password(self.dut, None)
 
     @test_tracker_info(uuid="50f8b3d9-b126-4419-b5e5-b37b850deb8e")
     @TelephonyBaseTest.tel_test_wrap
@@ -208,16 +209,15 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             False if failed.
         """
         try:
-            self.dut.fastboot_wipe()
+            fastboot_wipe(self.dut, skip_setup_wizard=False)
             if self.fake_emergency_call_test():
                 return True
             else:
                 return False
         finally:
-            self.dut.ensure_screen_on()
+            self.dut.send_keycode("BACK")
+            self.dut.send_keycode("BACK")
             self.dut.exit_setup_wizard()
-            if self.dut.device_password:
-                self.dut.droid.setDevicePassword(self.dut.device_password)
 
 
 """ Tests End """

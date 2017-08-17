@@ -1149,7 +1149,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
         self.revert_default_telephony_setting()
         self.ad.log.info("Wipe in fastboot")
-        self.ad.fastboot_wipe()
+        fastboot_wipe(self.ad)
         result = self.verify_volte_on_wfc_off()
         if not self.verify_default_telephony_setting(): result = False
         return result
@@ -1174,7 +1174,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
         self.revert_default_telephony_setting()
         self.ad.log.info("Wipe in fastboot")
-        self.ad.fastboot_wipe()
+        fastboot_wipe(self.ad)
         result = self.verify_volte_off_wfc_off()
         if not self.verify_default_telephony_setting(): result = False
         return result
