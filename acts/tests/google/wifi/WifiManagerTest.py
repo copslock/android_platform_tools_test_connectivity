@@ -58,7 +58,6 @@ class WifiManagerTest(WifiBaseTest):
                 a.set_atten(0)
         req_params = []
         opt_param = [
-            "additional_energy_info_models", "additional_tdls_models",
             "open_network", "reference_networks", "iperf_server_address"
         ]
         self.unpack_userparams(
@@ -303,8 +302,6 @@ class WifiManagerTest(WifiBaseTest):
         # Check if dut supports energy info reporting.
         actual_support = self.dut.droid.wifiIsEnhancedPowerReportingSupported()
         model = self.dut.model
-        expected_support = model in self.energy_info_models
-        asserts.assert_equal(expected_support, actual_support)
         if not actual_support:
             asserts.skip(
                 ("Device %s does not support energy info reporting as "
@@ -608,9 +605,9 @@ class WifiManagerTest(WifiBaseTest):
 
     @test_tracker_info(uuid="b9fbc13a-47b4-4f64-bd2c-e5a3cb24ab2f")
     def test_tdls_supported(self):
-        model = acts.utils.trim_model_name(self.dut.model)
+        model = self.dut.model
         self.log.debug("Model is %s" % model)
-        if model in self.tdls_models:
+        if not model.startswith("volantis"):
             asserts.assert_true(self.dut.droid.wifiIsTdlsSupported(), (
                 "TDLS should be supported on %s, but device is "
                 "reporting not supported.") % model)
