@@ -80,6 +80,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts.test_utils.tel.tel_defines import WAIT_TIME_SUPPLY_PUK_CODE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
@@ -4700,3 +4701,28 @@ def reset_device_password(ad, device_password=None):
         ad.log.info("Open new sl4a connection")
         droid, ed = ad.get_droid()
         ed.start()
+
+
+def is_sim_locked(ad):
+    return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+
+
+def unlock_sim(ad):
+    #The puk and pin can be provided in testbed config file.
+    #"AndroidDevice": [{"serial": "84B5T15A29018214",
+    #                   "adb_logcat_param": "-b all",
+    #                   "puk": "12345678",
+    #                   "puk_pin": "1234"}]
+    puk_pin = getattr(ad, "puk_pin", "1111")
+    try:
+        if not hasattr(ad, 'puk'):
+            result = ad.droid.telephonySupplyPin(puk_pin)
+        else:
+            ad.log.info("Enter PUK code and pin")
+            result = ad.droid.telephonySupplyPuk(ad.puk, puk_pin)
+    except:
+        # if sl4a is not available, use adb command
+        ad.unlock_screen(puk_pin)
+        if is_sim_locked(ad):
+            ad.unlock_screen(puk_pin)
+    return not is_sim_locked(ad)

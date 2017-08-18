@@ -35,6 +35,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import check_qxdm_logger_always_on
+from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
@@ -42,6 +43,7 @@ from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_always_on
+from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
@@ -59,30 +61,8 @@ class TelephonyBaseTest(BaseTestClass):
         self.logger_sessions = []
 
         for ad in self.android_devices:
-            if getattr(ad, "qxdm_always_on", False):
-                #this is only supported on 2017 devices
-                ad.log.info("qxdm_always_on is set in config file")
-                mask = getattr(ad, "qxdm_mask", "Radio-general.cfg")
-                if not check_qxdm_logger_always_on(ad, mask):
-                    ad.log.info("qxdm always on is not set, turn it on")
-                    set_qxdm_logger_always_on(ad, mask)
-                else:
-                    ad.log.info("qxdm always on is already set")
-
-            #The puk and pin should be provided in testbed config file.
-            #"AndroidDevice": [{"serial": "84B5T15A29018214",
-            #                   "adb_logcat_param": "-b all",
-            #                   "puk": "12345678",
-            #                   "puk_pin": "1234"}]
-            if hasattr(ad, 'puk'):
-                if not hasattr(ad, 'puk_pin'):
-                    abort_all_tests(ad.log, "puk_pin is not provided")
-                ad.log.info("Enter PUK code and pin")
-                if not ad.droid.telephonySupplyPuk(ad.puk, ad.puk_pin):
-                    abort_all_tests(
-                        ad.log,
-                        "Puk and puk_pin provided in testbed config do NOT work"
-                    )
+            if not unlock_sim(ad):
+                abort_all_tests(ad.log, "unable to unlock SIM")
 
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
@@ -97,6 +77,7 @@ class TelephonyBaseTest(BaseTestClass):
             self.test_id = test_id
             log_string = "[Test ID] %s" % test_id
             self.log.info(log_string)
+            no_crash = True
             try:
                 for ad in self.android_devices:
                     if getattr(ad, "droid"):
@@ -110,6 +91,7 @@ class TelephonyBaseTest(BaseTestClass):
                                                       self.begin_time, result)
                     if new_crash:
                         ad.log.error("Find new crash reports %s", new_crash)
+                        no_crash = False
                 if not result and self.user_params.get("telephony_auto_rerun"):
                     self.teardown_test()
                     # re-run only once, if re-run pass, mark as pass
@@ -131,7 +113,7 @@ class TelephonyBaseTest(BaseTestClass):
                         # still be considered a failure for reporting purposes.
                         self.log.info("Rerun indeterminate.")
                         result = False
-                return result
+                return result and no_crash
             except (TestSignal, TestAbortClass, TestAbortAll):
                 raise
             except Exception as e:
