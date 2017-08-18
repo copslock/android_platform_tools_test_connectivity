@@ -21,6 +21,8 @@ import time
 import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
+from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
@@ -29,62 +31,87 @@ from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
+from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
-
-DEFAULT_DEVICE_PASSWORD = "1111"
 
 
 class TelLiveEmergencyTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
+        self.dut = self.android_devices[0]
+        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
+        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
-        self.dut = self.android_devices[0]
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
-        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
-
-    def teardown_class(self):
-        super(TelephonyBaseTest, self).teardown_class()
-        #reboot to load default emergency number list ril.ecclist
-        self.dut.reboot()
 
     def setup_test(self):
-        pass
+        if not unlock_sim(self.dut):
+            abort_all_tests(self.dut.log, "unable to unlock SIM")
+        self.expected_call_result = True
 
     def change_emergency_number_list(self):
-        existing = self.dut.adb.shell("getprop ril.ecclist")
-        if self.fake_emergency_number in existing: return
-        emergency_numbers = "%s,%s" % (existing, self.fake_emergency_number)
-        self.dut.log.info("Change emergency numbes to %s", emergency_numbers)
-        self.dut.adb.shell("setprop ril.ecclist %s" % emergency_numbers)
+        for i in range(5):
+            existing = self.dut.adb.getprop("ril.ecclist")
+            self.dut.log.info("Existing ril.ecclist is: %s", existing)
+            if self.fake_emergency_number in existing:
+                return True
+            emergency_numbers = "%s,%s" % (existing,
+                                           self.fake_emergency_number)
+            cmd = "setprop ril.ecclist %s" % emergency_numbers
+            self.dut.log.info(cmd)
+            self.dut.adb.shell(cmd)
+            # After some system events, ril.ecclist might change
+            # wait sometime for it to settle
+            time.sleep(10)
+            if self.fake_emergency_number in existing:
+                return True
+        return False
 
     def fake_emergency_call_test(self, by_emergency_dialer=True):
-        result = True
-        self.change_emergency_number_list()
-        time.sleep(1)
-        call_numbers = len(dumpsys_telecom_call_info(self.dut))
         if by_emergency_dialer:
             dialing_func = initiate_emergency_dialer_call_by_adb
+            callee = self.fake_emergency_number
         else:
             dialing_func = initiate_call
-        if dialing_func(
-                self.log, self.dut, self.fake_emergency_number, timeout=10):
+            # Initiate_call method has to have "+" in front
+            # otherwise the number will be in dialer without dial out
+            # with sl4a fascade. Need further investigation
+            callee = "+%s" % self.fake_emergency_number
+        for _ in range(2):
+            result = True
+            if not self.change_emergency_number_list():
+                self.dut.log.error("Unable to add number to ril.ecclist")
+                return False
+            time.sleep(1)
+            call_numbers = len(dumpsys_telecom_call_info(self.dut))
+            dial_result = dialing_func(self.log, self.dut, callee)
             hung_up_call_by_adb(self.dut)
-            self.dut.log.info("Calling to the fake emergency number succeed")
-        else:
-            self.dut.log.error("Calling to the fake emergency number failed")
-            result = False
+            calls_info = dumpsys_telecom_call_info(self.dut)
+            if len(calls_info) <= call_numbers:
+                self.dut.log.error("New call is not in sysdump telecom")
+                result = False
+            else:
+                self.dut.log.info("New call info = %s", calls_info[-1])
 
-        calls_info = dumpsys_telecom_call_info(self.dut)
-        if len(calls_info) <= call_numbers:
-            self.dut.log.error("New call is not in sysdump telecom")
-            return False
-        else:
-            self.dut.log.info("New call info = %s", calls_info[call_numbers])
-            return result
+            if dial_result == self.expected_call_result:
+                self.dut.log.info("Call to %s returns %s as expected", callee,
+                                  self.expected_call_result)
+            else:
+                self.dut.log.error("Call to %s returns %s", callee,
+                                   not self.expected_call_result)
+                result = False
+            if result:
+                return True
+            if self.fake_emergency_number in self.dut.adb.getprop(
+                    "ril.ecclist"):
+                # Tested with the right ril.ecclist. No need to retry
+                self.dut.log.info("Tested with right ril-ecclist")
+                return result
+        self.dut.log.error("fake_emergency_call_test result is %s", result)
+        return result
 
     """ Tests Begin """
 
