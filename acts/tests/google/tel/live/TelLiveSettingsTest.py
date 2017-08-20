@@ -47,6 +47,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import wifi_reset
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
@@ -286,7 +287,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
-
+        set_wifi_to_default(self.log, self.ad)
         if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G")
             return False
@@ -389,7 +390,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
-
+        set_wifi_to_default(self.log, self.ad)
         if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G")
             return False
@@ -539,6 +540,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
+        set_wifi_to_default(self.log, self.ad)
         if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G.")
             return False
@@ -640,6 +642,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         2. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
+        set_wifi_to_default(self.log, self.ad)
         if not phone_setup_voice_3g(self.log, self.ad):
             self.log.error("Failed to setup 3G.")
             return False
@@ -760,8 +763,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         wifi_toggle_state(self.log, ad, True)
         time_values['wifi_enabled'] = time.time()
-        self.log.info("WiFi Enabled After {}s".format(
-            time_values['wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Enabled After {}s".format(time_values[
+            'wifi_enabled'] - time_values['start']))
 
         ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                               self.wifi_network_pass)
@@ -773,8 +776,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
         time_values['wifi_connected'] = time.time()
 
-        self.log.info("WiFi Connected After {}s".format(
-            time_values['wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WiFi Connected After {}s".format(time_values[
+            'wifi_connected'] - time_values['wifi_enabled']))
 
         if not verify_http_connection(self.log, ad, 'http://www.google.com',
                                       100, .1):
@@ -782,8 +785,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
 
         time_values['wifi_data'] = time.time()
-        self.log.info("WifiData After {}s".format(
-            time_values['wifi_data'] - time_values['wifi_connected']))
+        self.log.info("WifiData After {}s".format(time_values[
+            'wifi_data'] - time_values['wifi_connected']))
 
         if not wait_for_network_rat(
                 self.log, ad, RAT_FAMILY_WLAN,
@@ -795,16 +798,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             else:
                 return False
         time_values['iwlan_rat'] = time.time()
-        self.log.info("iWLAN Reported After {}s".format(
-            time_values['iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("iWLAN Reported After {}s".format(time_values[
+            'iwlan_rat'] - time_values['wifi_data']))
 
         if not wait_for_ims_registered(self.log, ad,
                                        MAX_WAIT_TIME_IMS_REGISTRATION):
             self.log.error("Never received IMS registered, aborting")
             return False
         time_values['ims_registered'] = time.time()
-        self.log.info("Ims Registered After {}s".format(
-            time_values['ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("Ims Registered After {}s".format(time_values[
+            'ims_registered'] - time_values['iwlan_rat']))
 
         if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
             self.log.error("Never received WFC feature, aborting")
@@ -820,16 +823,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
 
         self.log.info("\n\n------------------summary-----------------")
-        self.log.info("WiFi Enabled After {0:.2f} s".format(
-            time_values['wifi_enabled'] - time_values['start']))
-        self.log.info("WiFi Connected After {0:.2f} s".format(
-            time_values['wifi_connected'] - time_values['wifi_enabled']))
-        self.log.info("WifiData After {0:.2f} s".format(
-            time_values['wifi_data'] - time_values['wifi_connected']))
-        self.log.info("iWLAN Reported After {0:.2f} s".format(
-            time_values['iwlan_rat'] - time_values['wifi_data']))
-        self.log.info("Ims Registered After {0:.2f} s".format(
-            time_values['ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("WiFi Enabled After {0:.2f} s".format(time_values[
+            'wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Connected After {0:.2f} s".format(time_values[
+            'wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WifiData After {0:.2f} s".format(time_values[
+            'wifi_data'] - time_values['wifi_connected']))
+        self.log.info("iWLAN Reported After {0:.2f} s".format(time_values[
+            'iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("Ims Registered After {0:.2f} s".format(time_values[
+            'ims_registered'] - time_values['iwlan_rat']))
         self.log.info("Wifi Calling Feature Enabled After {0:.2f} s".format(
             time_values['wfc_enabled'] - time_values['ims_registered']))
         self.log.info("\n\n")
@@ -1007,8 +1010,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             "Set data roaming = %s, mobile data = 0, network preference = %s",
             new_data_roaming, new_network_preference)
         self.ad.adb.shell("settings put global mobile_data 0")
-        self.ad.adb.shell(
-            "settings put global data_roaming %s" % new_data_roaming)
+        self.ad.adb.shell("settings put global data_roaming %s" %
+                          new_data_roaming)
         self.ad.adb.shell("settings put global preferred_network_mode %s" %
                           new_network_preference)
 
@@ -1149,7 +1152,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
         self.revert_default_telephony_setting()
         self.ad.log.info("Wipe in fastboot")
-        self.ad.fastboot_wipe()
+        fastboot_wipe(self.ad)
         result = self.verify_volte_on_wfc_off()
         if not self.verify_default_telephony_setting(): result = False
         return result
@@ -1174,7 +1177,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
         self.revert_default_telephony_setting()
         self.ad.log.info("Wipe in fastboot")
-        self.ad.fastboot_wipe()
+        fastboot_wipe(self.ad)
         result = self.verify_volte_off_wfc_off()
         if not self.verify_default_telephony_setting(): result = False
         return result

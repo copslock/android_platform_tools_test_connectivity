@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 """
-    Test Script for Telephony Pre Check In Sanity
+    Test Script for Telephony Locked SIM Emergency Call Test
 """
 
 import time
@@ -26,6 +26,7 @@ from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
+from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
@@ -34,7 +35,7 @@ from acts.test_utils.tel.tel_test_utils import STORY_LINE
 DEFAULT_DEVICE_PASSWORD = "1111"
 
 
-class TelLiveNoSimTest(TelephonyBaseTest):
+class TelLiveLockedSIMTest(TelephonyBaseTest):
     def setup_class(self):
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -50,7 +51,9 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         self.dut.reboot()
 
     def setup_test(self):
-        pass
+        # reboot the device to SIM lock inquiry page if SIM is not locked
+        if not is_sim_locked(self.dut):
+            self.dut.reboot()
 
     def change_emergency_number_list(self):
         existing = self.dut.adb.shell("getprop ril.ecclist")
@@ -60,6 +63,7 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         self.dut.adb.shell("setprop ril.ecclist %s" % emergency_numbers)
 
     def fake_emergency_call_test(self, by_emergency_dialer=True):
+        result = True
         self.change_emergency_number_list()
         time.sleep(1)
         call_numbers = len(dumpsys_telecom_call_info(self.dut))
@@ -71,23 +75,31 @@ class TelLiveNoSimTest(TelephonyBaseTest):
                 self.log, self.dut, self.fake_emergency_number, timeout=10):
             hung_up_call_by_adb(self.dut)
             self.dut.log.error(
-                "calling to the fake emergency number should fail")
+                "Calling to the fake emergency number should fail with locked SIM"
+            )
+            result = False
+        else:
+            self.dut.log.info(
+                "Calling to the fake emergency number failed with locked SIM as expected"
+            )
+
         calls_info = dumpsys_telecom_call_info(self.dut)
         if len(calls_info) <= call_numbers:
             self.dut.log.error("New call is not in sysdump telecom")
             return False
         else:
             self.dut.log.info("New call info = %s", calls_info[call_numbers])
-            return True
+            return result
 
     """ Tests Begin """
 
-    @test_tracker_info(uuid="91bc0c02-c1f2-4112-a7f8-c91617bff53e")
+    @test_tracker_info(uuid="fd7fb69c-6fd4-4874-a4ca-769353b9db25")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_by_emergency_dialer(self):
         """Test emergency call with emergency dialer in user account.
 
-        Change system emergency number list to "611".
+        Enable SIM lock on the SIM. Reboot device to SIM pin request page.
+        Add storyline number to system emergency number list.
         Use the emergency dialer to call "611".
         Verify DUT has in call activity.
 
@@ -97,13 +109,14 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         """
         return self.fake_emergency_call_test()
 
-    @test_tracker_info(uuid="cdf7ddad-480f-4757-83bd-a74321b799f7")
+    @test_tracker_info(uuid="669cf1d9-9513-4f90-b0fd-2f0e8f1cc941")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_by_dialer(self):
         """Test emergency call with dialer.
 
-        Change system emergency number list to "611".
-        Call "611" by dialer.
+        Enable SIM lock on the SIM. Reboot device to SIM pin request page.
+        Add system emergency number list with storyline number.
+        Call storyline by dialer.
         Verify DUT has in call activity.
 
         Returns:
@@ -112,14 +125,15 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         """
         return self.fake_emergency_call_test(by_emergency_dialer=False)
 
-    @test_tracker_info(uuid="e147960a-4227-41e2-bd06-65001ad5e0cd")
+    @test_tracker_info(uuid="1990f166-66a7-4092-b448-c179a9194371")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_apm(self):
         """Test emergency call with emergency dialer in airplane mode.
 
         Enable airplane mode.
-        Change system emergency number list to "611".
-        Use the emergency dialer to call "611".
+        Enable SIM lock on the SIM. Reboot device to SIM pin request page.
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
         Verify DUT has in call activity.
 
         Returns:
@@ -135,14 +149,15 @@ class TelLiveNoSimTest(TelephonyBaseTest):
         finally:
             toggle_airplane_mode_by_adb(self.log, self.dut, False)
 
-    @test_tracker_info(uuid="34068bc8-bfa0-4c7b-9450-e189a0b93c8a")
+    @test_tracker_info(uuid="7ffdad34-b8fb-41b0-b0fd-2def5adc67bc")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_screen_lock(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
-        Enable device password and then reboot upto password query window.
-        Change system emergency number list to "611".
-        Use the emergency dialer to call "611".
+        Enable SIM lock on the SIM.
+        Enable device password and then reboot upto password and pin query stage.
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
         Verify DUT has in call activity.
 
         Returns:
@@ -164,14 +179,16 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             self.dut.start_services(self.dut.skip_sl4a)
             reset_device_password(self.dut, None)
 
-    @test_tracker_info(uuid="1ef97f8a-eb3d-45b7-b947-ac409bb70587")
+    @test_tracker_info(uuid="12dc1eb6-50ed-4ad9-b195-5d96c6b6952e")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_screen_lock_apm(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
-        Enable device password and then reboot upto password query window.
-        Change system emergency number list to "611".
-        Use the emergency dialer to call "611".
+        Enable device password and airplane mode
+        Enable SIM lock on the SIM.
+        Reboot upto pin query window.
+        Add system emergency number list with story line.
+        Use the emergency dialer to call story line.
         Verify DUT has in call activity.
 
         Returns:
@@ -194,14 +211,15 @@ class TelLiveNoSimTest(TelephonyBaseTest):
             self.dut.start_services(self.dut.skip_sl4a)
             reset_device_password(self.dut, None)
 
-    @test_tracker_info(uuid="50f8b3d9-b126-4419-b5e5-b37b850deb8e")
+    @test_tracker_info(uuid="1e01927a-a077-466d-8bf8-52dca87ab87c")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_setupwizard(self):
         """Test emergency call with emergency dialer in setupwizard.
 
+        Enable SIM lock on the SIM.
         Wipe the device and then reboot upto setupwizard.
-        Change system emergency number list to "611".
-        Use the emergency dialer to call "611".
+        Add system emergency number list with story line.
+        Use the emergency dialer to call story line.
         Verify DUT has in call activity.
 
         Returns:

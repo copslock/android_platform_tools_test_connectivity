@@ -32,6 +32,7 @@ DEFAULT_ADB_PULL_TIMEOUT = 180
 # Uses a regex to be backwards compatible with previous versions of ADB
 # (N and above add the serial to the error msg).
 DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
+DEVICE_OFFLINE_REGEX = re.compile('device offline')
 
 
 def parsing_parcel_output(output):
@@ -126,6 +127,8 @@ class AdbProxy(object):
 
         logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
                       err, ret)
+        if DEVICE_OFFLINE_REGEX.match(err):
+            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         if "Result: Parcel" in out:
             return parsing_parcel_output(out)
         if ignore_status:
