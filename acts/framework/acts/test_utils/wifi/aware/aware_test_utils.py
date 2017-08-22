@@ -342,6 +342,21 @@ def get_mac_addr(device, interface):
       extras=out)
   return res.group(1).upper().replace(':', '')
 
+def get_ipv6_addr(device, interface):
+  """Get the IPv6 address of the specified interface. Uses ifconfig and parses
+  its output. Returns a None if the interface does not have an IPv6 address
+  (indicating it is not UP).
+
+  Args:
+    device: Device on which to query the interface IPv6 address.
+    interface: Name of the interface for which to obtain the IPv6 address.
+  """
+  out = device.adb.shell("ifconfig %s" % interface)
+  res = re.match(".*inet6 addr: (\S+)/.*", out , re.S)
+  if not res:
+    return None
+  return res.group(1)
+
 #########################################################
 # Aware primitives
 #########################################################
