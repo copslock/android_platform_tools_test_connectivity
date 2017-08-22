@@ -195,6 +195,19 @@ class TelephonyBaseTest(BaseTestClass):
                     '--disable-fre" > /data/local/tmp/chrome-command-line'):
                 ad.adb.shell(cmd)
 
+            # Curl for 2016/7 devices
+            try:
+                if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
+                    out = ad.adb.shell("/data/curl --version")
+                    if not out or "not found" in out:
+                        ad.log.info("Pushing Curl to /data dir")
+                        curl_file_path = os.path.join("tel_data", "curl")
+                        ad.adb.push("%s /data" % (curl_file_path))
+                        ad.adb.shell(
+                            "chmod 777 /data/curl", ignore_status=True)
+            except Exception:
+                ad.log.info("Failed to push curl on this device")
+
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
             # logging.
