@@ -2466,7 +2466,9 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     """
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
-        raise TelTestUtilsError("VoLTE not supported by platform.")
+        ad.log.info("VoLTE not supported by platform.")
+        raise TelTestUtilsError(
+            "VoLTE not supported by platform %s." % ad.serial)
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -2788,7 +2790,9 @@ def is_volte_enabled(log, ad):
         if not is_ims_registered(log, ad):
             ad.log.info("VoLTE is Available, but IMS is not registered.")
             return False
-        return True
+        else:
+            ad.log.info("IMS is registered")
+            return True
 
 
 def is_video_enabled(log, ad):
@@ -4718,6 +4722,8 @@ def unlock_sim(ad):
     #                   "adb_logcat_param": "-b all",
     #                   "puk": "12345678",
     #                   "puk_pin": "1234"}]
+    if not is_sim_locked(ad):
+        return True
     puk_pin = getattr(ad, "puk_pin", "1111")
     try:
         if not hasattr(ad, 'puk'):
