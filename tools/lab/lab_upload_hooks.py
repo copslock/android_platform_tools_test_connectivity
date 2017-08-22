@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2017 - The Android Open Source Project
+#   Copyright 2016 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import sys
-import unittest
+import test_main
+from acts.libs.proc import job
+
+# Get the names of all files that have been modified from last upstream sync.
+GIT_MODIFIED_FILES = 'git show --pretty="" --name-only @{u}..'
 
 
 def main():
-    suite = unittest.TestLoader().discover(
-        start_dir='./tools/lab', pattern='*_test.py')
-    runner = unittest.TextTestRunner()
-
-    # Pass the return status of the tests to the exit code.
-    ret = not runner.run(suite).wasSuccessful()
-    sys.exit(ret)
+    files = job.run(GIT_MODIFIED_FILES, ignore_status=True).stdout
+    for file in files.split():
+        if file.startswith('tools/lab/'):
+            test_main.main()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
