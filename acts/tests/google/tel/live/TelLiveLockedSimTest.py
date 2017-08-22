@@ -21,6 +21,8 @@ import time
 import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
+from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
@@ -31,65 +33,25 @@ from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
+from TelLiveEmergencyTest import TelLiveEmergencyTest
 
-DEFAULT_DEVICE_PASSWORD = "1111"
+EXPECTED_CALL_TEST_RESULT = False
 
 
-class TelLiveLockedSIMTest(TelephonyBaseTest):
+class TelLiveLockedSimTest(TelLiveEmergencyTest):
     def setup_class(self):
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
-        self.dut = self.android_devices[0]
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
-        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
-
-    def teardown_class(self):
-        super(TelephonyBaseTest, self).teardown_class()
-        #reboot to load default emergency number list ril.ecclist
-        self.dut.reboot()
+        if not is_sim_locked(self.dut):
+            self.dut.reboot()
+            if not is_sim_locked(self.dut):
+                self.dut.log.error("SIM is not locked")
+                return False
+        self.dut.log.info("SIM is locked")
 
     def setup_test(self):
         # reboot the device to SIM lock inquiry page if SIM is not locked
         if not is_sim_locked(self.dut):
             self.dut.reboot()
-
-    def change_emergency_number_list(self):
-        existing = self.dut.adb.shell("getprop ril.ecclist")
-        if self.fake_emergency_number in existing: return
-        emergency_numbers = "%s,%s" % (existing, self.fake_emergency_number)
-        self.dut.log.info("Change emergency numbes to %s", emergency_numbers)
-        self.dut.adb.shell("setprop ril.ecclist %s" % emergency_numbers)
-
-    def fake_emergency_call_test(self, by_emergency_dialer=True):
-        result = True
-        self.change_emergency_number_list()
-        time.sleep(1)
-        call_numbers = len(dumpsys_telecom_call_info(self.dut))
-        if by_emergency_dialer:
-            dialing_func = initiate_emergency_dialer_call_by_adb
-        else:
-            dialing_func = initiate_call
-        if dialing_func(
-                self.log, self.dut, self.fake_emergency_number, timeout=10):
-            hung_up_call_by_adb(self.dut)
-            self.dut.log.error(
-                "Calling to the fake emergency number should fail with locked SIM"
-            )
-            result = False
-        else:
-            self.dut.log.info(
-                "Calling to the fake emergency number failed with locked SIM as expected"
-            )
-
-        calls_info = dumpsys_telecom_call_info(self.dut)
-        if len(calls_info) <= call_numbers:
-            self.dut.log.error("New call is not in sysdump telecom")
-            return False
-        else:
-            self.dut.log.info("New call info = %s", calls_info[call_numbers])
-            return result
+        self.expected_call_result = False
 
     """ Tests Begin """
 
@@ -107,6 +69,7 @@ class TelLiveLockedSIMTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        toggle_airplane_mode_by_adb(self.log, self.dut, False)
         return self.fake_emergency_call_test()
 
     @test_tracker_info(uuid="669cf1d9-9513-4f90-b0fd-2f0e8f1cc941")
@@ -123,6 +86,7 @@ class TelLiveLockedSIMTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        toggle_airplane_mode_by_adb(self.log, self.dut, False)
         return self.fake_emergency_call_test(by_emergency_dialer=False)
 
     @test_tracker_info(uuid="1990f166-66a7-4092-b448-c179a9194371")
