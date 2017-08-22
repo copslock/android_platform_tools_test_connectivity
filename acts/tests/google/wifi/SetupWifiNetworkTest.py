@@ -25,8 +25,8 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_security
 
-class SetupWifiNetworkTest(base_test.BaseTestClass):
 
+class SetupWifiNetworkTest(base_test.BaseTestClass):
     def wait_for_test_completion(self):
         port = int(self.user_params["socket_port"])
         timeout = float(self.user_params["socket_timeout_secs"])
@@ -40,7 +40,7 @@ class SetupWifiNetworkTest(base_test.BaseTestClass):
         sock.settimeout(timeout)
         sock.listen(1)
         logging.info("Waiting for client socket connection")
-        try :
+        try:
             connection, client_address = sock.accept()
         except socket.timeout:
             logging.error("Did not receive signal. Shutting down AP")
@@ -51,14 +51,8 @@ class SetupWifiNetworkTest(base_test.BaseTestClass):
             sock.shutdown(socket.SHUT_RDWR)
             sock.close()
 
-    def test_set_up_single_ap(self):
-        req_params = ["AccessPoint", "network_type", "ssid", "passphrase",
-                "security", "socket_port", "socket_timeout_secs"]
-        opt_params = []
-        self.unpack_userparams(req_param_names=req_params,
-                opt_param_names=opt_params)
+    def setup_ap(self):
         bss_settings = []
-
         self.access_point = self.access_points[0]
         network_type = self.user_params["network_type"]
         if (network_type == "2G"):
@@ -67,22 +61,47 @@ class SetupWifiNetworkTest(base_test.BaseTestClass):
             self.channel = hostapd_constants.AP_DEFAULT_CHANNEL_5G
 
         self.ssid = self.user_params["ssid"]
-        self.passphrase = self.user_params["passphrase"]
         self.security = self.user_params["security"]
-        self.hostapd_security = hostapd_security.Security(
-                security_mode=self.security,
-                password=self.passphrase)
-        bss_settings.append(hostapd_bss_settings.BssSettings(
-                name=self.ssid,
+        if self.security == "none":
+            self.config = hostapd_ap_preset.create_ap_preset(
+                channel=self.channel,
                 ssid=self.ssid,
-                security=self.hostapd_security))
-
-        self.config = hostapd_ap_preset.create_ap_preset(
+                bss_settings=bss_settings,
+                profile_name='whirlwind')
+        else:
+            self.passphrase = self.user_params["passphrase"]
+            self.hostapd_security = hostapd_security.Security(
+                security_mode=self.security, password=self.passphrase)
+            self.config = hostapd_ap_preset.create_ap_preset(
                 channel=self.channel,
                 ssid=self.ssid,
                 security=self.hostapd_security,
-                bss_settings= bss_settings,
+                bss_settings=bss_settings,
                 profile_name='whirlwind')
         self.access_point.start_ap(self.config)
+
+    def test_set_up_single_ap(self):
+        req_params = [
+            "AccessPoint", "network_type", "ssid", "passphrase", "security",
+            "socket_port", "socket_timeout_secs"
+        ]
+        opt_params = []
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_params)
+        # Setup the AP environment
+        self.setup_ap()
+        # AP enviroment created. Wait for client to teardown the environment
+        self.wait_for_test_completion()
+
+    def test_set_up_open_ap(self):
+        req_params = [
+            "AccessPoint", "network_type", "ssid", "security", "socket_port",
+            "socket_timeout_secs"
+        ]
+        opt_params = []
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_params)
+        # Setup the AP environment
+        self.setup_ap()
         # AP enviroment created. Wait for client to teardown the environment
         self.wait_for_test_completion()
