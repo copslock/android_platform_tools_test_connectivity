@@ -307,6 +307,7 @@ class TestResult(object):
             A json-format string representing the test results.
         """
         d = {}
+        d["ControllerInfo"] = self.controller_info
         executed = [record.to_dict() for record in self.executed]
         d["Results"] = executed
         d["Summary"] = self.summary_dict()
