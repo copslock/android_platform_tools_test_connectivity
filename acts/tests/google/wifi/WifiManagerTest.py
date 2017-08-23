@@ -72,25 +72,22 @@ class WifiManagerTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, True)
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
-        self.iot_test_prefix = "test_connection_to-"
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network = self.open_network[0]["2g"]
+        self.iperf_server.start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
-        if self.iot_test_prefix in self.current_test_name:
-            if "iperf_server_address" in self.user_params:
-                self.iperf_server.start()
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
-        if self.current_test_name and self.iot_test_prefix in self.current_test_name:
-            if "iperf_server_address" in self.user_params:
-                self.iperf_server.stop()
+
+    def teardown_class(self):
+        self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
