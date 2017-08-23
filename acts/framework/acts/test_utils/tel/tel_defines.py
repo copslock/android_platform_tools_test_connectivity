@@ -39,6 +39,9 @@ COUNTRY_CODE_LIST = [
     "+850", "+81"
 ]
 
+# default pin/password
+DEFAULT_DEVICE_PASSWORD = "1111"
+
 # Wait time after enterring puk code
 WAIT_TIME_SUPPLY_PUK_CODE = 30
 

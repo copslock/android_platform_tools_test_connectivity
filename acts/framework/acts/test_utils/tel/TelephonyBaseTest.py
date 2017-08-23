@@ -61,6 +61,16 @@ class TelephonyBaseTest(BaseTestClass):
         self.logger_sessions = []
 
         for ad in self.android_devices:
+            if getattr(ad, "qxdm_always_on", False):
+                #this is only supported on 2017 devices
+                ad.log.info("qxdm_always_on is set in config file")
+                mask = getattr(ad, "qxdm_mask", "Radio-general.cfg")
+                if not check_qxdm_logger_always_on(ad, mask):
+                    ad.log.info("qxdm always on is not set, turn it on")
+                    set_qxdm_logger_always_on(ad, mask)
+                else:
+                    ad.log.info("qxdm always on is already set")
+
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
 
@@ -89,7 +99,7 @@ class TelephonyBaseTest(BaseTestClass):
                         ad.droid.logI("Finished %s" % log_string)
                     new_crash = ad.check_crash_report(self.test_name,
                                                       self.begin_time, result)
-                    if new_crash:
+                    if self.user_params.get("check_crash", True) and new_crash:
                         ad.log.error("Find new crash reports %s", new_crash)
                         no_crash = False
                 if not result and self.user_params.get("telephony_auto_rerun"):
@@ -194,6 +204,19 @@ class TelephonyBaseTest(BaseTestClass):
                     'echo "chrome --no-default-browser-check --no-first-run '
                     '--disable-fre" > /data/local/tmp/chrome-command-line'):
                 ad.adb.shell(cmd)
+
+            # Curl for 2016/7 devices
+            try:
+                if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
+                    out = ad.adb.shell("/data/curl --version")
+                    if not out or "not found" in out:
+                        ad.log.info("Pushing Curl to /data dir")
+                        curl_file_path = os.path.join("tel_data", "curl")
+                        ad.adb.push("%s /data" % (curl_file_path))
+                        ad.adb.shell(
+                            "chmod 777 /data/curl", ignore_status=True)
+            except Exception:
+                ad.log.info("Failed to push curl on this device")
 
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
