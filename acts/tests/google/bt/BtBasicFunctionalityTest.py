@@ -232,8 +232,9 @@ class BtBasicFunctionalityTest(BluetoothBaseTest):
         name = "SetDeviceName"
         return set_device_name(self.droid_ad.droid, name)
 
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b38fb110-a707-47cf-b1c3-981266373786')
     def test_scan_mode_off(self):
-        @test_tracker_info(uuid='b38fb110-a707-47cf-b1c3-981266373786')
         """Test disabling bluetooth scanning.
 
         Test that changes scan mode to off.
