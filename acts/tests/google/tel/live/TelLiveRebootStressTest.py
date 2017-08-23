@@ -754,6 +754,23 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_lte_data=True, check_volte=True, check_vt=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f2447657-00d9-434f-9928-82098a138b45")
+    def test_crash_recovery_wfc(self):
+        """Crash Recovery Test
+
+        Steps:
+            1. Crash multiple daemons/processes
+            2. Post crash recovery, verify WFC
+
+        Expected Results:
+            No crash happens in functional test, WFC work fine.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._crash_recovery_test(check_wfc=True)
+
+    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b6d2fccd-5dfd-4637-aa3b-257837bfba54")
     def test_telephonymonitor_functional(self):
         """Telephony Monitor Functional Test
