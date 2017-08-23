@@ -442,6 +442,7 @@ class DataPathTest(AwareBaseTest):
   # peer using the Aware-provided peer handle (as opposed to a MAC address).
   #######################################
 
+  @test_tracker_info(uuid="fa30bedc-d1de-4440-bf25-ec00d10555af")
   def test_ib_unsolicited_passive_open_specific(self):
     """Data-path: in-band, unsolicited/passive, open encryption, specific peer
 
@@ -453,6 +454,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="57fc9d53-32ae-470f-a8b1-2fe37893687d")
   def test_ib_unsolicited_passive_open_any(self):
     """Data-path: in-band, unsolicited/passive, open encryption, any peer
 
@@ -464,6 +466,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="93b2a23d-8579-448a-936c-7812929464cf")
   def test_ib_unsolicited_passive_passphrase_specific(self):
     """Data-path: in-band, unsolicited/passive, passphrase, specific peer
 
@@ -475,6 +478,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="1736126f-a0ff-4712-acc4-f89b4eef5716")
   def test_ib_unsolicited_passive_passphrase_any(self):
     """Data-path: in-band, unsolicited/passive, passphrase, any peer
 
@@ -486,6 +490,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="b9353d5b-3f77-46bf-bfd9-65d56a7c939a")
   def test_ib_unsolicited_passive_pmk_specific(self):
     """Data-path: in-band, unsolicited/passive, PMK, specific peer
 
@@ -497,6 +502,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="06f3b2ab-4a10-4398-83a4-6a23851b1662")
   def test_ib_unsolicited_passive_pmk_any(self):
     """Data-path: in-band, unsolicited/passive, PMK, any peer
 
@@ -508,6 +514,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="0ed7d8b3-a69e-46ba-aeb7-13e507ecf290")
   def test_ib_solicited_active_open_specific(self):
     """Data-path: in-band, solicited/active, open encryption, specific peer
 
@@ -519,6 +526,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="c7ba6d28-5ef6-45d9-95d5-583ad6d981f3")
   def test_ib_solicited_active_open_any(self):
     """Data-path: in-band, solicited/active, open encryption, any peer
 
@@ -530,6 +538,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="388cea99-0e2e-49ea-b00e-f3e56b6236e5")
   def test_ib_solicited_active_passphrase_specific(self):
     """Data-path: in-band, solicited/active, passphrase, specific peer
 
@@ -541,6 +550,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="fcd3e28a-5eab-4169-8a0c-dc7204dcdc13")
   def test_ib_solicited_active_passphrase_any(self):
     """Data-path: in-band, solicited/active, passphrase, any peer
 
@@ -552,6 +562,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="9d4eaad7-ba53-4a06-8ce0-e308daea3309")
   def test_ib_solicited_active_pmk_specific(self):
     """Data-path: in-band, solicited/active, PMK, specific peer
 
@@ -563,6 +574,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="129d850e-c312-4137-a67b-05ae95fe66cc")
   def test_ib_solicited_active_pmk_any(self):
     """Data-path: in-band, solicited/active, PMK, any peer
 
@@ -587,6 +599,7 @@ class DataPathTest(AwareBaseTest):
   # exchange of MAC addresses and then Wi-Fi Aware for data-path.
   #######################################
 
+  @test_tracker_info(uuid="7db17d8c-1dce-4084-b695-215bbcfe7d41")
   def test_oob_open_specific(self):
     """Data-path: out-of-band, open encryption, specific peer
 
@@ -596,6 +609,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="ad416d89-cb95-4a07-8d29-ee213117450b")
   def test_oob_open_any(self):
     """Data-path: out-of-band, open encryption, any peer
 
@@ -605,6 +619,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="74937a3a-d524-43e2-8979-4449271cab52")
   def test_oob_passphrase_specific(self):
     """Data-path: out-of-band, passphrase, specific peer
 
@@ -614,6 +629,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="afcbdc7e-d3a9-465b-b1da-ce2e42e3941e")
   def test_oob_passphrase_any(self):
     """Data-path: out-of-band, passphrase, any peer
 
@@ -623,6 +639,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="0d095031-160a-4537-aab5-41b6ad5d55f8")
   def test_oob_pmk_specific(self):
     """Data-path: out-of-band, PMK, specific peer
 
@@ -632,6 +649,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="e45477bd-66cc-4eb7-88dd-4518c8aa2a74")
   def test_oob_pmk_any(self):
     """Data-path: out-of-band, PMK, any peer
 
@@ -643,6 +661,7 @@ class DataPathTest(AwareBaseTest):
 
   ##############################################################
 
+  @test_tracker_info(uuid="1c2c9805-dc1e-43b5-a1b8-315e8c9a4337")
   def test_passphrase_min(self):
     """Data-path: minimum passphrase length
 
@@ -654,6 +673,7 @@ class DataPathTest(AwareBaseTest):
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MIN)
 
+  @test_tracker_info(uuid="e696e2b9-87a9-4521-b337-61b9efaa2057")
   def test_passphrase_max(self):
     """Data-path: maximum passphrase length
 
@@ -665,68 +685,80 @@ class DataPathTest(AwareBaseTest):
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MAX)
 
+  @test_tracker_info(uuid="533cd44c-ff30-4283-ac28-f71fd7b4f02d")
   def test_negative_mismatch_publisher_peer_id(self):
     """Data-path: failure when publisher peer ID is mismatched"""
     self.run_mismatched_ib_data_path_test(pub_mismatch=True, sub_mismatch=False)
 
+  @test_tracker_info(uuid="682f275e-722a-4f8b-85e7-0dcea9d25532")
   def test_negative_mismatch_subscriber_peer_id(self):
     """Data-path: failure when subscriber peer ID is mismatched"""
     self.run_mismatched_ib_data_path_test(pub_mismatch=False, sub_mismatch=True)
 
+  @test_tracker_info(uuid="7fa82796-7fc9-4d9e-bbbb-84b751788943")
   def test_negative_mismatch_init_mac(self):
     """Data-path: failure when Initiator MAC address mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_mismatch_mac=True,
         resp_mismatch_mac=False)
 
+  @test_tracker_info(uuid="edeae959-4644-44f9-8d41-bdeb5216954e")
   def test_negative_mismatch_resp_mac(self):
     """Data-path: failure when Responder MAC address mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_mismatch_mac=False,
         resp_mismatch_mac=True)
 
+  @test_tracker_info(uuid="91f46949-c47f-49f9-a90f-6fae699613a7")
   def test_negative_mismatch_passphrase(self):
     """Data-path: failure when passphrases mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PASSPHRASE,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="01c49c2e-dc92-4a27-bb47-c4fc67617c23")
   def test_negative_mismatch_pmk(self):
     """Data-path: failure when PMK mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_PMK)
 
+  @test_tracker_info(uuid="4d651797-5fbb-408e-a4b6-a6e1944136da")
   def test_negative_mismatch_open_passphrase(self):
     """Data-path: failure when initiator is open, and responder passphrase"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_OPEN,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="1ae697f4-5987-4187-aeef-1e22d07d4a7c")
   def test_negative_mismatch_open_pmk(self):
     """Data-path: failure when initiator is open, and responder PMK"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_OPEN,
         resp_encr_type=self.ENCR_TYPE_PMK)
 
+  @test_tracker_info(uuid="f027b1cc-0e7a-4075-b880-5e64b288afbd")
   def test_negative_mismatch_pmk_passphrase(self):
     """Data-path: failure when initiator is pmk, and responder passphrase"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="0819bbd4-72ae-49c4-bd46-5448db2b0a06")
   def test_negative_mismatch_passphrase_open(self):
     """Data-path: failure when initiator is passphrase, and responder open"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PASSPHRASE,
         resp_encr_type=self.ENCR_TYPE_OPEN)
 
+  @test_tracker_info(uuid="7ef24f62-8e6b-4732-88a3-80a43584dda4")
   def test_negative_mismatch_pmk_open(self):
     """Data-path: failure when initiator is PMK, and responder open"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_OPEN)
 
+  @test_tracker_info(uuid="7b9c9efc-1c06-465e-8a5e-d6a22ac1da97")
   def test_negative_mismatch_passphrase_pmk(self):
     """Data-path: failure when initiator is passphrase, and responder pmk"""
     self.run_mismatched_oob_data_path_test(
