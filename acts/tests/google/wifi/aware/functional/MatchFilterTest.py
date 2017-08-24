@@ -178,12 +178,14 @@ class MatchFilterTest(AwareBaseTest):
 
   ###############################################################
 
+  @test_tracker_info(uuid="bd734f8c-895a-4cf9-820f-ec5060517fe9")
   def test_match_filters_per_spec_unsolicited_passive(self):
     """Validate all the match filter combinations in the Wi-Fi Aware spec,
     Appendix H for Unsolicited Publish (tx filter) Passive Subscribe (rx
     filter)"""
     self.run_match_filters_per_spec(do_unsolicited_passive=True)
 
+  @test_tracker_info(uuid="6560124d-69e5-49ff-a7e5-3cb305983723")
   def test_match_filters_per_spec_solicited_active(self):
     """Validate all the match filter combinations in the Wi-Fi Aware spec,
     Appendix H for Solicited Publish (rx filter) Active Subscribe (tx
