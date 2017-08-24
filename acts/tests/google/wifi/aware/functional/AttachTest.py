@@ -16,6 +16,7 @@
 
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
