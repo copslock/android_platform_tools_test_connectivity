@@ -210,11 +210,16 @@ class TelephonyBaseTest(BaseTestClass):
                 if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
                     out = ad.adb.shell("/data/curl --version")
                     if not out or "not found" in out:
-                        ad.log.info("Pushing Curl to /data dir")
                         curl_file_path = os.path.join("tel_data", "curl")
-                        ad.adb.push("%s /data" % (curl_file_path))
-                        ad.adb.shell(
-                            "chmod 777 /data/curl", ignore_status=True)
+                        if not os.path.isfile(curl_file_path):
+                            curl_file_path = os.path.join(
+                                self.user_params[Config.key_config_path],
+                                curl_file_path)
+                        if os.path.isfile(curl_file_path):
+                            ad.log.info("Pushing Curl to /data dir")
+                            ad.adb.push("%s /data" % (curl_file_path))
+                            ad.adb.shell(
+                                "chmod 777 /data/curl", ignore_status=True)
             except Exception:
                 ad.log.info("Failed to push curl on this device")
 
