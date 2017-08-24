@@ -266,7 +266,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 return False
         return True
 
-    def _telephony_monitor_test(self):
+    def _telephony_monitor_test(self, negative_test=False):
         """
         Steps -
         1. Reboot the phone
@@ -284,23 +284,26 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
+        tel_cmd = "setprop persist.radio.enable_tel_mon user_enabled"
+        if negative_test:
+            tel_cmd = "setprop persist.radio.enable_tel_mon user_disabled"
+
         # Reboot
         ads = self.android_devices
         ads[0].adb.shell(
             "am start -n com.android.settings/.DevelopmentSettings",
             ignore_status=True)
+        ads[0].adb.shell(tel_cmd, ignore_status=True)
         ads[0].log.info("reboot!")
         ads[0].reboot()
         ads[0].log.info("wait %d secs for radio up." % WAIT_TIME_AFTER_REBOOT)
         time.sleep(WAIT_TIME_AFTER_REBOOT)
 
-        # Ensure apk is running
+        # Ensure apk is running/not running
         if not ads[0].is_apk_running("com.google.telephonymonitor"):
-            ads[0].log.info("TelephonyMonitor is not running, start it now")
-            ads[0].adb.shell(
-                'am broadcast -a '
-                'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
-                '"ce.telephony_monitor_enable" "true"')
+            ads[0].log.debug("TelephonyMonitor is not running")
+        else:
+            ads[0].log.debug("TelephonyMonitor not running")
 
         # Setup Phone Call
         caller_number = ads[0].cfg['subscription'][get_outgoing_voice_sub_id(
@@ -329,12 +332,20 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         time.sleep(60)
 
         # Parse logcat for UI notification
-        if ads[0].search_logcat("Bugreport notification title Call Drop:"):
-            ads[0].log.info("User got the Call Drop Notification")
+        if not negative_test:
+            if ads[0].search_logcat("Bugreport notification title Call Drop:"):
+                ads[0].log.info("User got the Call Drop Notification")
+            else:
+                ads[0].log.error("User didn't get Call Drop Notify in 1 min")
+                return False
+            return True
         else:
-            ads[0].log.error("User didn't get Call Drop Notification in 1 min")
-            return False
-        return True
+            if ads[0].search_logcat("Bugreport notification title Call Drop:"):
+                ads[0].log.error("User got the Call Drop Notification")
+                return False
+            else:
+                ads[0].log.info("User didn't get Call Drop Notify in 1 min")
+                return True
 
     def _reboot_stress_test(self, **kwargs):
         """Reboot Reliability Test
@@ -754,6 +765,23 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             check_lte_data=True, check_volte=True, check_vt=True)
 
     @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f2447657-00d9-434f-9928-82098a138b45")
+    def test_crash_recovery_wfc(self):
+        """Crash Recovery Test
+
+        Steps:
+            1. Crash multiple daemons/processes
+            2. Post crash recovery, verify WFC
+
+        Expected Results:
+            No crash happens in functional test, WFC work fine.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._crash_recovery_test(check_wfc=True)
+
+    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b6d2fccd-5dfd-4637-aa3b-257837bfba54")
     def test_telephonymonitor_functional(self):
         """Telephony Monitor Functional Test
@@ -770,6 +798,24 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         return self._telephony_monitor_test()
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f048189b-e4bb-46f7-b150-37acf020af6e")
+    def test_telephonymonitor_negative(self):
+        """Telephony Monitor Functional Test
+
+        Steps:
+            1. Verify Telephony Monitor functionality is working or not
+            2. Force Trigger a call drop : media timeout and ensure it is
+               not notified by Telephony Monitor
+
+        Expected Results:
+            feature work fine, and does not report to User about Call Drop
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._telephony_monitor_test(negative_test=True)
 
 
 """ Tests End """
