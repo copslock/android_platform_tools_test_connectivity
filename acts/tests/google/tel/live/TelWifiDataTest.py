@@ -391,7 +391,7 @@ class TelWifiDataTest(TelephonyBaseTest):
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on LTE")
             return False
-        if not active_file_download_test(self.log, ad, "1GB"):
+        if not active_file_download_test(self.log, ad, "512MB"):
             ad.log.error("HTTP file download failed on LTE")
             return False
         return True
