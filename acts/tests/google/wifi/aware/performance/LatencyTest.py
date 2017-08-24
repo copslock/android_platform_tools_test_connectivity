@@ -407,8 +407,9 @@ class LatencyTest(AwareBaseTest):
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
       resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
 
-      # wait before trying another iteration (need to let CM clean-up)
-      time.sleep(10)
+      # wait to make sure previous NDP terminated, otherwise its termination
+      # time will be counted in the setup latency!
+      time.sleep(2)
 
     autils.extract_stats(
         init_dut,
@@ -537,7 +538,7 @@ class LatencyTest(AwareBaseTest):
         results=results,
         dw_24ghz=aconsts.DW_24_INTERACTIVE,
         dw_5ghz=aconsts.DW_5_INTERACTIVE,
-        num_iterations=10)
+        num_iterations=100)
     asserts.explicit_pass(
         "test_ndp_setup_latency_default_dws finished", extras=results)
 
@@ -550,6 +551,6 @@ class LatencyTest(AwareBaseTest):
         results=results,
         dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
         dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
-        num_iterations=10)
+        num_iterations=100)
     asserts.explicit_pass(
         "test_ndp_setup_latency_non_interactive_dws finished", extras=results)
