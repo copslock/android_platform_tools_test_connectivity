@@ -84,13 +84,14 @@ def _update_file_paths(config, config_path):
     """
     # Check the file_path_keys and update if it is a relative path.
     for file_path_key in keys.Config.file_path_keys.value:
-        config_file = config[file_path_key]
-        if not os.path.isfile(config_file):
-            config_file = os.path.join(config_path, config_file)
-        if not os.path.isfile(config_file):
-            raise ActsConfigError("Unable to load config %s from test "
-                                  "config file.", config_file)
-        config[file_path_key] = config_file
+        if file_path_key in config:
+            config_file = config[file_path_key]
+            if not os.path.isfile(config_file):
+                config_file = os.path.join(config_path, config_file)
+            if not os.path.isfile(config_file):
+                raise ActsConfigError("Unable to load config %s from test "
+                                      "config file.", config_file)
+            config[file_path_key] = config_file
 
 
 def _validate_testbed_configs(testbed_configs, config_path):
@@ -275,13 +276,13 @@ def load_test_config_file(test_config_path,
                                                              len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
 
-    if (not keys.Config.key_log_path.value in configs
-            and _ENV_ACTS_LOGPATH in os.environ):
+    if (not keys.Config.key_log_path.value in configs and
+            _ENV_ACTS_LOGPATH in os.environ):
         print('Using environment log path: %s' %
               (os.environ[_ENV_ACTS_LOGPATH]))
         configs[keys.Config.key_log_path.value] = os.environ[_ENV_ACTS_LOGPATH]
-    if (not keys.Config.key_test_paths.value in configs
-            and _ENV_ACTS_TESTPATHS in os.environ):
+    if (not keys.Config.key_test_paths.value in configs and
+            _ENV_ACTS_TESTPATHS in os.environ):
         print('Using environment test paths: %s' %
               (os.environ[_ENV_ACTS_TESTPATHS]))
         configs[keys.Config.key_test_paths.value] = os.environ[
