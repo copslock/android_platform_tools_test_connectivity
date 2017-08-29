@@ -59,7 +59,7 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
         if not "sim_conf_file" in self.user_params.keys():
             self.log.error("Missing mandatory user config \"sim_conf_file\"!")
             return False
-        sim_conf_file = self.user_params["sim_conf_file"]
+        sim_conf_file = self.user_params["sim_conf_file"][0]
         if not os.path.isfile(sim_conf_file):
             sim_conf_file = os.path.join(
                 self.user_params[Config.key_config_path], sim_conf_file)
