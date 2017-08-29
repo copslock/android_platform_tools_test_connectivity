@@ -692,7 +692,7 @@ class TestFuguRemote(unittest.TestCase):
         })
         self.mock_board = self.mock_rig.boards['MockBoard']
         self.fugu_config = {
-            'type': 'GenericRelayDevice',
+            'type': 'FuguRemote',
             'name': 'UniqueDeviceName',
             'mac_address': '00:00:00:00:00:00',
             'relays': {
