@@ -253,6 +253,7 @@ CARRIER_ESP = 'esp'
 CARRIER_ORG = 'org'
 CARRIER_TEL = 'tel'
 CARRIER_TSA = 'tsa'
+CARRIER_USCC = 'uscc'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
