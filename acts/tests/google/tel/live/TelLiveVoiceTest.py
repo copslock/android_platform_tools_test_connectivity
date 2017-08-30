@@ -128,7 +128,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
     """ Tests Begin """
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="8036004e-e42e-441f-b32d-96069be71ec2")
+    @test_tracker_info(uuid="fca3f9e1-447a-416f-9a9c-50b7161981bf")
     def test_call_mo_voice_general(self):
         """ General voice to voice call.
 
@@ -152,7 +152,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                         None, None)
 
     @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="448e1597-c28f-4e1d-88fd-3158e6b7c630")
+    @test_tracker_info(uuid="69faeb84-3830-47c0-ad80-dc657381a83b")
     def test_call_mt_voice_general(self):
         """ General voice to voice call.
 
