@@ -226,8 +226,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         """
         ble_state_error_msg = "Bluetooth LE State not OK {}. Expected {} got {}"
         # Enable BLE always available (effectively enabling BT in location)
-        self.scn_ad.adb.shell(
-            "shell settings put global ble_scan_always_enabled 1")
+        self.scn_ad.adb.shell("settings put global ble_scan_always_enabled 1")
 
         self.scn_ad.droid.bluetoothToggleState(False)
         try:
