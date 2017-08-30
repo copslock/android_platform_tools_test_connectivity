@@ -144,6 +144,8 @@ class TelephonyBaseTest(BaseTestClass):
         if not sim_conf_file:
             self.log.info("\"sim_conf_file\" is not provided test bed config!")
         else:
+            if isinstance(sim_conf_file, list):
+                sim_conf_file = sim_conf_file[0]
             # If the sim_conf_file is not a full path, attempt to find it
             # relative to the config file.
             if not os.path.isfile(sim_conf_file):
