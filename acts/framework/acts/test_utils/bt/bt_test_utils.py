@@ -51,6 +51,7 @@ from acts.test_utils.bt.bt_constants import \
 from acts.test_utils.bt.bt_constants import bt_default_timeout
 from acts.test_utils.bt.bt_constants import bt_discovery_timeout
 from acts.test_utils.bt.bt_constants import bt_profile_states
+from acts.test_utils.bt.bt_constants import bt_profile_constants
 from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import btsnoop_last_log_path_on_device
@@ -816,7 +817,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
         True of connection is successful, false if unsuccessful.
     """
     # Check if we support all profiles.
-    supported_profiles = [i.value for i in BluetoothProfile]
+    supported_profiles = [i.value for i in bt_profile_constants]
     for profile in profiles_set:
         if profile not in supported_profiles:
             pri_ad.log.info("Profile {} is not supported list {}".format(
@@ -908,7 +909,7 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
         False on Failure
     """
     # Sanity check to see if all the profiles in the given set is supported
-    supported_profiles = [i.value for i in BluetoothProfile]
+    supported_profiles = [i.value for i in bt_profile_constants]
     for profile in profiles_list:
         if profile not in supported_profiles:
             pri_ad.log.info("Profile {} is not in supported list {}".format(
