@@ -909,7 +909,7 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
         False on Failure
     """
     # Sanity check to see if all the profiles in the given set is supported
-    supported_profiles = [i.value for i in bt_profile_constants]
+    supported_profiles = bt_profile_constants.values()
     for profile in profiles_list:
         if profile not in supported_profiles:
             pri_ad.log.info("Profile {} is not in supported list {}".format(
