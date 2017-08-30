@@ -153,6 +153,11 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             self.max_bugreports -= 1
         self.dut.cat_adb_log(test_name, begin_time)
 
+    def teardown_class(self):
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
+
     """ Tests Begin """
 
     """ Test wifi auto join functionality move in range of AP1.
