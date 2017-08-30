@@ -20,6 +20,7 @@ Automated tests for the testing passthrough commands in Avrcp/A2dp profile.
 import os
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt import bt_test_utils
 from acts.test_utils.bt import BtEnum
@@ -130,7 +131,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                     return False
         return True
 
-    #@BluetoothTest(UUID=cf4fae08-f4f6-4e0d-b00a-4f6c41d69ff9)
+    @test_tracker_info(uuid='cf4fae08-f4f6-4e0d-b00a-4f6c41d69ff9')
     @BluetoothBaseTest.bt_test_wrap
     def test_play_pause(self):
         """
@@ -161,7 +162,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             return False
         return True
 
-    #@BluetoothTest(UUID=15615b26-3a49-4fa0-b369-41962e8de192)
+    @test_tracker_info(uuid='15615b26-3a49-4fa0-b369-41962e8de192')
     @BluetoothBaseTest.bt_test_wrap
     def test_passthrough(self):
         """
@@ -204,6 +205,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d4103c82-6d21-486b-bc25-007f988245b9')
     def test_media_metadata(self):
         """
         Test if the metadata matches between the two ends.
@@ -272,6 +274,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             return False
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='8f6179db-b800-4ff0-b55f-ee79e009c1a8')
     def test_disconnect_while_media_playing(self):
         """
         Disconnect BT between CT and TG in the middle of a audio streaming session and check
@@ -345,6 +348,7 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='46cd95c8-2066-4018-846d-03366796e94f')
     def test_connect_while_media_playing(self):
         """
         BT connect SRC and SNK when the SRC is already playing music and verify SNK strarts streaming
@@ -389,9 +393,9 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             car_media_utils.CMD_MEDIA_PLAY)
         # At this point, media should be playing only on phone, not on Car, since they are disconnected
         if not car_media_utils.isMediaSessionActive(
-                self.log, self.TG,
-                PHONE_MEDIA_BROWSER_SERVICE_NAME) or car_media_utils.isMediaSessionActive(
-                    self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
+                self.log, self.TG, PHONE_MEDIA_BROWSER_SERVICE_NAME
+        ) or car_media_utils.isMediaSessionActive(
+                self.log, self.CT, CAR_MEDIA_BROWSER_SERVICE_NAME):
             self.log.error("Media playing in wrong end")
             return False
 
@@ -402,8 +406,9 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
             return False
 
         # Now connect to Car on Bluetooth
-        if (not bt_test_utils.connect_pri_to_sec(self.SRC, self.SNK, set(
-            [BtEnum.BluetoothProfile.A2DP.value]))):
+        if (not bt_test_utils.connect_pri_to_sec(
+                self.SRC, self.SNK, set(
+                    [BtEnum.BluetoothProfile.A2DP.value]))):
             return False
 
         # Wait for a bit for the information to show up in the car side
