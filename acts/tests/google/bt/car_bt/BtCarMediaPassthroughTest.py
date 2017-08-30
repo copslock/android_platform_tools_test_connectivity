@@ -62,7 +62,9 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
                 "Missing mandatory user config \"local_media_path\"!")
             return False
         self.local_media_path = self.user_params["local_media_path"]
-        if not os.path.isdir(self.local_media_path):
+        if type(self.local_media_path) is list:
+            self.log.info("Media ready to push as is.")
+        elif not os.path.isdir(self.local_media_path):
             self.local_media_path = os.path.join(
                 self.user_params[Config.key_config_path],
                 self.local_media_path)
@@ -87,7 +89,11 @@ class BtCarMediaPassthroughTest(BluetoothBaseTest):
 
         # Push media files from self.local_media_path to ANDROID_MEDIA_PATH
         # Refer to note in the beginning of file
-        self.TG.adb.push("{} {}".format(self.local_media_path,
+        if type(self.local_media_path) is list:
+            for item in self.local_media_path:
+                self.TG.adb.push("{} {}".format(item, self.android_music_path))
+        else:
+            self.TG.adb.push("{} {}".format(self.local_media_path,
                                         self.android_music_path))
 
         return True
