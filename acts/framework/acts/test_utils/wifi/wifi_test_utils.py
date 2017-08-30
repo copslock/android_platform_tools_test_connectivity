@@ -576,9 +576,6 @@ def reset_wifi(ad):
         ad: An AndroidDevice object.
 
     """
-    # TODO(gmoturu): need to remove wifi_toggle_state() in reset_wifi() when
-    # bug: 32809235 is fixed
-    wifi_toggle_state(ad, True)
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
@@ -637,7 +634,6 @@ def wifi_forget_network(ad, net_ssid):
         net_ssid: ssid of network to be forget
 
     """
-    ad.droid.wifiToggleState(True)
     networks = ad.droid.wifiGetConfiguredNetworks()
     if not networks:
         return
