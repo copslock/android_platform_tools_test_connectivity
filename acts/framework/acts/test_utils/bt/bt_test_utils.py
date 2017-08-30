@@ -817,7 +817,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
         True of connection is successful, false if unsuccessful.
     """
     # Check if we support all profiles.
-    supported_profiles = [i.value for i in bt_profile_constants]
+    supported_profiles = bt_profile_constants.values()
     for profile in profiles_set:
         if profile not in supported_profiles:
             pri_ad.log.info("Profile {} is not supported list {}".format(
