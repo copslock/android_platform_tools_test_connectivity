@@ -77,6 +77,11 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
+    def teardown_class(self):
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
+
     """ Helper Functions """
 
     def add_networks(self, ad, networks):
