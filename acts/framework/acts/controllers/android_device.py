@@ -975,6 +975,9 @@ class AndroidDevice:
                            log_crash_report=False):
         """check crash report on the device."""
         crash_reports = []
+        if begin_time:
+            begin_time = "%s-%s" % (datetime.now().year, begin_time)
+            begin_time = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S.%f")
         for crash_path in CRASH_REPORT_PATHS:
             for report in self.get_file_names(crash_path):
                 if report in CRASH_REPORT_SKIPS:
@@ -982,7 +985,9 @@ class AndroidDevice:
                 file_path = os.path.join(crash_path, report)
                 if begin_time:
                     file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
-                    if begin_time < file_time.split('-', 1)[1]:
+                    file_time = datetime.strptime(file_time[:-3],
+                                                  "%Y-%m-%d %H:%M:%S.%f")
+                    if begin_time < file_time:
                         crash_reports.append(file_path)
                 else:
                     crash_reports.append(file_path)
