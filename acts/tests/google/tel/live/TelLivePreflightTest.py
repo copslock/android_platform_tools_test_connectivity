@@ -104,6 +104,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
     @test_tracker_info(uuid="1070b160-902b-43bf-92a0-92cc2d05bb13")
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
+        result = True
         for ad in self.android_devices:
             ad.crash_report_preflight = ad.check_crash_report(
                 self.test_id, None, True)
@@ -111,4 +112,5 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)
                 ad.log.warn(msg)
-        return True
+                result = False
+        return result
