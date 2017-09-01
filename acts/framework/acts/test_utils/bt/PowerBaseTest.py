@@ -46,7 +46,7 @@ class PowerBaseTest(BluetoothBaseTest):
     MONSOON_MAX_CURRENT = 7.8
     # Power mesaurement sampling rate in Hz
     POWER_SAMPLING_RATE = 10
-    SCREEN_TIME_OFF = 10
+    SCREEN_TIME_OFF = 5
     # Wait time for PMC to start in seconds
     WAIT_TIME = 10
     # Wait time for PMC to write AlarmTimes
@@ -86,6 +86,7 @@ class PowerBaseTest(BluetoothBaseTest):
         self.ad.adb.shell("settings put system screen_brightness 0")
         set_auto_rotate(self.ad, False)
         set_phone_screen_on(self.log, self.ad, self.SCREEN_TIME_OFF)
+        self.ad.go_to_sleep()
 
         wutils.wifi_toggle_state(self.ad, False)
 
