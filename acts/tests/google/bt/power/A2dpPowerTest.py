@@ -293,7 +293,10 @@ class A2dpPowerTest(PowerBaseTest):
         self.ad.log.info("Send broadcast message: %s", msg)
         self.ad.adb.shell(msg)
         # Check if PMC is ready
-        if not self.check_pmc_status(self.LOG_FILE, "READY",
+        status_msg = "READY"
+        if bt_on_not_play == True:
+            status_msg = "SUCCEED"
+        if not self.check_pmc_status(self.LOG_FILE, status_msg,
                                      "PMC is not ready"):
             return
 
