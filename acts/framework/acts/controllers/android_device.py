@@ -1372,7 +1372,7 @@ class AndroidDevice:
         self.send_keycode("NUMPAD_%s" % number)
 
     def unlock_screen(self, password=None):
-        self.log.info("Unlocking screen with %s", password or "swipe up")
+        self.log.info("Unlocking with %s", password or "swipe up")
         # Bring device to SLEEP so that unlock process can start fresh
         self.send_keycode("SLEEP")
         self.send_keycode("WAKEUP")
