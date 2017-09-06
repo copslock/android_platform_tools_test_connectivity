@@ -4726,6 +4726,7 @@ def unlock_sim(ad):
     puk_pin = getattr(ad, "puk_pin", "1111")
     try:
         if not hasattr(ad, 'puk'):
+            ad.log.info("Enter SIM pin code")
             result = ad.droid.telephonySupplyPin(puk_pin)
         else:
             ad.log.info("Enter PUK code and pin")
@@ -4735,6 +4736,7 @@ def unlock_sim(ad):
         ad.unlock_screen(puk_pin)
         if is_sim_locked(ad):
             ad.unlock_screen(puk_pin)
+    time.sleep(30)
     return not is_sim_locked(ad)
 
 
