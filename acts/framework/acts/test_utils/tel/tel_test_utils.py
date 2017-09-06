@@ -1208,6 +1208,9 @@ def initiate_emergency_dialer_call_by_adb(
             if check_call_state_connected_by_adb(ad):
                 ad.log.info("Call to %s is connected", callee_number)
                 return True
+            if check_call_state_idle_by_adb(ad):
+                ad.log.info("Call to %s failed", callee_number)
+                return False
         ad.log.info("Make call to %s failed", callee_number)
         return False
     except Exception as e:
@@ -4638,8 +4641,8 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     ad.adb.reboot_bootloader(ignore_status=True)
     ad.log.info("Wipe in fastboot")
     ad.fastboot._w()
+    ad.log.info("Reboot in fastboot")
     ad.fastboot.reboot()
-    ad.log.info("Reboot")
     ad.wait_for_boot_completion()
     ad.root_adb()
     if result:
@@ -4712,7 +4715,10 @@ def reset_device_password(ad, device_password=None):
 
 
 def is_sim_locked(ad):
-    return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+    try:
+        return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+    except:
+        return ad.adb.getprop("gsm.sim.state") == SIM_STATE_PIN_REQUIRED
 
 
 def unlock_sim(ad):
