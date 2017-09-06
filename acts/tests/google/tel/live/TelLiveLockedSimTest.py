@@ -19,10 +19,12 @@
 
 import time
 import os
+from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
@@ -39,13 +41,33 @@ EXPECTED_CALL_TEST_RESULT = False
 
 
 class TelLiveLockedSimTest(TelLiveEmergencyTest):
+    def __init__(self, controllers):
+        BaseTestClass.__init__(self, controllers)
+        self.logger_sessions = []
+
+        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
+        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
+        for ad in self.android_devices:
+            if not is_sim_locked(ad):
+                ad.log.info("SIM is not locked")
+            else:
+                ad.log.info("SIM is locked")
+                self.dut = ad
+                return
+        #if there is no locked SIM, reboot the device and check again
+        for ad in self.android_devices:
+            ad.reboot()
+            if not is_sim_locked(ad):
+                ad.log.info("SIM is not locked")
+            else:
+                ad.log.info("SIM is locked")
+                self.dut = ad
+                return
+        self.log.error("There is no locked SIM in this testbed")
+        abort_all_tests(self.log, "There is no locked SIM")
+
     def setup_class(self):
-        if not is_sim_locked(self.dut):
-            self.dut.reboot()
-            if not is_sim_locked(self.dut):
-                self.dut.log.error("SIM is not locked")
-                return False
-        self.dut.log.info("SIM is locked")
+        pass
 
     def setup_test(self):
         # reboot the device to SIM lock inquiry page if SIM is not locked
