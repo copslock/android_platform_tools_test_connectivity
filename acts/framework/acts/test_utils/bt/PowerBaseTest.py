@@ -48,7 +48,7 @@ class PowerBaseTest(BluetoothBaseTest):
     POWER_SAMPLING_RATE = 10
     SCREEN_TIME_OFF = 5
     # Wait time for PMC to start in seconds
-    WAIT_TIME = 10
+    WAIT_TIME = 60
     # Wait time for PMC to write AlarmTimes
     ALARM_WAIT_TIME = 600
 
