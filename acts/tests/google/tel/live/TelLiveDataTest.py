@@ -109,9 +109,11 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.provider = self.android_devices[-1]
         self.clients = self.android_devices[:-1]
 
@@ -298,8 +300,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -338,8 +340,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -628,8 +630,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -671,8 +673,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -690,6 +692,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         ensure_phones_idle(self.log, self.android_devices)
+        wifi_toggle_state(self.log, self.provider, False)
         if network_generation:
             if not ensure_network_generation(
                     self.log, self.provider, network_generation,
@@ -700,7 +703,6 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         self.log.info("Airplane Off, Wifi Off, Data On.")
         toggle_airplane_mode(self.log, self.provider, False)
-        wifi_toggle_state(self.log, self.provider, False)
         self.provider.droid.telephonyToggleDataConnection(True)
         for ad in self.clients:
             ad.droid.telephonyToggleDataConnection(False)
@@ -1009,8 +1011,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.provider.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            if not check_is_wifi_connected(self.log, self.clients[0], ssid) or (
-                    not verify_internet_connection(self.log, self.clients[0])):
+            if not check_is_wifi_connected(
+                    self.log, self.clients[0], ssid) or (
+                        not verify_internet_connection(self.log,
+                                                       self.clients[0])):
                 self.clients[0].log.error(
                     "Client wifi connection check failed!")
                 return False
@@ -1272,8 +1276,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1841,8 +1845,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2251,8 +2255,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2402,8 +2406,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             non_active_sim_slot_index = SIM2_SLOT_INDEX
         else:
