@@ -542,6 +542,9 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
         self.eap_connect_toggle_wifi(config, self.dut)
 
+    # Removing 'test_' for all passpoint based testcases as we want to disable
+    # them. Adding the valid test cases to self.tests make them run in serial
+    # (TODO): gmoturu - Update the passpoint tests to test the valid scenario
     # Passpoint connect tests
     """ Test connecting to enterprise networks of different authentication
         types with passpoint support.
@@ -560,13 +563,13 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             networks with passpoint support.
     """
     @test_tracker_info(uuid="0b942524-bde9-4fc6-ac6a-fef1c247cb8e")
-    def test_passpoint_connect_with_config_passpoint_tls(self):
+    def passpoint_connect_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         wutils.wifi_connect(self.dut, self.config_passpoint_tls)
 
     @test_tracker_info(uuid="33a014aa-99e7-4612-b732-54fabf1bf922")
-    def test_passpoint_connect_with_config_passpoint_ttls_none(self):
+    def passpoint_connect_with_config_passpoint_ttls_none(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -574,7 +577,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="1aba8bf9-2b09-4956-b418-c3f4dadab330")
-    def test_passpoint_connect_with_config_passpoint_ttls_pap(self):
+    def passpoint_connect_with_config_passpoint_ttls_pap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -582,7 +585,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="cd978fc9-a393-4b1e-bba3-1efc52224500")
-    def test_passpoint_connect_with_config_passpoint_ttls_mschap(self):
+    def passpoint_connect_with_config_passpoint_ttls_mschap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -590,7 +593,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="bc311ee7-ba64-4c76-a629-b916701bf6a5")
-    def test_passpoint_connect_with_config_passpoint_ttls_mschapv2(self):
+    def passpoint_connect_with_config_passpoint_ttls_mschapv2(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -598,7 +601,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, config)
 
     @test_tracker_info(uuid="357e5162-5081-4149-bedd-ef2c0f88b97e")
-    def test_passpoint_connect_with_config_passpoint_ttls_gtc(self):
+    def passpoint_connect_with_config_passpoint_ttls_gtc(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -616,14 +619,14 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             Fail to establish connection.
     """
     @test_tracker_info(uuid="7b6b44a0-ff70-49b4-94ca-a98bedc18f92")
-    def test_passpoint_connect_negative_with_config_passpoint_tls(self):
+    def passpoint_connect_negative_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = self.gen_negative_passpoint_configs(self.config_passpoint_tls)
         self.eap_negative_connect_logic(config, self.dut)
 
     @test_tracker_info(uuid="3dbde40a-e88c-4166-b932-163663a10a41")
-    def test_passpoint_connect_negative_with_config_passpoint_ttls_none(self):
+    def passpoint_connect_negative_with_config_passpoint_ttls_none(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -632,7 +635,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_negative_connect_logic(config, self.dut)
 
     @test_tracker_info(uuid="8ee22ad6-d561-4ca2-a808-9f372fce56b4")
-    def test_passpoint_connect_negative_with_config_passpoint_ttls_pap(self):
+    def passpoint_connect_negative_with_config_passpoint_ttls_pap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -641,7 +644,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_negative_connect_logic(config, self.dut)
 
     @test_tracker_info(uuid="db5cefe7-9cb8-47a6-8635-006c80b97012")
-    def test_passpoint_connect_negative_with_config_passpoint_ttls_mschap(self):
+    def passpoint_connect_negative_with_config_passpoint_ttls_mschap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -650,7 +653,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_negative_connect_logic(config, self.dut)
 
     @test_tracker_info(uuid="8f49496e-80df-48ce-9c51-42f0c6b81aff")
-    def test_passpoint_connect_negative_with_config_passpoint_ttls_mschapv2(self):
+    def passpoint_connect_negative_with_config_passpoint_ttls_mschapv2(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -659,7 +662,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_negative_connect_logic(config, self.dut)
 
     @test_tracker_info(uuid="6561508f-598e-408d-96b6-15b631664be6")
-    def test_passpoint_connect_negative_with_config_passpoint_ttls_gtc(self):
+    def passpoint_connect_negative_with_config_passpoint_ttls_gtc(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -687,13 +690,13 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             networks with passpoint support.
     """
     @test_tracker_info(uuid="5d5e6bb0-faea-4a6e-a6bc-c87de997a4fd")
-    def test_passpoint_connect_config_store_with_config_passpoint_tls(self):
+    def passpoint_connect_config_store_with_config_passpoint_tls(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         self.eap_connect_toggle_wifi(self.config_passpoint_tls, self.dut)
 
     @test_tracker_info(uuid="0c80262d-23c1-439f-ad64-7b8ada5d1962")
-    def test_passpoint_connect_config_store_with_config_passpoint_ttls_none(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_none(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -701,7 +704,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="786e424c-b5a6-4fe9-a951-b3de16ebb6db")
-    def test_passpoint_connect_config_store_with_config_passpoint_ttls_pap(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_pap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -709,7 +712,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="22fd61bf-722a-4016-a778-fc33e94ed211")
-    def test_passpoint_connect_config_store_with_config_passpoint_ttls_mschap(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_mschap(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -717,7 +720,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="2abd348c-9c66-456b-88ad-55f971717620")
-    def test_passpoint_connect_config_store_with_config_passpoint_ttls_mschapv2(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_mschapv2(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
@@ -725,7 +728,7 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
         self.eap_connect_toggle_wifi(config, self.dut)
 
     @test_tracker_info(uuid="043e8cdd-db95-4f03-b308-3c8cecf874b1")
-    def test_passpoint_connect_config_store_with_config_passpoint_ttls_gtc(self):
+    def passpoint_connect_config_store_with_config_passpoint_ttls_gtc(self):
         asserts.skip_if(not self.dut.droid.wifiIsPasspointSupported(),
                         "Passpoint is not supported on %s" % self.dut.model)
         config = dict(self.config_passpoint_ttls)
