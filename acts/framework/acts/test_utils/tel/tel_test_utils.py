@@ -4640,7 +4640,10 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     ad.log.info("Reboot to bootloader")
     ad.adb.reboot_bootloader(ignore_status=True)
     ad.log.info("Wipe in fastboot")
-    ad.fastboot._w()
+    try:
+        ad.fastboot._w()
+    except Exception as e:
+        ad.log.error(e)
     ad.log.info("Reboot in fastboot")
     ad.fastboot.reboot()
     ad.wait_for_boot_completion()
@@ -4649,11 +4652,11 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         # Try to reinstall for three times as the device might not be
         # ready to apk install shortly after boot complete.
         for _ in range(3):
+            if ad.is_sl4a_installed():
+                break
             ad.log.info("Re-install sl4a")
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
-            if ad.is_sl4a_installed():
-                break
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
 
 
