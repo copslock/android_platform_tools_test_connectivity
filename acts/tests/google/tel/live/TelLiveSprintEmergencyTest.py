@@ -23,7 +23,6 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
-from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
@@ -33,127 +32,69 @@ from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
-from acts.test_utils.tel.tel_test_utils import STORY_LINE
 
 
-class TelLiveEmergencyTest(TelephonyBaseTest):
+class TelLiveSprintEmergencyTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-
         self.dut = self.android_devices[0]
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
-        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
 
-    def setup_test(self):
-        if not unlock_sim(self.dut):
-            abort_all_tests(self.dut.log, "unable to unlock SIM")
-        self.expected_call_result = True
-
-    def change_emergency_number_list(self):
-        for i in range(5):
-            existing = self.dut.adb.getprop("ril.ecclist")
-            self.dut.log.info("Existing ril.ecclist is: %s", existing)
-            if self.fake_emergency_number in existing:
-                return True
-            emergency_numbers = "%s,%s" % (existing,
-                                           self.fake_emergency_number)
-            cmd = "setprop ril.ecclist %s" % emergency_numbers
-            self.dut.log.info(cmd)
-            self.dut.adb.shell(cmd)
-            # After some system events, ril.ecclist might change
-            # wait sometime for it to settle
-            time.sleep(10)
-            if self.fake_emergency_number in existing:
-                return True
-        return False
-
-    def fake_emergency_call_test(self, by_emergency_dialer=True):
+    def emergency_526_call_test(self, by_emergency_dialer=True):
+        callee = "526"
         if by_emergency_dialer:
             dialing_func = initiate_emergency_dialer_call_by_adb
-            callee = self.fake_emergency_number
         else:
             dialing_func = initiate_call
             # Initiate_call method has to have "+" in front
             # otherwise the number will be in dialer without dial out
             # with sl4a fascade. Need further investigation
-            callee = "+%s" % self.fake_emergency_number
-        for _ in range(2):
-            result = True
-            if not self.change_emergency_number_list():
-                self.dut.log.error("Unable to add number to ril.ecclist")
-                return False
-            time.sleep(1)
-            call_numbers = len(dumpsys_telecom_call_info(self.dut))
-            dial_result = dialing_func(self.log, self.dut, callee)
-            hung_up_call_by_adb(self.dut)
-            calls_info = dumpsys_telecom_call_info(self.dut)
-            if len(calls_info) <= call_numbers:
-                self.dut.log.error("New call is not in sysdump telecom")
-                result = False
-            else:
-                self.dut.log.info("New call info = %s", calls_info[-1])
-
-            if dial_result == self.expected_call_result:
-                self.dut.log.info("Call to %s returns %s as expected", callee,
-                                  self.expected_call_result)
-            else:
-                self.dut.log.error("Call to %s returns %s", callee,
-                                   not self.expected_call_result)
-                result = False
-            if result:
-                return True
-            if self.fake_emergency_number in self.dut.adb.getprop(
-                    "ril.ecclist"):
-                # Tested with the right ril.ecclist. No need to retry
-                self.dut.log.info("Tested with right ril-ecclist")
-                return result
-        self.dut.log.error("fake_emergency_call_test result is %s", result)
+            callee = "+%s" % callee
+        result = True
+        if not dialing_func(self.log, self.dut, callee):
+            self.dut.log.info("Call to %s failed", callee)
+            result = False
+        else:
+            self.dut.log.info("Call to %s succeeded", callee)
+        hung_up_call_by_adb(self.dut)
         return result
 
     """ Tests Begin """
 
-    @test_tracker_info(uuid="fe75ba2c-e4ea-4fc1-881b-97e7a9a7f48e")
+    @test_tracker_info(uuid="ea13fd5e-7d09-4523-b99b-9e9a0ac97ab0")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_by_emergency_dialer(self):
         """Test emergency call with emergency dialer in user account.
 
-        Add system emergency number list with storyline number.
-        Use the emergency dialer to call storyline.
+        Use the emergency dialer to call 526.
         Verify DUT has in call activity.
 
         Returns:
             True if success.
             False if failed.
         """
-        return self.fake_emergency_call_test()
+        return self.emergency_526_call_test()
 
-    @test_tracker_info(uuid="8a0978a8-d93e-4f6a-99fe-d0e28bf1be2a")
+    @test_tracker_info(uuid="23975c54-a499-4d9d-b8b1-134dd507e07e")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_by_dialer(self):
         """Test emergency call with dialer.
 
-        Add system emergency number list with storyline number.
-        Call storyline by dialer.
+        Call 526 by dialer.
         Verify DUT has in call activity.
 
         Returns:
             True if success.
             False if failed.
         """
-        return self.fake_emergency_call_test(by_emergency_dialer=False)
+        return self.emergency_526_call_test(by_emergency_dialer=False)
 
-    @test_tracker_info(uuid="2e6fcc75-ff9e-47b1-9ae8-ed6f9966d0f5")
+    @test_tracker_info(uuid="5c66ce2d-8b92-4b60-b71b-62dfeb8ae17b")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_apm(self):
         """Test emergency call with emergency dialer in airplane mode.
 
         Enable airplane mode.
-        Add system emergency number list with storyline number.
-        Use the emergency dialer to call storyline.
+        Use the emergency dialer to call 526.
         Verify DUT has in call activity.
 
         Returns:
@@ -162,21 +103,20 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         """
         try:
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            if self.fake_emergency_call_test():
+            if self.emergency_526_call_test():
                 return True
             else:
                 return False
         finally:
             toggle_airplane_mode_by_adb(self.log, self.dut, False)
 
-    @test_tracker_info(uuid="469bfa60-6e8f-4159-af1f-ab6244073079")
+    @test_tracker_info(uuid="c70a931c-5d07-45eb-8a7e-3252a5e1727d")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_screen_lock(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
         Enable device password and then reboot upto password query window.
-        Add system emergency number list with storyline.
-        Use the emergency dialer to call storyline.
+        Use the emergency dialer to call 526.
         Verify DUT has in call activity.
 
         Returns:
@@ -187,7 +127,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             toggle_airplane_mode_by_adb(self.log, self.dut, False)
             reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.reboot(stop_at_lock_screen=True)
-            if self.fake_emergency_call_test():
+            if self.emergency_526_call_test():
                 return True
             else:
                 return False
@@ -198,14 +138,13 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             self.dut.start_services(self.dut.skip_sl4a)
             reset_device_password(self.dut, None)
 
-    @test_tracker_info(uuid="17401c57-0dc2-49b5-b954-a94dbb2d5ad0")
+    @test_tracker_info(uuid="743c6b89-7107-41ff-b4fe-2a8e80c99a0d")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_screen_lock_apm(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
         Enable device password and then reboot upto password query window.
-        Add system emergency number list with storyline.
-        Use the emergency dialer to call storyline.
+        Use the emergency dialer to call 526.
         Verify DUT has in call activity.
 
         Returns:
@@ -216,7 +155,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
             reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.reboot(stop_at_lock_screen=True)
-            if self.fake_emergency_call_test():
+            if self.emergency_526_call_test():
                 return True
             else:
                 return False
@@ -228,14 +167,13 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             self.dut.start_services(self.dut.skip_sl4a)
             reset_device_password(self.dut, None)
 
-    @test_tracker_info(uuid="ccea13ae-6951-4790-a5f7-b5b7a2451c6c")
+    @test_tracker_info(uuid="55d55d7f-dc9b-4e73-b1ca-ec8c9a5e86ba")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_setupwizard(self):
         """Test emergency call with emergency dialer in setupwizard.
 
         Wipe the device and then reboot upto setupwizard.
-        Add system emergency number list with storyline number.
-        Use the emergency dialer to call storyline.
+        Use the emergency dialer to call 526.
         Verify DUT has in call activity.
 
         Returns:
@@ -244,7 +182,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         """
         try:
             fastboot_wipe(self.dut, skip_setup_wizard=False)
-            if self.fake_emergency_call_test():
+            if self.emergency_526_call_test():
                 return True
             else:
                 return False

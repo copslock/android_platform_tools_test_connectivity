@@ -33,7 +33,7 @@ class ThroughputTest(AwareBaseTest):
   SERVICE_NAME = "GoogleTestServiceXYZ"
 
   def __init__(self, controllers):
-    AwareBaseTest.__init__(self, controllers)
+    super(ThroughputTest, self).__init__(controllers)
 
   def request_network(self, dut, ns):
     """Request a Wi-Fi Aware network.

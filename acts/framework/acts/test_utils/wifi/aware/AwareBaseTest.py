@@ -23,7 +23,7 @@ from acts.test_utils.wifi.aware import aware_test_utils as autils
 
 class AwareBaseTest(BaseTestClass):
   def __init__(self, controllers):
-    BaseTestClass.__init__(self, controllers)
+    super(AwareBaseTest, self).__init__(controllers)
 
   # message ID counter to make sure all uses are unique
   msg_id = 0

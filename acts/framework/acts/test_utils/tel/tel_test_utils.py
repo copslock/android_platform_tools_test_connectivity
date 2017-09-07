@@ -1208,6 +1208,9 @@ def initiate_emergency_dialer_call_by_adb(
             if check_call_state_connected_by_adb(ad):
                 ad.log.info("Call to %s is connected", callee_number)
                 return True
+            if check_call_state_idle_by_adb(ad):
+                ad.log.info("Call to %s failed", callee_number)
+                return False
         ad.log.info("Make call to %s failed", callee_number)
         return False
     except Exception as e:
@@ -4637,20 +4640,23 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     ad.log.info("Reboot to bootloader")
     ad.adb.reboot_bootloader(ignore_status=True)
     ad.log.info("Wipe in fastboot")
-    ad.fastboot._w()
+    try:
+        ad.fastboot._w()
+    except Exception as e:
+        ad.log.error(e)
+    ad.log.info("Reboot in fastboot")
     ad.fastboot.reboot()
-    ad.log.info("Reboot")
     ad.wait_for_boot_completion()
     ad.root_adb()
     if result:
         # Try to reinstall for three times as the device might not be
         # ready to apk install shortly after boot complete.
         for _ in range(3):
+            if ad.is_sl4a_installed():
+                break
             ad.log.info("Re-install sl4a")
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
-            if ad.is_sl4a_installed():
-                break
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
 
 
@@ -4712,7 +4718,10 @@ def reset_device_password(ad, device_password=None):
 
 
 def is_sim_locked(ad):
-    return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+    try:
+        return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+    except:
+        return ad.adb.getprop("gsm.sim.state") == SIM_STATE_PIN_REQUIRED
 
 
 def unlock_sim(ad):
@@ -4726,6 +4735,7 @@ def unlock_sim(ad):
     puk_pin = getattr(ad, "puk_pin", "1111")
     try:
         if not hasattr(ad, 'puk'):
+            ad.log.info("Enter SIM pin code")
             result = ad.droid.telephonySupplyPin(puk_pin)
         else:
             ad.log.info("Enter PUK code and pin")
@@ -4735,6 +4745,7 @@ def unlock_sim(ad):
         ad.unlock_screen(puk_pin)
         if is_sim_locked(ad):
             ad.unlock_screen(puk_pin)
+    time.sleep(30)
     return not is_sim_locked(ad)
 
 
