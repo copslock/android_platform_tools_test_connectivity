@@ -24,6 +24,7 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
+from acts.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
@@ -57,6 +58,16 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         #if there is no locked SIM, reboot the device and check again
         for ad in self.android_devices:
             ad.reboot()
+            for _ in range(10):
+                sim_state = ad.adb.getprop("gsm.sim.state")
+                if sim_state == SIM_STATE_READY:
+                    break
+                elif sim_state == SIM_STATE_PIN_REQUIRED:
+                    ad.log.info("SIM is locked")
+                    self.dut = ad
+                    return
+                else:
+                    time.sleep(5)
             if not is_sim_locked(ad):
                 ad.log.info("SIM is not locked")
             else:
