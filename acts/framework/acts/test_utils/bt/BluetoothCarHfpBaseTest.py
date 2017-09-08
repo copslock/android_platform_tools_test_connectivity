@@ -22,6 +22,7 @@ import os
 import time
 from queue import Empty
 
+from acts.keys import Config
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
