@@ -846,8 +846,8 @@ class MD8475A(object):
         for _ in range(registration_check_iterations):
             waiting_time = 0
             while waiting_time <= time_to_wait:
-                callstat = self.send_query(
-                    "CALLSTAT? BTS{}".format(bts)).split(",")
+                callstat = self.send_query("CALLSTAT? BTS{}".format(
+                    bts)).split(",")
                 if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
                     break
                 time.sleep(sleep_interval)
@@ -1562,8 +1562,14 @@ class _BaseTransceiverStation(object):
         Returns:
             None
         """
-        cmd = "OLVL {},{}".format(level, self._bts_number)
-        self._anritsu.send_command(cmd)
+        counter = 1
+        while float(level) != float(self.output_level):
+            if counter > 3:
+                raise AnritsuError("Fail to set output level in 3 tries!")
+            cmd = "OLVL {},{}".format(level, self._bts_number)
+            self._anritsu.send_command(cmd)
+            counter += 1
+            time.sleep(1)
 
     @property
     def input_level(self):
@@ -1588,8 +1594,14 @@ class _BaseTransceiverStation(object):
         Returns:
             None
         """
-        cmd = "RFLVL {},{}".format(level, self._bts_number)
-        self._anritsu.send_command(cmd)
+        counter = 1
+        while float(level) != float(self.input_level):
+            if counter > 3:
+                raise AnritsuError("Fail to set intput level in 3 tries!")
+            cmd = "RFLVL {},{}".format(level, self._bts_number)
+            self._anritsu.send_command(cmd)
+            counter += 1
+            time.sleep(1)
 
     @property
     def band(self):
@@ -2522,6 +2534,38 @@ class _BaseTransceiverStation(object):
         """
         cmd = "ULMCS {},{}".format(mcs_ul, self._bts_number)
         self._anritsu.send_command(cmd)
+
+    @property
+    def lte_scheduling_mode(self):
+        """ Gets the Scheduling mode of the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            Scheduling mode
+        """
+        cmd = "SCHEDULEMODE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @lte_scheduling_mode.setter
+    def lte_scheduling_mode(self, mode):
+        """ Sets the Scheduling mode of the LTE cell
+
+        Args:
+            mode: STATIC (default) or DYNAMIC
+
+        Returns:
+            None
+        """
+        counter = 1
+        while mode != self.lte_scheduling_mode:
+            if counter > 3:
+                raise AnritsuError("Fail to set scheduling mode in 3 tries!")
+            cmd = "SCHEDULEMODE {},{}".format(mode, self._bts_number)
+            self._anritsu.send_command(cmd)
+            counter += 1
+            time.sleep(1)
 
     @property
     def lte_mcs_dl(self):
