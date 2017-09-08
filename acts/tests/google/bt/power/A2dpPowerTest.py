@@ -278,7 +278,7 @@ class A2dpPowerTest(PowerBaseTest):
                 self.PMC_BASE_CMD, self.music_url, play_time)
 
             if bt_off_mute == True:
-                msg = "%s --es BT_OFF_Mute %d" % (playing_msg, 1)
+                msg = "%s --es BT_OFF_Mute %d" % (play_msg, 1)
             else:
                 codec1_msg = "%s --es CodecType %d --es SampleRate %d" % (
                     play_msg, codec_type, sample_rate)
