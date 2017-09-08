@@ -353,13 +353,15 @@ def get_phone_number_by_secret_code(ad, operator):
     if "T-Mobile" in operator:
         ad.droid.telecomDialNumber("#686#")
         ad.send_keycode("ENTER")
-        time.sleep(30)
-        output = ad.search_logcat("mobile number")
-        result = re.findall(r"mobile number is (\S+)",
-                            output[-1]["log_message"])
-        return result[0]
-    else:
-        return ""
+        for _ in range(12):
+            output = ad.search_logcat("mobile number")
+            if output:
+                result = re.findall(r"mobile number is (\S+)",
+                                    output[-1]["log_message"])
+                return result[0]
+            else:
+                time.sleep(5)
+    return ""
 
 
 def get_slot_index_from_subid(log, ad, sub_id):
