@@ -60,7 +60,7 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         if not "bt_config" in self.user_params.keys():
             self.log.error("Missing mandatory user config \"bt_config\"!")
             return False
-        bt_config_map_file = self.user_params["bt_config"]
+        bt_config_map_file = self.user_params["bt_config"][0]
         return self._setup_bt_config(bt_config_map_file)
 
     def _setup_bt_config(self, bt_config_map_file):

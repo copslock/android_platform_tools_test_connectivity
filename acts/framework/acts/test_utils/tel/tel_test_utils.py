@@ -204,6 +204,8 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
         phone_number = phone_number_formatter(sim_data[iccid]["phone_num"])
     else:
         phone_number = get_phone_number_by_adb(ad)
+        if not phone_number and hasattr(ad, phone_number):
+            phone_number = ad.phone_number
     if not phone_number:
         abort_all_tests(ad.log, "Failed to find valid phone number")
     sim_record = {
@@ -238,6 +240,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
             log.warning("Failed to load %s!", sim_filename)
     if not ad.cfg["subscription"]:
         abort_all_tests(ad.log, "No Valid SIMs found in device")
+    result = False
     for sub_id, sub_info in ad.cfg["subscription"].items():
         sub_info["operator"] = get_operator_name(log, ad, sub_id)
         iccid = sub_info["iccid"]
@@ -245,22 +248,26 @@ def setup_droid_properties(log, ad, sim_filename=None):
             ad.log.warn("Unable to find ICC-ID for SIM")
             continue
         if not sub_info["phone_num"]:
-            if iccid not in sim_data or not sim_data[iccid].get("phone_num"):
-                abort_all_tests(
-                    ad.log,
-                    "Failed to find valid phone number for ICCID %s in %s" %
-                    (iccid, sim_filename))
-            else:
+            if iccid in sim_data and sim_data[iccid].get("phone_num"):
                 sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        elif sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
-            if not check_phone_number_match(sub_info["phone_num"],
-                                            sim_data[iccid]["phone_num"]):
+                ad.phone_number = sub_info["phone_num"]
+                result = True
+            else:
                 ad.log.error(
-                    "ICCID %s phone number is %s in %s, does not match "
-                    "the number %s retrieved from the phone", iccid,
-                    sim_data[iccid]["phone_num"], sim_filename,
-                    sub_info["phone_num"])
-            sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+                    "Unable to retrieve phone number for sub %s iccid %s from"
+                    " device or from testbed config or from sim_file %s",
+                    sim_filename, sub_id, iccid)
+        else:
+            result = True
+            if sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
+                if not check_phone_number_match(sub_info["phone_num"],
+                                                sim_data[iccid]["phone_num"]):
+                    ad.log.warning(
+                        "ICCID %s phone number is %s in %s, does not match "
+                        "the number %s retrieved from the phone", iccid,
+                        sim_data[iccid]["phone_num"], sim_filename,
+                        sub_info["phone_num"])
+                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
         if not hasattr(
                 ad, 'roaming'
         ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
@@ -271,6 +278,8 @@ def setup_droid_properties(log, ad, sim_filename=None):
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
+    if not result:
+        abort_all_tests(ad.log, "Failed to find valid phone number")
 
     ad.log.debug("cfg = %s", ad.cfg)
 
@@ -324,14 +333,35 @@ def refresh_droid_config(log, ad):
             sim_record[
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
-            sim_record["phone_num"] = phone_number_formatter(
-                droid.telephonyGetLine1NumberForSubscription(sub_id))
+            phone_number = droid.telephonyGetLine1NumberForSubscription(sub_id)
+            if not phone_number:
+                if hasattr(ad, "phone_number"):
+                    phone_number = ad.phone_number
+                if not phone_number:
+                    phone_number = get_phone_number_by_secret_code(
+                        ad, sim_record["sim_operator_name"])
+            sim_record["phone_num"] = phone_number_formatter(phone_number)
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
                     sub_id)
             cfg['subscription'][sub_id] = sim_record
             ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
     setattr(ad, 'cfg', cfg)
+
+
+def get_phone_number_by_secret_code(ad, operator):
+    if "T-Mobile" in operator:
+        ad.droid.telecomDialNumber("#686#")
+        ad.send_keycode("ENTER")
+        for _ in range(12):
+            output = ad.search_logcat("mobile number")
+            if output:
+                result = re.findall(r"mobile number is (\S+)",
+                                    output[-1]["log_message"])
+                return result[0]
+            else:
+                time.sleep(5)
+    return ""
 
 
 def get_slot_index_from_subid(log, ad, sub_id):
@@ -1682,6 +1712,8 @@ def phone_number_formatter(input_string, formatter=None):
         If no error happen, return phone number in expected format.
         Else, return None.
     """
+    if not input_string:
+        return ""
     # make sure input_string is 10 digital
     # Remove white spaces, dashes, dots
     input_string = input_string.replace(" ", "").replace("-", "").replace(

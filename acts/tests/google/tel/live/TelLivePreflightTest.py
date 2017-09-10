@@ -65,7 +65,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
             "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
 
     def setup_class(self):
-        pass
+        ensure_phones_default_state(self.log, self.android_devices)
 
     def setup_test(self):
         pass
