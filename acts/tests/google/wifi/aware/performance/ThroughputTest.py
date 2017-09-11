@@ -32,6 +32,9 @@ class ThroughputTest(AwareBaseTest):
 
   SERVICE_NAME = "GoogleTestServiceXYZ"
 
+  PASSPHRASE = "This is some random passphrase - very very secure!!"
+  PASSPHRASE2 = "This is some random passphrase - very very secure - but diff!!"
+
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
 
@@ -209,7 +212,7 @@ class ThroughputTest(AwareBaseTest):
       self.log.info("iPerf3: Sent = %d bps Received = %d bps",
                     results[i]["tx_rate"], results[i]["rx_rate"])
 
-    ########################################################################
+  ########################################################################
 
   def test_iperf_single_ndp_aware_only_ib(self):
     """Measure throughput using iperf on a single NDP, with Aware enabled and
@@ -235,3 +238,141 @@ class ThroughputTest(AwareBaseTest):
     self.run_iperf_max_ndp_aware_only(results=results)
     asserts.explicit_pass(
         "test_iperf_max_ndp_aware_only_oob passes", extras=results)
+
+  ########################################################################
+
+  def run_iperf_max_ndi_aware_only(self, sec_configs, results):
+    """Measure iperf performance on multiple NDPs between 2 devices using
+    different security configurations (and hence different NDIs). Test with
+    Aware enabled and no infrastructure connection - i.e. device is not
+    associated to an AP.
+
+    The security configuration can be:
+    - None: open
+    - String: passphrase
+    - otherwise: PMK (byte array)
+
+    Args:
+      sec_configs: list of security configurations
+      results: Dictionary into which to place test results.
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    asserts.skip_if(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs) or
+                    resp_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs),
+                    "Initiator or Responder do not support multiple NDIs")
+
+
+    init_id, init_mac = autils.attach_with_identity(init_dut)
+    resp_id, resp_mac = autils.attach_with_identity(resp_dut)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    resp_req_keys = []
+    init_req_keys = []
+    resp_aware_ifs = []
+    init_aware_ifs = []
+    resp_aware_ipv6s = []
+    init_aware_ipv6s = []
+
+    for sec in sec_configs:
+      # Responder: request network
+      resp_req_key = autils.request_network(resp_dut,
+                                            autils.get_network_specifier(
+                                                resp_dut, resp_id,
+                                                aconsts.DATA_PATH_RESPONDER,
+                                                init_mac, sec))
+      resp_req_keys.append(resp_req_key)
+
+      # Initiator: request network
+      init_req_key = autils.request_network(init_dut,
+                                            autils.get_network_specifier(
+                                                init_dut, init_id,
+                                                aconsts.DATA_PATH_INITIATOR,
+                                                resp_mac, sec))
+      init_req_keys.append(init_req_key)
+
+      # Wait for network
+      init_net_event = autils.wait_for_event_with_keys(
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+      resp_net_event = autils.wait_for_event_with_keys(
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+      resp_aware_ifs.append(
+          resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      init_aware_ifs.append(
+          init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+
+      resp_aware_ipv6s.append(
+          autils.get_ipv6_addr(resp_dut, resp_aware_ifs[-1]))
+      init_aware_ipv6s.append(
+          autils.get_ipv6_addr(init_dut, init_aware_ifs[-1]))
+
+    self.log.info("Initiator interfaces/ipv6: %s / %s", init_aware_ifs,
+                  init_aware_ipv6s)
+    self.log.info("Responder interfaces/ipv6: %s / %s", resp_aware_ifs,
+                  resp_aware_ipv6s)
+
+    # create threads, start them, and wait for all to finish
+    base_port = 5000
+    q = queue.Queue()
+    threads = []
+    for i in range(len(sec_configs)):
+      threads.append(
+          threading.Thread(
+              target=self.run_iperf,
+              args=(q, init_dut, resp_dut, resp_aware_ifs[i], init_aware_ipv6s[
+                  i], base_port + i)))
+
+    for thread in threads:
+      thread.start()
+
+    for thread in threads:
+      thread.join()
+
+    # release requests
+    for resp_req_key in resp_req_keys:
+      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    for init_req_key in init_req_keys:
+      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+
+    # collect data
+    for i in range(len(sec_configs)):
+      results[i] = {}
+      result, data = q.get()
+      asserts.assert_true(result,
+                          "Failure starting/running iperf3 in client mode")
+      self.log.debug(pprint.pformat(data))
+      data_json = json.loads("".join(data))
+      if "error" in data_json:
+        asserts.fail(
+            "iperf run failed: %s" % data_json["error"], extras=data_json)
+      results[i]["tx_rate"] = data_json["end"]["sum_sent"]["bits_per_second"]
+      results[i]["rx_rate"] = data_json["end"]["sum_received"][
+        "bits_per_second"]
+      self.log.info("iPerf3: Sent = %d bps Received = %d bps",
+                    results[i]["tx_rate"], results[i]["rx_rate"])
+
+  def test_iperf_max_ndi_aware_only_passphrases(self):
+    """Test throughput for multiple NDIs configured with different passphrases.
+    """
+    results = {}
+    self.run_iperf_max_ndi_aware_only(
+        [self.PASSPHRASE, self.PASSPHRASE2], results=results)
+    asserts.explicit_pass(
+        "test_iperf_max_ndi_aware_only_passphrases passes", extras=results)
