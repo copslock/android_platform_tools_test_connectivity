@@ -957,7 +957,7 @@ class AndroidDevice:
             self.adb.root_adb()
             out = self.adb.shell("ls %s" % directory, ignore_status=True)
         if out and "No such" not in out:
-            return out.split('\n')
+            return re.findall(r"(\S+)", out)
         else:
             return []
 
