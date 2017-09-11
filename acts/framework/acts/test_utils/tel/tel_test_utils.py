@@ -1111,7 +1111,8 @@ def initiate_call(log,
                   callee_number,
                   emergency=False,
                   timeout=MAX_WAIT_TIME_CALL_INITIATION,
-                  checking_interval=5):
+                  checking_interval=5,
+                  wait_time_betwn_call_initcheck=0):
     """Make phone call from caller to callee.
 
     Args:
@@ -1134,6 +1135,9 @@ def initiate_call(log,
             ad.droid.telecomCallEmergencyNumber(callee_number)
         else:
             ad.droid.telecomCallNumber(callee_number)
+
+        # Sleep time for stress test b/64915613
+        time.sleep(wait_time_betwn_call_initcheck)
 
         # Verify OFFHOOK event
         checking_retries = int(timeout / checking_interval)
@@ -1549,7 +1553,8 @@ def call_setup_teardown(log,
                         verify_caller_func=None,
                         verify_callee_func=None,
                         wait_time_in_call=WAIT_TIME_IN_CALL,
-                        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+                        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+                        extra_sleep=0):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -1570,6 +1575,7 @@ def call_setup_teardown(log,
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
             if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
             else, do nothing.
+        extra_sleep: for stress test only - b/64915613
 
     Returns:
         True if call process without any error.
@@ -1581,7 +1587,7 @@ def call_setup_teardown(log,
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
-        incall_ui_display)
+        incall_ui_display, extra_sleep)
 
 
 def call_setup_teardown_for_subscription(
@@ -1594,7 +1600,8 @@ def call_setup_teardown_for_subscription(
         verify_caller_func=None,
         verify_callee_func=None,
         wait_time_in_call=WAIT_TIME_IN_CALL,
-        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        extra_sleep=0):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -1617,6 +1624,7 @@ def call_setup_teardown_for_subscription(
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
             if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
             else, do nothing.
+        extra_sleep: for stress test only - b/64915613
 
     Returns:
         True if call process without any error.
@@ -1638,7 +1646,11 @@ def call_setup_teardown_for_subscription(
                        callee_number, wait_time_in_call)
 
     try:
-        if not initiate_call(log, ad_caller, callee_number):
+        if not initiate_call(
+                log,
+                ad_caller,
+                callee_number,
+                wait_time_betwn_call_initcheck=extra_sleep):
             ad_caller.log.error("Initiate call failed.")
             result = False
             return False
