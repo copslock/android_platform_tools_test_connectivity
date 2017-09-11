@@ -193,8 +193,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                   get_current_voice_rat(self.log, self.dut))
                 self.dut.log.info("Make call to %s with call duration %s",
                                   self.call_server_number, duration)
-                if not initiate_call(self.log, self.dut,
-                                     self.call_server_number):
+                if not initiate_call(
+                        self.log,
+                        self.dut,
+                        self.call_server_number,
+                        wait_time_betwn_call_initcheck=5):
                     self.dut.log.error("Initiate phone call to %s failed.",
                                        self.call_server_number)
                     self.result_info["Call initiation failure"] += 1

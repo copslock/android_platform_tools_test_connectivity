@@ -186,7 +186,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ad_hangup=ads[random.randrange(0, 2)],
                 wait_time_in_call=random.randrange(
                     self.min_phone_call_duration,
-                    self.max_phone_call_duration)):
+                    self.max_phone_call_duration),
+                extra_sleep=5):
             self.log.error("Call setup and teardown failed.")
             self.result_info["Call Failure"] += 1
             return False
@@ -204,7 +205,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 verify_callee_func=None,
                 wait_time_in_call=random.randrange(
                     self.min_phone_call_duration,
-                    self.max_phone_call_duration)):
+                    self.max_phone_call_duration),
+                extra_sleep=5):
             self.log.error("Call setup and teardown failed.")
             self.result_info["Call Failure"] += 1
             return False
