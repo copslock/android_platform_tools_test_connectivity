@@ -21,6 +21,7 @@ from datetime import datetime
 import logging
 import os
 import re
+import shellescape
 import socket
 import time
 
@@ -951,13 +952,15 @@ class AndroidDevice:
 
     def get_file_names(self, directory):
         """Get files names with provided directory."""
-        file_names = []
-        out = self.adb.shell("ls %s" % directory, ignore_status=True)
+        # -1 (the number one) prints one file per line.
+        out = self.adb.shell(
+            "ls -1 %s" % shellescape.quote(directory), ignore_status=True)
         if "Permission denied" in out:
-            self.adb.root_adb()
-            out = self.adb.shell("ls %s" % directory, ignore_status=True)
+            self.root_adb()
+            out = self.adb.shell(
+                "ls -1 %s" % shellescape.quote(directory), ignore_status=True)
         if out and "No such" not in out:
-            return re.findall(r"(\S+)", out)
+            return out.split('\n')
         else:
             return []
 
