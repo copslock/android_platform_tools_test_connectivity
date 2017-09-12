@@ -416,8 +416,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             if simultaneous_voice_data:
                 self.log.info("Step3 Verify internet.")
                 time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-                if not verify_internet_connection(self.log,
-                                                  self.android_devices[0]):
+                if not verify_internet_connection(
+                        self.log, self.android_devices[0], retries=3):
                     raise _LocalException("Internet Inaccessible when Enabled")
 
                 self.log.info("Step4 Turn off data and verify not connected.")
