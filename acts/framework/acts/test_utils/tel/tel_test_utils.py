@@ -1876,7 +1876,7 @@ def active_file_download_task(log, ad, file_name="5MB"):
     if not file_size:
         log.warning("file_name %s for download is not available", file_name)
         return False
-    timeout = min(max(file_size / 100000, 300), 3600)
+    timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not ad.curl_capable:
         return (http_file_download_by_chrome, (ad, url, file_size, True,
