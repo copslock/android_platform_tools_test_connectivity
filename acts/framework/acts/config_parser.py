@@ -68,10 +68,30 @@ def _validate_testbed_name(name):
                 "Char '%s' is not allowed in test bed names." % l)
 
 
+def _set_config_overrides(acts_config, testbed_config):
+    """Sets overridable testbed keys to be the user param value if available.
+
+    Any key in keys.Config.user_param_overridable can be overridden by
+    "%(testbed_name)_%(key)". Set the testbed_config value to have this for
+    automation instead.
+
+    Args:
+        acts_config: the full ACTS config
+        testbed_config: the config for the given testbed.
+    """
+    if keys.Config.key_testbed_name.value not in testbed_config:
+        return
+    testbed_name = testbed_config[keys.Config.key_testbed_name.value]
+    for entry_key in keys.Config.user_param_overridable.value:
+        user_param_override_key = "%s_%s" % (testbed_name, entry_key)
+        if user_param_override_key in acts_config:
+            testbed_config[entry_key] = acts_config[user_param_override_key]
+
+
 def _update_file_paths(config, config_path):
     """ Checks if the path entries are valid.
 
-    If the file path is invaild, assume it is a relative path and append
+    If the file path is invalid, assume it is a relative path and append
     that to the config file path.
 
     Args:
@@ -95,10 +115,11 @@ def _update_file_paths(config, config_path):
                 config[file_path_key] = config_file
 
 
-def _validate_testbed_configs(testbed_configs, config_path):
+def _validate_testbed_configs(acts_config, testbed_configs, config_path):
     """Validates the testbed configurations.
 
     Args:
+        acts_config: the full ACTS config.
         testbed_configs: A list of testbed configuration json objects.
         config_path : The path to the config file, which can be used to
                       generate absolute paths from relative paths in configs.
@@ -109,6 +130,7 @@ def _validate_testbed_configs(testbed_configs, config_path):
     seen_names = set()
     # Cross checks testbed configs for resource conflicts.
     for config in testbed_configs:
+        _set_config_overrides(acts_config, testbed_config=config)
         _update_file_paths(config, config_path)
         # Check for conflicts between multiple concurrent testbed configs.
         # No need to call it if there's only one testbed config.
@@ -159,7 +181,7 @@ def _parse_one_test_specifier(item):
         # This should be considered a test class name
         test_cls_name = tokens[0]
         _verify_test_class_name(test_cls_name)
-        return (test_cls_name, None)
+        return test_cls_name, None
     elif len(tokens) == 2:
         # This should be considered a test class name followed by
         # a list of test case names.
@@ -175,7 +197,7 @@ def _parse_one_test_specifier(item):
                      "naming convention test_*.") % (test_case_name,
                                                      test_cls_name))
             clean_names.append(test_case_name)
-        return (test_cls_name, clean_names)
+        return test_cls_name, clean_names
 
 
 def parse_test_list(test_list):
@@ -195,7 +217,7 @@ def test_randomizer(test_identifiers, test_case_iterations=10):
 
     Args:
         test_identifiers: A list of test classes/cases.
-        random_iterations: The range of random iterations for each case.
+        test_case_iterations: The range of random iterations for each case.
     Returns:
         A list of randomized test cases.
     """
@@ -232,7 +254,7 @@ def load_test_config_file(test_config_path,
                           override_test_args=None,
                           override_random=None,
                           override_test_case_iterations=None):
-    """Processes the test configuration file provied by user.
+    """Processes the test configuration file provided by the user.
 
     Loads the configuration file into a json object, unpacks each testbed
     config into its own json object, and validate the configuration in the
@@ -277,12 +299,12 @@ def load_test_config_file(test_config_path,
                                                              len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
 
-    if (not keys.Config.key_log_path.value in configs and
+    if (keys.Config.key_log_path.value not in configs and
             _ENV_ACTS_LOGPATH in os.environ):
         print('Using environment log path: %s' %
               (os.environ[_ENV_ACTS_LOGPATH]))
         configs[keys.Config.key_log_path.value] = os.environ[_ENV_ACTS_LOGPATH]
-    if (not keys.Config.key_test_paths.value in configs and
+    if (keys.Config.key_test_paths.value not in configs and
             _ENV_ACTS_TESTPATHS in os.environ):
         print('Using environment test paths: %s' %
               (os.environ[_ENV_ACTS_TESTPATHS]))
@@ -297,7 +319,7 @@ def load_test_config_file(test_config_path,
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
     configs[keys.Config.key_config_path] = config_path
     _validate_test_config(configs)
-    _validate_testbed_configs(configs[keys.Config.key_testbed.value],
+    _validate_testbed_configs(configs, configs[keys.Config.key_testbed.value],
                               config_path)
     # Unpack testbeds into separate json objects.
     beds = configs.pop(keys.Config.key_testbed.value)
