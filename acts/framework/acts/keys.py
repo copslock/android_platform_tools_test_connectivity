@@ -74,6 +74,9 @@ class Config(enum.Enum):
     # Keys that are file or folder paths.
     file_path_keys = [key_relay_device]
 
+    # Keys that can be overridden by "%(key)_%(testbed_name)".
+    user_param_overridable = [key_relay_device]
+
 
 def get_name_by_value(value):
     for name, member in Config.__members__.items():
