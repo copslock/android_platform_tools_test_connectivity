@@ -47,6 +47,8 @@ SYSTEM_NAVI = "settings put secure system_navigation_keys_enabled 0"
 # End of command to disable gestures
 AUTO_TIME_OFF = "settings put global auto_time 0"
 AUTO_TIMEZONE_OFF = "settings put global auto_time_zone 0"
+FORCE_YOUTUBE_STOP = "am force-stop com.google.android.youtube"
+FORCE_DIALER_STOP = "am force-stop com.google.android.dialer"
 IPERF_TIMEOUT = 180
 
 
@@ -74,7 +76,6 @@ def dut_rockbottom(ad):
     ad.droid.setScreenBrightness(0)
     ad.adb.shell(AOD_OFF)
     ad.droid.setScreenTimeout(2200)
-    ad.droid.goToSleepNow()
     ad.droid.wakeUpNow()
     ad.adb.shell(LIFT)
     ad.adb.shell(DOUBLE_TAP)
@@ -91,6 +92,9 @@ def dut_rockbottom(ad):
     ad.adb.shell(MUSIC_IQ_OFF)
     ad.adb.shell(AUTO_TIME_OFF)
     ad.adb.shell(AUTO_TIMEZONE_OFF)
+    ad.adb.shell(FORCE_YOUTUBE_STOP)
+    ad.adb.shell(FORCE_DIALER_STOP)
+    ad.droid.wakeUpNow()
     ad.log.info('Device has been set to Rockbottom state')
 
 
@@ -402,3 +406,42 @@ def get_wifi_rssi(ad):
     """
     RSSI = ad.droid.wifiGetConnectionInfo()['rssi']
     return RSSI
+
+
+def get_phone_ip(ad):
+    """Get the WiFi IP address of the phone.
+
+    Args:
+        ad: the android device under test
+    Returns:
+        IP: IP address of the phone for WiFi, as a string
+    """
+    IP = ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
+
+    return IP
+
+
+def get_phone_mac(ad):
+    """Get the WiFi MAC address of the phone.
+
+    Args:
+        ad: the android device under test
+    Returns:
+        mac: MAC address of the phone for WiFi, as a string
+    """
+    mac = ad.droid.wifiGetConnectionInfo()["mac_address"]
+
+    return mac
+
+
+def get_phone_ipv6(ad):
+    """Get the WiFi IPV6 address of the phone.
+
+    Args:
+        ad: the android device under test
+    Returns:
+        IPv6: IPv6 address of the phone for WiFi, as a string
+    """
+    IPv6 = ad.droid.connectivityGetLinkLocalIpv6Address('wlan0')[:-6]
+
+    return IPv6
