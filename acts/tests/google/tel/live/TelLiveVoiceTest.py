@@ -3010,6 +3010,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Data transfer failed with parallel phone call.")
             return False
         ad_download.log.info("Retry data transfer after call hung up")
+        time.sleep(15)
         return download_task[0](*download_task[1])
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
