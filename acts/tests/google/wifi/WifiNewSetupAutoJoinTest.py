@@ -32,6 +32,17 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
 
+    def add_network_and_enable(self, network):
+        """Add a network and enable it.
+
+        Args:
+            network : Network details for the network to be added.
+
+        """
+        ret = self.dut.droid.wifiAddNetwork(network)
+        asserts.assert_true(ret != -1, "Add network %r failed" % network)
+        self.dut.droid.wifiEnableNetwork(ret, 0)
+
     def setup_class(self):
         """It will setup the required dependencies from config file and configure
            the required networks for auto-join testing. Configured networks will
@@ -79,29 +90,12 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
             wait_time = 15
             self.dut.droid.wakeLockAcquireBright()
             self.dut.droid.wakeUpNow()
-            try:
-                self.dut.droid.wifiConnectByConfig(self.reference_networks[0][
-                    '2g'])
-                connect_result = self.dut.ed.pop_event(
-                    wifi_constants.CONNECT_BY_CONFIG_SUCCESS, 1)
-                self.log.info(connect_result)
-                time.sleep(wait_time)
-                if self.ref_ssid_count == 2:  #add 5g network as well
-                    self.dut.droid.wifiConnectByConfig(self.reference_networks[
-                        0]['5g'])
-                    connect_result = self.dut.ed.pop_event(
-                        wifi_constants.CONNECT_BY_CONFIG_SUCCESS, 1)
-                    self.log.info(connect_result)
-                    time.sleep(wait_time)
-                current_network = self.dut.droid.wifiGetConnectionInfo()
-                self.log.info("Current network: {}".format(current_network))
-                asserts.assert_true('network_id' in current_network,
-                                    NETWORK_ID_ERROR)
-                asserts.assert_true(current_network['network_id'] >= 0,
-                                    NETWORK_ERROR)
-            finally:
-                self.dut.droid.wifiLockRelease()
-                self.dut.droid.goToSleepNow()
+            # Add and enable all networks.
+            for network in self.reference_networks:
+                self.add_network_and_enable(network['2g'])
+                self.add_network_and_enable(network['5g'])
+            self.dut.droid.wifiLockRelease()
+            self.dut.droid.goToSleepNow()
 
     def check_connection(self, network_bssid):
         """Check current wifi connection networks.
