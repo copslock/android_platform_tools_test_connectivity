@@ -437,8 +437,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 if not wait_for_cell_data_connection(
                         self.log, self.android_devices[0], True):
                     raise _LocalException("Failed to Re-Enable Cellular Data")
-                if not verify_internet_connection(self.log,
-                                                  self.android_devices[0]):
+                if not verify_internet_connection(
+                        self.log, self.android_devices[0], retries=3):
                     raise _LocalException("Internet Inaccessible when Enabled")
             else:
                 self.log.info("Step3 Verify no Internet and skip step 4-5.")
@@ -454,8 +454,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not hangup_call(self.log, self.android_devices[0]):
                 self.log.error("Failed to hang up call")
                 return False
-            if not verify_internet_connection(self.log,
-                                              self.android_devices[0]):
+            if not verify_internet_connection(
+                    self.log, self.android_devices[0], retries=3):
                 raise _LocalException("Internet Inaccessible when Enabled")
 
         except _LocalException as e:
