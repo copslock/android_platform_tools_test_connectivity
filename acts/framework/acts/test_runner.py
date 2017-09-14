@@ -472,6 +472,10 @@ class TestRunner(object):
                 user_param_pairs.append(item)
         self.test_run_info[keys.Config.ikey_user_param.value] = copy.deepcopy(
             dict(user_param_pairs))
+        # Import and register the built-in controller modules specified
+        # in testbed config.
+        for module in self._import_builtin_controllers():
+            self.register_controller(module)
 
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.
@@ -573,17 +577,11 @@ class TestRunner(object):
             else:
                 self.log.debug("Executing test class %s", test_cls_name)
             try:
-                # Import and register the built-in controller modules specified
-                # in testbed config.
-                for module in self._import_builtin_controllers():
-                    self.register_controller(module)
                 self.run_test_class(test_cls_name, test_case_names)
             except signals.TestAbortAll as e:
                 self.log.warning(
                     "Abort all subsequent test classes. Reason: %s", e)
                 raise
-            finally:
-                self.unregister_controllers()
 
     def stop(self):
         """Releases resources from test run. Should always be called after
@@ -598,6 +596,7 @@ class TestRunner(object):
             self.log.info(msg.strip())
             logger.kill_test_logger(self.log)
             self.running = False
+        self.unregister_controllers()
 
     def _write_results_json_str(self):
         """Writes out a json file with the test result info for easy parsing.
