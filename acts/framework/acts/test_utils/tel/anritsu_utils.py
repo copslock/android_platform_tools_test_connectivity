@@ -213,9 +213,11 @@ DEFAULT_VNID = 1
 NDP_NIC_NAME = '"Intel(R) 82577LM Gigabit Network Connection"'
 CSCF_Monitoring_UA_URI = '"sip:+11234567890@test.3gpp.com"'
 TMO_CSCF_Monitoring_UA_URI = '"sip:001010123456789@msg.lab.t-mobile.com"'
+CSCF_Virtual_UA_URI = '"sip:+11234567891@test.3gpp.com"'
 TMO_CSCF_Virtual_UA_URI = '"sip:0123456789@ims.mnc01.mcc001.3gppnetwork.org"'
 CSCF_HOSTNAME = '"ims.mnc01.mcc001.3gppnetwork.org"'
-USERLIST_NAME = "310260123456789@msg.lab.t-mobile.com"
+TMO_USERLIST_NAME = "310260123456789@msg.lab.t-mobile.com"
+VZW_USERLIST_NAME = "001010123456789@test.3gpp.com"
 
 #Cell Numbers
 CELL_1 = 1
@@ -467,7 +469,14 @@ def _init_IMS(anritsu_handle,
         vnid.cscf_ims_authentication = "DISABLE"
         if auth:
             vnid.cscf_ims_authentication = "ENABLE"
-            vnid.cscf_userslist_add = USERLIST_NAME
+            vnid.tmo_cscf_userslist_add = TMO_USERLIST_NAME
+    elif sim_card == VzW12349:
+        vnid.cscf_monitoring_ua = CSCF_Monitoring_UA_URI
+        vnid.cscf_virtual_ua = CSCF_Virtual_UA_URI
+        vnid.cscf_ims_authentication = "DISABLE"
+        if auth:
+            vnid.cscf_ims_authentication = "ENABLE"
+            vnid.vzw_cscf_userslist_add = VZW_USERLIST_NAME
     else:
         vnid.cscf_monitoring_ua = CSCF_Monitoring_UA_URI
     vnid.psap = Switch.ENABLE
@@ -519,6 +528,8 @@ def set_system_model_lte_lte(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte1_bts, lte2_bts]
@@ -592,6 +603,8 @@ def set_system_model_lte_wcdma(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, wcdma_bts]
@@ -642,6 +655,8 @@ def set_system_model_lte_gsm(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, gsm_bts]
@@ -693,6 +708,8 @@ def set_system_model_lte_1x(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, cdma1x_bts]
@@ -743,6 +760,8 @@ def set_system_model_lte_evdo(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts, evdo_bts]
@@ -835,6 +854,8 @@ def set_system_model_lte(anritsu_handle, user_params, sim_card):
             sim_card,
             ipv6_address=CSCF_IPV6_ADDR_3,
             ip_type="IPV6")
+    elif sim_card == VzW12349:
+        _init_IMS(anritsu_handle, vnid1, sim_card, auth=True)
     else:
         _init_IMS(anritsu_handle, vnid1, sim_card)
     return [lte_bts]
@@ -2290,5 +2311,12 @@ def set_post_sim_params(anritsu_handle, user_params, sim_card):
         anritsu_handle.send_command("PDNVNID 1,1")
         anritsu_handle.send_command("PDNIMS 2,ENABLE")
         anritsu_handle.send_command("PDNVNID 2,2")
+        anritsu_handle.send_command("PDNIMS 3,ENABLE")
+        anritsu_handle.send_command("PDNVNID 3,1")
+    if sim_card == VzW12349:
+        anritsu_handle.send_command("PDNCHECKAPN 1,IMS")
+        anritsu_handle.send_command("PDNCHECKAPN 2,VZWINTERNET")
+        anritsu_handle.send_command("PDNIMS 1,ENABLE")
+        anritsu_handle.send_command("PDNVNID 1,1")
         anritsu_handle.send_command("PDNIMS 3,ENABLE")
         anritsu_handle.send_command("PDNVNID 3,1")
