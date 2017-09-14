@@ -17,13 +17,14 @@
 import logging
 import os
 import time
+from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from bokeh.plotting import figure, output_file, save
+from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
 from bokeh.models.widgets import DataTable, TableColumn
-from bokeh.layouts import layout
+from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
 
@@ -50,6 +51,7 @@ AUTO_TIMEZONE_OFF = "settings put global auto_time_zone 0"
 FORCE_YOUTUBE_STOP = "am force-stop com.google.android.youtube"
 FORCE_DIALER_STOP = "am force-stop com.google.android.dialer"
 IPERF_TIMEOUT = 180
+THRESHOLD_TOLERANCE = 0.05
 
 
 def dut_rockbottom(ad):
@@ -96,6 +98,25 @@ def dut_rockbottom(ad):
     ad.adb.shell(FORCE_DIALER_STOP)
     ad.droid.wakeUpNow()
     ad.log.info('Device has been set to Rockbottom state')
+
+
+def pass_fail_check(test_class, test_result):
+    """Check the test result and decide if it passed or failed.
+    The threshold is provided in the config file
+
+    Args:
+        test_class: the specific test class where test is running
+        avg_current: the average current as the test result
+    """
+    test_name = test_class.current_test_name
+    current_threshold = test_class.threshold[test_name]
+    asserts.assert_true(
+        abs(test_result - current_threshold) / current_threshold <
+        THRESHOLD_TOLERANCE,
+        ("Measured average current in [%s]: %s, which is "
+         "more than %d percent off than acceptable threshold %.2fmA") %
+        (test_name, test_result, THRESHOLD_TOLERANCE * 100, current_threshold))
+    asserts.explicit_pass("Measurement finished for %s." % test_name)
 
 
 def monsoon_data_collect_save(ad, mon_info, test_name, bug_report):
