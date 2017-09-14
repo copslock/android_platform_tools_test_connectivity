@@ -36,6 +36,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import DEFAULT_EMERGENCY_CALL_NUMBER
 from acts.test_utils.tel.tel_defines import EMERGENCY_CALL_NUMBERS
@@ -61,12 +62,13 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
 
+
 class TelLabEmergencyCallTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         try:
-            self.stress_test_number = int(self.user_params[
-                "stress_test_number"])
+            self.stress_test_number = int(
+                self.user_params["stress_test_number"])
             self.log.info("Executing {} calls per test in stress test mode".
                           format(self.stress_test_number))
         except KeyError:
@@ -103,8 +105,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phone_default_state(self.log, self.ad, check_subscription=False)
         toggle_airplane_mode_by_adb(self.log, self.ad, True)
-        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
-                          ignore_status=True)
+        self.ad.adb.shell(
+            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
         # get a handle to virtual phone
         self.virtualPhoneHandle = self.anritsu.get_VirtualPhone()
         return True
@@ -135,6 +137,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             set_simulation_func(self.anritsu, self.user_params,
                                 self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
             if csfb_type:
@@ -181,8 +185,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             successes = 0
             for i in range(1, iterations + 1):
                 if self.stress_test_number:
-                    self.log.info("Running iteration {} of {}".format(
-                        i, iterations))
+                    self.log.info(
+                        "Running iteration {} of {}".format(i, iterations))
                 # FIXME: There's no good reason why this must be true;
                 # I can only assume this was done to work around a problem
                 self.ad.droid.telephonyToggleDataConnection(False)
@@ -191,8 +195,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 sim_model = (self.anritsu.get_simulation_model()).split(",")
                 no_of_bts = len(sim_model)
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(
-                        i))
+                    self.anritsu.send_command(
+                        "OUTOFSERVICE OUT,BTS{}".format(i))
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
@@ -207,8 +211,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                         continue
 
                 for i in range(2, no_of_bts + 1):
-                    self.anritsu.send_command("OUTOFSERVICE IN,BTS{}".format(
-                        i))
+                    self.anritsu.send_command(
+                        "OUTOFSERVICE IN,BTS{}".format(i))
 
                 time.sleep(WAIT_TIME_ANRITSU_REG_AND_CALL)
                 if srlte_csfb or srvcc:
