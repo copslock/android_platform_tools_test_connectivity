@@ -24,7 +24,7 @@ from acts.controllers.relay_lib.helpers import validate_key
 PAIRING_MODE_WAIT_TIME = 5
 POWER_ON_WAIT_TIME = 2
 POWER_OFF_WAIT_TIME = 6
-MISSING_RELAY_MSG = 'Relay config for Sony XB2 "%s" missing relay "%s".'
+MISSING_RELAY_MSG = 'Relay config for Ak XB10 "%s" missing relay "%s".'
 
 log = logging
 
@@ -34,8 +34,8 @@ class Buttons(enum.Enum):
     PAIR = 'Pair'
 
 
-class SonyXB2Speaker(GenericRelayDevice):
-    """Sony XB2 Bluetooth Speaker model
+class AkXB10Speaker(GenericRelayDevice):
+    """A&K XB10 Bluetooth Speaker model
 
     Wraps the button presses, as well as the special features like pairing.
     """
@@ -43,7 +43,7 @@ class SonyXB2Speaker(GenericRelayDevice):
     def __init__(self, config, relay_rig):
         GenericRelayDevice.__init__(self, config, relay_rig)
 
-        self.mac_address = validate_key('mac_address', config, str, 'sony_xb2')
+        self.mac_address = validate_key('mac_address', config, str, 'ak_xb10')
 
         for button in Buttons:
             self.ensure_config_contains_relay(button.value)
