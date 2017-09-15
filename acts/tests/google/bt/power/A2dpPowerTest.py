@@ -168,7 +168,7 @@ class A2dpPowerTest(PowerBaseTest):
                     for d in bonded_devices:
                         if d['address'] == self.a2dp_speaker.mac_address:
                             self.log.info("Successfully bonded to device.")
-                            self.log.info("XB2 Bonded devices:\n{}".format(
+                            self.log.info("Bonded devices:\n{}".format(
                                 bonded_devices))
                             return True
         return False
