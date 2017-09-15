@@ -286,10 +286,12 @@ class AccessPoint(object):
         if configured_subnets:
             self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
+        del self._aps[identifier]
+
     def stop_all_aps(self):
         """Stops all running aps on this device."""
 
-        for ap in self._aps.keys():
+        for ap in list(self._aps.keys()):
             try:
                 self.stop_ap(ap)
             except dhcp_server.NoInterfaceError as e:
