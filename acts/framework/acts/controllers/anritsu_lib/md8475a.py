@@ -668,6 +668,8 @@ class MD8475A(object):
         # this is needed before Sync command is supported in 6.40a
         if self.send_query("IMSVNSTAT? 1") == "RUNNING":
             self.send_command("IMSSTOPVN 1")
+        if self.send_query("IMSVNSTAT? 2") == "RUNNING":
+            self.send_command("IMSSTOPVN 2")
         stat = self.send_query("STAT?")
         # Stop simulation if its is RUNNING
         if stat == "RUNNING":
@@ -846,8 +848,8 @@ class MD8475A(object):
         for _ in range(registration_check_iterations):
             waiting_time = 0
             while waiting_time <= time_to_wait:
-                callstat = self.send_query("CALLSTAT? BTS{}".format(
-                    bts)).split(",")
+                callstat = self.send_query(
+                    "CALLSTAT? BTS{}".format(bts)).split(",")
                 if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
                     break
                 time.sleep(sleep_interval)
@@ -3837,7 +3839,7 @@ class _IMS_Services(object):
         self._anritsu.send_command(cmd)
 
     @property
-    def cscf_userslist_add(self):
+    def tmo_cscf_userslist_add(self):
         """ Get CSCF USERLIST
 
         Args:
@@ -3849,8 +3851,8 @@ class _IMS_Services(object):
         cmd = "IMSCSCFUSERSLIST? " + self._vnid
         return self._anritsu.send_query(cmd)
 
-    @cscf_userslist_add.setter
-    def cscf_userslist_add(self, username):
+    @tmo_cscf_userslist_add.setter
+    def tmo_cscf_userslist_add(self, username):
         """ Set CSCF USER to USERLIST
             This is needed if IMS AUTH is enabled
 
@@ -3866,6 +3868,36 @@ class _IMS_Services(object):
         326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid,
                                                                 username)
         self._anritsu.send_command(cmd)
+
+    @property
+    def vzw_cscf_userslist_add(self):
+        """ Get CSCF USERLIST
+
+        Args:
+            None
+
+        Returns:
+            CSCF USERLIST
+        """
+        cmd = "IMSCSCFUSERSLIST? " + self._vnid
+        return self._anritsu.send_query(cmd)
+
+    @vzw_cscf_userslist_add.setter
+    def vzw_cscf_userslist_add(self, username):
+        """ Set CSCF USER to USERLIST
+            This is needed if IMS AUTH is enabled
+
+        Args:
+            username: CSCF Username
+
+        Returns:
+            None
+        """
+        cmd = "IMSCSCFUSERSLISTADD {},{},465B5CE8B199B49FAA5F0A2EE238A6BC,MILENAGE,AKAV1_MD5,\
+        OP,5F1D289C5D354D0A140C2548F5F3E3BA,8000,TRUE,FALSE,0123456789ABCDEF0123456789ABCDEF,\
+        54CDFEAB9889000001326754CDFEAB98,6754CDFEAB9889BAEFDC457623100132,\
+        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid,
+                                                                username)
 
     @property
     def dns(self):
