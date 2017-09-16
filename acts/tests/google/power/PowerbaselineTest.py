@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import os
-from acts import asserts
 from acts import base_test
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -68,21 +67,6 @@ class PowerbaselineTest(base_test.BaseTestClass):
         for key in bulk_params.keys():
             setattr(self, key, bulk_params[key])
 
-    def pass_fail_check(self, avg_current):
-        """Check the test result and decide if it passed or failed.
-        The threshold is provided in the config file
-
-        Args:
-            avg_current: the average current as the test result
-        """
-        test_name = self.current_test_name
-        current_threshold = self.threshold[test_name]
-        asserts.assert_true(avg_current < current_threshold,
-                            ("Measured average current in [%s]: %s, which is "
-                             "higher than acceptable threshold %.2fmA.") %
-                            (test_name, avg_current, current_threshold))
-        asserts.explicit_pass("Measurement finished for %s." % test_name)
-
     def rockbottom_test_func(self, screen_status, wifi_status):
         """Test function for baseline rockbottom tests.
 
@@ -101,7 +85,7 @@ class PowerbaselineTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-        self.pass_fail_check(avg_current)
+        wputils.pass_fail_check(self, avg_current)
 
     # Test cases
     @test_tracker_info(uuid="e7ab71f4-1e14-40d2-baec-cde19a3ac859")
