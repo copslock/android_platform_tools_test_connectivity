@@ -85,13 +85,13 @@ class WifiBaseTest(BaseTestClass):
             "security": ref_5g_security,
             "password": ref_5g_passphrase
         }
-
+        ap = 0
         for ap in range(ap_count):
             self.user_params["reference_networks"].append({
                 "2g":
-                network_dict_2g,
+                copy.copy(network_dict_2g),
                 "5g":
-                network_dict_5g
+                copy.copy(network_dict_5g)
             })
         self.reference_networks = self.user_params["reference_networks"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
@@ -118,6 +118,7 @@ class WifiBaseTest(BaseTestClass):
         open_5g_ssid = '5g_%s' % utils.rand_ascii_str(ssid_length_5g)
         network_dict_2g = {"SSID": open_2g_ssid, "security": 'none'}
         network_dict_5g = {"SSID": open_5g_ssid, "security": 'none'}
+        ap = 0
         for ap in range(ap_count):
             self.user_params["open_network"].append({
                 "2g": network_dict_2g,
@@ -126,10 +127,12 @@ class WifiBaseTest(BaseTestClass):
         self.open_network = self.user_params["open_network"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
 
-    def populate_bssid(self, ap, networks_5g, networks_2g):
+    def populate_bssid(self, ap_instance, ap, networks_5g, networks_2g):
         """Get bssid for a given SSID and add it to the network dictionary.
 
         Args:
+            ap_instance: Accesspoint index that was configured.
+            ap: Accesspoint object corresponding to ap_instance.
             networks_5g: List of 5g networks configured on the APs.
             networks_2g: List of 2g networks configured on the APs.
 
@@ -142,20 +145,16 @@ class WifiBaseTest(BaseTestClass):
             if 'channel' in network:
                 continue
             bssid = ap.get_bssid_from_ssid(network["SSID"])
-            if network["security"] == hostapd_constants.WPA2_STRING:
-                # TODO:(bamahadev) Change all occurances of reference_networks
-                # in to wpa_networks.
-                network_list = self.reference_networks
-            else:
-                network_list = self.open_network
             if '2g' in network["SSID"]:
                 band = hostapd_constants.BAND_2G
             else:
                 band = hostapd_constants.BAND_5G
-            # For each network update BSSID if it doesn't already exist.
-            for ref_network in network_list:
-                if not 'bssid' in ref_network[band]:
-                    ref_network[band]["bssid"] = bssid
+            if network["security"] == hostapd_constants.WPA2_STRING:
+                # TODO:(bamahadev) Change all occurances of reference_networks
+                # to wpa_networks.
+                self.reference_networks[ap_instance][band]["bssid"] = bssid
+            else:
+                self.open_network[ap_instance][band]["bssid"] = bssid
 
     def legacy_configure_ap_and_start(
             self,
@@ -199,11 +198,11 @@ class WifiBaseTest(BaseTestClass):
             self.config_5g = self._generate_legacy_ap_config(network_list_5g)
         if len(network_list_2g) > 1:
             self.config_2g = self._generate_legacy_ap_config(network_list_2g)
-
+        ap = 0
         for ap in range(ap_count):
             self.access_points[ap].start_ap(self.config_2g)
             self.access_points[ap].start_ap(self.config_5g)
-            self.populate_bssid(self.access_points[ap], orig_network_list_5g,
+            self.populate_bssid(ap, self.access_points[ap], orig_network_list_5g,
                                 orig_network_list_2g)
 
     def _generate_legacy_ap_config(self, network_list):
