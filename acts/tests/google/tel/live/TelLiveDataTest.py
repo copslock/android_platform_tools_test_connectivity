@@ -2314,12 +2314,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         # Install App and Push config
         self.log.info("Pushing embms config and apk to the Android device.")
-        embms_path_str = "embms_path"
         android_embms_path = "/sdcard/mobitv"
-        if embms_path_str not in self.user_params:
-            self.log.error("Need vzwdca for embms test in config file")
-            return False
-        embms_path = self.user_params[embms_path_str]
+        embms_path = self.user_params.get("embms_path", "embms_path")
         ad.adb.shell("mkdir /sdcard/mobitv")
         dcafile = os.path.join(embms_path, "dca.config")
         apkfile = os.path.join(embms_path, "VzwDCA-v3035.apk")
