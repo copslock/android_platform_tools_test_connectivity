@@ -32,7 +32,6 @@ install_requires = [
     'pyserial',
     'shellescape',
     'protobuf',
-    'bokeh',
 ]
 
 if sys.version_info < (3, ):
