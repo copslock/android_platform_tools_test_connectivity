@@ -283,6 +283,7 @@ class AccessPoint(object):
         # then an exception gets thrown. We need to catch this exception and
         # check that all interfaces should actually be down.
         configured_subnets = [x.subnet for x in self._aps.values()]
+        del self._aps[identifier]
         if configured_subnets:
             self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
@@ -293,7 +294,6 @@ class AccessPoint(object):
             try:
                 self.stop_ap(ap)
             except dhcp_server.NoInterfaceError as e:
-                del self._aps[ap]
                 pass
 
     def close(self):
