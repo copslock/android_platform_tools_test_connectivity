@@ -286,8 +286,6 @@ class AccessPoint(object):
         if configured_subnets:
             self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
-        del self._aps[identifier]
-
     def stop_all_aps(self):
         """Stops all running aps on this device."""
 
