@@ -33,6 +33,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -74,6 +75,28 @@ class TelLiveStressCallTest(TelephonyBaseTest):
 
     def _setup_wfc(self):
         for ad in self.android_devices:
+            if not ensure_wifi_connected(
+                    ad.log,
+                    ad,
+                    self.wifi_network_ssid,
+                    self.wifi_network_pass,
+                    retries=3):
+                ad.log.error("Phone Wifi connection fails.")
+                return False
+            ad.log.info("Phone WIFI is connected successfully.")
+            if not set_wfc_mode(self.log, ad, WFC_MODE_WIFI_PREFERRED):
+                ad.log.error("Phone failed to enable Wifi-Calling.")
+                return False
+            ad.log.info("Phone is set in Wifi-Calling successfully.")
+            if not phone_idle_iwlan(self.log, ad):
+                ad.log.error("Phone is not in WFC enabled state.")
+                return False
+            ad.log.info("Phone is in WFC enabled state.")
+        return True
+
+    def _setup_wfc_apm(self):
+        for ad in self.android_devices:
+            toggle_airplane_mode(ad.log, ad, True)
             if not ensure_wifi_connected(
                     ad.log,
                     ad,
@@ -317,7 +340,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         """ Wifi calling call stress test
 
         Steps:
-        1. Make Sure PhoneA and PhoneB in Wifi Calling mode.
+        1. Make Sure PhoneA and PhoneB in WFC On + Wifi Connected
         2. Call from PhoneA to PhoneB, hang up on PhoneA.
         3, Repeat 2 around N times based on the config setup
 
@@ -331,6 +354,28 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         """
         return self.stress_test(
             setup_func=self._setup_wfc,
+            network_check_func=is_phone_in_call_iwlan)
+
+    @test_tracker_info(uuid="be45c620-b45b-4a06-8424-b17d744d0735")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_wifi_calling_stress_apm(self):
+        """ Wifi calling in AirPlaneMode call stress test
+
+        Steps:
+        1. Make Sure PhoneA and PhoneB in WFC On + APM ON + Wifi Connected
+        2. Call from PhoneA to PhoneB, hang up on PhoneA.
+        3, Repeat 2 around N times based on the config setup
+
+        Expected Results:
+        1, Verify phone is at IDLE state
+        2, Verify the phone is at ACTIVE, if it is in dialing, then we retry
+        3, Verify the phone is IDLE after hung up
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self.stress_test(
+            setup_func=self._setup_wfc_apm,
             network_check_func=is_phone_in_call_iwlan)
 
     @test_tracker_info(uuid="8af0454b-b4db-46d8-b5cc-e13ec5bc59ab")
