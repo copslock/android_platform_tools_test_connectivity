@@ -71,6 +71,13 @@ class PowerroamingTest(base_test.BaseTestClass):
         for key in bulk_params.keys():
             setattr(self, key, bulk_params[key])
 
+    def ap_close_all(self):
+        """Close all the AP controller objects in roaming tests.
+
+        """
+        for ap in self.access_points:
+            ap.close()
+
     # Test cases
     @test_tracker_info(uuid="392622d3-0c5c-4767-afa2-abfb2058b0b8")
     def test_screenoff_roaming(self):
@@ -107,6 +114,9 @@ class PowerroamingTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.ap_close_all()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="2fec5208-043a-410a-8fd2-6784d70a3587")
@@ -149,6 +159,9 @@ class PowerroamingTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.ap_close_all()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="a0459b7c-74ce-4adb-8e55-c5365bc625eb")
@@ -182,6 +195,9 @@ class PowerroamingTest(base_test.BaseTestClass):
             file_path, avg_current = wputils.monsoon_data_collect_save(
                 self.dut, self.mon_info, self.current_test_name, 0)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.ap_close_all()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="e5ff95c0-b17e-425c-a903-821ba555a9b9")
@@ -213,6 +229,9 @@ class PowerroamingTest(base_test.BaseTestClass):
             file_path, avg_current = wputils.monsoon_data_collect_save(
                 self.dut, self.mon_info, self.current_test_name, 0)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.ap_close_all()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="a16ae337-326f-4d09-990f-42232c3c0dc4")
@@ -246,4 +265,7 @@ class PowerroamingTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.ap_close_all()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
