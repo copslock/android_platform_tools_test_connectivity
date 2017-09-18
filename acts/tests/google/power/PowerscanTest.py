@@ -121,6 +121,9 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.access_point.close()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     # Test cases
@@ -275,6 +278,9 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.access_point.close()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="51e3c4f1-742b-45af-afd5-ae3552a03272")
@@ -304,6 +310,9 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.access_point.close()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid="a16ae337-326f-4d09-990f-42232c3c0dc4")
@@ -333,4 +342,7 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Close AP controller
+        self.access_point.close()
+        # Path fail check
         wputils.pass_fail_check(self, avg_current)
