@@ -212,7 +212,8 @@ class TelephonyBaseTest(BaseTestClass):
                 if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
                     out = ad.adb.shell("/data/curl --version")
                     if not out or "not found" in out:
-                        curl_file_path = os.path.join("tel_data", "curl")
+                        tel_data = self.user_params.get("tel_data", "tel_data")
+                        curl_file_path = os.path.join(tel_data, "curl")
                         if not os.path.isfile(curl_file_path):
                             curl_file_path = os.path.join(
                                 self.user_params[Config.key_config_path],
