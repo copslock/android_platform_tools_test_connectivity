@@ -187,7 +187,7 @@ TC_CONN_TERM_BV_01_CF
   gattc_disconnect
 
 Note: Run the test a first time and it will fail. Change the address to
-be the peer address in the PTS logs that start with: 
+be the peer address in the PTS logs that start with:
   SEC_LE?SEC_LE_REMOTE_CSRK_REQUEST_IND=PDU
     peerAddr: 'xxxxxxxxxxxx'O
 TC_BOND_NBON_BV_01_C
