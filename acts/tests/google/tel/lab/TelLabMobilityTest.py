@@ -18,6 +18,7 @@ Sanity tests for voice tests in telephony
 """
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
@@ -320,6 +321,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="bd014822-2c09-4503-9e01-594513ea6808")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_iperf_handover(self):
         """ Test VoLTE to VoLTE Inter-Freq handover with iPerf data
@@ -347,6 +349,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=True,
             iperf=True)
 
+    @test_tracker_info(uuid="a5a15947-40eb-4a70-b652-0b52a548c3c1")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_handover(self):
         """ Test VoLTE to VoLTE Inter-Freq handover without iPerf data
@@ -372,6 +375,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=True,
             iperf=False)
 
+    @test_tracker_info(uuid="382521d9-d991-49bc-8347-2e766ec0db74")
     @TelephonyBaseTest.tel_test_wrap
     def test_iperf_handover(self):
         """ Test Inter-Freq handover with iPerf data
@@ -396,6 +400,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=False,
             iperf=True)
 
+    @test_tracker_info(uuid="d255a58b-8697-4d0a-9bc0-1e7ffa4cccaf")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_iperf_handover_wcdma(self):
         """ Test VoLTE to WCDMA to LTE handover with iPerf data
@@ -424,6 +429,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=True,
             iperf=True)
 
+    @test_tracker_info(uuid="28bc2e85-602e-4143-afe7-6dd442bef5c8")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_handover_wcdma(self):
         """ Test VoLTE to WCDMA handover (SRVCC)
@@ -451,6 +457,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=True,
             iperf=False)
 
+    @test_tracker_info(uuid="3ef15650-8e44-4b75-b809-8d7dec5a41e3")
     @TelephonyBaseTest.tel_test_wrap
     def test_iperf_handover_wcdma(self):
         """ Test LTE to WCDMA to LTE handovers with iPerf data
@@ -479,6 +486,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
             volte=False,
             iperf=True)
 
+    @test_tracker_info(uuid="2bfad82d-1797-474b-9bf7-c14602b061cd")
     @TelephonyBaseTest.tel_test_wrap
     def test_iperf_handover_wcdma_all_bands(self):
         """ Test LTE->WCDMA->LTE handovers through all bands UE supports with iPerf data
