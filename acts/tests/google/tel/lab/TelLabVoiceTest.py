@@ -18,6 +18,7 @@ Sanity tests for voice tests in telephony
 """
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import CsfbType
 from acts.controllers.anritsu_lib.md8475a import MD8475A
@@ -290,6 +291,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="56c42e16-3936-4c51-8b8b-4866f54cc0bc")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_lte_wcdma_csfb_redirection(self):
         """ Test Voice call functionality on LTE (CSFB to WCDMA).
@@ -315,6 +317,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             csfb_type=CsfbType.CSFB_TYPE_REDIRECTION)
 
+    @test_tracker_info(uuid="dcc1428f-9b7d-4064-8313-f1f5e428e0c7")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_lte_wcdma_csfb_handover(self):
         """ Test Voice call functionality on LTE (CSFB to WCDMA).
@@ -340,6 +343,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             csfb_type=CsfbType.CSFB_TYPE_HANDOVER)
 
+    @test_tracker_info(uuid="e250b134-d5e9-48ca-b224-eb0e07648275")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_lte_1x_csfb(self):
         """ Test Voice call functionality on LTE (CSFB to 1x).
@@ -363,6 +367,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_lte_1x,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="fcbe0f5d-51c2-46c8-8ff3-2daa1d91b936")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_wcdma(self):
         """ Test Voice call functionality on WCDMA
@@ -386,6 +391,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_wcdma,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="077f851b-2c8e-4b1d-adc2-0326d3346157")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_gsm(self):
         """ Test Voice call functionality on GSM
@@ -409,6 +415,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_gsm,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="80376fb3-44fc-43b7-be99-2ccd3bd2913e")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_1x(self):
         """ Test Voice call functionality on CDMA 1X
@@ -432,6 +439,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_1x,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="1f8ae218-042d-4114-9fc7-4401a503b3b4")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_1x_evdo(self):
         """ Test Voice call functionality on CDMA 1X with EVDO
@@ -455,6 +463,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self._phone_setup_1x,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="7641ffc0-c1b3-42b8-92d6-00ae53719f8d")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_wcdma_srvcc(self):
         """ Test Voice call functionality,
@@ -482,6 +491,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="0d63e797-b4bc-4094-98c3-70060e5ea91b")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_gsm_srvcc(self):
         """ Test Voice call functionality,
@@ -509,6 +519,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="f73f6cc0-79c8-47b3-9867-ea7390dfee41")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_wcdma_asrvcc(self):
         """ Test Voice call functionality,
@@ -535,6 +546,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             srvcc="Alert",
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="823e8e10-58bd-476d-ba4b-ec436ac424fb")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_gsm_asrvcc(self):
         """ Test Voice call functionality,
@@ -562,6 +574,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="cd066cb1-6d12-4e29-90b9-f44054f00a00")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_wcdma_asrvcc_mt(self):
         """ Test Voice call functionality,
@@ -589,6 +602,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             mo=False,
             voice_number=self.voice_call_number)
 
+    @test_tracker_info(uuid="b23ebec3-7e5c-4aca-a749-e34307c56d58")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte_gsm_asrvcc_mt(self):
         """ Test Voice call functionality,
@@ -617,6 +631,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
             voice_number=self.voice_call_number,
             wait_time_in_call=WAIT_TIME_IN_CALL_FOR_IMS)
 
+    @test_tracker_info(uuid="b81b3a0e-a7e3-4b30-889f-7c015bdc6980")
     @TelephonyBaseTest.tel_test_wrap
     def test_voice_call_volte(self):
         """ Test Voice call functionality on VoLTE
