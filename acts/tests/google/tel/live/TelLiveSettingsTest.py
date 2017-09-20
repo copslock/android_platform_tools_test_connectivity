@@ -55,6 +55,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
+from acts.utils import set_mobile_data_always_on
 
 
 class TelLiveSettingsTest(TelephonyBaseTest):
@@ -763,8 +764,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         wifi_toggle_state(self.log, ad, True)
         time_values['wifi_enabled'] = time.time()
-        self.log.info("WiFi Enabled After {}s".format(time_values[
-            'wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Enabled After {}s".format(
+            time_values['wifi_enabled'] - time_values['start']))
 
         ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                               self.wifi_network_pass)
@@ -776,8 +777,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
         time_values['wifi_connected'] = time.time()
 
-        self.log.info("WiFi Connected After {}s".format(time_values[
-            'wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WiFi Connected After {}s".format(
+            time_values['wifi_connected'] - time_values['wifi_enabled']))
 
         if not verify_http_connection(self.log, ad, 'http://www.google.com',
                                       100, .1):
@@ -785,8 +786,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             return False
 
         time_values['wifi_data'] = time.time()
-        self.log.info("WifiData After {}s".format(time_values[
-            'wifi_data'] - time_values['wifi_connected']))
+        self.log.info("WifiData After {}s".format(
+            time_values['wifi_data'] - time_values['wifi_connected']))
 
         if not wait_for_network_rat(
                 self.log, ad, RAT_FAMILY_WLAN,
@@ -798,16 +799,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             else:
                 return False
         time_values['iwlan_rat'] = time.time()
-        self.log.info("iWLAN Reported After {}s".format(time_values[
-            'iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("iWLAN Reported After {}s".format(
+            time_values['iwlan_rat'] - time_values['wifi_data']))
 
         if not wait_for_ims_registered(self.log, ad,
                                        MAX_WAIT_TIME_IMS_REGISTRATION):
             self.log.error("Never received IMS registered, aborting")
             return False
         time_values['ims_registered'] = time.time()
-        self.log.info("Ims Registered After {}s".format(time_values[
-            'ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("Ims Registered After {}s".format(
+            time_values['ims_registered'] - time_values['iwlan_rat']))
 
         if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
             self.log.error("Never received WFC feature, aborting")
@@ -823,16 +824,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
 
         self.log.info("\n\n------------------summary-----------------")
-        self.log.info("WiFi Enabled After {0:.2f} s".format(time_values[
-            'wifi_enabled'] - time_values['start']))
-        self.log.info("WiFi Connected After {0:.2f} s".format(time_values[
-            'wifi_connected'] - time_values['wifi_enabled']))
-        self.log.info("WifiData After {0:.2f} s".format(time_values[
-            'wifi_data'] - time_values['wifi_connected']))
-        self.log.info("iWLAN Reported After {0:.2f} s".format(time_values[
-            'iwlan_rat'] - time_values['wifi_data']))
-        self.log.info("Ims Registered After {0:.2f} s".format(time_values[
-            'ims_registered'] - time_values['iwlan_rat']))
+        self.log.info("WiFi Enabled After {0:.2f} s".format(
+            time_values['wifi_enabled'] - time_values['start']))
+        self.log.info("WiFi Connected After {0:.2f} s".format(
+            time_values['wifi_connected'] - time_values['wifi_enabled']))
+        self.log.info("WifiData After {0:.2f} s".format(
+            time_values['wifi_data'] - time_values['wifi_connected']))
+        self.log.info("iWLAN Reported After {0:.2f} s".format(
+            time_values['iwlan_rat'] - time_values['wifi_data']))
+        self.log.info("Ims Registered After {0:.2f} s".format(
+            time_values['ims_registered'] - time_values['iwlan_rat']))
         self.log.info("Wifi Calling Feature Enabled After {0:.2f} s".format(
             time_values['wfc_enabled'] - time_values['ims_registered']))
         self.log.info("\n\n")
@@ -1010,8 +1011,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             "Set data roaming = %s, mobile data = 0, network preference = %s",
             new_data_roaming, new_network_preference)
         self.ad.adb.shell("settings put global mobile_data 0")
-        self.ad.adb.shell("settings put global data_roaming %s" %
-                          new_data_roaming)
+        self.ad.adb.shell(
+            "settings put global data_roaming %s" % new_data_roaming)
         self.ad.adb.shell("settings put global preferred_network_mode %s" %
                           new_network_preference)
 
@@ -1181,3 +1182,37 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         result = self.verify_volte_off_wfc_off()
         if not self.verify_default_telephony_setting(): result = False
         return result
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="64deba57-c1c2-422f-b771-639c95edfbc0")
+    def test_disable_mobile_data_always_on(self):
+        """Verify mobile_data_always_on can be disabled.
+
+        Steps:
+        1. Disable mobile_data_always_on by adb.
+        2. Verify the mobile data_always_on state.
+
+        Expected Results: mobile_data_always_on return 0.
+        """
+        self.ad.log.info("Disable mobile_data_always_on")
+        set_mobile_data_always_on(self.ad, False)
+        time.sleep(1)
+        return self.ad.adb.shell(
+            "settings get global mobile_data_always_on") == "0"
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="56ddcd5a-92b0-46c7-9c2b-d743794efb7c")
+    def test_enable_mobile_data_always_on(self):
+        """Verify mobile_data_always_on can be enabled.
+
+        Steps:
+        1. Enable mobile_data_always_on by adb.
+        2. Verify the mobile data_always_on state.
+
+        Expected Results: mobile_data_always_on return 1.
+        """
+        self.ad.log.info("Enable mobile_data_always_on")
+        set_mobile_data_always_on(self.ad, True)
+        time.sleep(1)
+        return "1" in self.ad.adb.shell(
+            "settings get global mobile_data_always_on") == "1"
