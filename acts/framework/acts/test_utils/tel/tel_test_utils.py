@@ -253,10 +253,17 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 ad.phone_number = sub_info["phone_num"]
                 result = True
             else:
-                ad.log.error(
-                    "Unable to retrieve phone number for sub %s iccid %s from"
-                    " device or from testbed config or from sim_file %s",
-                    sim_filename, sub_id, iccid)
+                phone_number = get_phone_number_by_secret_code(
+                    ad, sub_info["sim_operator_name"])
+                if phone_number:
+                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+                    ad.phone_number = sub_info["phone_num"]
+                    result = True
+                else:
+                    ad.log.error(
+                        "Unable to retrieve phone number for sub %s iccid %s"
+                        " from device or testbed config or sim_file %s",
+                        sim_filename, sub_id, iccid)
         else:
             result = True
             if sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
@@ -274,6 +281,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
                         "network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
+        ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -333,18 +341,14 @@ def refresh_droid_config(log, ad):
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
             phone_number = droid.telephonyGetLine1NumberForSubscription(sub_id)
-            if not phone_number:
-                if hasattr(ad, "phone_number"):
-                    phone_number = ad.phone_number
-                if not phone_number:
-                    phone_number = get_phone_number_by_secret_code(
-                        ad, sim_record["sim_operator_name"])
+            if not phone_number and getattr(ad, "phone_number", None):
+                phone_number = ad.phone_number
             sim_record["phone_num"] = phone_number_formatter(phone_number)
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
                     sub_id)
             cfg['subscription'][sub_id] = sim_record
-            ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
+            ad.log.debug("SubId %s SIM record: %s", sub_id, sim_record)
     setattr(ad, 'cfg', cfg)
 
 
@@ -357,6 +361,7 @@ def get_phone_number_by_secret_code(ad, operator):
             if output:
                 result = re.findall(r"mobile number is (\S+)",
                                     output[-1]["log_message"])
+                ad.send_keycode("BACK")
                 return result[0]
             else:
                 time.sleep(5)
