@@ -18,6 +18,7 @@ Sanity tests for voice tests in telephony
 """
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts.controllers.anritsu_lib.md8475a import BtsServiceState
@@ -148,6 +149,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="46d49bff-9671-4ab0-a90d-b49d870af6f0")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_optus(self):
         """Data roaming test for Optus LTE and WCDMA networks
@@ -173,6 +175,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         """
         return self.LTE_WCDMA_data_roaming("505", "90F")
 
+    @test_tracker_info(uuid="68a6313c-d95a-4cae-8e35-2fdf3c94df56")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_telus(self):
         """Data roaming test for Telus LTE and WCDMA networks
@@ -198,6 +201,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         """
         return self.LTE_WCDMA_data_roaming("302", "86F")
 
+    @test_tracker_info(uuid="16de850a-6511-42d4-8d8f-d800477aba6b")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_vodafone(self):
         """Data roaming test for Vodafone LTE and WCDMA networks
@@ -223,6 +227,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         """
         return self.LTE_WCDMA_data_roaming("234", "15F")
 
+    @test_tracker_info(uuid="e9050f3d-b53c-4a87-9363-b88a842a3479")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_o2(self):
         """Data roaming test for O2 LTE and WCDMA networks
@@ -248,6 +253,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         """
         return self.LTE_WCDMA_data_roaming("234", "02F")
 
+    @test_tracker_info(uuid="a3f56da1-6a51-45b0-8016-3a492661e1f4")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_orange(self):
         """Data roaming test for Orange LTE and WCDMA networks
@@ -273,6 +279,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         """
         return self.LTE_WCDMA_data_roaming("234", "33F")
 
+    @test_tracker_info(uuid="dcde16c1-730c-41ee-ad29-286f4962c66f")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_roaming_idea(self):
         """Data roaming test for Idea LTE and WCDMA networks

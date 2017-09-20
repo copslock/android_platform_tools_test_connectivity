@@ -22,6 +22,7 @@ import json
 import logging
 import os
 
+from acts.test_decorators import test_tracker_info
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
@@ -226,6 +227,7 @@ class TelLabDataTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="df40279a-46dc-40ee-9205-bce2d0fba7e8")
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_pings_iperf(self):
         """ Test Pings functionality on LTE
