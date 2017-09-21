@@ -213,6 +213,8 @@ class TelephonyBaseTest(BaseTestClass):
                     out = ad.adb.shell("/data/curl --version")
                     if not out or "not found" in out:
                         tel_data = self.user_params.get("tel_data", "tel_data")
+                        if isinstance(tel_data, list):
+                            tel_data = tel_data[0]
                         curl_file_path = os.path.join(tel_data, "curl")
                         if not os.path.isfile(curl_file_path):
                             curl_file_path = os.path.join(
