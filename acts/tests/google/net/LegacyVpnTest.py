@@ -122,10 +122,14 @@ class LegacyVpnTest(base_test.BaseTestClass):
             Args:
                 connected_vpn_info which specifies the VPN connection status
         """
+        ping_result = None
         pkt_loss = "100% packet loss"
-        ping_result = self.dut.adb.shell("ping -c 3 -W 2 %s"
-                                         % self.vpn_verify_address)
-        return pkt_loss not in ping_result
+        try:
+            ping_result = self.dut.adb.shell("ping -c 3 -W 2 %s"
+                                             % self.vpn_verify_address)
+        except adb.AdbError:
+            pass
+        return ping_result and pkt_loss not in ping_result
 
     def legacy_vpn_connection_test_logic(self, vpn_profile):
         """ Test logic for each legacy VPN connection
@@ -180,7 +184,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.legacy_vpn_connection_test_logic(vpn_profile)
 
     @test_tracker_info(uuid="99af78dd-40b8-483a-8344-cd8f67594971")
-    def test_legacy_vpn_l2tp_ipsec_psk_libreswan(self):
+    def legacy_vpn_l2tp_ipsec_psk_libreswan(self):
         """ Verify L2TP IPSec PSK VPN connection to
             libreSwan server
         """
@@ -191,7 +195,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.legacy_vpn_connection_test_logic(vpn_profile)
 
     @test_tracker_info(uuid="e67d8c38-92c3-4167-8b6c-a49ef939adce")
-    def test_legacy_vpn_l2tp_ipsec_rsa_libreswan(self):
+    def legacy_vpn_l2tp_ipsec_rsa_libreswan(self):
         """ Verify L2TP IPSec RSA VPN connection to
             libreSwan server
         """
@@ -202,7 +206,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.legacy_vpn_connection_test_logic(vpn_profile)
 
     @test_tracker_info(uuid="8b3517dc-6a3b-44c2-a85d-bd7b969df3cf")
-    def test_legacy_vpn_ipsec_xauth_psk_libreswan(self):
+    def legacy_vpn_ipsec_xauth_psk_libreswan(self):
         """ Verify IPSec XAUTH PSK VPN connection to
             libreSwan server
         """
@@ -213,7 +217,7 @@ class LegacyVpnTest(base_test.BaseTestClass):
         self.legacy_vpn_connection_test_logic(vpn_profile)
 
     @test_tracker_info(uuid="abac663d-1d91-4b87-8e94-11c6e44fb07b")
-    def test_legacy_vpn_ipsec_xauth_rsa_libreswan(self):
+    def legacy_vpn_ipsec_xauth_rsa_libreswan(self):
         """ Verify IPSec XAUTH RSA VPN connection to
             libreSwan server
         """
