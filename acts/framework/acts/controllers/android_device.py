@@ -56,6 +56,7 @@ IPERF_TIMEOUT = 60
 SL4A_APK_NAME = "com.googlecode.android_scripting"
 WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
+DEFAULT_DEVICE_PASSWORD = "1111"
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -1335,7 +1336,11 @@ class AndroidDevice:
         if "unable to open" in out:
             self.root_adb()
             out = self.adb.shell(cmd, ignore_status=True)
-        if not ",0,'0'" in out:
+        out2 = self.adb.shell(
+            "sqlite3 /data/system/locksettings.db .dump"
+            " | grep lockscreen.disabled | grep -v migrated",
+            ignore_status=True)
+        if ",0,'0'" not in out and ",0,'1'" not in out2:
             self.log.info("Screen lock is enabled")
             return True
         return False
@@ -1358,6 +1363,9 @@ class AndroidDevice:
         if self.is_screen_lock_enabled():
             self.unlock_screen()
             time.sleep(1)
+            if self.is_waiting_for_unlock_pin():
+                self.unlock_screen(password=DEFAULT_DEVICE_PASSWORD)
+                time.sleep(1)
             return self.wait_for_window_ready()
         else:
             self.wakeup_screen()
@@ -1379,7 +1387,8 @@ class AndroidDevice:
         # Bring device to SLEEP so that unlock process can start fresh
         self.send_keycode("SLEEP")
         self.send_keycode("WAKEUP")
-        self.send_keycode("MENU")
+        if ENCRYPTION_WINDOW not in self.get_my_current_focus_app():
+            self.send_keycode("MENU")
         if password:
             self.send_keycode("DEL")
             for number in password:
