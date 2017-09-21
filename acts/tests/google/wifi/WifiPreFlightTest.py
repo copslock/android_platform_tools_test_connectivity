@@ -55,8 +55,11 @@ class WifiPreFlightTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, True)
 
         # Get reference networks as a list
-        req_params = ["reference_networks"]
-        self.unpack_userparams(req_param_names=req_params)
+        opt_params = ["reference_networks"]
+        self.unpack_userparams(opt_param_names=opt_params)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(ap_count=2)
         networks = []
         for ref_net in self.reference_networks:
             networks.append(ref_net[self.WIFI_2G])
@@ -86,6 +89,9 @@ class WifiPreFlightTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         for a in self.attenuators:
             a.set_atten(0)
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
 
     """ Helper functions """
     def _find_reference_networks_no_attn(self):
