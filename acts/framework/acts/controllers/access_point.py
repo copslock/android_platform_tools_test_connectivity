@@ -269,7 +269,7 @@ class AccessPoint(object):
             identifier: The identify of the ap that should be taken down.
         """
 
-        if identifier not in self._aps:
+        if identifier not in list(self._aps.keys()):
             raise ValueError('Invalid identifer %s given' % identifier)
 
         instance = self._aps.get(identifier)
@@ -283,13 +283,14 @@ class AccessPoint(object):
         # then an exception gets thrown. We need to catch this exception and
         # check that all interfaces should actually be down.
         configured_subnets = [x.subnet for x in self._aps.values()]
+        del self._aps[identifier]
         if configured_subnets:
             self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
     def stop_all_aps(self):
         """Stops all running aps on this device."""
 
-        for ap in self._aps.keys():
+        for ap in list(self._aps.keys()):
             try:
                 self.stop_ap(ap)
             except dhcp_server.NoInterfaceError as e:

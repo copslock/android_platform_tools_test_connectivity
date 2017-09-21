@@ -168,7 +168,7 @@ class A2dpPowerTest(PowerBaseTest):
                     for d in bonded_devices:
                         if d['address'] == self.a2dp_speaker.mac_address:
                             self.log.info("Successfully bonded to device.")
-                            self.log.info("XB2 Bonded devices:\n{}".format(
+                            self.log.info("Bonded devices:\n{}".format(
                                 bonded_devices))
                             return True
         return False
@@ -177,6 +177,12 @@ class A2dpPowerTest(PowerBaseTest):
         self.ad = self.android_devices[0]
         self.ad.droid.bluetoothFactoryReset()
         # Factory reset requires a short delay to take effect
+        time.sleep(3)
+
+        self.ad.log.info("Making sure BT phone is enabled here during setup")
+        if not bluetooth_enabled_check(self.ad):
+            self.log.error("Failed to turn Bluetooth on DUT")
+        # Give a breathing time of short delay to take effect
         time.sleep(3)
 
         # Determine if we have a relay-based device
