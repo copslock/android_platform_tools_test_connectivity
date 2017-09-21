@@ -471,6 +471,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if service == "modem":
                 trigger_modem_crash(self.log, self.dut)
                 time.sleep(WAIT_TIME_AFTER_CRASH * 2)
+            elif service == "netmgrd" and "check_wfc" in required_methods:
+                self.log.info("Skipping netmgrd based on b/65558142")
+                continue
             else:
                 process_pid = self.dut.adb.shell("pidof %s" % service)
                 self.log.info("%s is the pidof %s" % (process_pid, service))
