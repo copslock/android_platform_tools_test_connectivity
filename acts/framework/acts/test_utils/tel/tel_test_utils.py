@@ -4731,10 +4731,24 @@ def unlocking_device(ad, device_password=None):
     return False
 
 
+def refresh_sl4a_session(ad):
+    try:
+        ad.droid.logI("Checking SL4A connection")
+        ad.log.info("Existing sl4a session is active")
+    except:
+        ad.terminate_all_sessions()
+        ad.ensure_screen_on()
+        ad.log.info("Open new sl4a connection")
+        droid, ed = ad.get_droid()
+        ed.start()
+
+
 def reset_device_password(ad, device_password=None):
     # Enable or Disable Device Password per test bed config
+    unlock_sim(ad)
     screen_lock = ad.is_screen_lock_enabled()
     if device_password:
+        refresh_sl4a_session(ad)
         ad.droid.setDevicePassword(device_password)
         time.sleep(2)
         if screen_lock:
@@ -4744,7 +4758,6 @@ def reset_device_password(ad, device_password=None):
             # enable device password and log in for the first time
             ad.log.info("Enable device password")
             ad.adb.wait_for_device(timeout=180)
-            unlocking_device(ad, device_password)
     else:
         if not screen_lock:
             # no existing password, do not set password
@@ -4754,21 +4767,13 @@ def reset_device_password(ad, device_password=None):
             # need to disable the password and log in on the first time
             # with unlocking with a swipe
             ad.log.info("Disable device password")
+            refresh_sl4a_session(ad)
             ad.droid.disableDevicePassword()
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
-            unlocking_device(ad, None)
+    refresh_sl4a_session(ad)
     if not ad.is_adb_logcat_on:
         ad.start_adb_logcat()
-    try:
-        ad.droid.logI("Checking SL4A connection")
-        ad.log.info("Existing droid is active")
-        return
-    except:
-        ad.terminate_all_sessions()
-        ad.log.info("Open new sl4a connection")
-        droid, ed = ad.get_droid()
-        ed.start()
 
 
 def is_sim_locked(ad):
