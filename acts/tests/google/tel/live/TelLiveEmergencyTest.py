@@ -53,6 +53,10 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             abort_all_tests(self.dut.log, "unable to unlock SIM")
         self.expected_call_result = True
 
+    def teardown_test(self):
+        self.dut.ensure_screen_on()
+        reset_device_password(self.dut, None)
+
     def change_emergency_number_list(self):
         for i in range(5):
             existing = self.dut.adb.getprop("ril.ecclist")
@@ -90,6 +94,8 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             call_numbers = len(dumpsys_telecom_call_info(self.dut))
             dial_result = dialing_func(self.log, self.dut, callee)
             hung_up_call_by_adb(self.dut)
+            self.dut.send_keycode("BACK")
+            self.dut.send_keycode("BACK")
             calls_info = dumpsys_telecom_call_info(self.dut)
             if len(calls_info) <= call_numbers:
                 self.dut.log.error("New call is not in sysdump telecom")
@@ -183,20 +189,13 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        try:
-            toggle_airplane_mode_by_adb(self.log, self.dut, False)
-            reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
-            self.dut.reboot(stop_at_lock_screen=True)
-            if self.fake_emergency_call_test():
-                return True
-            else:
-                return False
-        finally:
-            self.dut.send_keycode("BACK")
-            self.dut.send_keycode("BACK")
-            unlocking_device(self.dut, DEFAULT_DEVICE_PASSWORD)
-            self.dut.start_services(self.dut.skip_sl4a)
-            reset_device_password(self.dut, None)
+        toggle_airplane_mode_by_adb(self.log, self.dut, False)
+        reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
+        self.dut.reboot(stop_at_lock_screen=True)
+        if self.fake_emergency_call_test():
+            return True
+        else:
+            return False
 
     @test_tracker_info(uuid="17401c57-0dc2-49b5-b954-a94dbb2d5ad0")
     @TelephonyBaseTest.tel_test_wrap
@@ -221,12 +220,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             else:
                 return False
         finally:
-            self.dut.send_keycode("BACK")
-            self.dut.send_keycode("BACK")
             toggle_airplane_mode_by_adb(self.log, self.dut, False)
-            unlocking_device(self.dut, DEFAULT_DEVICE_PASSWORD)
-            self.dut.start_services(self.dut.skip_sl4a)
-            reset_device_password(self.dut, None)
 
     @test_tracker_info(uuid="ccea13ae-6951-4790-a5f7-b5b7a2451c6c")
     @TelephonyBaseTest.tel_test_wrap
@@ -249,8 +243,6 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             else:
                 return False
         finally:
-            self.dut.send_keycode("BACK")
-            self.dut.send_keycode("BACK")
             self.dut.exit_setup_wizard()
 
 
