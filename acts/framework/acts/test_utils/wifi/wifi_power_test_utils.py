@@ -51,7 +51,7 @@ AUTO_TIMEZONE_OFF = "settings put global auto_time_zone 0"
 FORCE_YOUTUBE_STOP = "am force-stop com.google.android.youtube"
 FORCE_DIALER_STOP = "am force-stop com.google.android.dialer"
 IPERF_TIMEOUT = 180
-THRESHOLD_TOLERANCE = 0.05
+THRESHOLD_TOLERANCE = 0.2
 
 
 def dut_rockbottom(ad):
@@ -63,6 +63,9 @@ def dut_rockbottom(ad):
     """
     ad.log.info("Now set the device to Rockbottom State")
     utils.require_sl4a((ad, ))
+    ad.droid.connectivityToggleAirplaneMode(False)
+    time.sleep(5)
+    ad.droid.connectivityToggleAirplaneMode(True)
     utils.set_ambient_display(ad, False)
     utils.set_auto_rotate(ad, False)
     utils.set_adaptive_brightness(ad, False)
@@ -73,7 +76,6 @@ def dut_rockbottom(ad):
     utils.disable_doze(ad)
     wutils.reset_wifi(ad)
     wutils.wifi_toggle_state(ad, False)
-    ad.droid.connectivityToggleAirplaneMode(True)
     ad.droid.nfcDisable()
     ad.droid.setScreenBrightness(0)
     ad.adb.shell(AOD_OFF)
