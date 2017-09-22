@@ -253,10 +253,17 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 ad.phone_number = sub_info["phone_num"]
                 result = True
             else:
-                ad.log.error(
-                    "Unable to retrieve phone number for sub %s iccid %s from"
-                    " device or from testbed config or from sim_file %s",
-                    sim_filename, sub_id, iccid)
+                phone_number = get_phone_number_by_secret_code(
+                    ad, sub_info["sim_operator_name"])
+                if phone_number:
+                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+                    ad.phone_number = sub_info["phone_num"]
+                    result = True
+                else:
+                    ad.log.error(
+                        "Unable to retrieve phone number for sub %s iccid %s"
+                        " from device or testbed config or sim_file %s",
+                        sim_filename, sub_id, iccid)
         else:
             result = True
             if sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
@@ -274,6 +281,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
                         "network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
+        ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -333,18 +341,14 @@ def refresh_droid_config(log, ad):
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
             phone_number = droid.telephonyGetLine1NumberForSubscription(sub_id)
-            if not phone_number:
-                if hasattr(ad, "phone_number"):
-                    phone_number = ad.phone_number
-                if not phone_number:
-                    phone_number = get_phone_number_by_secret_code(
-                        ad, sim_record["sim_operator_name"])
+            if not phone_number and getattr(ad, "phone_number", None):
+                phone_number = ad.phone_number
             sim_record["phone_num"] = phone_number_formatter(phone_number)
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
                     sub_id)
             cfg['subscription'][sub_id] = sim_record
-            ad.log.info("SubId %s SIM record: %s", sub_id, sim_record)
+            ad.log.debug("SubId %s SIM record: %s", sub_id, sim_record)
     setattr(ad, 'cfg', cfg)
 
 
@@ -357,6 +361,7 @@ def get_phone_number_by_secret_code(ad, operator):
             if output:
                 result = re.findall(r"mobile number is (\S+)",
                                     output[-1]["log_message"])
+                ad.send_keycode("BACK")
                 return result[0]
             else:
                 time.sleep(5)
@@ -4726,10 +4731,24 @@ def unlocking_device(ad, device_password=None):
     return False
 
 
+def refresh_sl4a_session(ad):
+    try:
+        ad.droid.logI("Checking SL4A connection")
+        ad.log.info("Existing sl4a session is active")
+    except:
+        ad.terminate_all_sessions()
+        ad.ensure_screen_on()
+        ad.log.info("Open new sl4a connection")
+        droid, ed = ad.get_droid()
+        ed.start()
+
+
 def reset_device_password(ad, device_password=None):
     # Enable or Disable Device Password per test bed config
+    unlock_sim(ad)
     screen_lock = ad.is_screen_lock_enabled()
     if device_password:
+        refresh_sl4a_session(ad)
         ad.droid.setDevicePassword(device_password)
         time.sleep(2)
         if screen_lock:
@@ -4739,7 +4758,6 @@ def reset_device_password(ad, device_password=None):
             # enable device password and log in for the first time
             ad.log.info("Enable device password")
             ad.adb.wait_for_device(timeout=180)
-            unlocking_device(ad, device_password)
     else:
         if not screen_lock:
             # no existing password, do not set password
@@ -4749,21 +4767,13 @@ def reset_device_password(ad, device_password=None):
             # need to disable the password and log in on the first time
             # with unlocking with a swipe
             ad.log.info("Disable device password")
+            refresh_sl4a_session(ad)
             ad.droid.disableDevicePassword()
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
-            unlocking_device(ad, None)
+    refresh_sl4a_session(ad)
     if not ad.is_adb_logcat_on:
         ad.start_adb_logcat()
-    try:
-        ad.droid.logI("Checking SL4A connection")
-        ad.log.info("Existing droid is active")
-        return
-    except:
-        ad.terminate_all_sessions()
-        ad.log.info("Open new sl4a connection")
-        droid, ed = ad.get_droid()
-        ed.start()
 
 
 def is_sim_locked(ad):

@@ -2316,6 +2316,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Pushing embms config and apk to the Android device.")
         android_embms_path = "/sdcard/mobitv"
         embms_path = self.user_params.get("embms_path", "embms_path")
+        if isinstance(embms_path, list):
+            embms_path = embms_path[0]
         ad.adb.shell("mkdir /sdcard/mobitv")
         dcafile = os.path.join(embms_path, "dca.config")
         apkfile = os.path.join(embms_path, "VzwDCA-v3035.apk")
