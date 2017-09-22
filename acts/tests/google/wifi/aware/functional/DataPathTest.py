@@ -789,6 +789,7 @@ class DataPathTest(AwareBaseTest):
           self.log.info("Received an unexpected connectivity, the revoked "
                         "network request probably went through -- %s", event)
 
+  @test_tracker_info(uuid="2e325e2b-d552-4890-b470-20b40284395d")
   def test_multiple_identical_networks(self):
     """Validate that creating multiple networks between 2 devices, each network
     with identical configuration is supported over a single NDP.
@@ -1010,30 +1011,35 @@ class DataPathTest(AwareBaseTest):
     for init_req_key in init_req_keys:
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+  @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
   def test_multiple_ndi_open_passphrase(self):
     """Verify that can between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using passphrase). The result should use two
     different NDIs"""
     self.run_multiple_ndi([None, self.PASSPHRASE])
 
+  @test_tracker_info(uuid="5f2c32aa-20b2-41f0-8b1e-d0b68df73ada")
   def test_multiple_ndi_open_pmk(self):
     """Verify that can between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using pmk). The result should use two
     different NDIs"""
     self.run_multiple_ndi([None, self.PMK])
 
+  @test_tracker_info(uuid="34467659-bcfb-40cd-ba25-7e50560fca63")
   def test_multiple_ndi_passphrase_pmk(self):
     """Verify that can between 2 DUTs can create 2 NDPs with different security
     configuration (one using passphrase, one using pmk). The result should use
     two different NDIs"""
     self.run_multiple_ndi([self.PASSPHRASE, self.PMK])
 
+  @test_tracker_info(uuid="d9194ce6-45b6-41b1-9cc8-ada79968966d")
   def test_multiple_ndi_passphrases(self):
     """Verify that can between 2 DUTs can create 2 NDPs with different security
     configuration (using different passphrases). The result should use two
     different NDIs"""
     self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2])
 
+  @test_tracker_info(uuid="879df795-62d2-40d4-a862-bd46d8f7e67f")
   def test_multiple_ndi_pmks(self):
     """Verify that can between 2 DUTs can create 2 NDPs with different security
     configuration (using different PMKS). The result should use two different
