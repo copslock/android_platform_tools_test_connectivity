@@ -1361,12 +1361,16 @@ class AndroidDevice:
     def ensure_screen_on(self):
         """Ensure device screen is powered on"""
         if self.is_screen_lock_enabled():
-            self.unlock_screen()
-            time.sleep(1)
-            if self.is_waiting_for_unlock_pin():
-                self.unlock_screen(password=DEFAULT_DEVICE_PASSWORD)
+            for _ in range(2):
+                self.unlock_screen()
                 time.sleep(1)
-            return self.wait_for_window_ready()
+                if self.is_waiting_for_unlock_pin():
+                    self.unlock_screen(password=DEFAULT_DEVICE_PASSWORD)
+                    time.sleep(1)
+                if not self.is_waiting_for_unlock_pin(
+                ) and self.wait_for_window_ready():
+                    return True
+            return False
         else:
             self.wakeup_screen()
             return True
@@ -1386,6 +1390,7 @@ class AndroidDevice:
         self.log.info("Unlocking with %s", password or "swipe up")
         # Bring device to SLEEP so that unlock process can start fresh
         self.send_keycode("SLEEP")
+        time.sleep(1)
         self.send_keycode("WAKEUP")
         if ENCRYPTION_WINDOW not in self.get_my_current_focus_app():
             self.send_keycode("MENU")
@@ -1394,6 +1399,7 @@ class AndroidDevice:
             for number in password:
                 self.send_keycode_number_pad(number)
             self.send_keycode("ENTER")
+            self.send_keycode("BACK")
 
     def exit_setup_wizard(self):
         self.adb.shell(
