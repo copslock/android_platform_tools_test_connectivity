@@ -3373,7 +3373,6 @@ def mms_receive_verify_after_call_hangup_for_subscription(
                                    MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 log.warning("No sent_success event.")
-                return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
                 return False
