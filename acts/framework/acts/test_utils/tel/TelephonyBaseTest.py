@@ -176,13 +176,6 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
                              "\"com.google.android.wfcactivation/"
                              ".VzwEmergencyAddressActivity\"")
-            # Start telephony monitor
-            if not ad.is_apk_running("com.google.telephonymonitor"):
-                ad.log.info("TelephonyMonitor is not running, start it now")
-                ad.adb.shell(
-                    'am broadcast -a '
-                    'com.google.gservices.intent.action.GSERVICES_OVERRIDE -e '
-                    '"ce.telephony_monitor_enable" "true"')
             # Sub ID setup
             initial_set_up_for_subid_infomation(self.log, ad)
             if "enable_wifi_verbose_logging" in self.user_params:
