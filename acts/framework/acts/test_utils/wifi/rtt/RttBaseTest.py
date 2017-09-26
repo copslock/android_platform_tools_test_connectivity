@@ -25,6 +25,9 @@ class RttBaseTest(BaseTestClass):
     super(RttBaseTest, self).__init__(controllers)
 
   def setup_test(self):
+    required_params = ("rtt_reference_distance_mm",)
+    self.unpack_userparams(required_params)
+
     for ad in self.android_devices:
       asserts.skip_if(
           not ad.droid.doesDeviceSupportWifiRttFeature(),

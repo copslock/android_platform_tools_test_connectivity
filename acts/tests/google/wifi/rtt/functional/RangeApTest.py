@@ -32,7 +32,7 @@ class RangeApTest(RttBaseTest):
   def test_rtt_supporting_ap_only(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
     dut = self.android_devices[0]
-    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=2)
+    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
     dut.log.info("RTT Supporting APs=%s", rtt_supporting_aps)
 
     asserts.assert_true(
