@@ -814,8 +814,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info(
-                'Restarting logcat on file %s' % self.adb_logcat_file_path)
+            self.log.info('Restarting logcat on file %s' %
+                          self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -1052,7 +1052,7 @@ class AndroidDevice:
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
         droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
-        self.log.info("Open s4la session %s", session_id)
+        self.log.info("Open sl4a session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
 
@@ -1156,8 +1156,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError(
-            "Device %s booting process timed out." % self.serial)
+        raise AndroidDeviceError("Device %s booting process timed out." %
+                                 self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1222,8 +1222,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning(
-                        'Unable to find IP address for %s.' % interface)
+                    self.log.warning('Unable to find IP address for %s.' %
+                                     interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1352,8 +1352,8 @@ class AndroidDevice:
         if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "StatusBar" in current_window and (
-            (not current_app) or "FallbackHome" in current_app):
+        if "StatusBar" in current_window and ((not current_app) or
+                                              "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
