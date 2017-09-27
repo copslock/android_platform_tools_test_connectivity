@@ -461,7 +461,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if method in kwargs: required_methods.append(method)
 
         process_list = ("rild", "netmgrd", "com.android.phone", "imsqmidaemon",
-                        "imsdatadaemon", "ims_rtp_daemon", "netd",
+                        "imsdatadaemon", "ims_rtp_daemon",
                         "com.android.ims.rcsservice", "system_server", "cnd",
                         "modem")
         for service in process_list:
