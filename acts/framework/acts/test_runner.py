@@ -21,6 +21,7 @@ import argparse
 import copy
 import importlib
 import inspect
+import fnmatch
 import logging
 import os
 import pkgutil
@@ -176,7 +177,8 @@ class TestRunner(object):
         self.controller_destructors: A dictionary that holds the controller
                                      distructors. Keys are controllers' names.
         self.test_classes: A dictionary where we can look up the test classes
-                           by name to instantiate.
+                           by name to instantiate. Supports unix shell style
+                           wildcards.
         self.run_list: A list of tuples specifying what tests to run.
         self.results: The test result object used to record the results of
                       this test run.
@@ -512,31 +514,38 @@ class TestRunner(object):
             ValueError is raised if the requested test class could not be found
             in the test_paths directories.
         """
-        try:
-            test_cls = self.test_classes[test_cls_name]
-        except KeyError:
+        matches = fnmatch.filter(self.test_classes.keys(), test_cls_name)
+        if not matches:
             self.log.info(
-                "Cannot find test class %s skipping for now." % test_cls_name)
+                "Cannot find test class %s or classes matching pattern,"
+                "skipping for now." % test_cls_name)
             record = records.TestResultRecord("*all*", test_cls_name)
             record.test_skip(signals.TestSkip("Test class does not exist."))
             self.results.add_record(record)
             return
-        if self.test_configs.get(keys.Config.key_random.value) or (
-                "Preflight" in test_cls_name) or "Postflight" in test_cls_name:
-            test_case_iterations = 1
-        else:
-            test_case_iterations = self.test_configs.get(
-                keys.Config.key_test_case_iterations.value, 1)
+        if matches != [test_cls_name]:
+            self.log.info("Found classes matching pattern %s: %s",
+                          test_cls_name, matches)
 
-        with test_cls(self.test_run_info) as test_cls_instance:
-            try:
-                cls_result = test_cls_instance.run(test_cases,
-                                                   test_case_iterations)
-                self.results += cls_result
-                self._write_results_json_str()
-            except signals.TestAbortAll as e:
-                self.results += e.results
-                raise e
+        for test_cls_name_match in matches:
+            test_cls = self.test_classes[test_cls_name_match]
+            if self.test_configs.get(keys.Config.key_random.value) or (
+                    "Preflight" in test_cls_name_match) or (
+                        "Postflight" in test_cls_name_match):
+                test_case_iterations = 1
+            else:
+                test_case_iterations = self.test_configs.get(
+                    keys.Config.key_test_case_iterations.value, 1)
+
+            with test_cls(self.test_run_info) as test_cls_instance:
+                try:
+                    cls_result = test_cls_instance.run(test_cases,
+                                                       test_case_iterations)
+                    self.results += cls_result
+                    self._write_results_json_str()
+                except signals.TestAbortAll as e:
+                    self.results += e.results
+                    raise e
 
     def run(self, test_class=None):
         """Executes test cases.
@@ -567,6 +576,7 @@ class TestRunner(object):
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
+
             if test_case_names:
                 self.log.debug("Executing test cases %s in test class %s.",
                                test_case_names, test_cls_name)
