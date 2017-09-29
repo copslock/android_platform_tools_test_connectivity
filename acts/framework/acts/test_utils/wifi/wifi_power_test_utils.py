@@ -27,6 +27,9 @@ from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
+# http://www.secdev.org/projects/scapy/
+# On ubuntu, sudo pip3 install scapy-python3
+import scapy.all as scapy
 
 SETTINGS_PAGE = "am start -n com.android.settings/.Settings"
 SCROLL_BOTTOM = "input swipe 0 2000 0 0"
@@ -51,7 +54,7 @@ AUTO_TIMEZONE_OFF = "settings put global auto_time_zone 0"
 FORCE_YOUTUBE_STOP = "am force-stop com.google.android.youtube"
 FORCE_DIALER_STOP = "am force-stop com.google.android.dialer"
 IPERF_TIMEOUT = 180
-THRESHOLD_TOLERANCE = 0.05
+THRESHOLD_TOLERANCE = 0.2
 
 
 def dut_rockbottom(ad):
@@ -63,6 +66,9 @@ def dut_rockbottom(ad):
     """
     ad.log.info("Now set the device to Rockbottom State")
     utils.require_sl4a((ad, ))
+    ad.droid.connectivityToggleAirplaneMode(False)
+    time.sleep(5)
+    ad.droid.connectivityToggleAirplaneMode(True)
     utils.set_ambient_display(ad, False)
     utils.set_auto_rotate(ad, False)
     utils.set_adaptive_brightness(ad, False)
@@ -73,7 +79,6 @@ def dut_rockbottom(ad):
     utils.disable_doze(ad)
     wutils.reset_wifi(ad)
     wutils.wifi_toggle_state(ad, False)
-    ad.droid.connectivityToggleAirplaneMode(True)
     ad.droid.nfcDisable()
     ad.droid.setScreenBrightness(0)
     ad.adb.shell(AOD_OFF)
@@ -466,3 +471,25 @@ def get_phone_ipv6(ad):
     IPv6 = ad.droid.connectivityGetLinkLocalIpv6Address('wlan0')[:-6]
 
     return IPv6
+
+
+def get_if_addr6(intf, address_type):
+    """Returns the Ipv6 address from a given local interface.
+
+    Returns the desired IPv6 address from the interface 'intf' in human
+    readable form. The address type is indicated by the IPv6 constants like
+    IPV6_ADDR_LINKLOCAL, IPV6_ADDR_GLOBAL, etc. If no address is found,
+    None is returned.
+
+    Args:
+        intf: desired interface name
+        address_type: addrees typle like LINKLOCAL or GLOBAL
+
+    Returns:
+        Ipv6 address of the specified interface in human readable format
+    """
+    for if_list in scapy.in6_getifaddr():
+        if if_list[2] == intf and if_list[1] == address_type:
+            return if_list[0]
+
+    return None
