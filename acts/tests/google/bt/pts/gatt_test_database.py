@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from acts.test_utils.bt.GattEnum import CharacteristicValueFormat
 from acts.test_utils.bt.bt_constants import gatt_characteristic
 from acts.test_utils.bt.bt_constants import gatt_descriptor
 from acts.test_utils.bt.bt_constants import gatt_service_types
@@ -71,7 +70,7 @@ INVALID_SMALL_DATABASE = {
         'uuid': '00001801-0000-1000-8000-00805f9b34fb',
         'type': gatt_service_types['primary'],
         'characteristics': [{
-            'uuid': GattCharTypes.GATT_CHARAC_SERVICE_CHANGED.value,
+            'uuid': gatt_char_types['service_changed'],
             'properties': gatt_characteristic['property_indicate'],
             'permissions': gatt_characteristic['permission_read'] |
             gatt_characteristic['permission_write'],
@@ -79,7 +78,7 @@ INVALID_SMALL_DATABASE = {
             'value_type': gatt_characteristic_value_format['byte'],
             'value': [0x0000],
             'descriptors': [{
-                'uuid': GattCharDesc.GATT_CLIENT_CHARAC_CFG_UUID.value,
+                'uuid': gatt_char_desc_uuids['client_char_cfg'],
                 'permissions': gatt_descriptor['permission_read'] |
                 gatt_descriptor['permission_write'],
             }]
@@ -234,11 +233,10 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['byte'],
                     'value': [0x04],
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_SERVER_CHARAC_CFG_UUID.value,
+                        'uuid': gatt_char_desc_uuids['server_char_cfg'],
                         'permissions': gatt_descriptor['permission_read'] |
                         gatt_descriptor['permission_write'],
-                        'value':
-                        GattDescriptor.DISABLE_NOTIFICATION_VALUE.value
+                        'value': gatt_descriptor['disable_notification_value']
                     }]
                 },
                 {
@@ -295,11 +293,11 @@ LARGE_DB_1 = {
                 'value_type': gatt_characteristic_value_format['byte'],
                 'value': [0x05],
                 'descriptors': [{
-                    'uuid': GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                    'uuid': gatt_char_desc_uuids['char_ext_props'],
                     'permissions': gatt_descriptor['permission_read'],
                     'value': [0x03, 0x00]
                 }, {
-                    'uuid': GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                    'uuid': gatt_char_desc_uuids['char_user_desc'],
                     'permissions': gatt_descriptor['permission_read'] |
                     gatt_descriptor['permission_write'],
                     'value': [
@@ -308,9 +306,9 @@ LARGE_DB_1 = {
                         0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x90
                     ]
                 }, {
-                    'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                    'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                     'permissions':
-                    GattDescriptor.PERMISSION_READ_ENCRYPTED_MITM.value,
+                    gatt_descriptor['permission_read_encrypted_mitm'],
                     'value': [0x00, 0x01, 0x30, 0x01, 0x11, 0x31]
                 }, {
                     'uuid': '0000d5d4-0000-0000-0123-456789abcdef',
@@ -333,7 +331,7 @@ LARGE_DB_1 = {
                 'value_type': gatt_characteristic_value_format['byte'],
                 'value': [0x09],
                 'descriptors': [{
-                    'uuid': GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                    'uuid': gatt_char_desc_uuids['char_ext_props'],
                     'permissions': gatt_descriptor['permission_read'],
                     'value': gatt_descriptor['enable_notification_value']
                 }, {
@@ -360,7 +358,7 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['string'],
                     'value': "Length is ",
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x19, 0x00, 0x00, 0x30, 0x01, 0x00, 0x00]
                     }]
@@ -374,7 +372,7 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['byte'],
                     'value': [0x65],
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x04, 0x00, 0x01, 0x27, 0x01, 0x01, 0x00]
                     }]
@@ -388,7 +386,7 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['byte'],
                     'value': [0x34, 0x12],
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x06, 0x00, 0x10, 0x27, 0x01, 0x02, 0x00]
                     }]
@@ -402,7 +400,7 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['byte'],
                     'value': [0x04, 0x03, 0x02, 0x01],
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x08, 0x00, 0x17, 0x27, 0x01, 0x03, 0x00]
                     }]
@@ -414,14 +412,14 @@ LARGE_DB_1 = {
                     'value_type': gatt_characteristic_value_format['byte'],
                     'value': [0x65, 0x34, 0x12, 0x04, 0x03, 0x02, 0x01],
                     'descriptors': [{
-                        'uuid': GattCharDesc.GATT_CHARAC_AGREG_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_agreg_fmt'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0xa6, 0x00, 0xa9, 0x00, 0xac, 0x00]
                     }]
                 },
                 {
                     'uuid': '0000b011-0000-1000-8000-00805f9b34fb',
-                    'properties': GattCharacteristic.WRITE_TYPE_SIGNED.value
+                    'properties': gatt_characteristic['write_type_signed']
                     |  #for some reason 0x40 is not working...
                     gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
@@ -720,7 +718,7 @@ LARGE_DB_2 = {
                     'permissions': gatt_descriptor['permission_write'],
                     'value': [0x33]
                 }, {
-                    'uuid': GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                    'uuid': gatt_char_desc_uuids['char_ext_props'],
                     'permissions': gatt_descriptor['permission_write'],
                     'value': gatt_descriptor['enable_notification_value']
                 }]
@@ -1085,62 +1083,56 @@ LARGE_DB_3 = {
                     'value': [0x04],
                     'descriptors': [
                         {
-                            'uuid':
-                            GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                            'uuid': gatt_char_desc_uuids['char_ext_props'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x09]
                         },
                         {
-                            'uuid':
-                            GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                            'uuid': gatt_char_desc_uuids['char_user_desc'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
-                            'uuid':
-                            GattCharDesc.GATT_CLIENT_CHARAC_CFG_UUID.value,
+                            'uuid': gatt_char_desc_uuids['client_char_cfg'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x01, 0x00]
                         },
                         {
-                            'uuid':
-                            GattCharDesc.GATT_SERVER_CHARAC_CFG_UUID.value,
+                            'uuid': gatt_char_desc_uuids['server_char_cfg'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
-                            'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                            'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
-                            'uuid':
-                            GattCharDesc.GATT_CHARAC_AGREG_FMT_UUID.value,
+                            'uuid': gatt_char_desc_uuids['char_agreg_fmt'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
-                            'uuid':
-                            GattCharDesc.GATT_CHARAC_VALID_RANGE_UUID.value,
+                            'uuid': gatt_char_desc_uuids['char_valid_range'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
                             'uuid':
-                            GattCharDesc.GATT_EXTERNAL_REPORT_REFERENCE.value,
+                            gatt_char_desc_uuids['external_report_reference'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
                         },
                         {
-                            'uuid': GattCharDesc.GATT_REPORT_REFERENCE.value,
+                            'uuid': gatt_char_desc_uuids['report_reference'],
                             'permissions': gatt_descriptor['permission_read'] |
                             gatt_descriptor['permission_write'],
                             'value': [0x22]
@@ -1148,7 +1140,7 @@ LARGE_DB_3 = {
                     ]
                 },
                 {
-                    'uuid': GattCharTypes.GATT_CHARAC_SERVICE_CHANGED.value,
+                    'uuid': gatt_char_types['service_changed'],
                     'instance_id': 0x0023,
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
@@ -1165,8 +1157,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_PERIPHERAL_PRIV_FLAG.value,
+                    'uuid': gatt_char_types['peripheral_priv_flag'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1174,8 +1165,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_RECONNECTION_ADDRESS.value,
+                    'uuid': gatt_char_types['reconnection_address'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1183,7 +1173,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid': GattCharTypes.GATT_CHARAC_SYSTEM_ID.value,
+                    'uuid': gatt_char_types['system_id'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1191,8 +1181,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_MODEL_NUMBER_STRING.value,
+                    'uuid': gatt_char_types['model_number_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1200,8 +1189,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_SERIAL_NUMBER_STRING.value,
+                    'uuid': gatt_char_types['serial_number_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1209,8 +1197,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_FIRMWARE_REVISION_STRING.value,
+                    'uuid': gatt_char_types['firmware_revision_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1218,8 +1205,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_HARDWARE_REVISION_STRING.value,
+                    'uuid': gatt_char_types['hardware_revision_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1227,8 +1213,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_SOFTWARE_REVISION_STRING.value,
+                    'uuid': gatt_char_types['software_revision_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1236,8 +1221,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid':
-                    GattCharTypes.GATT_CHARAC_MANUFACTURER_NAME_STRING.value,
+                    'uuid': gatt_char_types['manufacturer_name_string'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1245,7 +1229,7 @@ LARGE_DB_3 = {
                     'value': '333334444455555666667777788888999990000011111',
                 },
                 {
-                    'uuid': GattCharTypes.GATT_CHARAC_PNP_ID.value,
+                    'uuid': gatt_char_types['pnp_id'],
                     'properties': gatt_characteristic['property_read'],
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1365,7 +1349,7 @@ LARGE_DB_3 = {
                         'value': [0x22]
                     },
                     {
-                        'uuid': GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_ext_props'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x01, 0x00]
                     },
@@ -1390,13 +1374,13 @@ LARGE_DB_3 = {
                 'value': [0x05],
                 'descriptors': [
                     {
-                        'uuid': GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_user_desc'],
                         'permissions': gatt_descriptor['permission_read'] |
                         gatt_descriptor['permission_write'],
                         'value': [0] * 26
                     },
                     {
-                        'uuid': GattCharDesc.GATT_CHARAC_EXT_PROPER_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_ext_props'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x03, 0x00]
                     },
@@ -1406,7 +1390,7 @@ LARGE_DB_3 = {
                         'value': [0x44]
                     },
                     {
-                        'uuid': GattCharDesc.GATT_CHARAC_FMT_UUID.value,
+                        'uuid': gatt_char_desc_uuids['char_fmt_uuid'],
                         'permissions': gatt_descriptor['permission_read'],
                         'value': [0x04, 0x00, 0x01, 0x30, 0x01, 0x11, 0x31]
                     },
@@ -1511,7 +1495,7 @@ TEST_DB_1 = {
             'value': 'test',
             'instance_id': 0x002a,
             'descriptors': [{
-                'uuid': GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                'uuid': gatt_char_desc_uuids['char_user_desc'],
                 'permissions': gatt_descriptor['permission_read'],
                 'value': [0x01]
             }]
@@ -1559,7 +1543,7 @@ TEST_DB_3 = {
             'value': 'test',
             'instance_id': 0x002a,
             'descriptors': [{
-                'uuid': GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                'uuid': gatt_char_desc_uuids['char_user_desc'],
                 'permissions': gatt_descriptor['permission_read'],
                 'value': [0x01]
             }, {
@@ -1595,9 +1579,9 @@ TEST_DB_4 = {
             'value': "test",
             'instance_id': 0x002a,
             'descriptors': [{
-                'uuid': GattCharDesc.GATT_CHARAC_USER_DESC_UUID.value,
+                'uuid': gatt_char_desc_uuids['char_user_desc'],
                 'permissions':
-                GattDescriptor.PERMISSION_READ_ENCRYPTED_MITM.value,
+                gatt_descriptor['permission_read_encrypted_mitm'],
                 'value': [0] * 512
             }]
         }]
@@ -1660,7 +1644,7 @@ SIMPLE_READ_DESCRIPTOR = {
             'value_type': gatt_characteristic_value_format['string'],
             'value': 'Test Database',
             'descriptors': [{
-                'uuid': GattCharDesc.GATT_CLIENT_CHARAC_CFG_UUID.value,
+                'uuid': gatt_char_desc_uuids['client_char_cfg'],
                 'permissions': gatt_descriptor['permission_read'],
             }]
         }]
