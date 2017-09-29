@@ -21,12 +21,13 @@ from acts.keys import Config
 from acts.utils import rand_ascii_str
 from acts.test_utils.bt.bt_constants import gatt_cb_strings
 from acts.test_utils.bt.bt_constants import gatt_characteristic
+from acts.test_utils.bt.bt_constants import gatt_characteristic_value_format
 from acts.test_utils.bt.bt_constants import gatt_cb_err
 from acts.test_utils.bt.bt_constants import gatt_transport
 from acts.test_utils.bt.bt_constants import gatt_event
 from acts.test_utils.bt.bt_constants import gatt_server_responses
 from acts.test_utils.bt.bt_constants import gatt_service_types
-from acts.test_utils.bt.bt_test_utils import TIMEOUT_SMALL
+from acts.test_utils.bt.bt_constants import small_timeout
 
 from gatt_test_database import STRING_512BYTES
 from acts.utils import exe_cmd
@@ -119,7 +120,7 @@ class GattServerLib():
             self.gatt_server_callback)
         regex = "({}|{}|{}|{}|{})".format(desc_read, desc_write, char_read,
                                           char_write, execute_write)
-        events = self.dut.ed.pop_events(regex, 5, TIMEOUT_SMALL)
+        events = self.dut.ed.pop_events(regex, 5, small_timeout)
         status = 0
         if user_input:
             status = gatt_server_responses.get(user_input)
@@ -282,7 +283,7 @@ class GattServerLib():
         i = 0
         num_packets = ceil((len(char_value) + 1) / (mtu - 1))
         while time.time() < end_time:
-            events = self.dut.ed.pop_events(regex, 10, TIMEOUT_SMALL)
+            events = self.dut.ed.pop_events(regex, 10, small_timeout)
             for event in events:
                 start_offset = i * (mtu - 1)
                 i += 1
@@ -321,7 +322,7 @@ class GattServerLib():
         i = 0
         num_packets = ceil((len(char_value) + 1) / (mtu - 1))
         while time.time() < end_time:
-            events = self.dut.ed.pop_events(regex, 10, TIMEOUT_SMALL)
+            events = self.dut.ed.pop_events(regex, 10, small_timeout)
             for event in events:
                 self.log.info(event)
                 request_id = event['data']['requestId']

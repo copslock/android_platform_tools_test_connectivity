@@ -24,8 +24,11 @@ Optional config parameters:
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from cmd_input import CmdInput
 from queue import Empty
+
 import os
 import uuid
+
+from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 
 
 class BtCmdLineTest(BluetoothBaseTest):
@@ -46,7 +49,7 @@ class BtCmdLineTest(BluetoothBaseTest):
                 self.log.error(
                     "Missing mandatory user config \"sim_conf_file\"!")
                 return False
-            sim_conf_file = self.user_params["sim_conf_file"]
+            sim_conf_file = self.user_params["sim_conf_file"][0]
             # If the sim_conf_file is not a full path, attempt to find it
             # relative to the config file.
             if not os.path.isfile(sim_conf_file):
@@ -61,7 +64,7 @@ class BtCmdLineTest(BluetoothBaseTest):
             music_path_str = "music_path"
             android_music_path = "/sdcard/Music/"
             if music_path_str not in self.user_params:
-                log.error("Need music for A2DP testcases")
+                self.log.error("Need music for A2DP testcases")
                 return False
             music_path = self.user_params[music_path_str]
             self._add_music_to_primary_android_device(music_path,
