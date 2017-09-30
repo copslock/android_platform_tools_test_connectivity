@@ -72,13 +72,6 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.log.info("qxdm always on is already set")
             ad.log.info("radio baseband = %s",
                         ad.adb.getprop("ro.build.expect.baseband"))
-            try:
-                mbn_ver = ad.adb.shell(
-                    "cat /vendor/mbn/mcfg/configs/mcfg_sw/mbn.ver")
-                if mbn_ver:
-                    ad.log.info("mcfg_sw mbn.ver = %s", mbn_ver)
-            except:
-                ad.log.debug("mcfg_sw mbn.ver is not available")
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
 
@@ -195,8 +188,6 @@ class TelephonyBaseTest(BaseTestClass):
             # Set chrome browser start with no-first-run verification and
             # disable-fre. Give permission to read from and write to storage.
             for cmd in (
-                    "am start -n com.google.android.setupwizard/."
-                    "SetupWizardExitActivity",
                     "pm disable com.android.cellbroadcastreceiver",
                     "pm grant com.android.chrome "
                     "android.permission.READ_EXTERNAL_STORAGE",
