@@ -17,7 +17,11 @@
     Test Script for Telephony Settings
 """
 
+import os
 import time
+
+from acts import signals
+from acts.utils import unzip_maintain_permissions
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
@@ -35,6 +39,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
@@ -1216,3 +1221,83 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         time.sleep(1)
         return "1" in self.ad.adb.shell(
             "settings get global mobile_data_always_on") == "1"
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="c2cc5b66-40af-4ba6-81cb-6c44ae34cbbb")
+    def test_push_new_mbn(self):
+        """Verify new mdn can be push to device.
+
+        Steps:
+        1. Push new mbn to device.
+        2. Verify the installed mbn version.
+
+        Expected Results: mbn can be pushed to device and mbn.ver is available.
+        """
+        result = True
+        mbn_path = self.user_params.get("mbn_path")
+        if not mbn_path:
+            self.log.info("No mbn_path is provided")
+            raise signals.TestSkip("No mbn_path is provided")
+        if isinstance(mbn_path, list):
+            mbn_path = mbn_path[0]
+        if not os.path.exists(mbn_path):
+            self.log.error("mbn_path %s does not exist", mbn_path)
+            mbn_path = os.path.join(self.user_params[Config.key_config_path],
+                                    mbn_path)
+        self.log.info("mbn_path = %s", mbn_path)
+        if "zip" in mbn_path:
+            self.log.info("Unzip %s", mbn_path)
+            path, file_name = os.path.split(mbn_path)
+            new_mbn_path = os.path.join(path, "mcfg_sw")
+            os.system("rm -rf %s" % new_mbn_path)
+            unzip_maintain_permissions(mbn_path, path)
+            mbn_path = new_mbn_path
+        if not os.path.exists(mbn_path):
+            self.log.error("mbn_path %s does not exist", mbn_path)
+            return False
+        else:
+            self.log.info("mbn_path is %s", mbn_path)
+        os.system("chmod -R 777 %s" % mbn_path)
+        for ad in self.android_devices:
+            push_result = True
+            try:
+                mbn_ver = ad.adb.shell(
+                    "cat /vendor/mbn/mcfg/configs/mcfg_sw/mbn.ver")
+                if mbn_ver:
+                    ad.log.info("mcfg_sw mbn.ver = %s", mbn_ver)
+                else:
+                    ad.log.info(
+                        "There is no mbn.ver before push, unmatching device")
+                    continue
+            except:
+                ad.log.info(
+                    "There is no mbn.ver before push, unmatching device")
+                continue
+            for i in range(2):
+                if not system_file_push(ad, mbn_path,
+                                        "/vendor/mbn/mcfg/configs/"):
+                    if i == 1:
+                        ad.log.error("Failed to push mbn file")
+                        push_result = False
+                else:
+                    ad.log.info("The mbn file is pushed to device")
+                    break
+            if not push_result:
+                result = False
+                continue
+            try:
+                new_mbn_ver = ad.adb.shell(
+                    "cat /vendor/mbn/mcfg/configs/mcfg_sw/mbn.ver")
+                if new_mbn_ver:
+                    ad.log.info("new mcfg_sw mbn.ver = %s", new_mbn_ver)
+                    if new_mbn_ver == mbn_ver:
+                        ad.log.error(
+                            "mbn.ver is the same before and after push")
+                        result = False
+                else:
+                    ad.log.error("Unable to get new mbn.ver")
+                    result = False
+            except Exception as e:
+                ad.log.error("cat mbn.ver with error %s", e)
+                result = False
+        return result
