@@ -26,6 +26,7 @@ from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_wcdma
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
@@ -60,8 +61,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
-        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
-                          ignore_status=True)
+        self.ad.adb.shell(
+            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -74,16 +75,20 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
-    def LTE_WCDMA_data_roaming(self, mcc, mnc):
+    def LTE_WCDMA_data_roaming(self, mcc, mnc, lte_band, wcdma_band):
         try:
             [self.bts1, self.bts2] = set_system_model_lte_wcdma(
                 self.anritsu, self.user_params, self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.bts1.mcc = mcc
             self.bts1.mnc = mnc
             self.bts2.mcc = mcc
             self.bts2.mnc = mnc
-            self.bts2.packet_rate = BtsPacketRate.WCDMA_DLHSAUTO_REL7_ULHSAUTO
+            self.bts1.band = lte_band
+            self.bts2.band = wcdma_band
+            self.bts2.packet_rate = BtsPacketRate.WCDMA_DLHSAUTO_REL8_ULHSAUTO
             self.anritsu.start_simulation()
             self.bts2.service_state = BtsServiceState.SERVICE_STATE_OUT
             self.log.info("Toggle Mobile Data On")
@@ -173,7 +178,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("505", "90F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="505", mnc="02F", lte_band="3", wcdma_band="1")
 
     @test_tracker_info(uuid="68a6313c-d95a-4cae-8e35-2fdf3c94df56")
     @TelephonyBaseTest.tel_test_wrap
@@ -199,7 +205,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("302", "86F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="302", mnc="220", lte_band="4", wcdma_band="2")
 
     @test_tracker_info(uuid="16de850a-6511-42d4-8d8f-d800477aba6b")
     @TelephonyBaseTest.tel_test_wrap
@@ -225,7 +232,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("234", "15F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="234", mnc="15F", lte_band="20", wcdma_band="1")
 
     @test_tracker_info(uuid="e9050f3d-b53c-4a87-9363-b88a842a3479")
     @TelephonyBaseTest.tel_test_wrap
@@ -251,7 +259,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("234", "02F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="234", mnc="02F", lte_band="20", wcdma_band="1")
 
     @test_tracker_info(uuid="a3f56da1-6a51-45b0-8016-3a492661e1f4")
     @TelephonyBaseTest.tel_test_wrap
@@ -277,7 +286,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("234", "33F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="234", mnc="33F", lte_band="20", wcdma_band="1")
 
     @test_tracker_info(uuid="dcde16c1-730c-41ee-ad29-286f4962c66f")
     @TelephonyBaseTest.tel_test_wrap
@@ -303,6 +313,7 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail
         """
-        return self.LTE_WCDMA_data_roaming("404", "24F")
+        return self.LTE_WCDMA_data_roaming(
+            mcc="404", mnc="24F", lte_band="3", wcdma_band="1")
 
     """ Tests End """
