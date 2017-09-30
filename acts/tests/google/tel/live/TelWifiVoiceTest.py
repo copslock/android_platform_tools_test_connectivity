@@ -455,7 +455,7 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
     def _wfc_phone_setup_cellular_absent(self, wfc_mode):
         is_exception_happened = False
-        time.sleep(60)
+        time.sleep(90)
         try:
             if not toggle_airplane_mode(self.log, self.android_devices[0],
                                         False):
