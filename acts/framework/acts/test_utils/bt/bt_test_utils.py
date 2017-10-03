@@ -63,6 +63,7 @@ from acts.test_utils.bt.bt_constants import pan_connect_timeout
 from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_constants import scan_failed
+from acts.test_utils.bt.bt_constants import hid_id_keyboard
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
@@ -1250,3 +1251,36 @@ def is_map_mse_device_connected(ad, addr):
     if addr in {d['address'] for d in devices}:
         return True
     return False
+
+
+def hid_keyboard_report(key, modifier="00"):
+    """Get the HID keyboard report for the given key
+
+    Args:
+        key: the key we want
+        modifier: HID keyboard modifier bytes
+    Returns:
+        The byte array for the HID report.
+    """
+    return str(bytearray.fromhex(
+            " ".join([modifier, "00", key, "00", "00", "00", "00", "00"])),
+            "utf-8")
+
+
+def hid_device_send_key_data_report(host_id, device_ad, key, interval=1):
+    """Send a HID report simulating a 1-second keyboard press from host_ad to
+    device_ad
+
+    Args:
+        host_id: the Bluetooth MAC address or name of the HID host
+        device_ad: HID device
+        key: the key we want to send
+        interval: the interval between key press and key release
+    """
+    device_ad.droid.bluetoothHidDeviceSendReport(host_id,
+            hid_id_keyboard,
+            hid_keyboard_report(key))
+    time.sleep(interval)
+    device_ad.droid.bluetoothHidDeviceSendReport(host_id,
+            hid_id_keyboard,
+            hid_keyboard_report("00"))
