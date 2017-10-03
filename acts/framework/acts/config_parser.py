@@ -86,12 +86,13 @@ def _update_file_paths(config, config_path):
     for file_path_key in keys.Config.file_path_keys.value:
         if file_path_key in config:
             config_file = config[file_path_key]
-            if not os.path.isfile(config_file):
-                config_file = os.path.join(config_path, config_file)
-            if not os.path.isfile(config_file):
-                raise ActsConfigError("Unable to load config %s from test "
-                                      "config file.", config_file)
-            config[file_path_key] = config_file
+            if type(config_file) is str:
+                if not os.path.isfile(config_file):
+                    config_file = os.path.join(config_path, config_file)
+                if not os.path.isfile(config_file):
+                    raise ActsConfigError("Unable to load config %s from test "
+                                          "config file.", config_file)
+                config[file_path_key] = config_file
 
 
 def _validate_testbed_configs(testbed_configs, config_path):
