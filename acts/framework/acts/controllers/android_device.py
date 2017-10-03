@@ -955,11 +955,11 @@ class AndroidDevice:
         """Get files names with provided directory."""
         # -1 (the number one) prints one file per line.
         out = self.adb.shell(
-            "ls -1 %s" % shellescape.quote(directory), ignore_status=True)
+            "ls -1 %s" % directory, ignore_status=True)
         if "Permission denied" in out:
             self.root_adb()
             out = self.adb.shell(
-                "ls -1 %s" % shellescape.quote(directory), ignore_status=True)
+                "ls -1 %s" % directory, ignore_status=True)
         if out and "No such" not in out:
             return out.split('\n')
         else:
@@ -1005,13 +1005,16 @@ class AndroidDevice:
 
     def get_qxdm_logs(self):
         """Get qxdm logs."""
-        ad.log.info("Pull QXDM Logs")
+        self.log.info("Pull QXDM Logs")
         qxdm_logs = self.get_file_names(
             "/data/vendor/radio/diag_logs/logs/*.qmdl")
         if qxdm_logs:
-            qxdm_path = os.path.join(ad.log_path, "QXDM_Logs")
+            qxdm_path = os.path.join(self.log_path, "QXDM_Logs")
             utils.create_dir(qxdm_path)
-            ad.pull_files(qxdm_logs, qxdm_path)
+            self.pull_files(qxdm_logs, qxdm_path)
+            self.adb.pull(
+                "/firmware/image/qdsp6m.qdb %s" % qxdm_path,
+                timeout=PULL_TIMEOUT, ignore_status=True)
 
     def start_new_session(self):
         """Start a new session in sl4a.
