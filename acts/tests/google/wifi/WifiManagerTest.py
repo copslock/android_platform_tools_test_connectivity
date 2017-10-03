@@ -383,8 +383,15 @@ class WifiManagerTest(WifiBaseTest):
 
     @test_tracker_info(uuid="aca85551-10ba-4007-90d9-08bcdeb16a60")
     def test_forget_network(self):
-        self.test_add_network()
         ssid = self.open_network[WifiEnums.SSID_KEY]
+        nId = self.dut.droid.wifiAddNetwork(self.open_network)
+        asserts.assert_true(nId > -1, "Failed to add network.")
+        configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
+        self.log.debug(
+            ("Configured networks after adding: %s" % configured_networks))
+        wutils.assert_network_in_list({
+            WifiEnums.SSID_KEY: ssid
+        }, configured_networks)
         wutils.wifi_forget_network(self.dut, ssid)
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         for nw in configured_networks:
