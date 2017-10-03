@@ -30,11 +30,18 @@ class StressRangeApTest(RttBaseTest):
   def __init__(self, controllers):
     BaseTestClass.__init__(self, controllers)
 
-  def test_rtt_supporting_ap_only(self):
+  #############################################################################
+
+  def run_rtt_supporting_ap_only(self, use_queue):
     """Scan for APs and perform RTT only to those which support 802.11mc.
 
     Stress test: repeat ranging to the same AP. Verify rate of success and
     stability of results.
+
+    Args:
+      use_queue: True to use the request queue (i.e. not wait for results before
+      sending the next ranging request), False to wait for results before
+      requesting another range.
     """
     dut = self.android_devices[0]
     rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=2)
@@ -47,12 +54,24 @@ class StressRangeApTest(RttBaseTest):
 
     # run all iterations
     results = []
-    for i in range(self.NUM_ITERATIONS):
-      id = dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps)
-      event = rutils.wait_for_event(dut,
-                                    rutils.decorate_event(
-                                        rconsts.EVENT_CB_RANGING_ON_RESULT, id))
-      results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
+    if use_queue:
+      ids = []
+      for i in range(self.NUM_ITERATIONS):
+        ids.append(dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps))
+      for i in range(self.NUM_ITERATIONS):
+        event = rutils.wait_for_event(dut,
+                                      rutils.decorate_event(
+                                          rconsts.EVENT_CB_RANGING_ON_RESULT,
+                                          ids[i]))
+        results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
+    else:
+      for i in range(self.NUM_ITERATIONS):
+        id = dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps)
+        event = rutils.wait_for_event(dut,
+                                      rutils.decorate_event(
+                                          rconsts.EVENT_CB_RANGING_ON_RESULT,
+                                          id))
+        results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
 
     # review results (TODO: copy margin code from WifiRttManagerTest.py)
     num_success = 0
@@ -63,3 +82,21 @@ class StressRangeApTest(RttBaseTest):
 
     asserts.assert_true(num_success >= self.PASS_RATE * self.NUM_ITERATIONS,
                         "Success rate too low", extras=results)
+
+  def test_rtt_supporting_ap_only_no_queue(self):
+    """Scan for APs and perform RTT only to those which support 802.11mc. Tests
+    without queueing requests.
+
+    Stress test: repeat ranging to the same AP. Verify rate of success and
+    stability of results.
+    """
+    self.run_rtt_supporting_ap_only(use_queue=False)
+
+  def test_rtt_supporting_ap_only_queue(self):
+    """Scan for APs and perform RTT only to those which support 802.11mc. Uses
+    range request queue.
+
+    Stress test: repeat ranging to the same AP. Verify rate of success and
+    stability of results.
+    """
+    self.run_rtt_supporting_ap_only(use_queue=True)
