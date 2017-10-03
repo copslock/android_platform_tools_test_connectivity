@@ -15,19 +15,19 @@
 #   limitations under the License.
 
 from acts import asserts
-from acts.base_test import BaseTestClass
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
+from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
-class RangeApTest(BaseTestClass):
+class RangeApTest(RttBaseTest):
   """Test class for RTT ranging to Access Points"""
 
   # max number of APs to range concurrently
   MAX_APS = 10
 
   def __init__(self, controllers):
-    BaseTestClass.__init__(self, controllers)
+    RttBaseTest.__init__(self, controllers)
 
   def test_rtt_supporting_ap_only(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
