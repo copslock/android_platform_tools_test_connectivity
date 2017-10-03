@@ -61,6 +61,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.logger_sessions = []
 
         for ad in self.android_devices:
+            ad.qxdm_log = True
             if getattr(ad, "qxdm_always_on", False):
                 #this is only supported on 2017 devices
                 ad.log.info("qxdm_always_on is set in config file")
