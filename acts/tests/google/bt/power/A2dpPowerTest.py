@@ -45,6 +45,8 @@ def push_file_to_device(ad, file_path, device_path, config_path):
         ad: Device for file push
         file_path: File path for the file to be pushed to the device
         device_path: File path on the device as destination
+        config_path: File path to the config file.  This is only used when
+                     a relative path is passed via the ACTS config.
 
     Returns:
         True if successful, False if unsuccessful.
@@ -168,8 +170,8 @@ class A2dpPowerTest(PowerBaseTest):
                     for d in bonded_devices:
                         if d['address'] == self.a2dp_speaker.mac_address:
                             self.log.info("Successfully bonded to device.")
-                            self.log.info("Bonded devices:\n{}".format(
-                                bonded_devices))
+                            self.log.info(
+                                "Bonded devices:\n{}".format(bonded_devices))
                             return True
         return False
 
@@ -210,7 +212,8 @@ class A2dpPowerTest(PowerBaseTest):
 
         # Add music files to the Android device
         music_path_dut = "/sdcard/Music/"
-        self.cd_quality_music_file = self.user_params["cd_quality_music_file"]
+        self.cd_quality_music_file = self.user_params["cd_quality_music_file"][
+            0]
         self.log.info(
             "Push CD quality music file {}".format(self.cd_quality_music_file))
         if not push_file_to_device(self.ad, self.cd_quality_music_file,
@@ -219,7 +222,7 @@ class A2dpPowerTest(PowerBaseTest):
             self.log.error("Unable to push file {} to DUT.".format(
                 self.cd_quality_music_file))
 
-        self.hi_res_music_file = self.user_params["hi_res_music_file"]
+        self.hi_res_music_file = self.user_params["hi_res_music_file"][0]
         self.log.info(
             "Push Hi Res quality music file {}".format(self.hi_res_music_file))
         if not push_file_to_device(self.ad, self.hi_res_music_file,
