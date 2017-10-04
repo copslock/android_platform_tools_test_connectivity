@@ -73,9 +73,6 @@ class Config(enum.Enum):
         key_monsoon, key_sniffer
     ]
 
-    # Keys that are file or folder paths.
-    file_path_keys = [key_relay_device]
-
 
 def get_name_by_value(value):
     for name, member in Config.__members__.items():
