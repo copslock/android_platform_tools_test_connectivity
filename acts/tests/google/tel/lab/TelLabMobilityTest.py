@@ -32,6 +32,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_lte_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_1x
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte_evdo
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import CALL_TEARDOWN_PHONE
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_CDMA2000
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_GSM
@@ -59,7 +60,7 @@ from acts.utils import rand_ascii_str
 from acts.controllers import iperf_server
 from acts.utils import exe_cmd
 
-DEFAULT_CALL_NUMBER = "0123456789"
+DEFAULT_CALL_NUMBER = "+11234567891"
 DEFAULT_PING_DURATION = 5
 WAITTIME_BEFORE_HANDOVER = 20
 WAITTIME_AFTER_HANDOVER = 20
@@ -125,6 +126,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
             bts = set_simulation_func(self.anritsu, self.user_params,
                                       self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.anritsu.start_simulation()
             self.anritsu.send_command("IMSSTARTVN 1")
             # turn off all other BTS to ensure UE registers on BTS1
@@ -189,8 +192,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
                         self.log.error("iPerf failed.")
                         return False
 
-                self.log.info("handover test case result code {}.".format(
-                    result[0]))
+                self.log.info(
+                    "handover test case result code {}.".format(result[0]))
                 if volte:
                     # check if the phone stay in call
                     if not self.ad.droid.telecomIsInCall():
@@ -215,8 +218,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
                     if not result[1]:
                         self.log.error("iPerf failed.")
                         return False
-                    self.log.info("handover test case result code {}.".format(
-                        result[0]))
+                    self.log.info(
+                        "handover test case result code {}.".format(result[0]))
 
         except AnritsuError as e:
             self.log.error("Error in connection with Anritsu Simulator: " +
