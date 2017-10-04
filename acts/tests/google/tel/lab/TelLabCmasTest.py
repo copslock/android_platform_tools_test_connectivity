@@ -44,6 +44,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
@@ -90,8 +91,9 @@ class TelLabCmasTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
-        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
-                          ignore_status=True)
+        self.ad.adb.shell(
+            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
+        self.ad.adb.shell("logcat -c -b all", ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -118,6 +120,8 @@ class TelLabCmasTest(TelephonyBaseTest):
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
                                               self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -157,8 +161,14 @@ class TelLabCmasTest(TelephonyBaseTest):
                         self.log, self.ad, self.anritsu,
                         next(TelLabCmasTest.SERIAL_NO), message_id,
                         warning_message):
-                    self.log.error("Phone {} Failed to receive CMAS message"
-                                   .format(self.ad.serial))
+                    self.log.warning("Phone {} Failed to receive CMAS message"
+                                     .format(self.ad.serial))
+                    # Another check of logcat before confirming failure
+                    if self.ad.search_logcat(warning_message):
+                        self.ad.log.info(
+                            "Confirmed from Logcat - User received %s",
+                            warning_message)
+                        return True
                     return False
             else:
                 if not cmas_receive_verify_message_cdma1x(
@@ -166,8 +176,13 @@ class TelLabCmasTest(TelephonyBaseTest):
                         next(TelLabCmasTest.SERIAL_NO), message_id,
                         warning_message, c2k_response_type, c2k_severity,
                         c2k_urgency, c2k_certainty):
-                    self.log.error("Phone {} Failed to receive CMAS message"
-                                   .format(self.ad.serial))
+                    self.log.warning("Phone {} Failed to receive CMAS message"
+                                     .format(self.ad.serial))
+                    if self.ad.search_logcat(warning_message):
+                        self.ad.log.info(
+                            "Confirmed from Logcat - User received %s",
+                            warning_message)
+                        return True
                     return False
         except AnritsuError as e:
             self.log.error("Error in connection with Anritsu Simulator: " +

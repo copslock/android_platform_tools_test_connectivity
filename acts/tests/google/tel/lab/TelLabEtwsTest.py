@@ -30,6 +30,7 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
@@ -78,8 +79,8 @@ class TelLabEtwsTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
-        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
-                          ignore_status=True)
+        self.ad.adb.shell(
+            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -97,6 +98,8 @@ class TelLabEtwsTest(TelephonyBaseTest):
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
                                               self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
