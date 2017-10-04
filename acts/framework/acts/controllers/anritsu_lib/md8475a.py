@@ -848,8 +848,8 @@ class MD8475A(object):
         for _ in range(registration_check_iterations):
             waiting_time = 0
             while waiting_time <= time_to_wait:
-                callstat = self.send_query(
-                    "CALLSTAT? BTS{}".format(bts)).split(",")
+                callstat = self.send_query("CALLSTAT? BTS{}".format(
+                    bts)).split(",")
                 if callstat[0] == "IDLE" or callstat[1] == "COMMUNICATION":
                     break
                 time.sleep(sleep_interval)
@@ -3865,8 +3865,7 @@ class _IMS_Services(object):
         cmd = "IMSCSCFUSERSLISTADD {},{},00112233445566778899AABBCCDDEEFF,TS34108,AKAV1_MD5,\
         OPC,00000000000000000000000000000000,8000,TRUE,FALSE,0123456789ABCDEF0123456789ABCDEF,\
         54CDFEAB9889000001326754CDFEAB98,6754CDFEAB9889BAEFDC457623100132,\
-        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid,
-                                                                username)
+        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid, username)
         self._anritsu.send_command(cmd)
 
     @property
@@ -3896,8 +3895,8 @@ class _IMS_Services(object):
         cmd = "IMSCSCFUSERSLISTADD {},{},465B5CE8B199B49FAA5F0A2EE238A6BC,MILENAGE,AKAV1_MD5,\
         OP,5F1D289C5D354D0A140C2548F5F3E3BA,8000,TRUE,FALSE,0123456789ABCDEF0123456789ABCDEF,\
         54CDFEAB9889000001326754CDFEAB98,6754CDFEAB9889BAEFDC457623100132,\
-        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid,
-                                                                username)
+        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(self._vnid, username)
+        self._anritsu.send_command(cmd)
 
     @property
     def dns(self):
