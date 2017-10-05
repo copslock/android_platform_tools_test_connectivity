@@ -165,7 +165,8 @@ class TelLiveNoSimTest(TelLiveEmergencyTest):
             False if failed.
         """
         try:
-            fastboot_wipe(self.dut, skip_setup_wizard=False)
+            if not fastboot_wipe(self.dut, skip_setup_wizard=False):
+                return False
             if self.fake_emergency_call_test():
                 return True
             else:
