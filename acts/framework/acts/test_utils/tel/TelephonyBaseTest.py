@@ -38,6 +38,7 @@ from acts.test_utils.tel.tel_test_utils import check_qxdm_logger_always_on
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
@@ -71,8 +72,7 @@ class TelephonyBaseTest(BaseTestClass):
                     set_qxdm_logger_always_on(ad, mask)
                 else:
                     ad.log.info("qxdm always on is already set")
-            ad.log.info("radio baseband = %s",
-                        ad.adb.getprop("ro.build.expect.baseband"))
+            print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
 
