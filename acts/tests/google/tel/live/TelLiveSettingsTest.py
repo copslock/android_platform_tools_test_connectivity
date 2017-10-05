@@ -36,8 +36,10 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import flash_radio
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
@@ -1224,47 +1226,66 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c2cc5b66-40af-4ba6-81cb-6c44ae34cbbb")
-    def test_push_new_mbn(self):
-        """Verify new mdn can be push to device.
+    def test_push_new_radio_or_mbn(self):
+        """Verify new mdn and radio can be push to device.
 
         Steps:
-        1. Push new mbn to device.
-        2. Verify the installed mbn version.
+        1. If new radio path is given, flash new radio on the device.
+        2. Verify the radio version.
+        3. If new mbn path is given, push new mbn to device.
+        4. Verify the installed mbn version.
 
-        Expected Results: mbn can be pushed to device and mbn.ver is available.
+        Expected Results:
+        radio and mbn can be pushed to device and mbn.ver is available.
         """
         result = True
-        mbn_path = self.user_params.get("mbn_path")
-        if not mbn_path:
-            self.log.info("No mbn_path is provided")
-            raise signals.TestSkip("No mbn_path is provided")
-        if isinstance(mbn_path, list):
-            mbn_path = mbn_path[0]
-        if not os.path.exists(mbn_path):
-            self.log.error("mbn_path %s does not exist", mbn_path)
-            mbn_path = os.path.join(self.user_params[Config.key_config_path],
-                                    mbn_path)
-        self.log.info("mbn_path = %s", mbn_path)
-        if "zip" in mbn_path:
-            self.log.info("Unzip %s", mbn_path)
-            path, file_name = os.path.split(mbn_path)
-            new_mbn_path = os.path.join(path, "mcfg_sw")
-            os.system("rm -rf %s" % new_mbn_path)
-            unzip_maintain_permissions(mbn_path, path)
-            mbn_path = new_mbn_path
-        if not os.path.exists(mbn_path):
-            self.log.error("mbn_path %s does not exist", mbn_path)
-            return False
-        else:
-            self.log.info("mbn_path is %s", mbn_path)
-        os.system("chmod -R 777 %s" % mbn_path)
+        paths = {}
+        for path_key, dst_name in zip(["radio_image", "mbn_path"],
+                                      ["radio.img", "mcfg_sw"]):
+            path = self.user_params.get(path_key)
+            if not path:
+                continue
+            elif isinstance(path, list):
+                if not path[0]:
+                    continue
+                path = path[0]
+            if not os.path.exists(path):
+                self.log.error("path %s does not exist", path)
+                path = os.path.join(self.user_params[Config.key_config_path],
+                                    path)
+                if not os.path.exists(path):
+                    self.log.error("path %s does not exist", path)
+                    continue
+
+            self.log.info("%s path = %s", path_key, path)
+            if "zip" in path:
+                self.log.info("Unzip %s", path)
+                file_path, file_name = os.path.split(path)
+                dest_path = os.path.join(file_path, dst_name)
+                os.system("rm -rf %s" % dest_path)
+                unzip_maintain_permissions(path, file_path)
+                path = dest_path
+            os.system("chmod -R 777 %s" % path)
+            paths[path_key] = path
+        if not paths:
+            self.log.info("No radio_path or mbn_path is provided")
+            raise signals.TestSkip("No radio_path or mbn_path is provided")
+        self.log.info("paths = %s", paths)
         for ad in self.android_devices:
+            if paths.get("radio_image"):
+                print_radio_info(ad, "Before flash radio, ")
+                flash_radio(ad, paths["radio_image"])
+                print_radio_info(ad, "After flash radio, ")
+            if not paths.get("mbn_path") or "mbn" not in ad.adb.shell(
+                    "ls /vendor"):
+                ad.log.info("No need to push mbn files")
+                continue
             push_result = True
             try:
                 mbn_ver = ad.adb.shell(
                     "cat /vendor/mbn/mcfg/configs/mcfg_sw/mbn.ver")
                 if mbn_ver:
-                    ad.log.info("mcfg_sw mbn.ver = %s", mbn_ver)
+                    ad.log.info("Before push mbn, mbn.ver = %s", mbn_ver)
                 else:
                     ad.log.info(
                         "There is no mbn.ver before push, unmatching device")
@@ -1273,8 +1294,9 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 ad.log.info(
                     "There is no mbn.ver before push, unmatching device")
                 continue
+            print_radio_info(ad, "Before push mbn, ")
             for i in range(2):
-                if not system_file_push(ad, mbn_path,
+                if not system_file_push(ad, paths["mbn_path"],
                                         "/vendor/mbn/mcfg/configs/"):
                     if i == 1:
                         ad.log.error("Failed to push mbn file")
@@ -1285,6 +1307,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if not push_result:
                 result = False
                 continue
+            print_radio_info(ad, "After push mbn, ")
             try:
                 new_mbn_ver = ad.adb.shell(
                     "cat /vendor/mbn/mcfg/configs/mcfg_sw/mbn.ver")
