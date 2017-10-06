@@ -193,6 +193,9 @@ class WifiPnoTest(WifiBaseTest):
         2. Run the simple pno test.
         """
         self.add_and_enable_dummy_networks(16)
-        self.test_simple_pno_connection_2g_to_5g()
+        self.add_network_and_enable(self.pno_network_a)
+        self.add_network_and_enable(self.pno_network_b)
+        self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
+        self.trigger_pno_and_assert_connect("b_on_a_off", self.pno_network_b)
 
     """ Tests End """
