@@ -182,6 +182,10 @@ def get_operator_by_adb(ad):
     return ad.adb.getprop("gsm.sim.operator.alpha")
 
 
+def get_plmn_by_adb(ad):
+    return ad.adb.getprop("gsm.sim.operator.numeric")
+
+
 def get_sub_id_by_adb(ad):
     return ad.adb.shell("service call iphonesubinfo 5")
 
@@ -200,18 +204,22 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
             log.warning("Failed to load %s!", sim_filename)
 
     sub_id = get_sub_id_by_adb(ad)
-    if iccid in sim_data and sim_data[iccid].get("phone_num"):
+    iccid = get_iccid_by_adb(ad)
+    ad.log.info("iccid = %s", iccid)
+    if sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
         phone_number = phone_number_formatter(sim_data[iccid]["phone_num"])
     else:
         phone_number = get_phone_number_by_adb(ad)
         if not phone_number and hasattr(ad, phone_number):
             phone_number = ad.phone_number
     if not phone_number:
-        abort_all_tests(ad.log, "Failed to find valid phone number")
+        ad.log.error("Failed to find valid phone number for %s", iccid)
+        abort_all_tests("Failed to find valid phone number for %s" % ad.serial)
     sim_record = {
         'phone_num': phone_number,
         'iccid': get_iccid_by_adb(ad),
-        'sim_operator_name': get_operator_by_adb(ad)
+        'sim_operator_name': get_operator_by_adb(ad),
+        'operator': operator_name_from_plmn_id(get_plmn_by_adb(ad))
     }
     device_props = {'subscription': {sub_id: sim_record}}
     ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
@@ -3949,8 +3957,8 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
     if not toggle_airplane_mode(log, ad, False, False):
         ad.log.error("Fail to turn off airplane mode")
         result = False
-    set_wifi_to_default(log, ad)
     try:
+        set_wifi_to_default(log, ad)
         if ad.droid.telecomIsInCall():
             ad.droid.telecomEndCall()
             if not wait_for_droid_not_in_call(log, ad):
@@ -3960,21 +3968,22 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
+        if not wait_for_not_network_rat(
+                log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
+            ad.log.error("%s still in %s", NETWORK_SERVICE_DATA,
+                         RAT_FAMILY_WLAN)
+            result = False
+
+        if check_subscription and not ensure_phone_subscription(log, ad):
+            ad.log.error("Unable to find a valid subscription!")
+            result = False
     except Exception as e:
         ad.log.error("%s failure, toggle APM instead", e)
-        toggle_airplane_mode(log, ad, True, False)
-        toggle_airplane_mode(log, ad, False, False)
-        ad.droid.telephonyToggleDataConnection(True)
-        set_wfc_mode(log, ad, WFC_MODE_DISABLED)
-
-    if not wait_for_not_network_rat(
-            log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
-        ad.log.error("%s still in %s", NETWORK_SERVICE_DATA, RAT_FAMILY_WLAN)
-        result = False
-
-    if check_subscription and not ensure_phone_subscription(log, ad):
-        ad.log.error("Unable to find a valid subscription!")
-        result = False
+        toggle_airplane_mode_by_adb(log, ad, True)
+        toggle_airplane_mode_by_adb(log, ad, False)
+        ad.send_keycode("ENDCALL")
+        ad.adb.shell("settings put global wfc_ims_enabled 0")
+        ad.adb.shell("settings put global mobile_data 1")
 
     return result
 
@@ -4679,6 +4688,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     Reboot the device. wait for device to complete booting
     Re-intall and start an sl4a session.
     """
+    status = True
     # Pull sl4a apk from device
     out = ad.adb.shell("pm path com.googlecode.android_scripting")
     result = re.search(r"package:(.*)", out)
@@ -4696,10 +4706,18 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.fastboot._w()
     except Exception as e:
         ad.log.error(e)
-    ad.log.info("Reboot in fastboot")
-    ad.fastboot.reboot()
-    ad.wait_for_boot_completion()
+        status = False
+    for _ in range(2):
+        try:
+            ad.log.info("Reboot in fastboot")
+            ad.fastboot.reboot()
+            ad.wait_for_boot_completion()
+            break
+        except Exception as e:
+            ad.log.error("Exception error %s", e)
     ad.root_adb()
+    if not ad.ensure_screen_on():
+        ad.log.error("User window cannot come up")
     if result:
         # Try to reinstall for three times as the device might not be
         # ready to apk install shortly after boot complete.
@@ -4710,6 +4728,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+    return status
 
 
 def unlocking_device(ad, device_password=None):
@@ -4849,3 +4868,35 @@ def system_file_push(ad, src_file_path, dst_file_path):
         ad.log.error("Unable to push system file %s to %s due to %s",
                      src_file_path, dst_file_path, e)
         return False
+
+
+def flash_radio(ad, file_path, skip_setup_wizard=True):
+    """Flash radio image."""
+    ad.stop_services()
+    ad.log.info("Reboot to bootloader")
+    ad.adb.reboot_bootloader(ignore_status=True)
+    ad.log.info("Flash radio in fastboot")
+    try:
+        ad.fastboot.flash("radio %s" % file_path, timeout=300)
+    except Exception as e:
+        ad.log.error(e)
+        status = False
+    for _ in range(2):
+        try:
+            ad.log.info("Reboot in fastboot")
+            ad.fastboot.reboot()
+            ad.wait_for_boot_completion()
+            break
+        except Exception as e:
+            ad.log.error("Exception error %s", e)
+    ad.root_adb()
+    if not ad.ensure_screen_on():
+        ad.log.error("User window cannot come up")
+    ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+
+
+def print_radio_info(ad, extra_msg=""):
+    for prop in ("gsm.version.baseband", "persist.radio.ver_info",
+                 "persist.radio.cnv.ver_info", "persist.radio.ci_status"):
+        output = ad.adb.getprop(prop)
+        if output: ad.log.info("%s%s = %s", extra_msg, prop, output)
