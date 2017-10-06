@@ -30,12 +30,10 @@ class PowerdtimTest(base_test.BaseTestClass):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = ("test_2g_screenoff_dtimx1", "test_2g_screenoff_dtimx2",
                       "test_2g_screenoff_dtimx4", "test_2g_screenoff_dtimx9",
-                      "test_2g_screenon_dtimx1", "test_2g_screenon_dtimx2",
-                      "test_2g_screenon_dtimx4", "test_2g_screenon_dtimx9",
+                      "test_2g_screenon_dtimx1", "test_2g_screenon_dtimx4",
                       "test_5g_screenoff_dtimx1", "test_5g_screenoff_dtimx2",
                       "test_5g_screenoff_dtimx4", "test_5g_screenoff_dtimx9",
-                      "test_5g_screenon_dtimx1", "test_5g_screenon_dtimx2",
-                      "test_5g_screenon_dtimx4", "test_5g_screenon_dtimx9")
+                      "test_5g_screenon_dtimx1", "test_5g_screenon_dtimx4")
 
     def setup_class(self):
 
@@ -130,23 +128,21 @@ class PowerdtimTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="384d3b0f-4335-4b00-8363-308ec27a150c")
     def test_2g_screenon_dtimx1(self):
+        """With screen on, modulated dtim isn't wokring, always DTIMx1.
+        So not running through all DTIM cases
+
+        """
         network = self.main_network[hc.BAND_2G]
         self.dtim_test_func(1, "ON", network)
 
-    @test_tracker_info(uuid="dee62525-7c7a-4a3c-97c2-db6b272fb8b2")
-    def test_2g_screenon_dtimx2(self):
-        network = self.main_network[hc.BAND_2G]
-        self.dtim_test_func(2, "ON", network)
-
     @test_tracker_info(uuid="79d0f065-2c46-4400-b02c-5ad60e79afea")
     def test_2g_screenon_dtimx4(self):
+        """Run only extra DTIMx4 for screen on to compare with DTIMx1.
+        They should be the same if everything is correct.
+
+        """
         network = self.main_network[hc.BAND_2G]
         self.dtim_test_func(4, "ON", network)
-
-    @test_tracker_info(uuid="50bda9c9-b443-4f0e-b4a6-cdc4483084b7")
-    def test_2g_screenon_dtimx9(self):
-        network = self.main_network[hc.BAND_2G]
-        self.dtim_test_func(9, "ON", network, dtim_max=10)
 
     @test_tracker_info(uuid="5e2f73cb-7e4e-4a25-8fd5-c85adfdf466e")
     def test_5g_screenoff_dtimx1(self):
@@ -170,20 +166,18 @@ class PowerdtimTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="327af44d-d9e7-49e0-9bda-accad6241dc7")
     def test_5g_screenon_dtimx1(self):
+        """With screen on, modulated dtim isn't wokring, always DTIMx1.
+        So not running through all DTIM cases
+
+        """
         network = self.main_network[hc.BAND_5G]
         self.dtim_test_func(1, "ON", network)
 
-    @test_tracker_info(uuid="96c7a28d-9d7d-404f-bd9f-3661b5a4b4c9")
-    def test_5g_screenon_dtimx2(self):
-        network = self.main_network[hc.BAND_5G]
-        self.dtim_test_func(2, "ON", network)
-
     @test_tracker_info(uuid="8b32585f-2517-426b-a2c9-8087093cf991")
     def test_5g_screenon_dtimx4(self):
+        """Run only extra DTIMx4 for screen on to compare with DTIMx1.
+        They should be the same if everything is correct.
+
+        """
         network = self.main_network[hc.BAND_5G]
         self.dtim_test_func(4, "ON", network)
-
-    @test_tracker_info(uuid="17a35bfe-f0a4-41cf-822a-f727a8b8090f")
-    def test_5g_screenon_dtimx9(self):
-        network = self.main_network[hc.BAND_5G]
-        self.dtim_test_func(9, "ON", network, dtim_max=10)
