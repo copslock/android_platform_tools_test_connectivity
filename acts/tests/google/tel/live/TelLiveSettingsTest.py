@@ -1249,6 +1249,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 if not path[0]:
                     continue
                 path = path[0]
+            if "dev/null" in path:
+                continue
             if not os.path.exists(path):
                 self.log.error("path %s does not exist", path)
                 path = os.path.join(self.user_params[Config.key_config_path],
