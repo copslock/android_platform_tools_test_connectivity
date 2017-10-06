@@ -42,6 +42,17 @@ DHCP_OFFER_OP = 2
 DHCP_OFFER_SRC_PORT = 67
 DHCP_OFFER_DST_PORT = 68
 DHCP_TRANS_ID = 0x01020304
+DNS_LEN = 3
+PING6_DATA = 'BEST PING6 EVER'
+PING4_TYPE = 8
+MDNS_TTL = 255
+MDNS_QTYPE = 'PTR'
+MDNS_UDP_PORT = 5353
+MDNS_V4_IP_DST = '224.0.0.251'
+MDNS_V4_MAC_DST = '01:00:5E:00:00:FB'
+MDNS_RECURSIVE = 1
+MDNS_V6_IP_DST = 'FF02::FB'
+MDNS_V6_MAC_DST = '33:33:00:00:00:FB'
 
 
 def create(configs):
@@ -479,15 +490,22 @@ class RaGenerator(object):
         else:
             self.src_ipv6 = config_params['src_ipv6']
 
-    def generate(self, lifetime, ip_dst=None, eth_dst=None):
+    def generate(self,
+                 lifetime,
+                 enableDNS=False,
+                 dns_lifetime=0,
+                 ip_dst=None,
+                 eth_dst=None):
         """Generates a Router Advertisement (RA) packet (ICMP over IPv6).
 
         Args:
             lifetime: RA lifetime
-            ip_dst: IPv6 destination address (layer 3)
+            enableDNS: Add RDNSS option to RA (Optional)
+            dns_lifetime: Set DNS server lifetime (Optional)
+            ip_dst: IPv6 destination address (Optional)
             eth_dst: Ethernet (layer 2) destination address (Optional)
         """
-        # Compute addresses
+        # Overwrite standard fields if desired
         ip6_dst = (ip_dst if ip_dst is not None else RA_IP)
         hw_dst = (eth_dst if eth_dst is not None else RA_MAC)
 
@@ -497,10 +515,266 @@ class RaGenerator(object):
         src_ll_addr = scapy.ICMPv6NDOptSrcLLAddr(lladdr=self.src_mac)
         prefix = scapy.ICMPv6NDOptPrefixInfo(
             prefixlen=RA_PREFIX_LEN, prefix=RA_PREFIX)
-        ip6 = base / router_solicitation / src_ll_addr / prefix
+        if enableDNS:
+            rndss = scapy.ICMPv6NDOptRDNSS(
+                lifetime=dns_lifetime, dns=[self.src_ipv6], len=DNS_LEN)
+            ip6 = base / router_solicitation / src_ll_addr / prefix / rndss
+        else:
+            ip6 = base / router_solicitation / src_ll_addr / prefix
 
         # Create Ethernet layer
         ethernet = scapy.Ether(src=self.src_mac, dst=hw_dst)
 
         self.packet = ethernet / ip6
+        return self.packet
+
+
+class Ping6Generator(object):
+    """Creates a custom Ping v6 packet (i.e., ICMP over IPv6)
+
+    Attributes:
+        packet: desired built custom packet
+        src_mac: MAC address (Layer 2) of the source node
+        dst_mac: MAC address (Layer 2) of the destination node
+        src_ipv6_type: IPv6 source address type (e.g., Link Local, Global, etc)
+        src_ipv6: IPv6 address (Layer 3) of the source node
+        dst_ipv6: IPv6 address (Layer 3) of the destination node
+    """
+
+    def __init__(self, **config_params):
+        """Initialize the class with the required network and packet params.
+
+        Args:
+            config_params: contains all the necessary packet parameters.
+              Some fields can be generated automatically. For example:
+              {'subnet_mask': '255.255.255.0',
+               'dst_ipv4': '192.168.1.3',
+               'src_ipv4: 'get_local', ...
+              The key can also be 'get_local' which means the code will read
+              and use the local interface parameters
+        """
+        interf = config_params['interf']
+        self.packet = None
+        self.dst_mac = config_params['dst_mac']
+        if config_params['src_mac'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_mac = scapy.get_if_hwaddr(interf)
+        else:
+            self.src_mac = config_params['src_mac']
+
+        self.dst_ipv6 = config_params['dst_ipv6']
+        self.src_ipv6_type = config_params['src_ipv6_type']
+        if config_params['src_ipv6'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_ipv6 = wputils.get_if_addr6(interf, self.src_ipv6_type)
+        else:
+            self.src_ipv6 = config_params['src_ipv6']
+
+    def generate(self, ip_dst=None, eth_dst=None):
+        """Generates a Ping6 packet (i.e., Echo Request)
+
+        Args:
+            ip_dst: IPv6 destination address (Optional)
+            eth_dst: Ethernet (layer 2) destination address (Optional)
+        """
+        # Overwrite standard fields if desired
+        ip6_dst = (ip_dst if ip_dst is not None else self.dst_ipv6)
+        hw_dst = (eth_dst if eth_dst is not None else self.dst_mac)
+
+        # Create IPv6 layer
+        base = scapy.IPv6(dst=ip6_dst, src=self.src_ipv6)
+        echo_request = scapy.ICMPv6EchoRequest(data=PING6_DATA)
+
+        ip6 = base / echo_request
+
+        # Create Ethernet layer
+        ethernet = scapy.Ether(src=self.src_mac, dst=hw_dst)
+
+        self.packet = ethernet / ip6
+        return self.packet
+
+
+class Ping4Generator(object):
+    """Creates a custom Ping v4 packet (i.e., ICMP over IPv4)
+
+    Attributes:
+        packet: desired built custom packet
+        src_mac: MAC address (Layer 2) of the source node
+        dst_mac: MAC address (Layer 2) of the destination node
+        src_ipv4: IPv4 address (Layer 3) of the source node
+        dst_ipv4: IPv4 address (Layer 3) of the destination node
+    """
+
+    def __init__(self, **config_params):
+        """Initialize the class with the required network and packet params.
+
+        Args:
+            config_params: contains all the necessary packet parameters.
+              Some fields can be generated automatically. For example:
+              {'subnet_mask': '255.255.255.0',
+               'dst_ipv4': '192.168.1.3',
+               'src_ipv4: 'get_local', ...
+              The key can also be 'get_local' which means the code will read
+              and use the local interface parameters
+        """
+        interf = config_params['interf']
+        self.packet = None
+        self.dst_mac = config_params['dst_mac']
+        if config_params['src_mac'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_mac = scapy.get_if_hwaddr(interf)
+        else:
+            self.src_mac = config_params['src_mac']
+
+        self.dst_ipv4 = config_params['dst_ipv4']
+        if config_params['src_ipv4'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_ipv4 = scapy.get_if_addr(interf)
+        else:
+            self.src_ipv4 = config_params['src_ipv4']
+
+    def generate(self, ip_dst=None, eth_dst=None):
+        """Generates a Ping4 packet (i.e., Echo Request)
+
+        Args:
+            ip_dst: IP destination address (Optional)
+            eth_dst: Ethernet (layer 2) destination address (Optional)
+        """
+
+        # Overwrite standard fields if desired
+        sta_ip = (ip_dst if ip_dst is not None else self.dst_ipv4)
+        sta_hw = (eth_dst if eth_dst is not None else self.dst_mac)
+
+        # Create IPv6 layer
+        base = scapy.IP(src=self.src_ipv4, dst=sta_ip)
+        echo_request = scapy.ICMP(type=PING4_TYPE)
+
+        ip4 = base / echo_request
+
+        # Create Ethernet layer
+        ethernet = scapy.Ether(src=self.src_mac, dst=sta_hw)
+
+        self.packet = ethernet / ip4
+        return self.packet
+
+
+class Mdns6Generator(object):
+    """Creates a custom mDNS IPv6 packet
+
+    Attributes:
+        packet: desired built custom packet
+        src_mac: MAC address (Layer 2) of the source node
+        src_ipv6_type: IPv6 source address type (e.g., Link Local, Global, etc)
+        src_ipv6: IPv6 address (Layer 3) of the source node
+    """
+
+    def __init__(self, **config_params):
+        """Initialize the class with the required network and packet params.
+
+        Args:
+            config_params: contains all the necessary packet parameters.
+              Some fields can be generated automatically. For example:
+              {'subnet_mask': '255.255.255.0',
+               'dst_ipv4': '192.168.1.3',
+               'src_ipv4: 'get_local', ...
+              The key can also be 'get_local' which means the code will read
+              and use the local interface parameters
+        """
+        interf = config_params['interf']
+        self.packet = None
+        if config_params['src_mac'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_mac = scapy.get_if_hwaddr(interf)
+        else:
+            self.src_mac = config_params['src_mac']
+
+        self.src_ipv6_type = config_params['src_ipv6_type']
+        if config_params['src_ipv6'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_ipv6 = wputils.get_if_addr6(interf, self.src_ipv6_type)
+        else:
+            self.src_ipv6 = config_params['src_ipv6']
+
+    def generate(self, ip_dst=None, eth_dst=None):
+        """Generates a mDNS v6 packet for multicast DNS config
+
+        Args:
+            ip_dst: IPv6 destination address (Optional)
+            eth_dst: Ethernet (layer 2) destination address (Optional)
+        """
+
+        # Overwrite standard fields if desired
+        sta_ip = (ip_dst if ip_dst is not None else MDNS_V6_IP_DST)
+        sta_hw = (eth_dst if eth_dst is not None else MDNS_V6_MAC_DST)
+
+        # Create mDNS layer
+        qdServer = scapy.DNSQR(qname=self.src_ipv6, qtype=MDNS_QTYPE)
+        mDNS = scapy.DNS(rd=MDNS_RECURSIVE, qd=qdServer)
+
+        # Create UDP
+        udp = scapy.UDP(sport=MDNS_UDP_PORT, dport=MDNS_UDP_PORT)
+
+        # Create IP layer
+        ip6 = scapy.IPv6(src=self.src_ipv6, dst=sta_ip)
+
+        # Create Ethernet layer
+        ethernet = scapy.Ether(src=self.src_mac, dst=sta_hw)
+
+        self.packet = ethernet / ip6 / udp / mDNS
+        return self.packet
+
+
+class Mdns4Generator(object):
+    """Creates a custom mDNS v4 packet
+
+    Attributes:
+        packet: desired built custom packet
+        src_mac: MAC address (Layer 2) of the source node
+        src_ipv4: IPv4 address (Layer 3) of the source node
+    """
+
+    def __init__(self, **config_params):
+        """Initialize the class with the required network and packet params.
+
+        Args:
+            config_params: contains all the necessary packet parameters.
+              Some fields can be generated automatically. For example:
+              {'subnet_mask': '255.255.255.0',
+               'dst_ipv4': '192.168.1.3',
+               'src_ipv4: 'get_local', ...
+              The key can also be 'get_local' which means the code will read
+              and use the local interface parameters
+        """
+        interf = config_params['interf']
+        self.packet = None
+        if config_params['src_mac'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_mac = scapy.get_if_hwaddr(interf)
+        else:
+            self.src_mac = config_params['src_mac']
+
+        if config_params['src_ipv4'] == GET_FROM_LOCAL_INTERFACE:
+            self.src_ipv4 = scapy.get_if_addr(interf)
+        else:
+            self.src_ipv4 = config_params['src_ipv4']
+
+    def generate(self, ip_dst=None, eth_dst=None):
+        """Generates a mDNS v4 packet for multicast DNS config
+
+        Args:
+            ip_dst: IP destination address (Optional)
+            eth_dst: Ethernet (layer 2) destination address (Optional)
+        """
+
+        # Overwrite standard fields if desired
+        sta_ip = (ip_dst if ip_dst is not None else MDNS_V4_IP_DST)
+        sta_hw = (eth_dst if eth_dst is not None else MDNS_V4_MAC_DST)
+
+        # Create mDNS layer
+        qdServer = scapy.DNSQR(qname=self.src_ipv4, qtype=MDNS_QTYPE)
+        mDNS = scapy.DNS(rd=MDNS_RECURSIVE, qd=qdServer)
+
+        # Create UDP
+        udp = scapy.UDP(sport=MDNS_UDP_PORT, dport=MDNS_UDP_PORT)
+
+        # Create IP layer
+        ip4 = scapy.IP(src=self.src_ipv4, dst=sta_ip, ttl=255)
+
+        # Create Ethernet layer
+        ethernet = scapy.Ether(src=self.src_mac, dst=sta_hw)
+
+        self.packet = ethernet / ip4 / udp / mDNS
         return self.packet
