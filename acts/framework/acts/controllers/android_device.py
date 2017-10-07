@@ -1339,11 +1339,7 @@ class AndroidDevice:
         if "unable to open" in out:
             self.root_adb()
             out = self.adb.shell(cmd, ignore_status=True)
-        out2 = self.adb.shell(
-            "sqlite3 /data/system/locksettings.db .dump"
-            " | grep lockscreen.disabled | grep -v migrated",
-            ignore_status=True)
-        if ",0,'0'" not in out and ",0,'1'" not in out2:
+        if ",0,'0'" not in out:
             self.log.info("Screen lock is enabled")
             return True
         return False
