@@ -79,7 +79,6 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             Ent.EAP: int(EAP.SIM),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
         }
-        self.attenuators = wutils.group_attenuators(self.attenuators)
         self.attn_a = self.attenuators[0]
         self.attn_b = self.attenuators[1]
         # Set screen lock password so ConfigStore is unlocked.
