@@ -45,7 +45,7 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
@@ -60,12 +60,18 @@ class TelLivePreflightTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+            "wifi_network_ssid_2g") or self.user_params.get("wifi_network_ssid_5g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+            "wifi_network_pass_2g") or self.user_params.get("wifi_network_ssid_5g")
 
     def setup_class(self):
-        ensure_phones_default_state(self.log, self.android_devices)
+        for ad in self.android_devices:
+            toggle_airplane_mode_by_adb(self.log, ad, False)
+
+    def teardown_class(self):
+        pass
 
     def setup_test(self):
         pass
