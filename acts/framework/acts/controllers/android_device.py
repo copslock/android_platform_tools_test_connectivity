@@ -145,13 +145,10 @@ def _start_services_on_ads(ads):
             ad.log.error("User window cannot come up")
             destroy(running_ads)
             raise AndroidDeviceError("User window cannot come up")
-        if not ad.is_sl4a_installed():
+        if not ad.skip_sl4a and not ad.is_sl4a_installed():
             ad.log.error("sl4a.apk is not installed")
-            if not ad.skip_sl4a:
-                ad.log.exception("The required sl4a.apk is not installed")
-                destroy(running_ads)
-                raise AndroidDeviceError(
-                    "The required sl4a.apk is not installed")
+            destroy(running_ads)
+            raise AndroidDeviceError("The required sl4a.apk is not installed")
         try:
             ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
