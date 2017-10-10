@@ -107,16 +107,21 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 self.dut.log.info("Call to %s returns %s as expected", callee,
                                   self.expected_call_result)
             else:
-                self.dut.log.error("Call to %s returns %s", callee,
-                                   not self.expected_call_result)
+                self.dut.log.info("Call to %s returns %s", callee,
+                                  not self.expected_call_result)
                 result = False
             if result:
                 return True
             if self.fake_emergency_number in self.dut.adb.getprop(
                     "ril.ecclist"):
                 # Tested with the right ril.ecclist. No need to retry
-                self.dut.log.info("Tested with right ril-ecclist")
+                self.dut.log.error("%s is in ril-ecclist, but call failed",
+                                   self.fake_emergency_number)
                 return result
+            else:
+                self.dut.log.info("%s is not in ril-ecclist",
+                                  self.fake_emergency_number)
+                result = True
         self.dut.log.error("fake_emergency_call_test result is %s", result)
         return result
 
