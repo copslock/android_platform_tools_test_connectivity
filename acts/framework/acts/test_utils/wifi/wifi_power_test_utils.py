@@ -20,6 +20,7 @@ import time
 from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
+from acts.libs.proc import job
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
@@ -353,10 +354,13 @@ def ap_setup(ap, network):
     log = logging.getLogger()
     bss_settings = []
     ssid = network[wutils.WifiEnums.SSID_KEY]
-    password = network["password"]
+    if "password" in network.keys():
+        password = network["password"]
+        security = hostapd_security.Security(
+            security_mode="wpa", password=password)
+    else:
+        security = hostapd_security.Security(security_mode=None, password=None)
     channel = network["channel"]
-    security = hostapd_security.Security(
-        security_mode="wpa", password=password)
     config = hostapd_ap_preset.create_ap_preset(
         channel=channel,
         ssid=ssid,
@@ -495,6 +499,48 @@ def get_if_addr6(intf, address_type):
             return if_list[0]
 
     return None
+
+
+@utils.timeout(60)
+def wait_for_dhcp(intf):
+    """Wait the DHCP address assigned to desired interface.
+
+    Getting DHCP address takes time and the wait time isn't constant. Utilizing
+    utils.timeout to keep trying until success
+
+    Args:
+        intf: desired interface name
+    Returns:
+        ip: ip address of the desired interface name
+    Raise:
+        TimeoutError: After timeout, if no DHCP assigned, raise
+    """
+    log = logging.getLogger()
+    reset_host_interface(intf)
+    ip = '0.0.0.0'
+    while ip == '0.0.0.0':
+        ip = scapy.get_if_addr(intf)
+    log.info('DHCP address assigned to {}'.format(intf))
+    return ip
+
+
+def reset_host_interface(intf):
+    """Reset the host interface.
+
+    Args:
+        intf: the desired interface to reset
+    """
+    log = logging.getLogger()
+    intf_down_cmd = 'ifconfig %s down' % intf
+    intf_up_cmd = 'ifconfig %s up' % intf
+    try:
+        job.run(intf_down_cmd)
+        time.sleep(3)
+        job.run(intf_up_cmd)
+        time.sleep(3)
+        log.info('{} has been reset'.format(intf))
+    except job.Error:
+        raise Exception('No such interface')
 
 
 def create_pkt_config(test_class):
