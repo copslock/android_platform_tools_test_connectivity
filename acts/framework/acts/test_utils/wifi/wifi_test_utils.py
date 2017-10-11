@@ -1268,7 +1268,7 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
     utils.exe_cmd(cmd)
 
 
-def validate_connection(ad, ping_addr):
+def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR):
     """Validate internet connection by pinging the address provided.
 
     Args:
