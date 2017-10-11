@@ -130,6 +130,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
                                 self.ad.sim_card)
             self.anritsu.start_simulation()
             self.anritsu.send_command("IMSSTARTVN 1")
+            self.anritsu.send_command("IMSSTARTVN 2")
+            self.anritsu.send_command("IMSSTARTVN 3")
             # turn off all other BTS to ensure UE registers on BTS1
             simmodel = self.anritsu.get_simulation_model().split(',')
             no_of_bts = len(simmodel)
