@@ -115,12 +115,14 @@ class CoreNetworkingTest(base_test.BaseTestClass):
         self.dut.adb.shell("cmd netpolicy set restrict-background true")
 
         # Launch app, check internet connectivity and close app
+        self.log.info("Launch app and test internet connectivity")
         res = self.dut.droid.launchForResult(dum_class)
-        self.log.info("Internet connectivity status after app launch: %s "
-                      % res['extras']['result'])
 
         # Disable data saver mode
         self.log.info("Disable data saver mode")
         self.dut.adb.shell("cmd netpolicy set restrict-background false")
 
+        # Return test result
+        self.log.info("Internet connectivity status after app launch: %s "
+                      % res['extras']['result'])
         return res['extras']['result']
