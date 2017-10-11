@@ -85,7 +85,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
-        self.max_run_time = int(self.user_params.get("max_run_time", 18000))
+        self.max_run_time = int(self.user_params.get("max_run_time", 14400))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
         self.min_sms_length = int(self.user_params.get("min_sms_length", 1))
