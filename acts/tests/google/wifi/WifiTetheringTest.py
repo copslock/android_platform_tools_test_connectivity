@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
+WAIT_TIME = 2
 
 class WifiTetheringTest(base_test.BaseTestClass):
     """ Tests for Wifi Tethering """
@@ -62,6 +63,24 @@ class WifiTetheringTest(base_test.BaseTestClass):
             "Tethering is not supported for the provider")
         for ad in self.tethered_devices:
             wutils.wifi_test_device_init(ad)
+
+        # Set chrome browser start with no-first-run verification
+        # Give permission to read from and write to storage
+        commands = ["pm grant com.android.chrome "
+                    "android.permission.READ_EXTERNAL_STORAGE",
+                    "pm grant com.android.chrome "
+                    "android.permission.WRITE_EXTERNAL_STORAGE",
+                    "rm /data/local/chrome-command-line",
+                    "am set-debug-app --persistent com.android.chrome",
+                    'echo "chrome --no-default-browser-check --no-first-run '
+                    '--disable-fre" > /data/local/tmp/chrome-command-line']
+        for cmd in commands:
+            for dut in self.tethered_devices:
+                try:
+                    dut.adb.shell(cmd)
+                except adb.AdbError:
+                    self.log.warn("adb command %s failed on %s"
+                                  % (cmd, dut.serial))
 
     def teardown_class(self):
         """ Reset devices """
@@ -112,6 +131,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         """
         carrier_supports_ipv6 = ["vzw", "tmo"]
         operator = get_operator_name(self.log, dut)
+        self.log.info("Carrier is %s" % operator)
         return operator in carrier_supports_ipv6
 
     def _find_ipv6_default_route(self, dut):
@@ -168,7 +188,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
                 wutils.wifi_connect(dut, self.network)
             device_connected[dut_id] = not device_connected[dut_id]
 
-    def _verify_ping(self, dut, ip):
+    def _verify_ping(self, dut, ip, isIPv6=False):
         """ Verify ping works from the dut to IP/hostname
 
         Args:
@@ -180,7 +200,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             False - if not
         """
         self.log.info("Pinging %s from dut %s" % (ip, dut.serial))
-        if self._is_ipaddress_ipv6(ip):
+        if isIPv6 or self._is_ipaddress_ipv6(ip):
             return dut.droid.pingHost(ip, 5, "ping6")
         return dut.droid.pingHost(ip)
 
@@ -263,7 +283,8 @@ class WifiTetheringTest(base_test.BaseTestClass):
         self._start_wifi_tethering()
 
         # Verify link properties on hotspot device
-        self.log.info("Check IPv6 properties on the hotspot device")
+        self.log.info("Check IPv6 properties on the hotspot device. "
+                      "Verizon & T-mobile should have IPv6 in link properties")
         self._verify_ipv6_tethering(self.hotspot_device)
 
         # Connect the client to the SSID
@@ -271,15 +292,16 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         # Need to wait atleast 2 seconds for IPv6 address to
         # show up in the link properties
-        time.sleep(2)
+        time.sleep(WAIT_TIME)
 
         # Verify link properties on tethered device
-        self.log.info("Check IPv6 properties on the tethered device")
+        self.log.info("Check IPv6 properties on the tethered device. "
+                      "Device should have IPv6 if carrier is Verizon")
         self._verify_ipv6_tethering(self.tethered_devices[0])
 
         # Verify ping6 on tethered device
         ping_result = self._verify_ping(self.tethered_devices[0],
-                                        "www.google.com")
+                                        wutils.DEFAULT_PING_ADDR, True)
         if self._supports_ipv6_tethering(self.hotspot_device):
             asserts.assert_true(ping_result, "Ping6 failed on the client")
         else:
@@ -294,7 +316,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             tel_defines.DATA_STATE_CONNECTED,
             "Could not disable cell data")
 
-        time.sleep(2) # wait until the IPv6 is removed from link properties
+        time.sleep(WAIT_TIME) # wait until the IPv6 is removed from link properties
 
         result = self._find_ipv6_default_route(self.tethered_devices[0])
         self.hotspot_device.droid.telephonyToggleDataConnection(True)
@@ -416,6 +438,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         self.log.info("Bytes before download %s" % bytes_before_download)
 
         # download file
+        self.log.info("Download file of size %sMB" % self.file_size)
         http_file_download_by_chrome(self.tethered_devices[0],
                                      self.download_file)
 
@@ -430,6 +453,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         # verify data usage update is correct
         bytes_used = bytes_diff/self.convert_byte_to_mb
+        self.log.info("Data usage on the device increased by %s" % bytes_used)
         return bytes_used > self.file_size \
             and bytes_used < self.file_size + self.data_usage_error
 
