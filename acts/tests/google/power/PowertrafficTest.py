@@ -18,6 +18,7 @@ import logging
 import os
 import time
 from acts import base_test
+from acts.controllers.ap_lib import bridge_interface as bi
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -82,7 +83,10 @@ class PowertrafficTest(base_test.BaseTestClass):
         # Set up the AP
         network = self.main_network[band]
         channel = network['channel']
-        self.access_point.bridge.start_bridge(channel)
+        configs = self.access_point.generate_bridge_configs(channel)
+        brconfigs = bi.BridgeInterfaceConfigs(configs[0], configs[1],
+                                              configs[2])
+        self.access_point.bridge.startup(brconfigs)
         wputils.ap_setup(self.access_point, network)
 
         # Wait for DHCP on the ethernet port and get IP as Iperf server address
@@ -120,7 +124,7 @@ class PowertrafficTest(base_test.BaseTestClass):
         wputils.monsoon_data_plot(self.mon_info, file_path, tag)
 
         # Bring down bridge interface
-        self.access_point.bridge.stop_bridge()
+        self.access_point.bridge.teardown(brconfigs)
 
         # Bring down the AP object
         self.access_point.close()
