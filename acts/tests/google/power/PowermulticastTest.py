@@ -19,6 +19,7 @@ import os
 import time
 
 from acts import base_test
+from acts.controllers.ap_lib import bridge_interface as bi
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -115,7 +116,10 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.log.info('Set attenuation level to all zero')
         channel = network['channel']
         iface_eth = self.pkt_sender.interface
-        self.access_point.bridge.start_bridge(channel)
+        brconfigs = self.access_point.generate_bridge_configs(channel)
+        self.brconfigs = bi.BridgeInterfaceConfigs(brconfigs[0], brconfigs[1],
+                                                   brconfigs[2])
+        self.access_point.bridge.startup(self.brconfigs)
         wputils.ap_setup(self.access_point, network)
         wutils.wifi_connect(self.dut, network)
 
@@ -143,7 +147,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         wputils.monsoon_data_plot(self.mon_info, file_path)
 
         # Bring down the bridge interface
-        self.access_point.bridge.stop_bridge()
+        self.access_point.bridge.teardown(self.brconfigs)
 
         # Close AP
         self.access_point.close()
