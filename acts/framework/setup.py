@@ -167,6 +167,13 @@ def main():
         },
         url="http://www.android.com/")
 
+    if {'-u', '--uninstall', 'uninstall'}.intersection(sys.argv):
+        act_path = '/usr/local/bin/act.py'
+        if os.path.islink(act_path):
+            os.unlink(act_path)
+        elif os.path.exists(act_path):
+            os.remove(act_path)
+
 
 if __name__ == '__main__':
     main()
