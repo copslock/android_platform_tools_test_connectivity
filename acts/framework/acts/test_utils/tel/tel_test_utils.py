@@ -4606,6 +4606,7 @@ def set_qxdm_logger(ad, mask=None):
     """Set QXDM logger."""
     ad.qxdm_log = True
     mask = mask or getattr(ad, "qxdm_mask", "QC_Default.cfg")
+    ad.qxdm_mask = mask
     if not check_qxdm_logger_mask(ad, mask):
         ad.log.info("Change QXDM log mask to %s", mask)
         set_qxdm_logger_mask(ad, mask)
@@ -4647,6 +4648,10 @@ def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
         ad: android device object.
 
     """
+    output = ad.adb.shell(
+        "ls /data/vendor/radio/diag_logs/", ignore_status=True)
+    if not output or "No such" in output:
+        return True
     if mask_file not in ad.adb.shell(
             "cat /data/vendor/radio/diag_logs/diag.conf", ignore_status=True):
         return False
