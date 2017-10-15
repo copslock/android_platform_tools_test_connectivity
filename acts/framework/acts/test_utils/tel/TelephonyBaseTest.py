@@ -34,16 +34,16 @@ from acts import utils
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
-from acts.test_utils.tel.tel_test_utils import check_qxdm_logger_always_on
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_always_on
+from acts.test_utils.tel.tel_test_utils import set_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -61,17 +61,9 @@ class TelephonyBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
 
+        tasks = [(set_qxdm_logger, [ad]) for ad in self.android_devices]
+        run_multithread_func(self.log, tasks)
         for ad in self.android_devices:
-            ad.qxdm_log = True
-            if getattr(ad, "qxdm_always_on", False):
-                #this is only supported on 2017 devices
-                ad.log.info("qxdm_always_on is set in config file")
-                mask = getattr(ad, "qxdm_mask", "Radio-general.cfg")
-                if not check_qxdm_logger_always_on(ad, mask):
-                    ad.log.info("qxdm always on is not set, turn it on")
-                    set_qxdm_logger_always_on(ad, mask)
-                else:
-                    ad.log.info("qxdm always on is already set")
             print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
