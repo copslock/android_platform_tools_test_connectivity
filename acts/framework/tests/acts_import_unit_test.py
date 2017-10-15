@@ -52,6 +52,7 @@ BLACKLIST = [
     'acts/controllers/native_android_device.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/framework/acts/controllers/packet_sender.py',
+    'acts/test_utils/wifi/wifi_retail_ap.py',
 ]
 
 
