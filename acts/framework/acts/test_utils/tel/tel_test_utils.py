@@ -4602,32 +4602,51 @@ def get_number_from_tel_uri(uri):
         return None
 
 
-def set_qxdm_logger_always_on(ad, mask_file="Radio-general.cfg"):
+def set_qxdm_logger(ad, mask=None):
+    """Set QXDM logger."""
+    ad.qxdm_log = True
+    mask = mask or getattr(ad, "qxdm_mask", "QC_Default.cfg")
+    if not check_qxdm_logger_mask(ad, mask):
+        ad.log.info("Change QXDM log mask to %s", mask)
+        set_qxdm_logger_mask(ad, mask)
+    if ad.is_apk_running("com.android.nexuslogger"):
+        ad.log.info("Kill NexusLogger")
+        ad.force_stop_apk("com.android.nexuslogger")
+    if ad.is_apk_installed("com.android.nexuslogger"):
+        for perm in ("READ", "WRITE"):
+            ad.adb.shell("pm grant com.android.nexuslogger "
+                         "android.permission.%s_EXTERNAL_STORAGE" % perm)
+        time.sleep(2)
+        ad.log.info("Start NexusLogger")
+        ad.adb.shell("am start -n com.android.nexuslogger/.MainActivity")
+    if getattr(ad, "qxdm_always_on", False):
+        ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
+
+
+def set_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
     """Set QXDM logger always on.
 
     Args:
         ad: android device object.
 
     """
+    ad.adb.shell('touch /data/vendor/radio/diag_logs/diag.conf')
+    ad.adb.shell(
+        'echo "diag_mdlog -f /data/vendor/radio/diag_logs/cfg/%s'
+        ' -o /data/vendor/radio/diag_logs/logs -s 500 -n 10 -b -c " > '
+        '/data/vendor/radio/diag_logs/diag.conf' % mask_file)
     ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
-    ad.adb.shell("setprop persist.radio.smlog_switch false")
-    ad.adb.shell('echo "diag_mdlog -f /data/vendor/radio/diag_logs/cfg/%s'
-                 ' -o /data/vendor/radio/diag_logs/logs -s 500 -n 10 -b -c > '
-                 '/data/vendor/radio/diag_logs/diag.conf"' % mask_file)
+    #ad.adb.shell("setprop persist.radio.smlog_switch false")
     ad.reboot()
 
 
-def check_qxdm_logger_always_on(ad, mask_file="Radio-general.cfg"):
+def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
     """Check if QXDM logger always on is set.
 
     Args:
         ad: android device object.
 
     """
-    if ad.adb.shell("getprop persist.sys.modem.diag.mdlog") != 'true':
-        return False
-    if ad.adb.shell("getprop persist.radio.smlog_switch") != 'false':
-        return False
     if mask_file not in ad.adb.shell(
             "cat /data/vendor/radio/diag_logs/diag.conf", ignore_status=True):
         return False
