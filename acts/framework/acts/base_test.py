@@ -679,12 +679,12 @@ class BaseTestClass(object):
 
     def _ad_take_reports(self, ad, test_name, begin_time):
         try:
+            if getattr(ad, "qxdm_log", False):
+                ad.get_qxdm_logs(test_name, begin_time)
             ad.take_bug_report(test_name, begin_time)
             bugreport_path = os.path.join(ad.log_path, test_name)
             utils.create_dir(bugreport_path)
             ad.check_crash_report(test_name, begin_time, True)
-            if getattr(ad, "qxdm_log", False):
-                ad.get_qxdm_logs()
         except Exception as e:
             ad.log.error("Failed to take a bug report for %s with error %s",
                          test_name, e)
