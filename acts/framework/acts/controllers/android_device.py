@@ -811,8 +811,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info('Restarting logcat on file %s' %
-                          self.adb_logcat_file_path)
+            self.log.info(
+                'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -948,19 +948,35 @@ class AndroidDevice:
                       full_out_path)
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
 
-    def get_file_names(self, directory):
+    def get_file_names(self, directory, begin_time=None, skip_files=[]):
         """Get files names with provided directory."""
         # -1 (the number one) prints one file per line.
-        out = self.adb.shell(
-            "ls -1 %s" % directory, ignore_status=True)
+        out = self.adb.shell("ls -1 %s" % directory, ignore_status=True)
         if "Permission denied" in out:
             self.root_adb()
-            out = self.adb.shell(
-                "ls -1 %s" % directory, ignore_status=True)
-        if out and "No such" not in out:
-            return out.split('\n')
-        else:
+            out = self.adb.shell("ls -1 %s" % directory, ignore_status=True)
+        if not out or "No such" in out:
             return []
+        if begin_time:
+            begin_time = "%s-%s" % (datetime.now().year, begin_time)
+            begin_time = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S.%f")
+            self.log.debug("Get files with timestamp after %s", begin_time)
+        files = out.split('\n')
+        filtered_files = []
+        for file_name in files:
+            if file_name in skip_files:
+                continue
+            file_path = os.path.join(directory, file_name)
+            if begin_time:
+                file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
+                file_time = datetime.strptime(file_time[:-3],
+                                              "%Y-%m-%d %H:%M:%S.%f")
+                if begin_time < file_time:
+                    filtered_files.append(file_path)
+            else:
+                filtered_files.append(file_path)
+        self.log.debug("Files in directory %s: %s", directory, filtered_files)
+        return filtered_files
 
     def pull_files(self, files, remote_path=None):
         """Pull files from devies."""
@@ -976,22 +992,12 @@ class AndroidDevice:
                            log_crash_report=False):
         """check crash report on the device."""
         crash_reports = []
-        if begin_time:
-            begin_time = "%s-%s" % (datetime.now().year, begin_time)
-            begin_time = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S.%f")
         for crash_path in CRASH_REPORT_PATHS:
-            for report in self.get_file_names(crash_path):
-                if report in CRASH_REPORT_SKIPS:
-                    continue
-                file_path = os.path.join(crash_path, report)
-                if begin_time:
-                    file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
-                    file_time = datetime.strptime(file_time[:-3],
-                                                  "%Y-%m-%d %H:%M:%S.%f")
-                    if begin_time < file_time:
-                        crash_reports.append(file_path)
-                else:
-                    crash_reports.append(file_path)
+            crash_reports.extend(
+                self.get_file_names(
+                    crash_path,
+                    begin_time=begin_time,
+                    skip_files=CRASH_REPORT_SKIPS))
         if crash_reports and log_crash_report:
             test_name = test_name or begin_time or time.strftime(
                 "%m-%d-%Y-%H-%M-%S")
@@ -1000,18 +1006,28 @@ class AndroidDevice:
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
 
-    def get_qxdm_logs(self):
+    def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
-        self.log.info("Pull QXDM Logs")
-        qxdm_logs = self.get_file_names(
-            "/data/vendor/radio/diag_logs/logs/*.qmdl")
+        output = self.adb.shell("ps -ef | grep mdlog")
+        if "diag_mdlog" in output:
+            self.adb.shell("diag_mdlog -k", ignore_status=True)
+            m = re.search(r"-o (\S+)", output)
+            if m: log_path = m.group(1)
+            # Neet to sleep 10 seconds for the log to be generated
+            time.sleep(10)
+        log_path = log_path or getattr(self, "qxdm_logger_path", None)
+        if not log_path:
+            return
+        qxdm_logs = self.get_file_names(log_path, begin_time=begin_time)
         if qxdm_logs:
-            qxdm_path = os.path.join(self.log_path, "QXDM_Logs")
-            utils.create_dir(qxdm_path)
-            self.pull_files(qxdm_logs, qxdm_path)
+            qxdm_log_path = os.path.join(self.log_path, test_name, "QXDM_Logs")
+            utils.create_dir(qxdm_log_path)
+            self.log.info("Pull QXDM Log %s", qxdm_logs)
+            self.pull_files(qxdm_logs, qxdm_log_path)
             self.adb.pull(
-                "/firmware/image/qdsp6m.qdb %s" % qxdm_path,
-                timeout=PULL_TIMEOUT, ignore_status=True)
+                "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
 
     def start_new_session(self):
         """Start a new session in sl4a.
@@ -1156,8 +1172,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError("Device %s booting process timed out." %
-                                 self.serial)
+        raise AndroidDeviceError(
+            "Device %s booting process timed out." % self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1222,8 +1238,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning('Unable to find IP address for %s.' %
-                                     interface)
+                    self.log.warning(
+                        'Unable to find IP address for %s.' % interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1348,8 +1364,8 @@ class AndroidDevice:
         if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "StatusBar" in current_window and ((not current_app) or
-                                              "FallbackHome" in current_app):
+        if "StatusBar" in current_window and (
+            (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
