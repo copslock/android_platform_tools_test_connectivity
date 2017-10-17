@@ -139,7 +139,11 @@ class TelLabMobilityTest(TelephonyBaseTest):
                 self.anritsu.send_command("OUTOFSERVICE OUT,BTS{}".format(i))
             if phone_setup_func is not None:
                 if not phone_setup_func(self.ad):
-                    self.log.error("phone_setup_func failed.")
+                    self.log.warning("phone_setup_func failed. Rebooting UE")
+                    self.ad.reboot()
+                    time.sleep(30)
+                    if not phone_setup_func(self.ad):
+                        self.log.error("phone_setup_func failed.")
             if is_wait_for_registration:
                 self.anritsu.wait_for_registration_state()
             if phone_idle_func_after_registration:
