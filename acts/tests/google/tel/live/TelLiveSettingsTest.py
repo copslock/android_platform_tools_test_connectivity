@@ -41,7 +41,7 @@ from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
-from acts.test_utils.tel.tel_test_utils import set_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
@@ -1224,7 +1224,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         set_mobile_data_always_on(self.ad, True)
         time.sleep(1)
         return "1" in self.ad.adb.shell(
-            "settings get global mobile_data_always_on") == "1"
+            "settings get global mobile_data_always_on")
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c2cc5b66-40af-4ba6-81cb-6c44ae34cbbb")
@@ -1332,13 +1332,15 @@ class TelLiveSettingsTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_set_qxdm_log_mask_ims(self):
         """Set the QXDM Log mask to IMS_DS_CNE_LnX_Golden.cfg"""
-        tasks = [(set_qxdm_logger, [ad, "IMS_DS_CNE_LnX_Golden.cfg"])
+        tasks = [(set_qxdm_logger_command, [ad, "IMS_DS_CNE_LnX_Golden.cfg"])
                  for ad in self.android_devices]
         run_multithread_func(self.log, tasks)
+        return True
 
     @TelephonyBaseTest.tel_test_wrap
     def test_set_qxdm_log_mask_qc_default(self):
         """Set the QXDM Log mask to QC_Default.cfg"""
-        tasks = [(set_qxdm_logger, [ad, " QC_Default.cfg"])
+        tasks = [(set_qxdm_logger_command, [ad, " QC_Default.cfg"])
                  for ad in self.android_devices]
         run_multithread_func(self.log, tasks)
+        return True

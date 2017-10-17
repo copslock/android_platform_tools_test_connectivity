@@ -1009,6 +1009,7 @@ class AndroidDevice:
     def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
         output = self.adb.shell("ps -ef | grep mdlog")
+        log_path = None
         if "diag_mdlog" in output:
             self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
