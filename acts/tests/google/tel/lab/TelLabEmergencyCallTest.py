@@ -178,6 +178,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 self.anritsu.start_simulation()
             if is_ims_call:
                 self.anritsu.send_command("IMSSTARTVN 1")
+                self.anritsu.send_command("IMSSTARTVN 2")
+                self.anritsu.send_command("IMSSTARTVN 3")
 
             iterations = 1
             if self.stress_test_number > 0:
