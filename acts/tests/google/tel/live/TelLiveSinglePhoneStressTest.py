@@ -44,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
@@ -80,11 +81,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                                        "7124325335")
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 3600))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 1200))
@@ -156,8 +155,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report("checking_crash",
-                                                           begin_time, True)
+                crash_report = self.dut.check_crash_report(
+                    "checking_crash", begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -202,9 +201,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                        self.call_server_number)
                     self.result_info["Call initiation failure"] += 1
                     failure += 1
-                    self._take_bug_report("%s_call_initiation_failure" %
-                                          self.test_name,
-                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_call_initiation_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
                 interval = min(60, duration)
@@ -219,6 +219,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self._take_bug_report(
                             "%s_call_drop" % self.test_name,
                             time.strftime("%m-%d-%Y-%H-%M-%S"))
+                        start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
                         self.dut.log.info("DUT is in call")
@@ -265,9 +266,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                        self.call_server_number)
                     self.result_info["Call initiation failure"] += 1
                     failure += 1
-                    self._take_bug_report("%s_call_initiation_failure" %
-                                          self.test_name,
-                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_call_initiation_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
                 interval = min(5, duration)
@@ -282,6 +284,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self._take_bug_report(
                             "%s_not_in_volte" % self.test_name,
                             time.strftime("%m-%d-%Y-%H-%M-%S"))
+                        start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
                         self.dut.log.info("DUT is in VoLTE call")
@@ -299,9 +302,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     set_preferred_network_mode_pref(self.dut.log, self.dut,
                                                     sub_id, network_preference)
                     time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
-                    self.dut.log.info(
-                        "Current Voice RAT is %s",
-                        get_current_voice_rat(self.log, self.dut))
+                    self.dut.log.info("Current Voice RAT is %s",
+                                      get_current_voice_rat(
+                                          self.log, self.dut))
 
                     # ModePref change back to with LTE
                     set_preferred_network_mode_pref(
@@ -355,8 +358,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self.log.error("%s of length %s from self to self fails",
                                    message_type, length)
                     self.result_info["%s failure" % message_type] += 1
-                    #self._take_bug_report("%s_messaging_failure" % self.test_name,
-                    #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_messaging_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                     failure += 1
                 else:
                     self.dut.log.info(
@@ -402,9 +407,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                      file_name] += 1
                     failure += 1
                     pull_tcpdump = True
-                    self._take_bug_report("%s_download_failure" %
-                                          self.test_name,
-                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_download_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                     self.dut.droid.goToSleepNow()
                     time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
@@ -449,9 +455,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             return False
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
-        results = run_multithread_func(
-            self.log, [(self.volte_modechange_volte_test, []),
-                       (self.message_test, []), (self.crash_check_test, [])])
+        results = run_multithread_func(self.log, [(
+            self.volte_modechange_volte_test, []), (self.message_test, []),
+                                                  (self.crash_check_test, [])])
         self.log.info(dict(self.result_info))
         error_message = " ".join(results).strip()
         if error_message:

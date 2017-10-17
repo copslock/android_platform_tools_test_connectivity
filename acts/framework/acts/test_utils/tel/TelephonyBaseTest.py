@@ -43,7 +43,8 @@ from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import set_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -61,9 +62,10 @@ class TelephonyBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
 
-        tasks = [(set_qxdm_logger, [ad]) for ad in self.android_devices]
-        run_multithread_func(self.log, tasks)
         for ad in self.android_devices:
+            ad.qxdm_log = getattr(ad, "qxdm_log", True)
+            set_qxdm_logger_command(
+                ad, mask=getattr(ad, "qxdm_log_mask", None))
             print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
@@ -247,11 +249,12 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.error("Failure with %s", e)
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         if getattr(self, "diag_logger", None):
             for logger in self.diag_logger:
                 self.log.info("Starting a diagnostic session %s", logger)
                 self.logger_sessions.append((logger, logger.start()))
-
         if self.skip_reset_between_cases:
             ensure_phones_idle(self.log, self.android_devices)
         else:

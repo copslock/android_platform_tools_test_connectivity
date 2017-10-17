@@ -44,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import is_voice_attached
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -276,6 +277,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     failure += 1
                     self._take_bug_report("%s_call_failure" % self.test_name,
                                           time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTION as e:
@@ -303,8 +305,10 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 total_count += 1
                 if not self._send_message(ads):
                     failure += 1
-                    #self._take_bug_report("%s_messaging_failure" % self.test_name,
-                    #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_messaging_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTION as e:
@@ -340,8 +344,10 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                                                  file_name):
                     self.result_info["%s file download failure" %
                                      file_name] += 1
-                    #self._take_bug_report("%s_download_failure" % self.test_name,
-                    #                      time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    self._take_bug_report(
+                        "%s_download_failure" % self.test_name,
+                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                    start_qxdm_loggers(self.log, self.android_devices)
                     failure += 1
                     self.dut.droid.goToSleepNow()
                     time.sleep(random.randrange(0, self.max_sleep_time))
