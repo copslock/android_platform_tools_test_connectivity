@@ -4577,7 +4577,10 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
 
     """
     ad.log.debug("Ensuring no tcpdump is running in background")
-    ad.adb.shell("killall -9 tcpdump")
+    try:
+        ad.adb.shell("killall -9 tcpdump")
+    except AdbError:
+        self.log.warn("Killing existing tcpdump processes failed")
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
     file_name = "/sdcard/tcpdump{}{}{}.pcap".format(ad.serial, test_name,
