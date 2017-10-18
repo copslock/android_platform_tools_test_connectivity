@@ -176,8 +176,14 @@ class TelLabVoiceTest(TelephonyBaseTest):
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
-                        self.log.error("phone_setup_func failed.")
-                        continue
+                        self.log.warning(
+                            "phone_setup_func failed. Rebooting UE")
+                        self.ad.reboot()
+                        time.sleep(30)
+                        if not phone_setup_func(self.ad):
+                            self.log.error("phone_setup_func failed.")
+                            continue
+
                 if is_wait_for_registration:
                     self.anritsu.wait_for_registration_state()
 
