@@ -40,7 +40,7 @@ from acts.test_utils.tel.tel_test_utils import flash_radio
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import print_radio_info
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import system_file_push
@@ -1334,13 +1334,11 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """Set the QXDM Log mask to IMS_DS_CNE_LnX_Golden.cfg"""
         tasks = [(set_qxdm_logger_command, [ad, "IMS_DS_CNE_LnX_Golden.cfg"])
                  for ad in self.android_devices]
-        run_multithread_func(self.log, tasks)
-        return True
+        return multithread_func(self.log, tasks)
 
     @TelephonyBaseTest.tel_test_wrap
     def test_set_qxdm_log_mask_qc_default(self):
         """Set the QXDM Log mask to QC_Default.cfg"""
         tasks = [(set_qxdm_logger_command, [ad, " QC_Default.cfg"])
                  for ad in self.android_devices]
-        run_multithread_func(self.log, tasks)
-        return True
+        return multithread_func(self.log, tasks)
