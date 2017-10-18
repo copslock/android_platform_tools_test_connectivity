@@ -61,10 +61,12 @@ class TelLivePreflightTest(TelephonyBaseTest):
 
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get(
-            "wifi_network_ssid_2g") or self.user_params.get("wifi_network_ssid_5g")
+                "wifi_network_ssid_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get(
-            "wifi_network_pass_2g") or self.user_params.get("wifi_network_ssid_5g")
+                "wifi_network_pass_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
 
     def setup_class(self):
         for ad in self.android_devices:
@@ -113,7 +115,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
         result = True
         for ad in self.android_devices:
             ad.crash_report_preflight = ad.check_crash_report(
-                self.test_id, None, True)
+                self.test_name, None, True)
             if ad.crash_report_preflight:
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)

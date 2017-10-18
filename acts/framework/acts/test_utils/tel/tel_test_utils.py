@@ -4602,14 +4602,83 @@ def get_number_from_tel_uri(uri):
         return None
 
 
-def set_qxdm_logger(ad, mask=None):
-    """Set QXDM logger."""
-    ad.qxdm_log = True
-    mask = mask or getattr(ad, "qxdm_mask", "QC_Default.cfg")
-    ad.qxdm_mask = mask
-    if not check_qxdm_logger_mask(ad, mask):
-        ad.log.info("Change QXDM log mask to %s", mask)
-        set_qxdm_logger_mask(ad, mask)
+def find_qxdm_logger_mask(ad, mask):
+    """Find QXDM logger mask."""
+    if "/" not in mask:
+        # Find the log mask path
+        for path in ("/data/vendor/radio/diag_logs", "/data/diag_logs"):
+            if mask in ad.adb.shell("ls %s/cfg" % path, ignore_status=True):
+                ad.qxdm_logger_path = os.path.join(path, "logs")
+                return "%s/cfg/%s" % (path, mask)
+    else:
+        out = ad.adb.shell("ls %s" % mask, ignore_status=True)
+        if out and "No such" not in out:
+            paths = mask.rsplit("/", 2)
+            ad.qxdm_logger_path = paths[0]
+            return paths[-1]
+    ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
+
+
+def set_qxdm_logger_command(ad, mask=None):
+    """Set QXDM logger always on.
+
+    Args:
+        ad: android device object.
+
+    """
+    ## Neet to check if log mask will be generated without starting nexus logger
+    if mask:
+        mask_path = find_qxdm_logger_mask(mask)
+    else:
+        for mask in ("QC_Default.cfg", "default.cfg"):
+            mask_path = find_qxdm_logger_mask(ad, mask)
+            if mask_path: break
+    if not mask_path:
+        ad.log.error("Cannot find mask %s", mask)
+        ad.qxdm_logger_command = None
+    else:
+        ad.log.info("Use QXDM log mask %s", mask)
+        ad.qxdm_logger_path = os.path.join(ad.qxdm_logger_path, "log")
+        ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 500 -n 10 -b -c" %
+                                  (mask_path, ad.qxdm_logger_path))
+        conf_path = os.path.split(ad.qxdm_logger_path)
+        conf_path = os.path.join(conf_path[0], "diag.conf")
+        # Enable qxdm always on so that after device reboot, qxdm will be
+        # turned on automatically
+        ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
+        ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
+
+
+def start_qxdm_logger(ad):
+    """Start QXDM logger."""
+    if getattr(ad, "qxdm_logger_command", None):
+        output = ad.adb.shell("ps -ef | grep mdlog") or ""
+        if ad.qxdm_logger_command not in output:
+            ad.log.debug("QXDM logging command %s is not running",
+                         ad.qxdm_logger_command)
+            if "diag_mdlog" in output:
+                # Kill the existing diag_mdlog process
+                # Only one diag_mdlog process can be run
+                for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
+                    ad.log.debug("Kill the existing qxdm process")
+                    ad.adb.shell(cmd, ignore_status=True)
+                    time.sleep(5)
+                    output = ad.adb.shell("ps -ef | grep mdlog") or ""
+                    if "diag_mdlog" not in output:
+                        break
+            ad.log.info("Start QXDM logger")
+            start_standing_subprocess("adb -s %s shell %s" %
+                                      (ad.serial, ad.qxdm_logger_command))
+
+
+def start_qxdm_loggers(log, ads):
+    tasks = [(start_qxdm_logger, [ad]) for ad in ads]
+    run_multithread_func(log, tasks)
+
+
+def start_nexuslogger(ad):
+    """Start Nexus Logger Apk."""
     if ad.is_apk_running("com.android.nexuslogger"):
         ad.log.info("Kill NexusLogger")
         ad.force_stop_apk("com.android.nexuslogger")
@@ -4620,25 +4689,6 @@ def set_qxdm_logger(ad, mask=None):
         time.sleep(2)
         ad.log.info("Start NexusLogger")
         ad.adb.shell("am start -n com.android.nexuslogger/.MainActivity")
-    if getattr(ad, "qxdm_always_on", False):
-        ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
-
-
-def set_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
-    """Set QXDM logger always on.
-
-    Args:
-        ad: android device object.
-
-    """
-    ad.adb.shell('touch /data/vendor/radio/diag_logs/diag.conf')
-    ad.adb.shell(
-        'echo "diag_mdlog -f /data/vendor/radio/diag_logs/cfg/%s'
-        ' -o /data/vendor/radio/diag_logs/logs -s 500 -n 10 -b -c " > '
-        '/data/vendor/radio/diag_logs/diag.conf' % mask_file)
-    ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
-    #ad.adb.shell("setprop persist.radio.smlog_switch false")
-    ad.reboot()
 
 
 def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
@@ -4667,7 +4717,10 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
 
     """
     ad.log.debug("Ensuring no tcpdump is running in background")
-    ad.adb.shell("killall -9 tcpdump")
+    try:
+        ad.adb.shell("killall -9 tcpdump")
+    except AdbError:
+        self.log.warn("Killing existing tcpdump processes failed")
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
     file_name = "/sdcard/tcpdump{}{}{}.pcap".format(ad.serial, test_name,

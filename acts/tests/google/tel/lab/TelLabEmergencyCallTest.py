@@ -178,6 +178,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                 self.anritsu.start_simulation()
             if is_ims_call:
                 self.anritsu.send_command("IMSSTARTVN 1")
+                self.anritsu.send_command("IMSSTARTVN 2")
+                self.anritsu.send_command("IMSSTARTVN 3")
 
             iterations = 1
             if self.stress_test_number > 0:
@@ -200,8 +202,14 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
 
                 if phone_setup_func is not None:
                     if not phone_setup_func(self.ad):
-                        self.log.error("phone_setup_func failed.")
-                        continue
+                        self.log.warning(
+                            "phone_setup_func failed. Rebooting UE")
+                        self.ad.reboot()
+                        time.sleep(30)
+                        if not phone_setup_func(self.ad):
+                            self.log.error("phone_setup_func failed.")
+                            continue
+
                 if is_wait_for_registration:
                     self.anritsu.wait_for_registration_state()
 

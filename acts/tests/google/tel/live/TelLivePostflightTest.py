@@ -50,15 +50,14 @@ class TelLivePostflightTest(TelephonyBaseTest):
             tombstones = ad.get_file_names("/data/tombstones/")
             if not tombstones: continue
             for tombstone in tombstones:
-                ts_path = os.path.join("/data/tombstones/", tombstone)
-                if ad.adb.shell("cat %s | grep pid | grep dialer" % ts_path):
-                    message = "%s dialer crash: %s " % (ad.serial, ts_path)
+                if ad.adb.shell("cat %s | grep pid | grep dialer" % tombstone):
+                    message = "%s dialer crash: %s " % (ad.serial, tombstone)
                     ad.log.error(message)
                     msg += message
                     crash_path = os.path.join(ad.log_path, self.test_id,
                                               "Crashes")
                     utils.create_dir(crash_path)
-                    ad.pull_files([], crash_path)
+                    ad.pull_files([tombstone], crash_path)
         if msg:
             fail(msg)
         return True
