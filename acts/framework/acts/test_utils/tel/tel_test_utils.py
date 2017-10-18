@@ -4616,7 +4616,7 @@ def find_qxdm_logger_mask(ad, mask):
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
             paths = mask.rsplit("/", 2)
-            ad.qxdm_logger_path = paths[0]
+            ad.qxdm_logger_path = os.path.join(paths[0], "logs")
             return mask
     ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
 
