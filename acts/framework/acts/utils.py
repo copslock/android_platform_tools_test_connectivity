@@ -28,6 +28,7 @@ import string
 import subprocess
 import time
 import traceback
+import zipfile
 
 from acts.controllers import adb
 
@@ -846,3 +847,28 @@ def adb_shell_ping(ad,
         return False
     finally:
         ad.adb.shell("rm /data/ping.txt", timeout=10, ignore_status=True)
+
+
+def unzip_maintain_permissions(zip_path, extract_location):
+    """Unzip a .zip file while maintaining permissions.
+
+    Args:
+        zip_path: The path to the zipped file.
+        extract_location: the directory to extract to.
+    """
+    with zipfile.ZipFile(zip_path, 'r') as zip_file:
+        for info in zip_file.infolist():
+            _extract_file(zip_file, info, extract_location)
+
+
+def _extract_file(zip_file, zip_info, extract_location):
+    """Extracts a single entry from a ZipFile while maintaining permissions.
+
+    Args:
+        zip_file: A zipfile.ZipFile.
+        zip_info: A ZipInfo object from zip_file.
+        extract_location: The directory to extract to.
+    """
+    out_path = zip_file.extract(zip_info.filename, path=extract_location)
+    perm = zip_info.external_attr >> 16
+    os.chmod(out_path, perm)
