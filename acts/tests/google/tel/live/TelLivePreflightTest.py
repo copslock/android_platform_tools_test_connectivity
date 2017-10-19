@@ -113,9 +113,15 @@ class TelLivePreflightTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
         result = True
+        begin_time = None
         for ad in self.android_devices:
-            ad.crash_report_preflight = ad.check_crash_report(
-                self.test_name, None, True)
+            output = ad.search_logcat(
+                "processing action (sys.boot_completed=1)")
+            if output:
+                begin_time = output[-1]["time_stamp"][5:]
+                ad.log.debug("begin time is %s", begin_time)
+            ad.crash_report_preflight = ad.check_crash_report(self.test_name,
+                                                              begin_time, True)
             if ad.crash_report_preflight:
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)
