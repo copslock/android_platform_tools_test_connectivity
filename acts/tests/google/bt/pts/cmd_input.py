@@ -949,7 +949,7 @@ class CmdInput(cmd.Cmd):
         """Get HID Report"""
         cmd = "Get HID Report"
         try:
-            self.pri_dut.droid.bluetoothHidGetReport(self.mac_addr, "1", "1",
+            self.pri_dut.droid.bluetoothHidGetReport(self.mac_addr, 1, 1,
                                                      1024)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
@@ -958,7 +958,7 @@ class CmdInput(cmd.Cmd):
         """Get HID Report"""
         cmd = "Get HID Report"
         try:
-            self.pri_dut.droid.bluetoothHidSetReport(self.mac_addr, "1",
+            self.pri_dut.droid.bluetoothHidSetReport(self.mac_addr, 1,
                                                      "Test")
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
