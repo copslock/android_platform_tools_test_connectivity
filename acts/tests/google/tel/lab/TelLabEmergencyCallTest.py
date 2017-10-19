@@ -172,6 +172,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             elif srvcc == "InCall":
                 self.anritsu.start_simulation()
                 self.anritsu.send_command("IMSSTARTVN 1")
+                self.anritsu.send_command("IMSSTARTVN 2")
+                self.anritsu.send_command("IMSSTARTVN 3")
                 check_ims_reg = True
                 check_ims_calling = True
             else:
