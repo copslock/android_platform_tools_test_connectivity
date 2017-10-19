@@ -75,6 +75,14 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         self.anritsu.disconnect()
         return True
 
+    def phone_setup_data_roaming(self):
+        return ensure_network_rat(
+            self.log,
+            self.ad,
+            NETWORK_MODE_LTE_GSM_WCDMA,
+            RAT_FAMILY_LTE,
+            toggle_apm_after_setting=True)
+
     def LTE_WCDMA_data_roaming(self, mcc, mnc, lte_band, wcdma_band):
         try:
             [self.bts1, self.bts2] = set_system_model_lte_wcdma(
@@ -93,25 +101,34 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
             self.bts2.service_state = BtsServiceState.SERVICE_STATE_OUT
             self.log.info("Toggle Mobile Data On")
             self.ad.droid.telephonyToggleDataConnection(True)
-            if not ensure_network_rat(
-                    self.log,
-                    self.ad,
-                    NETWORK_MODE_LTE_GSM_WCDMA,
-                    RAT_FAMILY_LTE,
-                    toggle_apm_after_setting=True):
-                self.log.error(
-                    "Failed to set rat family {}, preferred network:{}".format(
-                        RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
-                return False
+
+            if not self.phone_setup_data_roaming():
+                self.log.warning("phone_setup_func failed. Rebooting UE")
+                self.ad.reboot()
+                time.sleep(30)
+                if not self.phone_setup_data_roaming():
+                    self.log.error(
+                        "Failed to set rat family {}, preferred network:{}".
+                        format(RAT_FAMILY_LTE, NETWORK_MODE_LTE_GSM_WCDMA))
+                    return False
+
             toggle_cell_data_roaming(self.ad, True)
             self.anritsu.wait_for_registration_state(1)  # for BTS1 LTE
 
             time.sleep(TIME_TO_WAIT_BEFORE_PING)
-            if not adb_shell_ping(self.ad, PING_DURATION, PING_TARGET):
-                self.log.error(
-                    "Test Fail: Phone {} can not ping {} with Data Roaming On"
-                    .format(self.ad.serial, PING_TARGET))
-                return False
+            for i in range(3):
+                self.ad.log.info("Verify internet connection - attempt %d",
+                                 i + 1)
+                result = adb_shell_ping(self.ad, PING_DURATION, PING_TARGET)
+                if result:
+                    self.ad.log.info("PING SUCCESS")
+                    break
+                elif i == 2:
+                    self.log.error(
+                        "Test Fail: Phone {} can not ping {} with Data Roaming On"
+                        .format(self.ad.serial, PING_TARGET))
+                    return False
+
             toggle_cell_data_roaming(self.ad, False)
             time.sleep(TIME_TO_WAIT_BEFORE_PING)
             if adb_shell_ping(self.ad, PING_DURATION, PING_TARGET):
@@ -130,11 +147,19 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
             self.anritsu.wait_for_registration_state(2)  # for BTS2 WCDMA
 
             time.sleep(TIME_TO_WAIT_BEFORE_PING)
-            if not adb_shell_ping(self.ad, PING_DURATION, PING_TARGET):
-                self.log.error(
-                    "Test Fail: Phone {} can not ping {} with Data Roaming On"
-                    .format(self.ad.serial, PING_TARGET))
-                return False
+            for i in range(3):
+                self.ad.log.info("Verify internet connection - attempt %d",
+                                 i + 1)
+                result = adb_shell_ping(self.ad, PING_DURATION, PING_TARGET)
+                if result:
+                    self.ad.log.info("PING SUCCESS")
+                    break
+                elif i == 2:
+                    self.log.error(
+                        "Test Fail: Phone {} can not ping {} with Data Roaming On"
+                        .format(self.ad.serial, PING_TARGET))
+                    return False
+
             toggle_cell_data_roaming(self.ad, False)
             time.sleep(TIME_TO_WAIT_BEFORE_PING)
             if adb_shell_ping(self.ad, PING_DURATION, PING_TARGET):
