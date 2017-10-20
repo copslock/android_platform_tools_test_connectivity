@@ -56,6 +56,17 @@ class PowerBaseTest(BluetoothBaseTest):
                      "PMCMainActivity")
     PMC_VERBOSE_CMD = "setprop log.tag.PMC VERBOSE"
 
+    def setup_test(self):
+        self.timer_list = []
+        for a in self.android_devices:
+            a.ed.clear_all_events()
+            a.droid.setScreenTimeout(20)
+            self.ad.go_to_sleep()
+        return True
+
+    def teardown_test(self):
+        return True
+
     def setup_class(self):
         # Not to call Base class setup_class()
         # since it removes the bonded devices
@@ -85,8 +96,6 @@ class PowerBaseTest(BluetoothBaseTest):
         set_ambient_display(self.ad, False)
         self.ad.adb.shell("settings put system screen_brightness 0")
         set_auto_rotate(self.ad, False)
-        set_phone_screen_on(self.log, self.ad, self.SCREEN_TIME_OFF)
-        self.ad.go_to_sleep()
 
         wutils.wifi_toggle_state(self.ad, False)
 
