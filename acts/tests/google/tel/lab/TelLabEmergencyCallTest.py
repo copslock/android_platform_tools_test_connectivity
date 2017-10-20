@@ -103,12 +103,13 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         if len(list_of_devices) > 1:
             for i in range(len(list_of_devices) - 1):
                 self.log.info("Serial %s", list_of_devices[i])
-                if check_apm_mode_on_by_serial(list_of_devices[i]):
+                if check_apm_mode_on_by_serial(self.ad, list_of_devices[i]):
                     self.log.info("Device is already in APM ON")
                 else:
                     self.log.info("Device is not in APM, turning it ON")
-                    set_apm_mode_on_by_serial(list_of_devices[i])
-                    if check_apm_mode_on_by_serial(list_of_devices[i]):
+                    set_apm_mode_on_by_serial(self.ad, list_of_devices[i])
+                    if check_apm_mode_on_by_serial(self.ad,
+                                                   list_of_devices[i]):
                         self.log.info("Device is now in APM ON")
 
     def setup_class(self):

@@ -4983,21 +4983,29 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
 
 
-def check_apm_mode_on_by_serial(serial_id):
-    apm_check_cmd = "|".join(("adb -s %s shell dumpsys wifi" % serial_id,
-                              "grep -i airplanemodeon", "cut -f2 -d ' '"))
-    output = exe_cmd(apm_check_cmd)
-    if output.decode("utf-8").split("\n")[0] == "true":
+def check_apm_mode_on_by_serial(ad, serial_id):
+    try:
+        apm_check_cmd = "|".join(("adb -s %s shell dumpsys wifi" % serial_id,
+                                  "grep -i airplanemodeon", "cut -f2 -d ' '"))
+        output = exe_cmd(apm_check_cmd)
+        if output.decode("utf-8").split("\n")[0] == "true":
+            return True
+        else:
+            return False
+    except Exception as e:
+        ad.log.warning("Exception during check apm mode on %s", e)
         return True
-    else:
-        return False
 
 
-def set_apm_mode_on_by_serial(serial_id):
-    cmd1 = "adb -s %s shell settings put global airplane_mode_on 1" % serial_id
-    cmd2 = "adb -s %s shell am broadcast -a android.intent.action.AIRPLANE_MODE" % serial_id
-    exe_cmd(cmd1)
-    exe_cmd(cmd2)
+def set_apm_mode_on_by_serial(ad, serial_id):
+    try:
+        cmd1 = "adb -s %s shell settings put global airplane_mode_on 1" % serial_id
+        cmd2 = "adb -s %s shell am broadcast -a android.intent.action.AIRPLANE_MODE" % serial_id
+        exe_cmd(cmd1)
+        exe_cmd(cmd2)
+    except Exception as e:
+        ad.log.warning("Exception during set apm mode on %s", e)
+        return True
 
 
 def print_radio_info(ad, extra_msg=""):
