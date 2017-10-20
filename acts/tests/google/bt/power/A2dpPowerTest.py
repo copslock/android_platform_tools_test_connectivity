@@ -35,6 +35,7 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 
 
@@ -186,6 +187,8 @@ class A2dpPowerTest(PowerBaseTest):
             self.log.error("Failed to turn Bluetooth on DUT")
         # Give a breathing time of short delay to take effect
         time.sleep(3)
+
+        reset_bluetooth([self.ad])
 
         # Determine if we have a relay-based device
         self.a2dp_speaker = None
