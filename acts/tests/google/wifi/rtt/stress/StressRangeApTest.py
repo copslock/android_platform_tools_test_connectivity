@@ -57,7 +57,7 @@ class StressRangeApTest(RttBaseTest):
     if use_queue:
       ids = []
       for i in range(self.NUM_ITERATIONS):
-        ids.append(dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps))
+        ids.append(dut.droid.wifiRttStartRangingToAccessPoints(rtt_supporting_aps))
       for i in range(self.NUM_ITERATIONS):
         event = rutils.wait_for_event(dut,
                                       rutils.decorate_event(
@@ -66,7 +66,7 @@ class StressRangeApTest(RttBaseTest):
         results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
     else:
       for i in range(self.NUM_ITERATIONS):
-        id = dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps)
+        id = dut.droid.wifiRttStartRangingToAccessPoints(rtt_supporting_aps)
         event = rutils.wait_for_event(dut,
                                       rutils.decorate_event(
                                           rconsts.EVENT_CB_RANGING_ON_RESULT,

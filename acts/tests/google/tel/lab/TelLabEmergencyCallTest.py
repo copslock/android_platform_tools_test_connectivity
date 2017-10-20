@@ -58,9 +58,12 @@ from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import check_apm_mode_on_by_serial
+from acts.test_utils.tel.tel_test_utils import set_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
+from acts.utils import exe_cmd
 
 
 class TelLabEmergencyCallTest(TelephonyBaseTest):
@@ -92,6 +95,21 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         if not self.emergency_call_number in EMERGENCY_CALL_NUMBERS:
             self.log.warning("Unknown Emergency Number {}".format(
                 self.emergency_call_number))
+
+        # Check for all adb devices on the linux machine, and set APM ON
+        cmd = "|".join(("adb devices", "grep -i device$", "cut -f1"))
+        output = exe_cmd(cmd)
+        list_of_devices = output.decode("utf-8").split("\n")
+        if len(list_of_devices) > 1:
+            for i in range(len(list_of_devices) - 1):
+                self.log.info("Serial %s", list_of_devices[i])
+                if check_apm_mode_on_by_serial(list_of_devices[i]):
+                    self.log.info("Device is already in APM ON")
+                else:
+                    self.log.info("Device is not in APM, turning it ON")
+                    set_apm_mode_on_by_serial(list_of_devices[i])
+                    if check_apm_mode_on_by_serial(list_of_devices[i]):
+                        self.log.info("Device is now in APM ON")
 
     def setup_class(self):
         try:
@@ -172,6 +190,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             elif srvcc == "InCall":
                 self.anritsu.start_simulation()
                 self.anritsu.send_command("IMSSTARTVN 1")
+                self.anritsu.send_command("IMSSTARTVN 2")
+                self.anritsu.send_command("IMSSTARTVN 3")
                 check_ims_reg = True
                 check_ims_calling = True
             else:

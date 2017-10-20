@@ -32,14 +32,14 @@ class RangeApTest(RttBaseTest):
   def test_rtt_supporting_ap_only(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
     dut = self.android_devices[0]
-    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=2)
+    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
     dut.log.info("RTT Supporting APs=%s", rtt_supporting_aps)
 
     asserts.assert_true(
         len(rtt_supporting_aps) > 0,
         "Need at least one AP which supports 802.11mc!")
 
-    id = dut.droid.wifiRttStartRangingToAp(rtt_supporting_aps)
+    id = dut.droid.wifiRttStartRangingToAccessPoints(rtt_supporting_aps)
     event = rutils.wait_for_event(dut,
                                   rutils.decorate_event(
                                       rconsts.EVENT_CB_RANGING_ON_RESULT, id))
@@ -55,7 +55,7 @@ class RangeApTest(RttBaseTest):
       all_aps = all_aps[0:self.MAX_APS]
     dut.log.info("Visible APs=%s", all_aps)
 
-    id = dut.droid.wifiRttStartRangingToAp(all_aps)
+    id = dut.droid.wifiRttStartRangingToAccessPoints(all_aps)
     event = rutils.wait_for_event(dut,
                                   rutils.decorate_event(
                                       rconsts.EVENT_CB_RANGING_ON_RESULT, id))

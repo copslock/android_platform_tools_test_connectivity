@@ -147,6 +147,7 @@ from acts.utils import stop_standing_subprocess
 from acts.logger import epoch_to_log_line_timestamp
 from acts.logger import normalize_log_line_timestamp
 from acts.utils import get_current_epoch_time
+from acts.utils import exe_cmd
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
@@ -283,11 +284,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                         sim_data[iccid]["phone_num"], sim_filename,
                         sub_info["phone_num"])
                     sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        if not hasattr(
-                ad, 'roaming'
-        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
-                sub_info["sim_operator_name"].strip() not in
-                sub_info["network_operator_name"].strip()):
+        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
+                "network_plmn"] and (
+                    sub_info["sim_operator_name"].strip() not in sub_info[
+                        "network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
@@ -2096,8 +2096,8 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_folder, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(url,
+                                                                    out_path)
     file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2138,7 +2138,8 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data'][
+            'isConnected'] == target_state:
         return True
     return False
 
@@ -2165,8 +2166,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
+                                                          state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -2531,8 +2532,8 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         ad.log.info("VoLTE not supported by platform.")
-        raise TelTestUtilsError(
-            "VoLTE not supported by platform %s." % ad.serial)
+        raise TelTestUtilsError("VoLTE not supported by platform %s." %
+                                ad.serial)
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -4021,7 +4022,8 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4499,8 +4501,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data']
-                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data'][
+                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
@@ -4605,6 +4607,8 @@ def get_number_from_tel_uri(uri):
 def find_qxdm_logger_mask(ad, mask):
     """Find QXDM logger mask."""
     if "/" not in mask:
+        # Call nexuslogger to generate log mask
+        start_nexuslogger(ad)
         # Find the log mask path
         for path in ("/data/vendor/radio/diag_logs", "/data/diag_logs"):
             if mask in ad.adb.shell("ls %s/cfg" % path, ignore_status=True):
@@ -4614,8 +4618,8 @@ def find_qxdm_logger_mask(ad, mask):
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
             paths = mask.rsplit("/", 2)
-            ad.qxdm_logger_path = paths[0]
-            return paths[-1]
+            ad.qxdm_logger_path = os.path.join(paths[0], "logs")
+            return mask
     ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
 
 
@@ -4628,7 +4632,7 @@ def set_qxdm_logger_command(ad, mask=None):
     """
     ## Neet to check if log mask will be generated without starting nexus logger
     if mask:
-        mask_path = find_qxdm_logger_mask(mask)
+        mask_path = find_qxdm_logger_mask(ad, mask)
     else:
         for mask in ("QC_Default.cfg", "default.cfg"):
             mask_path = find_qxdm_logger_mask(ad, mask)
@@ -4636,18 +4640,20 @@ def set_qxdm_logger_command(ad, mask=None):
     if not mask_path:
         ad.log.error("Cannot find mask %s", mask)
         ad.qxdm_logger_command = None
+        return False
     else:
-        ad.log.info("Use QXDM log mask %s", mask)
-        ad.qxdm_logger_path = os.path.join(ad.qxdm_logger_path, "log")
+        ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 500 -n 10 -b -c" %
                                   (mask_path, ad.qxdm_logger_path))
-        conf_path = os.path.split(ad.qxdm_logger_path)
-        conf_path = os.path.join(conf_path[0], "diag.conf")
+        conf_path = os.path.split(ad.qxdm_logger_path)[0]
+        conf_path = os.path.join(conf_path, "diag.conf")
         # Enable qxdm always on so that after device reboot, qxdm will be
         # turned on automatically
         ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
-        ad.adb.shell("setprop persist.sys.modem.diag.mdlog true")
+        ad.adb.shell(
+            "setprop persist.sys.modem.diag.mdlog true", ignore_status=True)
+        return True
 
 
 def start_qxdm_logger(ad):
@@ -4680,8 +4686,12 @@ def start_qxdm_loggers(log, ads):
 def start_nexuslogger(ad):
     """Start Nexus Logger Apk."""
     if ad.is_apk_running("com.android.nexuslogger"):
-        ad.log.info("Kill NexusLogger")
-        ad.force_stop_apk("com.android.nexuslogger")
+        if "granted=true" in ad.adb.shell(
+                "dumpsys package com.android.nexuslogger | grep WRITE_EXTERN"):
+            return True
+        else:
+            ad.log.info("Kill NexusLogger")
+            ad.force_stop_apk("com.android.nexuslogger")
     if ad.is_apk_installed("com.android.nexuslogger"):
         for perm in ("READ", "WRITE"):
             ad.adb.shell("pm grant com.android.nexuslogger "
@@ -4689,6 +4699,7 @@ def start_nexuslogger(ad):
         time.sleep(2)
         ad.log.info("Start NexusLogger")
         ad.adb.shell("am start -n com.android.nexuslogger/.MainActivity")
+        return ad.is_apk_running("com.android.nexuslogger")
 
 
 def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
@@ -4970,6 +4981,23 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
     if not ad.ensure_screen_on():
         ad.log.error("User window cannot come up")
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+
+
+def check_apm_mode_on_by_serial(serial_id):
+    apm_check_cmd = "|".join(("adb -s %s shell dumpsys wifi" % serial_id,
+                              "grep -i airplanemodeon", "cut -f2 -d ' '"))
+    output = exe_cmd(apm_check_cmd)
+    if output.decode("utf-8").split("\n")[0] == "true":
+        return True
+    else:
+        return False
+
+
+def set_apm_mode_on_by_serial(serial_id):
+    cmd1 = "adb -s %s shell settings put global airplane_mode_on 1" % serial_id
+    cmd2 = "adb -s %s shell am broadcast -a android.intent.action.AIRPLANE_MODE" % serial_id
+    exe_cmd(cmd1)
+    exe_cmd(cmd2)
 
 
 def print_radio_info(ad, extra_msg=""):

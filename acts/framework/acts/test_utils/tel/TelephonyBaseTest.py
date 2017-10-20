@@ -53,7 +53,7 @@ from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 from acts.utils import force_airplane_mode
 
-QXDM_LOG_PATH = "/data/vendor/radio/diag_logs/logs/"
+QXDM_LOG_PATH = "/data/vendor/radio/diag_logs/logs"
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -62,10 +62,26 @@ class TelephonyBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
 
+        qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
+        if isinstance(qxdm_log_mask_cfg, list):
+            qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
+            if "dev/null" in qxdm_log_mask_cfg:
+                qxdm_log_mask_cfg = None
         for ad in self.android_devices:
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
-            set_qxdm_logger_command(
-                ad, mask=getattr(ad, "qxdm_log_mask", None))
+            qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
+            if ad.qxdm_log:
+                if qxdm_log_mask_cfg:
+                    qxdm_log_path = getattr(ad, "qxdm_log_path", QXDM_LOG_PATH)
+                    qxdm_cfg_path = os.path.join(
+                        os.path.split(qxdm_log_path)[0], "cfg")
+                    ad.adb.shell("mkdir -p %s" % qxdm_cfg_path)
+                    ad.log.info("Push %s to %s", qxdm_log_mask_cfg,
+                                qxdm_cfg_path)
+                    ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_cfg_path))
+                    mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
+                    qxdm_log_mask = os.path.join(qxdm_cfg_path, mask_file_name)
+                set_qxdm_logger_command(ad, mask=qxdm_log_mask)
             print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
