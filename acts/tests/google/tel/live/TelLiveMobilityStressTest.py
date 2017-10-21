@@ -101,6 +101,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
 
         return True
 
+    def on_fail(self, test_name, begin_time):
+        pass
+
     def _setup_volte_wfc_wifi_preferred(self):
         return self._wfc_phone_setup(
             False, WFC_MODE_WIFI_PREFERRED, volte_mode=True)
@@ -137,13 +140,18 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
-        self.result_info["Total %s" % message_type_map[selection]] += 1
+        message_type = message_type_map[selection]
+        self.result_info["Total %s" % message_type] += 1
+        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
-            self.log.error("%s of length %s from %s to %s fails",
-                           message_type_map[selection], length, ads[0].serial,
-                           ads[1].serial)
-            self.result_info["%s failure" % message_type_map[selection]] += 1
+            self.log.error("%s of length %s from %s to %s fails", message_type,
+                           length, ads[0].serial, ads[1].serial)
+            self.result_info["%s failure" % message_type] += 1
+            if message_type == "SMS":
+                self._take_bug_report("%s_sms_failure" % self.test_name,
+                                      begin_time)
+                start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
@@ -153,6 +161,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
 
     def _make_phone_call(self, ads):
         self.result_info["Total Calls"] += 1
+        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
         if not call_setup_teardown(
                 self.log,
                 ads[0],
@@ -163,6 +172,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     self.max_phone_call_duration)):
             self.log.error("Call setup and teardown failed.")
             self.result_info["Call Failure"] += 1
+            self._take_bug_report("%s_call_failure" % self.test_name,
+                                  begin_time)
+            start_qxdm_loggers(self.log, self.android_devices)
             return False
         self.log.info("Call setup and teardown succeed.")
         return True
@@ -275,9 +287,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                                          self.log, self.helper))
                 if not self._make_phone_call(ads):
                     failure += 1
-                    self._take_bug_report("%s_call_failure" % self.test_name,
-                                          time.strftime("%m-%d-%Y-%H-%M-%S"))
-                    start_qxdm_loggers(self.log, self.android_devices)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTION as e:
@@ -305,10 +314,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 total_count += 1
                 if not self._send_message(ads):
                     failure += 1
-                    self._take_bug_report(
-                        "%s_messaging_failure" % self.test_name,
-                        time.strftime("%m-%d-%Y-%H-%M-%S"))
-                    start_qxdm_loggers(self.log, self.android_devices)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTION as e:
@@ -344,10 +349,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                                                  file_name):
                     self.result_info["%s file download failure" %
                                      file_name] += 1
-                    self._take_bug_report(
-                        "%s_download_failure" % self.test_name,
-                        time.strftime("%m-%d-%Y-%H-%M-%S"))
-                    start_qxdm_loggers(self.log, self.android_devices)
                     failure += 1
                     self.dut.droid.goToSleepNow()
                     time.sleep(random.randrange(0, self.max_sleep_time))

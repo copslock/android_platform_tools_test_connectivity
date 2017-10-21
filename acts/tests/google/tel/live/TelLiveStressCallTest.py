@@ -50,6 +50,8 @@ from acts.test_utils.tel.tel_video_utils import phone_setup_video
 from acts.test_utils.tel.tel_video_utils import video_call_setup
 from acts.test_utils.tel.tel_video_utils import \
     is_phone_in_call_video_bidirectional
+from acts.logger import epoch_to_log_line_timestamp
+from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
 
@@ -71,6 +73,9 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             self.user_params.get("sleep_time_between_test_iterations", 0))
 
         return True
+
+    def on_fail(self, test_name, begin_time):
+        pass
 
     def _setup_wfc(self):
         for ad in self.android_devices:
@@ -192,6 +197,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         for i in range(1, self.phone_call_iteration + 1):
             msg = "Stress Call Test %s Iteration: <%s> / <%s>" % (
                 self.test_name, i, self.phone_call_iteration)
+            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             self.log.info(msg)
             iteration_result = True
             ensure_phones_idle(self.log, self.android_devices)
@@ -231,7 +237,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             self.log.info("%s %s", msg, iteration_result)
             if not iteration_result:
                 self._take_bug_report("%s_%s" % (self.test_name, i),
-                                      self.begin_time)
+                                      begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
 
             if self.sleep_time_between_test_iterations:
