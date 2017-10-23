@@ -42,6 +42,8 @@ from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
@@ -173,8 +175,10 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log.error("%s of length %s from %s to %s fails", message_type,
                            length, ads[0].serial, ads[1].serial)
             self.result_info["%s failure" % message_type] += 1
-            if message_type == "SMS":
-                self._take_bug_report("%s_sms_failure" % self.test_name,
+            if message_type == "SMS" or self.result_info["%s failure" %
+                                                         message_type] == 1:
+                self._take_bug_report("%s_%s_failure" % (self.test_name,
+                                                         message_type),
                                       begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
             return False
@@ -344,8 +348,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
-        self.test_detail_message += "Messaging test failure: %s/%s" % (
-            failure, total_count)
         if failure / total_count > 0.1:
             return False
         else:
@@ -358,26 +360,34 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         tcpdump_pid = None
         while time.time() < self.finishing_time:
-            pull_tcpdump = False
+            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
                 total_count += 1
-                (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
-                    self.dut, "%s_download" % self.test_name, mask="all")
+                if self.result_info["File download failure"] < 1:
+                    (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
+                        self.dut,
+                        "%s_file_download" % self.test_name,
+                        mask="all")
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
-                    self.result_info["%s file download failure" %
-                                     file_name] += 1
+                    self.result_info["File download failure"] += 1
                     failure += 1
-                    self.dut.droid.goToSleepNow()
-                    time.sleep(random.randrange(0, self.max_sleep_time))
-                    stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file, True)
-                else:
+                    if self.result_info["File download failure"] == 1:
+                        self._take_bug_report(
+                            "%s_file_download_failure" % self.test_name,
+                            begin_time)
+                        start_qxdm_loggers(self.log, self.android_devices)
+                        stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
+                                         True)
+                elif self.result_info["File download failure"] < 1:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -390,8 +400,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
-        self.test_detail_message += "File download test failure: %s/%s" % (
-            failure, total_count)
         if failure / total_count > 0.1:
             return False
         else:
@@ -407,9 +415,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info(dict(self.result_info))
-        errors = sum(results)
-        if errors:
+        self.log.info("%s", self.result_info)
+        if sum(results):
             fail("%s" % self.result_info)
         return True
 
@@ -422,11 +429,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info(dict(self.result_info))
-        error_message = " ".join(results).strip()
-        if error_message:
-            self.log.error(error_message)
-            fail(error_message)
+        self.log.info("%s", self.result_info)
+        if sum(results):
+            fail("%s" % self.result_info)
         return True
 
     """ Tests Begin """
