@@ -128,7 +128,7 @@ class PowerroamingTest(base_test.BaseTestClass):
         # Set attenuator and add two networks to the phone
         self.log.info('Set attenuation to connect device to the aux AP')
         [
-            self.attenuators[i].set_atten(self.atten_level[wc.AP_MAIN][i])
+            self.attenuators[i].set_atten(self.atten_level[wc.AP_AUX][i])
             for i in range(self.num_atten)
         ]
         wutils.wifi_connect(self.dut, network_aux)
@@ -147,7 +147,7 @@ class PowerroamingTest(base_test.BaseTestClass):
         # Trigger fastroaming
         self.dut.log.info('Trigger fastroaming now')
         [
-            self.attenuators[i].set_atten(self.atten_level[wc.AP_MAIN][i])
+            self.attenuators[i].set_atten(self.atten_level[wc.AP_AUX][i])
             for i in range(self.num_atten)
         ]
         file_path, avg_current = wputils.monsoon_data_collect_save(
