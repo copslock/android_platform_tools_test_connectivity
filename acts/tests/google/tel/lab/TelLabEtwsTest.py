@@ -98,8 +98,9 @@ class TelLabEtwsTest(TelephonyBaseTest):
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
                                               self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
-            set_post_sim_params(self.anritsu, self.user_params,
-                                self.ad.sim_card)
+            if rat == RAT_LTE:
+                set_post_sim_params(self.anritsu, self.user_params,
+                                    self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:

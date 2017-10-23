@@ -135,8 +135,9 @@ class TelLabVoiceTest(TelephonyBaseTest):
             set_simulation_func(self.anritsu, self.user_params,
                                 self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
-            set_post_sim_params(self.anritsu, self.user_params,
-                                self.ad.sim_card)
+            if is_ims_call or srvcc or csfb_type:
+                set_post_sim_params(self.anritsu, self.user_params,
+                                    self.ad.sim_card)
             self.virtualPhoneHandle.auto_answer = (VirtualPhoneAutoAnswer.ON,
                                                    2)
             if srvcc != None:
@@ -150,7 +151,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
                 check_ims_calling = True
             else:
                 self.anritsu.start_simulation()
-            if is_ims_call:
+            if is_ims_call or csfb_type:
                 self.anritsu.send_command("IMSSTARTVN 1")
                 self.anritsu.send_command("IMSSTARTVN 2")
                 self.anritsu.send_command("IMSSTARTVN 3")
@@ -239,6 +240,7 @@ class TelLabVoiceTest(TelephonyBaseTest):
         return True
 
     def _phone_setup_lte_wcdma(self, ad):
+        toggle_volte(self.log, ad, False)
         return ensure_network_rat(
             self.log,
             ad,
