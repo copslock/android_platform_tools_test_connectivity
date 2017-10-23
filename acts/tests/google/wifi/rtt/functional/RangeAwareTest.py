@@ -33,8 +33,8 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
   # Number of RTT iterations
   NUM_ITER = 10
 
-  # Allowed margin of distance measurements (in %)
-  DISTANCE_MARGIN = 10
+  # Allowed absolute margin of distance measurements (in mm)
+  DISTANCE_MARGIN_MM = 1000
 
   # Maximum expected RSSI
   MAX_EXPECTED_RSSI = 200
@@ -61,7 +61,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     AwareBaseTest.teardown_test(self)
     RttBaseTest.teardown_test(self)
 
-#############################################################################
+  #############################################################################
 
   def run_rtt_discovery(self, init_dut, resp_mac=None, resp_peer_id=None):
     """Perform single RTT measurement, using Aware, from the Initiator DUT to
@@ -79,21 +79,17 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                         " must be provided!")
     if resp_mac is not None:
       id = init_dut.droid.wifiRttStartRangingToAwarePeerMac(resp_mac)
-
     else:
       id = init_dut.droid.wifiRttStartRangingToAwarePeerId(resp_peer_id)
     try:
       event = init_dut.ed.pop_event(rutils.decorate_event(
           rconsts.EVENT_CB_RANGING_ON_RESULT, id), rutils.EVENT_TIMEOUT)
+      result = event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0]
       if resp_mac is not None:
-        rutils.validate_aware_mac_result(
-            event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0], resp_mac,
-            "DUT")
+        rutils.validate_aware_mac_result(result, resp_mac, "DUT")
       else:
-        rutils.validate_aware_peer_id_result(
-            event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0],
-            resp_peer_id, "DUT")
-      return event
+        rutils.validate_aware_peer_id_result(result, resp_peer_id, "DUT")
+      return result
     except queue.Empty:
       return None
 
@@ -128,14 +124,14 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         device_startup_offset=self.device_startup_offset,
         msg_id=self.get_next_msg_id())
 
-    eventsPS = []
-    eventsSP = []
+    resultsPS = []
+    resultsSP = []
     for i in range(iter_count):
       if i != 0 and time_between_iterations != 0:
         time.sleep(time_between_iterations)
 
       # perform RTT from pub -> sub
-      eventsPS.append(
+      resultsPS.append(
         self.run_rtt_discovery(p_dut, resp_peer_id=peer_id_on_pub))
 
       if do_both_directions:
@@ -143,10 +139,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
           time.sleep(time_between_roles)
 
         # perform RTT from sub -> pub
-        eventsSP.append(
+        resultsSP.append(
           self.run_rtt_discovery(s_dut, resp_peer_id=peer_id_on_sub))
 
-    return eventsPS if not do_both_directions else [eventsPS, eventsSP]
+    return resultsPS if not do_both_directions else [resultsPS, resultsSP]
 
   def run_rtt_oob_discovery_set(self, do_both_directions, iter_count,
       time_between_iterations, time_between_roles):
@@ -176,14 +172,14 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     # to execute the data-path request)
     time.sleep(autils.WAIT_FOR_CLUSTER)
 
-    events01 = []
-    events10 = []
+    results01 = []
+    results10 = []
     for i in range(iter_count):
       if i != 0 and time_between_iterations != 0:
         time.sleep(time_between_iterations)
 
       # perform RTT from dut0 -> dut1
-      events01.append(
+      results01.append(
           self.run_rtt_discovery(dut0, resp_mac=mac1))
 
       if do_both_directions:
@@ -191,25 +187,25 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
           time.sleep(time_between_roles)
 
         # perform RTT from dut1 -> dut0
-        events10.append(
+        results10.append(
             self.run_rtt_discovery(dut1, resp_mac=mac0))
 
-    return events01 if not do_both_directions else [events01, events10]
+    return results01 if not do_both_directions else [results01, results10]
 
-  def verify_results(self, events, events_reverse_direction=None):
+  def verify_results(self, results, results_reverse_direction=None):
     """Verifies the results of the RTT experiment.
 
     Args:
-      events: List of RTT result events.
-      events_reverse_direction: List of RTT result events executed in the
+      results: List of RTT results.
+      results_reverse_direction: List of RTT results executed in the
                                 reverse direction. Optional.
     """
-    stats = rutils.extract_stats(events, self.rtt_reference_distance_mm,
-                          self.DISTANCE_MARGIN, self.MAX_EXPECTED_RSSI)
+    stats = rutils.extract_stats(results, self.rtt_reference_distance_mm,
+                          self.DISTANCE_MARGIN_MM, self.MAX_EXPECTED_RSSI)
     stats_reverse_direction = None
-    if events_reverse_direction is not None:
-      stats_reverse_direction = rutils.extract_stats(events_reverse_direction,
-          self.rtt_reference_distance_mm, self.DISTANCE_MARGIN,
+    if results_reverse_direction is not None:
+      stats_reverse_direction = rutils.extract_stats(results_reverse_direction,
+          self.rtt_reference_distance_mm, self.DISTANCE_MARGIN_MM,
           self.MAX_EXPECTED_RSSI)
     self.log.info("Stats: %s", stats)
     if stats_reverse_direction is not None:
@@ -223,40 +219,40 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
     to communicate the MAC addresses to the peer. Test one-direction RTT only.
     """
-    rtt_events = self.run_rtt_oob_discovery_set(do_both_directions=False,
+    rtt_results = self.run_rtt_oob_discovery_set(do_both_directions=False,
           iter_count=self.NUM_ITER,
           time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
           time_between_roles=self.TIME_BETWEEN_ROLES)
-    self.verify_results(rtt_events)
+    self.verify_results(rtt_results)
 
   def test_rtt_oob_discovery_both_ways(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
     to communicate the MAC addresses to the peer. Test RTT both-ways:
     switching rapidly between Initiator and Responder.
     """
-    rtt_events1, rtt_events2 = self.run_rtt_oob_discovery_set(
+    rtt_results1, rtt_results2 = self.run_rtt_oob_discovery_set(
         do_both_directions=True, iter_count=self.NUM_ITER,
         time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
         time_between_roles=self.TIME_BETWEEN_ROLES)
-    self.verify_results(rtt_events1, rtt_events2)
+    self.verify_results(rtt_results1, rtt_results2)
 
   def test_rtt_ib_discovery_one_way(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
     to communicate the MAC addresses to the peer. Test one-direction RTT only.
     """
-    rtt_events = self.run_rtt_ib_discovery_set(do_both_directions=False,
+    rtt_results = self.run_rtt_ib_discovery_set(do_both_directions=False,
            iter_count=self.NUM_ITER,
            time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
            time_between_roles=self.TIME_BETWEEN_ROLES)
-    self.verify_results(rtt_events)
+    self.verify_results(rtt_results)
 
   def test_rtt_ib_discovery_both_ways(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
     to communicate the MAC addresses to the peer. Test RTT both-ways:
     switching rapidly between Initiator and Responder.
     """
-    rtt_events1, rtt_events2 = self.run_rtt_ib_discovery_set(
+    rtt_results1, rtt_results2 = self.run_rtt_ib_discovery_set(
         do_both_directions=True, iter_count=self.NUM_ITER,
         time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
         time_between_roles=self.TIME_BETWEEN_ROLES)
-    self.verify_results(rtt_events1, rtt_events2)
+    self.verify_results(rtt_results1, rtt_results2)

@@ -172,8 +172,8 @@ def validate_aware_peer_id_result(range_result, peer_id, description):
                        '%s: MAC Address not empty!' % description)
 
 
-def extract_stats(events, range_reference_mm, range_margin, max_rssi):
-  """Extract statistics from a list of RTT result events. Returns a dictionary
+def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
+  """Extract statistics from a list of RTT results. Returns a dictionary
    with results:
      - num_samples
      - num_no_results (e.g. timeout)
@@ -190,49 +190,48 @@ def extract_stats(events, range_reference_mm, range_margin, max_rssi):
      - status_codes
 
   Args:
-    events: List of RTT result events.
+    results: List of RTT results.
     range_reference_mm: Reference value for the distance (in mm)
-    range_margin: Acceptable margin for distance (in % of reference)
+    range_margin_mm: Acceptable absolute margin for distance (in mm)
     max_rssi: Acceptable maximum RSSI value.
 
   Returns: A dictionary of stats.
   """
   stats = {}
-  stats['num_results'] = len(events)
+  stats['num_results'] = len(results)
   stats['num_no_results'] = 0
   stats['num_failures'] = 0
   stats['num_range_out_of_margin'] = 0
   stats['num_invalid_rssi'] = 0
 
-  range_max_mm = range_reference_mm * (100 + range_margin) / 100
-  range_min_mm = range_reference_mm * (100 - range_margin) / 100
+  range_max_mm = range_reference_mm + range_margin_mm
+  range_min_mm = range_reference_mm - range_margin_mm
 
   distances = []
   distance_std_devs = []
   rssis = []
   status_codes = []
 
-  for i in range(len(events)):
-    event = events[i]
+  for i in range(len(results)):
+    result = results[i]
 
-    if event is None: # None -> timeout waiting for RTT result
+    if result is None: # None -> timeout waiting for RTT result
       stats['num_no_results'] = stats['num_no_results'] + 1
       continue
 
-    results = event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0]
-    status_codes.append(results[rconsts.EVENT_CB_RANGING_KEY_STATUS])
+    status_codes.append(result[rconsts.EVENT_CB_RANGING_KEY_STATUS])
     if status_codes[-1] != rconsts.EVENT_CB_RANGING_STATUS_SUCCESS:
       stats['num_failures'] = stats['num_failures'] + 1
       continue
 
-    distance_mm = results[rconsts.EVENT_CB_RANGING_KEY_DISTANCE_MM]
+    distance_mm = result[rconsts.EVENT_CB_RANGING_KEY_DISTANCE_MM]
     distances.append(distance_mm)
     if not range_min_mm <= distance_mm <= range_max_mm:
       stats['num_range_out_of_margin'] = stats['num_range_out_of_margin'] + 1
     distance_std_devs.append(
-        results[rconsts.EVENT_CB_RANGING_KEY_DISTANCE_STD_DEV_MM])
+        result[rconsts.EVENT_CB_RANGING_KEY_DISTANCE_STD_DEV_MM])
 
-    rssi = results[rconsts.EVENT_CB_RANGING_KEY_RSSI]
+    rssi = result[rconsts.EVENT_CB_RANGING_KEY_RSSI]
     rssis.append(rssi)
     if not 0 <= rssi <= max_rssi:
       stats['num_invalid_rssi'] = stats['num_invalid_rssi'] + 1
