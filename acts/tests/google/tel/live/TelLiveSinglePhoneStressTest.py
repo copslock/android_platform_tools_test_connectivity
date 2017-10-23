@@ -185,6 +185,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         total_count = 0
         while time.time() < self.finishing_time:
             total_count += 1
+            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
@@ -206,7 +207,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     failure += 1
                     self._take_bug_report(
                         "%s_call_initiation_failure" % self.test_name,
-                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                        begin_time)
                     start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
@@ -219,9 +220,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self.dut.log.error("Call droped.")
                         self.result_info["Call drop"] += 1
                         failure += 1
-                        self._take_bug_report(
-                            "%s_call_drop" % self.test_name,
-                            time.strftime("%m-%d-%Y-%H-%M-%S"))
+                        self._take_bug_report("%s_call_drop" % self.test_name,
+                                              begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
@@ -230,8 +230,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     hangup_call(self.log, self.dut)
                     self.dut.log.info("Call test succeed.")
                     ensure_phone_idle(self.log, self.dut)
-                    self.dut.droid.goToSleepNow()
-                    time.sleep(random.randrange(0, self.max_sleep_time))
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -253,6 +253,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         sub_id = self.dut.droid.subscriptionGetDefaultSubId()
         while time.time() < self.finishing_time:
             total_count += 1
+            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
@@ -271,7 +272,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     failure += 1
                     self._take_bug_report(
                         "%s_call_initiation_failure" % self.test_name,
-                        time.strftime("%m-%d-%Y-%H-%M-%S"))
+                        begin_time)
                     start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
@@ -285,8 +286,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self.result_info["Call not VoLTE"] += 1
                         failure += 1
                         self._take_bug_report(
-                            "%s_not_in_volte" % self.test_name,
-                            time.strftime("%m-%d-%Y-%H-%M-%S"))
+                            "%s_not_in_volte" % self.test_name, begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
@@ -362,9 +362,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self.log.error("%s of length %s from self to self fails",
                                    message_type, length)
                     self.result_info["%s failure" % message_type] += 1
-                    if message_type == "SMS":
-                        self._take_bug_report(
-                            "%s_sms_failure" % self.test_name, begin_time)
+                    if message_type == "SMS" or self.result_info["%s failure" %
+                                                                 message_type] == 1:
+                        self._take_bug_report("%s_%s_failure" %
+                                              (self.test_name,
+                                               message_type), begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
                     failure += 1
                 else:
@@ -403,23 +405,24 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
-                (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
-                    self.dut, "%s_download" % self.test_name, mask="all")
+                if self.result_info["File download failure"] < 1:
+                    (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
+                        self.dut, "%s_download" % self.test_name, mask="all")
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
-                    self.result_info["%s file download failure" %
-                                     file_name] += 1
+                    self.result_info["File download failure"] += 1
                     failure += 1
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file, True)
-                    #self._take_bug_report(
-                    #    "%s_download_failure" % self.test_name,
-                    #    begin_time)
-                    #start_qxdm_loggers(self.log, self.android_devices)
-                else:
+                    if self.result_info["File download failure"] == 1:
+                        self._take_bug_report(
+                            "%s_file_download_failure" % self.test_name,
+                            begin_time)
+                        start_qxdm_loggers(self.log, self.android_devices)
+                elif self.result_info["File download failure"] < 1:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
-                    self.dut.droid.goToSleepNow()
-                    time.sleep(random.randrange(0, self.max_sleep_time))
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -445,11 +448,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info(dict(self.result_info))
-        error_message = " ".join(results).strip()
-        if error_message:
-            self.log.error(error_message)
-            fail(error_message)
+        self.log.info("%s", self.result_info)
+        if sum(results):
+            fail("%s" % self.result_info)
         return True
 
     def parallel_volte_tests(self, setup_func=None):
@@ -461,11 +462,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info(dict(self.result_info))
-        error_message = " ".join(results).strip()
-        if error_message:
-            self.log.error(error_message)
-            fail(error_message)
+        self.log.info("%s", self.result_info)
+        if sum(results):
+            fail("%s" % self.result_info)
         return True
 
     """ Tests Begin """
