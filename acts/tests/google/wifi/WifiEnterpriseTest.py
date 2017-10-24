@@ -192,16 +192,19 @@ class WifiEnterpriseTest(base_test.BaseTestClass):
             configuration. Each invalid configuration has a different invalid
             field.
         """
-        nc = dict(config)
+        negative_config = dict(config)
+        if negative_config in [self.config_sim, self.config_aka,
+                               self.config_aka_prime]:
+            negative_config[WifiEnums.SSID_KEY] = 'wrong_hostapd_ssid'
         for k, v in neg_params.items():
             # Skip negative test for TLS's identity field since it's not
             # used for auth.
             if config[Ent.EAP] == EAP.TLS and k == Ent.IDENTITY:
                 continue
             if k in config:
-                nc[k] = v
-                nc["invalid_field"] = k
-        return nc
+                negative_config[k] = v
+                negative_config["invalid_field"] = k
+        return negative_config
 
     def gen_negative_eap_configs(self, config):
         """Generates invalid configurations for different EAP authentication
