@@ -29,6 +29,8 @@ from acts.keys import Config
 from acts.signals import TestSignal
 from acts.signals import TestAbortClass
 from acts.signals import TestAbortAll
+from acts.signals import TestBlocked
+from acts import records
 from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -291,6 +293,19 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_blocked(self, test_name, begin_time):
         self.on_fail(test_name, begin_time)
+
+    def _block_all_test_cases(self, tests):
+        """Over-write _block_all_test_case in BaseTestClass."""
+        for (i, (test_name, test_func)) in enumerate(tests):
+            signal = TestBlocked("Failed class setup")
+            record = records.TestResultRecord(test_name, self.TAG)
+            record.test_begin()
+            # mark all test cases as FAIL
+            record.test_fail(signal)
+            self.results.add_record(record)
+            # only gather bug report for the first test case
+            if i == 0:
+                self.on_fail(test_name, record.log_begin_time)
 
     def on_pass(self, test_name, begin_time):
         self._cleanup_logger_sessions()
