@@ -289,6 +289,9 @@ class TelephonyBaseTest(BaseTestClass):
         self._take_bug_report(test_name, begin_time)
         self._cleanup_logger_sessions()
 
+    def on_blocked(self, test_name, begin_time):
+        self.on_fail(test_name, begin_time)
+
     def on_pass(self, test_name, begin_time):
         self._cleanup_logger_sessions()
 

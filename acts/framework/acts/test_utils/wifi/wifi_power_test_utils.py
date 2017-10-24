@@ -58,6 +58,8 @@ IPERF_TIMEOUT = 180
 THRESHOLD_TOLERANCE = 0.2
 GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
+PHONE_BATTERY_VOLTAGE = 4.2
+MONSOON_MAX_CURRENT = 8.0
 
 
 def dut_rockbottom(ad):
@@ -106,6 +108,7 @@ def dut_rockbottom(ad):
     ad.adb.shell(FORCE_DIALER_STOP)
     ad.droid.wakeUpNow()
     ad.log.info('Device has been set to Rockbottom state')
+    ad.log.info('Screen is ON')
 
 
 def pass_fail_check(test_class, test_result):

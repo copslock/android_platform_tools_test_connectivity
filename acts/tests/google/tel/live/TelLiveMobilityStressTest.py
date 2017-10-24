@@ -148,8 +148,10 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.log.error("%s of length %s from %s to %s fails", message_type,
                            length, ads[0].serial, ads[1].serial)
             self.result_info["%s failure" % message_type] += 1
-            if message_type == "SMS":
-                self._take_bug_report("%s_sms_failure" % self.test_name,
+            if message_type == "SMS" or self.result_info["%s failure" %
+                                                         message_type] == 1:
+                self._take_bug_report("%s_%s_failure" % (self.test_name,
+                                                         message_type),
                                       begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
             return False
@@ -205,9 +207,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
-            return "%s crashes" % failure
+            return False
         else:
-            return ""
+            return True
 
     def environment_change_4g_wifi(self):
         #block cell 3G, WIFI 2G
@@ -300,9 +302,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 raise
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
-            return "Call test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def message_test(self):
         failure = 0
@@ -328,9 +330,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "Messaging test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def data_test(self):
         failure = 0
@@ -347,11 +349,15 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 file_name = file_names[selection]
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
-                    self.result_info["%s file download failure" %
-                                     file_name] += 1
+                    self.result_info["File download failure"] += 1
                     failure += 1
-                    self.dut.droid.goToSleepNow()
-                    time.sleep(random.randrange(0, self.max_sleep_time))
+                    if self.result_info["File download failure"] == 1:
+                        self._take_bug_report(
+                            "%s_file_download_failure" % self.test_name,
+                            begin_time)
+                        start_qxdm_loggers(self.log, self.android_devices)
+                self.dut.droid.goToSleepNow()
+                time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTION as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -364,9 +370,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "File download test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def parallel_tests(self, change_env_func, setup_func=None):
         if setup_func and not setup_func():
@@ -377,11 +383,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []), (
                 self.crash_check_test, []), (change_env_func, [])])
-        self.log.info(dict(self.result_info))
-        error_message = " ".join(results).strip()
-        if error_message:
-            self.log.error(error_message)
-            fail(error_message)
+        self.log.info("%s", self.result_info)
+        if all(results):
+            fail("%s" % self.result_info)
         return True
 
     """ Tests Begin """
