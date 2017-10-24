@@ -263,9 +263,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
-            return "%s crashes" % failure
+            return False
         else:
-            return ""
+            return True
 
     def call_test(self):
         failure = 0
@@ -290,9 +290,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
-            return "Call test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def volte_modechange_volte_test(self):
         failure = 0
@@ -416,7 +416,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
-        if sum(results):
+        if all(results):
             fail("%s" % self.result_info)
         return True
 
@@ -430,7 +430,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
-        if sum(results):
+        if all(results):
             fail("%s" % self.result_info)
         return True
 
