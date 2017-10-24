@@ -159,6 +159,21 @@ bt_priority_levels = {
     "undefined": -1
 }
 
+# Bluetooth HID constants.
+hid_connection_timeout = 5
+
+# Bluetooth HID EventFacade constants.
+hid_on_set_report_event = "onSetReport"
+hid_on_get_report_event = "onGetReport"
+hid_on_set_protocol_event = "onSetProtocol"
+hid_on_intr_data_event = "onIntrData"
+hid_on_virtual_cable_unplug_event = "onVirtualCableUnplug"
+hid_id_keyboard = 1
+hid_id_mouse = 2
+hid_default_event_timeout = 15
+hid_default_set_report_payload = "Haha"
+
+
 ### Bluetooth Constants End ###
 
 ### Bluetooth Low Energy Constants Begin ###
