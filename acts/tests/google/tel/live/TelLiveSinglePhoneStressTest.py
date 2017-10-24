@@ -21,6 +21,7 @@ import collections
 import random
 import time
 
+from acts.asserts import explicit_pass
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -453,8 +454,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
         if all(results):
+            explicit_pass("%s" % self.result_info)
+        else:
             fail("%s" % self.result_info)
-        return True
 
     def parallel_volte_tests(self, setup_func=None):
         if setup_func and not setup_func():
@@ -467,8 +469,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
         if all(results):
+            explicit_pass("%s" % self.result_info)
+        else:
             fail("%s" % self.result_info)
-        return True
 
     """ Tests Begin """
 
