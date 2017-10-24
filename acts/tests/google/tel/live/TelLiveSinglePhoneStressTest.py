@@ -78,7 +78,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         super(TelLiveSinglePhoneStressTest, self).setup_class()
         self.dut = self.android_devices[0]
         self.call_server_number = self.user_params.get("call_server_number",
-                                                       "7124325335")
+                                                       "+19523521350")
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -176,9 +176,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
-            return "%s crashes" % failure
+            return False
         else:
-            return ""
+            return True
 
     def call_test(self):
         failure = 0
@@ -243,9 +243,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 raise
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
-            return "Call test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def volte_modechange_volte_test(self):
         failure = 0
@@ -327,9 +327,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.dut.log.info("VoLTE test failure: %s/%s", failure,
                               total_count)
         if failure:
-            return "VoLTE test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def message_test(self):
         failure = 0
@@ -387,9 +387,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "Messaging test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def data_test(self):
         failure = 0
@@ -435,9 +435,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "File download test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def parallel_tests(self, setup_func=None):
         if setup_func and not setup_func():
@@ -449,7 +449,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
-        if sum(results):
+        if all(results):
             fail("%s" % self.result_info)
         return True
 
@@ -463,7 +463,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
         self.log.info("%s", self.result_info)
-        if sum(results):
+        if all(results):
             fail("%s" % self.result_info)
         return True
 
