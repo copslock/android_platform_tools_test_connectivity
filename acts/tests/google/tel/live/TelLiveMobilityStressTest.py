@@ -207,9 +207,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
-            return "%s crashes" % failure
+            return False
         else:
-            return ""
+            return True
 
     def environment_change_4g_wifi(self):
         #block cell 3G, WIFI 2G
@@ -302,9 +302,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 raise
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
-            return "Call test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def message_test(self):
         failure = 0
@@ -330,9 +330,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "Messaging test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def data_test(self):
         failure = 0
@@ -370,9 +370,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
-            return "File download test failure: %s/%s" % (failure, total_count)
+            return False
         else:
-            return ""
+            return True
 
     def parallel_tests(self, change_env_func, setup_func=None):
         if setup_func and not setup_func():
@@ -384,7 +384,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.message_test, []), (self.data_test, []), (
                 self.crash_check_test, []), (change_env_func, [])])
         self.log.info("%s", self.result_info)
-        if sum(results):
+        if all(results):
             fail("%s" % self.result_info)
         return True
 
