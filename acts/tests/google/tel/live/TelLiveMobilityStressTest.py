@@ -384,11 +384,12 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []), (
                 self.crash_check_test, []), (change_env_func, [])])
-        self.log.info("%s", self.result_info)
+        result_message = "%s" % dict(self.result_info)
+        self.log.info(result_message)
         if all(results):
-            explicit_pass("%s" % self.result_info)
+            explicit_pass(result_message)
         else:
-            fail("%s" % self.result_info)
+            fail(result_message)
 
     """ Tests Begin """
 
