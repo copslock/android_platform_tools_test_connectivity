@@ -20,6 +20,7 @@
 import collections
 import random
 import time
+from acts.asserts import explicit_pass
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -385,8 +386,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 self.crash_check_test, []), (change_env_func, [])])
         self.log.info("%s", self.result_info)
         if all(results):
+            explicit_pass("%s" % self.result_info)
+        else:
             fail("%s" % self.result_info)
-        return True
 
     """ Tests Begin """
 
