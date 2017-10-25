@@ -21,6 +21,7 @@ import collections
 import random
 import time
 
+from acts.asserts import explicit_pass
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -451,10 +452,12 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(self.call_test, []), (
             self.message_test, []), (self.data_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info("%s", self.result_info)
+        result_message = "%s" % dict(self.result_info)
+        self.log.info(result_message)
         if all(results):
-            fail("%s" % self.result_info)
-        return True
+            explicit_pass(result_message)
+        else:
+            fail(result_message)
 
     def parallel_volte_tests(self, setup_func=None):
         if setup_func and not setup_func():
@@ -465,10 +468,12 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
-        self.log.info("%s", self.result_info)
+        result_message = "%s" % dict(self.result_info)
+        self.log.info(result_message)
         if all(results):
-            fail("%s" % self.result_info)
-        return True
+            explicit_pass(result_message)
+        else:
+            fail(result_message)
 
     """ Tests Begin """
 
