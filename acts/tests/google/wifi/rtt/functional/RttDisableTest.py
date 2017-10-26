@@ -21,16 +21,19 @@ from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
-class WifiEnableDisableTest(RttBaseTest):
-  """Test class for RTT ranging interaction with Wi-Fi being disabled and
-  enabled."""
+class RttDisableTest(RttBaseTest):
+  """Test class for RTT ranging enable/disable flows."""
 
   def __init__(self, controllers):
     RttBaseTest.__init__(self, controllers)
 
-  def test_disable_flow(self):
-    """Validate that getting expected broadcast when Wi-Fi is disabled and that
-    any range requests are rejected."""
+  def run_disable_rtt(self, disable_wifi):
+    """Validate the RTT disabled flows: whether by disabling Wi-Fi or entering
+    doze mode.
+
+    Args:
+      disable_wifi: True to disable Wi-Fi, False to enable doze.
+    """
     dut = self.android_devices[0]
 
     # validate start-up conditions
@@ -40,8 +43,11 @@ class WifiEnableDisableTest(RttBaseTest):
     all_aps = rutils.scan_networks(dut)
     asserts.assert_true(len(all_aps) > 0, "Need at least one visible AP!")
 
-    # disable Wi-Fi and validate broadcast & API
-    wutils.wifi_toggle_state(dut, False)
+    # disable RTT and validate broadcast & API
+    if disable_wifi:
+      wutils.wifi_toggle_state(dut, False)
+    else:
+      dut.adb.shell("cmd deviceidle force-idle")
     rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_NOT_AVAILABLE)
     asserts.assert_false(dut.droid.wifiIsRttAvailable(), "RTT is available")
 
@@ -53,7 +59,22 @@ class WifiEnableDisableTest(RttBaseTest):
                          rconsts.RANGING_FAIL_CODE_RTT_NOT_AVAILABLE,
                          "Invalid error code")
 
-    # enable Wi-Fi and validate broadcast & API
-    wutils.wifi_toggle_state(dut, True)
+    # enable RTT and validate broadcast & API
+    if disable_wifi:
+      wutils.wifi_toggle_state(dut, True)
+    else:
+      dut.adb.shell("cmd deviceidle unforce")
     rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
     asserts.assert_true(dut.droid.wifiIsRttAvailable(), "RTT is not available")
+
+  ############################################################################
+
+  def test_disable_wifi(self):
+    """Validate that getting expected broadcast when Wi-Fi is disabled and that
+    any range requests are rejected."""
+    self.run_disable_rtt(True)
+
+  def test_enable_doze(self):
+    """Validate that getting expected broadcast when RTT is disabled due to doze
+    mode and that any range requests are rejected."""
+    self.run_disable_rtt(False)
