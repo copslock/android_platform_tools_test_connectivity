@@ -1789,9 +1789,10 @@ def get_internet_connection_type(log, ad):
 
 def verify_http_connection(log,
                            ad,
-                           url="http://www.google.com/",
+                           url="www.google.com",
                            retry=5,
-                           retry_interval=15):
+                           retry_interval=15,
+                           expected_state=True):
     """Make ping request and return status.
 
     Args:
@@ -1802,23 +1803,26 @@ def verify_http_connection(log,
 
     """
     for i in range(0, retry + 1):
-
-        try:
-            http_response = ad.droid.httpPing(url)
-        except:
-            http_response = None
-
+        # b/18899134 httpPing will hang
+        #try:
+        #    http_response = ad.droid.httpPing(url)
+        #except:
+        #    http_response = None
         # If httpPing failed, it may return {} (if phone just turn off APM) or
         # None (regular fail)
-        # So here use "if http_response" to see if it pass or fail
-        if http_response:
-            ad.log.info("Verify Internet succeeded")
+        state = ad.droid.pingHost(url)
+        ad.log.info("Connection to %s is %s", url, state)
+        if expected_state == state:
+            ad.log.info("Verify Internet connection state=%s succeeded",
+                        str(expected_state))
             return True
-        else:
-            if i < retry:
-                time.sleep(retry_interval)
-    ad.log.info("Verify Internet retry failed after %s second",
-                i * retry_interval)
+        if i < retry:
+            ad.log.info(
+                "Verify Internet connection state=%s failed. Try again",
+                str(expected_state))
+            time.sleep(retry_interval)
+    ad.log.info("Verify Internet state=%s failed after %s second",
+                expected_state, i * retry_interval)
     return False
 
 
@@ -4691,6 +4695,7 @@ def start_nexuslogger(ad):
         else:
             ad.log.info("Kill NexusLogger")
             ad.force_stop_apk("com.android.nexuslogger")
+            time.sleep(5)
     if ad.is_apk_installed("com.android.nexuslogger"):
         for perm in ("READ", "WRITE"):
             ad.adb.shell("pm grant com.android.nexuslogger "
@@ -4698,6 +4703,7 @@ def start_nexuslogger(ad):
         time.sleep(2)
         ad.log.info("Start NexusLogger")
         ad.adb.shell("am start -n com.android.nexuslogger/.MainActivity")
+        time.sleep(5)
         return ad.is_apk_running("com.android.nexuslogger")
 
 
@@ -5015,3 +5021,17 @@ def print_radio_info(ad, extra_msg=""):
                  "persist.radio.cnv.ver_info", "persist.radio.ci_status"):
         output = ad.adb.getprop(prop)
         if output: ad.log.info("%s%s = %s", extra_msg, prop, output)
+
+
+def wait_for_state(state_check_func,
+                   state,
+                   max_wait_time=60,
+                   checking_interval=10,
+                   *args,
+                   **kwargs):
+    while max_wait_time >= 0:
+        if state_check_func(*args, **kwargs) == state:
+            return True
+        time.sleep(checking_interval)
+        max_wait_time -= checking_interval
+    return False
