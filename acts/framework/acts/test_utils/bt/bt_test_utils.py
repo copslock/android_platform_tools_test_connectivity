@@ -544,6 +544,7 @@ def disable_bluetooth(droid):
     if droid.bluetoothCheckState() is True:
         droid.bluetoothToggleState(False)
         if droid.bluetoothCheckState() is True:
+            log.error("Failed to toggle Bluetooth off.")
             return False
     return True
 
@@ -1262,9 +1263,9 @@ def hid_keyboard_report(key, modifier="00"):
     Returns:
         The byte array for the HID report.
     """
-    return str(bytearray.fromhex(
-            " ".join([modifier, "00", key, "00", "00", "00", "00", "00"])),
-            "utf-8")
+    return str(
+        bytearray.fromhex(" ".join(
+            [modifier, "00", key, "00", "00", "00", "00", "00"])), "utf-8")
 
 
 def hid_device_send_key_data_report(host_id, device_ad, key, interval=1):
@@ -1277,10 +1278,8 @@ def hid_device_send_key_data_report(host_id, device_ad, key, interval=1):
         key: the key we want to send
         interval: the interval between key press and key release
     """
-    device_ad.droid.bluetoothHidDeviceSendReport(host_id,
-            hid_id_keyboard,
-            hid_keyboard_report(key))
+    device_ad.droid.bluetoothHidDeviceSendReport(host_id, hid_id_keyboard,
+                                                 hid_keyboard_report(key))
     time.sleep(interval)
-    device_ad.droid.bluetoothHidDeviceSendReport(host_id,
-            hid_id_keyboard,
-            hid_keyboard_report("00"))
+    device_ad.droid.bluetoothHidDeviceSendReport(host_id, hid_id_keyboard,
+                                                 hid_keyboard_report("00"))
