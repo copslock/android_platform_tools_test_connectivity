@@ -65,6 +65,7 @@ from acts.utils import exe_cmd
 
 DEFAULT_PING_DURATION = 30
 
+
 class TelLabDataTest(TelephonyBaseTest):
     SETTLING_TIME = 30
     SERIAL_NO = cb_serial_number()
@@ -100,8 +101,6 @@ class TelLabDataTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
-        self.ad.adb.shell(
-            "setprop net.lte.ims.volte.provisioned 1", ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -199,7 +198,7 @@ class TelLabDataTest(TelephonyBaseTest):
                 else:
                     self.log.error("iperf failed to Destination.")
                     self.log.info("Iteration %d Failed", iteration)
-                    if float(current_power) < -55.0 :
+                    if float(current_power) < -55.0:
                         return True
                     else:
                         return False
