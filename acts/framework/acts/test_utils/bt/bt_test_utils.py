@@ -543,6 +543,7 @@ def disable_bluetooth(droid):
     if droid.bluetoothCheckState() is True:
         droid.bluetoothToggleState(False)
         if droid.bluetoothCheckState() is True:
+            log.error("Failed to toggle Bluetooth off.")
             return False
     return True
 
@@ -1250,3 +1251,4 @@ def is_map_mse_device_connected(ad, addr):
     if addr in {d['address'] for d in devices}:
         return True
     return False
+
