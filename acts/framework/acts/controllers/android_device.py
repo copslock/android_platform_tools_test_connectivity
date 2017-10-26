@@ -21,6 +21,7 @@ from datetime import datetime
 import logging
 import os
 import re
+import shellescape
 import socket
 import time
 
@@ -53,6 +54,9 @@ PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
 IPERF_TIMEOUT = 60
 SL4A_APK_NAME = "com.googlecode.android_scripting"
+WAIT_FOR_DEVICE_TIMEOUT = 180
+ENCRYPTION_WINDOW = "CryptKeeper"
+DEFAULT_DEVICE_PASSWORD = "1111"
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -141,13 +145,10 @@ def _start_services_on_ads(ads):
             ad.log.error("User window cannot come up")
             destroy(running_ads)
             raise AndroidDeviceError("User window cannot come up")
-        if not ad.is_sl4a_installed():
+        if not ad.skip_sl4a and not ad.is_sl4a_installed():
             ad.log.error("sl4a.apk is not installed")
-            if not ad.skip_sl4a:
-                ad.log.exception("The required sl4a.apk is not installed")
-                destroy(running_ads)
-                raise AndroidDeviceError(
-                    "The required sl4a.apk is not installed")
+            destroy(running_ads)
+            raise AndroidDeviceError("The required sl4a.apk is not installed")
         try:
             ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
@@ -387,7 +388,6 @@ class AndroidDevice:
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
-        self.device_password = None
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -402,7 +402,7 @@ class AndroidDevice:
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
-    def start_services(self, skip_sl4a=False):
+    def start_services(self, skip_sl4a=False, skip_setup_wizard=True):
         """Starts long running services on the android device.
 
         1. Start adb logcat capture.
@@ -416,7 +416,8 @@ class AndroidDevice:
         except:
             self.log.exception("Failed to start adb logcat!")
             raise
-        self.exit_setup_wizard()
+        if skip_setup_wizard:
+            self.exit_setup_wizard()
         if not skip_sl4a:
             try:
                 droid, ed = self.get_droid()
@@ -424,13 +425,6 @@ class AndroidDevice:
             except:
                 self.log.exception("Failed to start sl4a!")
                 raise
-            # Enable or Disable Device Password per test bed config
-            if self.device_password:
-                self.log.info("Enable device password")
-                droid.setDevicePassword(self.device_password)
-            else:
-                self.log.debug("Disable device password")
-                droid.disableDevicePassword()
 
     def stop_services(self):
         """Stops long running services on the android device.
@@ -561,6 +555,9 @@ class AndroidDevice:
                 utils._assert_subprocess_running(self.adb_logcat_process)
                 return True
             except Exception:
+                # if skip_sl4a is true, there is no sl4a session
+                # if logcat died due to device reboot and sl4a session has
+                # not restarted there is no droid.
                 if self.droid:
                     self.droid.logI('Logcat died')
                 self.log.info("Logcat to %s died", self.adb_logcat_file_path)
@@ -579,7 +576,7 @@ class AndroidDevice:
         """
         for k, v in config.items():
             # skip_sl4a value can be reset from config file
-            if hasattr(self, k) and k not in ("skip_sl4a", "device_password"):
+            if hasattr(self, k) and k != "skip_sl4a":
                 raise AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
                     (k, self.serial))
@@ -639,8 +636,8 @@ class AndroidDevice:
 
         for i in range(PORT_RETRY_COUNT):
             try:
-                if self.is_sl4a_running():
-                    self.log.info("Stop sl4a apk")
+                if self.is_rogue_sl4a_running():
+                    self.log.info("Stop rogue sl4a")
                     self.stop_sl4a()
                     time.sleep(15)
                 self.log.info("Start sl4a apk")
@@ -655,6 +652,68 @@ class AndroidDevice:
                 self.log.warning("get_droid with exception: %s", e)
                 if i == PORT_RETRY_COUNT - 1:
                     raise
+
+    def is_rogue_sl4a_running(self):
+        """Returns true if SL4A was started by a process other than ACTS.
+
+        If SL4A is started by a process other than ACTS, the port will be set to
+        something other than sl4a_client.DEFAULT_DEVICE_SIDE_PORT. This causes
+        SL4A to be up and running, but nearly impossible to talk to.
+        """
+        sl4a_pid = self.get_package_pid(SL4A_APK_NAME)
+        if sl4a_pid is not None:
+            sl4a_port_hex = '{0:02x}'.format(
+                sl4a_client.DEFAULT_DEVICE_SIDE_PORT).upper()
+            port_is_open = (
+                # Get the tcp info
+                'cat /proc/%s/net/tcp | '
+                # Remove the space padding
+                'tr -s " " | '
+                # Grab the 4th column (rem_address)
+                'cut -d " " -f 4 | '
+                # Grab the port from that address
+                'cut -d ":" -f 2 | '
+                # Find the port we are looking for
+                'grep %s')
+            # If the resulting string from the command is empty, SL4A does not
+            # have a port open for ACTS to listen to.
+            return not bool(
+                self.adb.shell(port_is_open % (sl4a_pid, sl4a_port_hex)))
+        return False
+
+    def get_package_pid(self, package_name):
+        """Gets the pid for a given package. Returns None if not running.
+        Args:
+            package_name: The name of the package.
+        Returns:
+            The first pid found under a given package name. None if no process
+            was found running the package.
+        Raises:
+            AndroidDeviceError if the output of the phone's process list was
+            in an unexpected format.
+        """
+        for cmd in ("ps -A", "ps"):
+            try:
+                out = self.adb.shell(
+                    '%s | grep "S %s"' % (cmd, package_name),
+                    ignore_status=True)
+                if package_name not in out:
+                    continue
+                try:
+                    pid = int(out.split()[1])
+                    self.log.info('apk %s has pid %s.', package_name, pid)
+                    return pid
+                except (IndexError, ValueError) as e:
+                    # Possible ValueError from string to int cast.
+                    # Possible IndexError from split.
+                    self.log.warn('Command \"%s\" returned output line: '
+                                  '\"%s\".\nError: %s', cmd, out, e)
+            except Exception as e:
+                self.log.warn(
+                    'Device fails to check if %s running with \"%s\"\n'
+                    'Exception %s', package_name, cmd, e)
+        self.log.debug("apk %s is not running", package_name)
+        return None
 
     def get_dispatcher(self, droid):
         """Return an EventDispatcher for an sl4a session
@@ -752,8 +811,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info(
-                'Restarting logcat on file %s' % self.adb_logcat_file_path)
+            self.log.info('Restarting logcat on file %s' %
+                          self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -805,7 +864,7 @@ class AndroidDevice:
         """Check if the given apk is running.
 
         Args:
-        package_name: Name of the package, e.g., com.android.phone.
+            package_name: Name of the package, e.g., com.android.phone.
 
         Returns:
         True if package is installed. False otherwise.
@@ -856,7 +915,7 @@ class AndroidDevice:
             test_name: Name of the test case that triggered this bug report.
             begin_time: Logline format timestamp taken when the test started.
         """
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         new_br = True
         try:
             stdout = self.adb.shell("bugreportz -v")
@@ -887,15 +946,17 @@ class AndroidDevice:
                 " > {}".format(full_out_path), timeout=BUG_REPORT_TIMEOUT)
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
 
     def get_file_names(self, directory):
         """Get files names with provided directory."""
-        file_names = []
-        out = self.adb.shell("ls %s" % directory, ignore_status=True)
+        # -1 (the number one) prints one file per line.
+        out = self.adb.shell(
+            "ls -1 %s" % directory, ignore_status=True)
         if "Permission denied" in out:
-            self.adb.root_adb()
-            out = self.adb.shell("ls %s" % directory, ignore_status=True)
+            self.root_adb()
+            out = self.adb.shell(
+                "ls -1 %s" % directory, ignore_status=True)
         if out and "No such" not in out:
             return out.split('\n')
         else:
@@ -915,6 +976,9 @@ class AndroidDevice:
                            log_crash_report=False):
         """check crash report on the device."""
         crash_reports = []
+        if begin_time:
+            begin_time = "%s-%s" % (datetime.now().year, begin_time)
+            begin_time = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S.%f")
         for crash_path in CRASH_REPORT_PATHS:
             for report in self.get_file_names(crash_path):
                 if report in CRASH_REPORT_SKIPS:
@@ -922,7 +986,9 @@ class AndroidDevice:
                 file_path = os.path.join(crash_path, report)
                 if begin_time:
                     file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
-                    if begin_time < file_time.split('-', 1)[1]:
+                    file_time = datetime.strptime(file_time[:-3],
+                                                  "%Y-%m-%d %H:%M:%S.%f")
+                    if begin_time < file_time:
                         crash_reports.append(file_path)
                 else:
                     crash_reports.append(file_path)
@@ -936,13 +1002,16 @@ class AndroidDevice:
 
     def get_qxdm_logs(self):
         """Get qxdm logs."""
-        ad.log.info("Pull QXDM Logs")
+        self.log.info("Pull QXDM Logs")
         qxdm_logs = self.get_file_names(
             "/data/vendor/radio/diag_logs/logs/*.qmdl")
         if qxdm_logs:
-            qxdm_path = os.path.join(ad.log_path, "QXDM_Logs")
+            qxdm_path = os.path.join(self.log_path, "QXDM_Logs")
             utils.create_dir(qxdm_path)
-            ad.pull_files(qxdm_logs, qxdm_path)
+            self.pull_files(qxdm_logs, qxdm_path)
+            self.adb.pull(
+                "/firmware/image/qdsp6m.qdb %s" % qxdm_path,
+                timeout=PULL_TIMEOUT, ignore_status=True)
 
     def start_new_session(self):
         """Start a new session in sl4a.
@@ -983,7 +1052,7 @@ class AndroidDevice:
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
         droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
-        self.log.info("Open s4la session %s", session_id)
+        self.log.info("Open sl4a session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
 
@@ -1004,7 +1073,7 @@ class AndroidDevice:
         if self._droid_sessions and (session_id in self._droid_sessions):
             for droid in self._droid_sessions[session_id]:
                 self.log.info("Close sl4a session %s", session_id)
-                droid.closeSl4aSession(timeout=180)
+                droid.closeSl4aSession(timeout=WAIT_FOR_DEVICE_TIMEOUT)
                 droid.close()
             del self._droid_sessions[session_id]
 
@@ -1076,7 +1145,7 @@ class AndroidDevice:
         timeout_start = time.time()
         timeout = 15 * 60
 
-        self.adb.wait_for_device(timeout=180)
+        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         while time.time() < timeout_start + timeout:
             try:
                 completed = self.adb.getprop("sys.boot_completed")
@@ -1087,8 +1156,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError(
-            "Device %s booting process timed out." % self.serial)
+        raise AndroidDeviceError("Device %s booting process timed out." %
+                                 self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1108,50 +1177,12 @@ class AndroidDevice:
             self.fastboot.reboot()
             return
         self.terminate_all_sessions()
-        self.log.info("Reboot")
+        self.log.info("Rebooting")
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
-        if self.is_waiting_for_unlock_pin() and stop_at_lock_screen:
+        if stop_at_lock_screen and self.is_screen_lock_enabled():
             return
-        if not self.ensure_screen_on():
-            self.log.error("User window cannot come up")
-            raise AndroidDeviceError("User window cannot come up")
-        self.ensure_screen_on()
-        self.start_services(self.skip_sl4a)
-
-    def fastboot_wipe(self):
-        """Wipe the device in fastboot mode.
-
-        Pull sl4a apk from device. Terminate all sl4a sessions,
-        Reboot the device to bootloader, wipe the device by fastboot.
-        Reboot the device. wait for device to complete booting
-        Re-intall and start an sl4a session.
-
-        """
-        #Pull sl4a apk from device
-        out = self.adb.shell("pm path com.googlecode.android_scripting")
-        result = re.search(r"package:(.*)", out)
-        if not result:
-            self.log.error("Couldn't find sl4a apk")
-        else:
-            sl4a_apk = result.group(1)
-            self.log.info("Get sl4a apk from %s", sl4a_apk)
-            self.pull_files([sl4a_apk], "/tmp/")
-        has_adb_log = self.is_adb_logcat_on
-        self.terminate_all_sessions()
-        self.log.info("Reboot to bootloader")
-        self.adb.reboot_bootloader(ignore_status=True)
-        self.log.info("Wipe in fastboot")
-        self.fastboot._w()
-        self.fastboot.reboot()
-        self.log.info("Reboot")
-        self.wait_for_boot_completion()
-        self.root_adb()
-        if result:
-            self.log.info("Re-install sl4a")
-            self.adb.install("-r /tmp/base.apk")
-            time.sleep(10)
         self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string):
@@ -1191,8 +1222,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning(
-                        'Unable to find IP address for %s.' % interface)
+                    self.log.warning('Unable to find IP address for %s.' %
+                                     interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1236,8 +1267,10 @@ class AndroidDevice:
     def get_my_current_focus_window(self):
         """Get the current focus window on screen"""
         output = self.adb.shell(
-            'dumpsys window windows | grep -E mCurrentFocus')
-        if not output or "mCurrentFocus=null" in output:
+            'dumpsys window windows | grep -E mCurrentFocus',
+            ignore_status=True)
+        if not output or "not found" in output or "Can't find" in output or (
+                "mCurrentFocus=null" in output):
             result = ''
         else:
             result = output.split(' ')[-1].strip("}")
@@ -1246,8 +1279,10 @@ class AndroidDevice:
 
     def get_my_current_focus_app(self):
         """Get the current focus application"""
-        output = self.adb.shell('dumpsys window windows | grep -E mFocusedApp')
-        if not output or "mFocusedApp=null" in output:
+        output = self.adb.shell(
+            'dumpsys window windows | grep -E mFocusedApp', ignore_status=True)
+        if not output or "not found" in output or "Can't find" in output or (
+                "mFocusedApp=null" in output):
             result = ''
         else:
             result = output.split(' ')[-2]
@@ -1258,8 +1293,7 @@ class AndroidDevice:
         current_window = self.get_my_current_focus_window()
         if window_name:
             return window_name in current_window
-        return current_window and "CryptKeeper" not in current_window and (
-            "FallbackHome" not in self.get_my_current_focus_app())
+        return current_window and ENCRYPTION_WINDOW not in current_window
 
     def wait_for_window_ready(self,
                               window_name=None,
@@ -1267,10 +1301,10 @@ class AndroidDevice:
                               check_duration=60):
         elapsed_time = 0
         while elapsed_time < check_duration:
-            time.sleep(check_interval)
-            elapsed_time += check_interval
             if self.is_window_ready(window_name=window_name):
                 return True
+            time.sleep(check_interval)
+            elapsed_time += check_interval
         self.log.info("Current focus window is %s",
                       self.get_my_current_focus_window())
         return False
@@ -1280,8 +1314,7 @@ class AndroidDevice:
 
     def is_screen_awake(self):
         """Check if device screen is in sleep mode"""
-        output = self.adb.shell("dumpsys power | grep mWakefulness=")
-        return "Awake" in output
+        return "Awake" in self.adb.shell("dumpsys power | grep mWakefulness=")
 
     def is_screen_emergency_dialer(self):
         """Check if device screen is in emergency dialer mode"""
@@ -1295,43 +1328,53 @@ class AndroidDevice:
         """Check if device screen is in emergency dialer mode"""
         return "setupwizard" in self.get_my_current_focus_app()
 
+    def is_screen_lock_enabled(self):
+        """Check if screen lock is enabled"""
+        cmd = ("sqlite3 /data/system/locksettings.db .dump"
+               " | grep lockscreen.password_type | grep -v alternate")
+        out = self.adb.shell(cmd, ignore_status=True)
+        if "unable to open" in out:
+            self.root_adb()
+            out = self.adb.shell(cmd, ignore_status=True)
+        if ",0,'0'" not in out:
+            self.log.info("Screen lock is enabled")
+            return True
+        return False
+
     def is_waiting_for_unlock_pin(self):
         """Check if device is waiting for unlock pin to boot up"""
-        if "CryptKeeper" in self.get_my_current_focus_window():
+        current_window = self.get_my_current_focus_window()
+        current_app = self.get_my_current_focus_app()
+        if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "FallbackHome" in self.get_my_current_focus_app():
+        if "StatusBar" in current_window and ((not current_app) or
+                                              "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
 
     def ensure_screen_on(self):
         """Ensure device screen is powered on"""
-        if not self.is_screen_awake():
-            self.wakeup_screen()
-        if self.is_screen_emergency_dialer(
-        ) or self.is_screen_in_call_activity():
-            # Send two BACK keycodes to get out notification and dialer
-            self.send_keycode("BACK")
-            self.send_keycode("BACK")
-            time.sleep(2)
-        if self.is_waiting_for_unlock_pin():
-            self.unlock_screen()
-            time.sleep(2)
-            if self.is_waiting_for_unlock_pin():
+        if self.is_screen_lock_enabled():
+            for _ in range(2):
                 self.unlock_screen()
-            return self.wait_for_window_ready()
-        elif self.device_password and self.get_my_current_focus_window(
-        ) == "StatusBar":
-            self.unlock_screen()
-        return self.is_window_ready()
+                time.sleep(1)
+                if self.is_waiting_for_unlock_pin():
+                    self.unlock_screen(password=DEFAULT_DEVICE_PASSWORD)
+                    time.sleep(1)
+                if not self.is_waiting_for_unlock_pin(
+                ) and self.wait_for_window_ready():
+                    return True
+            return False
+        else:
+            self.wakeup_screen()
+            return True
 
     def wakeup_screen(self):
-        self.send_keycode("WAKEUP")
-        current_window = self.get_my_current_focus_window()
-        if "NexusLauncherActivity" not in current_window or (
-                "StatusBar" not in current_window):
-            self.send_keycode("MENU")
+        if not self.is_screen_awake():
+            self.log.info("Screen is not awake, wake it up")
+            self.send_keycode("WAKEUP")
 
     def go_to_sleep(self):
         self.send_keycode("SLEEP")
@@ -1340,13 +1383,19 @@ class AndroidDevice:
         self.send_keycode("NUMPAD_%s" % number)
 
     def unlock_screen(self, password=None):
-        password = password or self.device_password or "1111"
-        self.log.info("Unlocking screen with pin %s", password)
-        self.wakeup_screen()
-        self.send_keycode("DEL")
-        for number in password:
-            self.send_keycode_number_pad(number)
-        self.send_keycode("ENTER")
+        self.log.info("Unlocking with %s", password or "swipe up")
+        # Bring device to SLEEP so that unlock process can start fresh
+        self.send_keycode("SLEEP")
+        time.sleep(1)
+        self.send_keycode("WAKEUP")
+        if ENCRYPTION_WINDOW not in self.get_my_current_focus_app():
+            self.send_keycode("MENU")
+        if password:
+            self.send_keycode("DEL")
+            for number in password:
+                self.send_keycode_number_pad(number)
+            self.send_keycode("ENTER")
+            self.send_keycode("BACK")
 
     def exit_setup_wizard(self):
         self.adb.shell(
