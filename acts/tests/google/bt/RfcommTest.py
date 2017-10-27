@@ -55,22 +55,10 @@ class RfcommTest(BluetoothBaseTest):
     def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
-    def setup_test(self):
-        for a in self.android_devices:
-            if not clear_bonded_devices(a):
-                return False
-        for a in self.android_devices:
-            a.ed.clear_all_events()
-        return True
-
     def teardown_test(self):
         self.client_ad.droid.bluetoothRfcommCloseClientSocket()
         self.server_ad.droid.bluetoothRfcommCloseServerSocket()
         return True
-
-    def on_fail(self, test_name, begin_time):
-        take_btsnoop_logs(self.android_devices, self, test_name)
-        reset_bluetooth(self.android_devices)
 
     def teardown_test(self):
         if verify_server_and_client_connected(
