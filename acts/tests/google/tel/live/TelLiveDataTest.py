@@ -26,6 +26,9 @@ from acts.base_test import BaseTestClass
 from queue import Empty
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
+from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
@@ -77,6 +80,7 @@ from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
@@ -87,6 +91,7 @@ from acts.test_utils.tel.tel_test_utils import \
     wait_for_data_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import wifi_reset
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
@@ -109,11 +114,9 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.provider = self.android_devices[-1]
         self.clients = self.android_devices[:-1]
 
@@ -300,8 +303,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -340,8 +343,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -630,8 +633,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -673,8 +676,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -697,31 +700,406 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not ensure_network_generation(
                     self.log, self.provider, network_generation,
                     MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-                self.provider.log.error("Device failed to connect to %s.",
+                self.provider.log.error("Provider failed to connect to %s.",
                                         network_generation)
                 return False
 
-        self.log.info("Airplane Off, Wifi Off, Data On.")
+        self.provider.log.info("Airplane Off, Wifi Off, Data On.")
         toggle_airplane_mode(self.log, self.provider, False)
         self.provider.droid.telephonyToggleDataConnection(True)
         for ad in self.clients:
-            ad.droid.telephonyToggleDataConnection(False)
+            toggle_airplane_mode(self.log, ad, True)
 
         if not wait_for_cell_data_connection(self.log, self.provider, True):
             self.provider.log.error(
                 "Provider failed to enable data connection.")
             return False
 
-        self.log.info("Verify internet")
-        if not verify_internet_connection(self.log, self.provider):
-            self.provider.log.error("Data not available on cell.")
-            return False
-
         # Turn off active SoftAP if any.
         if self.provider.droid.wifiIsApEnabled():
+            self.provider.log.info("Disable provider wifi tethering")
             stop_wifi_tethering(self.log, self.provider)
+        self.provider.log.info("Disable provider bluetooth")
+        disable_bluetooth(self.provider.droid)
+
+        self.log.info("Verify internet")
+        if not self._test_internet_connection(
+                client_status=False, provider_status=True):
+            self.log.error("Internet connection check failed before tethering")
+            return False
 
         return True
+
+    def _enable_bluetooth_tethering_connection(self, provider, clients):
+        for ad in self.clients + [self.provider]:
+            if not bluetooth_enabled_check(ad):
+                ad.log.info("Bluetooth is not enabled")
+                return False
+            else:
+                ad.log.info("Bluetooth is enabled")
+
+        for client in self.clients:
+            if not (pair_pri_to_sec(self.provider, client)):
+                client.log.error("Client failed to pair with provider")
+                return False
+            else:
+                client.log.info("Client paired with provider")
+        self.provider.log.info("Enabling bluetooth tethering")
+        try:
+            provider.droid.bluetoothPanSetBluetoothTethering(True)
+        except Exception as e:
+            provider.log.error(
+                "Faile to enable provider Bluetooth tethering with %s", e)
+            return False
+
+        if wait_for_state(provider.droid.bluetoothPanIsTetheringOn, True):
+            provider.log.info("Provider Bluetooth tethering is enabled.")
+        else:
+            provider.log.error(
+                "Failed to enable provider Bluetooth tethering.")
+            provider.log.error("bluetoothPanIsTetheringOn = %s",
+                               provider.droid.bluetoothPanIsTetheringOn())
+            return False
+        for client in clients:
+            client.droid.bluetoothConnectBonded(
+                provider.droid.bluetoothGetLocalAddress())
+        time.sleep(20)
+        return True
+
+    def _test_internet_connection(self,
+                                  client_status=True,
+                                  provider_status=True):
+        client_retry = 10 if client_status else 1
+        for client in self.clients:
+            if not verify_http_connection(
+                    self.log,
+                    client,
+                    retry=client_retry,
+                    expected_state=client_status):
+                client.log.error("client internet connection state is not %s",
+                                 client_status)
+                return False
+            else:
+                client.log.info("client internet connection state is %s",
+                                client_status)
+        if not verify_http_connection(
+                self.log, self.provider, retry=0,
+                expected_state=provider_status):
+            self.provider.log.error(
+                "provider internet connection is not %s" % provider_status)
+            return False
+        else:
+            self.provider.log.info(
+                "provider internet connection is %s" % provider_status)
+        return True
+
+    def _verify_bluetooth_tethering_connection(self,
+                                               change_rat=None,
+                                               toggle_data=False,
+                                               toggle_tethering=False,
+                                               toggle_bluetooth=True):
+        """Setups up a bluetooth tethering conenction between two android devices.
+
+        Returns:
+            True if PAN connection and verification is successful,
+            false if unsuccessful.
+        """
+        if not self._enable_bluetooth_tethering_connection(
+                self.provider, self.clients):
+            return False
+        if not wait_for_state(self._test_internet_connection, True):
+            #if not self._test_internet_connection():
+            self.log.error("Internet connection check failed")
+            return False
+        if toggle_tethering:
+            self.log.info("====== Toggling provider bluetooth tethering =====")
+            self.provider.log.info("Disable bluetooth tethering")
+            self.provider.droid.bluetoothPanSetBluetoothTethering(False)
+            if not self._test_internet_connection(False, True):
+                self.log.error(
+                    "Internet connection check failed after disable tethering")
+                return False
+            self.provider.log.info("Enable bluetooth tethering")
+            if not self._enable_bluetooth_tethering_connection(
+                    self.provider, self.clients):
+                self.provider.log.error(
+                    "Fail to re-enable bluetooth tethering")
+                return False
+            if not self._test_internet_connection(True, True):
+                self.log.error(
+                    "Internet connection check failed after enable tethering")
+                return False
+        if toggle_bluetooth:
+            self.log.info("====== Toggling provider bluetooth =====")
+            self.provider.log.info("Disable provider bluetooth")
+            disable_bluetooth(self.provider.droid)
+            if not self._test_internet_connection(False, True):
+                self.log.error(
+                    "Internet connection check failed after disable bluetooth")
+                return False
+            if not self._enable_bluetooth_tethering_connection(
+                    self.provider, self.clients):
+                self.provider.log.error(
+                    "Fail to re-enable bluetooth tethering")
+                return False
+            if not self._test_internet_connection(True, True):
+                self.log.error(
+                    "Internet connection check failed after enable bluetooth")
+                return False
+        if toggle_data:
+            self.log.info("===== Toggling provider data connection =====")
+            self.provider.log.info("Disable provider data connection")
+            self.provider.droid.telephonyToggleDataConnection(False)
+
+            if not self._test_internet_connection(False, False):
+                return False
+            self.provider.log.info("Enable provider data connection")
+            self.provider.droid.telephonyToggleDataConnection(True)
+            if not wait_for_cell_data_connection(self.log, self.provider,
+                                                 True):
+                self.provider.log.error(
+                    "Provider failed to enable data connection.")
+                return False
+            if not self._test_internet_connection(True, True):
+                self.log.error(
+                    "Internet connection check failed after enable data")
+                return False
+        if change_rat:
+            self.log.info("===== Change provider RAT to %s =====", change_rat)
+            if not ensure_network_generation(
+                    self.log,
+                    self.provider,
+                    change_rat,
+                    voice_or_data=NETWORK_SERVICE_DATA,
+                    toggle_apm_after_setting=False):
+                self.provider.log.error("Provider failed to reselect to %s.",
+                                        change_rat)
+                return False
+            if not self._test_internet_connection(True, True):
+                self.log.error(
+                    "Internet connection check failed after RAT change to %s",
+                    change_rat)
+                return False
+        return True
+
+    @test_tracker_info(uuid="2d945656-22f7-4610-9a84-40ce04d603a4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_4g_to_bluetooth(self):
+        """Bluetooth Tethering test: LTE to Bluetooth Tethering
+
+        1. DUT in LTE mode, idle.
+        2. DUT start Bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider bluetooth connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 4G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection()
+
+    @test_tracker_info(uuid="b4617727-fa83-4451-89d7-7e574c0a0938")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_4g_to_bluetooth_toggle_data(self):
+        """Bluetooth Tethering test: LTE to Bluetooth Tethering
+
+        1. DUT in LTE mode, idle.
+        2. DUT start Bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider data connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 4G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=False, toggle_bluetooth=False, toggle_data=True)
+
+    @test_tracker_info(uuid="6a0f6001-609d-41f2-ad09-c8ae19f73ac8")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_4g_to_bluetooth_toggle_tethering(self):
+        """Bluetooth Tethering test: LTE to Bluetooth Tethering
+
+        1. DUT in LTE mode, idle.
+        2. DUT start Bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider bluetooth tethering
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 4G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=True, toggle_bluetooth=False, toggle_data=False)
+
+    @test_tracker_info(uuid="b1abc1ac-8018-4956-a17e-bf2ceaf264ea")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_3g_to_bluetooth(self):
+        """Bluetooth Tethering test: 3G to Bluetoothing Tethering
+
+        1. DUT in 3G mode, idle.
+        2. DUT start bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider bluetooth connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_3G):
+            self.log.error("Verify 3G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection()
+
+    @test_tracker_info(uuid="4275ee69-dfdf-4f47-82c5-4224fceee761")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_3g_to_bluetooth_toggle_data(self):
+        """Bluetooth Tethering test: 3G to Bluetoothing Tethering
+
+        1. DUT in 3G mode, idle.
+        2. DUT start bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider data connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_3G):
+            self.log.error("Verify 3G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=False, toggle_bluetooth=False, toggle_data=True)
+
+    @test_tracker_info(uuid="db0e0f27-1a4f-4301-832d-b66415e289f3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_2g_to_bluetooth(self):
+        """Bluetooth Tethering test: 2G to Bluetooth Tethering
+
+        1. DUT in 2G mode, idle.
+        2. DUT start bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider bluetooth connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_2G):
+            self.log.error("Verify 3G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection()
+
+    @test_tracker_info(uuid="be3e74f9-3dc8-4b72-8a33-32bff0868a44")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_2g_to_bluetooth_toggle_data(self):
+        """Bluetooth Tethering test: 2G to Bluetooth Tethering
+
+        1. DUT in 2G mode, idle.
+        2. DUT start Bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Toggle provider data connection
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_2G):
+            self.log.error("Verify 4G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=False, toggle_bluetooth=False, toggle_data=True)
+
+    @test_tracker_info(uuid="4a106549-0bfa-4c8f-8e66-edec93fabadf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_rat_from_4g_to_3g_bluetooth(self):
+        """Bluetooth Tethering test: 2G to Bluetooth Tethering
+
+        1. DUT in 4G mode, idle.
+        2. DUT start bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Change provider RAT to 3G
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 3G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=False,
+            toggle_bluetooth=False,
+            toggle_data=False,
+            change_rat=RAT_3G)
+
+    @test_tracker_info(uuid="eaa5b61b-f054-437f-ae82-8d80f6487785")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_rat_from_4g_to_2g_bluetooth(self):
+        """Bluetooth Tethering test: 2G to Bluetooth Tethering
+
+        1. DUT in 4G mode, idle.
+        2. DUT start bluetooth Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. Change provider RAT to 2G
+        6. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 3G Internet access failed.")
+            return False
+
+        return self._verify_bluetooth_tethering_connection(
+            toggle_tethering=False,
+            toggle_bluetooth=False,
+            toggle_data=False,
+            change_rat=RAT_2G)
 
     @test_tracker_info(uuid="912a11a3-14b3-4928-885f-cea69f14a571")
     @TelephonyBaseTest.tel_test_wrap
@@ -1011,10 +1389,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.provider.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            if not check_is_wifi_connected(
-                    self.log, self.clients[0], ssid) or (
-                        not verify_internet_connection(self.log,
-                                                       self.clients[0])):
+            if not check_is_wifi_connected(self.log, self.clients[0], ssid) or (
+                    not verify_internet_connection(self.log, self.clients[0])):
                 self.clients[0].log.error(
                     "Client wifi connection check failed!")
                 return False
@@ -1276,8 +1652,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1845,8 +2221,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2255,8 +2631,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2404,8 +2780,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             non_active_sim_slot_index = SIM2_SLOT_INDEX
         else:
