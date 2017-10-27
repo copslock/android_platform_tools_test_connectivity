@@ -30,7 +30,6 @@ class HealthChecker(object):
         _analyzers: a list of metric, analyzer tuples where metric is a string
           representing a metric name ('DiskMetric') and analyzer is a
           constant_health_analyzer object
-        _comparer_constructor: a dict that maps strings to comparer objects
         config:
         a dict formatted as follows:
         {
