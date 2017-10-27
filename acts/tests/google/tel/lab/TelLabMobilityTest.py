@@ -53,6 +53,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import iperf_test_by_adb
+from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.utils import adb_shell_ping
@@ -79,6 +80,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
         self.ip_server = self.iperf_servers[0]
         self.port_num = self.ip_server.port
         self.log.info("Iperf Port is %s", self.port_num)
+        if self.ad.sim_card == "VzW12349":
+            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
 
     def setup_class(self):
         try:
@@ -142,6 +145,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
                     self.log.warning("phone_setup_func failed. Rebooting UE")
                     self.ad.reboot()
                     time.sleep(30)
+                    if self.ad.sim_card == "VzW12349":
+                        set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
                     if not phone_setup_func(self.ad):
                         self.log.error("phone_setup_func failed.")
             if is_wait_for_registration:

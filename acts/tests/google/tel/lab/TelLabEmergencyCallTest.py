@@ -60,6 +60,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import check_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_test_utils import set_apm_mode_on_by_serial
+from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
@@ -111,6 +112,9 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                     if check_apm_mode_on_by_serial(self.ad,
                                                    list_of_devices[i]):
                         self.log.info("Device is now in APM ON")
+
+        if self.ad.sim_card == "VzW12349":
+            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
 
     def setup_class(self):
         try:
@@ -231,6 +235,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
                             "phone_setup_func failed. Rebooting UE")
                         self.ad.reboot()
                         time.sleep(30)
+                        if self.ad.sim_card == "VzW12349":
+                            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
                         if not phone_setup_func(self.ad):
                             self.log.error("phone_setup_func failed.")
                             continue
