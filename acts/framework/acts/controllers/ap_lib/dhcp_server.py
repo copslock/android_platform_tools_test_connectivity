@@ -38,7 +38,7 @@ class NoInterfaceError(Exception):
 class DhcpServer(object):
     """Manages the dhcp server program.
 
-    Only one of these can run in an enviroment at a time.
+    Only one of these can run in an environment at a time.
 
     Attributes:
         config: The dhcp server configuration that is being used.
@@ -94,8 +94,9 @@ class DhcpServer(object):
         self._shell.delete_file(self._log_file)
         self._shell.touch_file(self._lease_file)
 
-        dhcpd_command = '%s -cf "%s" -lf %s -f""' % (
-            self.PROGRAM_FILE, self._config_file, self._lease_file)
+        dhcpd_command = '%s -cf "%s" -lf %s -f""' % (self.PROGRAM_FILE,
+                                                     self._config_file,
+                                                     self._lease_file)
         base_command = 'cd "%s"; %s' % (self._working_dir, dhcpd_command)
         job_str = '%s > "%s" 2>&1' % (base_command, self._log_file)
         self._runner.run_async(job_str)
@@ -114,7 +115,7 @@ class DhcpServer(object):
     def is_alive(self):
         """
         Returns:
-            True if the deamon is running.
+            True if the daemon is running.
         """
         return self._shell.is_alive(self._identifier)
 
