@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
@@ -87,6 +88,9 @@ class TelLabVoiceTest(TelephonyBaseTest):
             self.voice_call_number = self.user_params['voice_call_number']
             self.log.info("Using provided voice call number: {}".format(
                 self.voice_call_number))
+
+        if self.ad.sim_card == "VzW12349":
+            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
 
     def setup_class(self):
         try:
@@ -181,6 +185,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
                             "phone_setup_func failed. Rebooting UE")
                         self.ad.reboot()
                         time.sleep(30)
+                        if self.ad.sim_card == "VzW12349":
+                            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
                         if not phone_setup_func(self.ad):
                             self.log.error("phone_setup_func failed.")
                             continue
