@@ -830,21 +830,23 @@ class TelLiveDataTest(TelephonyBaseTest):
                     self.log.error("Setup Call Failed.")
                     hangup_call(self.log, caller)
                     return False
-            self.log.info("Verify data.")
-            if not verify_http_connection(self.log, self.clients[0], retry=0):
-                self.clients[0].log.warning(
-                    "client internet connection state is not on")
-            else:
-                self.clients[0].log.info(
-                    "client internet connection state is on")
-            hangup_call(self.log, caller)
-            if not verify_http_connection(self.log, self.clients[0], retry=0):
-                self.clients[0].log.warning(
-                    "client internet connection state is not on")
-                return False
-            else:
-                self.clients[0].log.info(
-                    "client internet connection state is on")
+                self.log.info("Verify data.")
+                if not verify_http_connection(
+                        self.log, self.clients[0], retry=0):
+                    self.clients[0].log.warning(
+                        "client internet connection state is not on")
+                else:
+                    self.clients[0].log.info(
+                        "client internet connection state is on")
+                hangup_call(self.log, caller)
+                if not verify_http_connection(
+                        self.log, self.clients[0], retry=0):
+                    self.clients[0].log.warning(
+                        "client internet connection state is not on")
+                    return False
+                else:
+                    self.clients[0].log.info(
+                        "client internet connection state is on")
         if toggle_tethering:
             self.log.info("====== Toggling provider bluetooth tethering =====")
             self.provider.log.info("Disable bluetooth tethering")
