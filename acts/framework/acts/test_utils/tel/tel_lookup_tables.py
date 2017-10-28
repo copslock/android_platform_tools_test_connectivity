@@ -25,7 +25,7 @@ def rat_generation_from_rat(rat_type):
     return _TelTables.technology_tbl[rat_type]['generation']
 
 
-def network_preference_for_generaton(generation, operator, phone_type=None):
+def network_preference_for_generation(generation, operator, phone_type=None):
     if not phone_type:
         return _TelTables.operator_network_tbl[operator][generation][
             'network_preference']

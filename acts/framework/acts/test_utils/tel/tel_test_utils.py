@@ -120,7 +120,7 @@ from acts.test_utils.tel.tel_lookup_tables import \
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
 from acts.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generaton
+    network_preference_for_generation
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_lookup_tables import \
     rat_families_for_network_preference
@@ -3548,16 +3548,13 @@ def ensure_network_generation_for_subscription(
         "RAT network type voice: %s, data: %s",
         ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
         ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))
-    if is_droid_in_network_generation_for_subscription(
-            log, ad, sub_id, generation, voice_or_data):
-        return True
 
     try:
         ad.log.info("Finding the network preference for generation %s for "
                     "operator %s phone type %s", generation,
                     ad.cfg["subscription"][sub_id]["operator"],
                     ad.cfg["subscription"][sub_id]["phone_type"])
-        network_preference = network_preference_for_generaton(
+        network_preference = network_preference_for_generation(
             generation, ad.cfg["subscription"][sub_id]["operator"],
             ad.cfg["subscription"][sub_id]["phone_type"])
         ad.log.info("Network preference for %s is %s", generation,
@@ -4200,7 +4197,7 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
         try:
             if current_preference not in get_allowable_network_preference(
                     sub_info["operator"], sub_info["phone_type"]):
-                network_preference = network_preference_for_generaton(
+                network_preference = network_preference_for_generation(
                     GEN_4G, sub_info["operator"], sub_info["phone_type"])
                 ad.droid.telephonySetPreferredNetworkTypesForSubscription(
                     network_preference, sub_id)
