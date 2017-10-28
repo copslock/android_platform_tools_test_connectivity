@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import time
 import traceback
@@ -69,6 +70,7 @@ class BaseTestClass(object):
         self.results = records.TestResult()
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
+        self.size_limit_reached = False
         if 'android_devices' in self.__dict__:
             for ad in self.android_devices:
                 if ad.droid:
@@ -689,8 +691,33 @@ class BaseTestClass(object):
             ad.log.error("Failed to take a bug report for %s with error %s",
                          test_name, e)
 
-    def _take_bug_report(self, test_name, begin_time):
+    def _skip_bug_report(self):
+        """A function to check whether we should skip creating a bug report."""
         if "no_bug_report_on_fail" in self.user_params:
+            return True
+
+        # Once we hit a certain log path size, it's not going to get smaller.
+        # We cache the result so we don't have to keep doing directory walks.
+        if self.size_limit_reached:
+            return True
+        try:
+            max_log_size = int(
+                self.user_params.get("soft_output_size_limit") or "invalid")
+            log_path = getattr(logging, "log_path", None)
+            if log_path:
+                curr_log_size = utils.get_directory_size(log_path)
+                if curr_log_size > max_log_size:
+                    self.log.info(
+                        "Skipping bug report, as we've reached the size limit."
+                    )
+                    self.size_limit_reached = True
+                    return True
+        except ValueError:
+            pass
+        return False
+
+    def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report():
             return
 
         tasks = [(self._ad_take_reports, (ad, test_name, begin_time))
