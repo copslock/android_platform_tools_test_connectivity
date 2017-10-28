@@ -803,9 +803,9 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     packet_rcvd = int(stats[1].split()[0])
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
 
-    if (packet_loss >= loss_tolerance or
-            packet_xmit < count * min_packet_xmit_rcvd or
-            packet_rcvd < count * min_packet_xmit_rcvd):
+    if (packet_loss >= loss_tolerance
+            or packet_xmit < count * min_packet_xmit_rcvd
+            or packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error(
             "More than %d %% packet loss seen, Expected Packet_count %d \
             Packet loss %.2f%% Packets_xmitted %d Packets_rcvd %d",
@@ -872,3 +872,18 @@ def _extract_file(zip_file, zip_info, extract_location):
     out_path = zip_file.extract(zip_info.filename, path=extract_location)
     perm = zip_info.external_attr >> 16
     os.chmod(out_path, perm)
+
+
+def get_directory_size(path):
+    """Computes the total size of the files in a directory, including subdirectories.
+
+    Args:
+        path: The path of the directory.
+    Returns:
+        The size of the provided directory.
+    """
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            total += os.path.getsize(os.path.join(dirpath, filename))
+    return total
