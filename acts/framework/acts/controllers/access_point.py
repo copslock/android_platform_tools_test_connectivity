@@ -100,7 +100,7 @@ class AccessPoint(object):
 
     Attributes:
         ssh: The ssh connection to this ap.
-        ssh_settings: The ssh settings being used by the ssh conneciton.
+        ssh_settings: The ssh settings being used by the ssh connection.
         dhcp_settings: The dhcp server settings being used.
     """
 
@@ -133,7 +133,7 @@ class AccessPoint(object):
         Args:
             hostapd_config: hostapd_config.HostapdConfig, The configurations
                             to use when starting up the ap.
-            additional_parameters: A dicitonary of parameters that can sent
+            additional_parameters: A dictionary of parameters that can sent
                                    directly into the hostapd config file.  This
                                    can be used for debugging and or adding one
                                    off parameters into the config.
@@ -274,7 +274,7 @@ class AccessPoint(object):
         """
 
         if identifier not in list(self._aps.keys()):
-            raise ValueError('Invalid identifer %s given' % identifier)
+            raise ValueError('Invalid identifier %s given' % identifier)
 
         instance = self._aps.get(identifier)
 
@@ -304,7 +304,7 @@ class AccessPoint(object):
         """Called to take down the entire access point.
 
         When called will stop all aps running on this host, shutdown the dhcp
-        server, and stop the ssh conneciton.
+        server, and stop the ssh connection.
         """
 
         if self._aps:

@@ -79,13 +79,16 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.helper = self.android_devices[1]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 60))
+        self.min_sleep_time = int(self.user_params.get("min_sleep_time", 10))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
         self.max_run_time = int(self.user_params.get("max_run_time", 14400))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
@@ -178,9 +181,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.result_info["%s failure" % message_type] += 1
             if message_type == "SMS" or self.result_info["%s failure" %
                                                          message_type] == 1:
-                self._take_bug_report("%s_%s_failure" % (self.test_name,
-                                                         message_type),
-                                      begin_time)
+                self._take_bug_report("%s_%s_failure" % (
+                    self.test_name, message_type), begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
@@ -247,8 +249,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report(
-                    "checking_crash", begin_time, True)
+                crash_report = self.dut.check_crash_report("checking_crash",
+                                                           begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -280,7 +282,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not self._make_phone_call(ads):
                     failure += 1
                 self.dut.droid.goToSleepNow()
-                time.sleep(random.randrange(0, self.max_sleep_time))
+                time.sleep(
+                    random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -338,7 +341,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not self._send_message(ads):
                     failure += 1
                 self.dut.droid.goToSleepNow()
-                time.sleep(random.randrange(0, self.max_sleep_time))
+                time.sleep(
+                    random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -382,15 +386,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if tcpdump_pid is not None:
                             stop_adb_tcpdump(self.dut, tcpdump_pid,
                                              tcpdump_file, True)
-                        self._take_bug_report(
-                            "%s_file_download_failure" % self.test_name,
-                            begin_time)
+                        self._take_bug_report("%s_file_download_failure" %
+                                              self.test_name, begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
                 self.dut.droid.goToSleepNow()
-                time.sleep(random.randrange(0, self.max_sleep_time))
+                time.sleep(
+                    random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1

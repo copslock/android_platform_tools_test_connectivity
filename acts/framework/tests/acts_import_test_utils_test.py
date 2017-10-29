@@ -46,7 +46,6 @@ from acts.test_utils.tel import tel_test_utils
 from acts.test_utils.tel import tel_video_utils
 from acts.test_utils.tel import tel_voice_utils
 
-from acts.test_utils.wifi import wifi_aware_const
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils
 

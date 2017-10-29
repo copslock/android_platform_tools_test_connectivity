@@ -33,6 +33,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
+from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 from acts.utils import adb_shell_ping
 
 PING_DURATION = 5  # Number of packets to ping
@@ -48,6 +49,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        if self.ad.sim_card == "VzW12349":
+            set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
 
     def setup_class(self):
         try:
@@ -106,6 +109,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
                 self.log.warning("phone_setup_func failed. Rebooting UE")
                 self.ad.reboot()
                 time.sleep(30)
+                if self.ad.sim_card == "VzW12349":
+                    set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
                 if not self.phone_setup_data_roaming():
                     self.log.error(
                         "Failed to set rat family {}, preferred network:{}".

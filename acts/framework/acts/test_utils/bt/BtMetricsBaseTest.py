@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 import os
+import time
 
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.libs.proto.proto_utils import compile_import_proto, parse_proto_to_ascii

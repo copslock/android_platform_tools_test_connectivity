@@ -34,7 +34,7 @@ class FastbootVersionMetric(Metric):
               fastboot_version: string representing version of fastboot
                   Older versions of fastboot do not have a version flag. On an
                   older version, this metric will print 'this version is older
-                  than versions that return veresions properly'
+                  than versions that return versions properly'
 
         """
         result = self._shell.run(self.FASTBOOT_COMMAND, ignore_status=True)
