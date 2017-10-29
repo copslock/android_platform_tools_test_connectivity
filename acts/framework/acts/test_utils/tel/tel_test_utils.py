@@ -261,7 +261,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 "phone_num"):
             phone_number = sim_data[iccid]["phone_num"]
         if phone_number:
-            if sub_info["phone_num"] and not check_phone_number_match(
+            if sub_info.get("phone_num") and not check_phone_number_match(
                     sub_info["phone_num"], phone_number):
                 ad.log.warning("phone_number in config file %s do not match %s"
                                " in droid subscription", phone_number,
