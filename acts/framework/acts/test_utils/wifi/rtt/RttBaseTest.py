@@ -17,6 +17,8 @@
 from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.rtt import rtt_const as rconsts
+from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 
 
 class RttBaseTest(BaseTestClass):
@@ -33,3 +35,8 @@ class RttBaseTest(BaseTestClass):
           not ad.droid.doesDeviceSupportWifiRttFeature(),
           "Device under test does not support Wi-Fi RTT - skipping test")
       wutils.wifi_toggle_state(ad, True)
+      rtt_avail = ad.droid.wifiIsRttAvailable()
+      if not rtt_avail:
+          self.log.info('RTT not available. Waiting ...')
+          rutils.wait_for_event(ad, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
+      ad.ed.clear_all_events()

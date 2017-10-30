@@ -14,6 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+######################################################
+# Broadcast events
+######################################################
+BROADCAST_WIFI_RTT_AVAILABLE = "WifiRttAvailable"
+BROADCAST_WIFI_RTT_NOT_AVAILABLE = "WifiRttNotAvailable"
 
 ######################################################
 # RangingResultCallback events
@@ -34,6 +39,13 @@ EVENT_CB_RANGING_KEY_MAC_AS_STRING_BSSID = "macAsStringBSSID"
 EVENT_CB_RANGING_KEY_MAC_AS_STRING = "macAsString"
 
 EVENT_CB_RANGING_STATUS_SUCCESS = 0
+
+######################################################
+# status codes
+######################################################
+
+RANGING_FAIL_CODE_GENERIC = 1
+RANGING_FAIL_CODE_RTT_NOT_AVAILABLE = 2
 
 ######################################################
 # ScanResults keys
