@@ -120,7 +120,7 @@ from acts.test_utils.tel.tel_lookup_tables import \
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
 from acts.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generaton
+    network_preference_for_generation
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_lookup_tables import \
     rat_families_for_network_preference
@@ -249,45 +249,45 @@ def setup_droid_properties(log, ad, sim_filename=None):
             log.warning("Failed to load %s!", sim_filename)
     if not ad.cfg["subscription"]:
         abort_all_tests(ad.log, "No Valid SIMs found in device")
-    result = False
+    result = True
     for sub_id, sub_info in ad.cfg["subscription"].items():
         sub_info["operator"] = get_operator_name(log, ad, sub_id)
         iccid = sub_info["iccid"]
         if not iccid:
             ad.log.warn("Unable to find ICC-ID for SIM")
             continue
-        if not sub_info["phone_num"]:
-            if iccid in sim_data and sim_data[iccid].get("phone_num"):
-                sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+        phone_number = getattr(ad, "phone_number", None)
+        if not phone_number and iccid in sim_data and sim_data[iccid].get(
+                "phone_num"):
+            phone_number = sim_data[iccid]["phone_num"]
+        if phone_number:
+            if sub_info["phone_num"] and not check_phone_number_match(
+                    sub_info["phone_num"], ad.phone_number):
+                ad.log.warning("phone_number in config file %s do not match %s"
+                               " in droid subscription", ad.phone_number,
+                               sub_info["phone_num"])
+            sub_info["phone_num"] = phone_number
+            ad.phone_number = phone_number
+        else:
+            if sub_info["phone_num"]:
                 ad.phone_number = sub_info["phone_num"]
-                result = True
             else:
                 phone_number = get_phone_number_by_secret_code(
                     ad, sub_info["sim_operator_name"])
                 if phone_number:
-                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-                    ad.phone_number = sub_info["phone_num"]
-                    result = True
+                    sub_info["phone_num"] = phone_number
+                    ad.phone_number = phone_number
                 else:
                     ad.log.error(
                         "Unable to retrieve phone number for sub %s iccid %s"
                         " from device or testbed config or sim_file %s",
                         sim_filename, sub_id, iccid)
-        else:
-            result = True
-            if sim_data.get(iccid) and sim_data[iccid].get("phone_num"):
-                if not check_phone_number_match(sub_info["phone_num"],
-                                                sim_data[iccid]["phone_num"]):
-                    ad.log.warning(
-                        "ICCID %s phone number is %s in %s, does not match "
-                        "the number %s retrieved from the phone", iccid,
-                        sim_data[iccid]["phone_num"], sim_filename,
-                        sub_info["phone_num"])
-                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
-                "network_plmn"] and (
-                    sub_info["sim_operator_name"].strip() not in sub_info[
-                        "network_operator_name"].strip()):
+                    result = False
+        if not hasattr(
+                ad, 'roaming'
+        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
+                sub_info["sim_operator_name"].strip() not in
+                sub_info["network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
@@ -349,9 +349,13 @@ def refresh_droid_config(log, ad):
             sim_record[
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
-            phone_number = droid.telephonyGetLine1NumberForSubscription(sub_id)
-            if not phone_number and getattr(ad, "phone_number", None):
-                phone_number = ad.phone_number
+            if not getattr(ad, "phone_number", None):
+                phone_number = droid.telephonyGetLine1NumberForSubscription(
+                    sub_id)
+                if not phone_number:
+                    ad.log.warning("Unable to get phone number")
+                else:
+                    ad.phone_number = phone_number
             sim_record["phone_num"] = phone_number_formatter(phone_number)
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
@@ -2100,8 +2104,8 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_folder, file_name = _generate_file_directory_and_file_name(url,
-                                                                    out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(
+        url, out_path)
     file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2142,8 +2146,7 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data'][
-            'isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
         return True
     return False
 
@@ -2170,8 +2173,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
-                                                          state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(
+        log, ad, sub_id, state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -2536,8 +2539,8 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         ad.log.info("VoLTE not supported by platform.")
-        raise TelTestUtilsError("VoLTE not supported by platform %s." %
-                                ad.serial)
+        raise TelTestUtilsError(
+            "VoLTE not supported by platform %s." % ad.serial)
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -3548,16 +3551,13 @@ def ensure_network_generation_for_subscription(
         "RAT network type voice: %s, data: %s",
         ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(sub_id),
         ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(sub_id))
-    if is_droid_in_network_generation_for_subscription(
-            log, ad, sub_id, generation, voice_or_data):
-        return True
 
     try:
         ad.log.info("Finding the network preference for generation %s for "
                     "operator %s phone type %s", generation,
                     ad.cfg["subscription"][sub_id]["operator"],
                     ad.cfg["subscription"][sub_id]["phone_type"])
-        network_preference = network_preference_for_generaton(
+        network_preference = network_preference_for_generation(
             generation, ad.cfg["subscription"][sub_id]["operator"],
             ad.cfg["subscription"][sub_id]["phone_type"])
         ad.log.info("Network preference for %s is %s", generation,
@@ -4026,8 +4026,7 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info[
-            "SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4200,7 +4199,7 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
         try:
             if current_preference not in get_allowable_network_preference(
                     sub_info["operator"], sub_info["phone_type"]):
-                network_preference = network_preference_for_generaton(
+                network_preference = network_preference_for_generation(
                     GEN_4G, sub_info["operator"], sub_info["phone_type"])
                 ad.droid.telephonySetPreferredNetworkTypesForSubscription(
                     network_preference, sub_id)
@@ -4505,8 +4504,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data'][
-                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data']
+                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
