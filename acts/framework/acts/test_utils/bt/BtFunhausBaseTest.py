@@ -119,7 +119,7 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         :return: None
         """
         self.ad.droid.mediaPlayOpen("file:///sdcard/Music/{}".format(
-            self.music_file_to_play))
+            self.music_file_to_play.split("/")[-1]))
         self.ad.droid.mediaPlaySetLooping(True)
         self.ad.log.info("Music is now playing.")
 
