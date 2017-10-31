@@ -4822,7 +4822,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
-            ad.adb.install("-r /tmp/base.apk")
+            ad.adb.install("-r /tmp/base.apk", ignore_status=True)
             time.sleep(10)
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
     return status
