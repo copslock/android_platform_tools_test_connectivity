@@ -2493,7 +2493,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mo_mms_in_2g_call(ads, wifi=True)
+        return self._mo_mms_in_2g_call(ads)
 
     @test_tracker_info(uuid="060def89-01bd-4b44-a49b-a4536fe39165")
     @TelephonyBaseTest.tel_test_wrap
@@ -2521,4 +2521,4 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mt_mms_in_2g_call(ads, wifi=True)
+        return self._mt_mms_in_2g_call(ads)
