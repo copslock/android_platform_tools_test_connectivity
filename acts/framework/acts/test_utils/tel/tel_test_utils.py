@@ -261,10 +261,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                 "phone_num"):
             phone_number = sim_data[iccid]["phone_num"]
         if phone_number:
-            if sub_info["phone_num"] and not check_phone_number_match(
-                    sub_info["phone_num"], ad.phone_number):
+            if sub_info.get("phone_num") and not check_phone_number_match(
+                    sub_info["phone_num"], phone_number):
                 ad.log.warning("phone_number in config file %s do not match %s"
-                               " in droid subscription", ad.phone_number,
+                               " in droid subscription", phone_number,
                                sub_info["phone_num"])
             sub_info["phone_num"] = phone_number
             ad.phone_number = phone_number
@@ -356,7 +356,8 @@ def refresh_droid_config(log, ad):
                     ad.log.warning("Unable to get phone number")
                 else:
                     ad.phone_number = phone_number
-            sim_record["phone_num"] = phone_number_formatter(phone_number)
+                    sim_record["phone_num"] = phone_number_formatter(
+                        phone_number)
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
                     sub_id)
