@@ -20,6 +20,9 @@
 import time
 from queue import Empty
 
+from acts import signals
+from acts.controllers.android_device import get_info
+from acts.libs.ota import ota_updater
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
@@ -42,6 +45,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
@@ -79,6 +83,29 @@ class TelLivePreflightTest(TelephonyBaseTest):
         pass
 
     """ Tests Begin """
+
+    @test_tracker_info(uuid="cb897221-99e1-4697-927e-02d92d969440")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_ota_upgrade(self):
+        ota_package = self.user_params.get("ota_package")
+        if isinstance(ota_package, list):
+            ota_package = ota_package[0]
+        if ota_package and "dev/null" not in ota_package:
+            self.log.info("Upgrade with ota_package %s", ota_package)
+            self.log.info("Before OTA upgrade: %s",
+                          get_info(self.android_devices))
+        else:
+            raise signals.TestSkip("No ota_package is defined")
+        ota_updater.initialize(self.user_params, self.android_devices)
+        tasks = [(ota_updater.update, [ad]) for ad in self.android_devices]
+        try:
+            run_multithread_func(self.log, tasks)
+        except Exception as err:
+            abort_all_tests(ad.log, "Unable to do ota upgrade: %s" % err)
+        device_info = get_info(self.android_devices)
+        self.log.info("After OTA upgrade: %s", device_info)
+        self.results.add_controller_info("AndroidDevice", device_info)
+        return True
 
     @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")
     @TelephonyBaseTest.tel_test_wrap
@@ -120,8 +147,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
             if output:
                 begin_time = output[-1]["time_stamp"][5:]
                 ad.log.debug("begin time is %s", begin_time)
-            ad.crash_report_preflight = ad.check_crash_report(self.test_name,
-                                                              begin_time, True)
+            ad.crash_report_preflight = ad.check_crash_report(
+                self.test_name, begin_time, True)
             if ad.crash_report_preflight:
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)
