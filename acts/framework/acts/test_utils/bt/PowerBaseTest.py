@@ -214,6 +214,26 @@ class PowerBaseTest(BluetoothBaseTest):
 
         self.ad.take_bug_report(self.current_test_name, current_time)
 
+    def check_test_pass(test_case_name, average_current):
+        """Compare watermark numbers for pass/fail criteria.
+
+        b/67960377 = for BT codec runs
+        b/67959834 = for BLE scan+GATT runs
+
+        Args:
+            test_case_name: each unique test case scenario being completed
+            average_current: the numbers calculated from Monsoon box
+
+        Returns:
+            True if the current is within 10%; False otherwise
+
+        """
+        passing_value = float(self.user_params[test_case_name])
+        ten_percent_variance = (passing_value * 0.1) + passing_value
+        if average_current > ten_percent_variance:
+            return False
+        return True
+
 
 class BtMonsoonData(monsoon.MonsoonData):
     """A class for encapsulating power measurement data from monsoon.
