@@ -21,6 +21,7 @@ Shield box one: Android Device and Monsoon tool box
 
 import json
 import os
+import sys
 
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
@@ -63,7 +64,7 @@ class BleScanPowerTest(PowerBaseTest):
                     disable_bluetooth(ad.droid)
 
     def _measure_power_for_scan_n_log_data(self, scan_mode, scan_time,
-                                           idle_time, repetitions):
+                                           idle_time, repetitions, test_case):
         """utility function for power test with BLE scan.
 
         Steps:
@@ -81,7 +82,7 @@ class BleScanPowerTest(PowerBaseTest):
             repetitions:  The number of cycles of scanning/idle
 
         Returns:
-            None
+            True or False value per check_test_pass result
         """
 
         first_part_msg = "%s%s --es StartTime %d --es ScanTime %d" % (
@@ -117,6 +118,9 @@ class BleScanPowerTest(PowerBaseTest):
 
         self.save_logs_for_power_test(result, start_times, end_times, False)
 
+        # perform watermark comparison numbers
+        return self.check_test_pass(test_case, result.average_current)
+
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='37556d99-c535-4fd7-a7e7-5b737379d007')
     def test_power_for_scan_w_low_latency(self):
@@ -140,9 +144,10 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['low_latency'], self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40)
+            self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='9245360a-07b8-48a5-b26a-50d3b2b6e2c0')
@@ -167,9 +172,10 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['balanced'], self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40)
+            self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='9df99e3a-8cce-497a-b3d6-4ff6262e020e')
@@ -194,9 +200,10 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['low_power'], self.SCAN_TIME_60,
-            self.IDLE_TIME_30, self.REPETITIONS_40)
+            self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='cceeaf88-0ead-43e7-a25a-97eed93d1049')
@@ -221,9 +228,10 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['balanced'], self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360)
+            self.IDLE_TIME_5, self.REPETITIONS_360, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='5d20cdc2-876a-45b7-b3cf-064a37f0bb8a')
@@ -248,9 +256,10 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['low_latency'], self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360)
+            self.IDLE_TIME_5, self.REPETITIONS_360, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='5e526f85-77e7-4741-b8cd-7cdffb7daa16')
@@ -275,6 +284,7 @@ class BleScanPowerTest(PowerBaseTest):
         TAGS: LE, Scanning, Power
         Priority: 3
         """
-        self._measure_power_for_scan_n_log_data(
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_scan_n_log_data(
             ble_scan_settings_modes['low_power'], self.SCAN_TIME_5,
-            self.IDLE_TIME_5, self.REPETITIONS_360)
+            self.IDLE_TIME_5, self.REPETITIONS_360, current_test_case)
