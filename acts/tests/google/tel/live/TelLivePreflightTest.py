@@ -96,6 +96,18 @@ class TelLivePreflightTest(TelephonyBaseTest):
                           get_info(self.android_devices))
         else:
             raise signals.TestSkip("No ota_package is defined")
+        ota_util = self.user_params.get("ota_util")
+        if isinstance(ota_util, list):
+            ota_util = ota_util[0]
+        if ota_util:
+            if "update_engine_client.zip" in ota_util:
+                self.user_params["UpdateDeviceOtaTool"] = ota_util
+                self.user_params["ota_tool"] = "UpdateDeviceOtaTool"
+            else:
+                self.user_params["AdbSideloadOtaTool"] = ota_util
+                self.user_params["ota_tool"] = "AdbSideloadOtaTool"
+        self.log.info("OTA upgrade with %s by %s", ota_package,
+                      self.user_params["ota_tool"])
         ota_updater.initialize(self.user_params, self.android_devices)
         tasks = [(ota_updater.update, [ad]) for ad in self.android_devices]
         try:
