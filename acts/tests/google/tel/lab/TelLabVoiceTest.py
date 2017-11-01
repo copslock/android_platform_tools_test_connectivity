@@ -57,6 +57,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
@@ -103,6 +104,8 @@ class TelLabVoiceTest(TelephonyBaseTest):
 
     def setup_test(self):
         try:
+            if getattr(self, "qxdm_log", True):
+                start_qxdm_loggers(self.log, self.android_devices)
             self.ad.droid.telephonyFactoryReset()
             if self.ad.sim_card == "VzW12349":
                 self.ad.droid.imsSetVolteProvisioning(True)
