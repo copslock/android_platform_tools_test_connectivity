@@ -54,6 +54,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import iperf_test_by_adb
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.utils import adb_shell_ping
@@ -94,6 +95,8 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     def setup_test(self):
         try:
+            if getattr(self, "qxdm_log", True):
+                start_qxdm_loggers(self.log, self.android_devices)
             self.ad.droid.telephonyFactoryReset()
         except Exception as e:
             self.ad.log.error(e)
