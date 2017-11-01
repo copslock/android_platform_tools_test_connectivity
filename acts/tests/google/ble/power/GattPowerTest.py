@@ -21,6 +21,7 @@ Shield box one: Two Android Devices and Monsoon tool box
 
 import json
 import os
+import sys
 
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
@@ -66,7 +67,7 @@ class GattPowerTest(PowerBaseTest):
         self.per_ad.adb.shell(self.PMC_VERBOSE_CMD)
 
     def _measure_power_for_gatt_n_log_data(self, write_time, idle_time,
-                                           repetitions):
+                                           repetitions, test_case):
         """Utility function for power test with GATT write.
 
         Steps:
@@ -87,7 +88,7 @@ class GattPowerTest(PowerBaseTest):
             repetitions: number of repetitions of writing cycles
 
         Returns:
-            None
+            True or False value per check_test_pass result
         """
         # Send message to Gatt Server
         self.per_ad.log.info("Send broadcast message to GATT Server: %s",
@@ -108,11 +109,15 @@ class GattPowerTest(PowerBaseTest):
         result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
                                         self.current_test_name,
                                         self.START_TIME)
+
         # Calculate average and save power data into a file
         self.save_logs_for_power_test(result, write_time, idle_time)
         # Take bug report for peripheral device
         current_time = get_current_human_time()
         self.per_ad.take_bug_report(self.current_test_name, current_time)
+
+        # perform watermark comparison numbers
+        return self.check_test_pass(test_case, result.average_current)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='8c5213fc-ffe8-4c32-bb63-1d2b7394dc0c')
@@ -144,8 +149,10 @@ class GattPowerTest(PowerBaseTest):
         TAGS: LE, GATT, Power
         Priority: 3
         """
-        self._measure_power_for_gatt_n_log_data(
-            self.WRITE_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40)
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_gatt_n_log_data(
+            self.WRITE_TIME_60, self.IDLE_TIME_30, self.REPETITIONS_40,
+            current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='fd682d46-89db-432d-aaa6-35ed63d6d764')
@@ -178,5 +185,7 @@ class GattPowerTest(PowerBaseTest):
         TAGS: LE, GATT, Power
         Priority: 3
         """
-        self._measure_power_for_gatt_n_log_data(
-            self.WRITE_TIME_3600, self.IDLE_TIME_0, self.REPETITIONS_1)
+        current_test_case = func_name = sys._getframe().f_code.co_name
+        return self._measure_power_for_gatt_n_log_data(
+            self.WRITE_TIME_3600, self.IDLE_TIME_0, self.REPETITIONS_1,
+            current_test_case)
