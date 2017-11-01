@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+#!/usr/bin/env python3.4
 #
 # Copyright (C) 2009 Google Inc.
 #
@@ -35,7 +35,9 @@ DEFAULT_DEVICE_SIDE_PORT = 8080
 
 UNKNOWN_UID = -1
 
-MAX_SL4A_WAIT_TIME = 10
+MAX_SL4A_START_RETRY = 3
+MAX_SL4A_WAIT_TIME = 30
+
 _SL4A_LAUNCH_CMD = (
     "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
     "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
@@ -55,7 +57,7 @@ class Sl4aApiError(Sl4aException):
 
 
 class Sl4aProtocolError(Sl4aException):
-    """Raised when there is some error in exchanging data with server on device."""
+    """Raised when there an error in exchanging data with server on device."""
     NO_RESPONSE_FROM_HANDSHAKE = "No response from handshake."
     NO_RESPONSE_FROM_SERVER = "No response from server."
     MISMATCHED_API_ID = "Mismatched API id."
@@ -63,7 +65,8 @@ class Sl4aProtocolError(Sl4aException):
 
 def start_sl4a(adb_proxy,
                device_side_port=DEFAULT_DEVICE_SIDE_PORT,
-               wait_time=MAX_SL4A_WAIT_TIME):
+               wait_time=MAX_SL4A_WAIT_TIME,
+               retries=MAX_SL4A_START_RETRY):
     """Starts sl4a server on the android device.
 
     Args:
@@ -71,18 +74,20 @@ def start_sl4a(adb_proxy,
         device_side_port: int, The port number to open on the device side.
         wait_time: float, The time to wait for sl4a to come up before raising
                    an error.
+        retries: number of sl4a start command retries.
 
     Raises:
         Sl4aException: Raised when SL4A was not able to be started.
     """
     if not is_sl4a_installed(adb_proxy):
         raise Sl4aStartError("SL4A is not installed on %s" % adb_proxy.serial)
-    MAX_SL4A_WAIT_TIME = 10
-    adb_proxy.shell(_SL4A_LAUNCH_CMD.format(device_side_port))
-    for _ in range(wait_time):
-        time.sleep(1)
-        if is_sl4a_running(adb_proxy):
-            return
+    for _ in range(retries):
+        adb_proxy.shell(_SL4A_LAUNCH_CMD.format(device_side_port))
+        for _ in range(wait_time):
+            time.sleep(1)
+            if is_sl4a_running(adb_proxy):
+                logging.debug("SL4A is running")
+                return
     raise Sl4aStartError("SL4A failed to start on %s." % adb_proxy.serial)
 
 
@@ -95,8 +100,8 @@ def stop_sl4a(adb_proxy):
     Args:
         adb_proxy: adb.AdbProxy, The adb proxy to use for checking.
     """
-    adb_proxy.shell('am force-stop com.googlecode.android_scripting',
-                    ignore_status=True)
+    adb_proxy.shell(
+        'am force-stop com.googlecode.android_scripting', ignore_status=True)
 
 
 def is_sl4a_installed(adb_proxy):
@@ -139,7 +144,8 @@ def is_sl4a_running(adb_proxy, use_new_ps=True):
         else:
             out = adb_proxy.shell(
                 'ps | grep "S com.googlecode.android_scripting"')
-    except adb.AdbError as e:
+    except Exception as e:
+        logging.error("is_sl4a_running with exception %s", e)
         out = None
     if not out:
         if use_new_ps:
@@ -248,16 +254,18 @@ class Sl4aClient(object):
                 # Will be error handled to make sure this does not happen.
                 resp = self._cmd(cmd, self.uid)
                 break
-            except (socket.timeout):
-                logging.exception("Failed to create socket connection!")
+            except (socket.timeout) as e:
+                logging.warning(
+                    "Sl4aClient failed to open socket connection: %s", e)
                 raise
-            except (socket.error, IOError):
+            except (socket.error, IOError) as e:
                 # TODO: optimize to only forgive some errors here
                 # error values are OS-specific so this will require
                 # additional tuning to fail faster
                 time_left = get_time_left()
                 if time_left <= 0:
-                    logging.exception("Failed to create socket connection!")
+                    logging.warning(
+                        "Sl4aClient failed to create socket connection: %s", e)
                     raise
                 time.sleep(1)
 
@@ -293,12 +301,15 @@ class Sl4aClient(object):
         """
         if not uid:
             uid = self.uid
-        self.client.write(json.dumps({'cmd': command,
-                                      'uid': uid}).encode("utf8") + b'\n')
+        self.client.write(
+            json.dumps({
+                'cmd': command,
+                'uid': uid
+            }).encode("utf8") + b'\n')
         self.client.flush()
         return self.client.readline()
 
-    def _rpc(self, method, *args):
+    def _rpc(self, method, *args, **kwargs):
         """Sends an rpc to sl4a.
 
         Sends an rpc call to sl4a using this clients connection.
@@ -306,6 +317,7 @@ class Sl4aClient(object):
         Args:
             method: str, The name of the method to execute.
             args: any, The args to send to sl4a.
+            kwargs: timeout: timeout for the RPC call.
 
         Returns:
             The result of the rpc.
@@ -314,26 +326,60 @@ class Sl4aClient(object):
             Sl4aProtocolError: Something went wrong with the sl4a protocol.
             Sl4aApiError: The rpc went through, however executed with errors.
         """
+        timeout = kwargs.get("timeout")
+        retries = kwargs.get("retries", 3)
         with self._lock:
             apiid = next(self._counter)
+        if timeout:
+            self.conn.settimeout(timeout)
         data = {'id': apiid, 'method': method, 'params': args}
         request = json.dumps(data)
-        self.client.write(request.encode("utf8") + b'\n')
-        self.client.flush()
-        response = self.client.readline()
-        if not response:
-            raise Sl4aProtocolError(Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
+        for i in range(1, retries + 1):
+            try:
+                self.client.write(request.encode("utf8") + b'\n')
+                self.client.flush()
+                response = self.client.readline()
+            except BrokenPipeError as e:
+                if i < retries:
+                    logging.warning("RPC method %s on iteration %s error: %s",
+                                    method, i, e)
+                    continue
+                else:
+                    logging.error("RPC method %s fail on iteration %s: %s",
+                                  method, i, e)
+                    raise
+            if not response:
+                if i < retries:
+                    logging.warning(
+                        "No response for RPC method %s on iteration %s",
+                        method, i)
+                    continue
+                else:
+                    logging.error(
+                        "No response for RPC method %s on iteration %s",
+                        method, i)
+                    raise Sl4aProtocolError(
+                        Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
+            else:
+                break
         result = json.loads(str(response, encoding="utf8"))
+        if timeout:
+            self.conn.settimeout(self._SOCKET_TIMEOUT)
         if result['error']:
-            raise Sl4aApiError(result['error'])
+            logging.error("RPC method %s with error %s", method,
+                          result['error'])
+            raise Sl4aApiError("RPC call %s failed with error %s" %
+                               (method, result['error']))
         if result['id'] != apiid:
+            logging.error("RPC method %s with mismatched api id %s", method,
+                          result['id'])
             raise Sl4aProtocolError(Sl4aProtocolError.MISMATCHED_API_ID)
         return result['result']
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
-        def rpc_call(*args):
-            return self._rpc(name, *args)
+        def rpc_call(*args, **kwargs):
+            return self._rpc(name, *args, **kwargs)
 
         return rpc_call

@@ -58,6 +58,37 @@ def assert_equal(first, second, msg=None, extras=None):
         fail(my_msg, extras=extras)
 
 
+def assert_almost_equal(first,
+                        second,
+                        places=7,
+                        msg=None,
+                        delta=None,
+                        extras=None):
+    """
+    Assert FIRST to be within +/- DELTA to SECOND, otherwise fail the
+    test.
+    :param first: The first argument, LHS
+    :param second: The second argument, RHS
+    :param places: For floating points, how many decimal places to look into
+    :param msg: Message to display on failure
+    :param delta: The +/- first and second could be apart from each other
+    :param extras: Extra object passed to test failure handler
+    :return:
+    """
+    try:
+        if delta:
+            _pyunit_proxy.assertAlmostEqual(
+                first, second, msg=msg, delta=delta)
+        else:
+            _pyunit_proxy.assertAlmostEqual(
+                first, second, places=places, msg=msg)
+    except Exception as e:
+        my_msg = str(e)
+        if msg:
+            my_msg = "%s %s" % (my_msg, msg)
+        fail(my_msg, extras=extras)
+
+
 def assert_raises(expected_exception, extras=None, *args, **kwargs):
     """Assert that an exception is raised when a function is called.
 
@@ -100,9 +131,8 @@ def assert_raises_regex(expected_exception,
         extras: An optional field for extra information to be included in
                 test result.
     """
-    context = _AssertRaisesContext(expected_exception,
-                                   expected_regex,
-                                   extras=extras)
+    context = _AssertRaisesContext(
+        expected_exception, expected_regex, extras=extras)
     return context
 
 
@@ -281,8 +311,8 @@ class _AssertRaisesContext(object):
                 exc_name = self.expected.__name__
             except AttributeError:
                 exc_name = str(self.expected)
-            raise signals.TestFailure("{} not raised".format(exc_name),
-                                      extras=self.extras)
+            raise signals.TestFailure(
+                "{} not raised".format(exc_name), extras=self.extras)
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through
             return False

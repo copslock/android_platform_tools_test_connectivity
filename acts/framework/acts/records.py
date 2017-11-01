@@ -20,6 +20,7 @@ import json
 import logging
 import pprint
 
+from acts import logger
 from acts import signals
 from acts import utils
 
@@ -35,6 +36,8 @@ class TestResultEnums(object):
     RECORD_CLASS = "Test Class"
     RECORD_BEGIN_TIME = "Begin Time"
     RECORD_END_TIME = "End Time"
+    RECORD_LOG_BEGIN_TIME = "Log Begin Time"
+    RECORD_LOG_END_TIME = "Log End Time"
     RECORD_RESULT = "Result"
     RECORD_UID = "UID"
     RECORD_EXTRAS = "Extras"
@@ -43,6 +46,7 @@ class TestResultEnums(object):
     TEST_RESULT_PASS = "PASS"
     TEST_RESULT_FAIL = "FAIL"
     TEST_RESULT_SKIP = "SKIP"
+    TEST_RESULT_BLOCKED = "BLOCKED"
     TEST_RESULT_UNKNOWN = "UNKNOWN"
 
 
@@ -64,6 +68,8 @@ class TestResultRecord(object):
         self.test_class = t_class
         self.begin_time = None
         self.end_time = None
+        self.log_begin_time = None
+        self.log_end_time = None
         self.uid = None
         self.result = None
         self.extras = None
@@ -76,6 +82,8 @@ class TestResultRecord(object):
         Sets the begin_time of this record.
         """
         self.begin_time = utils.get_current_epoch_time()
+        self.log_begin_time = logger.epoch_to_log_line_timestamp(
+            self.begin_time)
 
     def _test_end(self, result, e):
         """Class internal function to signal the end of a test case execution.
@@ -87,6 +95,7 @@ class TestResultRecord(object):
                 acts.signals.TestSignal.
         """
         self.end_time = utils.get_current_epoch_time()
+        self.log_end_time = logger.epoch_to_log_line_timestamp(self.end_time)
         self.result = result
         if self.extra_errors:
             self.result = TestResultEnums.TEST_RESULT_UNKNOWN
@@ -123,6 +132,14 @@ class TestResultRecord(object):
             e: An instance of acts.signals.TestSkip.
         """
         self._test_end(TestResultEnums.TEST_RESULT_SKIP, e)
+
+    def test_blocked(self, e=None):
+        """To mark the test as blocked in this record.
+
+        Args:
+            e: An instance of acts.signals.Test
+        """
+        self._test_end(TestResultEnums.TEST_RESULT_BLOCKED, e)
 
     def test_unknown(self, e=None):
         """To mark the test as unknown in this record.
@@ -168,6 +185,8 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_CLASS] = self.test_class
         d[TestResultEnums.RECORD_BEGIN_TIME] = self.begin_time
         d[TestResultEnums.RECORD_END_TIME] = self.end_time
+        d[TestResultEnums.RECORD_LOG_BEGIN_TIME] = self.log_begin_time
+        d[TestResultEnums.RECORD_LOG_END_TIME] = self.log_end_time
         d[TestResultEnums.RECORD_RESULT] = self.result
         d[TestResultEnums.RECORD_UID] = self.uid
         d[TestResultEnums.RECORD_EXTRAS] = self.extras
@@ -213,6 +232,7 @@ class TestResult(object):
         self.executed = []
         self.passed = []
         self.skipped = []
+        self.blocked = []
         self.unknown = []
         self.controller_info = {}
 
@@ -245,6 +265,16 @@ class TestResult(object):
                 setattr(sum_result, name, l_value)
         return sum_result
 
+    def add_controller_info(self, name, info):
+        try:
+            json.dumps(info)
+        except TypeError:
+            logging.warning(("Controller info for %s is not JSON serializable!"
+                             " Coercing it to string.") % name)
+            self.controller_info[name] = str(info)
+            return
+        self.controller_info[name] = info
+
     def add_record(self, record):
         """Adds a test record to test result.
 
@@ -253,14 +283,18 @@ class TestResult(object):
         Args:
             record: A test record object to add.
         """
-        self.executed.append(record)
         if record.result == TestResultEnums.TEST_RESULT_FAIL:
+            self.executed.append(record)
             self.failed.append(record)
         elif record.result == TestResultEnums.TEST_RESULT_SKIP:
             self.skipped.append(record)
         elif record.result == TestResultEnums.TEST_RESULT_PASS:
+            self.executed.append(record)
             self.passed.append(record)
+        elif record.result == TestResultEnums.TEST_RESULT_BLOCKED:
+            self.blocked.append(record)
         else:
+            self.executed.append(record)
             self.unknown.append(record)
 
     def add_controller_info(self, name, info):
@@ -273,20 +307,11 @@ class TestResult(object):
             return
         self.controller_info[name] = info
 
-    def fail_class(self, test_record):
-        """Add a record to indicate a test class setup has failed and no test
-        in the class was executed.
-
-        Args:
-            test_record: A TestResultRecord object for the test class.
-        """
-        self.executed.append(test_record)
-        self.failed.append(test_record)
-
     @property
     def is_all_pass(self):
         """True if no tests failed or threw errors, False otherwise."""
-        num_of_failures = len(self.failed) + len(self.unknown)
+        num_of_failures = (
+            len(self.failed) + len(self.unknown) + len(self.blocked))
         if num_of_failures == 0:
             return True
         return False
@@ -341,10 +366,12 @@ class TestResult(object):
             A dictionary with the stats of this test result.
         """
         d = {}
+        d["ControllerInfo"] = self.controller_info
         d["Requested"] = len(self.requested)
         d["Executed"] = len(self.executed)
         d["Passed"] = len(self.passed)
         d["Failed"] = len(self.failed)
         d["Skipped"] = len(self.skipped)
+        d["Blocked"] = len(self.blocked)
         d["Unknown"] = len(self.unknown)
         return d

@@ -226,7 +226,7 @@ class ActsSl4aClientTest(unittest.TestCase):
         client.open()
 
         result = client.some_rpc(1, 2, 3)
-        self.assertEquals(result, 123)
+        self.assertEqual(result, 123)
 
         expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
         actual = json.loads(fake_file.last_write.decode('utf-8'))
@@ -248,7 +248,7 @@ class ActsSl4aClientTest(unittest.TestCase):
             fake_file.resp = (MOCK_RESP_TEMPLATE % i).encode('utf-8')
             client.some_rpc()
 
-        self.assertEquals(next(client._counter), 10)
+        self.assertEqual(next(client._counter), 10)
 
 
 if __name__ == "__main__":

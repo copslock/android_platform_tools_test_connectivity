@@ -18,6 +18,7 @@ Test script to test if Bluetooth will reboot successfully
 if it is killed.
 """
 
+import re
 import time
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
@@ -31,8 +32,10 @@ class BtKillProcessTest(BluetoothBaseTest):
     def _get_bt_pid(self):
         process_grep_string = "com.android.bluetooth"
         awk = "awk '{print $2}'"
-        return (self.dut.adb.shell("ps | grep {} | {}".format(
-            process_grep_string, awk)).decode('ascii'))
+        pid = self.dut.adb.shell("ps | grep com.android.bluetooth")
+        if not pid:
+            return None
+        return (re.findall("\d+\W", pid)[0])
 
     def _is_bt_process_running(self):
         if self._get_bt_pid():
@@ -40,7 +43,7 @@ class BtKillProcessTest(BluetoothBaseTest):
         else:
             return False
 
-    @BluetoothBaseTest.bt_test_wrap()
+    @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='c51186e9-4ba8-406c-b609-ea552868e4c9')
     def test_kill_process(self):
         """Test that a killed Bluetooth process restarts

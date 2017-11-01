@@ -52,6 +52,7 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
         self.ad = self.android_devices[0]
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
 
     def setup_class(self):
         try:
@@ -64,6 +65,8 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
     def setup_test(self):
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
+        self.ad.adb.shell("setprop net.lte.ims.volte.provisioned 1",
+                          ignore_status=True)
         return True
 
     def teardown_test(self):
@@ -80,7 +83,8 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
         try:
             self.anritsu.reset()
             self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
-            set_simulation_func(self.anritsu, self.user_params)
+            set_simulation_func(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -100,11 +104,12 @@ class TelLabUeIdentityTest(TelephonyBaseTest):
                 return False
 
             self.ad.droid.telephonyToggleDataConnection(True)
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))

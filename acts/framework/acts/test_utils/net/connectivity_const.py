@@ -39,6 +39,8 @@ NETWORK_CB_KEY_EVENT = "networkCallbackEvent"
 NETWORK_CB_KEY_MAX_MS_TO_LIVE = "maxMsToLive"
 NETWORK_CB_KEY_RSSI = "rssi"
 NETWORK_CB_KEY_INTERFACE_NAME = "interfaceName"
+NETWORK_CB_KEY_CREATE_TS = "creation_timestamp"
+NETWORK_CB_KEY_CURRENT_TS = "current_timestamp"
 
 # Constants for VPN connection status
 VPN_STATE_DISCONNECTED = 0
@@ -98,3 +100,4 @@ class VpnReqParams(object):
     cert_path_vpnserver = "cert_path_vpnserver"
     cert_password = "cert_password"
     pptp_mppe = "pptp_mppe"
+    ipsec_server_type = "ipsec_server_type"

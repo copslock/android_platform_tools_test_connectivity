@@ -19,6 +19,11 @@
 
 import time
 from queue import Empty
+
+from acts import signals
+from acts.controllers.android_device import get_info
+from acts.libs.ota import ota_updater
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CAPABILITY_PHONE
@@ -35,34 +40,74 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
-from acts.test_utils.tel.tel_test_utils import WifiUtils
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.asserts import abort_all
 from acts.asserts import fail
 
 
 class TelLivePreflightTest(TelephonyBaseTest):
-
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+
+    def setup_class(self):
+        for ad in self.android_devices:
+            toggle_airplane_mode_by_adb(self.log, ad, False)
+
+    def teardown_class(self):
+        pass
+
+    def setup_test(self):
+        pass
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="cb897221-99e1-4697-927e-02d92d969440")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_ota_upgrade(self):
+        ota_package = self.user_params.get("ota_package")
+        if isinstance(ota_package, list):
+            ota_package = ota_package[0]
+        if ota_package and "dev/null" not in ota_package:
+            self.log.info("Upgrade with ota_package %s", ota_package)
+            self.log.info("Before OTA upgrade: %s",
+                          get_info(self.android_devices))
+        else:
+            raise signals.TestSkip("No ota_package is defined")
+        ota_updater.initialize(self.user_params, self.android_devices)
+        tasks = [(ota_updater.update, [ad]) for ad in self.android_devices]
+        try:
+            run_multithread_func(self.log, tasks)
+        except Exception as err:
+            abort_all_tests(ad.log, "Unable to do ota upgrade: %s" % err)
+        device_info = get_info(self.android_devices)
+        self.log.info("After OTA upgrade: %s", device_info)
+        self.results.add_controller_info("AndroidDevice", device_info)
+        return True
+
+    @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")
     @TelephonyBaseTest.tel_test_wrap
     def test_check_environment(self):
         ad = self.android_devices[0]
@@ -73,49 +118,40 @@ class TelLivePreflightTest(TelephonyBaseTest):
         try:
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
-                self._preflight_fail("{}: WiFi connect fail.".format(ad.serial))
+                abort_all_tests(ad.log, "WiFi connect fail")
             if (not wait_for_wifi_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
-                self._preflight_fail("{}: Data not available on WiFi.".format(
-                    ad.serial))
+                abort_all_tests(ad.log, "Data not available on WiFi")
         finally:
-            WifiUtils.wifi_toggle_state(self.log, ad, False)
+            wifi_toggle_state(self.log, ad, False)
         # TODO: add more environment check here.
         return True
 
+    @test_tracker_info(uuid="7bb23ac7-6b7b-4d5e-b8d6-9dd10032b9ad")
     @TelephonyBaseTest.tel_test_wrap
     def test_pre_flight_check(self):
         for ad in self.android_devices:
             #check for sim and service
-            subInfo = ad.droid.subscriptionGetAllSubInfoList()
-            if not subInfo or len(subInfo) < 1:
-                self._preflight_fail("{}: Unable to find A valid subscription!".
-                                     format(ad.serial))
-            toggle_airplane_mode(self.log, ad, False, strict_checking=False)
-            if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID:
-                self._preflight_fail("{}: No Default Data Sub ID".format(
-                    ad.serial))
-            elif ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID:
-                self._preflight_fail("{}: No Valid Voice Sub ID".format(
-                    ad.serial))
-            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-            if not wait_for_voice_attach_for_subscription(
-                    self.log, ad, sub_id, MAX_WAIT_TIME_NW_SELECTION):
-                self._preflight_fail(
-                    "{}: Did Not Attach For Voice Services".format(ad.serial))
+            if not ensure_phone_subscription(self.log, ad):
+                abort_all_tests(ad.log, "Unable to find a valid subscription!")
         return True
 
+    @test_tracker_info(uuid="1070b160-902b-43bf-92a0-92cc2d05bb13")
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
+        result = True
+        begin_time = None
         for ad in self.android_devices:
-            ad.crash_report = ad.check_crash_report()
-            if ad.crash_report:
-                msg = "Find crash reports %s" % (ad.crash_report)
-                ad.log.error(msg)
-                fail(msg)
-        return True
-
-    def _preflight_fail(self, message):
-        self.log.error(
-            "Aborting all ongoing tests due to preflight check failure.")
-        abort_all(message)
+            output = ad.search_logcat(
+                "processing action (sys.boot_completed=1)")
+            if output:
+                begin_time = output[-1]["time_stamp"][5:]
+                ad.log.debug("begin time is %s", begin_time)
+            ad.crash_report_preflight = ad.check_crash_report(
+                self.test_name, begin_time, True)
+            if ad.crash_report_preflight:
+                msg = "Find crash reports %s before test starts" % (
+                    ad.crash_report_preflight)
+                ad.log.warn(msg)
+                result = False
+        return result

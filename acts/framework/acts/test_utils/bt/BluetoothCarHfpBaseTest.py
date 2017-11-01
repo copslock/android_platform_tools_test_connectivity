@@ -27,7 +27,6 @@ from acts.test_utils.bt.bt_test_utils import pair_pri_to_sec
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 
 
 class BluetoothCarHfpBaseTest(BluetoothBaseTest):
@@ -60,7 +59,7 @@ class BluetoothCarHfpBaseTest(BluetoothBaseTest):
         if not "sim_conf_file" in self.user_params.keys():
             self.log.error("Missing mandatory user config \"sim_conf_file\"!")
             return False
-        sim_conf_file = self.user_params["sim_conf_file"]
+        sim_conf_file = self.user_params["sim_conf_file"][0]
         if not os.path.isfile(sim_conf_file):
             sim_conf_file = os.path.join(
                 self.user_params[Config.key_config_path], sim_conf_file)

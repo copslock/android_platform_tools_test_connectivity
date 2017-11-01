@@ -14,6 +14,7 @@
 
 import collections
 import itertools
+import logging
 import os
 import time
 
@@ -52,18 +53,23 @@ class Hostapd(object):
         self._config_file = 'hostapd-%s.conf' % self._interface
         self._identifier = '%s.*%s' % (self.PROGRAM_FILE, self._config_file)
 
-    def start(self, config, timeout=60):
+    def start(self, config, timeout=60, additional_parameters=None):
         """Starts hostapd
 
         Starts the hostapd daemon and runs it in the background.
 
         Args:
-            config: Cconfigs to start the hostapd with.
+            config: Configs to start the hostapd with.
+            timeout: Time to wait for DHCP server to come up.
+            additional_parameters: A dictionary of parameters that can sent
+                                   directly into the hostapd config file.  This
+                                   can be used for debugging and or adding one
+                                   off parameters into the config.
 
         Returns:
             True if the daemon could be started. Note that the daemon can still
             start and not work. Invalid configurations can take a long amount
-            of time to be produced, and because the daemon runs indefinetly
+            of time to be produced, and because the daemon runs indefinitely
             it's impossible to wait on. If you need to check if configs are ok
             then periodic checks to is_running and logs should be used.
         """
@@ -72,10 +78,10 @@ class Hostapd(object):
 
         self.config = config
 
-        self._write_configs()
-
         self._shell.delete_file(self._ctrl_file)
         self._shell.delete_file(self._log_file)
+        self._shell.delete_file(self._config_file)
+        self._write_configs(additional_parameters=additional_parameters)
 
         hostapd_command = '%s -dd -t "%s"' % (self.PROGRAM_FILE,
                                               self._config_file)
@@ -97,7 +103,7 @@ class Hostapd(object):
     def is_alive(self):
         """
         Returns:
-            True if the deamon is running.
+            True if the daemon is running.
         """
         return self._shell.is_alive(self._identifier)
 
@@ -160,23 +166,24 @@ class Hostapd(object):
         if bad_config:
             raise Error('Interface failed to start', self)
 
-        bad_config = self._shell.search_file("Interface %s wasn't started" %
-                                             self._interface, self._log_file)
+        bad_config = self._shell.search_file(
+            "Interface %s wasn't started" % self._interface, self._log_file)
         if bad_config:
             raise Error('Interface failed to start', self)
 
         if should_be_up and is_dead:
             raise Error('Hostapd failed to start', self)
 
-    def _write_configs(self):
+    def _write_configs(self, additional_parameters=None):
         """Writes the configs to the hostapd config file."""
         self._shell.delete_file(self._config_file)
 
         our_configs = collections.OrderedDict()
         our_configs['interface'] = self._interface
         our_configs['ctrl_interface'] = self._ctrl_file
-
         packaged_configs = self.config.package_configs()
+        if additional_parameters:
+            packaged_configs.append(additional_parameters)
 
         pairs = ('%s=%s' % (k, v) for k, v in our_configs.items())
         for packaged_config in packaged_configs:
@@ -185,5 +192,10 @@ class Hostapd(object):
             pairs = itertools.chain(pairs, config_pairs)
 
         hostapd_conf = '\n'.join(pairs)
+
+        logging.info('Writing %s' % self._config_file)
+        logging.debug('******************Start*******************')
+        logging.debug('\n%s' % hostapd_conf)
+        logging.debug('*******************End********************')
 
         self._shell.write_file(self._config_file, hostapd_conf)

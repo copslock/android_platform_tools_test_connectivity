@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
+import time
 import traceback
 
 from acts import asserts
@@ -22,7 +24,9 @@ from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
+from acts import tracelogger
 from acts import utils
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -65,6 +69,13 @@ class BaseTestClass(object):
             setattr(self, name, value)
         self.results = records.TestResult()
         self.current_test_name = None
+        self.log = tracelogger.TraceLogger(self.log)
+        self.size_limit_reached = False
+        if 'android_devices' in self.__dict__:
+            for ad in self.android_devices:
+                if ad.droid:
+                    utils.set_location_service(ad, False)
+                    utils.sync_device_time(ad)
 
     def __enter__(self):
         return self
@@ -121,6 +132,21 @@ class BaseTestClass(object):
             else:
                 self.log.warning(("Missing optional user param '%s' in "
                                   "configuration, continue."), name)
+
+        capablity_of_devices = utils.CapablityPerDevice
+        if "additional_energy_info_models" in self.user_params:
+            self.energy_info_models = (capablity_of_devices.energy_info_models
+                                       + self.additional_energy_info_models)
+        else:
+            self.energy_info_models = capablity_of_devices.energy_info_models
+        self.user_params["energy_info_models"] = self.energy_info_models
+
+        if "additional_tdls_models" in self.user_params:
+            self.tdls_models = (capablity_of_devices.energy_info_models +
+                                self.additional_tdls_models)
+        else:
+            self.tdls_models = capablity_of_devices.energy_info_models
+        self.user_params["tdls_models"] = self.tdls_models
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -200,12 +226,10 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the failed test
                     case.
         """
-        test_name = record.test_name
         if record.details:
             self.log.error(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_fail(test_name, begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_fail(record.test_name, record.log_begin_time)
 
     def on_fail(self, test_name, begin_time):
         """A function that is executed upon a test case failure.
@@ -225,13 +249,11 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the passed test
                     case.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         msg = record.details
         if msg:
             self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_pass(test_name, begin_time)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_pass(record.test_name, record.log_begin_time)
 
     def on_pass(self, test_name, begin_time):
         """A function that is executed upon a test case passing.
@@ -251,16 +273,34 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the skipped test
                     case.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.log.info("Reason to skip: %s", record.details)
-        self.on_skip(test_name, begin_time)
+        self.on_skip(record.test_name, record.log_begin_time)
 
     def on_skip(self, test_name, begin_time):
         """A function that is executed upon a test case being skipped.
 
         Implementation is optional.
+
+        Args:
+            test_name: Name of the test that triggered this function.
+            begin_time: Logline format timestamp taken when the test started.
+        """
+
+    def _on_blocked(self, record):
+        """Proxy function to guarantee the base implementation of on_blocked
+        is called.
+
+        Args:
+            record: The records.TestResultRecord object for the blocked test
+                    case.
+        """
+        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.log.info("Reason to block: %s", record.details)
+        self.on_blocked(record.test_name, record.log_begin_time)
+
+    def on_blocked(self, test_name, begin_time):
+        """A function that is executed upon a test begin skipped.
 
         Args:
             test_name: Name of the test that triggered this function.
@@ -275,10 +315,8 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the failed test
                     case.
         """
-        test_name = record.test_name
         self.log.exception(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.on_exception(test_name, begin_time)
+        self.on_exception(record.test_name, record.log_begin_time)
 
     def on_exception(self, test_name, begin_time):
         """A function that is executed upon an unhandled exception from a test
@@ -330,11 +368,17 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
+        self.begin_time = tr_record.log_begin_time
+        self.test_name = tr_record.test_name
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
             try:
-                ret = self._setup_test(test_name)
+                if hasattr(self, 'android_devices'):
+                    for ad in self.android_devices:
+                        if not ad.is_adb_logcat_on:
+                            ad.start_adb_logcat(cont_logcat_file=True)
+                ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
                 if args or kwargs:
@@ -343,7 +387,7 @@ class BaseTestClass(object):
                     verdict = test_func()
             finally:
                 try:
-                    self._teardown_test(test_name)
+                    self._teardown_test(self.test_name)
                 except signals.TestAbortAll:
                     raise
                 except Exception as e:
@@ -351,7 +395,7 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.error(traceback.format_exc())
+            self.log.error(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -361,6 +405,7 @@ class BaseTestClass(object):
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
+            self._exec_procedure_func(self._on_fail, tr_record)
             raise e
         except signals.TestPass as e:
             # Explicit test pass.
@@ -370,6 +415,9 @@ class BaseTestClass(object):
             # This is a trigger test for generated tests, suppress reporting.
             is_generate_trigger = True
             self.results.requested.remove(test_name)
+        except signals.TestBlocked as e:
+            tr_record.test_blocked(e)
+            self._exec_procedure_func(self._on_blocked, tr_record)
         except Exception as e:
             self.log.error(traceback.format_exc())
             # Exception happened during test.
@@ -398,7 +446,8 @@ class BaseTestClass(object):
                                 args=None,
                                 kwargs=None,
                                 tag="",
-                                name_func=None):
+                                name_func=None,
+                                format_args=False):
         """Runs generated test cases.
 
         Generated test cases are not written down as functions, but as a list
@@ -420,6 +469,8 @@ class BaseTestClass(object):
                        proper test name. The test name should be shorter than
                        utils.MAX_FILENAME_LEN. Names over the limit will be
                        truncated.
+            format_args: If True, args will be appended as the first argument
+                         in the args list passed to test_func.
 
         Returns:
             A list of settings that did not pass.
@@ -427,23 +478,35 @@ class BaseTestClass(object):
         args = args or ()
         kwargs = kwargs or {}
         failed_settings = []
-        for s in settings:
-            test_name = "{} {}".format(tag, s)
+
+        for setting in settings:
+            test_name = "{} {}".format(tag, setting)
+
             if name_func:
                 try:
-                    test_name = name_func(s, *args, **kwargs)
+                    test_name = name_func(setting, *args, **kwargs)
                 except:
                     self.log.exception(("Failed to get test name from "
                                         "test_func. Fall back to default %s"),
                                        test_name)
+
             self.results.requested.append(test_name)
+
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
+
             previous_success_cnt = len(self.results.passed)
-            self.exec_one_testcase(test_name, test_func, (s, ) + args,
-                                   **kwargs)
+
+            if format_args:
+                self.exec_one_testcase(test_name, test_func,
+                                       args + (setting, ), **kwargs)
+            else:
+                self.exec_one_testcase(test_name, test_func,
+                                       (setting, ) + args, **kwargs)
+
             if len(self.results.passed) - previous_success_cnt != 1:
-                failed_settings.append(s)
+                failed_settings.append(setting)
+
         return failed_settings
 
     def _exec_func(self, func, *args):
@@ -499,17 +562,55 @@ class BaseTestClass(object):
         """
         test_funcs = []
         for test_name in test_names:
-            if not test_name.startswith("test_"):
-                raise Error(("Test case name %s does not follow naming "
-                             "convention test_*, abort.") % test_name)
-            try:
-                test_funcs.append((test_name, getattr(self, test_name)))
-            except AttributeError:
-                raise Error("%s does not have test case %s." % (self.TAG,
-                                                                test_name))
+            test_funcs.append(self._get_test_func(test_name))
+
         return test_funcs
 
-    def run(self, test_names=None):
+    def _get_test_func(self, test_name):
+        """Obtain the actual function of test cases based on the test name.
+
+        Args:
+            test_name: String, The name of the test.
+
+        Returns:
+            A tuples of (string, function). String is the test case
+            name, function is the actual test case function.
+
+        Raises:
+            Error is raised if the test name does not follow
+            naming convention "test_*". This can only be caused by user input
+            here.
+        """
+        if not test_name.startswith("test_"):
+            raise Error(("Test case name %s does not follow naming "
+                         "convention test_*, abort.") % test_name)
+        try:
+            return test_name, getattr(self, test_name)
+        except:
+
+            def test_skip_func(*args, **kwargs):
+                raise signals.TestSkip("Test %s does not exist" % test_name)
+
+            self.log.info("Test case %s not found in %s.", test_name, self.TAG)
+            return test_name, test_skip_func
+
+    def _block_all_test_cases(self, tests):
+        """
+        Block all passed in test cases.
+        Args:
+            tests: The tests to block.
+        """
+        for test_name, test_func in tests:
+            signal = signals.TestBlocked("Failed class setup")
+            record = records.TestResultRecord(test_name, self.TAG)
+            record.test_begin()
+            if hasattr(test_func, 'gather'):
+                signal.extras = test_func.gather()
+            record.test_blocked(signal)
+            self.results.add_record(record)
+            self._on_blocked(record)
+
+    def run(self, test_names=None, test_case_iterations=1):
         """Runs test cases within a test class by the order they appear in the
         execution list.
 
@@ -541,23 +642,22 @@ class BaseTestClass(object):
         self.results.requested = test_names
         tests = self._get_test_funcs(test_names)
         # A TestResultRecord used for when setup_class fails.
-        class_record = records.TestResultRecord("setup_class", self.TAG)
-        class_record.test_begin()
         # Setup for the class.
         try:
             if self._setup_class() is False:
-                asserts.fail("Failed to setup %s." % self.TAG)
+                self.log.error("Failed to setup %s.", self.TAG)
+                self._block_all_test_cases(tests)
+                return self.results
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
-            class_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, class_record)
             self._exec_func(self.teardown_class)
-            self.results.fail_class(class_record)
+            self._block_all_test_cases(tests)
             return self.results
         # Run tests in order.
         try:
             for test_name, test_func in tests:
-                self.exec_one_testcase(test_name, test_func, self.cli_args)
+                for _ in range(test_case_iterations):
+                    self.exec_one_testcase(test_name, test_func, self.cli_args)
             return self.results
         except signals.TestAbortClass:
             return self.results
@@ -578,3 +678,67 @@ class BaseTestClass(object):
         This function should clean up objects initialized in the constructor by
         user.
         """
+
+    def _ad_take_reports(self, ad, test_name, begin_time):
+        try:
+            if getattr(ad, "qxdm_log", False):
+                ad.get_qxdm_logs(test_name, begin_time)
+            ad.take_bug_report(test_name, begin_time)
+            bugreport_path = os.path.join(ad.log_path, test_name)
+            utils.create_dir(bugreport_path)
+            ad.check_crash_report(test_name, begin_time, True)
+        except Exception as e:
+            ad.log.error("Failed to take a bug report for %s with error %s",
+                         test_name, e)
+
+    def _skip_bug_report(self):
+        """A function to check whether we should skip creating a bug report."""
+        if "no_bug_report_on_fail" in self.user_params:
+            return True
+
+        # Once we hit a certain log path size, it's not going to get smaller.
+        # We cache the result so we don't have to keep doing directory walks.
+        if self.size_limit_reached:
+            return True
+        try:
+            max_log_size = int(
+                self.user_params.get("soft_output_size_limit") or "invalid")
+            log_path = getattr(logging, "log_path", None)
+            if log_path:
+                curr_log_size = utils.get_directory_size(log_path)
+                if curr_log_size > max_log_size:
+                    self.log.info(
+                        "Skipping bug report, as we've reached the size limit."
+                    )
+                    self.size_limit_reached = True
+                    return True
+        except ValueError:
+            pass
+        return False
+
+    def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report():
+            return
+
+        tasks = [(self._ad_take_reports, (ad, test_name, begin_time))
+                 for ad in self.android_devices]
+        run_multithread_func(self.log, tasks)
+
+    def _reboot_device(self, ad):
+        ad.log.info("Rebooting device.")
+        ad = ad.reboot()
+
+    def _cleanup_logger_sessions(self):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Resetting a diagnostic session %s, %s", logger,
+                          session)
+            logger.reset()
+        self.logger_sessions = []
+
+    def _pull_diag_logs(self, test_name, begin_time):
+        for (logger, session) in self.logger_sessions:
+            self.log.info("Pulling diagnostic session %s", logger)
+            logger.stop(session)
+            diag_path = os.path.join(self.log_path, begin_time)
+            utils.create_dir(diag_path)
+            logger.pull(session, diag_path)

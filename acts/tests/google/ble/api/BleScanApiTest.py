@@ -21,12 +21,13 @@ then other test suites utilising Ble Scanner will also fail.
 """
 
 from acts.controllers import sl4a_client
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
-from acts.test_utils.bt.BleEnum import ScanSettingsScanResultType
-from acts.test_utils.bt.BleEnum import ScanSettingsReportDelaySeconds
-from acts.test_utils.bt.BleEnum import Uuids
+from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_result_types
+from acts.test_utils.bt.bt_constants import ble_scan_settings_report_delay_milli_seconds
+from acts.test_utils.bt.bt_constants import ble_uuids
 
 
 class BleScanResultsError(Exception):
@@ -57,9 +58,9 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         if 'ScanSettings' not in input.keys():
             input['ScanSettings'] = (
-                ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-                ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-                ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+                ble_scan_settings_callback_types['all_matches'], 0,
+                ble_scan_settings_modes['low_power'],
+                ble_scan_settings_result_types['full'])
         if 'ScanFilterManufacturerDataId' not in input.keys():
             input['ScanFilterManufacturerDataId'] = -1
         if 'ScanFilterDeviceName' not in input.keys():
@@ -214,6 +215,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5ffc9f7b-c261-4bf0-9a6b-7fda182b6c97')
     def test_start_ble_scan_with_default_settings(self):
         """Test LE scan with default settings.
 
@@ -237,6 +239,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='88c3b0cb-b4d4-45d1-be25-9855290a6d03')
     def test_stop_ble_scan_default_settings(self):
         """Test stopping an LE scan.
 
@@ -274,6 +277,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5aa7a4c2-0b7d-4000-a980-f00c9329a7b9')
     def test_scan_settings_callback_type_all_matches(self):
         """Test LE scan settings callback type all matches.
 
@@ -295,12 +299,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='fd764861-aa76-480e-b2d2-5d55a888d123')
     def test_scan_settings_set_callback_type_first_match(self):
         """Test LE scan settings callback type first match
 
@@ -322,14 +327,15 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['first_match'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         test_result = self.validate_scan_settings_helper(input,
                                                          self.ad_dut.droid)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='52e4626e-199c-4755-b9f1-8b38ecb30896')
     def test_scan_settings_set_callback_type_match_lost(self):
         """Test LE scan settings callback type match lost.
 
@@ -351,14 +357,15 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['match_lost'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         test_result = self.validate_scan_settings_helper(input,
                                                          self.ad_dut.droid)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='57476b3c-ba7a-4342-86f6-1b56b2c00181')
     def test_scan_settings_set_invalid_callback_type(self):
         """Test LE scan settings invalid callback type.
 
@@ -378,14 +385,14 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 2
         """
         input = {}
-        input["ScanSettings"] = (
-            -1, 0, ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+        input["ScanSettings"] = (-1, 0, ble_scan_settings_modes['low_power'],
+                                 ble_scan_settings_result_types['full'])
         test_result = self.validate_scan_settings_helper(input,
                                                          self.ad_dut.droid)
         return not test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='52c80f0c-4f26-4cda-8a6b-291ac52f673a')
     def test_scan_settings_set_scan_mode_low_power(self):
         """Test LE scan settings scan mode low power mode.
 
@@ -407,14 +414,15 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         test_result = self.validate_scan_settings_helper(input,
                                                          self.ad_dut.droid)
         return test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='20f4513c-44a7-435d-be4e-03420093297a')
     def test_scan_settings_set_scan_mode_balanced(self):
         """Test LE scan settings scan mode balanced.
 
@@ -436,12 +444,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['balanced'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='bf14e7fd-853b-4833-8fef-8c4bd629374b')
     def test_scan_settings_set_scan_mode_low_latency(self):
         """Test LE scan settings scan mode low latency.
 
@@ -463,12 +472,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_latency'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='9f3b2e10-98f8-4d6a-b6b6-e8dee87063f0')
     def test_scan_settings_set_invalid_scan_mode(self):
         """Test LE scan settings scan mode as an invalid value.
         Test scan settings invalid scan mode -2.
@@ -487,11 +497,12 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0, -2,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0, -2,
+            ble_scan_settings_result_types['full'])
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cb246be7-4fef-4313-964d-5fb6dbe558c8')
     def test_scan_settings_set_report_delay_millis_min(self):
         """Test scan settings report delay millis as min value
 
@@ -513,13 +524,14 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
-            ScanSettingsReportDelaySeconds.MIN.value,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'],
+            ble_scan_settings_report_delay_milli_seconds['min'],
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='db1ea8f6-503d-4e9a-b61a-01210508c5a2')
     def test_scan_settings_set_report_delay_millis_min_plus_one(self):
         """Test scan settings report delay millis as min value plus one.
 
@@ -541,13 +553,14 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
-            ScanSettingsReportDelaySeconds.MIN.value + 1,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'],
+            ble_scan_settings_report_delay_milli_seconds['min'] + 1,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='54e83ff8-92b0-473e-839a-1ff1c7dcea83')
     def test_scan_settings_set_report_delay_millis_max(self):
         """Test scan settings report delay millis as max value.
 
@@ -569,13 +582,14 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
-            ScanSettingsReportDelaySeconds.MAX.value,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'],
+            ble_scan_settings_report_delay_milli_seconds['max'],
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='45d918ec-7e43-463b-8f07-f009f8808903')
     def test_scan_settings_set_report_delay_millis_max_minus_one(self):
         """Test scan settings report delay millis as max value minus one.
 
@@ -597,13 +611,14 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
-            ScanSettingsReportDelaySeconds.MAX.value - 1,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'],
+            ble_scan_settings_report_delay_milli_seconds['max'] - 1,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='eb94b5ee-f2e7-4322-b3df-7bdd3a250262')
     def test_scan_settings_set_invalid_report_delay_millis_min_minus_one(self):
         """Test scan settings report delay millis as an invalid value.
 
@@ -626,13 +641,14 @@ class BleScanApiTest(BluetoothBaseTest):
         droid = self.ad_dut.droid
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value,
-            ScanSettingsReportDelaySeconds.MIN.value - 1,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'],
+            ble_scan_settings_report_delay_milli_seconds['min'] - 1,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return not self.validate_scan_settings_helper(input, droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='8f5a2bd0-6037-4ac6-a962-f11e7fc13920')
     def test_scan_settings_set_scan_result_type_full(self):
         """Test scan settings result type full.
 
@@ -654,12 +670,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_FULL.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['full'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='610fe301-600e-443e-a28b-cd722cc8a4c1')
     def test_scan_settings_set_scan_result_type_abbreviated(self):
         """Test scan settings result type abbreviated.
 
@@ -681,12 +698,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
-            ScanSettingsScanResultType.SCAN_RESULT_TYPE_ABBREVIATED.value)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_power'],
+            ble_scan_settings_result_types['abbreviated'])
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='ed58430b-8180-472f-a118-64f5fce5e84c')
     def test_scan_settings_set_invalid_scan_result_type(self):
         """Test scan settings result type as an invalid value.
 
@@ -708,11 +726,12 @@ class BleScanApiTest(BluetoothBaseTest):
         """
         input = {}
         input["ScanSettings"] = (
-            ScanSettingsCallbackType.CALLBACK_TYPE_ALL_MATCHES.value, 0,
-            ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value, -1)
+            ble_scan_settings_callback_types['all_matches'], 0,
+            ble_scan_settings_modes['low_power'], -1)
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6489665f-313d-4b1b-bd7f-f0fdeeaad335')
     def test_scan_filter_set_device_name(self):
         """Test scan filter set valid device name.
 
@@ -737,6 +756,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='76021a9a-14ca-4a2f-a908-96ab90db39ce')
     def test_scan_filter_set_device_name_blank(self):
         """Test scan filter set blank device name.
 
@@ -762,6 +782,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d77c3d81-43a9-4572-a99b-87969117ede5')
     def test_scan_filter_set_device_name_special_chars(self):
         """Test scan filter set device name as special chars.
 
@@ -786,6 +807,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='1697004e-76ab-444b-9419-0437e30444ad')
     def test_scan_filter_set_device_address(self):
         """Test scan filter set valid device address.
 
@@ -810,6 +832,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='eab0409c-7fc5-4d1f-8fbe-5ee2bb743f7e')
     def test_scan_filter_set_invalid_device_address_lower_case(self):
         """Test scan filter set invalid device address.
 
@@ -833,6 +856,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0ec491ac-d273-468e-bbfe-e36a290aeb2a')
     def test_scan_filter_set_invalid_device_address_blank(self):
         """Test scan filter set invalid device address.
 
@@ -858,6 +882,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return not test_result
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='5cebc454-091c-4e46-b200-1e52c8dffbec')
     def test_scan_filter_set_invalid_device_address_bad_format(self):
         """Test scan filter set badly formatted device address.
 
@@ -881,6 +906,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='d5249d10-1486-4c38-a22d-1f1b077926db')
     def test_scan_filter_set_invalid_device_address_bad_address(self):
         """Test scan filter device address as an invalid value.
 
@@ -904,6 +930,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='65c62d50-69f6-4a0b-bd74-2340e0ce32ca')
     def test_scan_filter_set_manufacturer_id_data(self):
         """Test scan filter manufacturer data.
 
@@ -931,6 +958,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='12807021-9f66-4784-b34a-80859cf4a32f')
     def test_scan_filter_set_manufacturer_id_data_mask(self):
         """Test scan filter manufacturer data mask.
 
@@ -961,6 +989,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='980e5ab6-5381-4471-8e5b-0b716665a9b8')
     def test_scan_filter_set_manufacturer_max_id(self):
         """Test scan filter manufacturer data id.
 
@@ -988,6 +1017,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='cf0efe38-8621-4288-be26-742719da2f6c')
     def test_scan_filter_set_manufacturer_data_empty(self):
         """Test scan filter empty manufacturer data.
 
@@ -1015,6 +1045,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='7ea0e82e-e92a-469c-8432-8f21978508cb')
     def test_scan_filter_set_manufacturer_data_mask_empty(self):
         """Test scan filter empty manufacturer data mask.
 
@@ -1045,6 +1076,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='88e4a9b8-afae-48cb-873a-fd6b4ef84116')
     def test_scan_filter_set_invalid_manufacturer_min_id_minus_one(self):
         """Test scan filter invalid manufacturer data.
 
@@ -1072,6 +1104,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return not self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='2e8438dc-29cd-4f72-8747-4a161974d4d3')
     def test_scan_filter_set_service_uuid(self):
         """Test scan filter set valid service uuid.
 
@@ -1099,6 +1132,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='e07b9985-44b6-4dc4-b570-0833b5d2893c')
     def test_scan_filter_service_uuid_p_service(self):
         """Test scan filter service uuid.
 
@@ -1118,7 +1152,7 @@ class BleScanApiTest(BluetoothBaseTest):
         TAGS: LE, Scanning
         Priority: 2
         """
-        expected_service_uuid = Uuids.P_Service.value
+        expected_service_uuid = ble_uuids['p_service']
         expected_service_mask = "00000000-0000-1000-8000-00805F9B34FB"
         self.log.debug("Step 1: Setup environment.")
 
@@ -1128,6 +1162,7 @@ class BleScanApiTest(BluetoothBaseTest):
         return self.validate_scan_settings_helper(input, self.ad_dut.droid)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0467af19-6e9a-4cfe-9e10-878b0c224df2')
     def test_classic_ble_scan_with_service_uuids_p(self):
         """Test classic LE scan with valid service uuid.
 
@@ -1151,12 +1186,13 @@ class BleScanApiTest(BluetoothBaseTest):
         """
 
         droid = self.ad_dut.droid
-        service_uuid_list = [Uuids.P_Service.value]
+        service_uuid_list = [ble_uuids['p_service']]
         scan_callback = droid.bleGenLeScanCallback()
         return self.verify_classic_ble_scan_with_service_uuids(
             droid, scan_callback, service_uuid_list)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='516c295f-a2df-44f6-b2ad-54451af43ce8')
     def test_classic_ble_scan_with_service_uuids_hr(self):
         """Test classic LE scan with valid service uuid.
 
@@ -1179,12 +1215,13 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 1
         """
         droid = self.ad_dut.droid
-        service_uuid_list = [Uuids.HR_SERVICE.value]
+        service_uuid_list = [ble_uuids['hr_service']]
         scan_callback = droid.bleGenLeScanCallback()
         return self.verify_classic_ble_scan_with_service_uuids(
             droid, scan_callback, service_uuid_list)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='0458b5e0-bb0b-4d6e-ab79-e21169d3256b')
     def test_classic_ble_scan_with_service_uuids_empty_uuid_list(self):
         """Test classic LE scan with empty but valid uuid list.
 
@@ -1213,6 +1250,7 @@ class BleScanApiTest(BluetoothBaseTest):
             droid, scan_callback, service_uuid_list)
 
     @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='c0d84a37-c86c-43c4-9dc7-d16959fdbc2a')
     def test_classic_ble_scan_with_service_uuids_hr_and_p(self):
         """Test classic LE scan with multiple service uuids.
 
@@ -1235,7 +1273,7 @@ class BleScanApiTest(BluetoothBaseTest):
         Priority: 1
         """
         droid = self.ad_dut.droid
-        service_uuid_list = [Uuids.HR_SERVICE.value, Uuids.P_Service.value]
+        service_uuid_list = [ble_uuids['hr_service'], ble_uuids['p_service']]
         scan_callback = droid.bleGenLeScanCallback()
         return self.verify_classic_ble_scan_with_service_uuids(
             droid, scan_callback, service_uuid_list)

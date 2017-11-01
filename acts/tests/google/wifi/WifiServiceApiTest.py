@@ -22,6 +22,7 @@ import time
 from acts import base_test
 from acts import signals
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -37,6 +38,8 @@ class WifiServiceApiTest(base_test.BaseTestClass):
 
 
     TEST_SSID_PREFIX = "test_config_"
+    CONFIG_ELEMENT = 'config'
+    NETWORK_ID_ELEMENT = 'network_id'
 
     def setup_class(self):
         """ Sets up the required dependencies from the config file and
@@ -80,7 +83,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
         # Now save the config.
         network_id = self.dut.droid.wifiAddNetwork(config)
         self.dut.log.info("saved config: network_id = %s", network_id)
-        return {'network_id': network_id, 'config': config}
+        return {self.NETWORK_ID_ELEMENT: network_id, self.CONFIG_ELEMENT: config}
 
     def check_network_config_saved(self, config):
         """ Get the configured networks and check of the provided config
@@ -121,6 +124,7 @@ class WifiServiceApiTest(base_test.BaseTestClass):
 
 
     """ Tests Begin """
+    @test_tracker_info(uuid="f4df08c2-d3d5-4032-a433-c15f55130d4a")
     def test_remove_config_wifi_enabled(self):
         """ Test if config can be deleted when wifi is enabled.
 
@@ -132,22 +136,19 @@ class WifiServiceApiTest(base_test.BaseTestClass):
         """
         wutils.wifi_toggle_state(self.dut, True)
         test_network = self.create_and_save_wifi_network_config()
-        if not self.check_network_config_saved(test_network['config']):
+        if not self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
             raise signals.TestFailure(
                     "Test network not found in list of configured networks.")
-        if not self.forget_network(test_network['network_id']):
+        if not self.forget_network(test_network[self.NETWORK_ID_ELEMENT]):
             raise signals.TestFailure(
                     "Test network not deleted from configured networks.")
-        if self.check_network_config_saved(test_network['config']):
+        if self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
             raise signals.TestFailure(
                     "Deleted network was in configured networks list.")
 
+    @test_tracker_info(uuid="9af96c7d-a316-4d57-ba5f-c992427c237b")
     def test_remove_config_wifi_disabled(self):
         """ Test if config can be deleted when wifi is disabled.
-
-            NOTE: This test is currently modified to pass.  It will fail and
-            require changes back to a correct test when b/32809235 is fixed.
-            The proper test flow is described below.
 
             1. Enable wifi, if needed
             2. Create and save a random config.
@@ -158,25 +159,53 @@ class WifiServiceApiTest(base_test.BaseTestClass):
         """
         wutils.wifi_toggle_state(self.dut, True)
         test_network = self.create_and_save_wifi_network_config()
-        if not self.check_network_config_saved(test_network['config']):
+        if not self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
             raise signals.TestFailure(
                     "Test network not found in list of configured networks.")
         wutils.wifi_toggle_state(self.dut, False)
-        # Changes when comment in test doc is addressed:
-        # 1 - Expect True in the next line.
-        # 2 - Uncomment the 'if' line below.
-        # 3 - Delete the current 'if' self.check_network_config_saved
-        if not self.forget_network(test_network['network_id']):
-            self.dut.log.warning(
-                    "Currently expecting failure to delete network.")
-        #if self.check_network_config_saved(test_network['config']):
-        if self.check_network_config_saved(test_network['config']):
+        if not self.forget_network(test_network[self.NETWORK_ID_ELEMENT]):
+            raise signals.TestFailure("Failed to delete network.")
+        if self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
             raise signals.TestFailure(
                     "Test network was found in list of configured networks.")
 
+    @test_tracker_info(uuid="79204ae6-323b-4257-a2cb-2225d44199d4")
+    def test_retrieve_config_wifi_enabled(self):
+        """ Test if config can be retrieved when wifi is enabled.
+
+            1. Enable wifi
+            2. Create and save a random config
+            3. Retrieve the config
+            4. Remove the config (clean up from the test)
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        test_network = self.create_and_save_wifi_network_config()
+
+        if not self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
+            raise signals.TestFailure(
+                    "Test network not found in list of configured networks.")
+        if not self.forget_network(test_network[self.NETWORK_ID_ELEMENT]):
+            raise signals.TestFailure("Failed to delete network.")
+
+    @test_tracker_info(uuid="58fb4f81-bc19-43e1-b0af-89dbd17f45b2")
+    def test_retrieve_config_wifi_disabled(self):
+        """ Test if config can be retrieved when wifi is disabled.
+
+            1. Disable wifi
+            2. Create and save a random config
+            3. Retrieve the config
+            4. Remove the config (clean up from the test)
+        """
+        wutils.wifi_toggle_state(self.dut, False)
+        test_network = self.create_and_save_wifi_network_config()
+        if not self.check_network_config_saved(test_network[self.CONFIG_ELEMENT]):
+            raise signals.TestFailure(
+                    "Test network not found in list of configured networks.")
+        if not self.forget_network(test_network[self.NETWORK_ID_ELEMENT]):
+            raise signals.TestFailure("Failed to delete network.")
 
     """ Tests End """
 
 
-    if __name__ == "__main__":
-          pass
+if __name__ == "__main__":
+      pass

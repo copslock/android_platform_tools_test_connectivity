@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2017 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -33,12 +33,16 @@ class Config(enum.Enum):
     key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
+    key_random = "random"
+    key_test_case_iterations = "test_case_iterations"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_native_android_device = "NativeAndroidDevice"
+    key_relay_device = "RelayDevice"
     key_access_point = "AccessPoint"
     key_attenuator = "Attenuator"
     key_iperf_server = "IPerfServer"
+    key_packet_sender = "PacketSender"
     key_monsoon = "Monsoon"
     key_sniffer = "Sniffer"
     # Internal keys, used internally, not exposed to user's config files.
@@ -51,9 +55,11 @@ class Config(enum.Enum):
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
     m_key_native_android_device = "native_android_device"
+    m_key_relay_device = "relay_device_controller"
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
+    m_key_packet_sender = "packet_sender"
     m_key_sniffer = "sniffer"
 
     # A list of keys whose values in configs should not be passed to test
@@ -62,9 +68,16 @@ class Config(enum.Enum):
 
     # Controller names packaged with ACTS.
     builtin_controller_names = [
-        key_android_device, key_native_android_device, key_access_point,
-        key_attenuator, key_iperf_server, key_monsoon, key_sniffer
+        key_android_device, key_native_android_device, key_relay_device,
+        key_access_point, key_attenuator, key_iperf_server, key_packet_sender,
+        key_monsoon, key_sniffer
     ]
+
+    # Keys that are file or folder paths.
+    file_path_keys = [key_relay_device]
+
+    # Keys that can be overridden by "%(key)_%(testbed_name)".
+    user_param_overridable = [key_relay_device]
 
 
 def get_name_by_value(value):

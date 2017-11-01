@@ -26,9 +26,24 @@ MAX_WAIT_TIME_NW_SELECTION = 180
 # Max time to wait for call drop
 MAX_WAIT_TIME_CALL_DROP = 60
 
+# Wait time between state check retry
+WAIT_TIME_BETWEEN_STATE_CHECK = 5
+
 # Max time to wait after caller make a call and before
 # callee start ringing
-MAX_WAIT_TIME_CALLEE_RINGING = 30
+MAX_WAIT_TIME_CALLEE_RINGING = 90
+
+# country code list
+COUNTRY_CODE_LIST = [
+    "+1", "+44", "+39", "+61", "+49", "+34", "+33", "+47", "+246", "+86",
+    "+850", "+81"
+]
+
+# default pin/password
+DEFAULT_DEVICE_PASSWORD = "1111"
+
+# Wait time after enterring puk code
+WAIT_TIME_SUPPLY_PUK_CODE = 30
 
 # Max time to wait after caller make a call and before
 # callee start ringing
@@ -39,7 +54,10 @@ MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT = 30
 MAX_WAIT_TIME_CALL_IDLE_EVENT = 60
 
 # Max time to wait after initiating a call for telecom to report in-call
-MAX_WAIT_TIME_CALL_INITIATION = 25
+MAX_WAIT_TIME_CALL_INITIATION = 90
+
+# Time to wait after change Mode Pref for Stress Test
+WAIT_TIME_AFTER_MODE_CHANGE = 60
 
 # Max time to wait after toggle airplane mode and before
 # get expected event
@@ -60,10 +78,10 @@ MAX_WAIT_TIME_IMS_REGISTRATION = 120
 # be used for wait after IMS registration.
 
 # Max time to wait for VoLTE enabled flag to be True
-MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 20
+MAX_WAIT_TIME_VOLTE_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 60
 
 # Max time to wait for WFC enabled flag to be True
-MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 50
+MAX_WAIT_TIME_WFC_ENABLED = MAX_WAIT_TIME_IMS_REGISTRATION + 120
 
 # Max time to wait for WFC enabled flag to be False
 MAX_WAIT_TIME_WFC_DISABLED = 60
@@ -82,7 +100,7 @@ MAX_WAIT_TIME_USER_PLANE_DATA = 20
 MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 15
 
 # Max time to wait for voice mail count report correct result.
-MAX_WAIT_TIME_VOICE_MAIL_COUNT = 30
+MAX_WAIT_TIME_VOICE_MAIL_COUNT = 90
 
 # Max time to wait for data SIM change
 MAX_WAIT_TIME_DATA_SUB_CHANGE = 150
@@ -139,6 +157,9 @@ WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE = 10
 # Time to wait for radio to up and running after reboot
 WAIT_TIME_AFTER_REBOOT = 10
 
+# Time to wait for radio to up and running after force crash
+WAIT_TIME_AFTER_CRASH = 30
+
 # Time to wait for tethering test after reboot
 WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 
@@ -176,24 +197,25 @@ INVALID_SIM_SLOT_INDEX = -1
 INVALID_WIFI_RSSI = -127
 
 # MAX and MIN value for attenuator settings
-ATTEN_MAX_VALUE = 90
+ATTEN_MAX_VALUE = 95
 ATTEN_MIN_VALUE = 0
 
 MAX_RSSI_RESERVED_VALUE = 100
 MIN_RSSI_RESERVED_VALUE = -200
 
 # cellular weak RSSI value
-CELL_WEAK_RSSI_VALUE = -120
+CELL_WEAK_RSSI_VALUE = -105
 # cellular strong RSSI value
 CELL_STRONG_RSSI_VALUE = -70
 # WiFi weak RSSI value
-WIFI_WEAK_RSSI_VALUE = -80
+WIFI_WEAK_RSSI_VALUE = -63
 
 # Emergency call number
 DEFAULT_EMERGENCY_CALL_NUMBER = "911"
 
-EMERGENCY_CALL_NUMBERS = ["08", "000", "110", "112", "118", "119", "911", "999",
-                          "*911", "#911"]
+EMERGENCY_CALL_NUMBERS = [
+    "08", "000", "110", "112", "118", "119", "911", "999", "*911", "#911"
+]
 
 AOSP_PREFIX = "aosp_"
 
@@ -231,6 +253,7 @@ CARRIER_ESP = 'esp'
 CARRIER_ORG = 'org'
 CARRIER_TEL = 'tel'
 CARRIER_TSA = 'tsa'
+CARRIER_USCC = 'uscc'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -421,6 +444,10 @@ DATA_STATE_DISCONNECTED = "DISCONNECTED"
 DATA_STATE_CONNECTING = "CONNECTING"
 DATA_STATE_SUSPENDED = "SUSPENDED"
 DATA_STATE_UNKNOWN = "UNKNOWN"
+
+# Constant for Data Roaming State
+DATA_ROAMING_ENABLE = 1
+DATA_ROAMING_DISABLE = 0
 
 # Constant for Telephony Manager Call State
 TELEPHONY_STATE_RINGING = "RINGING"

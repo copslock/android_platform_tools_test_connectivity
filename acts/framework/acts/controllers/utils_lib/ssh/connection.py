@@ -28,11 +28,11 @@ from acts.libs.proc import job
 
 
 class Error(Exception):
-    """An error occured during an ssh operation."""
+    """An error occurred during an ssh operation."""
 
 
 class CommandError(Exception):
-    """An error occured with the command.
+    """An error occurred with the command.
 
     Attributes:
         result: The results of the ssh command that had the error.
@@ -46,8 +46,9 @@ class CommandError(Exception):
         self.result = result
 
     def __str__(self):
-        return 'cmd: %s\nstdout: %s\nstderr: %s' % (
-            self.result.command, self.result.stdout, self.result.stderr)
+        return 'cmd: %s\nstdout: %s\nstderr: %s' % (self.result.command,
+                                                    self.result.stdout,
+                                                    self.result.stderr)
 
 
 _Tunnel = collections.namedtuple('_Tunnel',
@@ -71,7 +72,7 @@ class SshConnection(object):
     def __init__(self, settings):
         """
         Args:
-            settings: The ssh settings to use for this conneciton.
+            settings: The ssh settings to use for this connection.
             formatter: The object that will handle formatting ssh command
                        for use with the background job.
         """
@@ -88,11 +89,12 @@ class SshConnection(object):
     def setup_master_ssh(self, timeout_seconds=5):
         """Sets up the master ssh connection.
 
-        Sets up the inital master ssh connection if it has not already been
+        Sets up the initial master ssh connection if it has not already been
         started.
 
         Args:
-            timeout_seconds: The time to wait for the master ssh connection to be made.
+            timeout_seconds: The time to wait for the master ssh connection to
+            be made.
 
         Raises:
             Error: When setting up the master ssh connection fails.
@@ -103,7 +105,7 @@ class SshConnection(object):
                 if (not os.path.exists(socket_path) or
                         self._master_ssh_proc.poll() is not None):
                     logging.debug('Master ssh connection to %s is down.',
-                                 self._settings.hostname)
+                                  self._settings.hostname)
                     self._cleanup_master_ssh()
 
             if self._master_ssh_proc is None:
@@ -116,13 +118,16 @@ class SshConnection(object):
                 # ControlMaster: Spawn a master connection.
                 # ControlPath: The master connection socket path.
                 extra_flags = {'-N': None}
-                extra_options = {'ControlMaster': True,
-                                 'ControlPath': self.socket_path,
-                                 'BatchMode': True}
+                extra_options = {
+                    'ControlMaster': True,
+                    'ControlPath': self.socket_path,
+                    'BatchMode': True
+                }
 
                 # Construct the command and start it.
                 master_cmd = self._formatter.format_ssh_local_command(
-                    self._settings, extra_flags=extra_flags,
+                    self._settings,
+                    extra_flags=extra_flags,
                     extra_options=extra_options)
                 logging.info('Starting master ssh connection to %s',
                              self._settings.hostname)
@@ -156,7 +161,7 @@ class SshConnection(object):
             ignore_status: bool True to ignore the exit code of the remote
                            subprocess.  Note that if you do ignore status codes,
                            you should handle non-zero exit codes explicitly.
-            env: dict enviroment variables to setup on the remote host.
+            env: dict environment variables to setup on the remote host.
             io_encoding: str unicode encoding of command output.
 
         Returns:
@@ -184,32 +189,30 @@ class SshConnection(object):
         full_command = 'echo "CONNECTED: %s"; %s' % (identifier, command)
 
         terminal_command = self._formatter.format_command(
-            full_command,
-            env, self._settings,
-            extra_options=extra_options)
+            full_command, env, self._settings, extra_options=extra_options)
 
         dns_retry_count = 2
         while True:
-            result = job.run(terminal_command, ignore_status=True,
-                             timeout=timeout)
+            result = job.run(
+                terminal_command, ignore_status=True, timeout=timeout)
             output = result.stdout
 
             # Check for a connected message to prevent false negatives.
-            valid_connection = re.search('^CONNECTED: %s' % identifier,
-                                         output,
-                                         flags=re.MULTILINE)
+            valid_connection = re.search(
+                '^CONNECTED: %s' % identifier, output, flags=re.MULTILINE)
             if valid_connection:
                 # Remove the first line that contains the connect message.
                 line_index = output.find('\n')
-                real_output = output[line_index + 1:].encode(
-                    result._encoding)
-                result = job.Result(command=result.command,
-                                    stdout=real_output,
-                                    stderr=result.raw_stderr,
-                                    exit_status=result.exit_status,
-                                    duration=result.duration,
-                                    did_timeout=result.did_timeout,
-                                    encoding=result._encoding)
+                real_output = output[line_index + 1:].encode(result._encoding)
+
+                result = job.Result(
+                    command=result.command,
+                    stdout=real_output,
+                    stderr=result._raw_stderr,
+                    exit_status=result.exit_status,
+                    duration=result.duration,
+                    did_timeout=result.did_timeout,
+                    encoding=result._encoding)
                 if result.exit_status:
                     raise job.Error(result)
                 return result
@@ -228,10 +231,11 @@ class SshConnection(object):
             else:
                 break
 
-        had_timeout = re.search(r'^ssh: connect to host .* port .*: '
-                                r'Connection timed out\r$',
-                                error_string,
-                                flags=re.MULTILINE)
+        had_timeout = re.search(
+            r'^ssh: connect to host .* port .*: '
+            r'Connection timed out\r$',
+            error_string,
+            flags=re.MULTILINE)
         if had_timeout:
             raise Error('Ssh timed out.', result)
 
@@ -239,10 +243,11 @@ class SshConnection(object):
         if permission_denied:
             raise Error('Permission denied.', result)
 
-        unknown_host = re.search(r'ssh: Could not resolve hostname .*: '
-                                 r'Name or service not known',
-                                 error_string,
-                                 flags=re.MULTILINE)
+        unknown_host = re.search(
+            r'ssh: Could not resolve hostname .*: '
+            r'Name or service not known',
+            error_string,
+            flags=re.MULTILINE)
         if unknown_host:
             raise Error('Unknown host.', result)
 
@@ -257,7 +262,7 @@ class SshConnection(object):
         Args:
             command: The command to execute over ssh. Can be either a string
                      or a list.
-            env: A dictonary of enviroment variables to setup on the remote
+            env: A dictonary of environment variables to setup on the remote
                  host.
 
         Returns:
@@ -319,24 +324,25 @@ class SshConnection(object):
                     return tunnel.local_port
 
         extra_flags = {
-                '-n': None,  # Read from /dev/null for stdin
-                '-N': None,  # Do not execute a remote command
-                '-q': None,  # Suppress warnings and diagnostic commands
-                '-L': '%d:localhost:%d' % (local_port, port),
+            '-n': None,  # Read from /dev/null for stdin
+            '-N': None,  # Do not execute a remote command
+            '-q': None,  # Suppress warnings and diagnostic commands
+            '-L': '%d:localhost:%d' % (local_port, port),
         }
         extra_options = dict()
         if self._master_ssh_proc:
             extra_options['ControlPath'] = self.socket_path
         tunnel_cmd = self._formatter.format_ssh_local_command(
-                self._settings, extra_flags=extra_flags,
-                extra_options=extra_options)
+            self._settings,
+            extra_flags=extra_flags,
+            extra_options=extra_options)
         logging.debug('Full tunnel command: %s', tunnel_cmd)
         # Exec the ssh process directly so that when we deliver signals, we
         # deliver them straight to the child process.
         tunnel_proc = job.run_async(tunnel_cmd)
         logging.debug('Started ssh tunnel, local = %d'
-                      ' remote = %d, pid = %d',
-                      local_port, port, tunnel_proc.pid)
+                      ' remote = %d, pid = %d', local_port, port,
+                      tunnel_proc.pid)
         self._tunnels.append(_Tunnel(local_port, port, tunnel_proc))
         return local_port
 
@@ -392,4 +398,7 @@ class SshConnection(object):
             'python -c "import socket; s=socket.socket(); '
             's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
         ) % interface_name
-        return int(self.run(free_port_cmd).stdout)
+        port = int(self.run(free_port_cmd).stdout)
+        # Yield to the os to ensure the port gets cleaned up.
+        time.sleep(0.001)
+        return port

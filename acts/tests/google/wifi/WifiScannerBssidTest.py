@@ -20,6 +20,7 @@ import queue
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 BSSID_EVENT_WAIT = 30
@@ -302,6 +303,7 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
     """ Helper Functions End """
     """ Tests Begin """
 
+    @test_tracker_info(uuid="599a30b8-73ad-4314-a245-7ec58fc7e74b")
     def test_wifi_track_bssid_found(self):
         """Test bssid track for event found with a list of different settings.
 
@@ -321,6 +323,7 @@ class WifiScannerBssidTest(base_test.BaseTestClass):
         asserts.assert_false(
             failed, "Track bssid found failed with these bssids: %s" % failed)
 
+    @test_tracker_info(uuid="7ebd4b61-c408-45b3-b9b6-098753d46aa7")
     def test_wifi_track_bssid_lost(self):
         """Test bssid track for event lost with a list of different settings.
 

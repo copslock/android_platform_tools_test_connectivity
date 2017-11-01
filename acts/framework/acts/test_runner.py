@@ -21,6 +21,7 @@ import argparse
 import copy
 import importlib
 import inspect
+import fnmatch
 import logging
 import os
 import pkgutil
@@ -176,7 +177,8 @@ class TestRunner(object):
         self.controller_destructors: A dictionary that holds the controller
                                      distructors. Keys are controllers' names.
         self.test_classes: A dictionary where we can look up the test classes
-                           by name to instantiate.
+                           by name to instantiate. Supports unix shell style
+                           wildcards.
         self.run_list: A list of tuples specifying what tests to run.
         self.results: The test result object used to record the results of
                       this test run.
@@ -201,7 +203,17 @@ class TestRunner(object):
         self.log = logging.getLogger()
         self.controller_registry = {}
         self.controller_destructors = {}
-        self.run_list = run_list
+        if self.test_configs.get(keys.Config.key_random.value):
+            test_case_iterations = self.test_configs.get(
+                keys.Config.key_test_case_iterations.value, 10)
+            self.log.info(
+                "Campaign randomizer is enabled with test_case_iterations %s",
+                test_case_iterations)
+            self.run_list = config_parser.test_randomizer(
+                run_list, test_case_iterations=test_case_iterations)
+            self.write_test_campaign()
+        else:
+            self.run_list = run_list
         self.results = records.TestResult()
         self.running = False
 
@@ -274,8 +286,8 @@ class TestRunner(object):
         for ctrl_name in keys.Config.builtin_controller_names.value:
             if ctrl_name in self.testbed_configs:
                 module_name = keys.get_module_name(ctrl_name)
-                module = importlib.import_module("acts.controllers.%s" %
-                                                 module_name)
+                module = importlib.import_module(
+                    "acts.controllers.%s" % module_name)
                 builtin_controllers.append(module)
         return builtin_controllers
 
@@ -302,8 +314,8 @@ class TestRunner(object):
                                                            attr))
             if not getattr(module, attr):
                 raise signals.ControllerError(
-                    ("Controller interface %s in %s cannot be null.") % (
-                     attr, module.__name__))
+                    "Controller interface %s in %s cannot be null." %
+                    (attr, module.__name__))
 
     def register_controller(self, module, required=True):
         """Registers an ACTS controller module for a test run.
@@ -410,7 +422,7 @@ class TestRunner(object):
         # Implementation of "get_info" is optional for a controller module.
         if hasattr(module, "get_info"):
             controller_info = module.get_info(objects)
-            logging.debug("Controller %s: %s", module_config_name,
+            self.log.info("Controller %s: %s", module_config_name,
                           controller_info)
             self.results.add_controller_info(module_config_name,
                                              controller_info)
@@ -421,8 +433,8 @@ class TestRunner(object):
         # tracking controller objs in test_run_info.
         if builtin:
             self.test_run_info[module_ref_name] = objects
-        self.log.debug("Found %d objects for controller %s", len(objects),
-                      module_config_name)
+        self.log.debug("Found %d objects for controller %s",
+                       len(objects), module_config_name)
         destroy_func = module.destroy
         self.controller_destructors[module_ref_name] = destroy_func
         return objects
@@ -502,18 +514,38 @@ class TestRunner(object):
             ValueError is raised if the requested test class could not be found
             in the test_paths directories.
         """
-        try:
-            test_cls = self.test_classes[test_cls_name]
-        except KeyError:
-            raise ValueError(("Unable to locate class %s in any of the test "
-                              "paths specified.") % test_cls_name)
-        with test_cls(self.test_run_info) as test_cls_instance:
-            try:
-                cls_result = test_cls_instance.run(test_cases)
-                self.results += cls_result
-            except signals.TestAbortAll as e:
-                self.results += e.results
-                raise e
+        matches = fnmatch.filter(self.test_classes.keys(), test_cls_name)
+        if not matches:
+            self.log.info(
+                "Cannot find test class %s or classes matching pattern,"
+                "skipping for now." % test_cls_name)
+            record = records.TestResultRecord("*all*", test_cls_name)
+            record.test_skip(signals.TestSkip("Test class does not exist."))
+            self.results.add_record(record)
+            return
+        if matches != [test_cls_name]:
+            self.log.info("Found classes matching pattern %s: %s",
+                          test_cls_name, matches)
+
+        for test_cls_name_match in matches:
+            test_cls = self.test_classes[test_cls_name_match]
+            if self.test_configs.get(keys.Config.key_random.value) or (
+                    "Preflight" in test_cls_name_match) or (
+                        "Postflight" in test_cls_name_match):
+                test_case_iterations = 1
+            else:
+                test_case_iterations = self.test_configs.get(
+                    keys.Config.key_test_case_iterations.value, 1)
+
+            with test_cls(self.test_run_info) as test_cls_instance:
+                try:
+                    cls_result = test_cls_instance.run(test_cases,
+                                                       test_case_iterations)
+                    self.results += cls_result
+                    self._write_results_json_str()
+                except signals.TestAbortAll as e:
+                    self.results += e.results
+                    raise e
 
     def run(self, test_class=None):
         """Executes test cases.
@@ -544,6 +576,7 @@ class TestRunner(object):
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
+
             if test_case_names:
                 self.log.debug("Executing test cases %s in test class %s.",
                                test_case_names, test_cls_name)
@@ -584,3 +617,11 @@ class TestRunner(object):
         path = os.path.join(self.log_path, "test_run_summary.json")
         with open(path, 'w') as f:
             f.write(self.results.json_str())
+
+    def write_test_campaign(self):
+        """Log test campaign file."""
+        path = os.path.join(self.log_path, "test_campaign.log")
+        with open(path, 'w') as f:
+            for test_class, test_cases in self.run_list:
+                f.write("%s:\n%s" % (test_class, ",\n".join(test_cases)))
+                f.write("\n\n")

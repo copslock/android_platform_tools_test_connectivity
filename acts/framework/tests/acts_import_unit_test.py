@@ -19,7 +19,7 @@ import re
 import sys
 import uuid
 
-if sys.version_info < (3,):
+if sys.version_info < (3, ):
     import warnings
 
     with warnings.catch_warnings():
@@ -48,7 +48,12 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
-    'acts/controllers/native.py', 'acts/controllers/native_android_device.py'
+    'acts/controllers/native.py',
+    'acts/controllers/native_android_device.py',
+    'acts/test_utils/wifi/wifi_power_test_utils.py',
+    'acts/controllers/packet_sender.py',
+    'acts/test_utils/wifi/wifi_retail_ap.py',
+    'acts/test_utils/bt/bt_power_test_utils.py',
 ]
 
 

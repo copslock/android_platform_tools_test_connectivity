@@ -28,6 +28,9 @@ import string
 import subprocess
 import time
 import traceback
+import zipfile
+
+from acts.controllers import adb
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -48,9 +51,20 @@ class NexusModelNames:
     N6v3 = 'marlin'
     N5v3 = 'sailfish'
 
+
 class DozeModeStatus:
     ACTIVE = "ACTIVE"
     IDLE = "IDLE"
+
+
+class CapablityPerDevice:
+    energy_info_models = [
+        "shamu", "volantis", "volantisg", "angler", "bullhead", "ryu",
+        "marlin", "sailfish"
+    ]
+    tdls_models = [
+        "shamu", "hammerhead", "angler", "bullhead", "marlin", "sailfish"
+    ]
 
 
 ascii_letters_and_digits = string.ascii_letters + string.digits
@@ -207,7 +221,11 @@ def load_config(file_full_path):
         A JSON object.
     """
     with open(file_full_path, 'r') as f:
-        conf = json.load(f)
+        try:
+            conf = json.load(f)
+        except Exception as e:
+            logging.error("Exception error to load %s: %s", f, e)
+            raise
         return conf
 
 
@@ -225,6 +243,20 @@ def load_file_to_base64_str(f_path):
         f_bytes = f.read()
         base64_str = base64.b64encode(f_bytes).decode("utf-8")
         return base64_str
+
+
+def dump_string_to_file(content, file_path, mode='w'):
+    """ Dump content of a string to
+
+    Args:
+        content: content to be dumped to file
+        file_path: full path to the file including the file name.
+        mode: file open mode, 'w' (truncating file) by default
+    :return:
+    """
+    full_path = abs_path(file_path)
+    with open(full_path, mode) as f:
+        f.write(content)
 
 
 def find_field(item_list, cond, comparator, target_field):
@@ -537,6 +569,7 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         wait_for_device_with_timeout(ad)
         ad.adb.shell("settings put global airplane_mode_on {}".format(
             1 if new_state else 0))
+        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
     except TimeoutError:
         # adb wait for device timeout
         return False
@@ -558,8 +591,7 @@ def enable_doze(ad):
     ad.adb.shell("dumpsys deviceidle force-idle")
     ad.droid.goToSleepNow()
     time.sleep(5)
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
-        'utf-8')
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep")
     if not adb_shell_result.startswith(DozeModeStatus.IDLE):
         info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
         print(info)
@@ -579,8 +611,7 @@ def disable_doze(ad):
     """
     ad.adb.shell("dumpsys deviceidle disable")
     ad.adb.shell("dumpsys battery reset")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
-        'utf-8')
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep")
     if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
         info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
         print(info)
@@ -603,8 +634,7 @@ def enable_doze_light(ad):
     time.sleep(5)
     ad.adb.shell("cmd deviceidle enable light")
     ad.adb.shell("cmd deviceidle step light")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
-        'utf-8')
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light")
     if not adb_shell_result.startswith(DozeModeStatus.IDLE):
         info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
         print(info)
@@ -624,8 +654,7 @@ def disable_doze_light(ad):
     """
     ad.adb.shell("dumpsys battery reset")
     ad.adb.shell("cmd deviceidle disable light")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
-        'utf-8')
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light")
     if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
         info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
         print(info)
@@ -640,8 +669,8 @@ def set_ambient_display(ad, new_state):
         ad: android device object.
         new_state: new state for "Ambient Display". True or False.
     """
-    ad.adb.shell("settings put secure doze_enabled {}".format(1 if new_state
-                                                              else 0))
+    ad.adb.shell(
+        "settings put secure doze_enabled {}".format(1 if new_state else 0))
 
 
 def set_adaptive_brightness(ad, new_state):
@@ -696,23 +725,165 @@ def set_mobile_data_always_on(ad, new_state):
         1 if new_state else 0))
 
 
-def bypass_setup_wizard(ad):
+def bypass_setup_wizard(ad, bypass_wait_time=3):
     """Bypass the setup wizard on an input Android device
 
     Args:
         ad: android device object.
+        bypass_wait_time: Do not set this variable. Only modified for framework
+        tests.
 
     Returns:
         True if Andorid device successfully bypassed the setup wizard.
         False if failed.
     """
-    ad.adb.shell(
-        "am start -n \"com.google.android.setupwizard/.SetupWizardExitActivity\"")
+    try:
+        ad.adb.shell("am start -n \"com.google.android.setupwizard/"
+                     ".SetupWizardExitActivity\"")
+        logging.debug("No error during default bypass call.")
+    except adb.AdbError as adb_error:
+        if adb_error.stdout == "ADB_CMD_OUTPUT:0":
+            if adb_error.stderr and \
+                    not adb_error.stderr.startswith("Error type 3\n"):
+                logging.error(
+                    "ADB_CMD_OUTPUT:0, but error is %s " % adb_error.stderr)
+                raise adb_error
+            logging.debug("Bypass wizard call received harmless error 3: "
+                          "No setup to bypass.")
+        elif adb_error.stdout == "ADB_CMD_OUTPUT:255":
+            # Run it again as root.
+            ad.adb.root_adb()
+            logging.debug("Need root access to bypass setup wizard.")
+            try:
+                ad.adb.shell("am start -n \"com.google.android.setupwizard/"
+                             ".SetupWizardExitActivity\"")
+                logging.debug("No error during rooted bypass call.")
+            except adb.AdbError as adb_error:
+                if adb_error.stdout == "ADB_CMD_OUTPUT:0":
+                    if adb_error.stderr and \
+                            not adb_error.stderr.startswith("Error type 3\n"):
+                        logging.error("Rooted ADB_CMD_OUTPUT:0, but error is "
+                                      "%s " % adb_error.stderr)
+                        raise adb_error
+                    logging.debug(
+                        "Rooted bypass wizard call received harmless "
+                        "error 3: No setup to bypass.")
+
     # magical sleep to wait for the gservices override broadcast to complete
-    time.sleep(3)
+    time.sleep(bypass_wait_time)
+
     provisioned_state = int(
         ad.adb.shell("settings get global device_provisioned"))
-    if (provisioned_state != 1):
+    if provisioned_state != 1:
         logging.error("Failed to bypass setup wizard.")
         return False
+    logging.debug("Setup wizard successfully bypassed.")
     return True
+
+
+def parse_ping_ouput(ad, count, out, loss_tolerance=20):
+    """Ping Parsing util.
+
+    Args:
+        ad: Android Device Object.
+        count: Number of ICMP packets sent
+        out: shell output text of ping operation
+        loss_tolerance: Threshold after which flag test as false
+    Returns:
+        False: if packet loss is more than loss_tolerance%
+        True: if all good
+    """
+    out = out.split('\n')[-3:]
+    stats = out[1].split(',')
+    # For failure case, line of interest becomes the last line
+    if len(stats) != 4:
+        stats = out[2].split(',')
+    packet_loss = float(stats[2].split('%')[0])
+    packet_xmit = int(stats[0].split()[0])
+    packet_rcvd = int(stats[1].split()[0])
+    min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
+
+    if (packet_loss >= loss_tolerance
+            or packet_xmit < count * min_packet_xmit_rcvd
+            or packet_rcvd < count * min_packet_xmit_rcvd):
+        ad.log.error(
+            "More than %d %% packet loss seen, Expected Packet_count %d \
+            Packet loss %.2f%% Packets_xmitted %d Packets_rcvd %d",
+            loss_tolerance, count, packet_loss, packet_xmit, packet_rcvd)
+        return False
+    ad.log.info("Pkt_count %d Pkt_loss %.2f%% Pkt_xmit %d Pkt_rcvd %d", count,
+                packet_loss, packet_xmit, packet_rcvd)
+    return True
+
+
+def adb_shell_ping(ad,
+                   count=120,
+                   dest_ip="www.google.com",
+                   timeout=200,
+                   loss_tolerance=20):
+    """Ping utility using adb shell.
+
+    Args:
+        ad: Android Device Object.
+        count: Number of ICMP packets to send
+        dest_ip: hostname or IP address
+                 default www.google.com
+        timeout: timeout for icmp pings to complete.
+    """
+    ping_cmd = "ping -W 1"
+    if count:
+        ping_cmd += " -c %d" % count
+    if dest_ip:
+        ping_cmd += " %s | tee /data/ping.txt" % dest_ip
+    try:
+        ad.log.info("Starting ping test to %s using adb command %s", dest_ip,
+                    ping_cmd)
+        out = ad.adb.shell(ping_cmd, timeout=timeout)
+        if not parse_ping_ouput(ad, count, out, loss_tolerance):
+            return False
+        return True
+    except Exception as e:
+        ad.log.warning("Ping Test to %s failed with exception %s", dest_ip, e)
+        return False
+    finally:
+        ad.adb.shell("rm /data/ping.txt", timeout=10, ignore_status=True)
+
+
+def unzip_maintain_permissions(zip_path, extract_location):
+    """Unzip a .zip file while maintaining permissions.
+
+    Args:
+        zip_path: The path to the zipped file.
+        extract_location: the directory to extract to.
+    """
+    with zipfile.ZipFile(zip_path, 'r') as zip_file:
+        for info in zip_file.infolist():
+            _extract_file(zip_file, info, extract_location)
+
+
+def _extract_file(zip_file, zip_info, extract_location):
+    """Extracts a single entry from a ZipFile while maintaining permissions.
+
+    Args:
+        zip_file: A zipfile.ZipFile.
+        zip_info: A ZipInfo object from zip_file.
+        extract_location: The directory to extract to.
+    """
+    out_path = zip_file.extract(zip_info.filename, path=extract_location)
+    perm = zip_info.external_attr >> 16
+    os.chmod(out_path, perm)
+
+
+def get_directory_size(path):
+    """Computes the total size of the files in a directory, including subdirectories.
+
+    Args:
+        path: The path of the directory.
+    Returns:
+        The size of the provided directory.
+    """
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            total += os.path.getsize(os.path.join(dirpath, filename))
+    return total

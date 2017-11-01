@@ -18,6 +18,7 @@ Test the HFP profile for basic calling functionality.
 """
 
 import time
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.BluetoothCarHfpBaseTest import BluetoothCarHfpBaseTest
 from acts.test_utils.bt import BtEnum
@@ -29,6 +30,8 @@ from acts.test_utils.tel import tel_defines
 BLUETOOTH_PKG_NAME = "com.android.bluetooth"
 CALL_TYPE_OUTGOING = "CALL_TYPE_OUTGOING"
 CALL_TYPE_INCOMING = "CALL_TYPE_INCOMING"
+AUDIO_STATE_DISCONNECTED = 0
+AUDIO_STATE_ROUTED = 2
 SHORT_TIMEOUT = 5
 
 
@@ -37,21 +40,22 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         if not super(BtCarHfpTest, self).setup_class():
             return False
         # Disable the A2DP profile.
-        bt_test_utils.set_profile_priority(
-            self.hf, self.ag, [BtEnum.BluetoothProfile.PBAP_CLIENT.value,
-                               BtEnum.BluetoothProfile.A2DP_SINK.value],
-            BtEnum.BluetoothPriorityLevel.PRIORITY_OFF)
+        bt_test_utils.set_profile_priority(self.hf, self.ag, [
+            BtEnum.BluetoothProfile.PBAP_CLIENT.value,
+            BtEnum.BluetoothProfile.A2DP_SINK.value
+        ], BtEnum.BluetoothPriorityLevel.PRIORITY_OFF)
         bt_test_utils.set_profile_priority(
             self.hf, self.ag, [BtEnum.BluetoothProfile.HEADSET_CLIENT.value],
             BtEnum.BluetoothPriorityLevel.PRIORITY_ON)
 
-        if not bt_test_utils.connect_pri_to_sec(self.hf, self.ag, set(
-            [BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
+        if not bt_test_utils.connect_pri_to_sec(
+                self.hf, self.ag,
+                set([BtEnum.BluetoothProfile.HEADSET_CLIENT.value])):
             self.log.error("Failed to connect.")
             return False
         return True
 
-    #@BluetoothTest(UUID=4ce2195a-b70a-4584-912e-cbd20d20e19d)
+    @test_tracker_info(uuid='4ce2195a-b70a-4584-912e-cbd20d20e19d')
     @BluetoothBaseTest.bt_test_wrap
     def test_default_calling_account(self):
         """
@@ -86,11 +90,11 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
             return False
         if not acc_component_id.startswith(BLUETOOTH_PKG_NAME):
             self.hf.log.error("Component name does not start with pkg name {}".
-                          format(selected_acc))
+                              format(selected_acc))
             return False
         return True
 
-    #@BluetoothTest(UUID=e579009d-05f3-4236-a698-5de8c11d73a9)
+    @test_tracker_info(uuid='e579009d-05f3-4236-a698-5de8c11d73a9')
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_call_hf(self):
         """
@@ -114,7 +118,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         """
         return self.dial_a_hangup_b(self.hf, self.hf)
 
-    #@BluetoothTest(UUID=c9d5f9cd-f275-4adf-b212-c2e9a70d4cac)
+    @test_tracker_info(uuid='c9d5f9cd-f275-4adf-b212-c2e9a70d4cac')
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_call_ag(self):
         """
@@ -138,7 +142,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         """
         return self.dial_a_hangup_b(self.ag, self.ag)
 
-    #@BluetoothTest(UUID=908c199b-ca65-4694-821d-1b864ee3fe69)
+    @test_tracker_info(uuid='908c199b-ca65-4694-821d-1b864ee3fe69')
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_dial_ag_hangup_hf(self):
         """
@@ -162,7 +166,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         """
         return self.dial_a_hangup_b(self.ag, self.hf)
 
-    #@BluetoothTest(UUID=5d1d52c7-51d8-4c82-b437-2e91a6220db3)
+    @test_tracker_info(uuid='5d1d52c7-51d8-4c82-b437-2e91a6220db3')
     @BluetoothBaseTest.bt_test_wrap
     def test_outgoing_dial_hf_hangup_ag(self):
         """
@@ -186,7 +190,7 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         """
         return self.dial_a_hangup_b(self.hf, self.ag)
 
-    #@BluetoothTest(UUID=a718e238-7e31-40c9-a45b-72081210cc73)
+    @test_tracker_info(uuid='a718e238-7e31-40c9-a45b-72081210cc73')
     @BluetoothBaseTest.bt_test_wrap
     def test_incoming_dial_re_hangup_re(self):
         """
@@ -209,6 +213,59 @@ class BtCarHfpTest(BluetoothCarHfpBaseTest):
         Priority: 0
         """
         return self.dial_a_hangup_b(self.re, self.re, self.ag_phone_number)
+
+    def test_bluetooth_voice_recognition_assistant(self):
+        """
+        Tests if we can initate a remote Voice Recognition session.
+
+        Precondition:
+        1. Devices are connected.
+
+        Steps:
+        1. Verify that audio isn't routed between the HF and AG.
+        2. From the HF send a BVRA command.
+        3. Verify that audio is routed from the HF to AG.
+        4. From the HF send a BVRA command to stop the session.
+        5. Verify that audio is no longer routed from the HF to AG.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        Priority: 0
+        """
+        audio_state = self.hf.droid.bluetoothHfpClientGetAudioState(
+            self.ag.droid.bluetoothGetLocalAddress())
+        if (audio_state != AUDIO_STATE_DISCONNECTED):
+            self.log.info(
+                "Audio connected before test started, current state {}.".
+                format(str(audio_state)))
+            return False
+        bvra_started = self.hf.droid.bluetoothHfpClientStartVoiceRecognition(
+            self.ag.droid.bluetoothGetLocalAddress())
+        if (bvra_started != True):
+            self.log.info("BVRA Failed to start.")
+            return False
+        time.sleep(SHORT_TIMEOUT)
+        audio_state = self.hf.droid.bluetoothHfpClientGetAudioState(
+            self.ag.droid.bluetoothGetLocalAddress())
+        if (audio_state != AUDIO_STATE_ROUTED):
+            self.log.info("Audio didn't route, current state {}.".format(
+                str(audio_state)))
+            return False
+        bvra_stopped = self.hf.droid.bluetoothHfpClientStopVoiceRecognition(
+            self.ag.droid.bluetoothGetLocalAddress())
+        if (bvra_stopped != True):
+            self.log.info("BVRA Failed to stop.")
+            return False
+        time.sleep(SHORT_TIMEOUT)
+        audio_state = self.hf.droid.bluetoothHfpClientGetAudioState(
+            self.ag.droid.bluetoothGetLocalAddress())
+        if (audio_state != AUDIO_STATE_DISCONNECTED):
+            self.log.info("Audio didn't cleanup, current state {}.".format(
+                str(audio_state)))
+            return False
+        return True
 
     def dial_a_hangup_b(self, caller, callee, ph=""):
         """

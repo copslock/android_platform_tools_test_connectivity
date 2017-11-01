@@ -20,6 +20,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import signals
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WifiEnums = wutils.WifiEnums
@@ -51,15 +52,15 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             "device_password")
         self.unpack_userparams(req_params)
         self.config_peap = {
-            Ent.EAP: EAP.PEAP,
+            Ent.EAP: int(EAP.PEAP),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid
         }
         self.config_tls = {
-            Ent.EAP: EAP.TLS,
+            Ent.EAP: int(EAP.TLS),
             Ent.CA_CERT: self.ca_cert,
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
             Ent.CLIENT_CERT: self.client_cert,
@@ -67,15 +68,15 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             Ent.IDENTITY: self.eap_identity,
         }
         self.config_ttls = {
-            Ent.EAP: EAP.TTLS,
+            Ent.EAP: int(EAP.TTLS),
             Ent.CA_CERT: self.ca_cert,
             Ent.IDENTITY: self.eap_identity,
             Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: EapPhase2.MSCHAPV2,
+            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid
         }
         self.config_sim = {
-            Ent.EAP: EAP.SIM,
+            Ent.EAP: int(EAP.SIM),
             WifiEnums.SSID_KEY: self.ent_roaming_ssid,
         }
         self.attenuators = wutils.group_attenuators(self.attenuators)
@@ -123,32 +124,6 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
                            attn_val_name)
             raise
 
-    def gen_eap_configs(self):
-        """Generates configurations for different EAP authentication types.
-
-        Returns:
-            A list of dicts each representing an EAP configuration.
-        """
-        configs = [self.config_tls]
-        # self.config_sim
-        configs += wutils.expand_enterprise_config_by_phase2(self.config_ttls)
-        configs += wutils.expand_enterprise_config_by_phase2(self.config_peap)
-        return configs
-
-    def gen_eap_roaming_test_name(self, config):
-        """Generates a test case name based on an EAP configuration.
-
-        Args:
-            config: A dict representing an EAP credential.
-
-        Returns:
-            A string representing the name of a generated EAP test case.
-        """
-        name = "test_roaming-%s" % config[Ent.EAP].name
-        if Ent.PHASE2 in config:
-            name += "-{}".format(config[Ent.PHASE2].name)
-        return name
-
     def trigger_roaming_and_validate(self, attn_val_name, expected_con):
         """Sets attenuators to trigger roaming and validate the DUT connected
         to the BSSID expected.
@@ -191,7 +166,7 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
             WifiEnums.BSSID_KEY: self.bssid_b,
         }
         self.set_attns("a_on_b_off")
-        wutils.eap_connect(config, self.dut, validate_con=False)
+        wutils.wifi_connect(self.dut, config)
         wutils.verify_wifi_connection_info(self.dut, expected_con_to_a)
         self.log.info("Roaming from %s to %s", self.bssid_a, self.bssid_b)
         self.trigger_roaming_and_validate("b_on_a_off", expected_con_to_b)
@@ -200,18 +175,50 @@ class WifiEnterpriseRoamingTest(base_test.BaseTestClass):
 
     """ Tests Begin """
 
-    @signals.generated_test
-    def test_roaming_with_different_auth_method(self):
-        eap_configs = self.gen_eap_configs()
-        self.log.info("Testing %d different configs.", len(eap_configs))
-        random.shuffle(eap_configs)
-        failed = self.run_generated_testcases(
-            self.roaming_between_a_and_b_logic,
-            eap_configs,
-            name_func=self.gen_eap_roaming_test_name)
-        asserts.assert_equal(
-            len(failed), 0,
-            "The following configs failed enterprise roaming test: %s" %
-            pprint.pformat(failed))
+    @test_tracker_info(uuid="b15e4b3f-841d-428d-87ac-272f29f06e14")
+    def test_roaming_with_config_tls(self):
+        self.roaming_between_a_and_b_logic(self.config_tls)
+
+    @test_tracker_info(uuid="d349cfec-b4af-48b2-88b7-744f5de25d43")
+    def test_roaming_with_config_ttls_none(self):
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.NONE.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="89b8161c-754e-4138-831d-5fe40f521ce4")
+    def test_roaming_with_config_ttls_pap(self):
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.PAP.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="d4925470-924b-4d03-8437-83e26b5f2df3")
+    def test_roaming_with_config_ttls_mschap(self):
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAP.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="206b1327-dd9c-4742-8717-e7bf2a04eed6")
+    def test_roaming_with_config_ttls_mschapv2(self):
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="c2c0168b-2933-4954-af62-fb41f42dc45a")
+    def test_roaming_with_config_ttls_gtc(self):
+        config = dict(self.config_ttls)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="481c4102-8f5b-4fcd-95cc-5e3285f47985")
+    def test_roaming_with_config_peap_mschapv2(self):
+        config = dict(self.config_peap)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.MSCHAPV2.value
+        self.roaming_between_a_and_b_logic(config)
+
+    @test_tracker_info(uuid="404155d4-33a7-42b3-b369-5f2d63d19f16")
+    def test_roaming_with_config_peap_gtc(self):
+        config = dict(self.config_peap)
+        config[WifiEnums.Enterprise.PHASE2] = WifiEnums.EapPhase2.GTC.value
+        self.roaming_between_a_and_b_logic(config)
 
     """ Tests End """

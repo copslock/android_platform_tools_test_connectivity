@@ -26,16 +26,16 @@ from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import BtTestUtilsError
-from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
-from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
-from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
-from acts.test_utils.bt.bt_test_utils import adv_succ
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.bt_test_utils import get_advanced_droid_list
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import scan_and_verify_n_advertisements
-from acts.test_utils.bt.bt_test_utils import scan_result
+from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_test_utils import setup_n_advertisements
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.bt.bt_test_utils import teardown_n_advertisements
@@ -570,4 +570,60 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             self.log.debug(
                 "Test failed, filtering callback onSuccess never occurred: {}".
                 format(error))
+        return test_result
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='dd5529b7-6774-4580-8b29-d84568c15442')
+    def test_timeout(self):
+        """Test starting advertiser with timeout.
+
+        Test that when a timeout is used, the advertiser is cleaned properly,
+        and next one can be started.
+
+        Steps:
+        1. Setup the advertiser android device with 4 second timeout.
+        2. Call start ble advertising.
+        3. Wait 5 seconds, to make sure advertiser times out.
+        4. Repeat steps 1-4 four times.
+
+        Expected Result:
+        Starting the advertising should succeed each time.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Concurrency
+        Priority: 1
+        """
+        advertise_timeout_s = 4
+        num_iterations = 4
+        test_result = True
+
+        for i in range(0, num_iterations):
+            advertise_callback, advertise_data, advertise_settings = (
+                generate_ble_advertise_objects(self.adv_ad.droid))
+
+            self.adv_ad.droid.bleSetAdvertiseSettingsTimeout(
+                advertise_timeout_s * 1000)
+
+            self.adv_ad.droid.bleStartBleAdvertising(
+                advertise_callback, advertise_data, advertise_settings)
+            try:
+                self.adv_ad.ed.pop_event(
+                    adv_succ.format(advertise_callback), self.default_timeout)
+            except Empty as error:
+                self.log.error("Test failed with Empty error: {}".format(
+                    error))
+                test_result = False
+            except concurrent.futures._base.TimeoutError as error:
+                self.log.debug(
+                    "Test failed, filtering callback onSuccess never occurred: {}".
+                    format(error))
+
+            if not test_result:
+                return test_result
+
+            time.sleep(advertise_timeout_s + 1)
+
         return test_result

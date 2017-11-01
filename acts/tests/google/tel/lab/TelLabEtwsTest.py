@@ -16,6 +16,8 @@
 """
 Sanity tests for voice tests in telephony
 """
+import time
+
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
 from acts.controllers.anritsu_lib.md8475a import CBCHSetup
@@ -27,6 +29,8 @@ from acts.test_utils.tel.anritsu_utils import etws_receive_verify_message_lte_wc
 from acts.test_utils.tel.anritsu_utils import set_system_model_gsm
 from acts.test_utils.tel.anritsu_utils import set_system_model_lte
 from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
+from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
@@ -42,29 +46,40 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_decorators import test_tracker_info
+
+WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
 
 
 class TelLabEtwsTest(TelephonyBaseTest):
     SERIAL_NO = cb_serial_number()
-    CELL_PARAM_FILE = 'C:\\MX847570\\CellParam\\ACTS\\2cell_param.wnscp'
-    SIM_PARAM_FILE = 'C:\\MX847570\\SimParam\\ACTS\\2cell_param.wnssp'
 
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
+        self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        self.ad.adb.shell("settings put secure cmas_additional_broadcast_pkg "
+                          "com.googlecode.android_scripting")
+        self.wait_time_between_reg_and_msg = self.user_params.get(
+            "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
+                                   self.wlan_option)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
         return True
@@ -81,10 +96,12 @@ class TelLabEtwsTest(TelephonyBaseTest):
     def _send_receive_etws_message(self, set_simulation_func, rat, message_id,
                                    warning_message):
         try:
-            self.anritsu.reset()
-            self.anritsu.load_cell_paramfile(self.CELL_PARAM_FILE)
-            self.anritsu.load_simulation_paramfile(self.SIM_PARAM_FILE)
-            [self.bts1] = set_simulation_func(self.anritsu, self.user_params)
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
+                                              self.ad.sim_card)
+            set_usim_parameters(self.anritsu, self.ad.sim_card)
+            if rat == RAT_LTE:
+                set_post_sim_params(self.anritsu, self.user_params,
+                                    self.ad.sim_card)
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
@@ -107,11 +124,12 @@ class TelLabEtwsTest(TelephonyBaseTest):
                 self.log.error("No valid RAT provided for ETWS test.")
                 return False
 
-            if not ensure_network_rat(self.log,
-                                      self.ad,
-                                      preferred_network_setting,
-                                      rat_family,
-                                      toggle_apm_after_setting=True):
+            if not ensure_network_rat(
+                    self.log,
+                    self.ad,
+                    preferred_network_setting,
+                    rat_family,
+                    toggle_apm_after_setting=True):
                 self.log.error(
                     "Failed to set rat family {}, preferred network:{}".format(
                         rat_family, preferred_network_setting))
@@ -136,6 +154,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
 
     """ Tests Begin """
 
+    @test_tracker_info(uuid="af4a00d0-9a91-45d5-9f65-9541e64a57f2")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_lte(self):
         """ETWS Earthquake and Tsunami warning message reception on LTE
@@ -158,6 +177,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_EARTHQUAKETSUNAMI,
                                                "LTE Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="03785878-0319-413c-9190-d4e08f0edc33")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_lte(self):
         """ETWS Other emergency warning message reception on LTE
@@ -180,6 +200,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_OTHER_EMERGENCY,
                                                "LTE ETWS Other Emergency")
 
+    @test_tracker_info(uuid="1ef4a5d7-9ceb-49eb-8ec7-5538625c8bd4")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_wcdma(self):
         """ETWS Earthquake and Tsunami warning message reception on WCDMA
@@ -202,6 +223,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
             set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_EARTHQUAKETSUNAMI,
             "WCDMA Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="71dc9650-d00a-4533-99f5-5cc301c21334")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_wcdma(self):
         """ETWS Other emergency warning message reception on WCDMA
@@ -224,6 +246,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
             set_system_model_wcdma, RAT_WCDMA, ETWS_WARNING_OTHER_EMERGENCY,
             "WCDMA ETWS Other Emergency")
 
+    @test_tracker_info(uuid="a9fd9c0e-21bf-41d1-81d2-c34679052fe0")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_earthquake_tsunami_gsm(self):
         """ETWS Earthquake and Tsunami warning message reception on GSM
@@ -246,6 +269,7 @@ class TelLabEtwsTest(TelephonyBaseTest):
                                                ETWS_WARNING_EARTHQUAKETSUNAMI,
                                                "GSM Earthquake and Tsunami")
 
+    @test_tracker_info(uuid="0ae42f8d-1720-449c-9200-e88f7f1d2cbe")
     @TelephonyBaseTest.tel_test_wrap
     def test_etws_other_emergency_gsm(self):
         """ETWS Other emergency warning message reception on GSM
