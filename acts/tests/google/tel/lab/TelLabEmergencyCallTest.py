@@ -61,6 +61,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import check_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_test_utils import set_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
@@ -126,6 +127,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phone_default_state(self.log, self.ad, check_subscription=False)
         toggle_airplane_mode_by_adb(self.log, self.ad, True)
         try:
