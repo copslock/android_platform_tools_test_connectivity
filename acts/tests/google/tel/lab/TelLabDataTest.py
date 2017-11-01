@@ -36,12 +36,14 @@ from acts.test_utils.tel.anritsu_utils import set_system_model_wcdma
 from acts.test_utils.tel.anritsu_utils import sms_mo_send
 from acts.test_utils.tel.anritsu_utils import sms_mt_receive_verify
 from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_GSM
 from acts.test_utils.tel.tel_defines import RAT_LTE
@@ -118,6 +120,8 @@ class TelLabDataTest(TelephonyBaseTest):
             [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
                                               self.ad.sim_card)
             set_usim_parameters(self.anritsu, self.ad.sim_card)
+            set_post_sim_params(self.anritsu, self.user_params,
+                                self.ad.sim_card)
             if self.lte_bandwidth == 20:
                 self.bts1.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
             elif self.lte_bandwidth == 15:
@@ -130,7 +134,7 @@ class TelLabDataTest(TelephonyBaseTest):
             self.anritsu.start_simulation()
 
             if rat == RAT_LTE:
-                preferred_network_setting = NETWORK_MODE_LTE_GSM_WCDMA
+                preferred_network_setting = NETWORK_MODE_LTE_CDMA_EVDO
                 rat_family = RAT_FAMILY_LTE
             elif rat == RAT_WCDMA:
                 preferred_network_setting = NETWORK_MODE_GSM_UMTS
@@ -158,10 +162,6 @@ class TelLabDataTest(TelephonyBaseTest):
 
             self.anritsu.wait_for_registration_state()
             time.sleep(self.SETTLING_TIME)
-            if not ensure_network_generation(self.log, self.ad, GEN_4G,
-                                             NETWORK_SERVICE_DATA):
-                self.log.error("Device not in 4G Connected Mode.")
-                return False
 
             # Fetch IP address of the host machine
             cmd = "|".join(("ifconfig", "grep eth0 -A1", "grep inet",
