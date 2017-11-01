@@ -60,6 +60,7 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
 
@@ -89,6 +90,8 @@ class TelLabCmasTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
         self.ad.adb.shell("logcat -c -b all", ignore_status=True)
@@ -137,6 +140,7 @@ class TelLabCmasTest(TelephonyBaseTest):
                 preferred_network_setting = NETWORK_MODE_GSM_ONLY
                 rat_family = RAT_FAMILY_GSM
             elif rat == RAT_1XRTT:
+                self.ad.droid.telephonyToggleDataConnection(False)
                 preferred_network_setting = NETWORK_MODE_CDMA
                 rat_family = RAT_FAMILY_CDMA2000
             else:
