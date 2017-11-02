@@ -46,6 +46,7 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_UMTS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
 
@@ -77,6 +78,8 @@ class TelLabEtwsTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
         return True

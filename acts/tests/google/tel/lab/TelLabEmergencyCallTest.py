@@ -61,6 +61,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import check_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_test_utils import set_apm_mode_on_by_serial
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_decorators import test_tracker_info
@@ -126,6 +127,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phone_default_state(self.log, self.ad, check_subscription=False)
         toggle_airplane_mode_by_adb(self.log, self.ad, True)
         try:
@@ -357,17 +360,17 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
     @test_tracker_info(uuid="f5c93228-3b43-48a3-b509-796d41625171")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_lte_wcdma_csfb_redirection(self):
-        """ Test Emergency call functionality on LTE (CSFB to WCDMA).
+        """ Test Emergency call functionality on LTE.
             CSFB type is REDIRECTION
 
         Steps:
         1. Setup CallBox on LTE and WCDMA network, make sure DUT register on LTE network.
-        2. Make an emergency call to 911. Make sure DUT CSFB to WCDMA.
+        2. Make an emergency call to 911. Make sure DUT does not CSFB to WCDMA.
         3. Make sure Anritsu receives the call and accept.
         4. Tear down the call.
 
         Expected Results:
-        2. Emergency call succeed. DUT CSFB to WCDMA.
+        2. Emergency call succeed. DUT does not CSFB to WCDMA.
         3. Anritsu can accept the call.
         4. Tear down call succeed.
 
@@ -378,22 +381,23 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             set_system_model_lte_wcdma,
             self._phone_setup_lte_wcdma,
             emergency_number=self.emergency_call_number,
-            csfb_type=CsfbType.CSFB_TYPE_REDIRECTION)
+            csfb_type=CsfbType.CSFB_TYPE_REDIRECTION,
+            is_ims_call=True)
 
     @test_tracker_info(uuid="8deb6b21-2cb0-4241-bcad-6cd62a340b07")
     @TelephonyBaseTest.tel_test_wrap
     def test_emergency_call_lte_wcdma_csfb_handover(self):
-        """ Test Emergency call functionality on LTE (CSFB to WCDMA).
+        """ Test Emergency call functionality on LTE.
             CSFB type is HANDOVER
 
         Steps:
         1. Setup CallBox on LTE and WCDMA network, make sure DUT register on LTE network.
-        2. Make an emergency call to 911. Make sure DUT CSFB to WCDMA.
+        2. Make an emergency call to 911. Make sure DUT does not CSFB to WCDMA.
         3. Make sure Anritsu receives the call and accept.
         4. Tear down the call.
 
         Expected Results:
-        2. Emergency call succeed. DUT CSFB to WCDMA.
+        2. Emergency call succeed. DUT does not CSFB to WCDMA.
         3. Anritsu can accept the call.
         4. Tear down call succeed.
 
@@ -404,7 +408,8 @@ class TelLabEmergencyCallTest(TelephonyBaseTest):
             set_system_model_lte_wcdma,
             self._phone_setup_lte_wcdma,
             emergency_number=self.emergency_call_number,
-            csfb_type=CsfbType.CSFB_TYPE_HANDOVER)
+            csfb_type=CsfbType.CSFB_TYPE_HANDOVER,
+            is_ims_call=True)
 
     @test_tracker_info(uuid="52b6b783-de77-497d-87e0-63c930e6c9bb")
     @TelephonyBaseTest.tel_test_wrap

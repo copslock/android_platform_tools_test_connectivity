@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.utils import adb_shell_ping
 
 PING_DURATION = 5  # Number of packets to ping
@@ -62,6 +63,8 @@ class TelLabDataRoamingTest(TelephonyBaseTest):
         return True
 
     def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         ensure_phones_idle(self.log, self.android_devices)
         toggle_airplane_mode(self.log, self.ad, True)
         self.ad.adb.shell(
