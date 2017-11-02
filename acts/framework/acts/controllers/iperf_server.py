@@ -17,15 +17,26 @@
 import json
 import logging
 import os
-import subprocess
 
 from acts import utils
+from acts.controllers.utils_lib.ssh import connection
+from acts.controllers.utils_lib.ssh import settings
 
 ACTS_CONTROLLER_CONFIG_NAME = "IPerfServer"
 ACTS_CONTROLLER_REFERENCE_NAME = "iperf_servers"
 
 
 def create(configs):
+    """ Factory method for iperf servers.
+
+    The function creates iperf servers based on at least one config.
+    If configs only specify a port number, a regular local IPerfServer object
+    will be created. If configs contains ssh settings for a remote host,
+    a RemoteIPerfServer object will be instantiated
+
+    Args:
+        config: config parameters for the iperf server
+    """
     results = []
     for c in configs:
         try:
@@ -45,9 +56,20 @@ def destroy(objs):
 
 class IPerfResult(object):
     def __init__(self, result_path):
+        """ Loads iperf result from file.
+
+        Loads iperf result from JSON formatted server log. File can be accessed
+        before or after server is stopped. Note that only the first JSON object
+        will be loaded and this funtion is not intended to be used with files
+        containing multiple iperf client runs.
+        """
         try:
             with open(result_path, 'r') as f:
-                self.result = json.load(f)
+                iperf_output = f.readlines()
+                if "}\n" in iperf_output:
+                    iperf_output = iperf_output[0:
+                                                iperf_output.index("}\n") + 1]
+                self.result = json.loads(''.join(iperf_output))
         except ValueError:
             with open(result_path, 'r') as f:
                 # Possibly a result from interrupted iperf run, skip first line
@@ -114,18 +136,29 @@ class IPerfResult(object):
 
 class IPerfServer():
     """Class that handles iperf3 operations.
+
+    Class handles both local and remote iperf servers. Type of server is set
+    at runtime based on the configuration input (whether or not ssh settings
+    were passed to the constructor).
     """
 
-    def __init__(self, port, log_path):
-        self.port = port
+    def __init__(self, config, log_path):
+        if type(config) is dict and "ssh_config" in config:
+            self.server_type = "remote"
+            self.ssh_settings = settings.from_config(config["ssh_config"])
+            self.ssh_session = connection.SshConnection(self.ssh_settings)
+            self.port = config["port"]
+        else:
+            self.server_type = "local"
+            self.port = config
         self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
-        self.iperf_str = "iperf3 -s -J -p {}".format(port)
-        self.iperf_process = None
+        utils.create_dir(self.log_path)
+        self.iperf_str = "iperf3 -s -J -p {}".format(self.port)
         self.log_files = []
         self.started = False
 
     def start(self, extra_args="", tag=""):
-        """Starts iperf server on specified port.
+        """Starts iperf server on specified machine and port.
 
         Args:
             extra_args: A string representing extra arguments to start iperf
@@ -135,18 +168,40 @@ class IPerfServer():
         """
         if self.started:
             return
-        utils.create_dir(self.log_path)
         if tag:
             tag = tag + ','
-        out_file_name = "IPerfServer,{},{}{}.log".format(self.port, tag,
-                                                         len(self.log_files))
-        full_out_path = os.path.join(self.log_path, out_file_name)
-        cmd = "{} {} > {}".format(self.iperf_str, extra_args, full_out_path)
-        self.iperf_process = utils.start_standing_subprocess(cmd)
-        self.log_files.append(full_out_path)
+        out_file_name = "IPerfServer,{},{}{}.log".format(
+            self.port, tag, len(self.log_files))
+        self.full_out_path = os.path.join(self.log_path, out_file_name)
+        if self.server_type == "local":
+            cmd = "{} {} > {}".format(self.iperf_str, extra_args,
+                                      self.full_out_path)
+            self.iperf_process = utils.start_standing_subprocess(cmd)
+        else:
+            cmd = "{} {} > {}".format(
+                self.iperf_str, extra_args,
+                "iperf_server_port{}.log".format(self.port))
+            job_result = self.ssh_session.run_async(cmd)
+            self.iperf_process = job_result.stdout
+        self.log_files.append(self.full_out_path)
         self.started = True
 
     def stop(self):
-        if self.started:
+        """ Stops iperf server running and get output in case of remote server.
+
+        """
+        if not self.started:
+            return
+        if self.server_type == "local":
             utils.stop_standing_subprocess(self.iperf_process)
+            self.started = False
+        if self.server_type == "remote":
+            self.ssh_session.run_async(
+                "kill {}".format(str(self.iperf_process)))
+            iperf_result = self.ssh_session.run(
+                "cat iperf_server_port{}.log".format(self.port))
+            with open(self.full_out_path, 'w') as f:
+                f.write(iperf_result.stdout)
+            self.ssh_session.run_async(
+                "rm iperf_server_port{}.log".format(self.port))
             self.started = False
