@@ -50,6 +50,24 @@ def wait_for_event(ad, event_name, timeout=EVENT_TIMEOUT):
     ad.log.info('%sTimed out while waiting for %s', prefix, event_name)
     asserts.fail(event_name)
 
+def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
+  """Wait for a timeout period and looks for the specified event - fails if it
+  is observed.
+
+  Args:
+    ad: The android device
+    event_name: The event to wait for (and fail on its appearance)
+  """
+  prefix = ''
+  if hasattr(ad, 'pretty_name'):
+    prefix = '[%s] ' % ad.pretty_name
+  try:
+    event = ad.ed.pop_event(event_name, timeout)
+    ad.log.info('%sReceived unwanted %s: %s', prefix, event_name, event['data'])
+    asserts.fail(event_name, extras=event)
+  except queue.Empty:
+    ad.log.info('%s%s not seen (as expected)', prefix, event_name)
+    return
 
 def get_rtt_supporting_networks(scanned_networks):
   """Filter the input list and only return those networks which support
