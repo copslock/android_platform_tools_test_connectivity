@@ -4648,7 +4648,7 @@ def set_qxdm_logger_command(ad, mask=None):
     else:
         ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 500 -n 10 -b -c" %
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -n 10 -b -c" %
                                   (mask_path, ad.qxdm_logger_path))
         conf_path = os.path.split(ad.qxdm_logger_path)[0]
         conf_path = os.path.join(conf_path, "diag.conf")
