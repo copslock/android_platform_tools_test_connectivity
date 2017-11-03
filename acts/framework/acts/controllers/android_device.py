@@ -48,7 +48,8 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/ramdump/", "/data/vendor/ssrdump",
                       "/data/vendor/ramdump/bluetooth")
-CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "bluetooth")
+CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
+                      "bluetooth")
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -993,11 +994,19 @@ class AndroidDevice:
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
-            crash_reports.extend(
-                self.get_file_names(
-                    crash_path,
-                    begin_time=begin_time,
-                    skip_files=CRASH_REPORT_SKIPS))
+            crashes = self.get_file_names(
+                crash_path,
+                begin_time=begin_time,
+                skip_files=CRASH_REPORT_SKIPS)
+            if crash_path == "/data/tombstones/" and crashes:
+                tombstones = crashes[:]
+                for tombstone in tombstones:
+                    if self.adb.shell(
+                            'cat %s | grep "crash_dump failed to dump process"'
+                            % tombstone):
+                        crashes.remove(tombstone)
+            if crashes:
+                crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
             test_name = test_name or begin_time or time.strftime(
                 "%m-%d-%Y-%H-%M-%S")
