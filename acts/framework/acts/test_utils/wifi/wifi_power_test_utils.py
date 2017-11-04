@@ -290,7 +290,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     return [plot, dt]
 
 
-def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=6):
+def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     """Function to change the DTIM setting in the phone.
 
     Args:
@@ -313,7 +313,8 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=6):
                 gEDTIM_old = line.strip('gEnableModulatedDTIM=').strip('\n')
             if 'gMaxLIModulatedDTIM=' in line:
                 gMDTIM_old = line.strip('gMaxLIModulatedDTIM=').strip('\n')
-    if int(gEDTIM_old) == gEnableModulatedDTIM:
+    if int(gEDTIM_old) == gEnableModulatedDTIM and int(
+            gMDTIM_old) == gMaxLIModulatedDTIM:
         ad.log.info('Current DTIM is already the desired value,'
                     'no need to reset it')
         return
