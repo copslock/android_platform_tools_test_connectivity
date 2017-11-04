@@ -88,6 +88,7 @@ class PowermulticastTest(base_test.BaseTestClass):
 
         """
         self.mon.usb('on')
+        self.pkt_sender.stop_sending(ignore_status=True)
         self.access_point.close()
 
     def set_connection(self, screen_status, network):
@@ -145,6 +146,9 @@ class PowermulticastTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+
+        # Stop packet sending thread
+        self.pkt_sender.stop_sending()
 
         # Bring down the bridge interface
         self.access_point.bridge.teardown(self.brconfigs)
