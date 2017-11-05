@@ -29,10 +29,10 @@ class PowerdtimTest(base_test.BaseTestClass):
 
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = ('test_2g_screenoff_dtimx1', 'test_2g_screenoff_dtimx2',
-                      'test_2g_screenoff_dtimx4', 'test_2g_screenoff_dtimx9',
+                      'test_2g_screenoff_dtimx4', 'test_2g_screenoff_dtimx5',
                       'test_2g_screenon_dtimx1', 'test_2g_screenon_dtimx4',
                       'test_5g_screenoff_dtimx1', 'test_5g_screenoff_dtimx2',
-                      'test_5g_screenoff_dtimx4', 'test_5g_screenoff_dtimx9',
+                      'test_5g_screenoff_dtimx4', 'test_5g_screenoff_dtimx5',
                       'test_5g_screenon_dtimx1', 'test_5g_screenon_dtimx4')
 
     def setup_class(self):
@@ -116,9 +116,9 @@ class PowerdtimTest(base_test.BaseTestClass):
         self.dtim_test_func(4, 'OFF', network)
 
     @test_tracker_info(uuid='b37fa75f-6166-4247-b15c-adcda8c7038e')
-    def test_2g_screenoff_dtimx9(self):
+    def test_2g_screenoff_dtimx5(self):
         network = self.main_network[hc.BAND_2G]
-        self.dtim_test_func(9, 'OFF', network, dtim_max=10)
+        self.dtim_test_func(5, 'OFF', network, dtim_max=10)
 
     @test_tracker_info(uuid='384d3b0f-4335-4b00-8363-308ec27a150c')
     def test_2g_screenon_dtimx1(self):
@@ -154,9 +154,9 @@ class PowerdtimTest(base_test.BaseTestClass):
         self.dtim_test_func(4, 'OFF', network)
 
     @test_tracker_info(uuid='75644df4-2cc8-4bbd-8985-0656a4f9d056')
-    def test_5g_screenoff_dtimx9(self):
+    def test_5g_screenoff_dtimx5(self):
         network = self.main_network[hc.BAND_5G]
-        self.dtim_test_func(9, 'OFF', network, dtim_max=10)
+        self.dtim_test_func(5, 'OFF', network, dtim_max=10)
 
     @test_tracker_info(uuid='327af44d-d9e7-49e0-9bda-accad6241dc7')
     def test_5g_screenon_dtimx1(self):
