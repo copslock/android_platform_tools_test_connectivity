@@ -79,11 +79,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.helper = self.android_devices[1]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
@@ -179,10 +177,11 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log.error("%s of length %s from %s to %s fails", message_type,
                            length, ads[0].serial, ads[1].serial)
             self.result_info["%s failure" % message_type] += 1
-            if message_type == "SMS" or self.result_info["%s failure" %
-                                                         message_type] == 1:
-                self._take_bug_report("%s_%s_failure" % (
-                    self.test_name, message_type), begin_time)
+            if message_type == "SMS" or (message_type == "MMS" and
+                                         self.result_info["MMS failure"] == 1):
+                self._take_bug_report("%s_%s_failure" % (self.test_name,
+                                                         message_type),
+                                      begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
@@ -249,8 +248,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report("checking_crash",
-                                                           begin_time, True)
+                crash_report = self.dut.check_crash_report(
+                    "checking_crash", begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -272,15 +271,11 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def call_test(self):
-        failure = 0
-        total_count = 0
         while time.time() < self.finishing_time:
             try:
                 ads = [self.dut, self.helper]
                 random.shuffle(ads)
-                total_count += 1
-                if not self._make_phone_call(ads):
-                    failure += 1
+                self._make_phone_call(ads)
                 self.dut.droid.goToSleepNow()
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
@@ -293,25 +288,20 @@ class TelLiveStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.finishing_time = time.time()
                 raise
-            self.dut.log.info("Call test failure: %s/%s", failure, total_count)
-        if failure:
+            self.log.info("%s", dict(self.result_info))
+        if self.result_info["Call Failure"]:
             return False
         else:
             return True
 
     def volte_modechange_volte_test(self):
-        failure = 0
-        total_count = 0
         sub_id = self.dut.droid.subscriptionGetDefaultSubId()
         while time.time() < self.finishing_time:
             try:
                 ads = [self.dut, self.helper]
-                total_count += 1
-                if not self._make_phone_call(
-                        ads, verify_caller_func=is_phone_in_call_volte):
-                    failure += 1
-                if not self._prefnetwork_mode_change(sub_id):
-                    failure += 1
+                self._make_phone_call(
+                    ads, verify_caller_func=is_phone_in_call_volte)
+                self._prefnetwork_mode_change(sub_id)
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -321,25 +311,19 @@ class TelLiveStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.finishing_time = time.time()
                 raise
-            self.dut.log.info(
-                "VoLTE with network mode change test failure: %s/%s", failure,
-                total_count)
-        if failure:
+            self.log.info("%s", dict(self.result_info))
+        if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
             return False
         else:
             return True
 
     def message_test(self):
-        failure = 0
-        total_count = 0
         while time.time() < self.finishing_time:
             begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             try:
                 ads = [self.dut, self.helper]
                 random.shuffle(ads)
-                total_count += 1
-                if not self._send_message(ads):
-                    failure += 1
+                self._send_message(ads)
                 self.dut.droid.goToSleepNow()
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
@@ -352,16 +336,15 @@ class TelLiveStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.finishing_time = time.time()
                 raise
-            self.dut.log.info("Messaging test failure: %s/%s", failure,
-                              total_count)
-        if failure / total_count > 0.1:
+            self.log.info("%s", dict(self.result_info))
+        if self.result_info["SMS failure"] or (
+                self.result_info["MMS failure"] / self.result_info["Total MMS"]
+                > 0.3):
             return False
         else:
             return True
 
     def data_test(self):
-        failure = 0
-        total_count = 0
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
@@ -372,7 +355,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
-                total_count += 1
                 if self.result_info["File download failure"] < 1:
                     (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
                         self.dut,
@@ -381,13 +363,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
                     self.result_info["File download failure"] += 1
-                    failure += 1
                     if self.result_info["File download failure"] == 1:
                         if tcpdump_pid is not None:
                             stop_adb_tcpdump(self.dut, tcpdump_pid,
                                              tcpdump_file, True)
-                        self._take_bug_report("%s_file_download_failure" %
-                                              self.test_name, begin_time)
+                        self._take_bug_report(
+                            "%s_file_download_failure" % self.test_name,
+                            begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
@@ -405,9 +387,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error(e)
                 self.finishing_time = time.time()
                 raise
-            self.dut.log.info("File download test failure: %s/%s", failure,
-                              total_count)
-        if failure / total_count > 0.1:
+            self.log.info("%s", dict(self.result_info))
+        if self.result_info["File download failure"] / self.result_info["Total file download"] > 0.1:
             return False
         else:
             return True
