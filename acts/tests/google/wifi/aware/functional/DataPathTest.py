@@ -16,6 +16,8 @@
 
 import time
 
+from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -334,8 +336,10 @@ class DataPathTest(AwareBaseTest):
 
     # Publisher & Subscriber: fail on network formation
     time.sleep(autils.EVENT_NDP_TIMEOUT)
-    autils.fail_on_event(p_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
-    autils.fail_on_event(s_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
+    autils.fail_on_event_with_keys(p_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                   (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+    autils.fail_on_event_with_keys(s_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                   (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
     # clean-up
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
@@ -414,8 +418,10 @@ class DataPathTest(AwareBaseTest):
 
     # Initiator & Responder: fail on network formation
     time.sleep(autils.EVENT_NDP_TIMEOUT)
-    autils.fail_on_event(init_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
-    autils.fail_on_event(resp_dut, cconsts.EVENT_NETWORK_CALLBACK, timeout=0)
+    autils.fail_on_event_with_keys(init_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                   (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+    autils.fail_on_event_with_keys(resp_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                   (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
     # clean-up
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
@@ -437,6 +443,7 @@ class DataPathTest(AwareBaseTest):
   # peer using the Aware-provided peer handle (as opposed to a MAC address).
   #######################################
 
+  @test_tracker_info(uuid="fa30bedc-d1de-4440-bf25-ec00d10555af")
   def test_ib_unsolicited_passive_open_specific(self):
     """Data-path: in-band, unsolicited/passive, open encryption, specific peer
 
@@ -448,6 +455,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="57fc9d53-32ae-470f-a8b1-2fe37893687d")
   def test_ib_unsolicited_passive_open_any(self):
     """Data-path: in-band, unsolicited/passive, open encryption, any peer
 
@@ -459,6 +467,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="93b2a23d-8579-448a-936c-7812929464cf")
   def test_ib_unsolicited_passive_passphrase_specific(self):
     """Data-path: in-band, unsolicited/passive, passphrase, specific peer
 
@@ -470,6 +479,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="1736126f-a0ff-4712-acc4-f89b4eef5716")
   def test_ib_unsolicited_passive_passphrase_any(self):
     """Data-path: in-band, unsolicited/passive, passphrase, any peer
 
@@ -481,6 +491,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="b9353d5b-3f77-46bf-bfd9-65d56a7c939a")
   def test_ib_unsolicited_passive_pmk_specific(self):
     """Data-path: in-band, unsolicited/passive, PMK, specific peer
 
@@ -492,6 +503,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="06f3b2ab-4a10-4398-83a4-6a23851b1662")
   def test_ib_unsolicited_passive_pmk_any(self):
     """Data-path: in-band, unsolicited/passive, PMK, any peer
 
@@ -503,6 +515,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="0ed7d8b3-a69e-46ba-aeb7-13e507ecf290")
   def test_ib_solicited_active_open_specific(self):
     """Data-path: in-band, solicited/active, open encryption, specific peer
 
@@ -514,6 +527,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="c7ba6d28-5ef6-45d9-95d5-583ad6d981f3")
   def test_ib_solicited_active_open_any(self):
     """Data-path: in-band, solicited/active, open encryption, any peer
 
@@ -525,6 +539,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="388cea99-0e2e-49ea-b00e-f3e56b6236e5")
   def test_ib_solicited_active_passphrase_specific(self):
     """Data-path: in-band, solicited/active, passphrase, specific peer
 
@@ -536,6 +551,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="fcd3e28a-5eab-4169-8a0c-dc7204dcdc13")
   def test_ib_solicited_active_passphrase_any(self):
     """Data-path: in-band, solicited/active, passphrase, any peer
 
@@ -547,6 +563,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="9d4eaad7-ba53-4a06-8ce0-e308daea3309")
   def test_ib_solicited_active_pmk_specific(self):
     """Data-path: in-band, solicited/active, PMK, specific peer
 
@@ -558,6 +575,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="129d850e-c312-4137-a67b-05ae95fe66cc")
   def test_ib_solicited_active_pmk_any(self):
     """Data-path: in-band, solicited/active, PMK, any peer
 
@@ -582,6 +600,7 @@ class DataPathTest(AwareBaseTest):
   # exchange of MAC addresses and then Wi-Fi Aware for data-path.
   #######################################
 
+  @test_tracker_info(uuid="7db17d8c-1dce-4084-b695-215bbcfe7d41")
   def test_oob_open_specific(self):
     """Data-path: out-of-band, open encryption, specific peer
 
@@ -591,6 +610,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="ad416d89-cb95-4a07-8d29-ee213117450b")
   def test_oob_open_any(self):
     """Data-path: out-of-band, open encryption, any peer
 
@@ -600,6 +620,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="74937a3a-d524-43e2-8979-4449271cab52")
   def test_oob_passphrase_specific(self):
     """Data-path: out-of-band, passphrase, specific peer
 
@@ -609,6 +630,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="afcbdc7e-d3a9-465b-b1da-ce2e42e3941e")
   def test_oob_passphrase_any(self):
     """Data-path: out-of-band, passphrase, any peer
 
@@ -618,6 +640,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PASSPHRASE,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="0d095031-160a-4537-aab5-41b6ad5d55f8")
   def test_oob_pmk_specific(self):
     """Data-path: out-of-band, PMK, specific peer
 
@@ -627,6 +650,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=True)
 
+  @test_tracker_info(uuid="e45477bd-66cc-4eb7-88dd-4518c8aa2a74")
   def test_oob_pmk_any(self):
     """Data-path: out-of-band, PMK, any peer
 
@@ -638,6 +662,7 @@ class DataPathTest(AwareBaseTest):
 
   ##############################################################
 
+  @test_tracker_info(uuid="1c2c9805-dc1e-43b5-a1b8-315e8c9a4337")
   def test_passphrase_min(self):
     """Data-path: minimum passphrase length
 
@@ -649,6 +674,7 @@ class DataPathTest(AwareBaseTest):
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MIN)
 
+  @test_tracker_info(uuid="e696e2b9-87a9-4521-b337-61b9efaa2057")
   def test_passphrase_max(self):
     """Data-path: maximum passphrase length
 
@@ -660,70 +686,362 @@ class DataPathTest(AwareBaseTest):
                                use_peer_id=False,
                                passphrase_to_use=self.PASSPHRASE_MAX)
 
+  @test_tracker_info(uuid="533cd44c-ff30-4283-ac28-f71fd7b4f02d")
   def test_negative_mismatch_publisher_peer_id(self):
     """Data-path: failure when publisher peer ID is mismatched"""
     self.run_mismatched_ib_data_path_test(pub_mismatch=True, sub_mismatch=False)
 
+  @test_tracker_info(uuid="682f275e-722a-4f8b-85e7-0dcea9d25532")
   def test_negative_mismatch_subscriber_peer_id(self):
     """Data-path: failure when subscriber peer ID is mismatched"""
     self.run_mismatched_ib_data_path_test(pub_mismatch=False, sub_mismatch=True)
 
+  @test_tracker_info(uuid="7fa82796-7fc9-4d9e-bbbb-84b751788943")
   def test_negative_mismatch_init_mac(self):
     """Data-path: failure when Initiator MAC address mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_mismatch_mac=True,
         resp_mismatch_mac=False)
 
+  @test_tracker_info(uuid="edeae959-4644-44f9-8d41-bdeb5216954e")
   def test_negative_mismatch_resp_mac(self):
     """Data-path: failure when Responder MAC address mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_mismatch_mac=False,
         resp_mismatch_mac=True)
 
+  @test_tracker_info(uuid="91f46949-c47f-49f9-a90f-6fae699613a7")
   def test_negative_mismatch_passphrase(self):
     """Data-path: failure when passphrases mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PASSPHRASE,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="01c49c2e-dc92-4a27-bb47-c4fc67617c23")
   def test_negative_mismatch_pmk(self):
     """Data-path: failure when PMK mismatch"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_PMK)
 
+  @test_tracker_info(uuid="4d651797-5fbb-408e-a4b6-a6e1944136da")
   def test_negative_mismatch_open_passphrase(self):
     """Data-path: failure when initiator is open, and responder passphrase"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_OPEN,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="1ae697f4-5987-4187-aeef-1e22d07d4a7c")
   def test_negative_mismatch_open_pmk(self):
     """Data-path: failure when initiator is open, and responder PMK"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_OPEN,
         resp_encr_type=self.ENCR_TYPE_PMK)
 
+  @test_tracker_info(uuid="f027b1cc-0e7a-4075-b880-5e64b288afbd")
   def test_negative_mismatch_pmk_passphrase(self):
     """Data-path: failure when initiator is pmk, and responder passphrase"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_PASSPHRASE)
 
+  @test_tracker_info(uuid="0819bbd4-72ae-49c4-bd46-5448db2b0a06")
   def test_negative_mismatch_passphrase_open(self):
     """Data-path: failure when initiator is passphrase, and responder open"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PASSPHRASE,
         resp_encr_type=self.ENCR_TYPE_OPEN)
 
+  @test_tracker_info(uuid="7ef24f62-8e6b-4732-88a3-80a43584dda4")
   def test_negative_mismatch_pmk_open(self):
     """Data-path: failure when initiator is PMK, and responder open"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PMK,
         resp_encr_type=self.ENCR_TYPE_OPEN)
 
+  @test_tracker_info(uuid="7b9c9efc-1c06-465e-8a5e-d6a22ac1da97")
   def test_negative_mismatch_passphrase_pmk(self):
     """Data-path: failure when initiator is passphrase, and responder pmk"""
     self.run_mismatched_oob_data_path_test(
         init_encr_type=self.ENCR_TYPE_PASSPHRASE,
         resp_encr_type=self.ENCR_TYPE_OPEN)
+
+
+  ##########################################################################
+
+  def wait_for_request_responses(self, dut, req_keys, aware_ifs):
+    """Wait for network request confirmation for all request keys.
+
+    Args:
+      dut: Device under test
+      req_keys: (in) A list of the network requests
+      aware_ifs: (out) A list into which to append the network interface
+    """
+    num_events = 0
+    while num_events != len(req_keys):
+      event = autils.wait_for_event(dut, cconsts.EVENT_NETWORK_CALLBACK)
+      if (event["data"][cconsts.NETWORK_CB_KEY_EVENT] ==
+          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED):
+        if event["data"][cconsts.NETWORK_CB_KEY_ID] in req_keys:
+          num_events = num_events + 1
+          aware_ifs.append(event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+        else:
+          self.log.info("Received an unexpected connectivity, the revoked "
+                        "network request probably went through -- %s", event)
+
+  @test_tracker_info(uuid="2e325e2b-d552-4890-b470-20b40284395d")
+  def test_multiple_identical_networks(self):
+    """Validate that creating multiple networks between 2 devices, each network
+    with identical configuration is supported over a single NDP.
+
+    Verify that the interface and IPv6 address is the same for all networks.
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    N = 2 # first iteration (must be 2 to give us a chance to cancel the first)
+    M = 5 # second iteration
+
+    init_ids = []
+    resp_ids = []
+
+    # Initiator+Responder: attach and wait for confirmation & identity
+    # create 10 sessions to be used in the different (but identical) NDPs
+    for i in range(N + M):
+      id, init_mac = autils.attach_with_identity(init_dut)
+      init_ids.append(id)
+      id, resp_mac = autils.attach_with_identity(resp_dut)
+      resp_ids.append(id)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    resp_req_keys = []
+    init_req_keys = []
+    resp_aware_ifs = []
+    init_aware_ifs = []
+
+    # issue N quick requests for identical NDPs - without waiting for result
+    # tests whether pre-setup multiple NDP procedure
+    for i in range(N):
+      # Responder: request network
+      resp_req_keys.append(autils.request_network(
+          resp_dut,
+          resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              resp_ids[i], aconsts.DATA_PATH_RESPONDER, init_mac, None)))
+
+      # Initiator: request network
+      init_req_keys.append(autils.request_network(
+          init_dut,
+          init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              init_ids[i], aconsts.DATA_PATH_INITIATOR, resp_mac, None)))
+
+    # remove the first request (hopefully before completed) testing that NDP
+    # is still created
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_keys[0])
+    resp_req_keys.remove(resp_req_keys[0])
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_keys[0])
+    init_req_keys.remove(init_req_keys[0])
+
+    # wait for network formation for all initial requests
+    self.wait_for_request_responses(resp_dut, resp_req_keys, resp_aware_ifs)
+    self.wait_for_request_responses(init_dut, init_req_keys, init_aware_ifs)
+
+    # issue N more requests for the same NDPs - tests post-setup multiple NDP
+    for i in range(M):
+      # Responder: request network
+      resp_req_keys.append(autils.request_network(
+          resp_dut,
+          resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              resp_ids[N + i], aconsts.DATA_PATH_RESPONDER, init_mac, None)))
+
+      # Initiator: request network
+      init_req_keys.append(autils.request_network(
+          init_dut,
+          init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              init_ids[N + i], aconsts.DATA_PATH_INITIATOR, resp_mac, None)))
+
+    # wait for network formation for all subsequent requests
+    self.wait_for_request_responses(resp_dut, resp_req_keys[N - 1:],
+                                    resp_aware_ifs)
+    self.wait_for_request_responses(init_dut, init_req_keys[N - 1:],
+                                    init_aware_ifs)
+
+    # determine whether all interfaces are identical (single NDP) - can't really
+    # test the IPv6 address since it is not part of the callback event - it is
+    # simply obtained from the system (so we'll always get the same for the same
+    # interface)
+    init_aware_ifs = list(set(init_aware_ifs))
+    resp_aware_ifs = list(set(resp_aware_ifs))
+
+    self.log.info("Interface names: I=%s, R=%s", init_aware_ifs, resp_aware_ifs)
+    self.log.info("Initiator requests: %s", init_req_keys)
+    self.log.info("Responder requests: %s", resp_req_keys)
+
+    asserts.assert_equal(
+        len(init_aware_ifs), 1, "Multiple initiator interfaces")
+    asserts.assert_equal(
+        len(resp_aware_ifs), 1, "Multiple responder interfaces")
+
+    self.log.info("Interface IPv6 (using ifconfig): I=%s, R=%s",
+                  autils.get_ipv6_addr(init_dut, init_aware_ifs[0]),
+                  autils.get_ipv6_addr(resp_dut, resp_aware_ifs[0]))
+
+    for i in range(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]):
+      if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
+      init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
+      resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
+
+      asserts.assert_equal(
+          init_ipv6 is None, if_name not in init_aware_ifs,
+          "Initiator interface %s in unexpected state" % if_name)
+      asserts.assert_equal(
+          resp_ipv6 is None, if_name not in resp_aware_ifs,
+          "Responder interface %s in unexpected state" % if_name)
+
+    # release requests
+    for resp_req_key in resp_req_keys:
+      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    for init_req_key in init_req_keys:
+      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  ########################################################################
+
+  def run_multiple_ndi(self, sec_configs):
+    """Validate that the device can create and use multiple NDIs.
+
+    The security configuration can be:
+    - None: open
+    - String: passphrase
+    - otherwise: PMK (byte array)
+
+    Args:
+      sec_configs: list of security configurations
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    asserts.skip_if(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs) or
+                    resp_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs),
+                    "Initiator or Responder do not support multiple NDIs")
+
+    init_id, init_mac = autils.attach_with_identity(init_dut)
+    resp_id, resp_mac = autils.attach_with_identity(resp_dut)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    resp_req_keys = []
+    init_req_keys = []
+    resp_aware_ifs = []
+    init_aware_ifs = []
+
+    for sec in sec_configs:
+      # Responder: request network
+      resp_req_key = autils.request_network(resp_dut,
+                                            autils.get_network_specifier(
+                                                resp_dut, resp_id,
+                                                aconsts.DATA_PATH_RESPONDER,
+                                                init_mac, sec))
+      resp_req_keys.append(resp_req_key)
+
+      # Initiator: request network
+      init_req_key = autils.request_network(init_dut,
+                                            autils.get_network_specifier(
+                                                init_dut, init_id,
+                                                aconsts.DATA_PATH_INITIATOR,
+                                                resp_mac, sec))
+      init_req_keys.append(init_req_key)
+
+      # Wait for network
+      init_net_event = autils.wait_for_event_with_keys(
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+      resp_net_event = autils.wait_for_event_with_keys(
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+      resp_aware_ifs.append(
+          resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      init_aware_ifs.append(
+          init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+
+    # check that we are using 2 NDIs
+    init_aware_ifs = list(set(init_aware_ifs))
+    resp_aware_ifs = list(set(resp_aware_ifs))
+
+    self.log.info("Interface names: I=%s, R=%s", init_aware_ifs, resp_aware_ifs)
+    self.log.info("Initiator requests: %s", init_req_keys)
+    self.log.info("Responder requests: %s", resp_req_keys)
+
+    asserts.assert_equal(
+        len(init_aware_ifs), len(sec_configs), "Multiple initiator interfaces")
+    asserts.assert_equal(
+        len(resp_aware_ifs), len(sec_configs), "Multiple responder interfaces")
+
+    for i in range(len(sec_configs)):
+      if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
+      init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
+      resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
+
+      asserts.assert_equal(
+          init_ipv6 is None, if_name not in init_aware_ifs,
+          "Initiator interface %s in unexpected state" % if_name)
+      asserts.assert_equal(
+          resp_ipv6 is None, if_name not in resp_aware_ifs,
+          "Responder interface %s in unexpected state" % if_name)
+
+    # release requests
+    for resp_req_key in resp_req_keys:
+      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    for init_req_key in init_req_keys:
+      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
+  def test_multiple_ndi_open_passphrase(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using passphrase). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([None, self.PASSPHRASE])
+
+  @test_tracker_info(uuid="5f2c32aa-20b2-41f0-8b1e-d0b68df73ada")
+  def test_multiple_ndi_open_pmk(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using pmk). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([None, self.PMK])
+
+  @test_tracker_info(uuid="34467659-bcfb-40cd-ba25-7e50560fca63")
+  def test_multiple_ndi_passphrase_pmk(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one using passphrase, one using pmk). The result should use
+    two different NDIs"""
+    self.run_multiple_ndi([self.PASSPHRASE, self.PMK])
+
+  @test_tracker_info(uuid="d9194ce6-45b6-41b1-9cc8-ada79968966d")
+  def test_multiple_ndi_passphrases(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different passphrases). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2])
+
+  @test_tracker_info(uuid="879df795-62d2-40d4-a862-bd46d8f7e67f")
+  def test_multiple_ndi_pmks(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different PMKS). The result should use two different
+    NDIs"""
+    self.run_multiple_ndi([self.PMK, self.PMK2])

@@ -18,6 +18,7 @@ import string
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -540,6 +541,7 @@ class DiscoveryTest(AwareBaseTest):
   # filter: typical, max, or min.
   #######################################
 
+  @test_tracker_info(uuid="954ebbde-ed2b-4f04-9e68-88239187d69d")
   def test_positive_unsolicited_passive_typical(self):
     """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
@@ -552,6 +554,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         payload_size=self.PAYLOAD_SIZE_TYPICAL)
 
+  @test_tracker_info(uuid="67fb22bb-6985-4345-95a4-90b76681a58b")
   def test_positive_unsolicited_passive_min(self):
     """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
@@ -564,6 +567,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         payload_size=self.PAYLOAD_SIZE_MIN)
 
+  @test_tracker_info(uuid="a02a47b9-41bb-47bb-883b-921024a2c30d")
   def test_positive_unsolicited_passive_max(self):
     """Functional test case / Discovery test cases / positive test case:
     - Solicited publish + passive subscribe
@@ -576,7 +580,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         payload_size=self.PAYLOAD_SIZE_MAX)
 
-
+  @test_tracker_info(uuid="586c657f-2388-4e7a-baee-9bce2f3d1a16")
   def test_positive_solicited_active_typical(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
@@ -589,6 +593,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         payload_size=self.PAYLOAD_SIZE_TYPICAL)
 
+  @test_tracker_info(uuid="5369e4ff-f406-48c5-b41a-df38ec340146")
   def test_positive_solicited_active_min(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
@@ -601,6 +606,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         payload_size=self.PAYLOAD_SIZE_MIN)
 
+  @test_tracker_info(uuid="634c6eb8-2c4f-42bd-9bbb-d874d0ec22f3")
   def test_positive_solicited_active_max(self):
     """Functional test case / Discovery test cases / positive test case:
     - Unsolicited publish + active subscribe
@@ -624,6 +630,7 @@ class DiscoveryTest(AwareBaseTest):
   # term_ind: ind_on or ind_off
   #######################################
 
+  @test_tracker_info(uuid="9d7e758e-e0e2-4550-bcee-bfb6a2bff63e")
   def test_ttl_unsolicited_ind_on(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Unsolicited publish
@@ -635,6 +642,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=None,
         term_ind_on=True)
 
+  @test_tracker_info(uuid="48fd69bc-cc2a-4f65-a0a1-63d7c1720702")
   def test_ttl_unsolicited_ind_off(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Unsolicited publish
@@ -646,6 +654,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=None,
         term_ind_on=False)
 
+  @test_tracker_info(uuid="afb75fc1-9ba7-446a-b5ed-7cd37ab51b1c")
   def test_ttl_solicited_ind_on(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Solicited publish
@@ -657,6 +666,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=None,
         term_ind_on=True)
 
+  @test_tracker_info(uuid="703311a6-e444-4055-94ee-ea9b9b71799e")
   def test_ttl_solicited_ind_off(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Solicited publish
@@ -668,6 +678,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=None,
         term_ind_on=False)
 
+  @test_tracker_info(uuid="38a541c4-ff55-4387-87b7-4d940489da9d")
   def test_ttl_passive_ind_on(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Passive subscribe
@@ -679,6 +690,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         term_ind_on=True)
 
+  @test_tracker_info(uuid="ba971e12-b0ca-417c-a1b5-9451598de47d")
   def test_ttl_passive_ind_off(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Passive subscribe
@@ -690,6 +702,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
         term_ind_on=False)
 
+  @test_tracker_info(uuid="7b5d96f2-2415-4b98-9a51-32957f0679a0")
   def test_ttl_active_ind_on(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Active subscribe
@@ -701,6 +714,7 @@ class DiscoveryTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         term_ind_on=True)
 
+  @test_tracker_info(uuid="c9268eca-0a30-42dd-8e6c-b8b0b84697fb")
   def test_ttl_active_ind_off(self):
     """Functional test case / Discovery test cases / TTL test case:
     - Active subscribe
@@ -722,6 +736,7 @@ class DiscoveryTest(AwareBaseTest):
   # sub_type: Type of subscribe discovery session: passive or active.
   #######################################
 
+  @test_tracker_info(uuid="175415e9-7d07-40d0-95f0-3a5f91ea4711")
   def test_mismatch_service_name_unsolicited_passive(self):
     """Functional test case / Discovery test cases / Mismatch service name
     - Unsolicited publish
@@ -734,6 +749,7 @@ class DiscoveryTest(AwareBaseTest):
         p_service_name="GoogleTestServiceXXX",
         s_service_name="GoogleTestServiceYYY")
 
+  @test_tracker_info(uuid="c22a54ce-9e46-47a5-ac44-831faf93d317")
   def test_mismatch_service_name_solicited_active(self):
     """Functional test case / Discovery test cases / Mismatch service name
     - Solicited publish
@@ -756,6 +772,7 @@ class DiscoveryTest(AwareBaseTest):
   # sub_type: Type of subscribe discovery session: passive or active.
   #######################################
 
+  @test_tracker_info(uuid="4806f631-d9eb-45fd-9e75-24674962770f")
   def test_mismatch_service_type_unsolicited_active(self):
     """Functional test case / Discovery test cases / Mismatch service name
     - Unsolicited publish
@@ -766,6 +783,7 @@ class DiscoveryTest(AwareBaseTest):
         p_type=aconsts.PUBLISH_TYPE_UNSOLICITED,
         s_type=aconsts.SUBSCRIBE_TYPE_ACTIVE)
 
+  @test_tracker_info(uuid="12d648fd-b8fa-4c0f-9467-95e2366047de")
   def test_mismatch_service_type_solicited_passive(self):
     """Functional test case / Discovery test cases / Mismatch service name
     - Unsolicited publish
@@ -786,6 +804,7 @@ class DiscoveryTest(AwareBaseTest):
   # sub_type: Type of subscribe discovery session: passive or active.
   #######################################
 
+  @test_tracker_info(uuid="d98454cb-64af-4266-8fed-f0b545a2d7c4")
   def test_mismatch_match_filter_unsolicited_passive(self):
     """Functional test case / Discovery test cases / Mismatch match filter
     - Unsolicited publish
@@ -798,6 +817,7 @@ class DiscoveryTest(AwareBaseTest):
         p_mf_1="hello there string",
         s_mf_1="goodbye there string")
 
+  @test_tracker_info(uuid="663c1008-ae11-4e1a-87c7-c311d83f481c")
   def test_mismatch_match_filter_solicited_active(self):
     """Functional test case / Discovery test cases / Mismatch match filter
     - Solicited publish
