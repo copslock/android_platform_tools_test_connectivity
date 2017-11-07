@@ -68,7 +68,34 @@ def _validate_testbed_name(name):
                 "Char '%s' is not allowed in test bed names." % l)
 
 
-def _validate_testbed_configs(testbed_configs):
+def _update_file_paths(config, config_path):
+    """ Checks if the path entries are valid.
+
+    If the file path is invalid, assume it is a relative path and append
+    that to the config file path.
+
+    Args:
+        config : the config object to verify.
+        config_path : The path to the config file, which can be used to
+                      generate absolute paths from relative paths in configs.
+
+    Raises:
+        If the file path is invalid, ActsConfigError is raised.
+    """
+    # Check the file_path_keys and update if it is a relative path.
+    for file_path_key in keys.Config.file_path_keys.value:
+        if file_path_key in config:
+            config_file = config[file_path_key]
+            if type(config_file) is str:
+                if not os.path.isfile(config_file):
+                    config_file = os.path.join(config_path, config_file)
+                if not os.path.isfile(config_file):
+                    raise ActsConfigError("Unable to load config %s from test "
+                                          "config file.", config_file)
+                config[file_path_key] = config_file
+
+
+def _validate_testbed_configs(testbed_configs, config_path):
     """Validates the testbed configurations.
 
     Args:
@@ -80,6 +107,7 @@ def _validate_testbed_configs(testbed_configs):
     seen_names = set()
     # Cross checks testbed configs for resource conflicts.
     for config in testbed_configs:
+        _update_file_paths(config, config_path)
         # Check for conflicts between multiple concurrent testbed configs.
         # No need to call it if there's only one testbed config.
         name = config[keys.Config.key_testbed_name.value]
@@ -248,25 +276,25 @@ def load_test_config_file(test_config_path,
                                                              len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
 
-    if (not keys.Config.key_log_path.value in configs and
-            _ENV_ACTS_LOGPATH in os.environ):
+    if (not keys.Config.key_log_path.value in configs
+            and _ENV_ACTS_LOGPATH in os.environ):
         print('Using environment log path: %s' %
               (os.environ[_ENV_ACTS_LOGPATH]))
         configs[keys.Config.key_log_path.value] = os.environ[_ENV_ACTS_LOGPATH]
-    if (not keys.Config.key_test_paths.value in configs and
-            _ENV_ACTS_TESTPATHS in os.environ):
+    if (not keys.Config.key_test_paths.value in configs
+            and _ENV_ACTS_TESTPATHS in os.environ):
         print('Using environment test paths: %s' %
               (os.environ[_ENV_ACTS_TESTPATHS]))
         configs[keys.Config.key_test_paths.value] = os.environ[
             _ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
 
-    _validate_test_config(configs)
-    _validate_testbed_configs(configs[keys.Config.key_testbed.value])
     k_log_path = keys.Config.key_log_path.value
     configs[k_log_path] = utils.abs_path(configs[k_log_path])
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
     configs[keys.Config.key_config_path] = config_path
-    tps = configs[keys.Config.key_test_paths.value]
+    _validate_test_config(configs)
+    _validate_testbed_configs(configs[keys.Config.key_testbed.value],
+                              config_path)
     # Unpack testbeds into separate json objects.
     beds = configs.pop(keys.Config.key_testbed.value)
     config_jsons = []
