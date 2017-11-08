@@ -122,6 +122,7 @@ def _validate_testbed_configs(testbed_configs, config_path):
 
 def gen_term_signal_handler(test_runners):
     def termination_sig_handler(signal_num, frame):
+        print('Received sigterm %s.' % signal_num)
         for t in test_runners:
             t.stop()
         sys.exit(1)
@@ -268,13 +269,13 @@ def load_test_config_file(test_config_path,
                                                              len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
 
-    if (keys.Config.key_log_path.value not in configs and
-            _ENV_ACTS_LOGPATH in os.environ):
+    if (keys.Config.key_log_path.value not in configs
+            and _ENV_ACTS_LOGPATH in os.environ):
         print('Using environment log path: %s' %
               (os.environ[_ENV_ACTS_LOGPATH]))
         configs[keys.Config.key_log_path.value] = os.environ[_ENV_ACTS_LOGPATH]
-    if (keys.Config.key_test_paths.value not in configs and
-            _ENV_ACTS_TESTPATHS in os.environ):
+    if (keys.Config.key_test_paths.value not in configs
+            and _ENV_ACTS_TESTPATHS in os.environ):
         print('Using environment test paths: %s' %
               (os.environ[_ENV_ACTS_TESTPATHS]))
         configs[keys.Config.key_test_paths.value] = os.environ[
