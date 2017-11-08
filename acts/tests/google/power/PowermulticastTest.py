@@ -83,6 +83,17 @@ class PowermulticastTest(base_test.BaseTestClass):
         for key in bulk_params.keys():
             setattr(self, key, bulk_params[key])
 
+    def teardown_test(self):
+        """Tear down necessary objects after test case is finished.
+
+        Bring down the AP interface, delete the bridge interface, stop the
+        packet sender, and reset the ethernet interface for the packet sender
+        """
+        self.pkt_sender.stop_sending(ignore_status=True)
+        self.access_point.bridge.teardown(self.brconfigs)
+        self.access_point.close()
+        wputils.reset_host_interface(self.pkt_sender.interface)
+
     def teardown_class(self):
         """Clean up the test class after tests finish running
 
@@ -146,15 +157,6 @@ class PowermulticastTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-
-        # Stop packet sending thread
-        self.pkt_sender.stop_sending()
-
-        # Bring down the bridge interface
-        self.access_point.bridge.teardown(self.brconfigs)
-
-        # Close AP
-        self.access_point.close()
 
         # Compute pass or fail check
         wputils.pass_fail_check(self, avg_current)
