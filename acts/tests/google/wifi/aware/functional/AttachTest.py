@@ -16,6 +16,7 @@
 
 import time
 
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -27,6 +28,7 @@ class AttachTest(AwareBaseTest):
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
 
+  @test_tracker_info(uuid="cdafd1e0-bcf5-4fe8-ae32-f55483db9925")
   def test_attach(self):
     """Functional test case / Attach test cases / attach
 
@@ -38,6 +40,7 @@ class AttachTest(AwareBaseTest):
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
     autils.fail_on_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
 
+  @test_tracker_info(uuid="82f2a8bc-a62b-49c2-ac8a-fe8460010ba2")
   def test_attach_with_identity(self):
     """Functional test case / Attach test cases / attach with identity callback
 
@@ -49,6 +52,7 @@ class AttachTest(AwareBaseTest):
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
 
+  @test_tracker_info(uuid="d2714d14-f330-47d4-b8e9-ee4d5e5b7ea0")
   def test_attach_multiple_sessions(self):
     """Functional test case / Attach test cases / multiple attach sessions
 
@@ -90,6 +94,7 @@ class AttachTest(AwareBaseTest):
                          autils.decorate_event(
                              aconsts.EVENT_CB_ON_IDENTITY_CHANGED, id3))
 
+  @test_tracker_info(uuid="b8ea4d02-ae23-42a7-a85e-def52932c858")
   def test_attach_with_no_wifi(self):
     """Function test case / Attach test cases / attempt to attach with wifi off
 
@@ -103,6 +108,7 @@ class AttachTest(AwareBaseTest):
     dut.droid.wifiAwareAttach()
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
 
+  @test_tracker_info(uuid="7ffde8e7-a010-4b77-97f5-959f263b5249")
   def test_attach_apm_toggle_attach_again(self):
     """Validates that enabling Airplane mode while Aware is on resets it
     correctly, and allows it to be re-enabled when Airplane mode is then

@@ -30,7 +30,7 @@ class DataPathStressTest(AwareBaseTest):
   ATTACH_ITERATIONS = 2
 
   # Number of iterations on create/destroy NDP in each discovery session.
-  NDP_ITERATIONS = 5
+  NDP_ITERATIONS = 20
 
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
@@ -128,9 +128,6 @@ class DataPathStressTest(AwareBaseTest):
         # clean-up
         init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
         resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
-
-        # wait before trying another iteration (need to let CM clean-up)
-        time.sleep(10)
 
       # clean-up at end of iteration
       init_dut.droid.wifiAwareDestroy(init_id)
