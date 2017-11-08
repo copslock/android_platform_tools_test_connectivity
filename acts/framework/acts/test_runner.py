@@ -93,6 +93,9 @@ def main():
         try:
             result = execute_one_test_class(test_class, config,
                                             test_identifier)
+            if not result:
+                logging.error(
+                    'Results for config %s have returned empty.' % config)
             ok = result and ok
         except signals.TestAbortAll:
             pass
