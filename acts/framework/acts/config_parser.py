@@ -122,6 +122,7 @@ def _validate_testbed_configs(testbed_configs, config_path):
 
 def gen_term_signal_handler(test_runners):
     def termination_sig_handler(signal_num, frame):
+        print('Received sigterm %s.' % signal_num)
         for t in test_runners:
             t.stop()
         sys.exit(1)
