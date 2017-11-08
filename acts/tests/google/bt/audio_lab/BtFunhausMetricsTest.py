@@ -58,16 +58,14 @@ class BtFunhausMetricsTest(BtFunhausBaseTest):
         """
         play_duration_seconds = 60
         start_time = time.time()
-        status, bluetooth_off_list, device_not_connected_list = \
-            self.play_music_for_duration(play_duration_seconds)
-        if not status:
-            return status
-        self.stop_playing_music_on_all_devices()
+        if not self.play_music_for_duration(play_duration_seconds):
+            return False
+        self.ad.droid.mediaPlayStopAll()
         time.sleep(20)
         bt_duration = time.time() - start_time
         bluetooth_logs, bluetooth_logs_ascii = \
             self.collect_bluetooth_manager_metrics_logs(
-                [self.android_devices[0]])
+                [self.ad])
         bluetooth_log = bluetooth_logs[0]
         bluetooth_log_ascii = bluetooth_logs_ascii[0]
         self.log.info(bluetooth_log_ascii)
@@ -113,10 +111,8 @@ class BtFunhausMetricsTest(BtFunhausBaseTest):
         a2dp_duration = 0
         for i in range(num_play):
             start_time = time.time()
-            status, bluetooth_off_list, device_not_connected_list = \
-                self.play_music_for_duration(play_duration_seconds)
-            if not status:
-                return status
+            if not self.play_music_for_duration(play_duration_seconds):
+                return False
             a2dp_duration += (time.time() - start_time)
             time.sleep(20)
             bt_duration += (time.time() - start_time)
@@ -161,10 +157,8 @@ class BtFunhausMetricsTest(BtFunhausBaseTest):
         play_duration_seconds = 30
         for i in range(num_play):
             start_time = time.time()
-            status, bluetooth_off_list, device_not_connected_list = \
-                self.play_music_for_duration(play_duration_seconds)
-            if not status:
-                return status
+            if not self.play_music_for_duration(play_duration_seconds):
+                return False
             time.sleep(20)
             bt_duration = time.time() - start_time
             bluetooth_logs, bluetooth_logs_ascii = \
