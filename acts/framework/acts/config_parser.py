@@ -99,6 +99,7 @@ def _verify_test_class_name(test_cls_name):
 
 def gen_term_signal_handler(test_runners):
     def termination_sig_handler(signal_num, frame):
+        print('Received sigterm %s.' % signal_num)
         for t in test_runners:
             t.stop()
         sys.exit(1)
