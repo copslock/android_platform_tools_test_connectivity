@@ -43,6 +43,8 @@ from acts.test_utils.bt.bt_gatt_utils import setup_multiple_services
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 
+PHYSICAL_DISCONNECT_TIMEOUT = 5
+
 
 class GattConnectTest(BluetoothBaseTest):
     adv_instances = []
@@ -61,6 +63,12 @@ class GattConnectTest(BluetoothBaseTest):
         bluetooth_gatt_list = []
         self.gatt_server_list = []
         self.adv_instances = []
+        # Ensure there is ample time for a physical disconnect in between
+        # testcases.
+        self.log.info(
+            "Waiting for {} seconds for physical GATT disconnections".format(
+                PHYSICAL_DISCONNECT_TIMEOUT))
+        time.sleep(PHYSICAL_DISCONNECT_TIMEOUT)
 
     def teardown_test(self):
         for bluetooth_gatt in self.bluetooth_gatt_list:
