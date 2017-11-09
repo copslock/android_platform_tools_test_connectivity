@@ -957,7 +957,7 @@ class DataPathTest(AwareBaseTest):
     resp_ids = []
 
     # Initiator+Responder: attach and wait for confirmation & identity
-    # create 10 sessions to be used in the different (but identical) NDPs
+    # create N+M sessions to be used in the different (but identical) NDPs
     for i in range(N + M):
       id, init_mac = autils.attach_with_identity(init_dut)
       init_ids.append(id)
@@ -1000,7 +1000,7 @@ class DataPathTest(AwareBaseTest):
     self.wait_for_request_responses(resp_dut, resp_req_keys, resp_aware_ifs)
     self.wait_for_request_responses(init_dut, init_req_keys, init_aware_ifs)
 
-    # issue N more requests for the same NDPs - tests post-setup multiple NDP
+    # issue M more requests for the same NDPs - tests post-setup multiple NDP
     for i in range(M):
       # Responder: request network
       resp_req_keys.append(autils.request_network(
@@ -1057,6 +1057,115 @@ class DataPathTest(AwareBaseTest):
       resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     for init_req_key in init_req_keys:
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  def test_identical_network_from_both_sides(self):
+    """Validate that requesting two identical NDPs (Open) each being initiated
+    from a different side, results in the same/single NDP.
+
+    Verify that the interface and IPv6 address is the same for all networks.
+    """
+    dut1 = self.android_devices[0]
+    dut2 = self.android_devices[1]
+
+    id1, mac1 = autils.attach_with_identity(dut1)
+    id2, mac2 = autils.attach_with_identity(dut2)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    # first NDP: DUT1 (Init) -> DUT2 (Resp)
+    req_a_resp = autils.request_network(dut2,
+                               dut2.droid.wifiAwareCreateNetworkSpecifierOob(
+                                 id2, aconsts.DATA_PATH_RESPONDER,
+                                 mac1))
+
+    req_a_init = autils.request_network(dut1,
+                               dut1.droid.wifiAwareCreateNetworkSpecifierOob(
+                                 id1, aconsts.DATA_PATH_INITIATOR,
+                                 mac2))
+
+    req_a_resp_event = autils.wait_for_event_with_keys(
+        dut2, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_a_resp))
+    req_a_init_event = autils.wait_for_event_with_keys(
+        dut1, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_a_init))
+
+    req_a_if_resp = req_a_resp_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    req_a_if_init = req_a_init_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    self.log.info("Interface names for A: I=%s, R=%s", req_a_if_init,
+                  req_a_if_resp)
+
+    req_a_ipv6_resp = \
+    dut2.droid.connectivityGetLinkLocalIpv6Address(req_a_if_resp).split("%")[0]
+    req_a_ipv6_init = \
+    dut1.droid.connectivityGetLinkLocalIpv6Address(req_a_if_init).split("%")[0]
+    self.log.info("Interface addresses (IPv6) for A: I=%s, R=%s",
+                  req_a_ipv6_init, req_a_ipv6_resp)
+
+    # second NDP: DUT2 (Init) -> DUT1 (Resp)
+    req_b_resp = autils.request_network(dut1,
+                                dut1.droid.wifiAwareCreateNetworkSpecifierOob(
+                                    id1, aconsts.DATA_PATH_RESPONDER,
+                                    mac2))
+
+    req_b_init = autils.request_network(dut2,
+                                dut2.droid.wifiAwareCreateNetworkSpecifierOob(
+                                    id2, aconsts.DATA_PATH_INITIATOR,
+                                    mac1))
+
+    req_b_resp_event = autils.wait_for_event_with_keys(
+        dut1, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_b_resp))
+    req_b_init_event = autils.wait_for_event_with_keys(
+        dut2, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_b_init))
+
+    req_b_if_resp = req_b_resp_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    req_b_if_init = req_b_init_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    self.log.info("Interface names for B: I=%s, R=%s", req_b_if_init,
+                  req_b_if_resp)
+
+    req_b_ipv6_resp = \
+      dut1.droid.connectivityGetLinkLocalIpv6Address(req_b_if_resp).split("%")[0]
+    req_b_ipv6_init = \
+      dut2.droid.connectivityGetLinkLocalIpv6Address(req_b_if_init).split("%")[0]
+    self.log.info("Interface addresses (IPv6) for B: I=%s, R=%s",
+                  req_b_ipv6_init, req_b_ipv6_resp)
+
+    # validate equality of NDPs (using interface names & ipv6)
+    asserts.assert_equal(req_a_if_init, req_b_if_resp,
+                         "DUT1 NDPs are on different interfaces")
+    asserts.assert_equal(req_a_if_resp, req_b_if_init,
+                         "DUT2 NDPs are on different interfaces")
+    asserts.assert_equal(req_a_ipv6_init, req_b_ipv6_resp,
+                         "DUT1 NDPs are using different IPv6 addresses")
+    asserts.assert_equal(req_a_ipv6_resp, req_b_ipv6_init,
+                         "DUT2 NDPs are using different IPv6 addresses")
+
+    # release requests
+    dut1.droid.connectivityUnregisterNetworkCallback(req_a_init)
+    dut1.droid.connectivityUnregisterNetworkCallback(req_b_resp)
+    dut2.droid.connectivityUnregisterNetworkCallback(req_a_resp)
+    dut2.droid.connectivityUnregisterNetworkCallback(req_b_init)
 
   ########################################################################
 
