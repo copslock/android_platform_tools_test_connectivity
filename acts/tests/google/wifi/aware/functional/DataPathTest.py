@@ -1169,7 +1169,7 @@ class DataPathTest(AwareBaseTest):
 
   ########################################################################
 
-  def run_multiple_ndi(self, sec_configs):
+  def run_multiple_ndi(self, sec_configs, flip_init_resp=False):
     """Validate that the device can create and use multiple NDIs.
 
     The security configuration can be:
@@ -1179,6 +1179,9 @@ class DataPathTest(AwareBaseTest):
 
     Args:
       sec_configs: list of security configurations
+      flip_init_resp: if True the roles of Initiator and Responder are flipped
+                      between the 2 devices, otherwise same devices are always
+                      configured in the same role.
     """
     dut1 = self.android_devices[0]
     dut2 = self.android_devices[1]
@@ -1202,22 +1205,42 @@ class DataPathTest(AwareBaseTest):
     dut2_aware_ifs = []
     dut1_aware_ifs = []
 
+    dut2_type = aconsts.DATA_PATH_RESPONDER
+    dut1_type = aconsts.DATA_PATH_INITIATOR
+    dut2_is_responder = True
     for sec in sec_configs:
-      # DUT2: request network
-      dut2_req_key = autils.request_network(dut2,
-                                            autils.get_network_specifier(
-                                                dut2, id2,
-                                                aconsts.DATA_PATH_RESPONDER,
-                                                mac1, sec))
-      dut2_req_keys.append(dut2_req_key)
+      if dut2_is_responder:
+        # DUT2 (Responder): request network
+        dut2_req_key = autils.request_network(dut2,
+                                              autils.get_network_specifier(
+                                                  dut2, id2,
+                                                  dut2_type,
+                                                  mac1, sec))
+        dut2_req_keys.append(dut2_req_key)
 
-      # DUT1: request network
-      dut1_req_key = autils.request_network(dut1,
-                                            autils.get_network_specifier(
-                                                dut1, id1,
-                                                aconsts.DATA_PATH_INITIATOR,
-                                                mac2, sec))
-      dut1_req_keys.append(dut1_req_key)
+        # DUT1 (Initiator): request network
+        dut1_req_key = autils.request_network(dut1,
+                                              autils.get_network_specifier(
+                                                  dut1, id1,
+                                                  dut1_type,
+                                                  mac2, sec))
+        dut1_req_keys.append(dut1_req_key)
+      else:
+        # DUT1 (Responder): request network
+        dut1_req_key = autils.request_network(dut1,
+                                              autils.get_network_specifier(
+                                                  dut1, id1,
+                                                  dut1_type,
+                                                  mac2, sec))
+        dut1_req_keys.append(dut1_req_key)
+
+        # DUT2 (Initiator): request network
+        dut2_req_key = autils.request_network(dut2,
+                                              autils.get_network_specifier(
+                                                  dut2, id2,
+                                                  dut2_type,
+                                                  mac1, sec))
+        dut2_req_keys.append(dut2_req_key)
 
       # Wait for network
       dut1_net_event = autils.wait_for_event_with_keys(
@@ -1235,6 +1258,15 @@ class DataPathTest(AwareBaseTest):
           dut2_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
       dut1_aware_ifs.append(
           dut1_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+
+      if flip_init_resp:
+        if dut2_is_responder:
+          dut2_type = aconsts.DATA_PATH_INITIATOR
+          dut1_type = aconsts.DATA_PATH_RESPONDER
+        else:
+          dut2_type = aconsts.DATA_PATH_RESPONDER
+          dut1_type = aconsts.DATA_PATH_INITIATOR
+        dut2_is_responder = not dut2_is_responder
 
     # check that we are using 2 NDIs
     dut1_aware_ifs = list(set(dut1_aware_ifs))
@@ -1302,3 +1334,49 @@ class DataPathTest(AwareBaseTest):
     configuration (using different PMKS). The result should use two different
     NDIs"""
     self.run_multiple_ndi([self.PMK, self.PMK2])
+
+  def test_multiple_ndi_open_passphrase_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using passphrase). The result should use two
+    different NDIs.
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([None, self.PASSPHRASE], flip_init_resp=True)
+
+  def test_multiple_ndi_open_pmk_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using pmk). The result should use two
+    different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([None, self.PMK], flip_init_resp=True)
+
+  def test_multiple_ndi_passphrase_pmk_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one using passphrase, one using pmk). The result should use
+    two different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PASSPHRASE, self.PMK], flip_init_resp=True)
+
+  def test_multiple_ndi_passphrases_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different passphrases). The result should use two
+    different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2],
+                          flip_init_resp=True)
+
+  def test_multiple_ndi_pmks_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different PMKS). The result should use two different
+    NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PMK, self.PMK2], flip_init_resp=True)
