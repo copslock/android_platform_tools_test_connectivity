@@ -1883,7 +1883,6 @@ def active_file_download_task(log, ad, file_name="5MB"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
-    url = "http://146.148.91.8/download/" + file_name + ".zip"
     file_map_dict = {
         '5MB': 5000000,
         '10MB': 10000000,
@@ -1900,9 +1899,11 @@ def active_file_download_task(log, ad, file_name="5MB"):
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not ad.curl_capable:
+        url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
         return (http_file_download_by_chrome, (ad, url, file_size, True,
                                                timeout))
     else:
+        url = "http://146.148.91.8/download/" + file_name + ".zip"
         return (http_file_download_by_curl, (ad, url, output_path, file_size,
                                              True, timeout))
 
