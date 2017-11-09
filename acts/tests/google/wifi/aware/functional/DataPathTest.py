@@ -1180,94 +1180,93 @@ class DataPathTest(AwareBaseTest):
     Args:
       sec_configs: list of security configurations
     """
-    init_dut = self.android_devices[0]
-    init_dut.pretty_name = "Initiator"
-    resp_dut = self.android_devices[1]
-    resp_dut.pretty_name = "Responder"
+    dut1 = self.android_devices[0]
+    dut2 = self.android_devices[1]
 
-    asserts.skip_if(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+    asserts.skip_if(dut1.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
                     < len(sec_configs) or
-                    resp_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    dut2.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
                     < len(sec_configs),
-                    "Initiator or Responder do not support multiple NDIs")
+                    "DUTs do not support enough NDIs")
 
-    init_id, init_mac = autils.attach_with_identity(init_dut)
-    resp_id, resp_mac = autils.attach_with_identity(resp_dut)
+    id1, mac1 = autils.attach_with_identity(dut1)
+    id2, mac2 = autils.attach_with_identity(dut2)
 
     # wait for for devices to synchronize with each other - there are no other
     # mechanisms to make sure this happens for OOB discovery (except retrying
     # to execute the data-path request)
     time.sleep(autils.WAIT_FOR_CLUSTER)
 
-    resp_req_keys = []
-    init_req_keys = []
-    resp_aware_ifs = []
-    init_aware_ifs = []
+    dut2_req_keys = []
+    dut1_req_keys = []
+    dut2_aware_ifs = []
+    dut1_aware_ifs = []
 
     for sec in sec_configs:
-      # Responder: request network
-      resp_req_key = autils.request_network(resp_dut,
+      # DUT2: request network
+      dut2_req_key = autils.request_network(dut2,
                                             autils.get_network_specifier(
-                                                resp_dut, resp_id,
+                                                dut2, id2,
                                                 aconsts.DATA_PATH_RESPONDER,
-                                                init_mac, sec))
-      resp_req_keys.append(resp_req_key)
+                                                mac1, sec))
+      dut2_req_keys.append(dut2_req_key)
 
-      # Initiator: request network
-      init_req_key = autils.request_network(init_dut,
+      # DUT1: request network
+      dut1_req_key = autils.request_network(dut1,
                                             autils.get_network_specifier(
-                                                init_dut, init_id,
+                                                dut1, id1,
                                                 aconsts.DATA_PATH_INITIATOR,
-                                                resp_mac, sec))
-      init_req_keys.append(init_req_key)
+                                                mac2, sec))
+      dut1_req_keys.append(dut1_req_key)
 
       # Wait for network
-      init_net_event = autils.wait_for_event_with_keys(
-          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+      dut1_net_event = autils.wait_for_event_with_keys(
+          dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-      resp_net_event = autils.wait_for_event_with_keys(
-          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_ID, dut1_req_key))
+      dut2_net_event = autils.wait_for_event_with_keys(
+          dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+          (cconsts.NETWORK_CB_KEY_ID, dut2_req_key))
 
-      resp_aware_ifs.append(
-          resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
-      init_aware_ifs.append(
-          init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      dut2_aware_ifs.append(
+          dut2_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      dut1_aware_ifs.append(
+          dut1_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
 
     # check that we are using 2 NDIs
-    init_aware_ifs = list(set(init_aware_ifs))
-    resp_aware_ifs = list(set(resp_aware_ifs))
+    dut1_aware_ifs = list(set(dut1_aware_ifs))
+    dut2_aware_ifs = list(set(dut2_aware_ifs))
 
-    self.log.info("Interface names: I=%s, R=%s", init_aware_ifs, resp_aware_ifs)
-    self.log.info("Initiator requests: %s", init_req_keys)
-    self.log.info("Responder requests: %s", resp_req_keys)
+    self.log.info("Interface names: DUT1=%s, DUT2=%s", dut1_aware_ifs,
+                  dut2_aware_ifs)
+    self.log.info("DUT1 requests: %s", dut1_req_keys)
+    self.log.info("DUT2 requests: %s", dut2_req_keys)
 
     asserts.assert_equal(
-        len(init_aware_ifs), len(sec_configs), "Multiple initiator interfaces")
+        len(dut1_aware_ifs), len(sec_configs), "Multiple DUT1 interfaces")
     asserts.assert_equal(
-        len(resp_aware_ifs), len(sec_configs), "Multiple responder interfaces")
+        len(dut2_aware_ifs), len(sec_configs), "Multiple DUT2 interfaces")
 
     for i in range(len(sec_configs)):
       if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
-      init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
-      resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
+      dut1_ipv6 = autils.get_ipv6_addr(dut1, if_name)
+      dut2_ipv6 = autils.get_ipv6_addr(dut2, if_name)
 
       asserts.assert_equal(
-          init_ipv6 is None, if_name not in init_aware_ifs,
-          "Initiator interface %s in unexpected state" % if_name)
+          dut1_ipv6 is None, if_name not in dut1_aware_ifs,
+          "DUT1 interface %s in unexpected state" % if_name)
       asserts.assert_equal(
-          resp_ipv6 is None, if_name not in resp_aware_ifs,
-          "Responder interface %s in unexpected state" % if_name)
+          dut2_ipv6 is None, if_name not in dut2_aware_ifs,
+          "DUT2 interface %s in unexpected state" % if_name)
 
     # release requests
-    for resp_req_key in resp_req_keys:
-      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
-    for init_req_key in init_req_keys:
-      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+    for dut2_req_key in dut2_req_keys:
+      dut2.droid.connectivityUnregisterNetworkCallback(dut2_req_key)
+    for dut1_req_key in dut1_req_keys:
+      dut1.droid.connectivityUnregisterNetworkCallback(dut1_req_key)
 
   @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
   def test_multiple_ndi_open_passphrase(self):
