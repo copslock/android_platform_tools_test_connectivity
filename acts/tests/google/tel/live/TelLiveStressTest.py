@@ -172,16 +172,32 @@ class TelLiveStressTest(TelephonyBaseTest):
         message_type = message_type_map[selection]
         self.result_info["Total %s" % message_type] += 1
         begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        incall_non_ims = [
+            ad.droid.telecomIsInCall() and
+            not ad.droid.telephonyIsImsRegistered() for ad in ads
+        ]
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             self.log.error("%s of length %s from %s to %s fails", message_type,
                            length, ads[0].serial, ads[1].serial)
-            self.result_info["%s failure" % message_type] += 1
-            if message_type == "SMS" or (message_type == "MMS" and
-                                         self.result_info["MMS failure"] == 1):
+            if message_type == "SMS":
+                self.result_info["%s failure" % message_type] += 1
                 self._take_bug_report("%s_%s_failure" % (self.test_name,
                                                          message_type),
                                       begin_time)
+                start_qxdm_loggers(self.log, self.android_devices)
+            else:
+                if any(incall_non_ims):
+                    self.result_info["NonIMS incall MMS failure"] += 1
+                    self.log.info(
+                        "Device not in IMS, MMS in call is not support")
+                    return True
+                else:
+                    self.result_info["MMS failure"] += 1
+                    if self.result_info["MMS failure"] == 1:
+                        self._take_bug_report("%s_%s_failure" %
+                                              (self.test_name,
+                                               message_type), begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
@@ -190,7 +206,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                           ads[1].serial)
             return True
 
-    def _make_phone_call(self, ads, verify_caller_func=None):
+    def _make_phone_call(self, ads, call_verification_func=None):
         self.result_info["Total Calls"] += 1
         begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
         if not call_setup_teardown(
@@ -198,7 +214,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ads[0],
                 ads[1],
                 ad_hangup=ads[random.randrange(0, 2)],
-                verify_caller_func=verify_caller_func,
+                verify_caller_func=call_verification_func,
+                verify_callee_func=call_verification_func,
                 wait_time_in_call=random.randrange(
                     self.min_phone_call_duration,
                     self.max_phone_call_duration),
@@ -270,12 +287,13 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def call_test(self):
+    def call_test(self, call_verification_func=None):
         while time.time() < self.finishing_time:
             try:
                 ads = [self.dut, self.helper]
                 random.shuffle(ads)
-                self._make_phone_call(ads)
+                self._make_phone_call(
+                    ads, call_verification_func=call_verification_func)
                 self.dut.droid.goToSleepNow()
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
@@ -300,7 +318,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 ads = [self.dut, self.helper]
                 self._make_phone_call(
-                    ads, verify_caller_func=is_phone_in_call_volte)
+                    ads, call_verification_func=is_phone_in_call_volte)
                 self._prefnetwork_mode_change(sub_id)
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
@@ -393,16 +411,17 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def parallel_tests(self, setup_func=None):
+    def parallel_tests(self, setup_func=None, call_verification_func=None):
         if setup_func and not setup_func():
             msg = "Test setup %s failed" % setup_func.__name__
             self.log.error(msg)
             fail(msg)
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
-        results = run_multithread_func(self.log, [(self.call_test, []), (
-            self.message_test, []), (self.data_test, []),
-                                                  (self.crash_check_test, [])])
+        results = run_multithread_func(
+            self.log, [(self.call_test,
+                        [call_verification_func]), (self.message_test, []),
+                       (self.data_test, []), (self.crash_check_test, [])])
         result_message = "%s" % dict(self.result_info)
         self.log.info(result_message)
         if all(results):
@@ -438,31 +457,41 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
-        return self.parallel_tests(setup_func=self._setup_lte_volte_enabled)
+        return self.parallel_tests(
+            setup_func=self._setup_lte_volte_enabled,
+            call_verification_func=is_phone_in_call_volte)
 
     @test_tracker_info(uuid="a317c23a-41e0-4ef8-af67-661451cfefcf")
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_parallel_stress(self):
         """ LTE non-VoLTE stress test"""
-        return self.parallel_tests(setup_func=self._setup_lte_volte_disabled)
+        return self.parallel_tests(
+            setup_func=self._setup_lte_volte_disabled,
+            call_verification_func=is_phone_in_call_csfb)
 
     @test_tracker_info(uuid="fdb791bf-c414-4333-9fa3-cc18c9b3b234")
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_parallel_stress(self):
         """ Wifi calling on stress test"""
-        return self.parallel_tests(setup_func=self._setup_wfc)
+        return self.parallel_tests(
+            setup_func=self._setup_wfc,
+            call_verification_func=is_phone_in_call_iwlan)
 
     @test_tracker_info(uuid="4566eef6-55de-4ac8-87ee-58f2ef41a3e8")
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_parallel_stress(self):
         """ 3G stress test"""
-        return self.parallel_tests(setup_func=self._setup_3g)
+        return self.parallel_tests(
+            setup_func=self._setup_3g,
+            call_verification_func=is_phone_in_call_3g)
 
     @test_tracker_info(uuid="f34f1a31-3948-4675-8698-372a83b8088d")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_2g_parallel_stress(self):
         """ 2G call stress test"""
-        return self.parallel_tests(setup_func=self._setup_2g)
+        return self.parallel_tests(
+            setup_func=self._setup_2g,
+            call_verification_func=is_phone_in_call_2g)
 
     @test_tracker_info(uuid="af580fca-fea6-4ca5-b981-b8c710302d37")
     @TelephonyBaseTest.tel_test_wrap
