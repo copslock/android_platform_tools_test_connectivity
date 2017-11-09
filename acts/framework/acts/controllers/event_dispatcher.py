@@ -74,7 +74,7 @@ class EventDispatcher:
             if not event_obj:
                 continue
             elif 'name' not in event_obj:
-                print("Received Malformed event {}".format(event_obj))
+                logging.error("Received Malformed event {}".format(event_obj))
                 continue
             else:
                 event_name = event_obj['name']
@@ -242,8 +242,9 @@ class EventDispatcher:
                 return event
 
             if time.time() > deadline:
-                raise queue.Empty('Timeout after {}s waiting for event: {}'.
-                                  format(timeout, event_name))
+                raise queue.Empty(
+                    'Timeout after {}s waiting for event: {}'.format(
+                        timeout, event_name))
 
     def pop_events(self, regex_pattern, timeout, freq=1):
         """Pop events whose names match a regex pattern.
