@@ -232,13 +232,17 @@ class DataPathTest(AwareBaseTest):
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
-  def run_oob_data_path_test(self, encr_type, use_peer_id):
+  def run_oob_data_path_test(self, encr_type, use_peer_id,
+      setup_discovery_sessions=False):
     """Runs the out-of-band data-path tests.
 
     Args:
       encr_type: Encryption type, one of ENCR_TYPE_*
       use_peer_id: On Responder: True to use peer ID, False to accept any
                    request
+      setup_discovery_sessions: If True also set up a (spurious) discovery
+        session (pub on both sides, sub on Responder side). Validates a corner
+        case.
     """
     init_dut = self.android_devices[0]
     init_dut.pretty_name = "Initiator"
@@ -262,6 +266,18 @@ class DataPathTest(AwareBaseTest):
     # mechanisms to make sure this happens for OOB discovery (except retrying
     # to execute the data-path request)
     time.sleep(self.WAIT_FOR_CLUSTER)
+
+    if setup_discovery_sessions:
+      init_dut.droid.wifiAwarePublish(init_id, self.create_config(
+        aconsts.PUBLISH_TYPE_UNSOLICITED))
+      autils.wait_for_event(init_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+      resp_dut.droid.wifiAwarePublish(resp_id, self.create_config(
+          aconsts.PUBLISH_TYPE_UNSOLICITED))
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+      resp_dut.droid.wifiAwareSubscribe(resp_id, self.create_config(
+          aconsts.SUBSCRIBE_TYPE_PASSIVE))
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
 
     passphrase = None
     pmk = None
@@ -702,6 +718,9 @@ class DataPathTest(AwareBaseTest):
   # encr_type: Encription type: open, passphrase
   # peer_spec: Peer specification method: any or specific
   #
+  # Optionally set up an extra discovery session to test coexistence. If so
+  # add "ib_coex" to test name.
+  #
   # Note: Out-of-Band means using a non-Wi-Fi Aware mechanism for discovery and
   # exchange of MAC addresses and then Wi-Fi Aware for data-path.
   #######################################
@@ -765,6 +784,30 @@ class DataPathTest(AwareBaseTest):
     self.run_oob_data_path_test(
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
+
+  def test_oob_ib_coex_open_specific(self):
+    """Data-path: out-of-band, open encryption, specific peer - in-band coex:
+    set up a concurrent discovery session to verify no impact. The session
+    consists of Publisher on both ends, and a Subscriber on the Responder.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        setup_discovery_sessions=True)
+
+  def test_oob_ib_coex_open_any(self):
+    """Data-path: out-of-band, open encryption, any peer - in-band coex:
+    set up a concurrent discovery session to verify no impact. The session
+    consists of Publisher on both ends, and a Subscriber on the Responder.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        setup_discovery_sessions=True)
 
   ##############################################################
 
