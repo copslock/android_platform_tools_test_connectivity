@@ -78,13 +78,18 @@ class DataPathTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-  def set_up_discovery(self, ptype, stype, get_peer_id):
+  def set_up_discovery(self, ptype, stype, get_peer_id, pub_on_both=False,
+      pub_on_both_same=True):
     """Set up discovery sessions and wait for service discovery.
 
     Args:
       ptype: Publish discovery type
       stype: Subscribe discovery type
       get_peer_id: Send a message across to get the peer's id
+      pub_on_both: If True then set up a publisher on both devices. The second
+                   publisher isn't used (existing to test use-case).
+      pub_on_both_same: If True then the second publish uses an identical
+                        service name, otherwise a different service name.
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -101,6 +106,15 @@ class DataPathTest(AwareBaseTest):
     # Publisher: start publish and wait for confirmation
     p_disc_id = p_dut.droid.wifiAwarePublish(p_id, self.create_config(ptype))
     autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Optionally set up a publish session on the Subscriber device
+    if pub_on_both:
+      p2_config = self.create_config(ptype)
+      if not pub_on_both_same:
+        p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = (
+          p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] + "-XYZXYZ")
+      s_dut.droid.wifiAwarePublish(s_id, p2_config)
+      autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
     # Subscriber: start subscribe and wait for confirmation
     s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, self.create_config(stype))
@@ -132,7 +146,9 @@ class DataPathTest(AwareBaseTest):
       stype,
       encr_type,
       use_peer_id,
-      passphrase_to_use=None):
+      passphrase_to_use=None,
+      pub_on_both=False,
+      pub_on_both_same=True):
     """Runs the in-band data-path tests.
 
     Args:
@@ -143,14 +159,21 @@ class DataPathTest(AwareBaseTest):
                    accept any request
       passphrase_to_use: The passphrase to use if encr_type=ENCR_TYPE_PASSPHRASE
                          If None then use self.PASSPHRASE
+      pub_on_both: If True then set up a publisher on both devices. The second
+                   publisher isn't used (existing to test use-case).
+      pub_on_both_same: If True then the second publish uses an identical
+                        service name, otherwise a different service name.
     """
     (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
-     peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id)
+     peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id,
+                                             pub_on_both=pub_on_both,
+                                             pub_on_both_same=pub_on_both_same)
 
     passphrase = None
     pmk = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
-      passphrase = self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use
+      passphrase = (
+        self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use)
     elif encr_type == self.ENCR_TYPE_PMK:
       pmk = self.PMK
 
@@ -586,6 +609,89 @@ class DataPathTest(AwareBaseTest):
         stype=aconsts.SUBSCRIBE_TYPE_ACTIVE,
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
+
+  #######################################
+  # Positive In-Band (IB) with a publish session running on the subscriber
+  # tests key:
+  #
+  # names is: test_ib_extra_pub_<same|diff>_<pub_type>_<sub_type>
+  #                                          _<encr_type>_<peer_spec>
+  # where:
+  #
+  # same|diff: Whether the extra publish session (on the subscriber) is the same
+  #            or different from the primary session.
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  # encr_type: Encription type: open, passphrase
+  # peer_spec: Peer specification method: any or specific
+  #
+  # Note: In-Band means using Wi-Fi Aware for discovery and referring to the
+  # peer using the Aware-provided peer handle (as opposed to a MAC address).
+  #######################################
+
+  def test_ib_extra_pub_same_unsolicited_passive_open_specific(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
+
+    Configuration contains a publisher (for the same service) running on *both*
+    devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        pub_on_both=True,
+        pub_on_both_same=True)
+
+  def test_ib_extra_pub_same_unsolicited_passive_open_any(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, any peer.
+
+    Configuration contains a publisher (for the same service) running on *both*
+    devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        pub_on_both=True,
+        pub_on_both_same=True)
+
+  def test_ib_extra_pub_diff_unsolicited_passive_open_specific(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
+
+    Configuration contains a publisher (for a different service) running on
+    *both* devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        pub_on_both=True,
+        pub_on_both_same=False)
+
+  def test_ib_extra_pub_diff_unsolicited_passive_open_any(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, any peer.
+
+    Configuration contains a publisher (for a different service) running on
+    *both* devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        pub_on_both=True,
+        pub_on_both_same=False)
 
   #######################################
   # Positive Out-of-Band (OOB) tests key:
