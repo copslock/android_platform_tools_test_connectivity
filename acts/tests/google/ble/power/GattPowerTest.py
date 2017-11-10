@@ -116,7 +116,7 @@ class GattPowerTest(PowerBaseTest):
 
         sample_time = (write_time + idle_time) * repetitions
         # Start the power measurement
-        return = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
+        result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
                                self.current_test_name, self.START_TIME)
 
         # Calculate average and save power data into a file
