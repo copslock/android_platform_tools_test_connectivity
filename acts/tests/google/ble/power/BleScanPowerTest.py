@@ -105,7 +105,7 @@ class BleScanPowerTest(PowerBaseTest):
 
         # Start the power measurement
         sample_time = (scan_time + idle_time) * repetitions
-        self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
+        return = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
                                self.current_test_name, self.SCAN_START_TIME)
 
         self.ad.log.info("Monsoon start_time: {}".format(result.timestamps[0]))
