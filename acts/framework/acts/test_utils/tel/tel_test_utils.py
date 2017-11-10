@@ -3316,6 +3316,8 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
     for ad in (ad_rx, ad_tx):
+        if "Permissive" not in ad.adb.shell("su root getenforce"):
+            ad.adb.shell("su root setenforce 0")
         if not hasattr(ad, "messaging_droid"):
             ad.messaging_droid = ad.start_new_session()
             ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
@@ -3328,6 +3330,7 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         ad_rx.ed.clear_all_events()
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         try:
+            ad_tx.ensure_screen_on()
             ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
