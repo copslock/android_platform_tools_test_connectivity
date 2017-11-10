@@ -28,12 +28,6 @@ class PowerdtimTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ('test_2g_screenoff_dtimx1', 'test_2g_screenoff_dtimx2',
-                      'test_2g_screenoff_dtimx4', 'test_2g_screenoff_dtimx5',
-                      'test_2g_screenon_dtimx1', 'test_2g_screenon_dtimx4',
-                      'test_5g_screenoff_dtimx1', 'test_5g_screenoff_dtimx2',
-                      'test_5g_screenoff_dtimx4', 'test_5g_screenoff_dtimx5',
-                      'test_5g_screenon_dtimx1', 'test_5g_screenon_dtimx4')
 
     def setup_class(self):
 

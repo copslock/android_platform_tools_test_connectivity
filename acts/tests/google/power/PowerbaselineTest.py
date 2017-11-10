@@ -30,10 +30,6 @@ class PowerbaselineTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ('test_rockbottom_screenoff_wifidisabled',
-                      'test_rockbottom_screenoff_wifidisconnected',
-                      'test_rockbottom_screenon_wifidisabled',
-                      'test_rockbottom_screenon_wifidisconnected')
 
     def setup_class(self):
 
