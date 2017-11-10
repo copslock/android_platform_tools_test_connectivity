@@ -17,7 +17,8 @@
 import time
 
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
-from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 
 BT_BASE_UUID = '00000000-0000-1000-8000-00805F9B34FB'
 BT_CLASSICAL_DATA = [1, 2, 3]
@@ -40,8 +41,6 @@ def phone_setup_for_BT(dut, bt_on, ble_on, screen_status):
     # Initialize the dut to rock-bottom state
     wputils.dut_rockbottom(dut)
     time.sleep(2)
-    bluetooth_enabled_check(dut)
-    time.sleep(2)
 
     # Check if we are enabling a background scan
     # TODO: Turn OFF cellular wihtout having to turn ON airplane mode
@@ -52,10 +51,10 @@ def phone_setup_for_BT(dut, bt_on, ble_on, screen_status):
 
     # Turn ON/OFF BT
     if bt_on == 'ON':
-        dut.droid.bluetoothToggleState(True)
+        enable_bluetooth(dut.droid, dut.ed)
         dut.log.info('BT is ON')
     else:
-        dut.droid.bluetoothToggleState(False)
+        disable_bluetooth(dut.droid)
         dut.droid.bluetoothDisableBLE()
         dut.log.info('BT is OFF')
     time.sleep(2)
