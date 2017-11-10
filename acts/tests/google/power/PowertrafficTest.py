@@ -31,12 +31,6 @@ class PowertrafficTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         WifiBaseTest.__init__(self, controllers)
-        self.tests = ('test_screenoff_iperf_2g_highrssi',
-                      'test_screenoff_iperf_2g_mediumrssi',
-                      'test_screenoff_iperf_2g_lowrssi',
-                      'test_screenoff_iperf_5g_highrssi',
-                      'test_screenoff_iperf_5g_mediumrssi',
-                      'test_screenoff_iperf_5g_lowrssi')
 
     def setup_class(self):
 
