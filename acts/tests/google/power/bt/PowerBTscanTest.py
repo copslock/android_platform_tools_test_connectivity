@@ -53,10 +53,17 @@ class PowerBTscanTest(base_test.BaseTestClass):
         self.dut.droid.bluetoothFactoryReset()
         time.sleep(2)
 
-    def teardown_class(self):
+    def teardown_test(self):
+        """Tear down necessary objects/settings after test finishes
 
-        self.mon.usb('on')
+        """
         self.dut.adb.shell(btutils.BLE_LOCATION_SCAN_DISABLE)
+
+    def teardown_class(self):
+        """Clean up the test class after all tests finish running
+
+        """
+        self.mon.usb('on')
         self.dut.droid.bluetoothFactoryReset()
 
     def unpack_testparams(self, bulk_params):
