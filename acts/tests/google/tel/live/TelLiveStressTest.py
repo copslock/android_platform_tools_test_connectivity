@@ -77,6 +77,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         super(TelLiveStressTest, self).setup_class()
         self.dut = self.android_devices[0]
         self.helper = self.android_devices[1]
+        self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -164,7 +165,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         length = random.randrange(min_length_map[selection],
                                   max_length_map[selection] + 1)
         text = rand_ascii_str(length)
-        message_content_map = {0: [text], 1: [("Mms Message", text, None)]}
+        message_content_map = {
+            0: [text],
+            1: [("Mms Message No.%s" % self.result_info["Total MMS"], text,
+                 None)]
+        }
         message_func_map = {
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
@@ -176,6 +181,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.droid.telecomIsInCall() and
             not ad.droid.telephonyIsImsRegistered() for ad in ads
         ]
+        start_qxdm_loggers(self.log, self.android_devices)
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             self.log.error("%s of length %s from %s to %s fails", message_type,
@@ -185,7 +191,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self._take_bug_report("%s_%s_failure" % (self.test_name,
                                                          message_type),
                                       begin_time)
-                start_qxdm_loggers(self.log, self.android_devices)
             else:
                 if any(incall_non_ims):
                     self.result_info["NonIMS incall MMS failure"] += 1
@@ -198,7 +203,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                         self._take_bug_report("%s_%s_failure" %
                                               (self.test_name,
                                                message_type), begin_time)
-                start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
@@ -209,6 +213,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _make_phone_call(self, ads, call_verification_func=None):
         self.result_info["Total Calls"] += 1
         begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
                 self.log,
                 ads[0],
@@ -224,7 +229,6 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.result_info["Call Failure"] += 1
             self._take_bug_report("%s_call_failure" % self.test_name,
                                   begin_time)
-            start_qxdm_loggers(self.log, self.android_devices)
             return False
         self.log.info("Call setup and teardown succeed.")
         return True
@@ -253,7 +257,6 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.result_info["RAT change failure"] += 1
             self._take_bug_report("%s_rat_change_failure" % self.test_name,
                                   begin_time)
-            start_qxdm_loggers(self.log, self.android_devices)
             return False
         return True
 
@@ -317,6 +320,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 ads = [self.dut, self.helper]
+                start_qxdm_loggers(self.log, ads)
                 self._make_phone_call(
                     ads, call_verification_func=is_phone_in_call_volte)
                 self._prefnetwork_mode_change(sub_id)
@@ -373,6 +377,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
+                start_qxdm_loggers(self.log, self.android_devices)
                 if self.result_info["File download failure"] < 1:
                     (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
                         self.dut,
@@ -388,7 +393,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
