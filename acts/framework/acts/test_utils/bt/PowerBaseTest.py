@@ -218,7 +218,7 @@ class PowerBaseTest(BluetoothBaseTest):
                           Otherwise they are arrays of time values
 
         Returns:
-            None
+            BtMonsoonData for Current Average and Std Deviation
         """
         current_time = get_current_human_time()
         file_name = "{}_{}".format(self.current_test_name, current_time)
