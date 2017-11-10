@@ -37,6 +37,7 @@ class Config(enum.Enum):
     key_test_case_iterations = "test_case_iterations"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
+    key_chameleon_device = "ChameleonDevice"
     key_native_android_device = "NativeAndroidDevice"
     key_relay_device = "RelayDevice"
     key_access_point = "AccessPoint"
@@ -54,6 +55,7 @@ class Config(enum.Enum):
     # module name of controllers packaged in ACTS.
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
+    m_key_chameleon_device = "chameleon_controller"
     m_key_native_android_device = "native_android_device"
     m_key_relay_device = "relay_device_controller"
     m_key_access_point = "access_point"
@@ -68,9 +70,16 @@ class Config(enum.Enum):
 
     # Controller names packaged with ACTS.
     builtin_controller_names = [
-        key_android_device, key_native_android_device, key_relay_device,
-        key_access_point, key_attenuator, key_iperf_server, key_packet_sender,
-        key_monsoon, key_sniffer
+        key_android_device,
+        key_native_android_device,
+        key_relay_device,
+        key_access_point,
+        key_attenuator,
+        key_iperf_server,
+        key_packet_sender,
+        key_monsoon,
+        key_sniffer,
+        key_chameleon_device,
     ]
 
     # Keys that are file or folder paths.
