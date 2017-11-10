@@ -29,10 +29,6 @@ class PowerroamingTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ('test_screenoff_roaming', 'test_screenoff_fastroaming',
-                      'test_screenon_toggle_between_AP',
-                      'test_screenoff_toggle_between_AP',
-                      'test_screenoff_wifi_wedge')
 
     def setup_class(self):
 
