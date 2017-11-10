@@ -30,16 +30,6 @@ class PowerscanTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ('test_single_shot_scan_2g_highRSSI',
-                      'test_single_shot_scan_2g_lowRSSI',
-                      'test_single_shot_scan_5g_highRSSI',
-                      'test_single_shot_scan_5g_lowRSSI',
-                      'test_background_scan'
-                      'test_wifi_scan_2g', 'test_wifi_scan_5g',
-                      'test_scan_wifidisconnected_turnonscreen',
-                      'test_scan_wificonnected_turnonscreen',
-                      'test_scan_screenoff_below_rssi_threshold',
-                      'test_scan_screenoff_lost_wificonnection')
 
     def setup_class(self):
 
