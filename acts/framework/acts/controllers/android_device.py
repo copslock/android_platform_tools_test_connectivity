@@ -812,8 +812,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info(
-                'Restarting logcat on file %s' % self.adb_logcat_file_path)
+            self.log.info('Restarting logcat on file %s' %
+                          self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -1120,6 +1120,28 @@ class AndroidDevice:
                 self.adb.remove_tcp_forward(self.h_port)
                 self.h_port = None
 
+    def run_iperf_client_nb(self,
+                            server_host,
+                            extra_args="",
+                            timeout=IPERF_TIMEOUT,
+                            log_file_path=None):
+        """Start iperf client on the device asynchronously.
+
+        Return status as true if iperf client start successfully.
+        And data flow information as results.
+
+        Args:
+            server_host: Address of the iperf server.
+            extra_args: A string representing extra arguments for iperf client,
+                e.g. "-i 1 -t 30".
+            log_file_path: The complete file path to log the results.
+
+        """
+        cmd = "iperf3 -c {} {}".format(server_host, extra_args)
+        if log_file_path:
+            cmd += " --logfile {} &".format(log_file_path)
+        self.adb.shell_nb(cmd)
+
     def run_iperf_client(self,
                          server_host,
                          extra_args="",
@@ -1182,8 +1204,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError(
-            "Device %s booting process timed out." % self.serial)
+        raise AndroidDeviceError("Device %s booting process timed out." %
+                                 self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1248,8 +1270,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning(
-                        'Unable to find IP address for %s.' % interface)
+                    self.log.warning('Unable to find IP address for %s.' %
+                                     interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1374,8 +1396,8 @@ class AndroidDevice:
         if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "StatusBar" in current_window and (
-            (not current_app) or "FallbackHome" in current_app):
+        if "StatusBar" in current_window and ((not current_app) or
+                                              "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
