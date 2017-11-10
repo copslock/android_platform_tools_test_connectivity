@@ -168,12 +168,12 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="2503d9ed-35df-4be0-b838-590324cecaee")
-    def iot_connection_to_Dlink_AC1200_2G(self):
+    def test_iot_connection_to_Dlink_AC1200_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="0a44e148-a4bf-43f4-88eb-e4c1ffa850ce")
-    def iot_connection_to_Dlink_AC1200_5G(self):
+    def test_iot_connection_to_Dlink_AC1200_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
@@ -193,12 +193,12 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="0e4978de-0435-4856-ae5a-c39cc64e375b")
-    def iot_connection_to_Dlink_N750_2G(self):
+    def test_iot_connection_to_Dlink_N750_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="cdb82797-9981-4ba6-8958-025f59c60e83")
-    def iot_connection_to_Dlink_N750_5G(self):
+    def test_iot_connection_to_Dlink_N750_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
@@ -208,12 +208,12 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="f231216d-6ab6-46b7-a0a5-1ac15935e412")
-    def iot_connection_to_Linksys_AC1900_2G(self):
+    def test_iot_connection_to_Linksys_AC1900_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="5acd4bec-b210-4b4c-8b2c-60f3f67798a9")
-    def iot_connection_to_Linksys_AC1900_5G(self):
+    def test_iot_connection_to_Linksys_AC1900_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
@@ -338,22 +338,22 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="3e9115dd-adb6-40a4-9831-dca8f1f32abe")
-    def iot_connection_to_Linksys06832_2G(self):
+    def test_iot_connection_to_Linksys06832_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="5dca028a-7384-444f-b231-973054afe215")
-    def iot_connection_to_Linksys06832_5G(self):
+    def test_iot_connection_to_Linksys06832_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="e639f6db-ad8e-4b4f-91f3-10acdf93142a")
-    def test_iot_connection_to_AmpedAthena_2G(self):
+    def iot_connection_to_AmpedAthena_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="3dd90d80-952f-4f17-a48a-fe42e7d6e1ff")
-    def test_iot_connection_to_AmpedAthena_5G(self):
+    def iot_connection_to_AmpedAthena_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
