@@ -153,9 +153,9 @@ def main(argv):
     Or you could implement your own cli entry point using acts.config_parser
     functions and acts.test_runner.execute_one_test_class.
     """
-    parser = argparse.ArgumentParser(description=(
-        "Specify tests to run. If "
-        "nothing specified, run all test cases found."))
+    parser = argparse.ArgumentParser(
+        description=("Specify tests to run. If nothing specified, "
+                     "run all test cases found."))
     parser.add_argument(
         '-c',
         '--config',
@@ -250,12 +250,15 @@ def main(argv):
 
     # Execute test runners.
     if args.parallel and len(parsed_configs) > 1:
+        print('Running tests in parallel.')
         exec_result = _run_tests_parallel(parsed_configs, test_identifiers,
                                           args.campaign_iterations)
     else:
+        print('Running tests sequentially.')
         exec_result = _run_tests_sequential(parsed_configs, test_identifiers,
                                             args.campaign_iterations)
     if exec_result is False:
+        print('Test results have returned empty.')
         sys.exit(1)
     sys.exit(0)
 

@@ -50,6 +50,7 @@ from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
@@ -96,6 +97,18 @@ class TelLivePreflightTest(TelephonyBaseTest):
                           get_info(self.android_devices))
         else:
             raise signals.TestSkip("No ota_package is defined")
+        ota_util = self.user_params.get("ota_util")
+        if isinstance(ota_util, list):
+            ota_util = ota_util[0]
+        if ota_util:
+            if "update_engine_client.zip" in ota_util:
+                self.user_params["UpdateDeviceOtaTool"] = ota_util
+                self.user_params["ota_tool"] = "UpdateDeviceOtaTool"
+            else:
+                self.user_params["AdbSideloadOtaTool"] = ota_util
+                self.user_params["ota_tool"] = "AdbSideloadOtaTool"
+        self.log.info("OTA upgrade with %s by %s", ota_package,
+                      self.user_params["ota_tool"])
         ota_updater.initialize(self.user_params, self.android_devices)
         tasks = [(ota_updater.update, [ad]) for ad in self.android_devices]
         try:
@@ -105,6 +118,9 @@ class TelLivePreflightTest(TelephonyBaseTest):
         device_info = get_info(self.android_devices)
         self.log.info("After OTA upgrade: %s", device_info)
         self.results.add_controller_info("AndroidDevice", device_info)
+        for ad in self.android_devices:
+            if not unlock_sim(ad):
+                abort_all_tests(ad.log, "unable to unlock SIM")
         return True
 
     @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")

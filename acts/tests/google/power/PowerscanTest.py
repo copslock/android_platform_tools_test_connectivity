@@ -30,16 +30,6 @@ class PowerscanTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ('test_single_shot_scan_2g_highRSSI',
-                      'test_single_shot_scan_2g_lowRSSI',
-                      'test_single_shot_scan_5g_highRSSI',
-                      'test_single_shot_scan_5g_lowRSSI',
-                      'test_background_scan'
-                      'test_wifi_scan_2g', 'test_wifi_scan_5g',
-                      'test_scan_wifidisconnected_turnonscreen',
-                      'test_scan_wificonnected_turnonscreen',
-                      'test_scan_screenoff_below_rssi_threshold',
-                      'test_scan_screenoff_lost_wificonnection')
 
     def setup_class(self):
 
@@ -92,6 +82,13 @@ class PowerscanTest(base_test.BaseTestClass):
             'android.test.InstrumentationTestRunner > /dev/null &' %
             (self.mon_duration + self.mon_offset + 10))
 
+    def teardown_test(self):
+        """Tear down necessary objects after test case is finished.
+
+        Bring down the AP interface
+        """
+        self.access_point.close()
+
     def teardown_class(self):
 
         self.mon.usb('on')
@@ -115,8 +112,6 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-        # Close AP controller
-        self.access_point.close()
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -272,8 +267,6 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-        # Close AP controller
-        self.access_point.close()
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -304,8 +297,6 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-        # Close AP controller
-        self.access_point.close()
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -336,7 +327,5 @@ class PowerscanTest(base_test.BaseTestClass):
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
         wputils.monsoon_data_plot(self.mon_info, file_path)
-        # Close AP controller
-        self.access_point.close()
         # Path fail check
         wputils.pass_fail_check(self, avg_current)

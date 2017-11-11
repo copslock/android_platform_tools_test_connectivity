@@ -31,12 +31,6 @@ class PowertrafficTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         WifiBaseTest.__init__(self, controllers)
-        self.tests = ('test_screenoff_iperf_2g_highrssi',
-                      'test_screenoff_iperf_2g_mediumrssi',
-                      'test_screenoff_iperf_2g_lowrssi',
-                      'test_screenoff_iperf_5g_highrssi',
-                      'test_screenoff_iperf_5g_mediumrssi',
-                      'test_screenoff_iperf_5g_lowrssi')
 
     def setup_class(self):
 
@@ -58,7 +52,21 @@ class PowertrafficTest(base_test.BaseTestClass):
         self.pkt_sender = self.packet_senders[0]
 
     def teardown_test(self):
+        """Tear down necessary objects after test case is finished.
+
+        Bring down the AP interface, delete the bridge interface, stop IPERF
+        server and reset the ethernet interface for iperf traffic
+        """
         self.iperf_server.stop()
+        self.access_point.bridge.teardown(self.brconfigs)
+        self.access_point.close()
+        wputils.reset_host_interface(self.pkt_sender.interface)
+
+    def teardown_class(self):
+        """Clean up the test class after tests finish running
+
+        """
+        self.mon.usb('on')
         self.access_point.close()
 
     def unpack_testparams(self, bulk_params):
@@ -84,9 +92,9 @@ class PowertrafficTest(base_test.BaseTestClass):
         network = self.main_network[band]
         channel = network['channel']
         configs = self.access_point.generate_bridge_configs(channel)
-        brconfigs = bi.BridgeInterfaceConfigs(configs[0], configs[1],
-                                              configs[2])
-        self.access_point.bridge.startup(brconfigs)
+        self.brconfigs = bi.BridgeInterfaceConfigs(configs[0], configs[1],
+                                                   configs[2])
+        self.access_point.bridge.startup(self.brconfigs)
         wputils.ap_setup(self.access_point, network)
 
         # Wait for DHCP on the ethernet port and get IP as Iperf server address
@@ -122,12 +130,6 @@ class PowertrafficTest(base_test.BaseTestClass):
         tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
             RSSI, (iperf_result.avg_receive_rate * 8))
         wputils.monsoon_data_plot(self.mon_info, file_path, tag)
-
-        # Bring down bridge interface
-        self.access_point.bridge.teardown(brconfigs)
-
-        # Bring down the AP object
-        self.access_point.close()
 
         # Pass and fail check
         wputils.pass_fail_check(self, avg_current)

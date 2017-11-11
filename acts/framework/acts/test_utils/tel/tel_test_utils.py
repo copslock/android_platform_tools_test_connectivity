@@ -283,11 +283,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                         " from device or testbed config or sim_file %s",
                         sim_filename, sub_id, iccid)
                     result = False
-        if not hasattr(
-                ad, 'roaming'
-        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
-                sub_info["sim_operator_name"].strip() not in
-                sub_info["network_operator_name"].strip()):
+        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
+                "network_plmn"] and (
+                    sub_info["sim_operator_name"].strip() not in
+                    sub_info["network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
@@ -352,9 +351,7 @@ def refresh_droid_config(log, ad):
             if not getattr(ad, "phone_number", None):
                 phone_number = droid.telephonyGetLine1NumberForSubscription(
                     sub_id)
-                if not phone_number:
-                    ad.log.warning("Unable to get phone number")
-                else:
+                if phone_number:
                     ad.phone_number = phone_number
                     sim_record["phone_num"] = phone_number_formatter(
                         phone_number)
@@ -1163,10 +1160,9 @@ def initiate_call(log,
         for i in range(checking_retries):
             if (ad.droid.telecomIsInCall() and
                     ad.droid.telephonyGetCallState() == TELEPHONY_STATE_OFFHOOK
-                    and
-                    ad.droid.telecomGetCallState() == TELEPHONY_STATE_OFFHOOK
-                ) or wait_for_call_offhook_event(log, ad, sub_id, True,
-                                                 checking_interval):
+                    and ad.droid.telecomGetCallState() ==
+                    TELEPHONY_STATE_OFFHOOK) or wait_for_call_offhook_event(
+                        log, ad, sub_id, True, checking_interval):
                 return True
         ad.log.info(
             "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
@@ -1885,7 +1881,6 @@ def active_file_download_task(log, ad, file_name="5MB"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
-    url = "http://146.148.91.8/download/" + file_name + ".zip"
     file_map_dict = {
         '5MB': 5000000,
         '10MB': 10000000,
@@ -1902,9 +1897,11 @@ def active_file_download_task(log, ad, file_name="5MB"):
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     if not ad.curl_capable:
+        url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
         return (http_file_download_by_chrome, (ad, url, file_size, True,
                                                timeout))
     else:
+        url = "http://146.148.91.8/download/" + file_name + ".zip"
         return (http_file_download_by_curl, (ad, url, output_path, file_size,
                                              True, timeout))
 
@@ -1939,7 +1936,9 @@ def iperf_test_by_adb(log,
                       limit_rate=None,
                       omit=10,
                       ipv6=False,
-                      rate_dict=None):
+                      rate_dict=None,
+                      blocking=True,
+                      log_file_path=None):
     """Iperf test by adb.
 
     Args:
@@ -1957,7 +1956,16 @@ def iperf_test_by_adb(log,
     if ipv6: iperf_option += " -6"
     if reverse: iperf_option += " -R"
     try:
+        if log_file_path:
+            ad.adb.shell("rm %s" % log_file_path, ignore_status=True)
         ad.log.info("Running adb iperf test with server %s", iperf_server)
+        if not blocking:
+            ad.run_iperf_client_nb(
+                iperf_server,
+                iperf_option,
+                timeout=timeout + 60,
+                log_file_path=log_file_path)
+            return True
         result, data = ad.run_iperf_client(
             iperf_server, iperf_option, timeout=timeout + 60)
         ad.log.info("Iperf test result with server %s is %s", iperf_server,
@@ -2105,8 +2113,8 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_folder, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(url,
+                                                                    out_path)
     file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2147,7 +2155,8 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data'][
+            'isConnected'] == target_state:
         return True
     return False
 
@@ -2174,8 +2183,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
+                                                          state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -2540,8 +2549,8 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         ad.log.info("VoLTE not supported by platform.")
-        raise TelTestUtilsError(
-            "VoLTE not supported by platform %s." % ad.serial)
+        raise TelTestUtilsError("VoLTE not supported by platform %s." %
+                                ad.serial)
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -3154,9 +3163,9 @@ def wait_for_matching_sms(log,
     """
     if not allow_multi_part_long_sms:
         try:
-            ad_rx.ed.wait_for_event(EventSmsReceived, is_sms_match,
-                                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
-                                    text)
+            ad_rx.messaging_ed.wait_for_event(EventSmsReceived, is_sms_match,
+                                              MAX_WAIT_TIME_SMS_RECEIVE,
+                                              phonenumber_tx, text)
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
@@ -3165,7 +3174,7 @@ def wait_for_matching_sms(log,
         try:
             received_sms = ''
             while (text != ''):
-                event = ad_rx.ed.wait_for_event(
+                event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match,
                     MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx, text)
                 text = text[len(event['data']['Text']):]
@@ -3212,9 +3221,9 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text):
     """
     try:
         #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-        ad_rx.ed.wait_for_event(EventMmsDownloaded, is_mms_match,
-                                MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
-                                text)
+        ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
+                                          MAX_WAIT_TIME_SMS_RECEIVE,
+                                          phonenumber_tx, text)
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
@@ -3237,22 +3246,27 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         subid_rx: Receiver's subsciption ID to be used for SMS
         array_message: the array of message to send/receive
     """
-
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    for ad in (ad_rx, ad_tx):
+        if not hasattr(ad, "messaging_droid"):
+            ad.messaging_droid = ad.start_new_session()
+            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
+            ad.messaging_ed.start()
     for text in array_message:
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
         result = False
-        ad_rx.ed.clear_all_events()
-        ad_rx.droid.smsStartTrackingIncomingSmsMessage()
+        ad_rx.messaging_ed.clear_all_events()
+        ad_tx.messaging_ed.clear_all_events()
+        ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
         try:
-            ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
-
+            ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text,
+                                                     True)
             try:
-                ad_tx.ed.pop_event(EventSmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
+                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
@@ -3268,7 +3282,7 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                                 length)
                 return False
         finally:
-            ad_rx.droid.smsStopTrackingIncomingSmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
     return True
 
 
@@ -3311,19 +3325,27 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    for ad in (ad_rx, ad_tx):
+        if "Permissive" not in ad.adb.shell("su root getenforce"):
+            ad.adb.shell("su root setenforce 0")
+        if not hasattr(ad, "messaging_droid"):
+            ad.messaging_droid = ad.start_new_session()
+            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
+            ad.messaging_ed.start()
     for subject, message, filename in array_payload:
         ad_tx.log.info(
             "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
         result = False
         ad_rx.ed.clear_all_events()
-        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         try:
-            ad_tx.droid.smsSendMultimediaMessage(
+            ad_tx.ensure_screen_on()
+            ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
-                ad_tx.ed.pop_event(EventMmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
                 return False
@@ -3374,20 +3396,25 @@ def mms_receive_verify_after_call_hangup_for_subscription(
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    for ad in (ad_rx, ad_tx):
+        if not hasattr(ad, "messaging_droid"):
+            ad.messaging_droid = ad.start_new_session()
+            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
+            ad.messaging_ed.start()
     for subject, message, filename in array_payload:
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
         result = False
-        ad_rx.ed.clear_all_events()
-        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
+        ad_rx.messaging_ed.clear_all_events()
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
         try:
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.ed.pop_event(EventMmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 log.warning("No sent_success event.")
 
@@ -4027,7 +4054,8 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         return True
     else:
@@ -4221,6 +4249,25 @@ def task_wrapper(task):
     func = task[0]
     params = task[1]
     return func(*params)
+
+
+def run_multithread_func_async(log, task):
+    """Starts a multi-threaded function asynchronously.
+
+    Args:
+        log: log object.
+        task: a task to be executed in parallel.
+
+    Returns:
+        Future object representing the execution of the task.
+    """
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        future_object = executor.submit(task_wrapper, task)
+    except Exception as e:
+        log.error("Exception error %s", e)
+        raise
+    return future_object
 
 
 def run_multithread_func(log, tasks):
@@ -4505,8 +4552,9 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data']
-                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and
+            (network_callback_event ==
+             event['data'][NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
@@ -4648,7 +4696,7 @@ def set_qxdm_logger_command(ad, mask=None):
     else:
         ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 500 -n 10 -b -c" %
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -n 50 -b -c" %
                                   (mask_path, ad.qxdm_logger_path))
         conf_path = os.path.split(ad.qxdm_logger_path)[0]
         conf_path = os.path.join(conf_path, "diag.conf")

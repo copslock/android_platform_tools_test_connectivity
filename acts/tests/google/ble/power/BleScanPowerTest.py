@@ -34,8 +34,8 @@ from acts.test_utils.bt.PowerBaseTest import PowerBaseTest
 
 class BleScanPowerTest(PowerBaseTest):
     # Repetitions for scan and idle
-    REPETITIONS_40 = 40
-    REPETITIONS_360 = 360
+    REPETITIONS_40 = 5
+    REPETITIONS_360 = 40
 
     # Power measurement start time in seconds
     SCAN_START_TIME = 60
@@ -82,8 +82,12 @@ class BleScanPowerTest(PowerBaseTest):
             repetitions:  The number of cycles of scanning/idle
 
         Returns:
-            True or False value per check_test_pass result
+            True if the average current is within the allowed tolerance;
+            False otherwise.
         """
+
+        if not self.disable_location_scanning():
+            return False
 
         first_part_msg = "%s%s --es StartTime %d --es ScanTime %d" % (
             self.PMC_BASE_CMD, scan_mode, self.SCAN_START_TIME, scan_time)
@@ -102,8 +106,7 @@ class BleScanPowerTest(PowerBaseTest):
         # Start the power measurement
         sample_time = (scan_time + idle_time) * repetitions
         result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
-                                        self.current_test_name,
-                                        self.SCAN_START_TIME)
+                               self.current_test_name, self.SCAN_START_TIME)
 
         self.ad.log.info("Monsoon start_time: {}".format(result.timestamps[0]))
 
@@ -116,10 +119,14 @@ class BleScanPowerTest(PowerBaseTest):
 
         self.ad.log.info("Number of test cycles: {}".format(len(start_times)))
 
-        self.save_logs_for_power_test(result, start_times, end_times, False)
+        (current_avg, stdev) = self.save_logs_for_power_test(
+            result, start_times, end_times, False)
 
         # perform watermark comparison numbers
-        return self.check_test_pass(test_case, result.average_current)
+        self.log.info("==> CURRENT AVG from PMC Monsoon app: %s" % current_avg)
+        self.log.info(
+            "==> WATERMARK from config file: %s" % self.user_params[test_case])
+        return self.check_test_pass(current_avg, self.user_params[test_case])
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='37556d99-c535-4fd7-a7e7-5b737379d007')

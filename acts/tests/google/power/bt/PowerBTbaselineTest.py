@@ -48,7 +48,9 @@ class PowerBTbaselineTest(base_test.BaseTestClass):
         time.sleep(2)
 
     def teardown_class(self):
+        """Clean up the test class after all tests finish running
 
+        """
         self.mon.usb('on')
         self.dut.droid.bluetoothFactoryReset()
 
