@@ -1380,8 +1380,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1439,8 +1439,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1498,8 +1498,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1557,8 +1557,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1616,8 +1616,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1669,8 +1669,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1722,8 +1722,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         self.log.info("Final Count - Success: {}, Failure: {}".format(
             success_count, fail_count))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -2962,7 +2962,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                  caller_verifier, callee_verifier,
                                  wait_time_in_call):
             #wait time for active data transfer
-            time.sleep(10)
+            time.sleep(5)
             return call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
                                        caller_verifier, callee_verifier,
                                        wait_time_in_call)
@@ -2974,15 +2974,14 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 self.log.error("Device failed to reselect in %s.",
                                MAX_WAIT_TIME_NW_SELECTION)
                 return False
+        else:
+            ensure_phones_default_state(self.log, self.android_devices)
 
-            #toggle_airplane_mode(self.log, self.android_devices[0], False)
-            #wifi_toggle_state(self.log, self.android_devices[0], False)
-
-            self.android_devices[0].droid.telephonyToggleDataConnection(True)
-            if not wait_for_cell_data_connection(
-                    self.log, self.android_devices[0], True):
-                self.log.error("Data connection is not on cell")
-                return False
+        self.android_devices[0].droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(self.log, self.android_devices[0],
+                                             True):
+            self.log.error("Data connection is not on cell")
+            return False
 
         if not verify_http_connection(self.log, self.android_devices[0]):
             self.log.error("HTTP connection is not available")
@@ -2996,6 +2995,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ad_callee = self.android_devices[0]
         ad_download = self.android_devices[0]
 
+        ad_download.ensure_screen_on()
+        ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
+                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
                                             ad_caller, None, None, 60))
         download_task = active_file_download_task(self.log, ad_download)
@@ -3353,6 +3355,359 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 "Failed to setup iwlan with APM, WIFI and WFC on")
             return False
         return self._test_call_setup_in_active_data_transfer(
+            None, DIRECTION_MOBILE_TERMINATED)
+
+    def _test_call_setup_in_active_youtube_video(
+            self,
+            nw_gen=None,
+            call_direction=DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=False):
+        """Test call can be established during active data connection.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting playing youtube video.
+        Initiate a voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if nw_gen:
+            if not ensure_network_generation(
+                    self.log, self.android_devices[0], nw_gen,
+                    MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                self.log.error("Device failed to reselect in %s.",
+                               MAX_WAIT_TIME_NW_SELECTION)
+                return False
+        else:
+            ensure_phones_default_state(self.log, self.android_devices)
+        self.android_devices[0].droid.telephonyToggleDataConnection(True)
+        if not wait_for_cell_data_connection(self.log, self.android_devices[0],
+                                             True):
+            self.log.error("Data connection is not on cell")
+            return False
+
+        if not verify_http_connection(self.log, self.android_devices[0]):
+            self.log.error("HTTP connection is not available")
+            return False
+
+        if call_direction == DIRECTION_MOBILE_ORIGINATED:
+            ad_caller = self.android_devices[0]
+            ad_callee = self.android_devices[1]
+        else:
+            ad_caller = self.android_devices[1]
+            ad_callee = self.android_devices[0]
+        ad_download = self.android_devices[0]
+
+        ad_download.log.info("Open an youtube video")
+        ad_download.ensure_screen_on()
+        ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
+                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
+        if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
+                                   None, None, 60):
+            self.log.error("Call setup failed in active youtube video")
+            return False
+        else:
+            self.log.info("Call setup succeed in active youtube video")
+            return True
+
+    @test_tracker_info(uuid="1dc9f03f-1b6c-4c17-993b-3acafdc26ea3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_general_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="32bc8fab-a0b9-4d47-8afb-940d1fdcde02")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_general_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="72204212-e0c8-4447-be3f-ae23b2a63a1c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_volte_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_4G, DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="84cd3ab9-a2b2-4ef9-b531-ee6201bec128")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_volte_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_volte(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_4G, DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="a8dca8d3-c44c-40a6-be56-931b4be5499b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_csfb_in_active_youtube_video(self):
+        """Test call can be established during active youbube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_4G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="d11f7263-f51d-4ea3-916a-0df4f52023ce")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_csfb_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_csfb(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup VoLTE")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_4G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="676378b4-94b7-4ad7-8242-7ccd2bf1efba")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_3g_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_3G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="6216fc6d-2aa2-4eb9-90e2-5791cb31c12e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_3g_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_voice_3g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup 3G")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_3G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="58ec9783-6f8e-49f6-8dae-9dd33108b6f9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_2g_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup voice in 2G")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_2G,
+            DIRECTION_MOBILE_ORIGINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="e8ba7c0c-48a3-4fc6-aa34-a2e1c570521a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_2g_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, disable WiFi, enable Cellular Data.
+        Make sure phone in <nw_gen>.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_voice_2g(self.log, self.android_devices[0]):
+            self.android_devices[0].log.error("Failed to setup voice in 2G")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            GEN_2G,
+            DIRECTION_MOBILE_TERMINATED,
+            allow_data_transfer_interruption=True)
+
+    @test_tracker_info(uuid="eb8971c1-b34a-430f-98df-0d4554c7ab12")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_wifi_wfc_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup IWLAN with NON-APM WIFI WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="275a93d6-1f39-40c8-893f-ff77afd09e54")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_wifi_wfc_in_active_youtube_video(self):
+        """Test call can be established during active youtube_video.
+
+        Turn off airplane mode, turn on wfc and wifi.
+        Starting an youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], False,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM off and WIFI and WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="ea087709-d4df-4223-b80c-1b33bacbd5a2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mo_voice_apm_wifi_wfc_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting an youtube video.
+        Initiate a MO voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
+            None, DIRECTION_MOBILE_ORIGINATED)
+
+    @test_tracker_info(uuid="44cc14e0-60c7-4fdb-ad26-31fdc4e52aaf")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_mt_voice_apm_wifi_wfc_in_active_youtube_video(self):
+        """Test call can be established during active youtube video.
+
+        Turn on wifi-calling, airplane mode and wifi.
+        Starting youtube video.
+        Initiate a MT voice call. Verify call can be established.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not phone_setup_iwlan(self.log, self.android_devices[0], True,
+                                 WFC_MODE_WIFI_PREFERRED,
+                                 self.wifi_network_ssid,
+                                 self.wifi_network_pass):
+            self.android_devices[0].log.error(
+                "Failed to setup iwlan with APM, WIFI and WFC on")
+            return False
+        return self._test_call_setup_in_active_youtube_video(
             None, DIRECTION_MOBILE_TERMINATED)
 
 

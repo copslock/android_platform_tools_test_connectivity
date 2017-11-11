@@ -3635,7 +3635,8 @@ def ensure_network_generation_for_subscription(
         rat_generation_from_rat(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
                 sub_id)))
-
+    if not result:
+        ad.log.info("singal strength = %s", get_telephony_signal_strength(ad))
     return result
 
 
@@ -4930,6 +4931,7 @@ def reset_device_password(ad, device_password=None):
             # with unlocking with a swipe
             ad.log.info("Disable device password")
             refresh_sl4a_session(ad)
+            ad.ensure_screen_on()
             ad.droid.disableDevicePassword()
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
