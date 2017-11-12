@@ -36,26 +36,6 @@ class PowermulticastTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            'test_screenoff_directed_arp', 'test_screenoff_misdirected_arp',
-            'test_screenoff_directed_ns', 'test_screenoff_misdirected_ns',
-            'test_screenoff_ra_short', 'test_screenoff_ra_long',
-            'test_screenoff_directed_dhcp_offer',
-            'test_screenoff_misdirected_dhcp_offer',
-            'test_screenoff_ra_rnds_short', 'test_screenoff_ra_rnds_long',
-            'test_screenoff_directed_ping6',
-            'test_screenoff_misdirected_ping6',
-            'test_screenoff_directed_ping4',
-            'test_screenoff_misdirected_ping4', 'test_screenoff_mdns6',
-            'test_screenoff_mdns4', 'test_screenon_directed_arp',
-            'test_screenon_misdirected_arp', 'test_screenon_directed_ns',
-            'test_screenon_misdirected_ns', 'test_screenon_ra_short',
-            'test_screenon_ra_long', 'test_screenon_directed_dhcp_offer',
-            'test_screenon_misdirected_dhcp_offer',
-            'test_screenon_ra_rnds_short', 'test_screenon_ra_rnds_long',
-            'test_screenon_directed_ping6', 'test_screenon_misdirected_ping6',
-            'test_screenon_directed_ping4', 'test_screenon_misdirected_ping4',
-            'test_screenon_mdns6', 'test_screenon_mdns4')
 
     def setup_class(self):
 
@@ -269,7 +249,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('OFF', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping6Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv6_dst_fake)
+        packet = pkt_gen.generate(self.ipv6_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='e37112e6-5c35-4c89-8d15-f5a44e69be0b')
@@ -287,7 +267,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('OFF', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping4Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv4_dst_fake)
+        packet = pkt_gen.generate(self.ipv4_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='03f0e845-fd66-4120-a79d-5eb64d49b6cd')
@@ -319,7 +299,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='406dffae-104e-46cb-9ec2-910aac7aca39')
-    def test_screenon_misdirecteded_arp(self):
+    def test_screenon_misdirected_arp(self):
         network = self.main_network[hc.BAND_5G]
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
@@ -337,7 +317,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='de21d24f-e03e-47a1-8bbb-11953200e870')
-    def test_screenon_misdirecteded_ns(self):
+    def test_screenon_misdirected_ns(self):
         network = self.main_network[hc.BAND_5G]
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
@@ -373,7 +353,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='eaebfe98-32da-4ebc-bca7-3b7026d99a4f')
-    def test_screenon_misdirecteded_dhcp_offer(self):
+    def test_screenon_misdirected_dhcp_offer(self):
         network = self.main_network[hc.BAND_5G]
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
@@ -416,7 +396,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping6Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv6_dst_fake)
+        packet = pkt_gen.generate(self.ipv6_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='90c70e8a-74fd-4878-89c6-5e15c3ede318')
@@ -434,7 +414,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping4Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv4_dst_fake)
+        packet = pkt_gen.generate(self.ipv4_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='117814db-f94d-4239-a7ab-033482b1da52')

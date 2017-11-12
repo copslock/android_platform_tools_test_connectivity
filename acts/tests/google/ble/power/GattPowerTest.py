@@ -38,11 +38,11 @@ class GattPowerTest(PowerBaseTest):
     # Time to start GATT write
     START_TIME = 30
     # Repetitions
-    REPETITIONS_40 = 40
+    REPETITIONS_40 = 7
     REPETITIONS_1 = 1
     # Time for GATT writing
     WRITE_TIME_60 = 60
-    WRITE_TIME_3600 = 3600
+    WRITE_TIME_3600 = 600
     # Time for idle
     IDLE_TIME_30 = 30
     IDLE_TIME_0 = 0
@@ -88,8 +88,18 @@ class GattPowerTest(PowerBaseTest):
             repetitions: number of repetitions of writing cycles
 
         Returns:
-            True or False value per check_test_pass result
+            True if the average current is within the allowed tolerance;
+            False otherwise.
         """
+
+        if not self.disable_location_scanning():
+            return False
+
+        # Verify Bluetooth is enabled on the companion phone.
+        if not bluetooth_enabled_check(self.android_devices[1]):
+            self.log.error("FAILED to enable Bluetooth on companion phone")
+            return False
+
         # Send message to Gatt Server
         self.per_ad.log.info("Send broadcast message to GATT Server: %s",
                              self.GATT_SERVER_MSG)
@@ -107,17 +117,20 @@ class GattPowerTest(PowerBaseTest):
         sample_time = (write_time + idle_time) * repetitions
         # Start the power measurement
         result = self.mon.measure_power(self.POWER_SAMPLING_RATE, sample_time,
-                                        self.current_test_name,
-                                        self.START_TIME)
+                               self.current_test_name, self.START_TIME)
 
         # Calculate average and save power data into a file
-        self.save_logs_for_power_test(result, write_time, idle_time)
+        (current_avg, stdev) = self.save_logs_for_power_test(
+            result, write_time, idle_time)
         # Take bug report for peripheral device
         current_time = get_current_human_time()
         self.per_ad.take_bug_report(self.current_test_name, current_time)
 
         # perform watermark comparison numbers
-        return self.check_test_pass(test_case, result.average_current)
+        self.log.info("==> CURRENT AVG from PMC Monsoon app: %s" % current_avg)
+        self.log.info(
+            "==> WATERMARK from config file: %s" % self.user_params[test_case])
+        return self.check_test_pass(current_avg, self.user_params[test_case])
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='8c5213fc-ffe8-4c32-bb63-1d2b7394dc0c')
