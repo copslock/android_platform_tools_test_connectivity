@@ -78,13 +78,18 @@ class DataPathTest(AwareBaseTest):
     network_req = {"TransportType": 5, "NetworkSpecifier": ns}
     return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
 
-  def set_up_discovery(self, ptype, stype, get_peer_id):
+  def set_up_discovery(self, ptype, stype, get_peer_id, pub_on_both=False,
+      pub_on_both_same=True):
     """Set up discovery sessions and wait for service discovery.
 
     Args:
       ptype: Publish discovery type
       stype: Subscribe discovery type
       get_peer_id: Send a message across to get the peer's id
+      pub_on_both: If True then set up a publisher on both devices. The second
+                   publisher isn't used (existing to test use-case).
+      pub_on_both_same: If True then the second publish uses an identical
+                        service name, otherwise a different service name.
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -101,6 +106,15 @@ class DataPathTest(AwareBaseTest):
     # Publisher: start publish and wait for confirmation
     p_disc_id = p_dut.droid.wifiAwarePublish(p_id, self.create_config(ptype))
     autils.wait_for_event(p_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Optionally set up a publish session on the Subscriber device
+    if pub_on_both:
+      p2_config = self.create_config(ptype)
+      if not pub_on_both_same:
+        p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] = (
+          p2_config[aconsts.DISCOVERY_KEY_SERVICE_NAME] + "-XYZXYZ")
+      s_dut.droid.wifiAwarePublish(s_id, p2_config)
+      autils.wait_for_event(s_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
     # Subscriber: start subscribe and wait for confirmation
     s_disc_id = s_dut.droid.wifiAwareSubscribe(s_id, self.create_config(stype))
@@ -132,7 +146,9 @@ class DataPathTest(AwareBaseTest):
       stype,
       encr_type,
       use_peer_id,
-      passphrase_to_use=None):
+      passphrase_to_use=None,
+      pub_on_both=False,
+      pub_on_both_same=True):
     """Runs the in-band data-path tests.
 
     Args:
@@ -143,14 +159,21 @@ class DataPathTest(AwareBaseTest):
                    accept any request
       passphrase_to_use: The passphrase to use if encr_type=ENCR_TYPE_PASSPHRASE
                          If None then use self.PASSPHRASE
+      pub_on_both: If True then set up a publisher on both devices. The second
+                   publisher isn't used (existing to test use-case).
+      pub_on_both_same: If True then the second publish uses an identical
+                        service name, otherwise a different service name.
     """
     (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
-     peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id)
+     peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id,
+                                             pub_on_both=pub_on_both,
+                                             pub_on_both_same=pub_on_both_same)
 
     passphrase = None
     pmk = None
     if encr_type == self.ENCR_TYPE_PASSPHRASE:
-      passphrase = self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use
+      passphrase = (
+        self.PASSPHRASE if passphrase_to_use == None else passphrase_to_use)
     elif encr_type == self.ENCR_TYPE_PMK:
       pmk = self.PMK
 
@@ -209,13 +232,17 @@ class DataPathTest(AwareBaseTest):
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
-  def run_oob_data_path_test(self, encr_type, use_peer_id):
+  def run_oob_data_path_test(self, encr_type, use_peer_id,
+      setup_discovery_sessions=False):
     """Runs the out-of-band data-path tests.
 
     Args:
       encr_type: Encryption type, one of ENCR_TYPE_*
       use_peer_id: On Responder: True to use peer ID, False to accept any
                    request
+      setup_discovery_sessions: If True also set up a (spurious) discovery
+        session (pub on both sides, sub on Responder side). Validates a corner
+        case.
     """
     init_dut = self.android_devices[0]
     init_dut.pretty_name = "Initiator"
@@ -239,6 +266,18 @@ class DataPathTest(AwareBaseTest):
     # mechanisms to make sure this happens for OOB discovery (except retrying
     # to execute the data-path request)
     time.sleep(self.WAIT_FOR_CLUSTER)
+
+    if setup_discovery_sessions:
+      init_dut.droid.wifiAwarePublish(init_id, self.create_config(
+        aconsts.PUBLISH_TYPE_UNSOLICITED))
+      autils.wait_for_event(init_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+      resp_dut.droid.wifiAwarePublish(resp_id, self.create_config(
+          aconsts.PUBLISH_TYPE_UNSOLICITED))
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+      resp_dut.droid.wifiAwareSubscribe(resp_id, self.create_config(
+          aconsts.SUBSCRIBE_TYPE_PASSIVE))
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED)
+      autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
 
     passphrase = None
     pmk = None
@@ -588,6 +627,89 @@ class DataPathTest(AwareBaseTest):
         use_peer_id=False)
 
   #######################################
+  # Positive In-Band (IB) with a publish session running on the subscriber
+  # tests key:
+  #
+  # names is: test_ib_extra_pub_<same|diff>_<pub_type>_<sub_type>
+  #                                          _<encr_type>_<peer_spec>
+  # where:
+  #
+  # same|diff: Whether the extra publish session (on the subscriber) is the same
+  #            or different from the primary session.
+  # pub_type: Type of publish discovery session: unsolicited or solicited.
+  # sub_type: Type of subscribe discovery session: passive or active.
+  # encr_type: Encription type: open, passphrase
+  # peer_spec: Peer specification method: any or specific
+  #
+  # Note: In-Band means using Wi-Fi Aware for discovery and referring to the
+  # peer using the Aware-provided peer handle (as opposed to a MAC address).
+  #######################################
+
+  def test_ib_extra_pub_same_unsolicited_passive_open_specific(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
+
+    Configuration contains a publisher (for the same service) running on *both*
+    devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        pub_on_both=True,
+        pub_on_both_same=True)
+
+  def test_ib_extra_pub_same_unsolicited_passive_open_any(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, any peer.
+
+    Configuration contains a publisher (for the same service) running on *both*
+    devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        pub_on_both=True,
+        pub_on_both_same=True)
+
+  def test_ib_extra_pub_diff_unsolicited_passive_open_specific(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
+
+    Configuration contains a publisher (for a different service) running on
+    *both* devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        pub_on_both=True,
+        pub_on_both_same=False)
+
+  def test_ib_extra_pub_diff_unsolicited_passive_open_any(self):
+    """Data-path: in-band, unsolicited/passive, open encryption, any peer.
+
+    Configuration contains a publisher (for a different service) running on
+    *both* devices.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        pub_on_both=True,
+        pub_on_both_same=False)
+
+  #######################################
   # Positive Out-of-Band (OOB) tests key:
   #
   # names is: test_oob_<encr_type>_<peer_spec>
@@ -595,6 +717,9 @@ class DataPathTest(AwareBaseTest):
   #
   # encr_type: Encription type: open, passphrase
   # peer_spec: Peer specification method: any or specific
+  #
+  # Optionally set up an extra discovery session to test coexistence. If so
+  # add "ib_coex" to test name.
   #
   # Note: Out-of-Band means using a non-Wi-Fi Aware mechanism for discovery and
   # exchange of MAC addresses and then Wi-Fi Aware for data-path.
@@ -659,6 +784,30 @@ class DataPathTest(AwareBaseTest):
     self.run_oob_data_path_test(
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
+
+  def test_oob_ib_coex_open_specific(self):
+    """Data-path: out-of-band, open encryption, specific peer - in-band coex:
+    set up a concurrent discovery session to verify no impact. The session
+    consists of Publisher on both ends, and a Subscriber on the Responder.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=True,
+        setup_discovery_sessions=True)
+
+  def test_oob_ib_coex_open_any(self):
+    """Data-path: out-of-band, open encryption, any peer - in-band coex:
+    set up a concurrent discovery session to verify no impact. The session
+    consists of Publisher on both ends, and a Subscriber on the Responder.
+
+    Verifies end-to-end discovery + data-path creation.
+    """
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        setup_discovery_sessions=True)
 
   ##############################################################
 
@@ -808,7 +957,7 @@ class DataPathTest(AwareBaseTest):
     resp_ids = []
 
     # Initiator+Responder: attach and wait for confirmation & identity
-    # create 10 sessions to be used in the different (but identical) NDPs
+    # create N+M sessions to be used in the different (but identical) NDPs
     for i in range(N + M):
       id, init_mac = autils.attach_with_identity(init_dut)
       init_ids.append(id)
@@ -851,7 +1000,7 @@ class DataPathTest(AwareBaseTest):
     self.wait_for_request_responses(resp_dut, resp_req_keys, resp_aware_ifs)
     self.wait_for_request_responses(init_dut, init_req_keys, init_aware_ifs)
 
-    # issue N more requests for the same NDPs - tests post-setup multiple NDP
+    # issue M more requests for the same NDPs - tests post-setup multiple NDP
     for i in range(M):
       # Responder: request network
       resp_req_keys.append(autils.request_network(
@@ -909,9 +1058,118 @@ class DataPathTest(AwareBaseTest):
     for init_req_key in init_req_keys:
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+  def test_identical_network_from_both_sides(self):
+    """Validate that requesting two identical NDPs (Open) each being initiated
+    from a different side, results in the same/single NDP.
+
+    Verify that the interface and IPv6 address is the same for all networks.
+    """
+    dut1 = self.android_devices[0]
+    dut2 = self.android_devices[1]
+
+    id1, mac1 = autils.attach_with_identity(dut1)
+    id2, mac2 = autils.attach_with_identity(dut2)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    # first NDP: DUT1 (Init) -> DUT2 (Resp)
+    req_a_resp = autils.request_network(dut2,
+                               dut2.droid.wifiAwareCreateNetworkSpecifierOob(
+                                 id2, aconsts.DATA_PATH_RESPONDER,
+                                 mac1))
+
+    req_a_init = autils.request_network(dut1,
+                               dut1.droid.wifiAwareCreateNetworkSpecifierOob(
+                                 id1, aconsts.DATA_PATH_INITIATOR,
+                                 mac2))
+
+    req_a_resp_event = autils.wait_for_event_with_keys(
+        dut2, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_a_resp))
+    req_a_init_event = autils.wait_for_event_with_keys(
+        dut1, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_a_init))
+
+    req_a_if_resp = req_a_resp_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    req_a_if_init = req_a_init_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    self.log.info("Interface names for A: I=%s, R=%s", req_a_if_init,
+                  req_a_if_resp)
+
+    req_a_ipv6_resp = \
+    dut2.droid.connectivityGetLinkLocalIpv6Address(req_a_if_resp).split("%")[0]
+    req_a_ipv6_init = \
+    dut1.droid.connectivityGetLinkLocalIpv6Address(req_a_if_init).split("%")[0]
+    self.log.info("Interface addresses (IPv6) for A: I=%s, R=%s",
+                  req_a_ipv6_init, req_a_ipv6_resp)
+
+    # second NDP: DUT2 (Init) -> DUT1 (Resp)
+    req_b_resp = autils.request_network(dut1,
+                                dut1.droid.wifiAwareCreateNetworkSpecifierOob(
+                                    id1, aconsts.DATA_PATH_RESPONDER,
+                                    mac2))
+
+    req_b_init = autils.request_network(dut2,
+                                dut2.droid.wifiAwareCreateNetworkSpecifierOob(
+                                    id2, aconsts.DATA_PATH_INITIATOR,
+                                    mac1))
+
+    req_b_resp_event = autils.wait_for_event_with_keys(
+        dut1, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_b_resp))
+    req_b_init_event = autils.wait_for_event_with_keys(
+        dut2, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, req_b_init))
+
+    req_b_if_resp = req_b_resp_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    req_b_if_init = req_b_init_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    self.log.info("Interface names for B: I=%s, R=%s", req_b_if_init,
+                  req_b_if_resp)
+
+    req_b_ipv6_resp = \
+      dut1.droid.connectivityGetLinkLocalIpv6Address(req_b_if_resp).split("%")[0]
+    req_b_ipv6_init = \
+      dut2.droid.connectivityGetLinkLocalIpv6Address(req_b_if_init).split("%")[0]
+    self.log.info("Interface addresses (IPv6) for B: I=%s, R=%s",
+                  req_b_ipv6_init, req_b_ipv6_resp)
+
+    # validate equality of NDPs (using interface names & ipv6)
+    asserts.assert_equal(req_a_if_init, req_b_if_resp,
+                         "DUT1 NDPs are on different interfaces")
+    asserts.assert_equal(req_a_if_resp, req_b_if_init,
+                         "DUT2 NDPs are on different interfaces")
+    asserts.assert_equal(req_a_ipv6_init, req_b_ipv6_resp,
+                         "DUT1 NDPs are using different IPv6 addresses")
+    asserts.assert_equal(req_a_ipv6_resp, req_b_ipv6_init,
+                         "DUT2 NDPs are using different IPv6 addresses")
+
+    # release requests
+    dut1.droid.connectivityUnregisterNetworkCallback(req_a_init)
+    dut1.droid.connectivityUnregisterNetworkCallback(req_b_resp)
+    dut2.droid.connectivityUnregisterNetworkCallback(req_a_resp)
+    dut2.droid.connectivityUnregisterNetworkCallback(req_b_init)
+
   ########################################################################
 
-  def run_multiple_ndi(self, sec_configs):
+  def run_multiple_ndi(self, sec_configs, flip_init_resp=False):
     """Validate that the device can create and use multiple NDIs.
 
     The security configuration can be:
@@ -921,95 +1179,126 @@ class DataPathTest(AwareBaseTest):
 
     Args:
       sec_configs: list of security configurations
+      flip_init_resp: if True the roles of Initiator and Responder are flipped
+                      between the 2 devices, otherwise same devices are always
+                      configured in the same role.
     """
-    init_dut = self.android_devices[0]
-    init_dut.pretty_name = "Initiator"
-    resp_dut = self.android_devices[1]
-    resp_dut.pretty_name = "Responder"
+    dut1 = self.android_devices[0]
+    dut2 = self.android_devices[1]
 
-    asserts.skip_if(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+    asserts.skip_if(dut1.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
                     < len(sec_configs) or
-                    resp_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    dut2.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
                     < len(sec_configs),
-                    "Initiator or Responder do not support multiple NDIs")
+                    "DUTs do not support enough NDIs")
 
-    init_id, init_mac = autils.attach_with_identity(init_dut)
-    resp_id, resp_mac = autils.attach_with_identity(resp_dut)
+    id1, mac1 = autils.attach_with_identity(dut1)
+    id2, mac2 = autils.attach_with_identity(dut2)
 
     # wait for for devices to synchronize with each other - there are no other
     # mechanisms to make sure this happens for OOB discovery (except retrying
     # to execute the data-path request)
     time.sleep(autils.WAIT_FOR_CLUSTER)
 
-    resp_req_keys = []
-    init_req_keys = []
-    resp_aware_ifs = []
-    init_aware_ifs = []
+    dut2_req_keys = []
+    dut1_req_keys = []
+    dut2_aware_ifs = []
+    dut1_aware_ifs = []
 
+    dut2_type = aconsts.DATA_PATH_RESPONDER
+    dut1_type = aconsts.DATA_PATH_INITIATOR
+    dut2_is_responder = True
     for sec in sec_configs:
-      # Responder: request network
-      resp_req_key = autils.request_network(resp_dut,
-                                            autils.get_network_specifier(
-                                                resp_dut, resp_id,
-                                                aconsts.DATA_PATH_RESPONDER,
-                                                init_mac, sec))
-      resp_req_keys.append(resp_req_key)
+      if dut2_is_responder:
+        # DUT2 (Responder): request network
+        dut2_req_key = autils.request_network(dut2,
+                                              autils.get_network_specifier(
+                                                  dut2, id2,
+                                                  dut2_type,
+                                                  mac1, sec))
+        dut2_req_keys.append(dut2_req_key)
 
-      # Initiator: request network
-      init_req_key = autils.request_network(init_dut,
-                                            autils.get_network_specifier(
-                                                init_dut, init_id,
-                                                aconsts.DATA_PATH_INITIATOR,
-                                                resp_mac, sec))
-      init_req_keys.append(init_req_key)
+        # DUT1 (Initiator): request network
+        dut1_req_key = autils.request_network(dut1,
+                                              autils.get_network_specifier(
+                                                  dut1, id1,
+                                                  dut1_type,
+                                                  mac2, sec))
+        dut1_req_keys.append(dut1_req_key)
+      else:
+        # DUT1 (Responder): request network
+        dut1_req_key = autils.request_network(dut1,
+                                              autils.get_network_specifier(
+                                                  dut1, id1,
+                                                  dut1_type,
+                                                  mac2, sec))
+        dut1_req_keys.append(dut1_req_key)
+
+        # DUT2 (Initiator): request network
+        dut2_req_key = autils.request_network(dut2,
+                                              autils.get_network_specifier(
+                                                  dut2, id2,
+                                                  dut2_type,
+                                                  mac1, sec))
+        dut2_req_keys.append(dut2_req_key)
 
       # Wait for network
-      init_net_event = autils.wait_for_event_with_keys(
-          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+      dut1_net_event = autils.wait_for_event_with_keys(
+          dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-      resp_net_event = autils.wait_for_event_with_keys(
-          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_ID, dut1_req_key))
+      dut2_net_event = autils.wait_for_event_with_keys(
+          dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
           (cconsts.NETWORK_CB_KEY_EVENT,
            cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+          (cconsts.NETWORK_CB_KEY_ID, dut2_req_key))
 
-      resp_aware_ifs.append(
-          resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
-      init_aware_ifs.append(
-          init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      dut2_aware_ifs.append(
+          dut2_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      dut1_aware_ifs.append(
+          dut1_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+
+      if flip_init_resp:
+        if dut2_is_responder:
+          dut2_type = aconsts.DATA_PATH_INITIATOR
+          dut1_type = aconsts.DATA_PATH_RESPONDER
+        else:
+          dut2_type = aconsts.DATA_PATH_RESPONDER
+          dut1_type = aconsts.DATA_PATH_INITIATOR
+        dut2_is_responder = not dut2_is_responder
 
     # check that we are using 2 NDIs
-    init_aware_ifs = list(set(init_aware_ifs))
-    resp_aware_ifs = list(set(resp_aware_ifs))
+    dut1_aware_ifs = list(set(dut1_aware_ifs))
+    dut2_aware_ifs = list(set(dut2_aware_ifs))
 
-    self.log.info("Interface names: I=%s, R=%s", init_aware_ifs, resp_aware_ifs)
-    self.log.info("Initiator requests: %s", init_req_keys)
-    self.log.info("Responder requests: %s", resp_req_keys)
+    self.log.info("Interface names: DUT1=%s, DUT2=%s", dut1_aware_ifs,
+                  dut2_aware_ifs)
+    self.log.info("DUT1 requests: %s", dut1_req_keys)
+    self.log.info("DUT2 requests: %s", dut2_req_keys)
 
     asserts.assert_equal(
-        len(init_aware_ifs), len(sec_configs), "Multiple initiator interfaces")
+        len(dut1_aware_ifs), len(sec_configs), "Multiple DUT1 interfaces")
     asserts.assert_equal(
-        len(resp_aware_ifs), len(sec_configs), "Multiple responder interfaces")
+        len(dut2_aware_ifs), len(sec_configs), "Multiple DUT2 interfaces")
 
     for i in range(len(sec_configs)):
       if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
-      init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
-      resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
+      dut1_ipv6 = autils.get_ipv6_addr(dut1, if_name)
+      dut2_ipv6 = autils.get_ipv6_addr(dut2, if_name)
 
       asserts.assert_equal(
-          init_ipv6 is None, if_name not in init_aware_ifs,
-          "Initiator interface %s in unexpected state" % if_name)
+          dut1_ipv6 is None, if_name not in dut1_aware_ifs,
+          "DUT1 interface %s in unexpected state" % if_name)
       asserts.assert_equal(
-          resp_ipv6 is None, if_name not in resp_aware_ifs,
-          "Responder interface %s in unexpected state" % if_name)
+          dut2_ipv6 is None, if_name not in dut2_aware_ifs,
+          "DUT2 interface %s in unexpected state" % if_name)
 
     # release requests
-    for resp_req_key in resp_req_keys:
-      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
-    for init_req_key in init_req_keys:
-      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+    for dut2_req_key in dut2_req_keys:
+      dut2.droid.connectivityUnregisterNetworkCallback(dut2_req_key)
+    for dut1_req_key in dut1_req_keys:
+      dut1.droid.connectivityUnregisterNetworkCallback(dut1_req_key)
 
   @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
   def test_multiple_ndi_open_passphrase(self):
@@ -1045,3 +1334,49 @@ class DataPathTest(AwareBaseTest):
     configuration (using different PMKS). The result should use two different
     NDIs"""
     self.run_multiple_ndi([self.PMK, self.PMK2])
+
+  def test_multiple_ndi_open_passphrase_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using passphrase). The result should use two
+    different NDIs.
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([None, self.PASSPHRASE], flip_init_resp=True)
+
+  def test_multiple_ndi_open_pmk_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using pmk). The result should use two
+    different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([None, self.PMK], flip_init_resp=True)
+
+  def test_multiple_ndi_passphrase_pmk_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one using passphrase, one using pmk). The result should use
+    two different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PASSPHRASE, self.PMK], flip_init_resp=True)
+
+  def test_multiple_ndi_passphrases_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different passphrases). The result should use two
+    different NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2],
+                          flip_init_resp=True)
+
+  def test_multiple_ndi_pmks_flip(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different PMKS). The result should use two different
+    NDIs
+
+    Flip Initiator and Responder roles.
+    """
+    self.run_multiple_ndi([self.PMK, self.PMK2], flip_init_resp=True)
