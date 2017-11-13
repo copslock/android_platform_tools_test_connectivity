@@ -181,7 +181,8 @@ class PowerroamingTest(base_test.BaseTestClass):
             self.dut.droid.wifiConnect(network_aux)
             file_path, avg_current = wputils.monsoon_data_collect_save(
                 self.dut, self.mon_info, self.current_test_name, 0)
-        wputils.monsoon_data_plot(self.mon_info, file_path)
+        [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
+        avg_current = dt.source.data['y0'][0]
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -213,7 +214,8 @@ class PowerroamingTest(base_test.BaseTestClass):
             self.dut.droid.wifiConnect(network_aux)
             file_path, avg_current = wputils.monsoon_data_collect_save(
                 self.dut, self.mon_info, self.current_test_name, 0)
-        wputils.monsoon_data_plot(self.mon_info, file_path)
+        [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
+        avg_current = dt.source.data['y0'][0]
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
