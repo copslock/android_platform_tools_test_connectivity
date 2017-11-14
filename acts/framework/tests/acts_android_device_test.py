@@ -40,6 +40,9 @@ MOCK_ADB_LOGCAT = ("02-29 14:02:19.123  4454  Nothing\n"
 MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
 MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
 
+MOCK_SERIAL = 1
+MOCK_BUILD_ID = "ABC1.123456.007"
+
 
 def get_mock_ads(num):
     """Generates a list of mock AndroidDevice objects.
@@ -88,7 +91,9 @@ class MockAdbProxy():
 
     def getprop(self, params):
         if params == "ro.build.id":
-            return "AB42"
+            return MOCK_BUILD_ID
+        elif params == "ro.build.version.incremental":
+            return "123456789"
         elif params == "ro.build.type":
             return "userdebug"
         elif params == "ro.build.product" or params == "ro.product.name":
@@ -253,20 +258,40 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(1))
-    def test_AndroidDevice_build_info(self, MockFastboot, MockAdbProxy):
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    def test_AndroidDevice_build_info_release(self, MockFastboot,
+                                              MockAdbProxy):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
         """
         ad = android_device.AndroidDevice(serial=1)
         build_info = ad.build_info
-        self.assertEqual(build_info["build_id"], "AB42")
+        self.assertEqual(build_info["build_id"], "ABC1.123456.007")
         self.assertEqual(build_info["build_type"], "userdebug")
 
     @mock.patch('acts.controllers.adb.AdbProxy', return_value=MockAdbProxy(1))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(1))
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    def test_AndroidDevice_build_info_dev(self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's basic attributes are correctly
+        set after instantiation.
+        """
+        global MOCK_BUILD_ID
+        ad = android_device.AndroidDevice(serial=1)
+        old_mock_build_id = MOCK_BUILD_ID
+        MOCK_BUILD_ID = "ABC-MR1"
+        build_info = ad.build_info
+        self.assertEqual(build_info["build_id"], "123456789")
+        self.assertEqual(build_info["build_type"], "userdebug")
+        MOCK_BUILD_ID = old_mock_build_id
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
     def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,

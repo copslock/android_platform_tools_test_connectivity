@@ -57,6 +57,7 @@ SL4A_APK_NAME = "com.googlecode.android_scripting"
 WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
 DEFAULT_DEVICE_PASSWORD = "1111"
+RELEASE_ID_REGEX = re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+')
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -374,8 +375,9 @@ class AndroidDevice:
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                       {"serial": self.serial}))
+            AndroidDeviceLoggerAdapter(logging.getLogger(), {
+                "serial": self.serial
+            }))
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -456,9 +458,15 @@ class AndroidDevice:
             self.log.error("Device is in fastboot mode, could not get build "
                            "info.")
             return
-        info = {}
-        info["build_id"] = self.adb.getprop("ro.build.id")
-        info["build_type"] = self.adb.getprop("ro.build.type")
+
+        build_id = self.adb.getprop("ro.build.id")
+        if not re.match(RELEASE_ID_REGEX, build_id):
+            build_id = self.adb.getprop("ro.build.version.incremental")
+
+        info = {
+            "build_id": build_id,
+            "build_type": self.adb.getprop("ro.build.type")
+        }
         return info
 
     @property
@@ -811,8 +819,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info('Restarting logcat on file %s' %
-                          self.adb_logcat_file_path)
+            self.log.info(
+                'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -849,8 +857,8 @@ class AndroidDevice:
 
         try:
             return bool(
-                self.adb.shell('pm list packages | grep -w "package:%s"' %
-                               package_name))
+                self.adb.shell(
+                    'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
             self.log.error('Could not determine if %s is installed. '
@@ -927,8 +935,8 @@ class AndroidDevice:
             new_br = False
         br_path = os.path.join(self.log_path, test_name)
         utils.create_dir(br_path)
-        out_name = "AndroidDevice%s_%s" % (self.serial, begin_time.replace(
-            " ", "_").replace(":", "-"))
+        out_name = "AndroidDevice%s_%s" % (
+            self.serial, begin_time.replace(" ", "_").replace(":", "-"))
         out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
@@ -1156,8 +1164,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError("Device %s booting process timed out." %
-                                 self.serial)
+        raise AndroidDeviceError(
+            "Device %s booting process timed out." % self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1222,8 +1230,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning('Unable to find IP address for %s.' %
-                                     interface)
+                    self.log.warning(
+                        'Unable to find IP address for %s.' % interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1348,8 +1356,8 @@ class AndroidDevice:
         if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "StatusBar" in current_window and ((not current_app) or
-                                              "FallbackHome" in current_app):
+        if "StatusBar" in current_window and (
+            (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
