@@ -26,9 +26,6 @@ from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 class RangeApTest(RttBaseTest):
   """Test class for RTT ranging to Access Points"""
 
-  # max number of APs to range concurrently
-  MAX_APS = 10
-
   # Number of RTT iterations
   NUM_ITER = 10
 
@@ -104,14 +101,15 @@ class RangeApTest(RttBaseTest):
   def test_rtt_supporting_ap_only(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
     dut = self.android_devices[0]
+    max_peers = dut.droid.wifiRttMaxPeersInRequest()
     rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
     dut.log.info("RTT Supporting APs=%s", rtt_supporting_aps)
 
     asserts.assert_true(
         len(rtt_supporting_aps) > 0,
         "Need at least one AP which supports 802.11mc!")
-    if len(rtt_supporting_aps) > self.MAX_APS:
-      rtt_supporting_aps = rtt_supporting_aps[0:self.MAX_APS]
+    if len(rtt_supporting_aps) > max_peers:
+      rtt_supporting_aps = rtt_supporting_aps[0:max_peers]
 
     events = self.run_ranging(dut, aps=rtt_supporting_aps,
         iter_count=self.NUM_ITER,
@@ -121,9 +119,10 @@ class RangeApTest(RttBaseTest):
   def test_rtt_all_aps(self):
     """Scan for APs and perform RTT on the first 10 visible APs"""
     dut = self.android_devices[0]
+    max_peers = dut.droid.wifiRttMaxPeersInRequest()
     all_aps = rutils.scan_networks(dut)
-    if len(all_aps) > self.MAX_APS:
-      all_aps = all_aps[0:self.MAX_APS]
+    if len(all_aps) > max_peers:
+      all_aps = all_aps[0:max_peers]
     dut.log.info("Visible APs=%s", all_aps)
 
     events = self.run_ranging(dut, aps=all_aps,

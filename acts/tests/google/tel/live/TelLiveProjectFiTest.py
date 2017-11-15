@@ -25,9 +25,11 @@ from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CARRIER_SPT
 from acts.test_utils.tel.tel_defines import CARRIER_TMO
 from acts.test_utils.tel.tel_defines import CARRIER_USCC
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 
 _CARRIER_DIALER_CODE_LOOKUP = {
     CARRIER_SPT: '34777',
@@ -38,10 +40,166 @@ _CARRIER_DIALER_CODE_LOOKUP = {
 _SWITCHING_PREF_FILE = (
     '/data/data/com.google.android.apps.tycho/shared_prefs/switching.xml')
 
+_INTENT_FLAGS = int(0x00008000 | 0x10000000 | 0x00080000 | 0x00020000)
+_TYCHO_PKG = 'com.google.android.apps.tycho'
+_MAX_WAIT_TIME = 600
+
+
+class TychoClassId(object):
+    """Tycho Activity/Service Classnames."""
+    # Activities
+    CARRIER_SETUP = 'CarrierSetupEntryPointTrampoline'
+    INIT_ACTIVITY = 'InitActivity'
+    # Services
+    SYNC_SERVICE = 'services.SyncService'
+    ACTIVATE_SUPER_NETWORK_SERVICE = 'services.SuperNetworkConfigurationService'
+
+
+class ActionTypeId(object):
+    """Andorid Action Type to trigger events."""
+    MAIN = 'android.intent.action.MAIN'
+    MASTER_CLEAR_NOTIFICATION = 'android.intent.action.MASTER_CLEAR_NOTIFICATION'
+    TYCHO_ACTIVATE_SUPER_NETWORK = (
+        'com.google.android.apps.tycho.ActionType.ACTIVATE_SUPER_NETWORK')
+
 
 class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
-        pass
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+
+        tasks = [(self._account_registration, [ad])
+                 for ad in self.android_devices]
+        return multithread_func(self.log, tasks)
+
+    def _account_registration(self, ad):
+        if hasattr(ad, "user_account"):
+            if not ad.is_apk_installed("com.google.android.tradefed.account"
+                                       ) and self.user_params.get(
+                                           "account_util"):
+                acccount_util = self.user_params["account_util"]
+                if isinstance(acccount_util, list):
+                    acccount_util = acccount_util[0]
+                ad.log.info("Install account_util %s", acccount_util)
+                ad.ensure_screen_on()
+                ad.adb.install("-r %s" % acccount_util, timeout=180)
+            if not ad.is_apk_installed("com.google.android.tradefed.account"):
+                ad.log.error(
+                    "com.google.android.tradefed.account is not installed")
+                return False
+            ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                  self.wifi_network_pass)
+            ad.log.info("Add google account")
+            ad.ensure_screen_on()
+            ad.adb.shell(
+                'am instrument -w -e account "%s@gmail.com" -e password '
+                '"%s" -e sync true -e wait-for-checkin false '
+                'com.google.android.tradefed.account/.AddAccount' %
+                (ad.user_account, ad.user_password))
+            ad.log.info("Enable and activate tycho apk")
+            ad.adb.shell('pm enable %s' % _TYCHO_PKG)
+            if not self.start_tycho_init_activity(ad):
+                return False
+        return True
+
+    def start_service(self, ad, package, service_id, extras, action_type):
+        """Starts the specified service.
+
+        Args:
+          ad: (android_device.AndroidDevice) device to start activity on
+          package: (str) the package to start the service from
+          service_id: (str) service to start
+          extras: (dict) extras needed to specify with the activity id
+          action_type: The action type id to create the intent
+        """
+        ad.log.info('Starting service %s/.%s.', package, service_id)
+        intent = ad.droid.makeIntent(action_type, None, None, extras, [
+            'android.intent.category.DEFAULT'
+        ], package, package + '.' + service_id, _INTENT_FLAGS)
+        ad.droid.startServiceIntent(intent)
+
+    def start_activity(self, ad, package, activity_id, extras=None):
+        """Starts the specified activity.
+
+        Args:
+          ad: (android_device.AndroidDevice) device to start activity on
+          package: (str) the package to start
+          activity_id: (str) activity to start
+          extras: (dict) extras needed to specify with the activity id
+        """
+        ad.log.info('Starting activity %s/.%s.', package, activity_id)
+        intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras, [
+            'android.intent.category.DEFAULT'
+        ], package, package + '.' + activity_id, _INTENT_FLAGS)
+        ad.droid.startActivityIntent(intent, False)
+
+    def start_tycho_init_activity(self, ad):
+        """Start Tycho InitActivity.
+
+        For in-app Tycho activition (post-SUW tests), Tycho does not
+        automatically trigger OMADM process. This method is used to start
+        Tycho InitActivity before launching super network activation.
+
+        The device will finally stay on Sprint network if everything goes well.
+
+        Args:
+          ad: Android device need to start Tycho InitActivity.
+        """
+        extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
+        self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
+        time.sleep(60)
+        ad.send_keycode("TAB")
+        ad.send_keycode("TAB")
+        ad.send_keycode("ENTER")
+        time.sleep(2)
+        ad.send_keycode("TAB")
+        ad.send_keycode("ENTER")
+        for _ in range(10):
+            if ad.adb.getprop("gsm.sim.state") == "READY" and ad.adb.getprop(
+                    "gsm.sim.operator.alpha") == "Fi Network":
+                ad.log.info("SIM state is READY, SIM operator is Fi")
+                return True
+            time.sleep(30)
+
+    def start_tycho_activation(self, ad):
+        """Start the Tycho client and register to cellular network.
+
+        Starts Tycho within SUW:
+         - Tycho is expected to follow the in-SUW work flow:
+          - Tycho will perform TychoInit, handshake to server,
+            account configuration, etc
+          - If successful, Tycho will trigger a switch to Sprint Network
+          - If successful, Tycho will start OMA-DM activation sessions
+
+        The device will finally stay on Sprint network if everything goes well.
+
+        Args:
+          ad: Android device need to start Tycho activation.
+        """
+        extra = {'device_setup': True, 'has_account': True}
+        self.start_activity(ad, _TYCHO_PKG, TychoClassId.CARRIER_SETUP, extra)
+
+    def start_super_network_activation(self, ad):
+        """Start the Super-Network activation.
+
+        For in-app Tycho activition (post-SUW tests), this method starts
+        super-network activation after Tycho is initialized.
+
+        The device will finally stay on Sprint network if everything goes well.
+
+        Args:
+          ad: Android device need to start Tycho super network activation.
+        """
+        extra = {'in_setup_wizard': False, 'is_interactive': True}
+        self.start_service(ad, _TYCHO_PKG,
+                           TychoClassId.ACTIVATE_SUPER_NETWORK_SERVICE, extra,
+                           ActionTypeId.TYCHO_ACTIVATE_SUPER_NETWORK)
 
     def get_active_carrier(self, ad):
         """Gets the active carrier profile value from the device.
@@ -70,7 +228,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
     def set_active_carrier(self,
                            ad,
                            carrier,
-                           timeout=MAX_WAIT_TIME_NW_SELECTION,
+                           timeout=_MAX_WAIT_TIME,
                            check_interval=10):
         """Requests an active carrier to be set on the device sim.
 
@@ -174,7 +332,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
     def wait_for_carrier_switch_completed(self,
                                           ad,
                                           carrier,
-                                          timeout=MAX_WAIT_TIME_NW_SELECTION,
+                                          timeout=_MAX_WAIT_TIME,
                                           check_interval=10):
         """Wait for carrier switch to complete.
 
