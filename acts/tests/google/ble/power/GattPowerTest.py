@@ -133,7 +133,7 @@ class GattPowerTest(PowerBaseTest):
         return self.check_test_pass(current_avg, self.user_params[test_case])
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='8c5213fc-ffe8-4c32-bb63-1d2b7394dc0c')
+    @test_tracker_info(uuid='f14cc28b-54f2-4a87-9fa9-68f39bf96701')
     def test_power_for_60_sec_n_30_sec_idle_gatt_write(self):
         """Test power usage when do 60 sec GATT write & 30 sec idle
 
@@ -168,7 +168,7 @@ class GattPowerTest(PowerBaseTest):
             current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='fd682d46-89db-432d-aaa6-35ed63d6d764')
+    @test_tracker_info(uuid='41ca217e-161b-4899-a5b7-2d59d8dc7973')
     def test_power_for_60_min_non_stop_gatt_write(self):
         """Test power usage when do a single GATT write.
 
