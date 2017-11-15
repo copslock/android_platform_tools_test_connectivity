@@ -129,7 +129,7 @@ class BleScanPowerTest(PowerBaseTest):
         return self.check_test_pass(current_avg, self.user_params[test_case])
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='37556d99-c535-4fd7-a7e7-5b737379d007')
+    @test_tracker_info(uuid='1e8c793f-897d-4160-8ebf-fd1addcd9c71')
     def test_power_for_scan_w_low_latency(self):
         """Test power usage when scan with low latency.
 
@@ -157,7 +157,7 @@ class BleScanPowerTest(PowerBaseTest):
             self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='9245360a-07b8-48a5-b26a-50d3b2b6e2c0')
+    @test_tracker_info(uuid='83e37081-9f00-4b5f-ba1c-92136047fa83')
     def test_power_for_scan_w_balanced(self):
         """Test power usage when scan with balanced mode.
 
@@ -185,7 +185,7 @@ class BleScanPowerTest(PowerBaseTest):
             self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='9df99e3a-8cce-497a-b3d6-4ff6262e020e')
+    @test_tracker_info(uuid='cbf16414-3468-4f60-8a62-2a88556d7a87')
     def test_power_for_scan_w_low_power(self):
         """Test power usage when scan with low power.
 
@@ -213,7 +213,7 @@ class BleScanPowerTest(PowerBaseTest):
             self.IDLE_TIME_30, self.REPETITIONS_40, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='cceeaf88-0ead-43e7-a25a-97eed93d1049')
+    @test_tracker_info(uuid='0b1eaedb-4385-48ba-a175-7db79360aed8')
     def test_power_for_intervaled_scans_w_balanced(self):
         """Test power usage when intervaled scans with balanced mode
 
@@ -241,7 +241,7 @@ class BleScanPowerTest(PowerBaseTest):
             self.IDLE_TIME_5, self.REPETITIONS_360, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='5d20cdc2-876a-45b7-b3cf-064a37f0bb8a')
+    @test_tracker_info(uuid='90e6b341-9b11-4740-8ec1-dc605db93ec9')
     def test_power_for_intervaled_scans_w_low_latency(self):
         """Test power usage when intervaled scans with low latency mode
 
@@ -269,7 +269,7 @@ class BleScanPowerTest(PowerBaseTest):
             self.IDLE_TIME_5, self.REPETITIONS_360, current_test_case)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='5e526f85-77e7-4741-b8cd-7cdffb7daa16')
+    @test_tracker_info(uuid='cbf16414-3468-4f60-8a62-2a88556d7a87')
     def test_power_for_intervaled_scans_w_low_power(self):
         """Test power usage when intervaled scans with low power mode
 
