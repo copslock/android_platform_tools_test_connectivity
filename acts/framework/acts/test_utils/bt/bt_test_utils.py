@@ -226,6 +226,9 @@ def setup_multiple_devices_for_bt_test(android_devices):
 
         for a in android_devices:
             d = a.droid
+            # TODO: Create specific RPC command to instantiate
+            # BluetoothConnectionFacade. This is just a workaround.
+            d.bluetoothStartConnectionStateChangeMonitor("");
             setup_result = d.bluetoothSetLocalName(generate_id_by_size(4))
             if not setup_result:
                 a.log.error("Failed to set device name.")
