@@ -63,4 +63,5 @@ class AdbSideloadOtaToolTest(unittest.TestCase):
         device = get_mock_android_device()
         tool = adb_sideload_ota_tool.AdbSideloadOtaTool('')
         runner = ota_runner.SingleUseOtaRunner(tool, device, '', '')
+        runner.android_device.adb.getprop = mock.Mock(side_effect=['a', 'b'])
         runner.update()

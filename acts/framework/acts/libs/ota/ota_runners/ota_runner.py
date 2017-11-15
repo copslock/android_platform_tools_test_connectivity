@@ -33,12 +33,19 @@ class OtaRunner(object):
         self.serial = self.android_device.serial
 
     def _update(self):
+        old_info = self.android_device.adb.getprop('ro.build.fingerprint')
+        logging.info('Starting Update. Beginning build info: %s', old_info)
         logging.info('Stopping services.')
         self.android_device.stop_services()
         logging.info('Beginning tool.')
         self.ota_tool.update(self)
         logging.info('Tool finished. Waiting for boot completion.')
         self.android_device.wait_for_boot_completion()
+        new_info = self.android_device.adb.getprop('ro.build.fingerprint')
+        if not old_info or old_info == new_info:
+            raise OtaError('The device was not updated to a new build. '
+                           'Previous build: %s. New build: %s' % (old_info,
+                                                                  new_info))
         logging.info('Boot completed. Rooting adb.')
         self.android_device.root_adb()
         logging.info('Root complete. Installing new SL4A.')
