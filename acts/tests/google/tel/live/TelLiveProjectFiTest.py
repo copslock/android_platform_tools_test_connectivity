@@ -83,12 +83,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
                                            "account_util"):
-                acccount_util = self.user_params["account_util"]
-                if isinstance(acccount_util, list):
-                    acccount_util = acccount_util[0]
-                ad.log.info("Install account_util %s", acccount_util)
+                account_util = self.user_params["account_util"]
+                if isinstance(account_util, list):
+                    account_util = account_util[0]
+                ad.log.info("Install account_util %s", account_util)
                 ad.ensure_screen_on()
-                ad.adb.install("-r %s" % acccount_util, timeout=180)
+                ad.adb.install("-r %s" % account_util, timeout=180)
             if not ad.is_apk_installed("com.google.android.tradefed.account"):
                 ad.log.error(
                     "com.google.android.tradefed.account is not installed")
