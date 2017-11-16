@@ -37,11 +37,11 @@ class BtCmdLineTest(BluetoothBaseTest):
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
         if not "target_mac_address" in self.user_params.keys():
-            self.log.error(
-                "Missing mandatory user config \"target_mac_address\"!")
-            return False
-        self.target_mac_address = self.user_params["target_mac_address"].upper(
-        )
+            self.log.warning("Missing user config \"target_mac_address\"!")
+            self.target_mac_address = ""
+        else:
+            self.target_mac_address = self.user_params[
+                "target_mac_address"].upper()
 
         self.android_devices[0].droid.bluetoothSetLocalName("CMD LINE Test")
         if len(self.android_devices) > 1:
