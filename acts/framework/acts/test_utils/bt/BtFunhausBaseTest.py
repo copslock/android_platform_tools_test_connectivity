@@ -144,7 +144,7 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         while time.time() < end_time:
             if not self.ad.droid.bluetoothCheckState():
                 self.ad.log.error("Device {}'s Bluetooth state is off.".format(
-                    serial))
+                    self.ad.serial))
                 return False
             if self.ad.droid.bluetoothGetConnectedDevices() == 0:
                 self.ad.log.error(

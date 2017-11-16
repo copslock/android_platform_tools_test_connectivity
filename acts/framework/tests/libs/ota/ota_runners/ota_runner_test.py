@@ -67,12 +67,24 @@ class OtaRunnerTest(unittest.TestCase):
         device = mock.MagicMock()
         tool = MockOtaTool('mock_command')
         runner = OtaRunnerImpl(tool, device)
+        runner.android_device.adb.getprop = mock.Mock(side_effect=['a', 'b'])
         runner._update()
         device.stop_services.assert_called()
         device.wait_for_boot_completion.assert_called()
         device.start_services.assert_called()
         device.adb.install.assert_called()
         tool.assert_calls_equal(self, 1)
+
+    def test_update_fail_on_no_change_to_build(self):
+        device = mock.MagicMock()
+        tool = MockOtaTool('mock_command')
+        runner = OtaRunnerImpl(tool, device)
+        runner.android_device.adb.getprop = mock.Mock(side_effect=['a', 'a'])
+        try:
+            runner._update()
+            self.fail('Matching build fingerprints did not throw an error!')
+        except ota_runner.OtaError:
+            pass
 
     def test_init(self):
         device = mock.MagicMock()
