@@ -25,11 +25,13 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
+from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
@@ -41,7 +43,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.dut = self.android_devices[0]
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
+        fake_number = self.user_params.get("fake_emergency_number", "800")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -74,6 +76,19 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             if self.fake_emergency_number in existing:
                 return True
         return False
+
+    def change_qcril_emergency_source_mcc_table(self):
+        # This will add the fake number into emergency number list for a mcc
+        # in qcril. Please note, the fake number will be send as an emergency
+        # number by modem and reach the real 911 by this
+        qcril_database_path = self.dut.adb.shell("find /data -iname  qcril.db")
+        if not qcril_database_path: return
+        mcc = self.dut.droid.telephonyGetNetworkOperator()
+        mcc = mcc[:3]
+        self.dut.log.info("Add %s mcc %s in qcril_emergency_source_mcc_table")
+        self.dut.adb.shell(
+            "sqlite3 %s \"INSERT INTO qcril_emergency_source_mcc_table VALUES('%s','%s','','')\""
+            % (qcril_database_path, mcc, self.fake_emergency_number))
 
     def fake_emergency_call_test(self, by_emergency_dialer=True):
         if by_emergency_dialer:
