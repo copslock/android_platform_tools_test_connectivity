@@ -130,6 +130,20 @@ class GattClientLib():
             self.bluetooth_gatt, self.discovered_services_index,
             int(instance_id, 16), write_value)
 
+    def write_char_by_instance_id_value(self, line):
+        """GATT Client Write to Characteristic by instance ID"""
+        args = line.split()
+        if len(args) != 2:
+            self.log.info("2 Arguments required: [InstanceId] [Size]")
+            return
+        instance_id = args[0]
+        write_value = args[1]
+        self._setup_discovered_services_index()
+        self.dut.droid.gattClientWriteCharacteristicByInstanceId(
+            self.bluetooth_gatt, self.discovered_services_index,
+            int(instance_id, 16), [int(write_value)])
+
+
     def mod_write_char_by_instance_id(self, line):
         """GATT Client Write to Char that doesn't have write permission"""
         args = line.split()
