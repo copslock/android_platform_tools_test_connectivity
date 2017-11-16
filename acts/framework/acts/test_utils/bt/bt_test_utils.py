@@ -1152,6 +1152,11 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
     if not toggle_airplane_mode_by_adb(log, panu_dut, True):
         panu_dut.log.error("Failed to toggle airplane mode on")
         return False
+    if not toggle_airplane_mode_by_adb(log, panu_dut, False):
+        pan_dut.log.error("Failed to toggle airplane mode off")
+        return False
+    pan_dut.droid.bluetoothStartConnectionStateChangeMonitor("")
+    panu_dut.droid.bluetoothStartConnectionStateChangeMonitor("")
     if not bluetooth_enabled_check(panu_dut):
         return False
     if not bluetooth_enabled_check(pan_dut):
