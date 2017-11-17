@@ -172,7 +172,7 @@ class Sl4aClient(object):
     Connects to a remove device running sl4a. Before opening a connection
     a port forward must be setup to go over usb. This be done using
     adb.tcp_forward(). This is calling the shell command
-    adb forward <local> remote>. Once the port has been forwarded it can be
+    `adb forward <local> <remote>`. Once the port has been forwarded it can be
     used in this object as the port of communication.
 
     Attributes:
@@ -186,7 +186,7 @@ class Sl4aClient(object):
 
     _SOCKET_TIMEOUT = 60
 
-    def __init__(self, port=PORT, addr=HOST, uid=UNKNOWN_UID):
+    def __init__(self, serial, port=PORT, addr=HOST, uid=UNKNOWN_UID):
         """
         Args:
             port: int, The port this client should connect to.
@@ -195,6 +195,7 @@ class Sl4aClient(object):
                  new session.
         """
         self.port = port
+        self.serial = serial
         self.addr = addr
         self._lock = threading.Lock()
         self._counter = self._id_counter()
@@ -366,10 +367,10 @@ class Sl4aClient(object):
         if timeout:
             self.conn.settimeout(self._SOCKET_TIMEOUT)
         if result['error']:
-            logging.error("RPC method %s with error %s", method,
-                          result['error'])
-            raise Sl4aApiError("RPC call %s failed with error %s" %
-                               (method, result['error']))
+            err_msg = "RPC call %s to device '%s' failed with error %s" % (
+                method, self.serial, result['error'])
+            logging.error(err_msg)
+            raise Sl4aApiError(err_msg)
         if result['id'] != apiid:
             logging.error("RPC method %s with mismatched api id %s", method,
                           result['id'])
