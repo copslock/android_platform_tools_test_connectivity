@@ -2021,11 +2021,36 @@ def http_file_download_by_curl(ad,
         curl_cmd += " --retry %s" % retry
     curl_cmd += " --url %s > %s" % (url, file_path)
     try:
+        total_rx_bytes_before = ad.droid.getTotalRxBytes()
+        mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
         ad.adb.shell(curl_cmd, timeout=timeout)
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded to %s successfully", url, file_path)
+            total_rx_bytes_increased = ad.droid.getTotalRxBytes(
+            ) - total_rx_bytes_before
+            mobile_rx_bytes_increased = ad.droid.getMobileRxBytes(
+            ) - mobile_rx_bytes_before
+            ad.log.info(
+                "Mobile Rx increased %s after downloading file of size %s",
+                mobile_rx_bytes_increased, expected_file_size)
+            ad.log.info(
+                "Total Rx increased %s after downloading file of size %s",
+                total_rx_bytes_increased, expected_file_size)
+            if total_rx_bytes_increased < expected_file_size:
+                ad.log.warning(
+                    "Total Rx increased less than expected file size")
+                ad.data_accounting["Total_Rx_Accounting_Failure"] += 1
+            if getattr(ad, "on_mobile_data", False):
+                if mobile_rx_bytes_increased < expected_file_size:
+                    ad.log.warning(
+                        "Mobile Rx increased less than expected file size")
+                    ad.data_accounting["Mobile_Rx_Accounting_Failure"] += 1
+            else:
+                if mobile_rx_bytes_increased >= expected_file_size:
+                    ad.log.error("File download is consuming mobile data")
+                    return False
             return True
         else:
             ad.log.warning("Fail to download %s", url)
@@ -2066,6 +2091,8 @@ def http_file_download_by_chrome(ad,
     ad.force_stop_apk("com.android.chrome")
     ad.adb.shell("rm %s" % file_path, ignore_status=True)
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    total_rx_bytes_before = ad.droid.getTotalRxBytes()
+    mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
     ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
     open_url_by_adb(ad, url)
@@ -2077,6 +2104,29 @@ def http_file_download_by_chrome(ad,
             if remove_file_after_check:
                 ad.log.info("Remove the downloaded file %s", file_path)
                 ad.adb.shell("rm %s" % file_path, ignore_status=True)
+            total_rx_bytes_increased = ad.droid.getTotalRxBytes(
+            ) - total_rx_bytes_before
+            mobile_rx_bytes_increased = ad.droid.getMobileRxBytes(
+            ) - mobile_rx_bytes_before
+            ad.log.info(
+                "Mobile Rx increased %s after downloading file of size %s",
+                mobile_rx_bytes_increased, expected_file_size)
+            ad.log.info(
+                "Total Rx increased %s after downloading file of size %s",
+                total_rx_bytes_increased, expected_file_size)
+            if total_rx_bytes_increased < expected_file_size:
+                ad.log.warning(
+                    "Total Rx increased less than expected file size")
+                ad.data_accounting["Total_Rx_Accounting_Failure"] += 1
+            if getattr(ad, "on_mobile_data", False):
+                if mobile_rx_bytes_increased < expected_file_size:
+                    ad.log.warning(
+                        "Mobile Rx increased less than expected file size")
+                    ad.data_accounting["Mobile_Rx_Accounting_Failure"] += 1
+            else:
+                if mobile_rx_bytes_increased >= expected_file_size:
+                    ad.log.error("File download is consuming mobile data")
+                    return False
             return True
         elif _check_file_existance(ad, "%s.crdownload" % file_path):
             ad.log.info("Chrome is downloading %s", url)
@@ -4058,10 +4108,12 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
     wifi_info = ad.droid.wifiGetConnectionInfo()
     if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
+        ad.on_mobile_data = False
         return True
     else:
         ad.log.info("Wifi is not connected to %s", wifi_ssid)
         ad.log.debug("Wifi connection_info=%s", wifi_info)
+        ad.on_mobile_data = True
         return False
 
 
@@ -4115,6 +4167,7 @@ def forget_all_wifi_networks(log, ad):
         boolean success (True) or failure (False)
     """
     if not ad.droid.wifiGetConfiguredNetworks():
+        ad.on_mobile_data = True
         return True
     try:
         old_state = ad.droid.wifiCheckState()
@@ -4123,6 +4176,7 @@ def forget_all_wifi_networks(log, ad):
     except Exception as e:
         log.error("forget_all_wifi_networks with exception: %s", e)
         return False
+    ad.on_mobile_data = True
     return True
 
 
@@ -4157,6 +4211,7 @@ def set_wifi_to_default(log, ad):
     """
     ad.droid.wifiFactoryReset()
     ad.droid.wifiToggleState(False)
+    ad.on_mobile_data = True
 
 
 def wifi_toggle_state(log, ad, state, retries=3):
@@ -4172,6 +4227,7 @@ def wifi_toggle_state(log, ad, state, retries=3):
     """
     for i in range(retries):
         if wifi_test_utils.wifi_toggle_state(ad, state, assert_on_fail=False):
+            ad.on_mobile_data = not state
             return True
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
     return False
@@ -4371,7 +4427,6 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     out = ad.adb.shell("settings list system | grep volume")
     for attr in re.findall(r"(volume_.*)=\d+", out):
         ad.adb.shell("settings put system %s 0" % attr)
-
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 

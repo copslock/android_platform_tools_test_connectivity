@@ -18,6 +18,7 @@ from builtins import str
 from builtins import open
 from datetime import datetime
 
+import collections
 import logging
 import os
 import re
@@ -403,6 +404,7 @@ class AndroidDevice:
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
+        self.data_accounting = collections.defaultdict(int)
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
