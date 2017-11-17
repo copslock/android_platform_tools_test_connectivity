@@ -2974,14 +2974,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 self.log.error("Device failed to reselect in %s.",
                                MAX_WAIT_TIME_NW_SELECTION)
                 return False
-        else:
-            ensure_phones_default_state(self.log, self.android_devices)
 
-        self.android_devices[0].droid.telephonyToggleDataConnection(True)
-        if not wait_for_cell_data_connection(self.log, self.android_devices[0],
-                                             True):
-            self.log.error("Data connection is not on cell")
-            return False
+            self.android_devices[0].droid.telephonyToggleDataConnection(True)
+            if not wait_for_cell_data_connection(
+                    self.log, self.android_devices[0], True):
+                self.log.error("Data connection is not on cell")
+                return False
 
         if not verify_http_connection(self.log, self.android_devices[0]):
             self.log.error("HTTP connection is not available")
