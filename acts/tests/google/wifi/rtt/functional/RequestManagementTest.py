@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import random
 import time
 
 from acts import asserts
@@ -49,7 +50,7 @@ class RequestManagementTest(RttBaseTest):
     dut = self.android_devices[0]
     max_peers = dut.droid.wifiRttMaxPeersInRequest()
 
-    all_uids = [10, 20, 30]
+    all_uids = [1000, 20, 30] # 1000 = System Server (makes requests foreground)
     some_uids = [20, 30]
 
     aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
@@ -94,3 +95,37 @@ class RequestManagementTest(RttBaseTest):
     for i in range(len(group3_ids)):
       rutils.wait_for_event(dut, rutils.decorate_event(
           rconsts.EVENT_CB_RANGING_ON_RESULT, group3_ids[i]))
+
+  def test_throttling(self):
+    """Request sequential range operations using a bogus UID (which will
+    translate as a throttled process) and similarly using the ACTS/sl4a as
+    the source (a foreground/unthrottled process)."""
+    dut = self.android_devices[0]
+    max_peers = dut.droid.wifiRttMaxPeersInRequest()
+
+    # Need to use a random number since the system keeps states and so the
+    # background uid will be throttled on the next run of this script
+    fake_uid = [random.randint(10, 9999)]
+
+    aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
+    dut.log.info("RTT Supporting APs=%s", aps)
+
+    asserts.assert_true(
+        len(aps) > 0,
+        "Need at least one AP which supports 802.11mc!")
+    if len(aps) > max_peers:
+      aps = aps[0:max_peers]
+
+    id1 = dut.droid.wifiRttStartRangingToAccessPoints(aps) # as ACTS/sl4a
+    id2 = dut.droid.wifiRttStartRangingToAccessPoints(aps, fake_uid)
+    id3 = dut.droid.wifiRttStartRangingToAccessPoints(aps, fake_uid)
+    id4 = dut.droid.wifiRttStartRangingToAccessPoints(aps) # as ACTS/sl4a
+
+    rutils.wait_for_event(dut, rutils.decorate_event(
+      rconsts.EVENT_CB_RANGING_ON_RESULT, id1))
+    rutils.wait_for_event(dut, rutils.decorate_event(
+        rconsts.EVENT_CB_RANGING_ON_RESULT, id2))
+    rutils.wait_for_event(dut, rutils.decorate_event(
+        rconsts.EVENT_CB_RANGING_ON_FAIL, id3))
+    rutils.wait_for_event(dut, rutils.decorate_event(
+        rconsts.EVENT_CB_RANGING_ON_RESULT, id4))
