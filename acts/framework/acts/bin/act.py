@@ -135,9 +135,9 @@ def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
         try:
             ret = _run_test(c, test_identifiers, repeat)
             ok = ok and ret
-        except:
-            print("Exception occurred when executing test bed %s" %
-                  c[keys.Config.key_testbed.value])
+        except Exception as e:
+            print("Exception occurred when executing test bed %s. %s" %
+                  (c[keys.Config.key_testbed.value], e))
     return ok
 
 
