@@ -1060,7 +1060,7 @@ class AndroidDevice:
             Sl4aException: Something is wrong with sl4a and it returned an
             existing uid to a new session.
         """
-        droid = sl4a_client.Sl4aClient(port=self.h_port)
+        droid = sl4a_client.Sl4aClient(self.serial, port=self.h_port)
         droid.open()
         if droid.uid in self._droid_sessions:
             raise sl4a_client.Sl4aException(
@@ -1085,7 +1085,8 @@ class AndroidDevice:
         """
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
-        droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
+        droid = sl4a_client.Sl4aClient(
+            self.serial, port=self.h_port, uid=session_id)
         self.log.info("Open sl4a session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
