@@ -20,17 +20,15 @@ This test script exercises different onLost/onFound scenarios.
 from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_callback_types
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
+from acts.test_utils.bt.BleEnum import ScanSettingsCallbackType
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchMode
 from acts.test_utils.bt.BleEnum import ScanSettingsMatchNum
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_match_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_match_nums
-from acts.test_utils.bt.bt_constants import adv_succ
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.bt_test_utils import adv_succ
 from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class BleOnLostOnFoundTest(BluetoothBaseTest):
@@ -57,7 +55,7 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
     def _start_generic_advertisement_include_device_name(self):
         self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
-            ble_advertise_settings_modes['low_latency'])
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value)
         advertise_data = self.adv_ad.droid.bleBuildAdvertiseData()
         advertise_settings = self.adv_ad.droid.bleBuildAdvertiseSettings()
         advertise_callback = self.adv_ad.droid.bleGenBleAdvertiseCallback()
@@ -109,14 +107,14 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         filter_list = self.scn_ad.droid.bleGenFilterList()
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
-        self.scn_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
-            'low_latency'])
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         self.scn_ad.droid.bleSetScanSettingsCallbackType(
-            ble_scan_settings_callback_types['found_and_lost'])
+            ScanSettingsCallbackType.CALLBACK_TYPE_FOUND_AND_LOST.value)
         self.scn_ad.droid.bleSetScanSettingsMatchMode(
-            ble_scan_settings_match_modes['aggresive'])
+            ScanSettingsMatchMode.AGGRESIVE.value)
         self.scn_ad.droid.bleSetScanSettingsNumOfMatches(
-            ble_scan_settings_match_nums['one'])
+            ScanSettingsMatchNum.MATCH_NUM_ONE_ADVERTISEMENT.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
@@ -127,23 +125,21 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 3)
         found_callback_type = event['data']['CallbackType']
-        if event['data']['CallbackType'] != ble_scan_settings_callback_types[
-                'first_match']:
+        if event['data'][
+                'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
             self.log.info(
                 "Found Callbacreset_bluetoothkType:{}, Expected CallbackType:{}".
-                format(found_callback_type, ble_scan_settings_callback_types[
-                    'first_match']))
+                format(found_callback_type, ScanSettingsCallbackType.
+                       CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
-        if found_callback_type != ble_scan_settings_callback_types[
-                'match_lost']:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type, ble_scan_settings_callback_types[
-                        'match_lost']))
+        if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True
 
@@ -179,14 +175,14 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         filter_list = self.scn_ad.droid.bleGenFilterList()
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
-        self.scn_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
-            'low_latency'])
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         self.scn_ad.droid.bleSetScanSettingsCallbackType(
-            ble_scan_settings_callback_types['found_and_lost'])
+            ScanSettingsCallbackType.CALLBACK_TYPE_FOUND_AND_LOST.value)
         self.scn_ad.droid.bleSetScanSettingsMatchMode(
-            ble_scan_settings_match_modes['sticky'])
+            ScanSettingsMatchMode.STICKY.value)
         self.scn_ad.droid.bleSetScanSettingsNumOfMatches(
-            ble_scan_settings_match_nums['one'])
+            ScanSettingsMatchNum.MATCH_NUM_ONE_ADVERTISEMENT.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
@@ -197,23 +193,20 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 3)
         found_callback_type = event['data']['CallbackType']
-        if event['data']['CallbackType'] != ble_scan_settings_callback_types[
-                'first_match']:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type, ble_scan_settings_callback_types[
-                        'first_match']))
+        if event['data'][
+                'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
-        if found_callback_type != ble_scan_settings_callback_types[
-                'match_lost']:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type, ble_scan_settings_callback_types[
-                        'match_lost']))
+        if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True
 
@@ -249,14 +242,14 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         filter_list = self.scn_ad.droid.bleGenFilterList()
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
-        self.scn_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
-            'low_latency'])
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         self.scn_ad.droid.bleSetScanSettingsCallbackType(
-            ble_scan_settings_callback_types['found_and_lost'])
+            ScanSettingsCallbackType.CALLBACK_TYPE_FOUND_AND_LOST.value)
         self.scn_ad.droid.bleSetScanSettingsMatchMode(
-            ble_scan_settings_match_modes['aggresive'])
+            ScanSettingsMatchMode.AGGRESIVE.value)
         self.scn_ad.droid.bleSetScanSettingsNumOfMatches(
-            ble_scan_settings_match_nums['few'])
+            ScanSettingsMatchNum.MATCH_NUM_FEW_ADVERTISEMENT.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleBuildScanFilter(filter_list)
@@ -267,22 +260,19 @@ class BleOnLostOnFoundTest(BluetoothBaseTest):
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 3)
         found_callback_type = event['data']['CallbackType']
-        if event['data']['CallbackType'] != ble_scan_settings_callback_types[
-                'first_match']:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type, ble_scan_settings_callback_types[
-                        'first_match']))
+        if event['data'][
+                'CallbackType'] != ScanSettingsCallbackType.CALLBACK_TYPE_FIRST_MATCH.value:
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_FIRST_MATCH.value))
             return False
         self.adv_ad.droid.bleStopBleAdvertising(adv_callback)
         event = self.scn_ad.ed.pop_event(
             scan_result.format(scan_callback), self.default_timeout * 4)
         found_callback_type = event['data']['CallbackType']
-        if found_callback_type != ble_scan_settings_callback_types[
-                'match_lost']:
-            self.log.info(
-                "Found CallbackType:{}, Expected CallbackType:{}".format(
-                    found_callback_type, ble_scan_settings_callback_types[
-                        'match_lost']))
+        if found_callback_type != ScanSettingsCallbackType.CALLBACK_TYPE_MATCH_LOST.value:
+            self.log.info("Found CallbackType:{}, Expected CallbackType:{}".
+                          format(found_callback_type, ScanSettingsCallbackType.
+                                 CALLBACK_TYPE_MATCH_LOST.value))
             return False
         return True

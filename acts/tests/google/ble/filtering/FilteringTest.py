@@ -21,17 +21,17 @@ import time
 from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
-from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
-from acts.test_utils.bt.bt_constants import java_integer
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
-from acts.test_utils.bt.bt_constants import small_timeout
-from acts.test_utils.bt.bt_constants import adv_fail
-from acts.test_utils.bt.bt_constants import adv_succ
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseMode
+from acts.test_utils.bt.BleEnum import AdvertiseSettingsAdvertiseTxPower
+from acts.test_utils.bt.BleEnum import JavaInteger
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.BleEnum import ScanSettingsScanMode
+from acts.test_utils.bt.bt_test_utils import TIMEOUT_SMALL
+from acts.test_utils.bt.bt_test_utils import adv_fail
+from acts.test_utils.bt.bt_test_utils import adv_succ
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
-from acts.test_utils.bt.bt_constants import scan_result
+from acts.test_utils.bt.bt_test_utils import scan_result
 
 
 class FilteringTest(BluetoothBaseTest):
@@ -107,7 +107,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -145,7 +146,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -183,7 +185,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -221,7 +224,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -259,7 +263,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -297,7 +302,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -335,7 +341,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -373,7 +380,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -411,7 +419,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -449,7 +458,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -487,7 +497,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -525,7 +536,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -563,7 +575,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -601,7 +614,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -639,7 +653,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -677,7 +692,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -715,7 +731,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -753,7 +770,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -791,7 +809,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -829,7 +848,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -867,7 +887,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -905,7 +926,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -943,7 +965,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -981,7 +1004,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1019,7 +1043,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1057,7 +1082,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1095,7 +1121,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1133,7 +1160,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1171,7 +1199,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1209,7 +1238,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1247,7 +1277,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1285,7 +1316,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1323,7 +1355,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1361,7 +1394,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1399,7 +1433,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1437,7 +1472,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1475,7 +1511,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1513,7 +1550,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1551,7 +1589,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1589,7 +1628,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1627,7 +1667,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1665,7 +1706,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1703,7 +1745,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1741,7 +1784,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1779,7 +1823,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1817,7 +1862,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1855,7 +1901,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1893,7 +1940,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1931,7 +1979,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -1969,7 +2018,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2007,7 +2057,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2045,7 +2096,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2083,7 +2135,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2121,7 +2174,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2159,7 +2213,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2197,7 +2252,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2235,7 +2291,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2273,7 +2330,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2311,7 +2369,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2349,7 +2408,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2387,7 +2447,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2425,7 +2486,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2463,7 +2525,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2501,7 +2564,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2539,7 +2603,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2577,7 +2642,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2615,7 +2681,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2653,7 +2720,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2691,7 +2759,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2729,7 +2798,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2767,7 +2837,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2805,7 +2876,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2843,7 +2915,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2881,7 +2954,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2919,7 +2993,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2957,7 +3032,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -2995,7 +3071,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3033,7 +3110,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3071,7 +3149,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3109,7 +3188,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3147,7 +3227,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3185,7 +3266,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3223,7 +3305,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3261,7 +3344,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3299,7 +3383,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3337,7 +3422,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3375,7 +3461,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3413,7 +3500,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3451,7 +3539,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3489,7 +3578,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3527,7 +3617,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3565,7 +3656,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3603,7 +3695,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3641,7 +3734,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3679,7 +3773,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3717,7 +3812,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3755,7 +3851,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3793,7 +3890,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3831,7 +3929,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3869,7 +3968,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3907,7 +4007,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3945,7 +4046,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -3983,7 +4085,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4021,7 +4124,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4059,7 +4163,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4097,7 +4202,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4135,7 +4241,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4173,7 +4280,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4211,8 +4319,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4250,8 +4359,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4289,8 +4399,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4328,8 +4439,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4367,8 +4479,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4406,8 +4519,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4445,8 +4559,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4484,8 +4599,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4523,8 +4639,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4562,8 +4679,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4601,8 +4719,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4640,8 +4759,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4679,8 +4799,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4718,8 +4839,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4757,8 +4879,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4796,8 +4919,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4835,8 +4959,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4874,8 +4999,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4913,8 +5039,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4952,8 +5079,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -4991,8 +5119,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5030,8 +5159,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5069,8 +5199,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5108,8 +5239,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5147,8 +5279,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5186,8 +5319,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5225,8 +5359,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5264,8 +5399,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5303,8 +5439,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5342,8 +5479,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5381,8 +5519,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5420,8 +5559,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5459,8 +5599,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5498,8 +5639,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5537,8 +5679,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5576,8 +5719,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5615,8 +5759,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5654,8 +5799,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5693,8 +5839,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5732,8 +5879,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5771,8 +5919,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5810,8 +5959,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5849,8 +5999,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5888,8 +6039,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5927,8 +6079,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -5966,8 +6119,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6005,8 +6159,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6044,8 +6199,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6083,8 +6239,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6122,8 +6279,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6161,8 +6319,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6200,8 +6359,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6239,8 +6399,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6278,8 +6439,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6317,8 +6479,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6356,8 +6519,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6395,8 +6559,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6434,8 +6599,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6473,8 +6639,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6512,8 +6679,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6551,8 +6719,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6590,8 +6759,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6629,8 +6799,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6668,8 +6839,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6707,8 +6879,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6746,8 +6919,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6785,8 +6959,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6824,8 +6999,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6863,8 +7039,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6902,8 +7079,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6941,8 +7119,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -6980,8 +7159,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7019,8 +7199,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7058,8 +7239,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7097,8 +7279,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7136,8 +7319,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7175,8 +7359,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7214,8 +7399,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7253,8 +7439,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7292,8 +7479,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7331,8 +7519,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7370,8 +7559,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7409,8 +7599,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7448,8 +7639,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7487,8 +7679,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7526,8 +7719,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7565,8 +7759,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7604,8 +7799,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7643,8 +7839,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7682,8 +7879,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7721,8 +7919,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7760,8 +7959,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7799,8 +7999,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7838,8 +8039,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7877,8 +8079,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7916,8 +8119,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7955,8 +8159,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -7994,8 +8199,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8033,8 +8239,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8072,8 +8279,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8111,8 +8319,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8150,8 +8359,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8189,8 +8399,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8228,8 +8439,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8267,8 +8479,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8306,8 +8519,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_medium
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8345,8 +8559,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8384,8 +8599,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_small_2
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8416,10 +8632,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8450,10 +8668,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8484,10 +8704,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8518,10 +8740,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8552,10 +8776,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8586,10 +8812,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8620,10 +8848,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8654,10 +8884,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8688,10 +8920,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8722,10 +8956,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8756,10 +8992,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8790,10 +9028,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8824,10 +9064,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8858,10 +9100,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8892,10 +9136,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8926,10 +9172,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8960,10 +9208,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -8994,10 +9244,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9028,10 +9280,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9062,10 +9316,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9096,10 +9352,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9130,10 +9388,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9164,10 +9424,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9198,10 +9460,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9232,10 +9496,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9266,10 +9532,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9300,10 +9568,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9334,10 +9604,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9368,10 +9640,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9402,10 +9676,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9436,10 +9712,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9470,10 +9748,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': True,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9504,10 +9784,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9538,10 +9820,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9572,10 +9856,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9606,10 +9892,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9640,10 +9928,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9674,10 +9964,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9708,10 +10000,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9742,10 +10036,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9776,10 +10072,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9810,10 +10108,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9844,10 +10144,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9878,10 +10180,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9912,10 +10216,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9946,10 +10252,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -9980,10 +10288,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10014,10 +10324,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['balanced']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_BALANCED.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10048,10 +10360,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10082,10 +10396,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10116,10 +10432,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10150,10 +10468,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10184,10 +10504,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10218,10 +10540,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10252,10 +10576,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10286,10 +10612,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['opportunistic'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10320,10 +10648,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10354,10 +10684,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10388,10 +10720,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10422,10 +10756,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['balanced'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_BALANCED.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10456,10 +10792,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['high'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_HIGH.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10490,10 +10828,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['low'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10524,10 +10864,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['ultra_low'],
+            'mode': AdvertiseSettingsAdvertiseTxPower.
+            ADVERTISE_TX_POWER_ULTRA_LOW.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10558,10 +10900,12 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_tx_powers['medium'],
+            'mode':
+            AdvertiseSettingsAdvertiseTxPower.ADVERTISE_TX_POWER_MEDIUM.value,
             'is_connectable': False,
-            'scan_mode': ble_scan_settings_modes['low_power'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_POWER.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10592,7 +10936,8 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_tx_power_level': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10623,7 +10968,8 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'filter_device_address': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10657,7 +11003,8 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data': self.manu_sepecific_data_small
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10691,7 +11038,8 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data': self.manu_sepecific_data_large
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10726,7 +11074,8 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data_mask': [1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10760,7 +11109,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_large
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10794,7 +11144,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [13]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10828,7 +11179,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [11, 14, 50]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10862,7 +11214,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [16, 22, 11]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10896,7 +11249,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [2, 9, 54]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10930,7 +11284,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [69, 11, 50]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10964,7 +11319,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [12, 11, 21]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -10998,7 +11354,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [12, 12, 44]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11032,7 +11389,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [4, 54, 1]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11066,7 +11424,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [33, 22, 44]
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11100,7 +11459,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11134,7 +11494,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11168,7 +11529,8 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11199,7 +11561,8 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'mode': ble_advertise_settings_modes['low_latency']
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11230,8 +11593,9 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_tx_power_level': True}
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11262,8 +11626,9 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'filter_device_address': True}
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11297,8 +11662,9 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data': self.manu_sepecific_data_small
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11332,8 +11698,9 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data': self.manu_sepecific_data_large
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11368,8 +11735,9 @@ class FilteringTest(BluetoothBaseTest):
             'manufacturer_specific_data_mask': [1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11403,8 +11771,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': self.service_data_large
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11438,8 +11807,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [13]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11473,8 +11843,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [11, 14, 50]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11508,8 +11879,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [16, 22, 11]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11543,8 +11915,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [2, 9, 54]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11578,8 +11951,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [69, 11, 50]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11613,8 +11987,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [12, 11, 21]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11648,8 +12023,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [12, 12, 44]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11683,8 +12059,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [4, 54, 1]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11718,8 +12095,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_data': [33, 22, 44]
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11753,8 +12131,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11788,8 +12167,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11823,8 +12203,9 @@ class FilteringTest(BluetoothBaseTest):
             'service_mask': '00000000-0000-1000-8000-00805f9b34fb'
         }
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11855,8 +12236,9 @@ class FilteringTest(BluetoothBaseTest):
         """
         filters = {'include_device_name': True}
         settings_in_effect = {
-            'scan_mode': ble_scan_settings_modes['low_latency'],
-            'mode': ble_advertise_settings_modes['low_latency']
+            'scan_mode': ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value,
+            'mode':
+            AdvertiseSettingsAdvertiseMode.ADVERTISE_MODE_LOW_LATENCY.value
         }
         return self._magic((filters, settings_in_effect))
 
@@ -11933,9 +12315,9 @@ class FilteringTest(BluetoothBaseTest):
             test_result = False
         if 'tx_power_level' in settings_in_effect.keys():
             if (event['data']['SettingsInEffect']['txPowerLevel'] ==
-                    java_integer['min']):
+                    JavaInteger.MIN.value):
                 self.log.error("Expected tx power level was not meant to be: "
-                               "{}".format(java_integer['min']))
+                               "{}".format(JavaInteger.MIN.value))
                 test_result = False
         elif (event['data']['SettingsInEffect']['txPowerLevel'] !=
               self.default_tx_power_level):
@@ -12030,12 +12412,12 @@ class FilteringTest(BluetoothBaseTest):
             generate_ble_advertise_objects(self.adv_ad.droid))
         if ('scan_mode' in settings_in_effect and
                 settings_in_effect['scan_mode'] !=
-                ble_scan_settings_modes['opportunistic']):
+                ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
             self.scn_ad.droid.bleSetScanSettingsScanMode(settings_in_effect[
                 'scan_mode'])
         else:
             self.scn_ad.droid.bleSetScanSettingsScanMode(
-                ble_scan_settings_modes['low_latency'])
+                ScanSettingsScanMode.SCAN_MODE_LOW_LATENCY.value)
         scan_settings = self.scn_ad.droid.bleBuildScanSetting()
         scan_callback = self.scn_ad.droid.bleGenScanCallback()
         self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings,
@@ -12044,14 +12426,14 @@ class FilteringTest(BluetoothBaseTest):
         scan_settings2, scan_callback2 = None, None
         if ('scan_mode' in settings_in_effect and
                 settings_in_effect['scan_mode'] ==
-                ble_scan_settings_modes['opportunistic']):
+                ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value):
             opportunistic = True
             scan_settings2 = self.scn_ad.droid.bleBuildScanSetting()
             scan_callback2 = self.scn_ad.droid.bleGenScanCallback()
             self.scn_ad.droid.bleStartBleScan(filter_list, scan_settings2,
                                               scan_callback2)
             self.scn_ad.droid.bleSetScanSettingsScanMode(
-                ble_scan_settings_modes['opportunistic'])
+                ScanSettingsScanMode.SCAN_MODE_OPPORTUNISTIC.value)
         self.adv_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
         regex = "(" + adv_succ.format(
@@ -12060,7 +12442,7 @@ class FilteringTest(BluetoothBaseTest):
         self.log.debug(regex)
         try:
             event = self.adv_ad.ed.pop_events(regex, self.default_timeout,
-                                              small_timeout)
+                                              TIMEOUT_SMALL)
         except Empty:
             self.adv_ad.log.error("Failed to get success or failed event.")
             return False

@@ -58,9 +58,8 @@ class BtFunhausTest(BtFunhausBaseTest):
         self.start_playing_music_on_all_devices()
 
         sleep_interval = 120
-        #twelve_hours_in_seconds = 43200
-        one_hour_in_seconds = 3600
-        end_time = time.time() + one_hour_in_seconds
+        twelve_hours_in_seconds = 43200
+        end_time = time.time() + twelve_hours_in_seconds
         status, bluetooth_off_list, device_not_connected_list = \
             self.monitor_music_play_util_deadline(end_time, sleep_interval)
         if not status:

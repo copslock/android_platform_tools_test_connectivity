@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#   Copyright 2017 - The Android Open Source Project
+#   Copyright 2016 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ from acts.controllers.relay_lib.helpers import validate_key
 from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.fugu_remote import FuguRemote
-from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 
 
 class RelayRig:
@@ -49,7 +48,6 @@ class RelayRig:
     _device_constructors = {
         'GenericRelayDevice': lambda x, rig: GenericRelayDevice(x, rig),
         'FuguRemote': lambda x, rig: FuguRemote(x, rig),
-        'SonyXB2Speaker': lambda x, rig: SonyXB2Speaker(x, rig),
     }
 
     def __init__(self, config):

@@ -296,7 +296,7 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
         wifi_toggle_state(log, ad, False)
 
 
-def airplane_mode_test(log, ad, retries=3):
+def airplane_mode_test(log, ad):
     """ Test airplane mode basic on Phone and Live SIM.
 
     Ensure phone attach, data on, WiFi off and verify Internet.
@@ -323,16 +323,9 @@ def airplane_mode_test(log, ad, retries=3):
         if not toggle_airplane_mode(log, ad, False):
             ad.log.error("Failed initial attach")
             return False
-        for i in range(retries):
-            if verify_internet_connection(log, ad):
-                ad.log.info("Data available on cell.")
-                break
-            elif i == retries - 1:
-                ad.log.error("Data not available on cell.")
-                return False
-            else:
-                ad.log.warning("Attempt %d Data not available on cell" %
-                               (i + 1))
+        if not verify_internet_connection(log, ad):
+            ad.log.error("Data not available on cell.")
+            return False
 
         log.info("Step2: enable airplane mode and ensure detach")
         if not toggle_airplane_mode(log, ad, True):
@@ -357,17 +350,7 @@ def airplane_mode_test(log, ad, retries=3):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         log.info("Step4 verify internet")
-        for i in range(retries):
-            if verify_internet_connection(log, ad):
-                ad.log.info("Data available on cell.")
-                break
-            elif i == retries - 1:
-                ad.log.error("Data not available on cell.")
-                return False
-            else:
-                ad.log.warning("Attempt %d Data not available on cell" %
-                               (i + 1))
-        return True
+        return verify_internet_connection(log, ad)
     finally:
         toggle_airplane_mode(log, ad, False)
 

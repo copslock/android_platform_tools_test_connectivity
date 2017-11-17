@@ -35,7 +35,7 @@ class BtMetricsBaseTest(BluetoothBaseTest):
         :return: True on success, False on failure
         """
         super(BtMetricsBaseTest, self).setup_class()
-        self.bluetooth_proto_path = self.user_params["bluetooth_proto_path"][0]
+        self.bluetooth_proto_path = self.user_params["bluetooth_proto_path"]
         if not os.path.isfile(self.bluetooth_proto_path):
             try:
                 self.bluetooth_proto_path = "{}/bluetooth.proto".format(

@@ -218,11 +218,7 @@ def load_config(file_full_path):
         A JSON object.
     """
     with open(file_full_path, 'r') as f:
-        try:
-            conf = json.load(f)
-        except Exception as e:
-            logging.error("Exception error to load %s: %s", f, e)
-            raise
+        conf = json.load(f)
         return conf
 
 
@@ -588,7 +584,8 @@ def enable_doze(ad):
     ad.adb.shell("dumpsys deviceidle force-idle")
     ad.droid.goToSleepNow()
     time.sleep(5)
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
+        'utf-8')
     if not adb_shell_result.startswith(DozeModeStatus.IDLE):
         info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
         print(info)
@@ -608,7 +605,8 @@ def disable_doze(ad):
     """
     ad.adb.shell("dumpsys deviceidle disable")
     ad.adb.shell("dumpsys battery reset")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get deep").decode(
+        'utf-8')
     if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
         info = ("dumpsys deviceidle get deep: {}".format(adb_shell_result))
         print(info)
@@ -631,7 +629,8 @@ def enable_doze_light(ad):
     time.sleep(5)
     ad.adb.shell("cmd deviceidle enable light")
     ad.adb.shell("cmd deviceidle step light")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
+        'utf-8')
     if not adb_shell_result.startswith(DozeModeStatus.IDLE):
         info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
         print(info)
@@ -651,7 +650,8 @@ def disable_doze_light(ad):
     """
     ad.adb.shell("dumpsys battery reset")
     ad.adb.shell("cmd deviceidle disable light")
-    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light")
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get light").decode(
+        'utf-8')
     if not adb_shell_result.startswith(DozeModeStatus.ACTIVE):
         info = ("dumpsys deviceidle get light: {}".format(adb_shell_result))
         print(info)
@@ -803,7 +803,7 @@ def adb_shell_ping(ad, count=120, dest_ip="www.google.com", timeout=200,
             return False
         return True
     except Exception as e:
-        ad.log.warning("Ping Test to %s failed with exception %s", dest_ip, e)
+        ad.log.warn("Ping Test to %s failed with exception %s", dest_ip, e)
         return False
     finally:
         ad.adb.shell("rm /data/ping.txt", timeout=10, ignore_status=True)

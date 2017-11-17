@@ -20,13 +20,13 @@ This test script exercises different GATT write procedures.
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.GattConnectedBaseTest import GattConnectedBaseTest
-from acts.test_utils.bt.bt_constants import gatt_characteristic
-from acts.test_utils.bt.bt_constants import gatt_descriptor
-from acts.test_utils.bt.bt_constants import gatt_event
-from acts.test_utils.bt.bt_constants import gatt_cb_strings
-from acts.test_utils.bt.bt_constants import gatt_connection_priority
-from acts.test_utils.bt.bt_constants import gatt_characteristic_attr_length
-from acts.test_utils.bt.bt_constants import gatt_mtu_size
+from acts.test_utils.bt.GattEnum import GattCharacteristic
+from acts.test_utils.bt.GattEnum import GattDescriptor
+from acts.test_utils.bt.GattEnum import GattEvent
+from acts.test_utils.bt.GattEnum import GattCbStrings
+from acts.test_utils.bt.GattEnum import GattConnectionPriority
+from acts.test_utils.bt.GattEnum import GattCharacteristicAttrLength
+from acts.test_utils.bt.GattEnum import MtuSize
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
 
 
@@ -62,13 +62,13 @@ class GattWriteTest(GattConnectedBaseTest):
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_default'])
+            GattCharacteristic.WRITE_TYPE_DEFAULT.value)
 
         self.cen_ad.droid.gattClientWriteCharacteristic(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-        event = self._server_wait(gatt_event['char_write_req'])
+        event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
 
         request_id = event['data']['requestId']
         self.assertEqual(True, event['data']['responseNeeded'],
@@ -84,7 +84,7 @@ class GattWriteTest(GattConnectedBaseTest):
         self.per_ad.droid.gattServerSendResponse(
             self.gatt_server, bt_device_id, request_id, status, offset, [])
 
-        event = self._client_wait(gatt_event['char_write'])
+        event = self._client_wait(GattEvent.CHAR_WRITE)
         self.assertEqual(status, event["data"]["Status"],
                          "Write status should be 0")
         # Write response doesn't carry any data expcept status
@@ -123,7 +123,7 @@ class GattWriteTest(GattConnectedBaseTest):
             self.test_service_index, self.WRITABLE_CHAR_UUID,
             self.WRITABLE_DESC_UUID)
 
-        event = self._server_wait(gatt_event['desc_write_req'])
+        event = self._server_wait(GattEvent.DESC_WRITE_REQ)
 
         request_id = event['data']['requestId']
         self.assertEqual(True, event['data']['responseNeeded'],
@@ -139,7 +139,7 @@ class GattWriteTest(GattConnectedBaseTest):
         self.per_ad.droid.gattServerSendResponse(
             self.gatt_server, bt_device_id, request_id, status, offset, [])
 
-        event = self._client_wait(gatt_event['desc_write'])
+        event = self._client_wait(GattEvent.DESC_WRITE)
         self.assertEqual(status, event["data"]["Status"],
                          "Write status should be 0")
         # Write response doesn't carry any data except status
@@ -175,18 +175,18 @@ class GattWriteTest(GattConnectedBaseTest):
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_no_response'])
+            GattCharacteristic.WRITE_TYPE_NO_RESPONSE.value)
 
         self.cen_ad.droid.gattClientWriteCharacteristic(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-        event = self._client_wait(gatt_event['char_write'])
+        event = self._client_wait(GattEvent.CHAR_WRITE)
         if event["data"]["Status"] != 0:
             self.log.error("Write status should be 0")
             return False
 
-        event = self._server_wait(gatt_event['char_write_req'])
+        event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
 
         request_id = event['data']['requestId']
         self.assertEqual(False, event['data']['responseNeeded'],
@@ -229,13 +229,13 @@ class GattWriteTest(GattConnectedBaseTest):
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_no_response'])
+            GattCharacteristic.WRITE_TYPE_NO_RESPONSE.value)
 
         self.cen_ad.droid.gattClientWriteCharacteristic(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-        event = self._server_wait(gatt_event['char_write_req'])
+        event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
 
         request_id = event['data']['requestId']
         self.assertEqual(False, event['data']['responseNeeded'])
@@ -246,7 +246,7 @@ class GattWriteTest(GattConnectedBaseTest):
             trimmed_value, event['data']['value'],
             "Received value should be sent value trimmed to MTU-3")
 
-        event = self._client_wait(gatt_event['char_write'])
+        event = self._client_wait(GattEvent.CHAR_WRITE)
         if event["data"]["Status"] != 0:
             self.log.error("Write status should be 0")
             return False
@@ -260,8 +260,8 @@ class GattWriteTest(GattConnectedBaseTest):
         Test establishing a gatt connection between a GATT Peripheral and GATT
         Client. Request mtu size equal to the max MTU.
         The max number of bytes can be sent within a characteristic is
-        (MTU - gatt_characteristic_attr_length['attr_2']) since
-        the gatt_characteristic_attr_length['attr_2'] (3 bytes) are
+        (MTU - GattCharacteristicAttrLength.MTU_ATTR_2) since
+        the GattCharacteristicAttrLength.MTU_ATTR_2 (3 bytes) are
         used for its attribute of the command code and its handle.
         Then reduce mtu by 1 and re-send the same characteristic.
         Make sure the characteristic value received by the remote side is
@@ -273,11 +273,11 @@ class GattWriteTest(GattConnectedBaseTest):
         2. Client: request new mtu size change to max MTU.
         3. Client: write a characteristic with char_value of max MTU bytes.
         4. Peripheral: receive the written data.  Check it was properly
-           truncated to (max MTU - gatt_characteristic_attr_length['attr_2']).
+           truncated to (max MTU - GattCharacteristicAttrLength.MTU_ATTR_2).
         5. Client: request mtu size change to (max MTU - 1).
         6. Client: write the same characteristic again.
         7. Peripheral: receive the written data.  Check it was properly
-           truncated to (max MTU - 1 - gatt_characteristic_attr_length['attr_2'])
+           truncated to (max MTU - 1 - GattCharacteristicAttrLength.MTU_ATTR_2)
 
         Expected Result:
         Verify that data received by the Peripheral side is properly truncated
@@ -290,7 +290,7 @@ class GattWriteTest(GattConnectedBaseTest):
         TAGS: LE, GATT, Characteristic, MTU
         Priority: 2
         """
-        self.mtu = gatt_mtu_size['max']
+        self.mtu = MtuSize.MAX.value
         self.log.info("Set mtu to max MTU: {}".format(self.mtu))
         # set new MTU to the middle point of min and max of MTU
         if not setup_gatt_mtu(self.cen_ad, self.bluetooth_gatt,
@@ -299,7 +299,7 @@ class GattWriteTest(GattConnectedBaseTest):
 
         # create a characteristic with max MTU (217) bytes
         char_value = []
-        for i in range(gatt_mtu_size['max']):
+        for i in range(MtuSize.MAX.value):
             char_value.append(i)
 
         self.cen_ad.droid.gattClientCharacteristicSetValue(
@@ -309,29 +309,29 @@ class GattWriteTest(GattConnectedBaseTest):
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_no_response'])
+            GattCharacteristic.WRITE_TYPE_NO_RESPONSE.value)
 
         # write data to the characteristic of the Peripheral
         self.cen_ad.droid.gattClientWriteCharacteristic(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-        event = self._server_wait(gatt_event['char_write_req'])
+        event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
         self.log.info("Received value with mtu = max MTU: {}".format(event[
             'data']['value']))
 
         # check the data received by Peripheral shall be truncated to
-        # (mtu - gatt_characteristic_attr_length['attr_2']) bytes
-        data_length = self.mtu - gatt_characteristic_attr_length['attr_2']
+        # (mtu - GattCharacteristicAttrLength.MTU_ATTR_2) bytes
+        data_length = self.mtu - GattCharacteristicAttrLength.MTU_ATTR_2
         expected_value = char_value[:data_length]
         self.assertEqual(
             expected_value, event['data']['value'],
             "Received value should have {} bytes".format(data_length))
 
         # set the mtu to max MTU-1
-        self.mtu = gatt_mtu_size['max'] - 1
+        self.mtu = MtuSize.MAX.value - 1
         self.log.info("Set mtu to max MTU - 1 : {}".format(self.mtu))
-        data_length = self.mtu - gatt_characteristic_attr_length['attr_2']
+        data_length = self.mtu - GattCharacteristicAttrLength.MTU_ATTR_2
         if not setup_gatt_mtu(self.cen_ad, self.bluetooth_gatt,
                               self.gatt_callback, self.mtu):
             return False
@@ -341,12 +341,12 @@ class GattWriteTest(GattConnectedBaseTest):
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-        event = self._server_wait(gatt_event['char_write_req'])
+        event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
         self.log.info("Data received when mtu = max MTU - 1: {}".format(event[
             'data']['value']))
 
         # check the data received by Peripheral shall be truncated to
-        # (mtu - gatt_characteristic_attr_length['attr_2']) bytes
+        # (mtu - GattCharacteristicAttrLength.MTU_ATTR_2) bytes
         # when mtu is reduced
         expected_value = char_value[:data_length]
         self.assertEqual(
@@ -379,14 +379,15 @@ class GattWriteTest(GattConnectedBaseTest):
         Priority: 0
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
-            self.bluetooth_gatt, gatt_connection_priority['high'])
+            self.bluetooth_gatt,
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         bt_device_id = 0
 
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_default'])
+            GattCharacteristic.WRITE_TYPE_DEFAULT.value)
 
         for i in range(100):
 
@@ -402,11 +403,11 @@ class GattWriteTest(GattConnectedBaseTest):
                 self.bluetooth_gatt, self.discovered_services_index,
                 self.test_service_index, self.WRITABLE_CHAR_UUID)
 
-            event = self._server_wait(gatt_event['char_write_req'])
+            event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
 
-            self.log.info("{} event found: {}".format(gatt_cb_strings[
-                'char_write_req'].format(self.gatt_server_callback), event[
-                    'data']['value']))
+            self.log.info("{} event found: {}".format(
+                GattCbStrings.CHAR_WRITE_REQ.value.format(
+                    self.gatt_server_callback), event['data']['value']))
             request_id = event['data']['requestId']
             found_value = event['data']['value']
             if found_value != char_value:
@@ -422,7 +423,7 @@ class GattWriteTest(GattConnectedBaseTest):
                 self.gatt_server, bt_device_id, request_id, status, offset,
                 char_value_return)
 
-            event = self._client_wait(gatt_event['char_write'])
+            event = self._client_wait(GattEvent.CHAR_WRITE)
             if event["data"]["Status"] != status:
                 self.log.error("Write status should be 0")
                 return False
@@ -453,7 +454,8 @@ class GattWriteTest(GattConnectedBaseTest):
         Priority: 0
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
-            self.bluetooth_gatt, gatt_connection_priority['high'])
+            self.bluetooth_gatt,
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         for i in range(100):
 
@@ -471,11 +473,11 @@ class GattWriteTest(GattConnectedBaseTest):
                 self.test_service_index, self.WRITABLE_CHAR_UUID,
                 self.WRITABLE_DESC_UUID)
 
-            event = self._server_wait(gatt_event['desc_write_req'])
+            event = self._server_wait(GattEvent.DESC_WRITE_REQ)
 
-            self.log.info("{} event found: {}".format(gatt_cb_strings[
-                'char_write_req'].format(self.gatt_server_callback), event[
-                    'data']['value']))
+            self.log.info("{} event found: {}".format(
+                GattCbStrings.CHAR_WRITE_REQ.value.format(
+                    self.gatt_server_callback), event['data']['value']))
 
             request_id = event['data']['requestId']
             self.assertEqual(True, event['data']['responseNeeded'],
@@ -491,7 +493,7 @@ class GattWriteTest(GattConnectedBaseTest):
             self.per_ad.droid.gattServerSendResponse(
                 self.gatt_server, bt_device_id, request_id, status, offset, [])
 
-            event = self._client_wait(gatt_event['desc_write'])
+            event = self._client_wait(GattEvent.DESC_WRITE)
             self.assertEqual(status, event["data"]["Status"],
                              "Write status should be 0")
             # Write response doesn't carry any data except status
@@ -521,14 +523,15 @@ class GattWriteTest(GattConnectedBaseTest):
         Priority: 0
         """
         self.cen_ad.droid.gattClientRequestConnectionPriority(
-            self.bluetooth_gatt, gatt_connection_priority['high'])
+            self.bluetooth_gatt,
+            GattConnectionPriority.CONNECTION_PRIORITY_HIGH.value)
 
         bt_device_id = 0
 
         self.cen_ad.droid.gattClientCharacteristicSetWriteType(
             self.bluetooth_gatt, self.discovered_services_index,
             self.test_service_index, self.WRITABLE_CHAR_UUID,
-            gatt_characteristic['write_type_no_response'])
+            GattCharacteristic.WRITE_TYPE_NO_RESPONSE.value)
 
         for i in range(100):
             char_value = []
@@ -544,16 +547,16 @@ class GattWriteTest(GattConnectedBaseTest):
                 self.test_service_index, self.WRITABLE_CHAR_UUID)
 
             # client shall not wait for server, get complete event right away
-            event = self._client_wait(gatt_event['char_write'])
+            event = self._client_wait(GattEvent.CHAR_WRITE)
             if event["data"]["Status"] != 0:
                 self.log.error("Write status should be 0")
                 return False
 
-            event = self._server_wait(gatt_event['char_write_req'])
+            event = self._server_wait(GattEvent.CHAR_WRITE_REQ)
 
-            self.log.info("{} event found: {}".format(gatt_cb_strings[
-                'char_write_req'].format(self.gatt_server_callback), event[
-                    'data']['value']))
+            self.log.info("{} event found: {}".format(
+                GattCbStrings.CHAR_WRITE_REQ.value.format(
+                    self.gatt_server_callback), event['data']['value']))
             request_id = event['data']['requestId']
             found_value = event['data']['value']
             if found_value != char_value:

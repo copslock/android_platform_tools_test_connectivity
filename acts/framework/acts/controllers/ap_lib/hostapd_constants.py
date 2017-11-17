@@ -16,8 +16,6 @@
 
 import itertools
 
-BAND_2G = '2g'
-BAND_5G = '5g'
 WPA1 = 1
 WPA2 = 2
 MIXED = 3

@@ -64,12 +64,6 @@ class TelLivePreflightTest(TelephonyBaseTest):
             "wifi_network_pass") or self.user_params.get(
                 "wifi_network_pass_2g")
 
-    def setup_class(self):
-        pass
-
-    def setup_test(self):
-        pass
-
     """ Tests Begin """
 
     @TelephonyBaseTest.tel_test_wrap
@@ -102,8 +96,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_check_crash(self):
         for ad in self.android_devices:
-            ad.crash_report_preflight = ad.check_crash_report(
-                self.test_id, None, True)
+            ad.crash_report_preflight = ad.check_crash_report()
             if ad.crash_report_preflight:
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)

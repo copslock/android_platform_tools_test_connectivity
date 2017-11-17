@@ -13,7 +13,6 @@
 # the License.
 import time
 
-from acts.test_decorators import test_tracker_info
 from acts import asserts
 from acts.test_utils.bt.BtFunhausBaseTest import BtFunhausBaseTest
 
@@ -31,7 +30,6 @@ class BtFunhausMetricsTest(BtFunhausBaseTest):
     def setup_test(self):
         return super(BtFunhausMetricsTest, self).setup_test()
 
-    @test_tracker_info(uuid='b712ed0e-c1fb-4bc8-9dee-83891aa22205')
     def test_run_bt_audio(self):
         """Test run Bluetooth A2DP audio for one iteration
 
@@ -81,7 +79,6 @@ class BtFunhausMetricsTest(BtFunhausBaseTest):
             delta=10000)
         return True
 
-    @test_tracker_info(uuid='ab6b8c61-057b-4bf6-b0cf-8bec3ae3a7eb')
     def test_run_multiple_bt_audio(self):
         """Test metrics for multiple Bluetooth audio sessions
 

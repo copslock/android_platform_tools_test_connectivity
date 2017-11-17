@@ -53,7 +53,6 @@ def get_mock_ads(num):
     ads = []
     for i in range(num):
         ad = mock.MagicMock(name="AndroidDevice", serial=i, h_port=None)
-        ad.ensure_screen_on = mock.MagicMock(return_value=True)
         ads.append(ad)
     return ads
 
@@ -328,10 +327,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
-    @mock.patch('acts.utils._assert_subprocess_running')
-    def test_AndroidDevice_take_logcat(self, check_proc_mock, stop_proc_mock,
-                                       start_proc_mock, creat_dir_mock,
-                                       FastbootProxy, MockAdbProxy):
+    def test_AndroidDevice_take_logcat(self, stop_proc_mock, start_proc_mock,
+                                       creat_dir_mock, FastbootProxy,
+                                       MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -374,10 +372,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
     @mock.patch('acts.utils.stop_standing_subprocess')
-    @mock.patch('acts.utils._assert_subprocess_running')
     def test_AndroidDevice_take_logcat_with_user_param(
-            self, check_proc_mock, stop_proc_mock, start_proc_mock,
-            creat_dir_mock, FastbootProxy, MockAdbProxy):
+            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
+            FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -412,10 +409,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.logger.get_log_line_timestamp',
         return_value=MOCK_ADB_LOGCAT_END_TIME)
-    @mock.patch('acts.utils._assert_subprocess_running')
-    def test_AndroidDevice_cat_adb_log(
-            self, check_proc_mock, mock_timestamp_getter, stop_proc_mock,
-            start_proc_mock, FastbootProxy, MockAdbProxy):
+    def test_AndroidDevice_cat_adb_log(self, mock_timestamp_getter,
+                                       stop_proc_mock, start_proc_mock,
+                                       FastbootProxy, MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
         and writes the lines to the correct output file.

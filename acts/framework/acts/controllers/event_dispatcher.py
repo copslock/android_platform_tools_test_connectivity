@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 from concurrent.futures import ThreadPoolExecutor
-import logging
 import queue
 import re
 import socket
@@ -66,10 +65,10 @@ class EventDispatcher:
             event_name = None
             try:
                 event_obj = self.droid.eventWait(50000)
-            except Exception as e:
+            except:
                 if self.started:
-                    logging.error("Exception %s happened during polling.", e)
-                    logging.info(traceback.format_exc())
+                    print("Exception happened during polling.")
+                    print(traceback.format_exc())
                     raise
             if not event_obj:
                 continue
@@ -116,8 +115,8 @@ class EventDispatcher:
         self.lock.acquire()
         try:
             if event_name in self.handlers:
-                raise DuplicateError(
-                    'A handler for {} already exists'.format(event_name))
+                raise DuplicateError('A handler for {} already exists'.format(
+                    event_name))
             self.handlers[event_name] = (handler, args)
         finally:
             self.lock.release()
@@ -184,8 +183,8 @@ class EventDispatcher:
         e_queue = self.get_event_q(event_name)
 
         if not e_queue:
-            raise TypeError(
-                "Failed to get an event queue for {}".format(event_name))
+            raise TypeError("Failed to get an event queue for {}".format(
+                event_name))
 
         try:
             # Block for timeout
@@ -242,8 +241,9 @@ class EventDispatcher:
                 return event
 
             if time.time() > deadline:
-                raise queue.Empty('Timeout after {}s waiting for event: {}'.
-                                  format(timeout, event_name))
+                raise queue.Empty(
+                    'Timeout after {}s waiting for event: {}'.format(
+                        timeout, event_name))
 
     def pop_events(self, regex_pattern, timeout, freq=1):
         """Pop events whose names match a regex pattern.
@@ -317,7 +317,8 @@ class EventDispatcher:
                 passed.
         """
         self.lock.acquire()
-        if not event_name in self.event_dict or self.event_dict[event_name] is None:
+        if not event_name in self.event_dict or self.event_dict[
+                event_name] is None:
             self.event_dict[event_name] = queue.Queue()
         self.lock.release()
 

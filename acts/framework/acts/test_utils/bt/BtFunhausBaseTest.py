@@ -139,8 +139,8 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
             config_path = os.path.join(
                 self.user_params[Config.key_config_path], config_path)
             if not os.path.isfile(config_path):
-                self.log.error("Unable to load bt_config file {}.".format(
-                    config_path))
+                self.log.error(
+                    "Unable to load bt_config file {}.".format(config_path))
                 return False
         ad.adb.push("{} {}".format(config_path, BT_CONF_PATH))
         return True
@@ -152,32 +152,25 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         :return: True on success, False on failure
         """
         self.log.info("Pushing music to the Android device.")
-        music_path_str = "bt_music"
+        music_path_str = "music_path"
         android_music_path = "/sdcard/Music/"
         if music_path_str not in self.user_params:
             self.log.error("Need music for audio testcases...")
             return False
         music_path = self.user_params[music_path_str]
-        if type(music_path) is list:
-            self.log.info("Media ready to push as is.")
-        elif not os.path.isdir(music_path):
+        if not os.path.isdir(music_path):
             music_path = os.path.join(self.user_params[Config.key_config_path],
                                       music_path)
             if not os.path.isdir(music_path):
-                self.log.error("Unable to find music directory {}.".format(
-                    music_path))
+                self.log.error(
+                    "Unable to find music directory {}.".format(music_path))
                 return False
-        if type(music_path) is list:
-            for item in music_path:
-                self.music_file_to_play = item
-                ad.adb.push("{} {}".format(item, android_music_path))
-        else:
-            for dirname, dirnames, filenames in os.walk(music_path):
-                for filename in filenames:
-                    self.music_file_to_play = filename
-                    file = os.path.join(dirname, filename)
-                    # TODO: Handle file paths with spaces
-                    ad.adb.push("{} {}".format(file, android_music_path))
+        for dirname, dirnames, filenames in os.walk(music_path):
+            for filename in filenames:
+                self.music_file_to_play = filename
+                file = os.path.join(dirname, filename)
+                # TODO: Handle file paths with spaces
+                ad.adb.push("{} {}".format(file, android_music_path))
         ad.reboot()
         return True
 
@@ -204,11 +197,11 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
                     break
             else:
                 try:
-                    ad.droid.bluetoothConnectBonded(bt_config_map[serial][
-                        "peripheral_info"]["address"])
+                    ad.droid.bluetoothConnectBonded(
+                        bt_config_map[serial]["peripheral_info"]["address"])
                 except Exception as err:
-                    self.log.error("Failed to connect bonded. Err: {}".format(
-                        err))
+                    self.log.error(
+                        "Failed to connect bonded. Err: {}".format(err))
         if not result:
             self.log.info("Connected Devices: {}".format(connected_devices))
             self.log.info("Bonded Devices: {}".format(
@@ -242,11 +235,11 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         :return: None
         """
         for ad in self.android_devices:
-            ad.droid.mediaPlayOpen("file:///sdcard/Music/{}".format(
-                self.music_file_to_play))
+            ad.droid.mediaPlayOpen(
+                "file:///sdcard/Music/{}".format(self.music_file_to_play))
             ad.droid.mediaPlaySetLooping(True)
-            self.log.info("Music is now playing on device {}".format(
-                ad.serial))
+            self.log.info(
+                "Music is now playing on device {}".format(ad.serial))
 
     def stop_playing_music_on_all_devices(self):
         """
