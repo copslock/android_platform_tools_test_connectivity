@@ -75,7 +75,8 @@ class ActsSl4aClientTest(unittest.TestCase):
         mock_create_connection.side_effect = IOError()
 
         with self.assertRaises(IOError):
-            client = sl4a_client.Sl4aClient()
+            dummy_serial = 0
+            client = sl4a_client.Sl4aClient(dummy_serial)
             client.open(connection_timeout=0.1)
 
     @mock.patch('socket.create_connection')
@@ -88,7 +89,8 @@ class ActsSl4aClientTest(unittest.TestCase):
         mock_create_connection.side_effect = socket.timeout
 
         with self.assertRaises(socket.timeout):
-            client = sl4a_client.Sl4aClient()
+            dummy_serial = 0
+            client = sl4a_client.Sl4aClient(dummy_serial)
             client.open(connection_timeout=0.1)
 
     @mock.patch('socket.create_connection')
@@ -101,9 +103,9 @@ class ActsSl4aClientTest(unittest.TestCase):
         fake_conn = mock.MagicMock()
         fake_conn.makefile.return_value = MockSocketFile(None)
         mock_create_connection.return_value = fake_conn
-
+        dummy_value = 0
         with self.assertRaises(sl4a_client.Sl4aProtocolError):
-            client = sl4a_client.Sl4aClient()
+            client = sl4a_client.Sl4aClient(dummy_value)
             client.open()
 
     @mock.patch('socket.create_connection')
@@ -116,8 +118,8 @@ class ActsSl4aClientTest(unittest.TestCase):
         fake_conn = mock.MagicMock()
         fake_conn.makefile.return_value = MockSocketFile(MOCK_RESP)
         mock_create_connection.return_value = fake_conn
-
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         self.assertEqual(client.uid, 1)
@@ -134,7 +136,8 @@ class ActsSl4aClientTest(unittest.TestCase):
             MOCK_RESP_UNKWN_STATUS)
         mock_create_connection.return_value = fake_conn
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         self.assertEqual(client.uid, sl4a_client.UNKNOWN_UID)
@@ -143,12 +146,13 @@ class ActsSl4aClientTest(unittest.TestCase):
     def test_open_no_response(self, mock_create_connection):
         """Test handshake no response
 
-        Test that if a handshake recieves no response then it will give a
+        Test that if a handshake receives no response then it will give a
         protocol error.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         fake_file.resp = None
@@ -162,12 +166,13 @@ class ActsSl4aClientTest(unittest.TestCase):
     def test_rpc_error_response(self, mock_create_connection):
         """Test rpc that is given an error response
 
-        Test that when an rpc recieves a reponse with an error will raised
+        Test that when an rpc receives a response with an error will raised
         an api error.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         fake_file.resp = MOCK_RESP_WITH_ERROR
@@ -180,11 +185,12 @@ class ActsSl4aClientTest(unittest.TestCase):
         """Test rpc that returns a different id than expected
 
         Test that if an rpc returns with an id that is different than what
-        is expected will give a protocl error.
+        is expected will give a protocol error.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         fake_file.resp = (MOCK_RESP_TEMPLATE % 52).encode('utf8')
@@ -196,14 +202,15 @@ class ActsSl4aClientTest(unittest.TestCase):
 
     @mock.patch('socket.create_connection')
     def test_rpc_no_response(self, mock_create_connection):
-        """Test rpc that does not get a reponse
+        """Test rpc that does not get a response
 
         Test that when an rpc does not get a response it throws a protocol
         error.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         fake_file.resp = None
@@ -215,14 +222,15 @@ class ActsSl4aClientTest(unittest.TestCase):
 
     @mock.patch('socket.create_connection')
     def test_rpc_send_to_socket(self, mock_create_connection):
-        """Test rpc sending and recieving
+        """Test rpc sending and receiving
 
-        Tests that when an rpc is sent and received the corrent data
+        Tests that when an rpc is sent and received the current data
         is used.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         result = client.some_rpc(1, 2, 3)
@@ -241,7 +249,8 @@ class ActsSl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
+        dummy_serial = 0
+        client = sl4a_client.Sl4aClient(dummy_serial)
         client.open()
 
         for i in range(0, 10):
