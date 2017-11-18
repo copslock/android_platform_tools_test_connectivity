@@ -51,6 +51,9 @@ DISCOVERY_KEY_MATCH_FILTER_LIST = "MatchFilterList"
 DISCOVERY_KEY_DISCOVERY_TYPE = "DiscoveryType"
 DISCOVERY_KEY_TTL = "TtlSec"
 DISCOVERY_KEY_TERM_CB_ENABLED = "TerminateNotificationEnabled"
+DISCOVERY_KEY_RANGING_ENABLED = "RangingEnabled"
+DISCOVERY_KEY_MIN_DISTANCE_MM = "MinDistanceMm"
+DISCOVERY_KEY_MAX_DISTANCE_MM = "MaxDistanceMm"
 
 PUBLISH_TYPE_UNSOLICITED = 0
 PUBLISH_TYPE_SOLICITED = 1
@@ -84,6 +87,8 @@ SESSION_CB_ON_SESSION_CONFIG_UPDATED = "WifiAwareSessionOnSessionConfigUpdated"
 SESSION_CB_ON_SESSION_CONFIG_FAILED = "WifiAwareSessionOnSessionConfigFailed"
 SESSION_CB_ON_SESSION_TERMINATED = "WifiAwareSessionOnSessionTerminated"
 SESSION_CB_ON_SERVICE_DISCOVERED = "WifiAwareSessionOnServiceDiscovered"
+SESSION_CB_ON_SERVICE_DISCOVERED_WITHIN_RANGE = \
+  "WifiAwareSessionOnServiceDiscoveredWithinRange"
 SESSION_CB_ON_MESSAGE_SENT = "WifiAwareSessionOnMessageSent"
 SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiAwareSessionOnMessageSendFailed"
 SESSION_CB_ON_MESSAGE_RECEIVED = "WifiAwareSessionOnMessageReceived"
@@ -101,6 +106,7 @@ SESSION_CB_KEY_MESSAGE_ID = "messageId"
 SESSION_CB_KEY_MESSAGE_AS_STRING = "messageAsString"
 SESSION_CB_KEY_LATENCY_MS = "latencyMs"
 SESSION_CB_KEY_TIMESTAMP_MS = "timestampMs"
+SESSION_CB_KEY_DISTANCE_MM = "distanceMm"
 
 ######################################################
 # WifiAwareRangingListener events (RttManager.RttListener)

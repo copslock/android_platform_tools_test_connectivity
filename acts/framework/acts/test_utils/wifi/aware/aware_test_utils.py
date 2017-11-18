@@ -495,6 +495,36 @@ def create_discovery_config(service_name,
   config[aconsts.DISCOVERY_KEY_TERM_CB_ENABLED] = term_cb_enable
   return config
 
+def add_ranging_to_pub(p_config, enable_ranging):
+  """Add ranging enabled configuration to a publish configuration (only relevant
+  for publish configuration).
+
+  Args:
+    p_config: The Publish discovery configuration.
+    enable_ranging: True to enable ranging, False to disable.
+  Returns:
+    The modified publish configuration.
+  """
+  p_config[aconsts.DISCOVERY_KEY_RANGING_ENABLED] = enable_ranging
+  return p_config
+
+def add_ranging_to_sub(s_config, min_distance_mm, max_distance_mm):
+  """Add ranging distance configuration to a subscribe configuration (only
+  relevant to a subscribe configuration).
+
+  Args:
+    s_config: The Subscribe discovery configuration.
+    min_distance_mm, max_distance_mm: The min and max distance specification.
+                                      Used if not None.
+  Returns:
+    The modified subscribe configuration.
+  """
+  if min_distance_mm is not None:
+    s_config[aconsts.DISCOVERY_KEY_MIN_DISTANCE_MM] = min_distance_mm
+  if max_distance_mm is not None:
+    s_config[aconsts.DISCOVERY_KEY_MAX_DISTANCE_MM] = max_distance_mm
+  return s_config
+
 def attach_with_identity(dut):
   """Start an Aware session (attach) and wait for confirmation and identity
   information (mac address).
