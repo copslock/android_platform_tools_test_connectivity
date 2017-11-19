@@ -18,6 +18,7 @@ from builtins import str
 from builtins import open
 from datetime import datetime
 
+import collections
 import logging
 import os
 import re
@@ -129,6 +130,18 @@ def get_info(ads):
         info.update(ad.build_info)
         device_info.append(info)
     return device_info
+
+
+def get_post_job_info(ads):
+    """Returns the tracked build id to test_run_summary.json
+
+    Args:
+        ads: A list of AndroidDevice objects.
+
+    Returns:
+        A dict consisting of {'build_id': ads[0].build_info}
+    """
+    return 'Build Info', ads[0].build_info
 
 
 def _start_services_on_ads(ads):
@@ -391,6 +404,7 @@ class AndroidDevice:
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
+        self.data_accounting = collections.defaultdict(int)
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -1060,7 +1074,7 @@ class AndroidDevice:
             Sl4aException: Something is wrong with sl4a and it returned an
             existing uid to a new session.
         """
-        droid = sl4a_client.Sl4aClient(port=self.h_port)
+        droid = sl4a_client.Sl4aClient(self.serial, port=self.h_port)
         droid.open()
         if droid.uid in self._droid_sessions:
             raise sl4a_client.Sl4aException(
@@ -1085,7 +1099,8 @@ class AndroidDevice:
         """
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
-        droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
+        droid = sl4a_client.Sl4aClient(
+            self.serial, port=self.h_port, uid=session_id)
         self.log.info("Open sl4a session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
