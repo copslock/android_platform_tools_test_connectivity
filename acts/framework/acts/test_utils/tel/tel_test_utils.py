@@ -283,11 +283,10 @@ def setup_droid_properties(log, ad, sim_filename=None):
                         " from device or testbed config or sim_file %s",
                         sim_filename, sub_id, iccid)
                     result = False
-        if not hasattr(
-                ad, 'roaming'
-        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
-                sub_info["sim_operator_name"].strip() not in
-                sub_info["network_operator_name"].strip()):
+        if not hasattr(ad, 'roaming') and sub_info["sim_plmn"] != sub_info[
+                "network_plmn"] and (
+                    sub_info["sim_operator_name"].strip() not in sub_info[
+                        "network_operator_name"].strip()):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
@@ -1923,9 +1922,12 @@ def verify_internet_connection(log, ad, retries=1):
     """
     for i in range(retries):
         ad.log.info("Verify internet connection - attempt %d", i + 1)
-        result = adb_shell_ping(ad, count=5, timeout=60, loss_tolerance=40)
-        if result:
-            return True
+        dest_to_ping = ["www.google.com", "www.amazon.com", "54.230.144.105"]
+        for dest in dest_to_ping:
+            result = adb_shell_ping(
+                ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
+            if result:
+                return True
     return False
 
 
@@ -2165,8 +2167,8 @@ def http_file_download_by_sl4a(log,
                                  check.
         timeout: timeout for file download to complete.
     """
-    file_folder, file_name = _generate_file_directory_and_file_name(
-        url, out_path)
+    file_folder, file_name = _generate_file_directory_and_file_name(url,
+                                                                    out_path)
     file_path = os.path.join(file_folder, file_name)
     try:
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2207,7 +2209,8 @@ def _connection_state_change(_event, target_state, connection_type):
                 connection_type, connection_type_string_in_event, cur_type)
             return False
 
-    if 'isConnected' in _event['data'] and _event['data']['isConnected'] == target_state:
+    if 'isConnected' in _event['data'] and _event['data'][
+            'isConnected'] == target_state:
         return True
     return False
 
@@ -2234,8 +2237,8 @@ def wait_for_cell_data_connection(
         False if failed.
     """
     sub_id = get_default_data_sub_id(ad)
-    return wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value)
+    return wait_for_cell_data_connection_for_subscription(log, ad, sub_id,
+                                                          state, timeout_value)
 
 
 def _is_data_connection_state_match(log, ad, expected_data_connection_state):
@@ -2600,8 +2603,8 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
         ad.log.info("VoLTE not supported by platform.")
-        raise TelTestUtilsError(
-            "VoLTE not supported by platform %s." % ad.serial)
+        raise TelTestUtilsError("VoLTE not supported by platform %s." %
+                                ad.serial)
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -4106,7 +4109,8 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         False if wifi is not connected to wifi_ssid
     """
     wifi_info = ad.droid.wifiGetConnectionInfo()
-    if wifi_info["supplicant_state"] == "completed" and wifi_info["SSID"] == wifi_ssid:
+    if wifi_info["supplicant_state"] == "completed" and wifi_info[
+            "SSID"] == wifi_ssid:
         ad.log.info("Wifi is connected to %s", wifi_ssid)
         ad.on_mobile_data = False
         return True
@@ -4598,8 +4602,8 @@ def is_network_call_back_event_match(event, network_callback_id,
     try:
         return (
             (network_callback_id == event['data'][NetworkCallbackContainer.ID])
-            and (network_callback_event == event['data']
-                 [NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
+            and (network_callback_event == event['data'][
+                NetworkCallbackContainer.NETWORK_CALLBACK_EVENT]))
     except KeyError:
         return False
 
