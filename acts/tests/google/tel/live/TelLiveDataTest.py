@@ -754,7 +754,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             else:
                 client.log.info("Client paired with provider")
-        self.provider.log.info("Enabling bluetooth tethering")
+        self.provider.log.info("Provider enabling bluetooth tethering")
         try:
             provider.droid.bluetoothPanSetBluetoothTethering(True)
         except Exception as e:
@@ -770,6 +770,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             provider.log.error("bluetoothPanIsTetheringOn = %s",
                                provider.droid.bluetoothPanIsTetheringOn())
             return False
+        time.sleep(5)
         for client in clients:
             client.droid.bluetoothConnectBonded(
                 provider.droid.bluetoothGetLocalAddress())
