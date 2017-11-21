@@ -78,6 +78,7 @@ from acts.test_utils.tel.tel_defines import RAT_1XRTT
 from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_EMERGENCY_ONLY
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
+from acts.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
@@ -507,6 +508,36 @@ def is_sim_ready(log, ad, sim_slot_id=None):
         log.info("Sim not ready")
         return False
     return True
+
+
+def is_sim_ready_by_adb(log, ad):
+    if ad.adb.getprop("gsm.sim.state") == SIM_STATE_READY:
+        ad.log.debug("SIM state is ready")
+        return True
+    else:
+        ad.log.debug("Sim state is not ready")
+        return False
+
+
+def wait_for_sim_ready_by_adb(log, ad, wait_time=90):
+    return _wait_for_droid_in_state(log, ad, wait_time, is_sim_ready_by_adb)
+
+
+def get_service_state_by_adb(log, ad):
+    output = ad.adb.shell("dumpsys telephony.registry | grep mServiceState")
+    if "mVoiceRegState" in output:
+        result = re.search(r"mVoiceRegState=(\S+)\((\S+)\)", output)
+        if result:
+            ad.log.info("mVoiceRegState is %s %s",
+                        result.group(1), result.group(2))
+            return result.group(2)
+    else:
+        result = re.search(r"mServiceState=(\S+)", output)
+        if result:
+            ad.log.info("mServiceState=%s %s",
+                        result.group(1),
+                        SERVICE_STATE_MAPPING[result.group(1)])
+            return SERVICE_STATE_MAPPING[result.group(1)]
 
 
 def _is_expecting_event(event_recv_list):
@@ -4978,6 +5009,7 @@ def reset_device_password(ad, device_password=None):
             # need to disable the password and log in on the first time
             # with unlocking with a swipe
             ad.log.info("Disable device password")
+            ad.unlock_screen(password="1111")
             refresh_sl4a_session(ad)
             ad.ensure_screen_on()
             ad.droid.disableDevicePassword()
