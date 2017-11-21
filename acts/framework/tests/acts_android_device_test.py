@@ -42,7 +42,9 @@ MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
 MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
 
 MOCK_SERIAL = 1
-MOCK_BUILD_ID = "ABC1.123456.007"
+MOCK_RELEASE_BUILD_ID = "ABC1.123456.007"
+MOCK_DEV_BUILD_ID = "ABC-MR1"
+MOCK_NYC_BUILD_ID = "N4F27P"
 
 
 def get_mock_ads(num):
@@ -73,12 +75,17 @@ def mock_list_adb_devices():
 class MockAdbProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
 
-    def __init__(self, serial, fail_br=False, fail_br_before_N=False):
+    def __init__(self,
+                 serial,
+                 fail_br=False,
+                 fail_br_before_N=False,
+                 build_id=MOCK_RELEASE_BUILD_ID):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
         self.return_value = None
         self.return_multiple = False
+        self.build_id = build_id
 
     def shell(self, params, ignore_status=False, timeout=60):
         if params == "id -u":
@@ -99,7 +106,7 @@ class MockAdbProxy(object):
 
     def getprop(self, params):
         if params == "ro.build.id":
-            return MOCK_BUILD_ID
+            return self.build_id
         elif params == "ro.build.version.incremental":
             return "123456789"
         elif params == "ro.build.type":
@@ -282,7 +289,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
+        return_value=MockAdbProxy(MOCK_SERIAL, build_id=MOCK_DEV_BUILD_ID))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=MockFastbootProxy(MOCK_SERIAL))
@@ -290,14 +297,24 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
         """
-        global MOCK_BUILD_ID
         ad = android_device.AndroidDevice(serial=1)
-        old_mock_build_id = MOCK_BUILD_ID
-        MOCK_BUILD_ID = "ABC-MR1"
         build_info = ad.build_info
         self.assertEqual(build_info["build_id"], "123456789")
         self.assertEqual(build_info["build_type"], "userdebug")
-        MOCK_BUILD_ID = old_mock_build_id
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL, build_id=MOCK_NYC_BUILD_ID))
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    def test_AndroidDevice_build_info_nyc(self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's build id is set correctly for
+        NYC releases.
+        """
+        ad = android_device.AndroidDevice(serial=1)
+        build_info = ad.build_info
+        self.assertEqual(build_info["build_id"], MOCK_NYC_BUILD_ID)
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
