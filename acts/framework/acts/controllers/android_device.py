@@ -59,7 +59,10 @@ SL4A_APK_NAME = "com.googlecode.android_scripting"
 WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
 DEFAULT_DEVICE_PASSWORD = "1111"
-RELEASE_ID_REGEX = re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+')
+RELEASE_ID_REGEXES = [
+    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'),
+    re.compile(r'N[A-Za-z0-9]+')
+]
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -475,7 +478,12 @@ class AndroidDevice:
             return
 
         build_id = self.adb.getprop("ro.build.id")
-        if not re.match(RELEASE_ID_REGEX, build_id):
+        valid_build_id = False
+        for regex in RELEASE_ID_REGEXES:
+            if re.match(regex, build_id):
+                valid_build_id = True
+                break
+        if not valid_build_id:
             build_id = self.adb.getprop("ro.build.version.incremental")
 
         info = {
