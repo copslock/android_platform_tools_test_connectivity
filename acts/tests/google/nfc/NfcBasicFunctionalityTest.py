@@ -42,23 +42,27 @@ class NfcBasicFunctionalityTest(BaseTestClass):
 
     def _ensure_nfc_enabled(self, dut):
         end_time = time.time() + 10
-        while (not dut.droid.nfcIsEnabled() and end_time > time.time()):
+        while end_time > time.time():
             try:
                 dut.ed.pop_event(self.nfc_on_event, self.timeout)
+                self.log.info("Event {} found".format(self.nfc_on_event))
                 return True
             except Exception as err:
-                self.log.debug("Event not yet found")
-        return dut.droid.nfcIsEnabled()
+                self.log.debug(
+                    "Event {} not yet found".format(self.nfc_on_event))
+        return False
 
     def _ensure_nfc_disabled(self, dut):
         end_time = time.time() + 10
-        while (dut.droid.nfcIsEnabled() and end_time > time.time()):
+        while end_time > time.time():
             try:
                 dut.ed.pop_event(self.nfc_off_event, self.timeout)
+                self.log.info("Event {} found".format(self.nfc_off_event))
                 return True
             except Exception as err:
-                self.log.debug("Event not yet found")
-        return not dut.droid.nfcIsEnabled()
+                self.log.debug(
+                    "Event {} not yet found".format(self.nfc_off_event))
+        return False
 
     def setup_test(self):
         # Every test starts with the assumption that NFC is enabled
