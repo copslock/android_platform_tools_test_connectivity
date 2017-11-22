@@ -2056,6 +2056,7 @@ def http_file_download_by_curl(ad,
     try:
         total_rx_bytes_before = ad.droid.getTotalRxBytes()
         mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
+        subscriber_mobile_data_usage_before = get_mobile_data_usage(ad)
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
         ad.adb.shell(curl_cmd, timeout=timeout)
@@ -2065,12 +2066,17 @@ def http_file_download_by_curl(ad,
             ) - total_rx_bytes_before
             mobile_rx_bytes_increased = ad.droid.getMobileRxBytes(
             ) - mobile_rx_bytes_before
+            subscriber_mobile_data_usage_increased = get_mobile_data_usage(
+                ad) - subscriber_mobile_data_usage_before
             ad.log.info(
-                "Mobile Rx increased %s after downloading file of size %s",
+                "Mobile Rx increased %sB after downloading file of size %sB",
                 mobile_rx_bytes_increased, expected_file_size)
             ad.log.info(
-                "Total Rx increased %s after downloading file of size %s",
+                "Total Rx increased %sB after downloading file of size %sB",
                 total_rx_bytes_increased, expected_file_size)
+            ad.log.info(
+                "Subscriber mobile data usage increased %sB after downloading file of size %sB",
+                subscriber_mobile_data_usage_increased, expected_file_size)
             if total_rx_bytes_increased < expected_file_size:
                 ad.log.warning(
                     "Total Rx increased less than expected file size")
@@ -2080,9 +2086,20 @@ def http_file_download_by_curl(ad,
                     ad.log.warning(
                         "Mobile Rx increased less than expected file size")
                     ad.data_accounting["Mobile_Rx_Accounting_Failure"] += 1
+                if subscriber_mobile_data_usage_increased < expected_file_size:
+                    ad.log.warning(
+                        "Mobile data usage increased less than expected file size"
+                    )
+                    ad.data_accounting[
+                        "Subscriber_Mobile_Data_Usage_Accounting_Failure"] += 1
             else:
                 if mobile_rx_bytes_increased >= expected_file_size:
                     ad.log.error("File download is consuming mobile data")
+                    return False
+                if subscriber_mobile_data_usage_increased >= expected_file_size:
+                    ad.log.error(
+                        "File download is consuming subscriber mobile data usage"
+                    )
                     return False
             return True
         else:
@@ -2126,6 +2143,7 @@ def http_file_download_by_chrome(ad,
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
     total_rx_bytes_before = ad.droid.getTotalRxBytes()
     mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
+    subscriber_mobile_data_usage_before = get_mobile_data_usage(ad)
     ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
     open_url_by_adb(ad, url)
@@ -2141,12 +2159,17 @@ def http_file_download_by_chrome(ad,
             ) - total_rx_bytes_before
             mobile_rx_bytes_increased = ad.droid.getMobileRxBytes(
             ) - mobile_rx_bytes_before
+            subscriber_mobile_data_usage_increased = get_mobile_data_usage(
+                ad) - subscriber_mobile_data_usage_before
             ad.log.info(
-                "Mobile Rx increased %s after downloading file of size %s",
+                "Mobile Rx increased %sB after downloading file of size %sB",
                 mobile_rx_bytes_increased, expected_file_size)
             ad.log.info(
-                "Total Rx increased %s after downloading file of size %s",
+                "Total Rx increased %sB after downloading file of size %sB",
                 total_rx_bytes_increased, expected_file_size)
+            ad.log.info(
+                "Subscriber mobile data usage increased %sB after downloading file of size %sB",
+                subscriber_mobile_data_usage_increased, expected_file_size)
             if total_rx_bytes_increased < expected_file_size:
                 ad.log.warning(
                     "Total Rx increased less than expected file size")
@@ -2156,9 +2179,20 @@ def http_file_download_by_chrome(ad,
                     ad.log.warning(
                         "Mobile Rx increased less than expected file size")
                     ad.data_accounting["Mobile_Rx_Accounting_Failure"] += 1
+                if subscriber_mobile_data_usage_increased < expected_file_size:
+                    ad.log.warning(
+                        "Mobile data usage increased less than expected file size"
+                    )
+                    ad.data_accounting[
+                        "Subscriber_Mobile_Data_Usage_Accounting_Failure"] += 1
             else:
                 if mobile_rx_bytes_increased >= expected_file_size:
                     ad.log.error("File download is consuming mobile data")
+                    return False
+                if subscriber_mobile_data_usage_increased >= expected_file_size:
+                    ad.log.error(
+                        "File download is consuming subscriber mobile data usage"
+                    )
                     return False
             return True
         elif _check_file_existance(ad, "%s.crdownload" % file_path):
@@ -2170,7 +2204,7 @@ def http_file_download_by_chrome(ad,
             ad.log.error("Unable to download file from %s", url)
             break
         elapse_time += 30
-    ad.log.error("Fail to download file from %s", url)
+    ad.log.warning("Fail to download file from %s", url)
     ad.force_stop_apk("com.android.chrome")
     ad.adb.shell("rm %s" % file_path, ignore_status=True)
     ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
@@ -2218,6 +2252,30 @@ def http_file_download_by_sl4a(log,
         if remove_file_after_check:
             ad.log.info("Remove the downloaded file %s", file_path)
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
+
+
+def get_mobile_data_usage(ad, subscriber_id=None):
+    if not subscriber_id:
+        subscriber_id = ad.droid.telephonyGetSubscriberId()
+    end_time = int(time.time() * 1000)
+    usage = ad.droid.connectivityQuerySummaryForDevice(subscriber_id, 0,
+                                                       end_time)
+    ad.log.info("The mobile data usage for subscriber is %s", usage)
+    return usage
+
+
+def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
+    if not subscriber_id:
+        subscriber_id = ad.droid.telephonyGetSubscriberId()
+    ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
+
+
+def remove_mobile_data_usage_limit(ad, subscriber_id=None):
+    if not subscriber_id:
+        subscriber_id = ad.droid.telephonyGetSubscriberId()
+    ad.log.info("Remove subscriber mobile data usage limit")
+    ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
 def trigger_modem_crash(log, ad, timeout=10):
@@ -4087,6 +4145,7 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
+        remove_mobile_data_usage_limit(ad)
         if not wait_for_not_network_rat(
                 log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
             ad.log.error("%s still in %s", NETWORK_SERVICE_DATA,
