@@ -23,15 +23,20 @@ import time
 
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import ble_scan_settings_match_nums
 from acts.test_utils.bt.bt_constants import bt_profile_constants
 from acts.test_utils.bt.bt_constants import gatt_characteristic
 from acts.test_utils.bt.bt_constants import gatt_descriptor
 from acts.test_utils.bt.bt_constants import gatt_service_types
 from acts.test_utils.bt.bt_constants import gatt_cb_err
 from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_connection_state
 from acts.test_utils.bt.bt_constants import gatt_mtu_size
 from acts.test_utils.bt.bt_constants import gatt_phy_mask
 from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import wait_for_gatt_disconnect_event
@@ -997,3 +1002,151 @@ class GattConnectTest(BluetoothBaseTest):
         self.adv_instances.append(adv_callback)
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='8a3530a3-c8bb-466b-9710-99e694c38618')
+    def test_gatt_connect_second_adv_after_canceling_first_adv(self):
+        """Test GATT connection to peripherals second advertising address.
+
+        The the ability of cancelling GATT connections and trying to reconnect
+        to the same device via a different address.
+
+        Steps:
+        1. A starts advertising
+        2. B starts scanning and finds A's mac address
+        3. Stop advertisement from step 1. Start a new advertisement on A and
+            find the new new mac address, B knows of both old and new address.
+        4. B1 sends connect request to old address of A
+        5. B1 cancel connect attempt after 10 seconds
+        6. B1 sends connect request to new address of A
+        7. Verify B1 establish connection to A in less than 10 seconds
+
+        Expected Result:
+        Verify that a connection was established only on the second
+            advertisement's mac address.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: LE, Advertising, Scanning, GATT
+        Priority: 3
+        """
+        autoconnect = False
+        transport = gatt_transport['auto']
+        opportunistic = False
+        # Setup a basic Gatt server on the peripheral
+        gatt_server_cb = self.per_ad.droid.gattServerCreateGattServerCallback()
+        gatt_server = self.per_ad.droid.gattServerOpenGattServer(
+            gatt_server_cb)
+
+        # Set advertisement settings to include local name in advertisement
+        # and set the advertising mode to low_latency.
+        self.per_ad.droid.bleSetAdvertiseSettingsIsConnectable(True)
+        self.per_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.per_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
+            ble_advertise_settings_modes['low_latency'])
+
+        # Setup necessary advertisement objects.
+        advertise_data = self.per_ad.droid.bleBuildAdvertiseData()
+        advertise_settings = self.per_ad.droid.bleBuildAdvertiseSettings()
+        advertise_callback = self.per_ad.droid.bleGenBleAdvertiseCallback()
+
+        # Step 1: Start advertisement
+        self.per_ad.droid.bleStartBleAdvertising(
+            advertise_callback, advertise_data, advertise_settings)
+
+        # Setup scan settings for low_latency scanning and to include the local name
+        # of the advertisement started in step 1.
+        filter_list = self.cen_ad.droid.bleGenFilterList()
+        self.cen_ad.droid.bleSetScanSettingsNumOfMatches(
+            ble_scan_settings_match_nums['one'])
+        self.cen_ad.droid.bleSetScanFilterDeviceName(
+            self.per_ad.droid.bluetoothGetLocalName())
+        self.cen_ad.droid.bleBuildScanFilter(filter_list)
+        self.cen_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
+            'low_latency'])
+
+        # Setup necessary scan objects.
+        scan_settings = self.cen_ad.droid.bleBuildScanSetting()
+        scan_callback = self.cen_ad.droid.bleGenScanCallback()
+
+        # Step 2: Start scanning on central Android device and find peripheral
+        # address.
+        self.cen_ad.droid.bleStartBleScan(filter_list, scan_settings,
+                                          scan_callback)
+        expected_event_name = scan_result.format(scan_callback)
+        try:
+            mac_address_pre_restart = self.cen_ad.ed.pop_event(
+                expected_event_name, self.default_timeout)['data']['Result'][
+                    'deviceInfo']['address']
+            self.log.info(
+                "Peripheral advertisement found with mac address: {}".format(
+                    mac_address_pre_restart))
+        except Empty:
+            self.log.info("Peripheral advertisement not found")
+            test_result = False
+
+        # Step 3: Restart peripheral advertising such that a new mac address is
+        # created.
+        self.per_ad.droid.bleStopBleAdvertising(advertise_callback)
+        self.per_ad.droid.bleStartBleAdvertising(
+            advertise_callback, advertise_data, advertise_settings)
+
+        try:
+            mac_address_post_restart = self.cen_ad.ed.pop_event(
+                expected_event_name, self.default_timeout)['data']['Result'][
+                    'deviceInfo']['address']
+            self.log.info(
+                "Peripheral advertisement found with mac address: {}".format(
+                    mac_address_post_restart))
+        except Empty:
+            self.log.info("Peripheral advertisement not found")
+            test_result = False
+
+        # Steps 4: Try to connect to the first mac address
+        gatt_callback = self.cen_ad.droid.gattCreateGattCallback()
+        self.log.info("Gatt Connect to mac address {}.".format(
+            mac_address_pre_restart))
+        bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
+            gatt_callback, mac_address_pre_restart, autoconnect, transport,
+            opportunistic, gatt_phy_mask['1m_mask'])
+        self.bluetooth_gatt_list.append(bluetooth_gatt)
+        expected_event = gatt_cb_strings['gatt_conn_change'].format(
+            gatt_callback)
+        try:
+            event = self.cen_ad.ed.pop_event(expected_event,
+                                             self.default_timeout)
+            self.log.error(
+                "Connection callback updated unexpectedly: {}".format(event))
+            return False
+        except Empty:
+            self.log.info("No connection update as expected.")
+
+        # Step 5: Cancel connection request.
+        self.cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
+
+        # Step 6: Connect to second mac address.
+        self.log.info("Gatt Connect to mac address {}.".format(
+            mac_address_post_restart))
+        bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
+            gatt_callback, mac_address_post_restart, autoconnect, transport,
+            opportunistic, gatt_phy_mask['1m_mask'])
+        self.bluetooth_gatt_list.append(bluetooth_gatt)
+        expected_event = gatt_cb_strings['gatt_conn_change'].format(
+            gatt_callback)
+
+        # Step 7: Verify connection was setup successfully.
+        try:
+            event = self.cen_ad.ed.pop_event(expected_event,
+                                             self.default_timeout)
+            self.log.info(
+                "Connection callback updated successfully: {}".format(event))
+            if event['data']['State'] != gatt_connection_state['connected']:
+                self.log.error(
+                    "Could not establish a connection to the peripheral.")
+                return False
+        except Empty:
+            self.log.error("No connection update was found.")
+            return False
+        return self.cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
