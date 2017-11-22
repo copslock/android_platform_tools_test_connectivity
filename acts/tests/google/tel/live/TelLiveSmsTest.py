@@ -35,10 +35,13 @@ from acts.test_utils.tel.tel_test_utils import \
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
@@ -2522,3 +2525,119 @@ class TelLiveSmsTest(TelephonyBaseTest):
                               self.wifi_network_pass)
 
         return self._mt_mms_in_2g_call(ads)
+
+    @test_tracker_info(uuid="7de95a56-8055-4c0c-9438-f249403c6078")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_general_after_mobile_data_usage_limit_reached(self):
+        """Test SMS send after mobile data usage limit is reached.
+
+        Airplane mode is off.
+        Set the data limit to the current usage
+        Send SMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                     (phone_setup_voice_general, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+            return self._sms_test_mo(ads)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="df56687f-0932-4b13-952c-ae0ce30b1d7a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_general_after_mobile_data_usage_limit_reached(self):
+        """Test SMS receive after mobile data usage limit is reached.
+
+        Airplane mode is off.
+        Set the data limit to the current usage
+        Send SMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                     (phone_setup_voice_general, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+            return self._sms_test_mt(ads)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="131f98c6-3b56-44df-b5e7-66f33e2cf117")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_general_after_mobile_data_usage_limit_reached(self):
+        """Test MMS send after mobile data usage limit is reached.
+
+        Airplane mode is off.
+        Set the data limit to the current usage
+        Send MMS from PhoneA to PhoneB.
+        Verify MMS cannot be send.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                     (phone_setup_voice_general, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+            return not self._mms_test_mo(ads)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="051e259f-0cb9-417d-9a68-8e8a4266fca1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mt_general_after_mobile_data_usage_limit_reached(self):
+        """Test MMS receive after mobile data usage limit is reached.
+
+        Airplane mode is off.
+        Set the data limit to the current usage
+        Send MMS from PhoneB to PhoneA.
+        Verify MMS cannot be received.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                     (phone_setup_voice_general, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+            return not self._mms_test_mt(ads)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)

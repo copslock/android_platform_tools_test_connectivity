@@ -87,11 +87,13 @@ class TelLivePostflightTest(TelephonyBaseTest):
     def test_check_data_accounting_failures(self):
         msg = ""
         for ad in self.android_devices:
-            ad.log.info("TotalRxBytes = %s, Mobile_Rx_Bytes=%s",
-                        ad.droid.getTotalRxBytes(),
-                        ad.droid.getMobileRxBytes())
-            if ad.data_accounting["Total_Rx_Accounting_Failure"] > 0 or (
-                    ad.data_accounting["Total_Mobile_Accounting_Failure"] > 0):
+            if any([
+                    ad.data_accounting[stat]
+                    for stat in
+                ("Total_Rx_Accounting_Failure",
+                 "Total_Mobile_Accounting_Failure",
+                 "Subscriber_Mobile_Data_Usage_Accounting_Failure")
+            ]):
                 msg += "%s %s" % (ad.serial, dict(ad.data_accounting))
         if msg:
             fail(msg)
