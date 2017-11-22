@@ -63,6 +63,7 @@ from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
+from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
@@ -70,8 +71,10 @@ from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
+from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_phone_number
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import setup_sim
@@ -3707,6 +3710,76 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
         return self._test_call_setup_in_active_youtube_video(
             None, DIRECTION_MOBILE_TERMINATED)
+
+    @test_tracker_info(uuid="f367de12-1fd8-488d-816f-091deaacb791")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_wfc_wifi_preferred_after_mobile_data_usage_limit_reached(
+            self):
+        """ WiFi Preferred, WiFi calling test after data limit reached
+
+        1. Set the data limit to the current usage
+        2. Setup PhoneA WFC mode: WIFI_PREFERRED.
+        3. Make Sure PhoneB is in 3G mode.
+        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            # Turn OFF WiFi for Phone B
+            set_wifi_to_default(self.log, ads[1])
+            tasks = [(phone_setup_iwlan,
+                      (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                       self.wifi_network_ssid, self.wifi_network_pass)),
+                     (phone_setup_voice_3g, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+
+            return two_phone_call_short_seq(
+                self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
+                ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="af943c7f-2b42-408f-b8a3-2d360a7483f7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_after_mobile_data_usage_limit_reached(self):
+        """ VoLTE to VoLTE call test after mobile data usage limit reached
+
+        1. Set the data limit to the current usage
+        2. Make Sure PhoneA is in LTE mode (with VoLTE).
+        3. Make Sure PhoneB is in LTE mode (with VoLTE).
+        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        try:
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+
+            tasks = [(phone_setup_volte, (self.log, ads[0])),
+                     (phone_setup_volte, (self.log, ads[1]))]
+            if not multithread_func(self.log, tasks):
+                self.log.error("Phone Failed to Set Up Properly.")
+                return False
+
+            return two_phone_call_short_seq(
+                self.log, ads[0], phone_idle_volte, is_phone_in_call_volte,
+                ads[1], phone_idle_volte, is_phone_in_call_volte, None,
+                WAIT_TIME_IN_CALL_FOR_IMS)
+        finally:
+            remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
 
 """ Tests End """

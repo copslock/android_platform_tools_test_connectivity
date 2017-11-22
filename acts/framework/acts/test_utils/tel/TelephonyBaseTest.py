@@ -67,8 +67,8 @@ class TelephonyBaseTest(BaseTestClass):
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
-            if "dev/null" in qxdm_log_mask_cfg:
-                qxdm_log_mask_cfg = None
+        if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
+            qxdm_log_mask_cfg = None
         for ad in self.android_devices:
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
