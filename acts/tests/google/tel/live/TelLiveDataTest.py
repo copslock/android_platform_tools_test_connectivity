@@ -73,11 +73,14 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -3000,7 +3003,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         Steps:
         1. Download a file random picked.
-        2. Device sleep for sometime and Repeat 1 .
+        2. Device sleep for sometime and Repeat 1.
 
         Expected Results:
         Total download failure rate is less than 10%.
@@ -3010,4 +3013,48 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         return self.file_download_stress()
+
+    @test_tracker_info(uuid="c9970955-123b-467c-afbb-95ec8f99e9b7")
+    def test_file_download_with_mobile_data_usage_limit_set(self):
+        """ Steps:
+        1. Set the data usage limit to current data usage + 9MB
+        2. Download 5MB file from internet.
+        3. The first file download should succeed
+        4. The second file download should fail
+        """
+        dut = self.android_devices[0]
+        ensure_phones_default_state(self.log, [dut])
+        subscriber_id = dut.droid.telephonyGetSubscriberId()
+        old_data_usage = get_mobile_data_usage(dut, subscriber_id)
+
+        # set data usage limit to current usage limit + 10MB
+        data_limit = old_data_usage + 9 * 1000 * 1000
+        set_mobile_data_usage_limit(dut, data_limit, subscriber_id)
+
+        # download file - size 5MB twice
+        try:
+            for _ in range(2):
+                if not active_file_download_test(self.log, dut, "5MB"):
+                    if get_mobile_data_usage(
+                            dut, subscriber_id) + 5 * 1000 * 1000 < data_limit:
+                        dut.log.error(
+                            "Fail to download file when mobile data usage is"
+                            " below data usage limit")
+                        return False
+                    else:
+                        dut.log.info(
+                            "Download fails as expected due to data limit reached"
+                        )
+                else:
+                    if get_mobile_data_usage(dut, subscriber_id) < data_limit:
+                        dut.log.info(
+                            "Download file succeed when mobile data usage is"
+                            " below data usage limit")
+                    else:
+                        dut.log.error(
+                            "Download should fail due to data limit reached")
+                        return False
+            return True
+        finally:
+            remove_mobile_data_usage_limit(dut, subscriber_id)
         """ Tests End """
