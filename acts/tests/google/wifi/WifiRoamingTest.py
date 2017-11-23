@@ -153,22 +153,25 @@ class WifiRoamingTest(WifiBaseTest):
         The following tests are designed to test inter-SSID Roaming only.
 
         """
-
+    @test_tracker_info(uuid="db8a46f9-713f-4b98-8d9f-d36319905b0a")
     def test_roaming_between_AP1_to_AP2_open_2g(self):
         AP1_network = self.open_network[0]["2g"]
         AP2_network = self.open_network[1]["2g"]
         self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
 
+    @test_tracker_info(uuid="0db67d9b-6ea9-4f40-acf2-155c4ecf9dc5")
     def test_roaming_between_AP1_to_AP2_open_5g(self):
         AP1_network = self.open_network[0]["5g"]
         AP2_network = self.open_network[1]["5g"]
         self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
 
+    @test_tracker_info(uuid="eabc7319-d962-4bef-b679-725e9ff00420")
     def test_roaming_between_AP1_to_AP2_psk_2g(self):
         AP1_network = self.reference_networks[0]["2g"]
         AP2_network = self.reference_networks[1]["2g"]
         self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
 
+    @test_tracker_info(uuid="1cf9c681-4ff0-45c1-9719-f01629f6a7f7")
     def test_roaming_between_AP1_to_AP2_psk_5g(self):
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
