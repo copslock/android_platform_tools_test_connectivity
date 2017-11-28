@@ -112,8 +112,9 @@ class SonyXB2PairingTest(BluetoothBaseTest):
         device_not_found = True
         for device in self._perform_classic_discovery():
             if device['address'] == self.sony_xb2_speaker.mac_address:
-                self.dut.log.info("Undesired device with MAC address %s found!",
-                                  self.sony_xb2_speaker.mac_address)
+                self.dut.log.info(
+                    "Undesired device with MAC address %s found!",
+                    self.sony_xb2_speaker.mac_address)
                 device_not_found = False
 
         # Set the speaker back to the normal for tear_down()
@@ -158,7 +159,7 @@ class SonyXB2PairingTest(BluetoothBaseTest):
                 if d['address'] == self.sony_xb2_speaker.mac_address:
                     self.dut.log.info("Successfully bonded to device.")
                     self.log.info(
-                        "XB2 Bonded devices:\n{}".format(bonded_devices))
+                        "Sony XB2 Bonded devices:\n{}".format(bonded_devices))
                     return True
         # Timed out trying to bond.
         self.dut.log.info("Failed to bond devices.")

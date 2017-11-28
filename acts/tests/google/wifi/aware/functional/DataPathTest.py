@@ -769,23 +769,6 @@ class DataPathTest(AwareBaseTest):
 
   ##########################################################################
 
-  def attach_with_identity(self, dut):
-    """Start an Aware session (attach) and wait for confirmation and identity
-    information (mac address).
-
-    Args:
-      dut: Device under test
-    Returns:
-      id: Aware session ID.
-      mac: Discovery MAC address of this device.
-    """
-    id = dut.droid.wifiAwareAttach(True)
-    autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
-    event = autils.wait_for_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
-    mac = event["data"]["mac"]
-
-    return id, mac
-
   def wait_for_request_responses(self, dut, req_keys, aware_ifs):
     """Wait for network request confirmation for all request keys.
 
@@ -806,6 +789,7 @@ class DataPathTest(AwareBaseTest):
           self.log.info("Received an unexpected connectivity, the revoked "
                         "network request probably went through -- %s", event)
 
+  @test_tracker_info(uuid="2e325e2b-d552-4890-b470-20b40284395d")
   def test_multiple_identical_networks(self):
     """Validate that creating multiple networks between 2 devices, each network
     with identical configuration is supported over a single NDP.
@@ -826,9 +810,9 @@ class DataPathTest(AwareBaseTest):
     # Initiator+Responder: attach and wait for confirmation & identity
     # create 10 sessions to be used in the different (but identical) NDPs
     for i in range(N + M):
-      id, init_mac = self.attach_with_identity(init_dut)
+      id, init_mac = autils.attach_with_identity(init_dut)
       init_ids.append(id)
-      id, resp_mac = self.attach_with_identity(resp_dut)
+      id, resp_mac = autils.attach_with_identity(resp_dut)
       resp_ids.append(id)
 
     # wait for for devices to synchronize with each other - there are no other
@@ -924,3 +908,140 @@ class DataPathTest(AwareBaseTest):
       resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     for init_req_key in init_req_keys:
       init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  ########################################################################
+
+  def run_multiple_ndi(self, sec_configs):
+    """Validate that the device can create and use multiple NDIs.
+
+    The security configuration can be:
+    - None: open
+    - String: passphrase
+    - otherwise: PMK (byte array)
+
+    Args:
+      sec_configs: list of security configurations
+    """
+    init_dut = self.android_devices[0]
+    init_dut.pretty_name = "Initiator"
+    resp_dut = self.android_devices[1]
+    resp_dut.pretty_name = "Responder"
+
+    asserts.skip_if(init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs) or
+                    resp_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]
+                    < len(sec_configs),
+                    "Initiator or Responder do not support multiple NDIs")
+
+    init_id, init_mac = autils.attach_with_identity(init_dut)
+    resp_id, resp_mac = autils.attach_with_identity(resp_dut)
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    resp_req_keys = []
+    init_req_keys = []
+    resp_aware_ifs = []
+    init_aware_ifs = []
+
+    for sec in sec_configs:
+      # Responder: request network
+      resp_req_key = autils.request_network(resp_dut,
+                                            autils.get_network_specifier(
+                                                resp_dut, resp_id,
+                                                aconsts.DATA_PATH_RESPONDER,
+                                                init_mac, sec))
+      resp_req_keys.append(resp_req_key)
+
+      # Initiator: request network
+      init_req_key = autils.request_network(init_dut,
+                                            autils.get_network_specifier(
+                                                init_dut, init_id,
+                                                aconsts.DATA_PATH_INITIATOR,
+                                                resp_mac, sec))
+      init_req_keys.append(init_req_key)
+
+      # Wait for network
+      init_net_event = autils.wait_for_event_with_keys(
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+      resp_net_event = autils.wait_for_event_with_keys(
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+      resp_aware_ifs.append(
+          resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+      init_aware_ifs.append(
+          init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+
+    # check that we are using 2 NDIs
+    init_aware_ifs = list(set(init_aware_ifs))
+    resp_aware_ifs = list(set(resp_aware_ifs))
+
+    self.log.info("Interface names: I=%s, R=%s", init_aware_ifs, resp_aware_ifs)
+    self.log.info("Initiator requests: %s", init_req_keys)
+    self.log.info("Responder requests: %s", resp_req_keys)
+
+    asserts.assert_equal(
+        len(init_aware_ifs), len(sec_configs), "Multiple initiator interfaces")
+    asserts.assert_equal(
+        len(resp_aware_ifs), len(sec_configs), "Multiple responder interfaces")
+
+    for i in range(len(sec_configs)):
+      if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
+      init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
+      resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
+
+      asserts.assert_equal(
+          init_ipv6 is None, if_name not in init_aware_ifs,
+          "Initiator interface %s in unexpected state" % if_name)
+      asserts.assert_equal(
+          resp_ipv6 is None, if_name not in resp_aware_ifs,
+          "Responder interface %s in unexpected state" % if_name)
+
+    # release requests
+    for resp_req_key in resp_req_keys:
+      resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    for init_req_key in init_req_keys:
+      init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
+  def test_multiple_ndi_open_passphrase(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using passphrase). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([None, self.PASSPHRASE])
+
+  @test_tracker_info(uuid="5f2c32aa-20b2-41f0-8b1e-d0b68df73ada")
+  def test_multiple_ndi_open_pmk(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one open, one using pmk). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([None, self.PMK])
+
+  @test_tracker_info(uuid="34467659-bcfb-40cd-ba25-7e50560fca63")
+  def test_multiple_ndi_passphrase_pmk(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (one using passphrase, one using pmk). The result should use
+    two different NDIs"""
+    self.run_multiple_ndi([self.PASSPHRASE, self.PMK])
+
+  @test_tracker_info(uuid="d9194ce6-45b6-41b1-9cc8-ada79968966d")
+  def test_multiple_ndi_passphrases(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different passphrases). The result should use two
+    different NDIs"""
+    self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2])
+
+  @test_tracker_info(uuid="879df795-62d2-40d4-a862-bd46d8f7e67f")
+  def test_multiple_ndi_pmks(self):
+    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    configuration (using different PMKS). The result should use two different
+    NDIs"""
+    self.run_multiple_ndi([self.PMK, self.PMK2])

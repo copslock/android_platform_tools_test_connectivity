@@ -45,6 +45,8 @@ def push_file_to_device(ad, file_path, device_path, config_path):
         ad: Device for file push
         file_path: File path for the file to be pushed to the device
         device_path: File path on the device as destination
+        config_path: File path to the config file.  This is only used when
+                     a relative path is passed via the ACTS config.
 
     Returns:
         True if successful, False if unsuccessful.
@@ -168,8 +170,8 @@ class A2dpPowerTest(PowerBaseTest):
                     for d in bonded_devices:
                         if d['address'] == self.a2dp_speaker.mac_address:
                             self.log.info("Successfully bonded to device.")
-                            self.log.info("XB2 Bonded devices:\n{}".format(
-                                bonded_devices))
+                            self.log.info(
+                                "Bonded devices:\n{}".format(bonded_devices))
                             return True
         return False
 
@@ -177,6 +179,12 @@ class A2dpPowerTest(PowerBaseTest):
         self.ad = self.android_devices[0]
         self.ad.droid.bluetoothFactoryReset()
         # Factory reset requires a short delay to take effect
+        time.sleep(3)
+
+        self.ad.log.info("Making sure BT phone is enabled here during setup")
+        if not bluetooth_enabled_check(self.ad):
+            self.log.error("Failed to turn Bluetooth on DUT")
+        # Give a breathing time of short delay to take effect
         time.sleep(3)
 
         # Determine if we have a relay-based device
@@ -204,7 +212,8 @@ class A2dpPowerTest(PowerBaseTest):
 
         # Add music files to the Android device
         music_path_dut = "/sdcard/Music/"
-        self.cd_quality_music_file = self.user_params["cd_quality_music_file"]
+        self.cd_quality_music_file = self.user_params["cd_quality_music_file"][
+            0]
         self.log.info(
             "Push CD quality music file {}".format(self.cd_quality_music_file))
         if not push_file_to_device(self.ad, self.cd_quality_music_file,
@@ -213,7 +222,7 @@ class A2dpPowerTest(PowerBaseTest):
             self.log.error("Unable to push file {} to DUT.".format(
                 self.cd_quality_music_file))
 
-        self.hi_res_music_file = self.user_params["hi_res_music_file"]
+        self.hi_res_music_file = self.user_params["hi_res_music_file"][0]
         self.log.info(
             "Push Hi Res quality music file {}".format(self.hi_res_music_file))
         if not push_file_to_device(self.ad, self.hi_res_music_file,
@@ -278,7 +287,7 @@ class A2dpPowerTest(PowerBaseTest):
                 self.PMC_BASE_CMD, self.music_url, play_time)
 
             if bt_off_mute == True:
-                msg = "%s --es BT_OFF_Mute %d" % (playing_msg, 1)
+                msg = "%s --es BT_OFF_Mute %d" % (play_msg, 1)
             else:
                 codec1_msg = "%s --es CodecType %d --es SampleRate %d" % (
                     play_msg, codec_type, sample_rate)

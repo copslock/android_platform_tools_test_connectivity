@@ -169,6 +169,7 @@ class ActsRelayTest(unittest.TestCase):
 
     def test_clean_up_default_on(self):
         new_relay = Relay(self.board, 0)
+        new_relay._original_state = RelayState.NO
         self.board.set(new_relay.position, RelayState.NO)
         new_relay.clean_up()
 
@@ -177,11 +178,22 @@ class ActsRelayTest(unittest.TestCase):
 
     def test_clean_up_default_off(self):
         new_relay = Relay(self.board, 0)
+        new_relay._original_state = RelayState.NO
         self.board.set(new_relay.position, RelayState.NC)
         new_relay.clean_up()
 
         self.assertEqual(
             self.board.get_relay_status(new_relay.position), RelayState.NO)
+
+    def test_clean_up_original_state_none(self):
+        val = 'STAYS_THE_SAME'
+        new_relay = Relay(self.board, 0)
+        # _original_state is none by default
+        # The line below sets the dict to an impossible value.
+        self.board.set(new_relay.position, val)
+        new_relay.clean_up()
+        # If the impossible value is cleared, then the test should fail.
+        self.assertEqual(self.board.get_relay_status(new_relay.position), val)
 
 
 class ActsSainSmartBoardTest(unittest.TestCase):
@@ -204,10 +216,8 @@ class ActsSainSmartBoardTest(unittest.TestCase):
             file.write(self.RELAY_ON_PAGE_CONTENTS)
 
         self.config = ({
-            'name':
-            'SSBoard',
-            'base_url':
-            self.test_dir,
+            'name': 'SSBoard',
+            'base_url': self.test_dir,
             'relays': [{
                 'name': '0',
                 'relay_pos': 0
@@ -652,10 +662,8 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'type':
-            'SomeInvalidType',
-            'name':
-            '.',
+            'type': 'SomeInvalidType',
+            'name': '.',
             'relays': [{
                 'name': 'r0',
                 'pos': 'MockBoard/0'

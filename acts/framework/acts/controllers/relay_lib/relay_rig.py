@@ -19,6 +19,9 @@ from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.fugu_remote import FuguRemote
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
+from acts.controllers.relay_lib.ak_xb10_speaker import AkXB10Speaker
+from acts.controllers.relay_lib.dongles import SingleButtonDongle
+from acts.controllers.relay_lib.dongles import ThreeButtonDongle
 
 
 class RelayRig:
@@ -50,6 +53,9 @@ class RelayRig:
         'GenericRelayDevice': lambda x, rig: GenericRelayDevice(x, rig),
         'FuguRemote': lambda x, rig: FuguRemote(x, rig),
         'SonyXB2Speaker': lambda x, rig: SonyXB2Speaker(x, rig),
+        'AkXB10Speaker': lambda x, rig: AkXB10Speaker(x, rig),
+        'SingleButtonDongle': lambda x, rig: SingleButtonDongle(x, rig),
+        'ThreeButtonDongle': lambda x, rig: ThreeButtonDongle(x, rig),
     }
 
     def __init__(self, config):

@@ -55,8 +55,11 @@ class WifiPreFlightTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, True)
 
         # Get reference networks as a list
-        req_params = ["reference_networks"]
-        self.unpack_userparams(req_param_names=req_params)
+        opt_params = ["reference_networks"]
+        self.unpack_userparams(opt_param_names=opt_params)
+
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start(ap_count=2)
         networks = []
         for ref_net in self.reference_networks:
             networks.append(ref_net[self.WIFI_2G])
@@ -66,26 +69,13 @@ class WifiPreFlightTest(WifiBaseTest):
             len(self.reference_networks) == 4,
             "Need at least 4 reference network with psk.")
 
-        # Set attenuation to 0 and verify reference
-        # networks show up in the scanned results
-        if getattr(self, "attenuators", []):
-            for a in self.attenuators:
-                a.set_atten(0)
-
-        self.target_networks = []
-        for ref_net in self.reference_networks:
-            self.target_networks.append( {'BSSID': ref_net['bssid']} )
-        result = self._find_reference_networks_no_attn()
-
-        if result:
-            self.log.error("Did not find or signal strength too low "
-                           "for the following reference networks\n%s\n" % result)
-            return False
-
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
         for a in self.attenuators:
             a.set_atten(0)
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
 
     """ Helper functions """
     def _find_reference_networks_no_attn(self):
@@ -106,6 +96,7 @@ class WifiPreFlightTest(WifiBaseTest):
                 break
             time.sleep(WAIT_TIME)
             scanned_networks = self.dut.droid.wifiGetScanResults()
+            self.log.info("SCANNED RESULTS %s" % scanned_networks)
             for net in self.target_networks:
                 if net in found_networks:
                     result = wutils.match_networks(net, scanned_networks)
@@ -131,6 +122,7 @@ class WifiPreFlightTest(WifiBaseTest):
         while(time.time() < start_time + SCAN_TIME):
             time.sleep(WAIT_TIME)
             scanned_networks = self.dut.droid.wifiGetScanResults()
+            self.log.info("SCANNED RESULTS %s" % scanned_networks)
             result = wutils.match_networks(target_network, scanned_networks)
             if not result:
                 return True
@@ -154,9 +146,25 @@ class WifiPreFlightTest(WifiBaseTest):
             2. Verify that the corresponding network does not show
                up in the scanned results
         """
-        found_networks = []
+        # Set attenuation to 0 and verify reference
+        # networks show up in the scanned results
+        self.log.info("Verify if all reference networks show with "
+                      "attenuation set to 0")
+        if getattr(self, "attenuators", []):
+            for a in self.attenuators:
+                a.set_atten(0)
+        self.target_networks = []
+        for ref_net in self.reference_networks:
+            self.target_networks.append( {'BSSID': ref_net['bssid']} )
+        result = self._find_reference_networks_no_attn()
+        asserts.assert_true(not result,
+                            "Did not find or signal strength too low "
+                            "for the following reference networks\n%s\n" % result)
 
         # attenuate 1 channel at a time and find the network
+        self.log.info("Verify if attenuation channel matches with "
+                      "correct reference network")
+        found_networks = []
         for i in range(len(self.attenuators)):
             target_network = {}
             target_network['BSSID'] = self.reference_networks[i]['bssid']
@@ -168,7 +176,6 @@ class WifiPreFlightTest(WifiBaseTest):
                 target_network['ATTN'] = i
                 found_networks.append(target_network)
 
-        if found_networks:
-            self.log.error("Attenuators did not match the networks\n %s\n"
-                           % pprint.pformat(found_networks))
-            return False
+        asserts.assert_true(not found_networks,
+                            "Attenuators did not match the networks\n %s\n"
+                            % pprint.pformat(found_networks))

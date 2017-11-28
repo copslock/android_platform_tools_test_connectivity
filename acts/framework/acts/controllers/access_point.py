@@ -16,8 +16,8 @@
 
 import collections
 import ipaddress
-import logging
 
+from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
@@ -90,6 +90,9 @@ _AP_2GHZ_SUBNET_STR = '192.168.1.0/24'
 _AP_5GHZ_SUBNET_STR = '192.168.9.0/24'
 _AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_2GHZ_SUBNET_STR))
 _AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_5GHZ_SUBNET_STR))
+LAN_INTERFACE = 'eth1'
+# The last digit of the ip for the bridge interface
+BRIDGE_IP_LAST = '100'
 
 
 class AccessPoint(object):
@@ -116,6 +119,7 @@ class AccessPoint(object):
         # A map from network interface name to _ApInstance objects representing
         # the hostapd instance running against the interface.
         self._aps = dict()
+        self.bridge = bridge_interface.BridgeInterface(self.ssh)
 
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.
@@ -269,7 +273,7 @@ class AccessPoint(object):
             identifier: The identify of the ap that should be taken down.
         """
 
-        if identifier not in self._aps:
+        if identifier not in list(self._aps.keys()):
             raise ValueError('Invalid identifer %s given' % identifier)
 
         instance = self._aps.get(identifier)
@@ -283,13 +287,14 @@ class AccessPoint(object):
         # then an exception gets thrown. We need to catch this exception and
         # check that all interfaces should actually be down.
         configured_subnets = [x.subnet for x in self._aps.values()]
+        del self._aps[identifier]
         if configured_subnets:
             self._dhcp.start(dhcp_config.DhcpConfig(configured_subnets))
 
     def stop_all_aps(self):
         """Stops all running aps on this device."""
 
-        for ap in self._aps.keys():
+        for ap in list(self._aps.keys()):
             try:
                 self.stop_ap(ap)
             except dhcp_server.NoInterfaceError as e:
@@ -305,3 +310,29 @@ class AccessPoint(object):
         if self._aps:
             self.stop_all_aps()
         self.ssh.close()
+
+    def generate_bridge_configs(self, channel, iface_lan=LAN_INTERFACE):
+        """Generate a list of configs for a bridge between LAN and WLAN.
+
+        Args:
+            channel: the channel WLAN interface is brought up on
+            iface_lan: the LAN interface to bridge
+        Returns:
+            configs: tuple containing iface_wlan, iface_lan and bridge_ip
+        """
+
+        if channel < 15:
+            iface_wlan = _AP_2GHZ_INTERFACE
+            subnet_str = _AP_2GHZ_SUBNET_STR
+        else:
+            iface_wlan = _AP_5GHZ_INTERFACE
+            subnet_str = _AP_5GHZ_SUBNET_STR
+
+        iface_lan = iface_lan
+
+        a, b, c, d = subnet_str.strip('/24').split('.')
+        bridge_ip = "%s.%s.%s.%s" % (a, b, c, BRIDGE_IP_LAST)
+
+        configs = (iface_wlan, iface_lan, bridge_ip)
+
+        return configs

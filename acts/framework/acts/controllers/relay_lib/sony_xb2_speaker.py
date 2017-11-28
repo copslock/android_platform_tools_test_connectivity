@@ -24,7 +24,7 @@ from acts.controllers.relay_lib.helpers import validate_key
 PAIRING_MODE_WAIT_TIME = 5
 POWER_ON_WAIT_TIME = 2
 POWER_OFF_WAIT_TIME = 6
-MISSING_RELAY_MSG = 'Relay config for Sonxy XB2 "%s" missing relay "%s".'
+MISSING_RELAY_MSG = 'Relay config for Sony XB2 "%s" missing relay "%s".'
 
 log = logging
 
@@ -35,7 +35,7 @@ class Buttons(enum.Enum):
 
 
 class SonyXB2Speaker(GenericRelayDevice):
-    """A Sony XB2 Bluetooth Speaker.
+    """Sony XB2 Bluetooth Speaker model
 
     Wraps the button presses, as well as the special features like pairing.
     """
