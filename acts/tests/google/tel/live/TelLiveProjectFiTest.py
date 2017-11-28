@@ -26,12 +26,18 @@ from acts.test_utils.tel.tel_defines import CARRIER_SPT
 from acts.test_utils.tel.tel_defines import CARRIER_TMO
 from acts.test_utils.tel.tel_defines import CARRIER_USCC
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import wait_for_state
+
+CARRIER_AUTO = "auto"
 
 _CARRIER_DIALER_CODE_LOOKUP = {
+    CARRIER_AUTO: '342886',
     CARRIER_SPT: '34777',
     CARRIER_TMO: '34866',
     CARRIER_USCC: '34872'
@@ -74,9 +80,19 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 "wifi_network_pass_2g") or self.user_params.get(
                     "wifi_network_ssid_5g")
 
-        tasks = [(self._account_registration, [ad])
-                 for ad in self.android_devices]
-        return multithread_func(self.log, tasks)
+    def _add_google_account(self, ad, retries=3):
+        for _ in range(3):
+            ad.ensure_screen_on()
+            output = ad.adb.shell(
+                'am instrument -w -e account "%s@gmail.com" -e password '
+                '"%s" -e sync true -e wait-for-checkin false '
+                'com.google.android.tradefed.account/.AddAccount' %
+                (ad.user_account, ad.user_password))
+            if "result=SUCCESS" in output:
+                ad.log.info("google account is added successfully")
+                return True
+        ad.log.error("Fail to add google account due to %s", output)
+        return False
 
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
@@ -93,10 +109,14 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 ad.log.error(
                     "com.google.android.tradefed.account is not installed")
                 return False
-            ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
-                                  self.wifi_network_pass)
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("Failed to connect to wifi")
+                return False
             ad.log.info("Add google account")
-            ad.ensure_screen_on()
+            if not self._add_google_account(ad):
+                ad.log.error("Failed to add google account")
+                return False
             ad.adb.shell(
                 'am instrument -w -e account "%s@gmail.com" -e password '
                 '"%s" -e sync true -e wait-for-checkin false '
@@ -105,7 +125,14 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
             if not self.start_tycho_init_activity(ad):
+                ad.log.error("Fail to activate Fi account")
                 return False
+        elif ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network":
+            ad.log.error("Google account is not provided for Fi Network")
+            return False
+        if not ensure_phone_subscription(self.log, ad):
+            ad.log.error("Unable to find a valid subscription!")
+            return False
         return True
 
     def start_service(self, ad, package, service_id, extras, action_type):
@@ -135,7 +162,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         ad.log.info('Starting activity %s/.%s.', package, activity_id)
         intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras, [
-            'android.intent.category.DEFAULT'
+            'android.intent.category.LAUNCHER'
         ], package, package + '.' + activity_id, _INTENT_FLAGS)
         ad.droid.startActivityIntent(intent, False)
 
@@ -161,8 +188,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ad.send_keycode("TAB")
         ad.send_keycode("ENTER")
         for _ in range(10):
-            if ad.adb.getprop("gsm.sim.state") == "READY" and ad.adb.getprop(
-                    "gsm.sim.operator.alpha") == "Fi Network":
+            if ad.adb.getprop("gsm.sim.state") == "READY" and (
+                    ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network" or
+                    ad.adb.getprop("gsm.operator.alpha") == "Fi Network"):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
                 return True
             time.sleep(30)
@@ -225,6 +253,27 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                          mcc_mnc)
         raise
 
+    def switch_sim(self, ad):
+        """Requests switch between physical sim and esim.
+
+        Args:
+            ad: An AndroidDevice Object.
+            timeout: (optional -- integer) the number of seconds in which a
+                     switch should be completed.
+
+        Raises:
+            Error: whenever a device is not set to the desired carrier within
+                   the timeout window.
+        """
+        wait_for_state(self.is_ready_to_make_carrier_switch, True, [ad])
+        old_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        ad.log.info("Before SIM switch, SIM operator = %s", old_sim_operator)
+        send_dialer_secret_code(ad, "794824746")
+        time.sleep(10)
+        new_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        ad.log.info("After SIM switch, SIM operator = %s", new_sim_operator)
+        return old_sim_operator != new_sim_operator
+
     def set_active_carrier(self,
                            ad,
                            carrier,
@@ -255,6 +304,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         else:
             ad.log.error("Device stays in carrier switch lock state")
             return False
+        if carrier == CARRIER_AUTO:
+            send_dialer_secret_code(ad, _CARRIER_DIALER_CODE_LOOKUP[carrier])
+            return True
         old_carrier = self.get_active_carrier(ad)
         if carrier == old_carrier:
             ad.log.info('Already on %s, so no need to switch', carrier)
@@ -358,15 +410,35 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                      self.get_active_carrier(ad), carrier)
         return False
 
+    def operator_network_switch(self, ad, carrier):
+        if ad.adb.getprop("gsm.sim.operator.alpha") != "Fi Network" and (
+                not self.set_active_carrier(ad, carrier)):
+            ad.log.error("Failed to switch to %s", carrier)
+            return False
+        return True
+
     def network_switch_test(self, carrier):
         result = True
-        for ad in self.android_devices:
-            if not self.set_active_carrier(ad, carrier):
-                ad.log.error("Failed to switch to %s", carrier)
-                result = False
-        return result
+        tasks = [(self.operator_network_switch, [ad, carrier])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            abort_all_tests(ad.log, "Unable to switch to network %s" % carrier)
 
     """ Tests Begin """
+
+    @test_tracker_info(uuid="4d92318e-4980-471a-882b-3136c5dda384")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_project_fi_account_activation(self):
+        """Test activate Fi account.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        tasks = [(self._account_registration, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            abort_all_tests(ad.log, "Unable to activate Fi account!")
 
     @test_tracker_info(uuid="6bfbcc1d-e318-4964-bf36-5b82f086860d")
     @TelephonyBaseTest.tel_test_wrap
@@ -400,6 +472,29 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             False if failed.
         """
         return self.network_switch_test(CARRIER_USCC)
+
+    @test_tracker_info(uuid="0b062751-d59d-420e-941e-3ffa02aea0d5")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_switch_to_auto_network(self):
+        """Test switch to auto network selection.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        return self.network_switch_test(CARRIER_AUTO)
+
+    @test_tracker_info(uuid="13c5f080-69bf-42fd-86ed-c67b1984c347")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_switch_between_sim(self):
+        """Test switch between physical sim and esim.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        for ad in self.android_devices:
+            self.switch_sim(ad)
 
 
 """ Tests End """

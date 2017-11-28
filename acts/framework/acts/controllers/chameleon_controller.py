@@ -17,6 +17,7 @@
 import logging
 import time
 import xmlrpc.client
+from subprocess import call
 
 from acts import signals
 
@@ -99,6 +100,7 @@ class ChameleonDevice:
     """
 
     def __init__(self, ip="", port=9992):
+        self.ip = ip
         self.log = logging.getLogger()
         self.port = port
         self.address = "http://{}:{}".format(ip, self.port)
@@ -171,3 +173,16 @@ class ChameleonDevice:
             bus_number: 1 or 2 for audio bus 1 or bus 2.
         """
         self.client.AudioBoardClearRoutes()
+
+    def scp(self, source, destination):
+        """Copies files from the Chameleon device to the host machine.
+
+        Args:
+            source: The file path on the Chameleon board.
+            dest: The file path on the host machine.
+        """
+        cmd = "scp root@{}:/{} {}".format(self.ip, source, destination)
+        try:
+            call(cmd.split(" "))
+        except FileNotFoundError as err:
+            self.log.exception("File not found {}".format(source))
