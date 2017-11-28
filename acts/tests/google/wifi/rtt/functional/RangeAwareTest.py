@@ -117,10 +117,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
      peer_id_on_sub, peer_id_on_pub) = autils.create_discovery_pair(
         p_dut,
         s_dut,
-        p_config=autils.create_discovery_config(
-            self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED),
-        s_config=autils.create_discovery_config(
-            self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        p_config=autils.add_ranging_to_pub(autils.create_discovery_config(
+            self.SERVICE_NAME, aconsts.PUBLISH_TYPE_UNSOLICITED), True),
+        s_config=autils.add_ranging_to_pub(autils.create_discovery_config(
+            self.SERVICE_NAME, aconsts.SUBSCRIBE_TYPE_PASSIVE), True),
         device_startup_offset=self.device_startup_offset,
         msg_id=self.get_next_msg_id())
 
@@ -171,6 +171,17 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     # mechanisms to make sure this happens for OOB discovery (except retrying
     # to execute the data-path request)
     time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    # start publisher(s) on the Responder(s) with ranging enabled
+    p_config = autils.add_ranging_to_pub(
+      autils.create_discovery_config(self.SERVICE_NAME,
+                                     aconsts.PUBLISH_TYPE_UNSOLICITED),
+      enable_ranging=True)
+    dut1.droid.wifiAwarePublish(id1, p_config)
+    autils.wait_for_event(dut1, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+    if do_both_directions:
+      dut0.droid.wifiAwarePublish(id0, p_config)
+      autils.wait_for_event(dut0, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
 
     results01 = []
     results10 = []
