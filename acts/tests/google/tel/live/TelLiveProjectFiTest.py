@@ -20,13 +20,13 @@
 import time
 import os
 import re
-from acts.asserts import abort_all
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CARRIER_SPT
 from acts.test_utils.tel.tel_defines import CARRIER_TMO
 from acts.test_utils.tel.tel_defines import CARRIER_USCC
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import multithread_func
@@ -127,6 +127,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             if not self.start_tycho_init_activity(ad):
                 ad.log.error("Fail to activate Fi account")
                 return False
+        elif ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network":
+            ad.log.error("Google account is not provided for Fi Network")
+            return False
         if not ensure_phone_subscription(self.log, ad):
             ad.log.error("Unable to find a valid subscription!")
             return False
@@ -185,9 +188,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ad.send_keycode("TAB")
         ad.send_keycode("ENTER")
         for _ in range(10):
-            if ad.adb.getprop("gsm.sim.state") == "READY" and (ad.adb.getprop(
-                    "gsm.sim.operator.alpha") == "Fi Network" or ad.adb.getprop(
-                    "gsm.operator.alpha") == "Fi Network"):
+            if ad.adb.getprop("gsm.sim.state") == "READY" and (
+                    ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network" or
+                    ad.adb.getprop("gsm.operator.alpha") == "Fi Network"):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
                 return True
             time.sleep(30)
@@ -250,11 +253,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                          mcc_mnc)
         raise
 
-    def switch_sim(self, ad, timeout=_MAX_WAIT_TIME, check_interval=10):
+    def switch_sim(self, ad):
         """Requests switch between physical sim and esim.
-
-        If switching to a different carrier, after the switch is completed
-        auto-switching will be disabled. To re-enable, call enable_auto_switching.
 
         Args:
             ad: An AndroidDevice Object.
