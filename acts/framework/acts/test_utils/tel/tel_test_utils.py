@@ -251,39 +251,44 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if not ad.cfg["subscription"]:
         abort_all_tests(ad.log, "No Valid SIMs found in device")
     result = True
+    active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_id, sub_info in ad.cfg["subscription"].items():
         sub_info["operator"] = get_operator_name(log, ad, sub_id)
         iccid = sub_info["iccid"]
         if not iccid:
             ad.log.warn("Unable to find ICC-ID for SIM")
             continue
-        phone_number = getattr(ad, "phone_number", None)
-        if not phone_number and iccid in sim_data and sim_data[iccid].get(
-                "phone_num"):
-            phone_number = sim_data[iccid]["phone_num"]
-        if phone_number:
-            if sub_info.get("phone_num") and not check_phone_number_match(
-                    sub_info["phone_num"], phone_number):
-                ad.log.warning("phone_number in config file %s do not match %s"
-                               " in droid subscription", phone_number,
-                               sub_info["phone_num"])
-            sub_info["phone_num"] = phone_number
-            ad.phone_number = phone_number
-        else:
-            if sub_info.get("phone_num"):
-                ad.phone_number = sub_info["phone_num"]
-            else:
-                phone_number = get_phone_number_by_secret_code(
-                    ad, sub_info["sim_operator_name"])
-                if phone_number:
-                    sub_info["phone_num"] = phone_number
-                    ad.phone_number = phone_number
+        if sub_info.get("phone_num"):
+            if getattr(ad, "phone_number", None) and check_phone_number_match(
+                    sub_info["phone_num"], ad.phone_number):
+                sub_info["phone_num"] = ad.phone_number
+            elif iccid and iccid in sim_data and sim_data[iccid].get(
+                    "phone_num"):
+                if check_phone_number_match(sim_data[iccid]["phone_num"],
+                                            phone_number):
+                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
                 else:
-                    ad.log.error(
-                        "Unable to retrieve phone number for sub %s iccid %s"
-                        " from device or testbed config or sim_file %s",
-                        sim_filename, sub_id, iccid)
-                    result = False
+                    ad.log.warning(
+                        "phone_num %s in sim card data file for iccid %s"
+                        "  do not match phone_num %s in droid subscription",
+                        sim_data[iccid]["phone_num"], iccid,
+                        sub_info["phone_num"])
+        elif iccid and iccid in sim_data and sim_data[iccid].get("phone_num"):
+            sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+        elif sub_id == active_sub_id:
+            phone_number = get_phone_number_by_secret_code(
+                ad, sub_info["sim_operator_name"])
+            if phone_number:
+                sub_info["phone_num"] = phone_number
+            elif getattr(ad, "phone_num", None):
+                sub_info["phone_num"] = ad.phone_number
+        if (not sub_info.get("phone_num")) and sub_id == active_sub_id:
+            ad.log.info("sub_id %s sub_info = %s", sub_id, sub_info)
+            ad.log.error(
+                "Unable to retrieve phone number for sub %s with iccid"
+                " %s from device or testbed config or sim card file %s",
+                sub_id, iccid, sim_filename)
+            result = False
         if not hasattr(
                 ad, 'roaming'
         ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
@@ -311,20 +316,23 @@ def refresh_droid_config(log, ad):
     Returns:
         None
     """
-    cfg = {"subscription": {}}
+    if hasattr(ad, 'cfg'):
+        cfg = ad.cfg.copy()
+    else:
+        cfg = {"subscription": {}}
     droid = ad.droid
     sub_info_list = droid.subscriptionGetAllSubInfoList()
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
         sim_slot = sub_info["simSlotIndex"]
         if sim_slot != INVALID_SIM_SLOT_INDEX:
-            sim_serial = droid.telephonyGetSimSerialNumberForSubscription(
-                sub_id)
-            if not sim_serial:
-                ad.log.error("Unable to find ICC-ID for SIM in slot %s",
-                             sim_slot)
             sim_record = {}
-            sim_record["iccid"] = sim_serial
+            if sub_info.get("iccId"):
+                sim_record["iccid"] = sub_info["iccId"]
+            else:
+                sim_record[
+                    "iccid"] = droid.telephonyGetSimSerialNumberForSubscription(
+                        sub_id)
             sim_record["sim_slot"] = sim_slot
             try:
                 sim_record[
@@ -332,9 +340,14 @@ def refresh_droid_config(log, ad):
                         sub_id)
             except:
                 sim_record["phone_type"] = droid.telephonyGetPhoneType()
+            if sub_info.get("mcc"):
+                sim_record["mcc"] = sub_info["mcc"]
+            if sub_info.get("mnc"):
+                sim_record["mnc"] = sub_info["mnc"]
             sim_record[
                 "sim_plmn"] = droid.telephonyGetSimOperatorForSubscription(
                     sub_id)
+            sim_record["display_name"] = sub_info["displayName"]
             sim_record[
                 "sim_operator_name"] = droid.telephonyGetSimOperatorNameForSubscription(
                     sub_id)
@@ -350,16 +363,18 @@ def refresh_droid_config(log, ad):
             sim_record[
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
-            if not getattr(ad, "phone_number", None):
-                phone_number = droid.telephonyGetLine1NumberForSubscription(
-                    sub_id)
-                if phone_number:
-                    ad.phone_number = phone_number
-                    sim_record["phone_num"] = phone_number_formatter(
-                        phone_number)
+            if sub_info.get("number"):
+                sim_record["phone_num"] = sub_info["number"]
+            else:
+                sim_record["phone_num"] = phone_number_formatter(
+                    droid.telephonyGetLine1NumberForSubscription(sub_id))
             sim_record[
                 "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
                     sub_id)
+            if (not sim_record["phone_num"]
+                ) and cfg["subscription"].get(sub_id):
+                sim_record["phone_num"] = cfg["subscription"][sub_id][
+                    "phone_num"]
             cfg['subscription'][sub_id] = sim_record
             ad.log.debug("SubId %s SIM record: %s", sub_id, sim_record)
     setattr(ad, 'cfg', cfg)
@@ -829,7 +844,7 @@ def wait_for_ringing_call_for_subscription(
             ad.log.info("callee in ringing state")
             break
         if i == retries - 1:
-            ad.log.error(
+            ad.log.info(
                 "callee didn't receive ring event or got into ringing state")
             return False
     if not event_tracking_started:
@@ -1145,8 +1160,7 @@ def check_phone_number_match(number1, number2):
     number1 = phone_number_formatter(number1)
     number2 = phone_number_formatter(number2)
     # Handle extra country code attachment when matching phone number
-    if number1.replace("+", "") in number2 or number2.replace("+",
-                                                              "") in number1:
+    if number1[-7:] in number2 or number2[-7:] in number1:
         return True
     else:
         logging.info("phone number1 %s and number2 %s does not match" %
@@ -3007,17 +3021,18 @@ def is_volte_enabled(log, ad):
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
+    result = True
     if not ad.droid.telephonyIsVolteAvailable():
         ad.log.info("IsVolteCallingAvailble is False")
-        return False
+        result = False
     else:
         ad.log.info("IsVolteCallingAvailble is True")
-        if not is_ims_registered(log, ad):
-            ad.log.info("VoLTE is Available, but IMS is not registered.")
-            return False
-        else:
-            ad.log.info("IMS is registered")
-            return True
+    if not is_ims_registered(log, ad):
+        ad.log.info("IMS is not registered.")
+        result = False
+    else:
+        ad.log.info("IMS is registered")
+    return result
 
 
 def is_video_enabled(log, ad):
@@ -4100,7 +4115,7 @@ def ensure_phone_subscription(log, ad):
     while duration < MAX_WAIT_TIME_NW_SELECTION:
         subInfo = ad.droid.subscriptionGetAllSubInfoList()
         if subInfo and len(subInfo) >= 1:
-            ad.log.info("Find valid subcription %s", subInfo)
+            ad.log.debug("Find valid subcription %s", subInfo)
             break
         else:
             ad.log.info("Did not find a valid subscription")
