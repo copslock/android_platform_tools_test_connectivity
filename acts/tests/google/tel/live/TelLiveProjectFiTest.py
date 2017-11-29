@@ -30,6 +30,7 @@ from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import wait_for_state
@@ -94,6 +95,30 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ad.log.error("Fail to add google account due to %s", output)
         return False
 
+    def _remove_google_account(self, ad, retries=3):
+        if not ad.is_apk_installed("com.google.android.tradefed.account"
+                                   ) and self.user_params.get("account_util"):
+            account_util = self.user_params["account_util"]
+            if isinstance(account_util, list):
+                account_util = account_util[0]
+            ad.log.info("Install account_util %s", account_util)
+            ad.ensure_screen_on()
+            ad.adb.install("-r %s" % account_util, timeout=180)
+        if not ad.is_apk_installed("com.google.android.tradefed.account"):
+            ad.log.error(
+                "com.google.android.tradefed.account is not installed")
+            return False
+        for _ in range(3):
+            ad.ensure_screen_on()
+            output = ad.adb.shell(
+                'am instrument -w '
+                'com.google.android.tradefed.account/.RemoveAccounts')
+            if "result=SUCCESS" in output:
+                ad.log.info("google account is removed successfully")
+                return True
+        ad.log.error("Fail to remove google account due to %s", output)
+        return False
+
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
             if not ad.is_apk_installed("com.google.android.tradefed.account"
@@ -124,15 +149,21 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            if not self.start_tycho_init_activity(ad):
+            if ad.adb.shell("settings get secure user_setup_complete") == "0":
+                self.start_tycho_activation(ad)
+                ad.exit_setup_wizard()
+            else:
+                self.start_tycho_init_activity(ad)
+            if not self.check_project_fi_activated(ad):
                 ad.log.error("Fail to activate Fi account")
                 return False
-        elif ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network":
+        elif "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha"):
             ad.log.error("Google account is not provided for Fi Network")
             return False
         if not ensure_phone_subscription(self.log, ad):
             ad.log.error("Unable to find a valid subscription!")
             return False
+        refresh_droid_config(self.log, ad)
         return True
 
     def start_service(self, ad, package, service_id, extras, action_type):
@@ -187,10 +218,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         time.sleep(2)
         ad.send_keycode("TAB")
         ad.send_keycode("ENTER")
+
+    def check_project_fi_activated(self, ad):
         for _ in range(10):
             if ad.adb.getprop("gsm.sim.state") == "READY" and (
-                    ad.adb.getprop("gsm.sim.operator.alpha") == "Fi Network" or
-                    ad.adb.getprop("gsm.operator.alpha") == "Fi Network"):
+                    "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") or
+                    "Fi Network" in ad.adb.getprop("gsm.operator.alpha")):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
                 return True
             time.sleep(30)
@@ -265,13 +298,13 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             Error: whenever a device is not set to the desired carrier within
                    the timeout window.
         """
-        wait_for_state(self.is_ready_to_make_carrier_switch, True, [ad])
         old_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
         ad.log.info("Before SIM switch, SIM operator = %s", old_sim_operator)
         send_dialer_secret_code(ad, "794824746")
         time.sleep(10)
         new_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
         ad.log.info("After SIM switch, SIM operator = %s", new_sim_operator)
+        refresh_droid_config(self.log, ad)
         return old_sim_operator != new_sim_operator
 
     def set_active_carrier(self,
@@ -411,10 +444,14 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         return False
 
     def operator_network_switch(self, ad, carrier):
-        if ad.adb.getprop("gsm.sim.operator.alpha") != "Fi Network" and (
+        if "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") and (
                 not self.set_active_carrier(ad, carrier)):
             ad.log.error("Failed to switch to %s", carrier)
             return False
+        if not ensure_phone_subscription(self.log, ad):
+            ad.log.error("Unable to find a valid subscription!")
+            return False
+        refresh_droid_config(self.log, ad)
         return True
 
     def network_switch_test(self, carrier):
@@ -422,7 +459,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         tasks = [(self.operator_network_switch, [ad, carrier])
                  for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
-            abort_all_tests(ad.log, "Unable to switch to network %s" % carrier)
+            abort_all_tests(self.log,
+                            "Unable to switch to network %s" % carrier)
 
     """ Tests Begin """
 
@@ -438,7 +476,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         tasks = [(self._account_registration, [ad])
                  for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
-            abort_all_tests(ad.log, "Unable to activate Fi account!")
+            abort_all_tests(self.log, "Unable to activate Fi account!")
 
     @test_tracker_info(uuid="6bfbcc1d-e318-4964-bf36-5b82f086860d")
     @TelephonyBaseTest.tel_test_wrap
@@ -495,6 +533,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         for ad in self.android_devices:
             self.switch_sim(ad)
+
+    @test_tracker_info(uuid="")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_remove_google_account(self):
+        for ad in self.android_devices:
+            self._remove_google_account(ad)
 
 
 """ Tests End """
