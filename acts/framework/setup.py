@@ -17,7 +17,6 @@
 from distutils import cmd
 from distutils import log
 import os
-import pip
 import shutil
 import setuptools
 from setuptools.command import test
