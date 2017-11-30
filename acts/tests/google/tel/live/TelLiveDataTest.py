@@ -128,6 +128,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.clients = self.android_devices[:-1]
 
     def setup_test(self):
+        TelephonyBaseTest.setup_test(self)
         try:
             self.tcpdump_pid = None
             self.tcpdump_file = None
@@ -138,6 +139,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             pass
 
     def teardown_test(self):
+        TelephonyBaseTest.teardown_test(self)
         self.log.info("Inside Teardown Test")
         try:
             if self.tcpdump_pid is not None:

@@ -431,13 +431,13 @@ class AndroidDevice:
         Args:
             skip_sl4a: Does not attempt to start SL4A if True.
         """
+        if skip_setup_wizard:
+            self.exit_setup_wizard()
         try:
             self.start_adb_logcat()
         except:
             self.log.exception("Failed to start adb logcat!")
             raise
-        if skip_setup_wizard:
-            self.exit_setup_wizard()
         if not skip_sl4a:
             try:
                 droid, ed = self.get_droid()
@@ -1053,8 +1053,8 @@ class AndroidDevice:
             self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
-            # Neet to sleep 10 seconds for the log to be generated
-            time.sleep(10)
+            # Neet to sleep 20 seconds for the log to be generated
+            time.sleep(20)
         log_path = log_path or getattr(self, "qxdm_logger_path", None)
         if not log_path:
             return
@@ -1260,7 +1260,7 @@ class AndroidDevice:
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
-        if stop_at_lock_screen and self.is_screen_lock_enabled():
+        if stop_at_lock_screen:
             return
         self.start_services(self.skip_sl4a)
 
@@ -1480,6 +1480,10 @@ class AndroidDevice:
         self.adb.shell(
             "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
         )
+        if not self.is_user_setup_complete():
+            self.adb.shell("echo ro.test_harness=1 > /data/local.prop")
+            self.adb.shell("chmod 644 /data/local.prop")
+            self.reboot(stop_at_lock_screen=True)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
