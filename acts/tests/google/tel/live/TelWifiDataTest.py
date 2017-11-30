@@ -79,15 +79,16 @@ class TelWifiDataTest(TelephonyBaseTest):
         Make sure DUT get Cell Data coverage (LTE)
         Make sure DUT WiFi is connected
         """
-        toggle_airplane_mode(self.log, self.android_devices[0], False)
-        if not ensure_network_generation(self.log, self.android_devices[0],
+        ad = self.android_devices[0]
+        toggle_airplane_mode(self.log, ad, False)
+        if not ensure_network_generation(self.log, ad,
                                          GEN_4G, NETWORK_SERVICE_DATA):
             return False
 
-        if not ensure_wifi_connected(self.log, self.android_devices[0],
+        if not ensure_wifi_connected(self.log, ad,
                                      self.live_network_ssid,
                                      self.live_network_pwd):
-            ad.log.error("%s connect WiFI failed")
+            ad.log.error("connect WiFi failed")
             return False
         return True
 
@@ -257,6 +258,7 @@ class TelWifiDataTest(TelephonyBaseTest):
             if (not wait_for_wifi_data_connection(self.log, ad, True)):
                 ad.log.error("Data not on WiFi")
                 break
+            ad.on_mobile_data = False
             if not active_file_download_test(self.log, ad):
                 ad.log.error("HTTP file download failed on WiFi")
                 break
@@ -265,6 +267,7 @@ class TelWifiDataTest(TelephonyBaseTest):
             if (not wait_for_cell_data_connection(self.log, ad, True)):
                 ad.log.error("Data not on Cell")
                 break
+            ad.on_mobile_data = True
             if not active_file_download_test(self.log, ad):
                 ad.log.error("HTTP file download failed on cell")
                 break
@@ -361,6 +364,7 @@ class TelWifiDataTest(TelephonyBaseTest):
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
             return False
+        ad.on_mobile_data = False
         if not active_file_download_test(self.log, ad, "10MB"):
             ad.log.error("HTTP file download failed on WiFi")
             return False
@@ -391,6 +395,7 @@ class TelWifiDataTest(TelephonyBaseTest):
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on LTE")
             return False
+        ad.on_mobile_data = True
         if not active_file_download_test(self.log, ad, "512MB"):
             ad.log.error("HTTP file download failed on LTE")
             return False
