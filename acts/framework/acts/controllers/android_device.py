@@ -1053,8 +1053,8 @@ class AndroidDevice:
             self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
-            # Neet to sleep 10 seconds for the log to be generated
-            time.sleep(10)
+            # Neet to sleep 20 seconds for the log to be generated
+            time.sleep(20)
         log_path = log_path or getattr(self, "qxdm_logger_path", None)
         if not log_path:
             return
