@@ -48,6 +48,7 @@ from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import stop_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -68,6 +69,7 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
         if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
             qxdm_log_mask_cfg = None
+        stop_qxdm_loggers(None, self.android_devices)
         for ad in self.android_devices:
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
@@ -86,6 +88,8 @@ class TelephonyBaseTest(BaseTestClass):
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
 
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
 
@@ -254,6 +258,7 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def teardown_class(self):
+        stop_qxdm_loggers(None, self.android_devices)
         try:
             for ad in self.android_devices:
                 ad.droid.disableDevicePassword()
