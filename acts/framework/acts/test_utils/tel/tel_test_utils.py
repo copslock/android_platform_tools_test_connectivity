@@ -4455,8 +4455,9 @@ def run_multithread_func(log, tasks):
         log.error("Exception error %s", e)
         raise
     executor.shutdown()
-    log.info("multithread_func %s result: %s",
-             [task[0].__name__ for task in tasks], results)
+    if log:
+        log.info("multithread_func %s result: %s",
+                 [task[0].__name__ for task in tasks], results)
     return results
 
 
@@ -4861,6 +4862,17 @@ def set_qxdm_logger_command(ad, mask=None):
         return True
 
 
+def stop_qxdm_logger(ad):
+    """Stop QXDM logger."""
+    for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
+        output = ad.adb.shell("ps -ef | grep mdlog") or ""
+        if "diag_mdlog" not in output:
+            break
+        ad.log.debug("Kill the existing qxdm process")
+        ad.adb.shell(cmd, ignore_status=True)
+        time.sleep(5)
+
+
 def start_qxdm_logger(ad):
     """Start QXDM logger."""
     if getattr(ad, "qxdm_logger_command", None):
@@ -4871,20 +4883,20 @@ def start_qxdm_logger(ad):
             if "diag_mdlog" in output:
                 # Kill the existing diag_mdlog process
                 # Only one diag_mdlog process can be run
-                for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
-                    ad.log.debug("Kill the existing qxdm process")
-                    ad.adb.shell(cmd, ignore_status=True)
-                    time.sleep(5)
-                    output = ad.adb.shell("ps -ef | grep mdlog") or ""
-                    if "diag_mdlog" not in output:
-                        break
+                stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             start_standing_subprocess("adb -s %s shell %s" %
                                       (ad.serial, ad.qxdm_logger_command))
+        return True
 
 
 def start_qxdm_loggers(log, ads):
     tasks = [(start_qxdm_logger, [ad]) for ad in ads]
+    run_multithread_func(log, tasks)
+
+
+def stop_qxdm_loggers(log, ads):
+    tasks = [(stop_qxdm_logger, [ad]) for ad in ads]
     run_multithread_func(log, tasks)
 
 
