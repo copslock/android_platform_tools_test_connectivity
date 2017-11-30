@@ -121,6 +121,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
 
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
+            ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
                                            "account_util"):
@@ -149,11 +150,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            if ad.adb.shell("settings get secure user_setup_complete") == "0":
-                self.start_tycho_activation(ad)
-                ad.exit_setup_wizard()
-            else:
-                self.start_tycho_init_activity(ad)
+            self.start_tycho_init_activity(ad)
             if not self.check_project_fi_activated(ad):
                 ad.log.error("Fail to activate Fi account")
                 return False
