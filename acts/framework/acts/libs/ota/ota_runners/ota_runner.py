@@ -49,9 +49,14 @@ class OtaRunner(object):
         logging.info('Boot completed. Rooting adb.')
         self.android_device.root_adb()
         logging.info('Root complete. Installing new SL4A.')
-        output = self.android_device.adb.install('-r %s' % self.get_sl4a_apk())
-        logging.info('SL4A install output: %s' % output)
-        time.sleep(SL4A_SERVICE_SETUP_TIME)
+        if not hasattr(self.android_device, 'skip_sl4a'):
+            for _ in range(3):
+                self.android_device.log.info("Re-install sl4a")
+                self.android_device.adb.install(
+                    "-r -g %s" % self.get_sl4a_apk(), ignore_status=True)
+                time.sleep(SL4A_SERVICE_SETUP_TIME)
+                if self.android_device.is_sl4a_installed():
+                    break
         logging.info('Starting services.')
         self.android_device.start_services()
         logging.info('Services started. Running ota tool cleanup.')
