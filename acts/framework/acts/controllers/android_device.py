@@ -1068,6 +1068,15 @@ class AndroidDevice:
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
+        if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
+            omadm_log_path = os.path.join(self.log_path, test_name, "OMADM_Log")
+            utils.create_dir(omadm_log_path)
+            self.log.info("Pull OMADM Log")
+            self.adb.pull(
+                "/data/data/com.android.omadm.service/files/dm/log/ %s" %
+                omadm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
 
     def start_new_session(self):
         """Start a new session in sl4a.
