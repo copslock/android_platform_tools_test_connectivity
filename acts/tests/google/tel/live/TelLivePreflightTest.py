@@ -114,7 +114,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
         try:
             run_multithread_func(self.log, tasks)
         except Exception as err:
-            abort_all_tests(ad.log, "Unable to do ota upgrade: %s" % err)
+            abort_all_tests(self.log, "Unable to do ota upgrade: %s" % err)
         device_info = get_info(self.android_devices)
         self.log.info("After OTA upgrade: %s", device_info)
         self.results.add_controller_info("AndroidDevice", device_info)
