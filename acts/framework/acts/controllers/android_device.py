@@ -92,6 +92,8 @@ def create(configs):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
 
+    ads[0].log.info('The primary device under test is "%s".' % ads[0].serial)
+
     for ad in ads:
         if not ad.is_connected():
             raise DoesNotExistError(("Android device %s is specified in config"
