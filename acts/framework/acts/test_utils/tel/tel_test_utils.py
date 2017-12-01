@@ -490,6 +490,12 @@ def get_telephony_signal_strength(ad):
     return signal_strength
 
 
+def get_wifi_signal_strength(ad):
+    signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
+    ad.log.info("WiFi Signal Strength is %s" % signal_strength)
+    return signal_strength
+
+
 def is_expected_event(event_to_check, events_list):
     """ check whether event is present in the event list
 
