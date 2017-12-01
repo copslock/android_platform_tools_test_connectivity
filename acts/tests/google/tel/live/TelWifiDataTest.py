@@ -30,6 +30,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
+from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
 from acts.utils import adb_shell_ping
 
 # Attenuator name
@@ -153,6 +155,8 @@ class TelWifiDataTest(TelephonyBaseTest):
                                               irat_wait_time) or
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
 
         ad.log.info("Triggering WiFi to Cellular IRAT")
@@ -161,6 +165,8 @@ class TelWifiDataTest(TelephonyBaseTest):
                                               irat_wait_time) or
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on Cell")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
         return True
 
@@ -257,19 +263,29 @@ class TelWifiDataTest(TelephonyBaseTest):
             self._atten_setup_wifi_cell()
             if (not wait_for_wifi_data_connection(self.log, ad, True)):
                 ad.log.error("Data not on WiFi")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
+
             ad.on_mobile_data = False
             if not active_file_download_test(self.log, ad):
                 ad.log.error("HTTP file download failed on WiFi")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
 
             self._atten_setup_cell_only()
             if (not wait_for_cell_data_connection(self.log, ad, True)):
                 ad.log.error("Data not on Cell")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
+
             ad.on_mobile_data = True
             if not active_file_download_test(self.log, ad):
                 ad.log.error("HTTP file download failed on cell")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
 
             self.log.info(">----Iteration : %d/%d succeed.----<",
@@ -322,13 +338,18 @@ class TelWifiDataTest(TelephonyBaseTest):
             if (not wait_for_wifi_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
                 ad.log.error("Data not on WiFi")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
 
             self._atten_setup_cell_only()
             if (not wait_for_cell_data_connection(self.log, ad, True) or
                     not verify_http_connection(self.log, ad)):
                 ad.log.error("Data not on Cell")
+                get_telephony_signal_strength(ad)
+                get_wifi_signal_strength(ad)
                 break
+
             self.log.info(">----Iteration : %d/%d succeed.----<",
                           current_iteration, total_iteration)
             current_iteration += 1
@@ -363,10 +384,14 @@ class TelWifiDataTest(TelephonyBaseTest):
         if (not wait_for_wifi_data_connection(self.log, ad, True) or
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
         ad.on_mobile_data = False
         if not active_file_download_test(self.log, ad, "10MB"):
             ad.log.error("HTTP file download failed on WiFi")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
         return True
 
@@ -394,10 +419,14 @@ class TelWifiDataTest(TelephonyBaseTest):
         if (not wait_for_cell_data_connection(self.log, ad, True) or
                 not verify_http_connection(self.log, ad)):
             ad.log.error("Data not on LTE")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
         ad.on_mobile_data = True
         if not active_file_download_test(self.log, ad, "512MB"):
             ad.log.error("HTTP file download failed on LTE")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
             return False
         return True
 
