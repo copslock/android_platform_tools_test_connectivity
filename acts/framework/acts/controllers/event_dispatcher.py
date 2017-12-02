@@ -82,7 +82,9 @@ class EventDispatcher:
             if event_name in self.handlers:
                 self.handle_subscribed_event(event_obj, event_name)
             if event_name == "EventDispatcherShutdown":
-                self.droid.closeSl4aSession()
+                # closeSl4aSession() has been called, which breaks the
+                # connection with SL4A. Close the event dispatcher on the ACTS
+                # side.
                 break
             else:
                 self.lock.acquire()
