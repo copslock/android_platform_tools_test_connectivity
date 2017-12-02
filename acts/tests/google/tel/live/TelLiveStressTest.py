@@ -426,7 +426,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log, [(self.call_test,
                         [call_verification_func]), (self.message_test, []),
                        (self.data_test, []), (self.crash_check_test, [])])
-        result_message = "%s" % dict(self.result_info)
+        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
+        for count in ("Call Failure", "Total SMS", "SMS failure", "Total MMS",
+                      "MMS failure", "Total file download",
+                      "File download failure"):
+            result_message = "%s, %s: %s" % (result_message, count,
+                                             self.result_info[count])
         self.log.info(result_message)
         if all(results):
             explicit_pass(result_message)
@@ -442,8 +447,12 @@ class TelLiveStressTest(TelephonyBaseTest):
         results = run_multithread_func(self.log, [(
             self.volte_modechange_volte_test, []), (self.message_test, []),
                                                   (self.crash_check_test, [])])
-        result_message = "%s" % dict(self.result_info)
-        self.log.info(result_message)
+        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
+        for count in ("Call Failure", "Total SMS", "SMS failure", "Total MMS",
+                      "MMS failure", "Total file download",
+                      "File download failure", "RAT change failure"):
+            result_message = "%s, %s: %s" % (result_message, count,
+                                             self.result_info[count])
         if all(results):
             explicit_pass(result_message)
         else:
