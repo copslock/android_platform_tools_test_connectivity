@@ -26,6 +26,8 @@ from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 class RequestManagementTest(RttBaseTest):
   """Test class for RTT request management flows."""
 
+  SPAMMING_LIMIT = 20
+
   def __init__(self, controllers):
     RttBaseTest.__init__(self, controllers)
 
@@ -66,8 +68,8 @@ class RequestManagementTest(RttBaseTest):
     group2_ids = []
     group3_ids = []
 
-    # step 1: request 50 ranging operations on [uid1, uid2, uid3]
-    for i in range(50):
+    # step 1: request <spam_limit> ranging operations on [uid1, uid2, uid3]
+    for i in range(self.SPAMMING_LIMIT):
       group1_ids.append(
         dut.droid.wifiRttStartRangingToAccessPoints(aps, all_uids))
 

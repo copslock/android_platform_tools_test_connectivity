@@ -265,7 +265,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
             elif iccid and iccid in sim_data and sim_data[iccid].get(
                     "phone_num"):
                 if check_phone_number_match(sim_data[iccid]["phone_num"],
-                                            phone_number):
+                                            sub_info["phone_num"]):
                     sub_info["phone_num"] = sim_data[iccid]["phone_num"]
                 else:
                     ad.log.warning(
@@ -487,6 +487,12 @@ def get_telephony_signal_strength(ad):
          "lteRsrq", "lteRssnr", "lteCqi", "lteRsrpBoost")):
         signal_strength[val] = signal_strength.get(val, int(signals[i]))
     ad.log.info("Telephony Signal strength = %s", signal_strength)
+    return signal_strength
+
+
+def get_wifi_signal_strength(ad):
+    signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
+    ad.log.info("WiFi Signal Strength is %s" % signal_strength)
     return signal_strength
 
 
@@ -4885,8 +4891,7 @@ def start_qxdm_logger(ad):
                 # Only one diag_mdlog process can be run
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
-            start_standing_subprocess("adb -s %s shell %s" %
-                                      (ad.serial, ad.qxdm_logger_command))
+            ad.adb.shell_nb(ad.qxdm_logger_command)
         return True
 
 

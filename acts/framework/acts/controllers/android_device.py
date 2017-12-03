@@ -97,6 +97,8 @@ def create(configs):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
 
+    ads[0].log.info('The primary device under test is "%s".' % ads[0].serial)
+
     for ad in ads:
         if not ad.is_connected():
             raise DoesNotExistError(("Android device %s is specified in config"
@@ -1066,6 +1068,15 @@ class AndroidDevice:
             self.pull_files(qxdm_logs, qxdm_log_path)
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
+        if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
+            omadm_log_path = os.path.join(self.log_path, test_name, "OMADM_Log")
+            utils.create_dir(omadm_log_path)
+            self.log.info("Pull OMADM Log")
+            self.adb.pull(
+                "/data/data/com.android.omadm.service/files/dm/log/ %s" %
+                omadm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
 
