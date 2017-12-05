@@ -527,9 +527,9 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             return False
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
-        results = run_multithread_func(self.log, [(
-            self.volte_modechange_volte_test, []), (self.message_test, []),
-                                                  (self.crash_check_test, [])])
+        results = run_multithread_func(self.log,
+                                       [(self.volte_modechange_volte_test, []),
+                                        (self.crash_check_test, [])])
         result_message = "%s" % dict(self.result_info)
         self.log.info(result_message)
         if all(results):
