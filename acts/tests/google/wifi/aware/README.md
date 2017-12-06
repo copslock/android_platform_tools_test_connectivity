@@ -42,7 +42,7 @@ devices without listing specific serial numbers. Note that some tests use a
 single device while others use 2 devices. In addition, the configurations
 define the following key to configure the test:
 
-* **default_power_mode**: The power mode in which to run all tests. Options
+* **aware_default_power_mode**: The power mode in which to run all tests. Options
 are `INTERACTIVE` and `NON_INTERACTIVE`.
 
 The following configurations are provided:

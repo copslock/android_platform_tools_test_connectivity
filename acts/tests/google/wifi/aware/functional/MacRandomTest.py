@@ -17,6 +17,7 @@
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -50,6 +51,7 @@ class MacRandomTest(AwareBaseTest):
 
   ##########################################################################
 
+  @test_tracker_info(uuid="09964368-146a-48e4-9f33-6a319f9eeadc")
   def test_nmi_ndi_randomization_on_enable(self):
     """Validate randomization of the NMI (NAN management interface) and all NDIs
     (NAN data-interface) on each enable/disable cycle"""
@@ -97,6 +99,7 @@ class MacRandomTest(AwareBaseTest):
         "Infrastructure MAC address (%s) is used for Aware NMI (all=%s)" %
         (infra_mac, mac_addresses))
 
+  @test_tracker_info(uuid="0fb0b5d8-d9cb-4e37-b9af-51811be5670d")
   def test_nmi_randomization_on_interval(self):
     """Validate randomization of the NMI (NAN management interface) on a set
     interval. Default value is 30 minutes - change to a small value to allow

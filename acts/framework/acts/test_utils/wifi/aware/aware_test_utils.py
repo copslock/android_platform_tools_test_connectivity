@@ -342,6 +342,21 @@ def get_mac_addr(device, interface):
       extras=out)
   return res.group(1).upper().replace(':', '')
 
+def get_ipv6_addr(device, interface):
+  """Get the IPv6 address of the specified interface. Uses ifconfig and parses
+  its output. Returns a None if the interface does not have an IPv6 address
+  (indicating it is not UP).
+
+  Args:
+    device: Device on which to query the interface IPv6 address.
+    interface: Name of the interface for which to obtain the IPv6 address.
+  """
+  out = device.adb.shell("ifconfig %s" % interface)
+  res = re.match(".*inet6 addr: (\S+)/.*", out , re.S)
+  if not res:
+    return None
+  return res.group(1)
+
 #########################################################
 # Aware primitives
 #########################################################
@@ -356,6 +371,26 @@ def request_network(dut, ns):
   """
   network_req = {"TransportType": 5, "NetworkSpecifier": ns}
   return dut.droid.connectivityRequestWifiAwareNetwork(network_req)
+
+def get_network_specifier(dut, id, dev_type, peer_mac, sec):
+  """Create a network specifier for the device based on the security
+  configuration.
+
+  Args:
+    dut: device
+    id: session ID
+    dev_type: device type - Initiator or Responder
+    peer_mac: the discovery MAC address of the peer
+    sec: security configuration
+  """
+  if sec is None:
+    return dut.droid.wifiAwareCreateNetworkSpecifierOob(
+        id, dev_type, peer_mac)
+  if isinstance(sec, str):
+    return dut.droid.wifiAwareCreateNetworkSpecifierOob(
+        id, dev_type, peer_mac, sec)
+  return dut.droid.wifiAwareCreateNetworkSpecifierOob(
+      id, dev_type, peer_mac, None, sec)
 
 def configure_dw(device, is_default, is_24_band, value):
   """Use the command-line API to configure the DW (discovery window) setting
@@ -459,6 +494,23 @@ def create_discovery_config(service_name,
   config[aconsts.DISCOVERY_KEY_TTL] = ttl
   config[aconsts.DISCOVERY_KEY_TERM_CB_ENABLED] = term_cb_enable
   return config
+
+def attach_with_identity(dut):
+  """Start an Aware session (attach) and wait for confirmation and identity
+  information (mac address).
+
+  Args:
+    dut: Device under test
+  Returns:
+    id: Aware session ID.
+    mac: Discovery MAC address of this device.
+  """
+  id = dut.droid.wifiAwareAttach(True)
+  wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACHED)
+  event = wait_for_event(dut, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+  mac = event["data"]["mac"]
+
+  return id, mac
 
 def create_discovery_pair(p_dut,
                           s_dut,

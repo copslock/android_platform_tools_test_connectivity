@@ -1,3 +1,4 @@
 MessagesStressTest
 DataPathStressTest
 DiscoveryStressTest
+InfraAssociationStressTest

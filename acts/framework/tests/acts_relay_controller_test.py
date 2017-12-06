@@ -217,10 +217,8 @@ class ActsSainSmartBoardTest(unittest.TestCase):
             file.write(self.RELAY_ON_PAGE_CONTENTS)
 
         self.config = ({
-            'name':
-            'SSBoard',
-            'base_url':
-            self.test_dir,
+            'name': 'SSBoard',
+            'base_url': self.test_dir,
             'relays': [{
                 'name': '0',
                 'relay_pos': 0
@@ -677,10 +675,8 @@ class TestRelayRigParser(unittest.TestCase):
         rig.relays['r0'] = self.r0
         rig.relays['r1'] = self.r1
         config = {
-            'type':
-            'SomeInvalidType',
-            'name':
-            '.',
+            'type': 'SomeInvalidType',
+            'name': '.',
             'relays': [{
                 'name': 'r0',
                 'pos': 'MockBoard/0'

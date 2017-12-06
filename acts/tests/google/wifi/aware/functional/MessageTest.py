@@ -18,6 +18,7 @@ import string
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -391,42 +392,49 @@ class MessageTest(AwareBaseTest):
 
   ############################################################################
 
+  @test_tracker_info(uuid="a8cd0512-b279-425f-93cf-949ddba22c7a")
   def test_message_no_queue_min(self):
     """Functional / Message / No queue
     - Minimal payload size (None or "")
     """
     self.run_message_no_queue(self.PAYLOAD_SIZE_MIN)
 
+  @test_tracker_info(uuid="2c26170a-5d0a-4cf4-b0b9-56ef03f5dcf4")
   def test_message_no_queue_typical(self):
     """Functional / Message / No queue
     - Typical payload size
     """
     self.run_message_no_queue(self.PAYLOAD_SIZE_TYPICAL)
 
+  @test_tracker_info(uuid="c984860c-b62d-4d9b-8bce-4d894ea3bfbe")
   def test_message_no_queue_max(self):
     """Functional / Message / No queue
     - Max payload size (based on device capabilities)
     """
     self.run_message_no_queue(self.PAYLOAD_SIZE_MAX)
 
+  @test_tracker_info(uuid="3f06de73-31ab-4e0c-bc6f-59abdaf87f4f")
   def test_message_with_queue_min(self):
     """Functional / Message / With queue
     - Minimal payload size (none or "")
     """
     self.run_message_with_queue(self.PAYLOAD_SIZE_MIN)
 
+  @test_tracker_info(uuid="9b7f5bd8-b0b1-479e-8e4b-9db0bb56767b")
   def test_message_with_queue_typical(self):
     """Functional / Message / With queue
     - Typical payload size
     """
     self.run_message_with_queue(self.PAYLOAD_SIZE_TYPICAL)
 
+  @test_tracker_info(uuid="4f9a6dce-3050-4e6a-a143-53592c6c7c28")
   def test_message_with_queue_max(self):
     """Functional / Message / With queue
     - Max payload size (based on device capabilities)
     """
     self.run_message_with_queue(self.PAYLOAD_SIZE_MAX)
 
+  @test_tracker_info(uuid="4cece232-0983-4d6b-90a9-1bb9314b64f0")
   def test_message_with_multiple_discovery_sessions_typical(self):
     """Functional / Message / Multiple sessions
 
