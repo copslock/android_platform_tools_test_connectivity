@@ -173,7 +173,6 @@ hid_id_mouse = 2
 hid_default_event_timeout = 15
 hid_default_set_report_payload = "Haha"
 
-
 ### Bluetooth Constants End ###
 
 ### Bluetooth Low Energy Constants Begin ###
@@ -253,28 +252,40 @@ ble_advertise_error_code = {
 gatt_cb_err = {
     "char_write_req_err":
     "Characteristic Write Request event not found. Expected {}",
-    "char_write_err": "Characteristic Write event not found. Expected {}",
+    "char_write_err":
+    "Characteristic Write event not found. Expected {}",
     "desc_write_req_err":
     "Descriptor Write Request event not found. Expected {}",
-    "desc_write_err": "Descriptor Write event not found. Expected {}",
-    "char_read_err": "Characteristic Read event not found. Expected {}",
-    "char_read_req_err": "Characteristic Read Request not found. Expected {}",
-    "desc_read_err": "Descriptor Read event not found. Expected {}",
+    "desc_write_err":
+    "Descriptor Write event not found. Expected {}",
+    "char_read_err":
+    "Characteristic Read event not found. Expected {}",
+    "char_read_req_err":
+    "Characteristic Read Request not found. Expected {}",
+    "desc_read_err":
+    "Descriptor Read event not found. Expected {}",
     "desc_read_req_err":
     "Descriptor Read Request event not found. Expected {}",
-    "rd_remote_rssi_err": "Read Remote RSSI event not found. Expected {}",
+    "rd_remote_rssi_err":
+    "Read Remote RSSI event not found. Expected {}",
     "gatt_serv_disc_err":
     "GATT Services Discovered event not found. Expected {}",
-    "serv_added_err": "Service Added event not found. Expected {}",
-    "mtu_changed_err": "MTU Changed event not found. Expected {}",
-    "mtu_serv_changed_err": "MTU Server Changed event not found. Expected {}",
+    "serv_added_err":
+    "Service Added event not found. Expected {}",
+    "mtu_changed_err":
+    "MTU Changed event not found. Expected {}",
+    "mtu_serv_changed_err":
+    "MTU Server Changed event not found. Expected {}",
     "gatt_conn_changed_err":
     "GATT Connection Changed event not found. Expected {}",
     "char_change_err":
     "GATT Characteristic Changed event not fond. Expected {}",
-    "phy_read_err": "Phy Read event not fond. Expected {}",
-    "phy_update_err": "Phy Update event not fond. Expected {}",
-    "exec_write_err": "GATT Execute Write event not found. Expected {}"
+    "phy_read_err":
+    "Phy Read event not fond. Expected {}",
+    "phy_update_err":
+    "Phy Update event not fond. Expected {}",
+    "exec_write_err":
+    "GATT Execute Write event not found. Expected {}"
 }
 
 # GATT callback strings as defined in GattClientFacade.java and
