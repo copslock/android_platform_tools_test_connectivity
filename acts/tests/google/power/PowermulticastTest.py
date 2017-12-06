@@ -249,7 +249,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('OFF', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping6Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv6_dst_fake)
+        packet = pkt_gen.generate(self.ipv6_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='e37112e6-5c35-4c89-8d15-f5a44e69be0b')
@@ -267,7 +267,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('OFF', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping4Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv4_dst_fake)
+        packet = pkt_gen.generate(self.ipv4_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='03f0e845-fd66-4120-a79d-5eb64d49b6cd')
@@ -396,7 +396,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping6Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv6_dst_fake)
+        packet = pkt_gen.generate(self.ipv6_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='90c70e8a-74fd-4878-89c6-5e15c3ede318')
@@ -414,7 +414,7 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.set_connection('ON', network)
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.Ping4Generator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv4_dst_fake)
+        packet = pkt_gen.generate(self.ipv4_dst_fake, pkt_utils.MAC_BROADCAST)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='117814db-f94d-4239-a7ab-033482b1da52')
