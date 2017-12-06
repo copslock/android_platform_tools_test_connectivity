@@ -209,7 +209,11 @@ class ActsTestRunnerTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.android_device.AndroidDevice.ensure_screen_on',
         return_value=True)
-    def test_run_two_test_classes(self, mock_ensure_screen_on, mock_get_all,
+    @mock.patch(
+        'acts.controllers.android_device.AndroidDevice.exit_setup_wizard',
+        return_value=True)
+    def test_run_two_test_classes(self, mock_exit_setup_wizard,
+                                  mock_ensure_screen_on, mock_get_all,
                                   mock_list_adb, mock_fastboot, mock_adb):
         """Verifies that runing more than one test class in one test run works
         proerly.
