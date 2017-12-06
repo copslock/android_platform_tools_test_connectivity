@@ -28,6 +28,9 @@ from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+
 # http://www.secdev.org/projects/scapy/
 # On ubuntu, sudo pip3 install scapy-python3
 import scapy.all as scapy
@@ -608,3 +611,62 @@ def create_monsoon_info(test_class):
         'data_path': test_class.mon_data_path
     }
     return mon_info
+
+
+def setup_phone_wireless(test_class,
+                         bt_on,
+                         wifi_on,
+                         screen_status,
+                         network=None,
+                         regular_mode=False):
+    """Sets the phone in rock-bottom and in the desired wireless mode
+
+    Args:
+        test_class: the specific test class where test is running
+        bt_on: Enable/Disable BT
+        wifi_on: Enable/Disable WiFi
+        screen_status: screen ON or OFF
+        network: a dict of information for the WiFi network to connect
+        regular_mode: enable cellular data (i.e., disable airplane mode)
+    """
+    # Initialize the dut to rock-bottom state
+    dut_rockbottom(test_class.dut)
+    time.sleep(1)
+
+    if regular_mode:
+        test_class.dut.droid.connectivityToggleAirplaneMode(False)
+        utils.set_mobile_data_always_on(test_class.dut, True)
+        time.sleep(2)
+
+    # Turn ON/OFF BT
+    if bt_on == 'ON':
+        enable_bluetooth(test_class.dut.droid, test_class.dut.ed)
+        test_class.dut.log.info('BT is ON')
+    else:
+        disable_bluetooth(test_class.dut.droid)
+        test_class.dut.droid.bluetoothDisableBLE()
+        test_class.dut.log.info('BT is OFF')
+    time.sleep(2)
+
+    # Turn ON/OFF Wifi
+    if wifi_on == 'ON':
+        wutils.wifi_toggle_state(test_class.dut, True)
+        test_class.dut.log.info('WiFi is ON')
+        if network:
+            # Set attenuation and connect to AP
+            for attn in range(test_class.num_atten):
+                test_class.attenuators[attn].set_atten(
+                    test_class.atten_level['zero_atten'][attn])
+            test_class.log.info('Set attenuation level to all zero')
+            ap_setup(test_class.access_point, network)
+            wutils.wifi_connect(test_class.dut, network)
+    else:
+        wutils.wifi_toggle_state(test_class.dut, False)
+        test_class.dut.log.info('WiFi is OFF')
+    time.sleep(1)
+
+    # Set the desired screen status
+    if screen_status == 'OFF':
+        test_class.dut.droid.goToSleepNow()
+        test_class.dut.log.info('Screen is OFF')
+    time.sleep(1)
