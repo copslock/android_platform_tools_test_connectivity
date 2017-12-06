@@ -63,7 +63,7 @@ class HidDeviceTest(BluetoothBaseTest):
 
     def teardown_test(self):
         self.log.info("Device: unregister")
-        self.device_ad.droid.bluetoothHidDeviceUnregisterApp(True)
+        self.device_ad.droid.bluetoothHidDeviceUnregisterApp()
         time.sleep(2)
         return True
 

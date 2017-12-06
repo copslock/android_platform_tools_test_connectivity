@@ -111,6 +111,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import disable_doze
 from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
+from acts.utils import adb_shell_ping
 
 
 class TelLiveDataTest(TelephonyBaseTest):
@@ -431,6 +432,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                                                self.android_devices[0])):
             self.log.error("Data not available on cell")
             return False
+
+        self.log.info("b/69431819, sending data to increase NW threshold limit")
+        adb_shell_ping(self.android_devices[0], count=30, timeout=60,
+                       loss_tolerance=100)
 
         try:
             self.log.info("Step2 Initiate call and accept.")
