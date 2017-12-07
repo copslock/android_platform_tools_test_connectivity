@@ -378,7 +378,7 @@ def ap_setup(ap, network):
     log.info("AP started on channel {} with SSID {}".format(channel, ssid))
 
 
-def bokeh_plot(data_sets, legends, fig_property):
+def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
     """Plot bokeh figs.
         Args:
             data_sets: data sets including lists of x_data and lists of y_data
@@ -414,6 +414,9 @@ def bokeh_plot(data_sets, legends, fig_property):
     plot.legend.location = "top_right"
     plot.legend.click_policy = "hide"
     plot.title.text_font_size = {'value': '15pt'}
+    if output_file_path is not None:
+        output_file(output_file_path)
+        save(plot)
     return plot
 
 
