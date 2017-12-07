@@ -456,8 +456,8 @@ class TestRunner(object):
         # tracking controller objs in test_run_info.
         if builtin:
             self.test_run_info[module_ref_name] = controllers
-        self.log.debug("Found %d objects for controller %s",
-                       len(controllers), module_config_name)
+        self.log.debug("Found %d objects for controller %s", len(controllers),
+                       module_config_name)
         return controllers
 
     def unregister_controllers(self):
@@ -542,7 +542,7 @@ class TestRunner(object):
         matches = fnmatch.filter(self.test_classes.keys(), test_cls_name)
         if not matches:
             self.log.info(
-                "Cannot find test class %s or classes matching pattern,"
+                "Cannot find test class %s or classes matching pattern, "
                 "skipping for now." % test_cls_name)
             record = records.TestResultRecord("*all*", test_cls_name)
             record.test_skip(signals.TestSkip("Test class does not exist."))
