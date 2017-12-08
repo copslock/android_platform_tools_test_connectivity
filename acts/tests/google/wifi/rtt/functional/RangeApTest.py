@@ -86,7 +86,7 @@ class RangeApTest(AwareBaseTest, RttBaseTest):
             len(range_results),
             'Mismatch in length of scan results and range results')
         for result in range_results:
-          bssid = result[rconsts.EVENT_CB_RANGING_KEY_MAC_AS_STRING_BSSID]
+          bssid = result[rconsts.EVENT_CB_RANGING_KEY_MAC_AS_STRING]
           asserts.assert_true(bssid in events,
                               "Result BSSID %s not in requested AP!?" % bssid)
           asserts.assert_equal(len(events[bssid]), i,
