@@ -369,6 +369,7 @@ class BaseTestClass(object):
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         self.begin_time = tr_record.log_begin_time
+        self.epoch_begin_time = tr_record.begin_time
         self.test_name = tr_record.test_name
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
@@ -681,14 +682,24 @@ class BaseTestClass(object):
 
     def _ad_take_reports(self, ad, test_name, begin_time):
         try:
-            if getattr(ad, "qxdm_log", False):
-                ad.get_qxdm_logs(test_name, begin_time)
-            ad.take_bug_report(test_name, begin_time)
             bugreport_path = os.path.join(ad.log_path, test_name)
             utils.create_dir(bugreport_path)
-            ad.check_crash_report(test_name, begin_time, True)
+            ad.take_bug_report(test_name, begin_time)
         except Exception as e:
             ad.log.error("Failed to take a bug report for %s with error %s",
+                         test_name, e)
+        if getattr(ad, "qxdm_log", False):
+            try:
+                qxdm_begin_time = logger.epoch_to_log_line_timestamp(
+                    self.epoch_begin_time - 1000 * 60 * 3)
+                ad.get_qxdm_logs(test_name, qxdm_begin_time)
+            except Exception as e:
+                ad.log.error("Failed to get QXDM log for %s with error %s",
+                             test_name, e)
+        try:
+            ad.check_crash_report(test_name, begin_time, True)
+        except Exception as e:
+            ad.log.error("Failed to check crash report for %s with error %s",
                          test_name, e)
 
     def _skip_bug_report(self):
@@ -729,16 +740,16 @@ class BaseTestClass(object):
         ad = ad.reboot()
 
     def _cleanup_logger_sessions(self):
-        for (logger, session) in self.logger_sessions:
-            self.log.info("Resetting a diagnostic session %s, %s", logger,
+        for (mylogger, session) in self.logger_sessions:
+            self.log.info("Resetting a diagnostic session %s, %s", mylogger,
                           session)
-            logger.reset()
+            mylogger.reset()
         self.logger_sessions = []
 
     def _pull_diag_logs(self, test_name, begin_time):
-        for (logger, session) in self.logger_sessions:
-            self.log.info("Pulling diagnostic session %s", logger)
-            logger.stop(session)
+        for (mylogger, session) in self.logger_sessions:
+            self.log.info("Pulling diagnostic session %s", mylogger)
+            mylogger.stop(session)
             diag_path = os.path.join(self.log_path, begin_time)
             utils.create_dir(diag_path)
-            logger.pull(session, diag_path)
+            mylogger.pull(session, diag_path)
