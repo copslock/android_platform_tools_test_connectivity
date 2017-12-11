@@ -1050,8 +1050,11 @@ class AndroidDevice:
     def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
         output = self.adb.shell("ps -ef | grep mdlog")
+        match = re.search(r"diag_mdlog.*", output)
         log_path = None
-        if "diag_mdlog" in output:
+        diag_mdlog_cmd = None
+        if match:
+            diag_mdlog_cmd = match.group(0)
             self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
@@ -1070,6 +1073,9 @@ class AndroidDevice:
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
+        if diag_mdlog_cmd:
+            self.log.debug("start qxdm logging by %s", diag_mdlog_cmd)
+            self.adb.shell_nb(diag_mdlog_cmd)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.log_path, test_name, "OMADM_Log")
             utils.create_dir(omadm_log_path)

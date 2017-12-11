@@ -161,16 +161,21 @@ def validate_ap_results(scan_results, range_results):
 
 
 def validate_aware_mac_result(range_result, mac, description):
-  """Validate the range result for An Aware peer specified with a MAC address:
-  - Correct MAC address
+  """Validate the range result for an Aware peer specified with a MAC address:
+  - Correct MAC address.
+
+  The MAC addresses may contain ":" (which are ignored for the comparison) and
+  may be in any case (which is ignored for the comparison).
 
   Args:
     range_result: Range result returned by the RTT API
     mac: MAC address of the peer
     description: Additional content to print on failure
   """
-  asserts.assert_equal(mac,
-                       range_result[rconsts.EVENT_CB_RANGING_KEY_MAC_AS_STRING],
+  mac1 = mac.replace(':', '').lower()
+  mac2 = range_result[rconsts.EVENT_CB_RANGING_KEY_MAC_AS_STRING].replace(':',
+                                                                  '').lower()
+  asserts.assert_equal(mac1, mac2,
                        '%s: MAC mismatch' % description)
 
 def validate_aware_peer_id_result(range_result, peer_id, description):
