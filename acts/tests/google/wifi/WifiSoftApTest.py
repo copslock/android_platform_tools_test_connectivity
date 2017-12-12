@@ -24,8 +24,9 @@ from acts import base_test
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
-
 
 class WifiSoftApTest(base_test.BaseTestClass):
 
@@ -140,6 +141,33 @@ class WifiSoftApTest(base_test.BaseTestClass):
             asserts.assert_true(self.dut.droid.telephonyIsDataEnabled(),
                                 "Failed to enable cell data for softap dut.")
 
+    def validate_full_tether_startup(self, band=None):
+        """Test full startup of wifi tethering
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        initial_wifi_state = self.dut.droid.wifiCheckState()
+        initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
+        self.dut.log.info("current state: %s", initial_wifi_state)
+        self.dut.log.info("is sim ready? %s", initial_cell_state)
+        if initial_cell_state:
+            self.check_cell_data_and_enable()
+        config = self.create_softap_config()
+        wutils.start_wifi_tethering(self.dut,
+                                    config[wutils.WifiEnums.SSID_KEY],
+                                    config[wutils.WifiEnums.PWD_KEY], band)
+        self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
+        wutils.stop_wifi_tethering(self.dut)
+        asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
+                             "SoftAp is still reported as running")
+        if initial_wifi_state:
+            self.verify_return_to_wifi_enabled()
+        elif self.dut.droid.wifiCheckState():
+            asserts.fail("Wifi was disabled before softap and now it is enabled")
 
     """ Tests Begin """
 
@@ -163,7 +191,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid="09c19c35-c708-48a5-939b-ac2bbb403d54")
     def test_full_tether_startup(self):
-        """Test full startup of wifi tethering
+        """Test full startup of wifi tethering in default band.
 
         1. Report current state.
         2. Switch to AP mode.
@@ -171,24 +199,31 @@ class WifiSoftApTest(base_test.BaseTestClass):
         4. Shutdown wifi tethering.
         5. verify back to previous mode.
         """
-        initial_wifi_state = self.dut.droid.wifiCheckState()
-        initial_cell_state = tel_utils.is_sim_ready(self.log, self.dut)
-        self.dut.log.info("current state: %s", initial_wifi_state)
-        self.dut.log.info("is sim ready? %s", initial_cell_state)
-        if initial_cell_state:
-            self.check_cell_data_and_enable()
-        config = self.create_softap_config()
-        wutils.start_wifi_tethering(self.dut,
-                                    config[wutils.WifiEnums.SSID_KEY],
-                                    config[wutils.WifiEnums.PWD_KEY])
-        self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
-        wutils.stop_wifi_tethering(self.dut)
-        asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
-                             "SoftAp is still reported as running")
-        if initial_wifi_state:
-            self.verify_return_to_wifi_enabled()
-        elif self.dut.droid.wifiCheckState():
-            asserts.fail("Wifi was disabled before softap and now it is enabled")
+        self.validate_full_tether_startup()
+
+    @test_tracker_info(uuid="6437727d-7db1-4f69-963e-f26a7797e47f")
+    def test_full_tether_startup_2G(self):
+        """Test full startup of wifi tethering in 2G band.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
+
+    @test_tracker_info(uuid="970272fa-1302-429b-b261-51efb4dad779")
+    def test_full_tether_startup_5G(self):
+        """Test full startup of wifi tethering in 5G band.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G)
 
     """ Tests End """
 
