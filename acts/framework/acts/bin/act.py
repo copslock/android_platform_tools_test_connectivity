@@ -121,8 +121,8 @@ def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
     of their corresponding configs.
 
     Args:
-        parsed_config: A list of dicts, each is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_configs: A list of dicts, each is a set of configs for one
+                        test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -258,7 +258,7 @@ def main(argv):
         exec_result = _run_tests_sequential(parsed_configs, test_identifiers,
                                             args.campaign_iterations)
     if exec_result is False:
-        print('Test results have returned empty.')
+        # return 1 upon test failure.
         sys.exit(1)
     sys.exit(0)
 
