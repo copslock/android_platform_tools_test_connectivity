@@ -125,8 +125,6 @@ class AdbProxy(object):
         result = job.run(cmd, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
 
-        logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
-                      err, ret)
         if DEVICE_OFFLINE_REGEX.match(err):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         if "Result: Parcel" in out:
@@ -142,14 +140,14 @@ class AdbProxy(object):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
                               **kwargs)
 
-    def _exec_cmd_nb(self, cmd):
+    def _exec_cmd_nb(self, cmd, **kwargs):
         """Executes adb commands in a new shell, non blocking.
 
         Args:
             cmds: A string that is the adb command to execute.
 
         """
-        job.run_async(cmd)
+        return job.run_async(cmd, **kwargs)
 
     def _exec_adb_cmd_nb(self, name, arg_str, **kwargs):
         return self._exec_cmd_nb(' '.join((self.adb_str, name, arg_str)),

@@ -84,6 +84,7 @@ class TelephonyBaseTest(BaseTestClass):
                     qxdm_log_mask = os.path.join(qxdm_mask_path,
                                                  mask_file_name)
                 set_qxdm_logger_command(ad, mask=qxdm_log_mask)
+                ad.adb.shell("rm %s" % os.path.join(ad.qxdm_logger_path, "*"))
             print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
