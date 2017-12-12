@@ -25,14 +25,18 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
+from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
+from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
+from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 
 
@@ -41,7 +45,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.dut = self.android_devices[0]
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
+        fake_number = self.user_params.get("fake_emergency_number", "800")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -75,7 +79,22 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 return True
         return False
 
+    def change_qcril_emergency_source_mcc_table(self):
+        # This will add the fake number into emergency number list for a mcc
+        # in qcril. Please note, the fake number will be send as an emergency
+        # number by modem and reach the real 911 by this
+        qcril_database_path = self.dut.adb.shell("find /data -iname  qcril.db")
+        if not qcril_database_path: return
+        mcc = self.dut.droid.telephonyGetNetworkOperator()
+        mcc = mcc[:3]
+        self.dut.log.info("Add %s mcc %s in qcril_emergency_source_mcc_table")
+        self.dut.adb.shell(
+            "sqlite3 %s \"INSERT INTO qcril_emergency_source_mcc_table VALUES('%s','%s','','')\""
+            % (qcril_database_path, mcc, self.fake_emergency_number))
+
     def fake_emergency_call_test(self, by_emergency_dialer=True):
+        self.dut.log.info("ServiceState is in %s",
+                          get_service_state_by_adb(self.log, self.dut))
         if by_emergency_dialer:
             dialing_func = initiate_emergency_dialer_call_by_adb
             callee = self.fake_emergency_number
@@ -123,7 +142,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 self.dut.log.info("%s is not in ril-ecclist",
                                   self.fake_emergency_number)
                 result = True
-        self.dut.log.error("fake_emergency_call_test result is %s", result)
+        self.dut.log.info("fake_emergency_call_test result is %s", result)
         return result
 
     """ Tests Begin """
@@ -197,6 +216,9 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
+        if not wait_for_sim_ready_by_adb(self.log, self.dut):
+            self.dut.log.error("SIM is not ready")
+            return False
         self.dut.reboot(stop_at_lock_screen=True)
         if self.fake_emergency_call_test():
             return True
@@ -221,6 +243,9 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
             reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
             self.dut.reboot(stop_at_lock_screen=True)
+            if not wait_for_sim_ready_by_adb(self.log, self.dut):
+                self.dut.log.error("SIM is not ready")
+                return False
             if self.fake_emergency_call_test():
                 return True
             else:
@@ -244,6 +269,9 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         """
         try:
             if not fastboot_wipe(self.dut, skip_setup_wizard=False):
+                return False
+            if not wait_for_sim_ready_by_adb(self.log, self.dut):
+                self.dut.log.error("SIM is not ready")
                 return False
             if self.fake_emergency_call_test():
                 return True

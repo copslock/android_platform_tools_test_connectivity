@@ -63,6 +63,8 @@ from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -71,11 +73,14 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
+from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
@@ -106,6 +111,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import disable_doze
 from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
+from acts.utils import adb_shell_ping
 
 
 class TelLiveDataTest(TelephonyBaseTest):
@@ -114,11 +120,35 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         self.stress_test_number = self.get_stress_test_number()
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.provider = self.android_devices[-1]
         self.clients = self.android_devices[:-1]
+
+    def setup_test(self):
+        TelephonyBaseTest.setup_test(self)
+        try:
+            self.tcpdump_pid = None
+            self.tcpdump_file = None
+            (self.tcpdump_pid, self.tcpdump_file) = \
+          start_adb_tcpdump(self.android_devices[0], self.test_name, mask="all")
+        except Exception as e:
+            self.log.warning("Failed to start tcpdump collection", e)
+            pass
+
+    def teardown_test(self):
+        TelephonyBaseTest.teardown_test(self)
+        self.log.info("Inside Teardown Test")
+        try:
+            if self.tcpdump_pid is not None:
+                stop_adb_tcpdump(self.android_devices[0], self.tcpdump_pid,
+                                 self.tcpdump_file, True)
+        except Exception as e:
+            self.log.warning("Failed to stop tcpdump collection", e)
+            pass
 
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -303,8 +333,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -343,8 +373,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -402,6 +432,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                                                self.android_devices[0])):
             self.log.error("Data not available on cell")
             return False
+
+        self.log.info("b/69431819, sending data to increase NW threshold limit")
+        adb_shell_ping(self.android_devices[0], count=30, timeout=60,
+                       loss_tolerance=100)
 
         try:
             self.log.info("Step2 Initiate call and accept.")
@@ -633,8 +667,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -676,8 +710,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -754,7 +788,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             else:
                 client.log.info("Client paired with provider")
-        self.provider.log.info("Enabling bluetooth tethering")
+        self.provider.log.info("Provider enabling bluetooth tethering")
         try:
             provider.droid.bluetoothPanSetBluetoothTethering(True)
         except Exception as e:
@@ -770,6 +804,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             provider.log.error("bluetoothPanIsTetheringOn = %s",
                                provider.droid.bluetoothPanIsTetheringOn())
             return False
+        time.sleep(5)
         for client in clients:
             client.droid.bluetoothConnectBonded(
                 provider.droid.bluetoothGetLocalAddress())
@@ -795,12 +830,12 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not verify_http_connection(
                 self.log, self.provider, retry=0,
                 expected_state=provider_status):
-            self.provider.log.error(
-                "provider internet connection is not %s" % provider_status)
+            self.provider.log.error("provider internet connection is not %s" %
+                                    provider_status)
             return False
         else:
-            self.provider.log.info(
-                "provider internet connection is %s" % provider_status)
+            self.provider.log.info("provider internet connection is %s" %
+                                   provider_status)
         return True
 
     def _verify_bluetooth_tethering_connection(self,
@@ -815,8 +850,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if PAN connection and verification is successful,
             false if unsuccessful.
         """
-        if not self._enable_bluetooth_tethering_connection(
-                self.provider, self.clients):
+        if not self._enable_bluetooth_tethering_connection(self.provider,
+                                                           self.clients):
             return False
         if not self._test_internet_connection():
             self.log.error("Internet connection check failed")
@@ -856,8 +891,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                     "Internet connection check failed after disable tethering")
                 return False
             self.provider.log.info("Enable bluetooth tethering")
-            if not self._enable_bluetooth_tethering_connection(
-                    self.provider, self.clients):
+            if not self._enable_bluetooth_tethering_connection(self.provider,
+                                                               self.clients):
                 self.provider.log.error(
                     "Fail to re-enable bluetooth tethering")
                 return False
@@ -873,8 +908,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error(
                     "Internet connection check failed after disable bluetooth")
                 return False
-            if not self._enable_bluetooth_tethering_connection(
-                    self.provider, self.clients):
+            if not self._enable_bluetooth_tethering_connection(self.provider,
+                                                               self.clients):
                 self.provider.log.error(
                     "Fail to re-enable bluetooth tethering")
                 return False
@@ -1497,8 +1532,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.provider.log.error("Provider WiFi tethering stopped.")
                 return False
 
-            if not check_is_wifi_connected(self.log, self.clients[0], ssid) or (
-                    not verify_internet_connection(self.log, self.clients[0])):
+            if not check_is_wifi_connected(
+                    self.log, self.clients[0], ssid) or (
+                        not verify_internet_connection(self.log,
+                                                       self.clients[0])):
                 self.clients[0].log.error(
                     "Client wifi connection check failed!")
                 return False
@@ -1760,8 +1797,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (
-                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (success_count + fail_count
+                            ) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -2329,8 +2366,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2739,8 +2776,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2888,8 +2925,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(
-            self.log, ad, current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
+                                                           current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             non_active_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2973,7 +3010,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         Steps:
         1. Download a file random picked.
-        2. Device sleep for sometime and Repeat 1 .
+        2. Device sleep for sometime and Repeat 1.
 
         Expected Results:
         Total download failure rate is less than 10%.
@@ -2983,4 +3020,48 @@ class TelLiveDataTest(TelephonyBaseTest):
             False if failed.
         """
         return self.file_download_stress()
+
+    @test_tracker_info(uuid="c9970955-123b-467c-afbb-95ec8f99e9b7")
+    def test_file_download_with_mobile_data_usage_limit_set(self):
+        """ Steps:
+        1. Set the data usage limit to current data usage + 9MB
+        2. Download 5MB file from internet.
+        3. The first file download should succeed
+        4. The second file download should fail
+        """
+        dut = self.android_devices[0]
+        ensure_phones_default_state(self.log, [dut])
+        subscriber_id = dut.droid.telephonyGetSubscriberId()
+        old_data_usage = get_mobile_data_usage(dut, subscriber_id)
+
+        # set data usage limit to current usage limit + 10MB
+        data_limit = old_data_usage + 9 * 1000 * 1000
+        set_mobile_data_usage_limit(dut, data_limit, subscriber_id)
+
+        # download file - size 5MB twice
+        try:
+            for _ in range(2):
+                if not active_file_download_test(self.log, dut, "5MB"):
+                    if get_mobile_data_usage(
+                            dut, subscriber_id) + 5 * 1000 * 1000 < data_limit:
+                        dut.log.error(
+                            "Fail to download file when mobile data usage is"
+                            " below data usage limit")
+                        return False
+                    else:
+                        dut.log.info(
+                            "Download fails as expected due to data limit reached"
+                        )
+                else:
+                    if get_mobile_data_usage(dut, subscriber_id) < data_limit:
+                        dut.log.info(
+                            "Download file succeed when mobile data usage is"
+                            " below data usage limit")
+                    else:
+                        dut.log.error(
+                            "Download should fail due to data limit reached")
+                        return False
+            return True
+        finally:
+            remove_mobile_data_usage_limit(dut, subscriber_id)
         """ Tests End """

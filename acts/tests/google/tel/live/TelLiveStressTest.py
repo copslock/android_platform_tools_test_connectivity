@@ -80,13 +80,15 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
-            self.user_params.get("max_phone_call_duration", 60))
+            self.user_params.get("max_phone_call_duration", 600))
         self.min_sleep_time = int(self.user_params.get("min_sleep_time", 10))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
         self.max_run_time = int(self.user_params.get("max_run_time", 14400))
@@ -188,9 +190,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                            length, ads[0].serial, ads[1].serial)
             if message_type == "SMS":
                 self.result_info["%s failure" % message_type] += 1
-                self._take_bug_report("%s_%s_failure" % (self.test_name,
-                                                         message_type),
-                                      begin_time)
+                self._take_bug_report("%s_%s_failure" % (
+                    self.test_name, message_type), begin_time)
             else:
                 if any(incall_non_ims):
                     self.result_info["NonIMS incall MMS failure"] += 1
@@ -200,9 +201,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 else:
                     self.result_info["MMS failure"] += 1
                     if self.result_info["MMS failure"] == 1:
-                        self._take_bug_report("%s_%s_failure" %
-                                              (self.test_name,
-                                               message_type), begin_time)
+                        self._take_bug_report("%s_%s_failure" % (
+                            self.test_name, message_type), begin_time)
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
@@ -268,8 +268,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 begin_time = epoch_to_log_line_timestamp(
                     get_current_epoch_time())
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report(
-                    "checking_crash", begin_time, True)
+                crash_report = self.dut.check_crash_report("checking_crash",
+                                                           begin_time, True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -334,7 +334,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
-        if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
+        if self.result_info["Call Failure"] or self.result_info[
+                "RAT change failure"]:
             return False
         else:
             return True
@@ -390,9 +391,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if tcpdump_pid is not None:
                             stop_adb_tcpdump(self.dut, tcpdump_pid,
                                              tcpdump_file, True)
-                        self._take_bug_report(
-                            "%s_file_download_failure" % self.test_name,
-                            begin_time)
+                        self._take_bug_report("%s_file_download_failure" %
+                                              self.test_name, begin_time)
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
@@ -410,7 +410,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
-        if self.result_info["File download failure"] / self.result_info["Total file download"] > 0.1:
+        if self.result_info["File download failure"] / self.result_info[
+                "Total file download"] > 0.1:
             return False
         else:
             return True
@@ -426,7 +427,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log, [(self.call_test,
                         [call_verification_func]), (self.message_test, []),
                        (self.data_test, []), (self.crash_check_test, [])])
-        result_message = "%s" % dict(self.result_info)
+        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
+        for count in ("Call Failure", "Total SMS", "SMS failure", "Total MMS",
+                      "MMS failure", "Total file download",
+                      "File download failure"):
+            result_message = "%s, %s: %s" % (result_message, count,
+                                             self.result_info[count])
         self.log.info(result_message)
         if all(results):
             explicit_pass(result_message)
@@ -439,11 +445,13 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
-        results = run_multithread_func(self.log, [(
-            self.volte_modechange_volte_test, []), (self.message_test, []),
-                                                  (self.crash_check_test, [])])
-        result_message = "%s" % dict(self.result_info)
-        self.log.info(result_message)
+        results = run_multithread_func(self.log,
+                                       [(self.volte_modechange_volte_test, []),
+                                        (self.crash_check_test, [])])
+        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
+        for count in ("Call Failure", "RAT change failure"):
+            result_message = "%s, %s: %s" % (result_message, count,
+                                             self.result_info[count])
         if all(results):
             explicit_pass(result_message)
         else:

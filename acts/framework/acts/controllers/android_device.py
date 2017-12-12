@@ -18,6 +18,7 @@ from builtins import str
 from builtins import open
 from datetime import datetime
 
+import collections
 import logging
 import os
 import re
@@ -58,6 +59,10 @@ SL4A_APK_NAME = "com.googlecode.android_scripting"
 WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
 DEFAULT_DEVICE_PASSWORD = "1111"
+RELEASE_ID_REGEXES = [
+    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'),
+    re.compile(r'N[A-Za-z0-9]+')
+]
 
 
 class AndroidDeviceError(signals.ControllerError):
@@ -91,6 +96,8 @@ def create(configs):
     else:
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
+
+    ads[0].log.info('The primary device under test is "%s".' % ads[0].serial)
 
     for ad in ads:
         if not ad.is_connected():
@@ -128,6 +135,18 @@ def get_info(ads):
         info.update(ad.build_info)
         device_info.append(info)
     return device_info
+
+
+def get_post_job_info(ads):
+    """Returns the tracked build id to test_run_summary.json
+
+    Args:
+        ads: A list of AndroidDevice objects.
+
+    Returns:
+        A dict consisting of {'build_id': ads[0].build_info}
+    """
+    return 'Build Info', ads[0].build_info
 
 
 def _start_services_on_ads(ads):
@@ -375,8 +394,9 @@ class AndroidDevice:
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                       {"serial": self.serial}))
+            AndroidDeviceLoggerAdapter(logging.getLogger(), {
+                "serial": self.serial
+            }))
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -389,6 +409,7 @@ class AndroidDevice:
         self._ssh_connection = ssh_connection
         self.skip_sl4a = False
         self.crash_report = None
+        self.data_accounting = collections.defaultdict(int)
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -412,13 +433,13 @@ class AndroidDevice:
         Args:
             skip_sl4a: Does not attempt to start SL4A if True.
         """
+        if skip_setup_wizard:
+            self.exit_setup_wizard()
         try:
             self.start_adb_logcat()
         except:
             self.log.exception("Failed to start adb logcat!")
             raise
-        if skip_setup_wizard:
-            self.exit_setup_wizard()
         if not skip_sl4a:
             try:
                 droid, ed = self.get_droid()
@@ -457,9 +478,20 @@ class AndroidDevice:
             self.log.error("Device is in fastboot mode, could not get build "
                            "info.")
             return
-        info = {}
-        info["build_id"] = self.adb.getprop("ro.build.id")
-        info["build_type"] = self.adb.getprop("ro.build.type")
+
+        build_id = self.adb.getprop("ro.build.id")
+        valid_build_id = False
+        for regex in RELEASE_ID_REGEXES:
+            if re.match(regex, build_id):
+                valid_build_id = True
+                break
+        if not valid_build_id:
+            build_id = self.adb.getprop("ro.build.version.incremental")
+
+        info = {
+            "build_id": build_id,
+            "build_type": self.adb.getprop("ro.build.type")
+        }
         return info
 
     @property
@@ -812,8 +844,8 @@ class AndroidDevice:
         if cont_logcat_file:
             if self.droid:
                 self.droid.logI('Restarting logcat')
-            self.log.info('Restarting logcat on file %s' %
-                          self.adb_logcat_file_path)
+            self.log.info(
+                'Restarting logcat on file %s' % self.adb_logcat_file_path)
             logcat_file_path = self.adb_logcat_file_path
         else:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
@@ -850,8 +882,8 @@ class AndroidDevice:
 
         try:
             return bool(
-                self.adb.shell('pm list packages | grep -w "package:%s"' %
-                               package_name))
+                self.adb.shell(
+                    'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
             self.log.error('Could not determine if %s is installed. '
@@ -928,8 +960,8 @@ class AndroidDevice:
             new_br = False
         br_path = os.path.join(self.log_path, test_name)
         utils.create_dir(br_path)
-        out_name = "AndroidDevice%s_%s" % (self.serial, begin_time.replace(
-            " ", "_").replace(":", "-"))
+        out_name = "AndroidDevice%s_%s" % (
+            self.serial, begin_time.replace(" ", "_").replace(":", "-"))
         out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
@@ -1018,13 +1050,16 @@ class AndroidDevice:
     def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
         output = self.adb.shell("ps -ef | grep mdlog")
+        match = re.search(r"diag_mdlog.*", output)
         log_path = None
-        if "diag_mdlog" in output:
+        diag_mdlog_cmd = None
+        if match:
+            diag_mdlog_cmd = match.group(0)
             self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
-            # Neet to sleep 10 seconds for the log to be generated
-            time.sleep(10)
+            # Neet to sleep 20 seconds for the log to be generated
+            time.sleep(20)
         log_path = log_path or getattr(self, "qxdm_logger_path", None)
         if not log_path:
             return
@@ -1034,8 +1069,21 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s", qxdm_logs)
             self.pull_files(qxdm_logs, qxdm_log_path)
+            self.adb.shell("rm %s" % os.path.join(log_path, "*"))
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
+        if diag_mdlog_cmd:
+            self.log.debug("start qxdm logging by %s", diag_mdlog_cmd)
+            self.adb.shell_nb(diag_mdlog_cmd)
+        if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
+            omadm_log_path = os.path.join(self.log_path, test_name, "OMADM_Log")
+            utils.create_dir(omadm_log_path)
+            self.log.info("Pull OMADM Log")
+            self.adb.pull(
+                "/data/data/com.android.omadm.service/files/dm/log/ %s" %
+                omadm_log_path,
                 timeout=PULL_TIMEOUT,
                 ignore_status=True)
 
@@ -1052,7 +1100,7 @@ class AndroidDevice:
             Sl4aException: Something is wrong with sl4a and it returned an
             existing uid to a new session.
         """
-        droid = sl4a_client.Sl4aClient(port=self.h_port)
+        droid = sl4a_client.Sl4aClient(self.serial, port=self.h_port)
         droid.open()
         if droid.uid in self._droid_sessions:
             raise sl4a_client.Sl4aException(
@@ -1077,7 +1125,8 @@ class AndroidDevice:
         """
         if session_id not in self._droid_sessions:
             raise DoesNotExistError("Session %d doesn't exist." % session_id)
-        droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
+        droid = sl4a_client.Sl4aClient(
+            self.serial, port=self.h_port, uid=session_id)
         self.log.info("Open sl4a session %s", session_id)
         droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
         return droid
@@ -1204,8 +1253,8 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError("Device %s booting process timed out." %
-                                 self.serial)
+        raise AndroidDeviceError(
+            "Device %s booting process timed out." % self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1229,7 +1278,7 @@ class AndroidDevice:
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
-        if stop_at_lock_screen and self.is_screen_lock_enabled():
+        if stop_at_lock_screen:
             return
         self.start_services(self.skip_sl4a)
 
@@ -1270,8 +1319,8 @@ class AndroidDevice:
                 break
             except adb.AdbError as e:
                 if timer + 1 == timeout:
-                    self.log.warning('Unable to find IP address for %s.' %
-                                     interface)
+                    self.log.warning(
+                        'Unable to find IP address for %s.' % interface)
                     return None
                 else:
                     time.sleep(1)
@@ -1396,8 +1445,8 @@ class AndroidDevice:
         if ENCRYPTION_WINDOW in current_window:
             self.log.info("Device is in CrpytKeeper window")
             return True
-        if "StatusBar" in current_window and ((not current_app) or
-                                              "FallbackHome" in current_app):
+        if "StatusBar" in current_window and (
+            (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
@@ -1449,6 +1498,10 @@ class AndroidDevice:
         self.adb.shell(
             "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
         )
+        if not self.is_user_setup_complete():
+            self.adb.shell("echo ro.test_harness=1 > /data/local.prop")
+            self.adb.shell("chmod 644 /data/local.prop")
+            self.reboot(stop_at_lock_screen=True)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

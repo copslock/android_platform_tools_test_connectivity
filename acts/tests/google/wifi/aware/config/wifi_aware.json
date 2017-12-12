@@ -11,5 +11,5 @@
     "logpath": "~/logs",
     "testpaths": ["./tools/test/connectivity/acts/tests/google/wifi"],
     "adb_logcat_param": "-b all",
-    "default_power_mode": "INTERACTIVE"
+    "aware_default_power_mode": "INTERACTIVE"
 }

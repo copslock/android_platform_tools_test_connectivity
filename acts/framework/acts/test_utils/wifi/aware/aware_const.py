@@ -90,7 +90,7 @@ SESSION_CB_ON_MESSAGE_RECEIVED = "WifiAwareSessionOnMessageReceived"
 
 # WifiAwareDiscoverySessionCallback events keys
 SESSION_CB_KEY_CB_ID = "callbackId"
-SESSION_CB_KEY_SESSION_ID = "sessionId"
+SESSION_CB_KEY_SESSION_ID = "discoverySessionId"
 SESSION_CB_KEY_REASON = "reason"
 SESSION_CB_KEY_PEER_ID = "peerId"
 SESSION_CB_KEY_SERVICE_SPECIFIC_INFO = "serviceSpecificInfo"

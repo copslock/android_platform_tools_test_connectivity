@@ -17,7 +17,6 @@
 from distutils import cmd
 from distutils import log
 import os
-import pip
 import shutil
 import setuptools
 from setuptools.command import test
@@ -29,6 +28,7 @@ install_requires = [
     # mock-1.0.1 is the last version compatible with setuptools <17.1,
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
+    'numpy',
     'pyserial',
     'shellescape',
     'protobuf',

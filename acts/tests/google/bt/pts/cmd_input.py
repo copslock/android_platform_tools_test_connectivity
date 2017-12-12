@@ -173,6 +173,14 @@ class CmdInput(cmd.Cmd):
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
+    def do_gattc_write_char_by_instance_id_value(self, line):
+        """GATT Client Write to Characteristic by instance ID"""
+        cmd = "GATT Client write to Characteristic by instance ID"
+        try:
+            self.gattc_lib.write_char_by_instance_id_value(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
     def do_gattc_mod_write_char_by_instance_id(self, line):
         """GATT Client Write to Char that doesn't have write permission"""
         cmd = "GATT Client Write to Char that doesn't have write permission"

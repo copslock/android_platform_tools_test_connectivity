@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import nsd_const as nconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -46,6 +47,7 @@ class ProtocolsTest(AwareBaseTest):
 
   ########################################################################
 
+  @test_tracker_info(uuid="ce103067-7fdd-4379-9a2b-d238959f1d53")
   def test_ping6_oob(self):
     """Validate that ping6 works correctly on an NDP created using OOB (out-of
     band) discovery"""
@@ -67,6 +69,7 @@ class ProtocolsTest(AwareBaseTest):
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+  @test_tracker_info(uuid="fef86a48-0e05-464b-8c66-64316275c5ba")
   def test_ping6_ib_unsolicited_passive(self):
     """Validate that ping6 works correctly on an NDP created using Aware
     discovery with UNSOLICITED/PASSIVE sessions."""
@@ -94,6 +97,7 @@ class ProtocolsTest(AwareBaseTest):
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
+  @test_tracker_info(uuid="5bbd68a9-994b-4c26-88cd-43388cec280b")
   def test_ping6_ib_solicited_active(self):
     """Validate that ping6 works correctly on an NDP created using Aware
     discovery with SOLICITED/ACTIVE sessions."""
@@ -120,6 +124,64 @@ class ProtocolsTest(AwareBaseTest):
     # clean-up
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
+
+  def test_ping6_oob_max_ndp(self):
+    """Validate that ping6 works correctly on multiple NDPs brought up
+    concurrently. Uses the capability of the device to determine the max
+    number of NDPs to set up.
+
+    Note: the test requires MAX_NDP + 1 devices to be validated. If these are
+    not available the test will fail."""
+    dut = self.android_devices[0]
+
+    # get max NDP: using first available device (assumes all devices are the
+    # same)
+    max_ndp = dut.aware_capabilities[aconsts.CAP_MAX_NDP_SESSIONS]
+    asserts.assert_true(len(self.android_devices) > max_ndp,
+                        'Needed %d devices to run the test, have %d' %
+                        (max_ndp + 1, len(self.android_devices)))
+
+    # create all NDPs
+    dut_aware_if = None
+    dut_ipv6 = None
+    peers_aware_ifs = []
+    peers_ipv6s = []
+    dut_requests = []
+    peers_requests = []
+    for i in range(max_ndp):
+      (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+       resp_ipv6) = autils.create_oob_ndp(dut, self.android_devices[i + 1])
+      self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
+      self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
+                    resp_ipv6)
+
+      dut_requests.append(init_req_key)
+      peers_requests.append(resp_req_key)
+      if dut_aware_if is None:
+        dut_aware_if = init_aware_if
+      else:
+        asserts.assert_equal(
+            dut_aware_if, init_aware_if,
+            "DUT (Initiator) interface changed on subsequent NDPs!?")
+      if dut_ipv6 is None:
+        dut_ipv6 = init_ipv6
+      else:
+        asserts.assert_equal(
+            dut_ipv6, init_ipv6,
+            "DUT (Initiator) IPv6 changed on subsequent NDPs!?")
+      peers_aware_ifs.append(resp_aware_if)
+      peers_ipv6s.append(resp_ipv6)
+
+    # run ping6
+    for i in range(max_ndp):
+      self.run_ping6(dut, peers_ipv6s[i], dut_aware_if)
+      self.run_ping6(self.android_devices[i + 1], dut_ipv6, peers_aware_ifs[i])
+
+    # cleanup
+    for i in range(max_ndp):
+      dut.droid.connectivityUnregisterNetworkCallback(dut_requests[i])
+      self.android_devices[i + 1].droid.connectivityUnregisterNetworkCallback(
+          peers_requests[i])
 
   def test_nsd_oob(self):
     """Validate that NSD (mDNS) works correctly on an NDP created using OOB

@@ -81,3 +81,20 @@ class TelLivePostflightTest(TelephonyBaseTest):
         if msg:
             fail(msg)
         return True
+
+    @test_tracker_info(uuid="707d4a33-2e21-40ea-bd27-d15f4e3ff0f0")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_check_data_accounting_failures(self):
+        msg = ""
+        for ad in self.android_devices:
+            if any([
+                    ad.data_accounting[stat]
+                    for stat in
+                ("Total_Rx_Accounting_Failure",
+                 "Total_Mobile_Accounting_Failure",
+                 "Subscriber_Mobile_Data_Usage_Accounting_Failure")
+            ]):
+                msg += "%s %s" % (ad.serial, dict(ad.data_accounting))
+        if msg:
+            fail(msg)
+        return True
