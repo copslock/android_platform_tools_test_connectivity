@@ -50,12 +50,13 @@ class OtaRunner(object):
         self.android_device.root_adb()
         log.info('Root complete.')
         if self.android_device.skip_sl4a:
-            self.android_device.log.info("Skipping SL4A install.")
+            self.android_device.log.info('Skipping SL4A install.')
         else:
             for _ in range(3):
-                self.android_device.log.info("Re-installing SL4A.")
+                self.android_device.log.info('Re-installing SL4A from "%s".',
+                                             self.get_sl4a_apk())
                 self.android_device.adb.install(
-                    "-r -g %s" % self.get_sl4a_apk(), ignore_status=True)
+                    '-r -g %s' % self.get_sl4a_apk(), ignore_status=True)
                 time.sleep(SL4A_SERVICE_SETUP_TIME)
                 if self.android_device.is_sl4a_installed():
                     break
