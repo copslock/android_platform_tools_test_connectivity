@@ -1069,6 +1069,7 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s", qxdm_logs)
             self.pull_files(qxdm_logs, qxdm_log_path)
+            self.adb.shell("rm %s" % os.path.join(log_path, "*"))
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
