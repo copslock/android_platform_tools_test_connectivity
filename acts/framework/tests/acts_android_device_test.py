@@ -22,6 +22,7 @@ import tempfile
 import unittest
 
 from acts import base_test
+from acts import logger
 from acts.controllers import sl4a_client
 from acts.controllers import android_device
 
@@ -29,17 +30,18 @@ from acts.controllers import android_device
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
 # The expected result of the cat adb operation.
 MOCK_ADB_LOGCAT_CAT_RESULT = [
-    "02-29 14:02:21.456  4454  Something\n",
-    "02-29 14:02:21.789  4454  Something again\n"
+    "01-02 21:12:21.456  4454  Something\n",
+    "01-02 21:12:25.789  4454  Something again\n"
 ]
 # A mockd piece of adb logcat output.
-MOCK_ADB_LOGCAT = ("02-29 14:02:19.123  4454  Nothing\n"
+MOCK_ADB_LOGCAT = ("01-02 21:02:19.723  4454  Nothing\n"
                    "%s"
-                   "02-29 14:02:22.123  4454  Something again and again\n"
+                   "01-02 21:22:22.123  4454  Something again and again\n"
                    ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
 # Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
-MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
+MOCK_ADB_LOGCAT_BEGIN_TIME = "01-02 21:03:20.123"
+MOCK_ADB_LOGCAT_END_TIME = "01-02 21:22:02.000"
+MOCK_ADB_EPOCH_BEGIN_TIME = 191000123
 
 MOCK_SERIAL = 1
 MOCK_RELEASE_BUILD_ID = "ABC1.123456.007"
@@ -122,7 +124,9 @@ class MockAdbProxy(object):
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(
             logging.log_path, "AndroidDevice%s" % self.serial,
-            "test_something", "AndroidDevice%s_sometime" % self.serial)
+            "test_something", "AndroidDevice%s_%s" %
+            (self.serial,
+             logger.normalize_log_line_timestamp(MOCK_ADB_LOGCAT_BEGIN_TIME)))
         assert expected in params, "Expected '%s', got '%s'." % (expected,
                                                                  params)
 
@@ -351,7 +355,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         and writes the bugreport file to the correct path.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", "sometime")
+        ad.take_bug_report("test_something", 234325.32)
         expected_path = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
         create_dir_mock.assert_called_with(expected_path)
@@ -373,7 +377,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
         with self.assertRaisesRegex(android_device.AndroidDeviceError,
                                     expected_msg):
-            ad.take_bug_report("test_something", "sometime")
+            ad.take_bug_report("test_something", 4346343.23)
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -389,7 +393,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         bugreport on builds that do not have bugreportz.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", "sometime")
+        ad.take_bug_report("test_something", MOCK_ADB_EPOCH_BEGIN_TIME)
         expected_path = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
         create_dir_mock.assert_called_with(expected_path)
@@ -503,7 +507,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                         "collected on Android device .*")
         with self.assertRaisesRegex(android_device.AndroidDeviceError,
                                     expected_msg):
-            ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
+            ad.cat_adb_log("some_test", MOCK_ADB_EPOCH_BEGIN_TIME)
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
         ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
@@ -511,10 +515,10 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:
             f.write(MOCK_ADB_LOGCAT)
-        ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
+        ad.cat_adb_log("some_test", MOCK_ADB_EPOCH_BEGIN_TIME)
         cat_file_path = os.path.join(
-            ad.log_path, "AdbLogExcerpts",
-            ("some_test,02-29 14:02:20.123,%s,%s.txt") % (ad.model, ad.serial))
+            ad.log_path, "AdbLogExcerpts", ("some_test,%s,%s,%s.txt") %
+            (MOCK_ADB_LOGCAT_BEGIN_TIME, ad.model, ad.serial))
         with open(cat_file_path, 'r') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
