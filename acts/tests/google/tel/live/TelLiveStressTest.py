@@ -80,11 +80,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
@@ -178,7 +176,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         }
         message_type = message_type_map[selection]
         self.result_info["Total %s" % message_type] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
         incall_non_ims = [
             ad.droid.telecomIsInCall() and
             not ad.droid.telephonyIsImsRegistered() for ad in ads
@@ -190,8 +188,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                            length, ads[0].serial, ads[1].serial)
             if message_type == "SMS":
                 self.result_info["%s failure" % message_type] += 1
-                self._take_bug_report("%s_%s_failure" % (
-                    self.test_name, message_type), begin_time)
+                self._take_bug_report("%s_%s_failure" % (self.test_name,
+                                                         message_type),
+                                      begin_time)
             else:
                 if any(incall_non_ims):
                     self.result_info["NonIMS incall MMS failure"] += 1
@@ -201,8 +200,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 else:
                     self.result_info["MMS failure"] += 1
                     if self.result_info["MMS failure"] == 1:
-                        self._take_bug_report("%s_%s_failure" % (
-                            self.test_name, message_type), begin_time)
+                        self._take_bug_report("%s_%s_failure" %
+                                              (self.test_name,
+                                               message_type), begin_time)
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
@@ -212,7 +212,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _make_phone_call(self, ads, call_verification_func=None):
         self.result_info["Total Calls"] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
                 self.log,
@@ -235,7 +235,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _prefnetwork_mode_change(self, sub_id):
         # ModePref change to non-LTE
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
         network_preference_list = [
             NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
             NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA, NETWORK_MODE_GSM_ONLY
@@ -265,11 +265,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             self.dut.log.info(dict(self.result_info))
             try:
-                begin_time = epoch_to_log_line_timestamp(
-                    get_current_epoch_time())
+                begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report("checking_crash",
-                                                           begin_time, True)
+                crash_report = self.dut.check_crash_report(
+                    "checking_crash", begin_time, log_crash_report=True)
                 if crash_report:
                     self.dut.log.error("Find new crash reports %s",
                                        crash_report)
@@ -334,15 +333,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
-        if self.result_info["Call Failure"] or self.result_info[
-                "RAT change failure"]:
+        if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
             return False
         else:
             return True
 
     def message_test(self):
         while time.time() < self.finishing_time:
-            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
             try:
                 ads = [self.dut, self.helper]
                 random.shuffle(ads)
@@ -371,7 +368,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
-            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+            begin_time = get_current_epoch_time()
             tcpdump_pid = None
             try:
                 self.dut.log.info(dict(self.result_info))
@@ -391,8 +388,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if tcpdump_pid is not None:
                             stop_adb_tcpdump(self.dut, tcpdump_pid,
                                              tcpdump_file, True)
-                        self._take_bug_report("%s_file_download_failure" %
-                                              self.test_name, begin_time)
+                        self._take_bug_report(
+                            "%s_file_download_failure" % self.test_name,
+                            begin_time)
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
@@ -410,8 +408,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
-        if self.result_info["File download failure"] / self.result_info[
-                "Total file download"] > 0.1:
+        if self.result_info["File download failure"] / self.result_info["Total file download"] > 0.1:
             return False
         else:
             return True

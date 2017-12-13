@@ -20,6 +20,7 @@ from datetime import datetime
 
 import collections
 import logging
+import math
 import os
 import re
 import shellescape
@@ -60,8 +61,7 @@ WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
 DEFAULT_DEVICE_PASSWORD = "1111"
 RELEASE_ID_REGEXES = [
-    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'),
-    re.compile(r'N[A-Za-z0-9]+')
+    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'), re.compile(r'N[A-Za-z0-9]+')
 ]
 
 
@@ -347,7 +347,6 @@ def take_bug_reports(ads, test_name, begin_time):
         test_name: Name of the test case that triggered this bug report.
         begin_time: Logline format timestamp taken when the test started.
     """
-    begin_time = acts_logger.normalize_log_line_timestamp(begin_time)
 
     def take_br(test_name, begin_time, ad):
         ad.take_bug_report(test_name, begin_time)
@@ -394,9 +393,8 @@ class AndroidDevice:
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(), {
-                "serial": self.serial
-            }))
+            AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                       {"serial": self.serial}))
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -769,9 +767,11 @@ class AndroidDevice:
         self._event_dispatchers[ed_key] = ed
         return ed
 
-    def _is_timestamp_in_range(self, target, begin_time, end_time):
-        low = acts_logger.logline_timestamp_comparator(begin_time, target) <= 0
-        high = acts_logger.logline_timestamp_comparator(end_time, target) >= 0
+    def _is_timestamp_in_range(self, target, log_begin_time, log_end_time):
+        low = acts_logger.logline_timestamp_comparator(log_begin_time,
+                                                       target) <= 0
+        high = acts_logger.logline_timestamp_comparator(log_end_time,
+                                                        target) >= 0
         return low and high
 
     def cat_adb_log(self, tag, begin_time):
@@ -780,20 +780,20 @@ class AndroidDevice:
 
         Args:
             tag: An identifier of the time period, usualy the name of a test.
-            begin_time: Logline format timestamp of the beginning of the time
-                period.
+            begin_time: Epoch time of the beginning of the time period.
         """
+        log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
         if not self.adb_logcat_file_path:
             raise AndroidDeviceError(
                 ("Attempting to cat adb log when none has"
                  " been collected on Android device %s.") % self.serial)
-        end_time = acts_logger.get_log_line_timestamp()
+        log_end_time = acts_logger.get_log_line_timestamp()
         self.log.debug("Extracting adb log from logcat.")
         adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
         out_name = f_name.replace("adblog,", "").replace(".txt", "")
-        out_name = ",{},{}.txt".format(begin_time, out_name)
+        out_name = ",{},{}.txt".format(log_begin_time, out_name)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         tag = tag[:tag_len]
         out_name = tag + out_name
@@ -813,8 +813,8 @@ class AndroidDevice:
                     line_time = line[:acts_logger.log_line_timestamp_len]
                     if not acts_logger.is_valid_logline_timestamp(line_time):
                         continue
-                    if self._is_timestamp_in_range(line_time, begin_time,
-                                                   end_time):
+                    if self._is_timestamp_in_range(line_time, log_begin_time,
+                                                   log_end_time):
                         in_range = True
                         if not line.endswith('\n'):
                             line += '\n'
@@ -882,8 +882,8 @@ class AndroidDevice:
 
         try:
             return bool(
-                self.adb.shell(
-                    'pm list packages | grep -w "package:%s"' % package_name))
+                self.adb.shell('pm list packages | grep -w "package:%s"' %
+                               package_name))
 
         except Exception as err:
             self.log.error('Could not determine if %s is installed. '
@@ -946,7 +946,7 @@ class AndroidDevice:
 
         Args:
             test_name: Name of the test case that triggered this bug report.
-            begin_time: Logline format timestamp taken when the test started.
+            begin_time: Epoch time when the test started.
         """
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
         new_br = True
@@ -960,8 +960,10 @@ class AndroidDevice:
             new_br = False
         br_path = os.path.join(self.log_path, test_name)
         utils.create_dir(br_path)
-        out_name = "AndroidDevice%s_%s" % (
-            self.serial, begin_time.replace(" ", "_").replace(":", "-"))
+        time_stamp = acts_logger.normalize_log_line_timestamp(
+            acts_logger.epoch_to_log_line_timestamp(begin_time))
+        out_name = "AndroidDevice%s_%s" % (self.serial, time_stamp.replace(
+            " ", "_").replace(":", "-"))
         out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
@@ -983,33 +985,21 @@ class AndroidDevice:
 
     def get_file_names(self, directory, begin_time=None, skip_files=[]):
         """Get files names with provided directory."""
-        # -1 (the number one) prints one file per line.
-        out = self.adb.shell("ls -1 %s" % directory, ignore_status=True)
-        if "Permission denied" in out:
-            self.root_adb()
-            out = self.adb.shell("ls -1 %s" % directory, ignore_status=True)
-        if not out or "No such" in out:
-            return []
+        cmd = "find %s -type f" % directory
         if begin_time:
-            begin_time = "%s-%s" % (datetime.now().year, begin_time)
-            begin_time = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S.%f")
-            self.log.debug("Get files with timestamp after %s", begin_time)
-        files = out.split('\n')
-        filtered_files = []
-        for file_name in files:
-            if file_name in skip_files:
-                continue
-            file_path = os.path.join(directory, file_name)
-            if begin_time:
-                file_time = self.adb.shell('stat -c "%%y" %s' % file_path)
-                file_time = datetime.strptime(file_time[:-3],
-                                              "%Y-%m-%d %H:%M:%S.%f")
-                if begin_time < file_time:
-                    filtered_files.append(file_path)
-            else:
-                filtered_files.append(file_path)
-        self.log.debug("Files in directory %s: %s", directory, filtered_files)
-        return filtered_files
+            current_time = utils.get_current_epoch_time()
+            seconds = int(math.ceil((current_time - begin_time) / 1000.0))
+            cmd = "%s -mtime -%ss" % (cmd, seconds)
+            self.log.debug("Find files modified in last %s seconds in %s",
+                           seconds, directory)
+        for skip_file in skip_files:
+            cmd = "%s ! -iname %s" % (cmd, skip_file)
+        out = self.adb.shell(cmd, ignore_status=True)
+        if not out or "No such" in out or "Permission denied" in out:
+            return []
+        files = out.split("\n")
+        self.log.debug("Find files in directory %s: %s", directory, files)
+        return files
 
     def pull_files(self, files, remote_path=None):
         """Pull files from devies."""
@@ -1028,8 +1018,8 @@ class AndroidDevice:
         for crash_path in CRASH_REPORT_PATHS:
             crashes = self.get_file_names(
                 crash_path,
-                begin_time=begin_time,
-                skip_files=CRASH_REPORT_SKIPS)
+                skip_files=CRASH_REPORT_SKIPS,
+                begin_time=begin_time)
             if crash_path == "/data/tombstones/" and crashes:
                 tombstones = crashes[:]
                 for tombstone in tombstones:
@@ -1040,8 +1030,7 @@ class AndroidDevice:
             if crashes:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
-            test_name = test_name or begin_time or time.strftime(
-                "%m-%d-%Y-%H-%M-%S")
+            test_name = test_name or time.strftime("%m-%d-%Y-%H-%M-%S")
             crash_log_path = os.path.join(self.log_path, test_name, "Crashes")
             utils.create_dir(crash_log_path)
             self.pull_files(crash_reports, crash_log_path)
@@ -1053,6 +1042,7 @@ class AndroidDevice:
         match = re.search(r"diag_mdlog.*", output)
         log_path = None
         diag_mdlog_cmd = None
+        qxdm_logs = None
         if match:
             diag_mdlog_cmd = match.group(0)
             self.adb.shell("diag_mdlog -k", ignore_status=True)
@@ -1078,7 +1068,8 @@ class AndroidDevice:
             self.log.debug("start qxdm logging by %s", diag_mdlog_cmd)
             self.adb.shell_nb(diag_mdlog_cmd)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
-            omadm_log_path = os.path.join(self.log_path, test_name, "OMADM_Log")
+            omadm_log_path = os.path.join(self.log_path, test_name,
+                                          "OMADM_Log")
             utils.create_dir(omadm_log_path)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
