@@ -18,6 +18,7 @@
 
 bt_default_timeout = 15
 default_rfcomm_timeout_ms = 10000
+default_bluetooth_socket_timeout_ms = 10000
 pan_connect_timeout = 5
 bt_discovery_timeout = 3
 small_timeout = 0.0001
@@ -71,6 +72,9 @@ batch_scan_not_supported_list = [
 # rfcomm test uuids
 rfcomm_secure_uuid = "fa87c0d0-afac-11de-8a39-0800200c9a66"
 rfcomm_insecure_uuid = "8ce255c0-200a-11e0-ac64-0800200c9a66"
+
+# bluetooth socket connection test uuid
+bluetooth_socket_conn_test_uuid = "12345678-1234-5678-9abc-123456789abc"
 
 # Bluetooth Adapter Scan Mode Types
 bt_scan_mode_types = {
