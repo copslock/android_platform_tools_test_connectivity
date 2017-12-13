@@ -433,9 +433,10 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Data not available on cell")
             return False
 
-        self.log.info("b/69431819, sending data to increase NW threshold limit")
-        adb_shell_ping(self.android_devices[0], count=30, timeout=60,
-                       loss_tolerance=100)
+        self.log.info(
+            "b/69431819, sending data to increase NW threshold limit")
+        adb_shell_ping(
+            self.android_devices[0], count=30, timeout=60, loss_tolerance=100)
 
         try:
             self.log.info("Step2 Initiate call and accept.")
@@ -2841,7 +2842,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             embms_path = embms_path[0]
         ad.adb.shell("mkdir /sdcard/mobitv")
         dcafile = os.path.join(embms_path, "dca.config")
-        apkfile = os.path.join(embms_path, "VzwDCA-v3035.apk")
+        apkfile = os.path.join(embms_path, "VzwDCA.apk")
         ad.adb.push("%s %s" % (dcafile, android_embms_path))
         ad.adb.install("%s" % apkfile)
 
