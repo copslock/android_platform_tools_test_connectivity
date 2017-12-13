@@ -1004,7 +1004,7 @@ class GattConnectTest(BluetoothBaseTest):
                                                     gatt_callback)
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='8a3530a3-c8bb-466b-9710-99e694c38618')
+    @test_tracker_info(uuid='a0a37ca6-9fa8-4d35-9fdb-0e25b4b8a363')
     def test_gatt_connect_second_adv_after_canceling_first_adv(self):
         """Test GATT connection to peripherals second advertising address.
 
