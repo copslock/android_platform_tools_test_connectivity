@@ -143,7 +143,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         }
         message_type = message_type_map[selection]
         self.result_info["Total %s" % message_type] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             self.log.error("%s of length %s from %s to %s fails", message_type,
@@ -164,7 +164,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
 
     def _make_phone_call(self, ads):
         self.result_info["Total Calls"] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
         if not call_setup_teardown(
                 self.log,
                 ads[0],
@@ -187,8 +187,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         while time.time() < self.finishing_time:
             self.dut.log.info(dict(self.result_info))
             try:
-                begin_time = epoch_to_log_line_timestamp(
-                    get_current_epoch_time())
+                begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
                 crash_report = self.dut.check_crash_report(
                     "checking_crash", begin_time, True)

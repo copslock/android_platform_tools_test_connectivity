@@ -21,6 +21,7 @@ import time
 from queue import Empty
 
 from acts import signals
+from acts import utils
 from acts.controllers.android_device import get_info
 from acts.libs.ota import ota_updater
 from acts.test_decorators import test_tracker_info
@@ -158,13 +159,13 @@ class TelLivePreflightTest(TelephonyBaseTest):
         result = True
         begin_time = None
         for ad in self.android_devices:
-            output = ad.search_logcat(
-                "processing action (sys.boot_completed=1)")
-            if output:
-                begin_time = output[-1]["time_stamp"][5:]
-                ad.log.debug("begin time is %s", begin_time)
+            output = ad.adb.shell("cat /proc/uptime")
+            epoch_up_time = utils.get_current_epoch_time() - 1000 * float(
+                output.split(" ")[0])
             ad.crash_report_preflight = ad.check_crash_report(
-                self.test_name, begin_time, True)
+                self.test_name,
+                begin_time=epoch_up_time,
+                log_crash_report=True)
             if ad.crash_report_preflight:
                 msg = "Find crash reports %s before test starts" % (
                     ad.crash_report_preflight)
