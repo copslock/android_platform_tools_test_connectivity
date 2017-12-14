@@ -62,6 +62,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             self.hotspot_device.droid.connectivityIsTetheringSupported(),
             "Tethering is not supported for the provider")
         for ad in self.tethered_devices:
+            ad.droid.telephonyToggleDataConnection(False)
             wutils.wifi_test_device_init(ad)
 
         # Set chrome browser start with no-first-run verification
@@ -85,6 +86,8 @@ class WifiTetheringTest(base_test.BaseTestClass):
     def teardown_class(self):
         """ Reset devices """
         wutils.wifi_toggle_state(self.hotspot_device, True)
+        for ad in self.tethered_devices:
+            ad.droid.telephonyToggleDataConnection(True)
 
     def on_fail(self, test_name, begin_time):
         """ Collect bug report on failure """
@@ -136,34 +139,25 @@ class WifiTetheringTest(base_test.BaseTestClass):
         self.log.info("Carrier is %s" % operator)
         return operator in carrier_supports_ipv6
 
-    def _find_ipv6_default_route(self, dut):
-        """ Checks if IPv6 default route exists in the link properites
-
-        Returns:
-            True: if default route found
-            False: if not
-        """
-        default_route_substr = "::/0 -> "
-        link_properties = dut.droid.connectivityGetActiveLinkProperties()
-        self.log.info("LINK PROPERTIES:\n%s\n" % link_properties)
-        return link_properties and default_route_substr in link_properties
-
     def _verify_ipv6_tethering(self, dut):
         """ Verify IPv6 tethering """
         http_response = dut.droid.httpRequestString(self.url)
-        link_properties = dut.droid.connectivityGetActiveLinkProperties()
         self.log.info("IP address %s " % http_response)
+        active_link_addrs = dut.droid.connectivityGetAllAddressesOfActiveLink()
         if dut==self.hotspot_device and self._carrier_supports_ipv6(dut)\
             or self._supports_ipv6_tethering(self.hotspot_device):
             asserts.assert_true(self._is_ipaddress_ipv6(http_response),
                                 "The http response did not return IPv6 address")
-            asserts.assert_true(link_properties and http_response in link_properties,
-                                "Could not find IPv6 address in link properties")
-            asserts.assert_true(self._find_ipv6_default_route(dut),
-                                "Could not find IPv6 default route in link properties")
+            asserts.assert_true(
+                active_link_addrs and http_response in str(active_link_addrs),
+                "Could not find IPv6 address in link properties")
+            asserts.assert_true(
+                dut.droid.connectivityHasIPv6DefaultRoute(),
+                "Could not find IPv6 default route in link properties")
         else:
-            asserts.assert_true(not self._find_ipv6_default_route(dut),
-                                "Found IPv6 default route in link properties")
+            asserts.assert_true(
+                not dut.droid.connectivityHasIPv6DefaultRoute(),
+                "Found IPv6 default route in link properties")
 
     def _start_wifi_tethering(self, wifi_band=WIFI_CONFIG_APBAND_2G):
         """ Start wifi tethering on hotspot device
@@ -323,7 +317,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         time.sleep(WAIT_TIME) # wait until the IPv6 is removed from link properties
 
-        result = self._find_ipv6_default_route(self.tethered_devices[0])
+        result = self.tethered_devices[0].droid.connectivityHasIPv6DefaultRoute()
         self.hotspot_device.droid.telephonyToggleDataConnection(True)
         if result:
             asserts.fail("Found IPv6 default route in link properties:Data off")
@@ -447,7 +441,8 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # download file
         self.log.info("Download file of size %sMB" % self.file_size)
         http_file_download_by_chrome(self.tethered_devices[0],
-                                     self.download_file)
+                                     self.download_file,
+                                     self.file_size)
 
         # get data usage limit after download
         end_time = int(time.time() * 1000)
@@ -498,6 +493,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # download file - size 20MB
         http_file_download_by_chrome(self.tethered_devices[0],
                                      self.download_file,
+                                     self.file_size,
                                      timeout=120)
         end_time = int(time.time() * 1000)
         new_data_usage = dut.droid.connectivityQuerySummaryForDevice(
