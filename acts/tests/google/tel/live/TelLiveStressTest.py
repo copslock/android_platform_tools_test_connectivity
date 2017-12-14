@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -215,21 +216,36 @@ class TelLiveStressTest(TelephonyBaseTest):
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
-                self.log,
-                ads[0],
-                ads[1],
-                ad_hangup=ads[random.randrange(0, 2)],
-                verify_caller_func=call_verification_func,
-                verify_callee_func=call_verification_func,
-                wait_time_in_call=random.randrange(
-                    self.min_phone_call_duration,
-                    self.max_phone_call_duration),
-                extra_sleep=5):
-            self.log.error("Call setup and teardown failed.")
-            self.result_info["Call Failure"] += 1
-            self._take_bug_report("%s_call_failure" % self.test_name,
+                self.log, ads[0], ads[1], ad_hangup=None, wait_time_in_call=0):
+            self.log.error("Setup Call failed.")
+            self.result_info["Call Setup Failure"] += 1
+            self._take_bug_report("%s_call_setup_failure" % self.test_name,
                                   begin_time)
             return False
+        duration = random.randrange(self.min_phone_call_duration,
+                                    self.max_phone_call_duration)
+        elapsed_time = 0
+        check_interval = 5
+        while (elapsed_time < duration):
+            check_interval = min(check_interval, duration - elapsed_time)
+            time.sleep(check_interval)
+            elapsed_time += check_interval
+            time_message = "at <%s>/<%s> second." % (elapsed_time, duration)
+            for ad in ads:
+                if not call_verification_func(self.log, ad):
+                    ad.log.error("Call is NOT in correct %s state at %s",
+                                 call_verification_func.__name__, time_message)
+                    self.result_info["Call Maintenance Failure"] += 1
+                    self._take_bug_report(
+                        "%s_call_maintenance_failure" % self.test_name,
+                        begin_time)
+                    return False
+        if not hangup_call(self.log, ads[0]) or time.sleep(
+                1) or ads[1].droid.telecomIsInCall():
+            ads[0].log.error("Fail to hung up call")
+            self.result_info["Call Teardown Failure"] += 1
+            self._take_bug_report("%s_call_teardown_failure" % self.test_name,
+                                  begin_time)
         self.log.info("Call setup and teardown succeed.")
         return True
 
@@ -290,6 +306,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def call_test(self, call_verification_func=None):
+        if not call_verification_func:
+            call_verification_func = is_phone_in_call
         while time.time() < self.finishing_time:
             try:
                 ads = [self.dut, self.helper]
@@ -309,7 +327,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
-        if self.result_info["Call Failure"]:
+        if any([
+                self.result_info["Call Setup Failure"],
+                self.result_info["Call Maintenance Failure"],
+                self.result_info["Call Teardown Failure"]
+        ]):
             return False
         else:
             return True
@@ -425,8 +447,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                         [call_verification_func]), (self.message_test, []),
                        (self.data_test, []), (self.crash_check_test, [])])
         result_message = "Total Calls: %s" % self.result_info["Total Calls"]
-        for count in ("Call Failure", "Total SMS", "SMS failure", "Total MMS",
-                      "MMS failure", "Total file download",
+        for count in ("Call Setup Failure", "Call Maintenance Failure",
+                      "Call Teardown Failure", "Total SMS", "SMS failure",
+                      "Total MMS", "MMS failure", "Total file download",
                       "File download failure"):
             result_message = "%s, %s: %s" % (result_message, count,
                                              self.result_info[count])
@@ -446,7 +469,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                                        [(self.volte_modechange_volte_test, []),
                                         (self.crash_check_test, [])])
         result_message = "Total Calls: %s" % self.result_info["Total Calls"]
-        for count in ("Call Failure", "RAT change failure"):
+        for count in ("Call Setup Failure", "Call Maintenance Failure",
+                      "Call Teardown Failure", "RAT change failure"):
             result_message = "%s, %s: %s" % (result_message, count,
                                              self.result_info[count])
         if all(results):
