@@ -62,6 +62,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             self.hotspot_device.droid.connectivityIsTetheringSupported(),
             "Tethering is not supported for the provider")
         for ad in self.tethered_devices:
+            ad.droid.telephonyToggleDataConnection(False)
             wutils.wifi_test_device_init(ad)
 
         # Set chrome browser start with no-first-run verification
@@ -85,6 +86,8 @@ class WifiTetheringTest(base_test.BaseTestClass):
     def teardown_class(self):
         """ Reset devices """
         wutils.wifi_toggle_state(self.hotspot_device, True)
+        for ad in self.tethered_devices:
+            ad.droid.telephonyToggleDataConnection(True)
 
     def on_fail(self, test_name, begin_time):
         """ Collect bug report on failure """
