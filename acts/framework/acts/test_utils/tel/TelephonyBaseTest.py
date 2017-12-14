@@ -100,7 +100,7 @@ class TelephonyBaseTest(BaseTestClass):
     def tel_test_wrap(fn):
         def _safe_wrap_test_case(self, *args, **kwargs):
             test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
-                                    self.begin_time.replace(' ', '-'))
+                                    self.log_begin_time.replace(' ', '-'))
             self.test_id = test_id
             log_string = "[Test ID] %s" % test_id
             self.log.info(log_string)
