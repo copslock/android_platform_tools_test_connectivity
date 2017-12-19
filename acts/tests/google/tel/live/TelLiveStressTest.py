@@ -249,7 +249,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                            the_number), begin_time)
                     return False
         if not hangup_call(self.log, ads[0]) or time.sleep(
-                1) or ads[1].droid.telecomIsInCall():
+                5) or ads[1].droid.telecomIsInCall():
             ads[0].log.error("Fail to hung up call")
             self.result_info["Call Teardown Failure"] += 1
             self._take_bug_report("%s_call_No_%s_teardown_failure" %
