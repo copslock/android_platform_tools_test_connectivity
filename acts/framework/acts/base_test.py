@@ -681,14 +681,18 @@ class BaseTestClass(object):
         user.
         """
 
-    def _ad_take_reports(self, ad, test_name, begin_time):
-        try:
-            bugreport_path = os.path.join(ad.log_path, test_name)
-            utils.create_dir(bugreport_path)
-            ad.take_bug_report(test_name, begin_time)
-        except Exception as e:
-            ad.log.error("Failed to take a bug report for %s with error %s",
-                         test_name, e)
+    def _ad_take_bugreport(self, ad, test_name, begin_time):
+        for i in range(3):
+            try:
+                bugreport_path = os.path.join(ad.log_path, test_name)
+                utils.create_dir(bugreport_path)
+                ad.take_bug_report(test_name, begin_time)
+                return True
+            except Exception as e:
+                ad.log.error("bugreport attempt %s error: %s", i + 1, e)
+
+    def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        result = True
         if getattr(ad, "qxdm_log", False):
             # Gather qxdm log modified 3 minutes earlier than test start time
             if begin_time:
@@ -700,11 +704,15 @@ class BaseTestClass(object):
             except Exception as e:
                 ad.log.error("Failed to get QXDM log for %s with error %s",
                              test_name, e)
+                result = False
+
         try:
             ad.check_crash_report(test_name, begin_time, log_crash_report=True)
         except Exception as e:
             ad.log.error("Failed to check crash report for %s with error %s",
                          test_name, e)
+            result = False
+        return result
 
     def _skip_bug_report(self):
         """A function to check whether we should skip creating a bug report."""
@@ -723,7 +731,8 @@ class BaseTestClass(object):
                 curr_log_size = utils.get_directory_size(log_path)
                 if curr_log_size > max_log_size:
                     self.log.info(
-                        "Skipping bug report, as we've reached the size limit.")
+                        "Skipping bug report, as we've reached the size limit."
+                    )
                     self.size_limit_reached = True
                     return True
         except ValueError:
@@ -734,8 +743,10 @@ class BaseTestClass(object):
         if self._skip_bug_report():
             return
 
-        tasks = [(self._ad_take_reports, (ad, test_name, begin_time))
+        tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
                  for ad in self.android_devices]
+        tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
+                      for ad in self.android_devices])
         run_multithread_func(self.log, tasks)
 
     def _reboot_device(self, ad):
