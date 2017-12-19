@@ -4455,6 +4455,7 @@ def run_multithread_func(log, tasks):
     number_of_workers = min(MAX_NUMBER_OF_WORKERS, len(tasks))
     executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=number_of_workers)
+    if not log: log = logging
     try:
         results = list(executor.map(task_wrapper, tasks))
     except Exception as e:

@@ -69,7 +69,7 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
         if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
             qxdm_log_mask_cfg = None
-        stop_qxdm_loggers(None, self.android_devices)
+        stop_qxdm_loggers(self.log, self.android_devices)
         for ad in self.android_devices:
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
@@ -259,7 +259,7 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        stop_qxdm_loggers(None, self.android_devices)
+        stop_qxdm_loggers(self.log, self.android_devices)
         try:
             for ad in self.android_devices:
                 ad.droid.disableDevicePassword()
