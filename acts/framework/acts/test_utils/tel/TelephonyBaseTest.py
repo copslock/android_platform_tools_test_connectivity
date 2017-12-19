@@ -90,7 +90,8 @@ class TelephonyBaseTest(BaseTestClass):
                 abort_all_tests(ad.log, "unable to unlock SIM")
 
         if getattr(self, "qxdm_log", True):
-            start_qxdm_loggers(self.log, self.android_devices)
+            start_qxdm_loggers(self.log, self.android_devices,
+                               utils.get_current_epoch_time())
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
 
@@ -272,7 +273,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def setup_test(self):
         if getattr(self, "qxdm_log", True):
-            start_qxdm_loggers(self.log, self.android_devices)
+            start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "diag_logger", None):
             for logger in self.diag_logger:
                 self.log.info("Starting a diagnostic session %s", logger)
