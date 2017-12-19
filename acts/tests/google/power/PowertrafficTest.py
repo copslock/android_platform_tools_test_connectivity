@@ -78,7 +78,7 @@ class PowertrafficTest(base_test.BaseTestClass):
         for key in bulk_params.keys():
             setattr(self, key, bulk_params[key])
 
-    def iperf_power_test_func(self, screen_status, band):
+    def iperf_power_test_func(self, screen_status, band, bandwidth):
         """Test function for iperf power measurement at different RSSI level.
 
         Args:
@@ -95,7 +95,7 @@ class PowertrafficTest(base_test.BaseTestClass):
         self.brconfigs = bi.BridgeInterfaceConfigs(configs[0], configs[1],
                                                    configs[2])
         self.access_point.bridge.startup(self.brconfigs)
-        wputils.ap_setup(self.access_point, network)
+        wputils.ap_setup(self.access_point, network, bandwidth)
 
         # Wait for DHCP on the ethernet port and get IP as Iperf server address
         # Time out in 60 seconds if not getting DHCP address
@@ -104,8 +104,10 @@ class PowertrafficTest(base_test.BaseTestClass):
 
         # Set attenuator to desired level
         self.log.info('Set attenuation to desired RSSI level')
+        atten_setting = self.current_test_name[:self.current_test_name.find(
+            'rssi') + 4]
         for i in range(self.num_atten):
-            attenuation = self.atten_level[self.current_test_name][i]
+            attenuation = self.atten_level[atten_setting][i]
             self.attenuators[i].set_atten(attenuation)
 
         # Connect the phone to the AP
@@ -138,29 +140,59 @@ class PowertrafficTest(base_test.BaseTestClass):
     @test_tracker_info(uuid='43d9b146-3547-4a27-9d79-c9341c32ccda')
     def test_screenoff_iperf_2g_highrssi(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G)
+        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
 
     @test_tracker_info(uuid='f00a868b-c8b1-4b36-8136-b39b5c2396a7')
     def test_screenoff_iperf_2g_mediumrssi(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G)
+        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
 
     @test_tracker_info(uuid='cd0c37ac-23fe-4dd1-9130-ccb2dfa71020')
     def test_screenoff_iperf_2g_lowrssi(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G)
+        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
 
     @test_tracker_info(uuid='f9173d39-b46d-4d80-a5a5-7966f5eed9de')
-    def test_screenoff_iperf_5g_highrssi(self):
+    def test_screenoff_iperf_5g_highrssi_20m(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G)
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
 
     @test_tracker_info(uuid='cf77e1dc-30bc-4df9-88be-408f1fddc24f')
-    def test_screenoff_iperf_5g_mediumrssi(self):
+    def test_screenoff_iperf_5g_mediumrssi_20m(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G)
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
 
     @test_tracker_info(uuid='48f91745-22dc-47c9-ace6-c2719df651d6')
-    def test_screenoff_iperf_5g_lowrssi(self):
+    def test_screenoff_iperf_5g_lowrssi_20m(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G)
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
+
+    @test_tracker_info(uuid='18456aa7-62f0-4560-a7dc-4d7e01f6aca5')
+    def test_screenoff_iperf_5g_highrssi_40m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+
+    @test_tracker_info(uuid='8ad237d7-f5e1-45e1-a4a2-a010628a4db9')
+    def test_screenoff_iperf_5g_mediumrssi_40m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+
+    @test_tracker_info(uuid='3e29173f-b950-4a41-a7f6-6cc0731bf477')
+    def test_screenoff_iperf_5g_lowrssi_40m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+
+    @test_tracker_info(uuid='3d4cdb21-a1b0-4011-9956-ca0b7a9f3bec')
+    def test_screenoff_iperf_5g_highrssi_80m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
+
+    @test_tracker_info(uuid='8427d3f0-9418-4b5c-aea9-7509e5959ce6')
+    def test_screenoff_iperf_5g_mediumrssi_80m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
+
+    @test_tracker_info(uuid='5ac91734-0323-464b-b04a-c7d3d7ff8cdf')
+    def test_screenoff_iperf_5g_lowrssi_80m(self):
+
+        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
