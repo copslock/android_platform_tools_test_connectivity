@@ -1045,7 +1045,6 @@ class AndroidDevice:
         qxdm_logs = None
         if match:
             diag_mdlog_cmd = match.group(0)
-            self.adb.shell("diag_mdlog -k", ignore_status=True)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
             # Neet to sleep 20 seconds for the log to be generated
@@ -1057,9 +1056,8 @@ class AndroidDevice:
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.log_path, test_name, "QXDM_Logs")
             utils.create_dir(qxdm_log_path)
-            self.log.info("Pull QXDM Log %s", qxdm_logs)
+            self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
-            self.adb.shell("rm %s" % os.path.join(log_path, "*"))
             self.adb.pull(
                 "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
                 timeout=PULL_TIMEOUT,
