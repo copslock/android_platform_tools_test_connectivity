@@ -3306,7 +3306,8 @@ def wait_for_matching_sms(log,
                           ad_rx,
                           phonenumber_tx,
                           text,
-                          allow_multi_part_long_sms=True):
+                          allow_multi_part_long_sms=True,
+                          begin_time=None):
     """Wait for matching incoming SMS.
 
     Args:
@@ -3328,6 +3329,11 @@ def wait_for_matching_sms(log,
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
+            if begin_time:
+                log_results = ad_rx.search_logcat(
+                    "Received SMS message", begin_time=begin_time)
+                if log_results:
+                    ad_rx.log.info("Receivd SMS message is seen in logcat")
             return False
     else:
         try:
@@ -3341,6 +3347,11 @@ def wait_for_matching_sms(log,
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
+            if begin_time:
+                log_results = ad_rx.search_logcat(
+                    "Received SMS message", begin_time=begin_time)
+                if log_results:
+                    ad_rx.log.info("Receivd SMS message is seen in logcat")
             if received_sms != '':
                 ad_rx.log.error("Only received partial matched SMS: %s",
                                 received_sms)
@@ -3364,7 +3375,7 @@ def is_mms_match(event, phonenumber_tx, text):
     return True
 
 
-def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text):
+def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
     """Wait for matching incoming SMS.
 
     Args:
@@ -3386,6 +3397,12 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text):
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
+        if begin_time:
+            log_results = ad_rx.search_logcat(
+                "Received MMS message", begin_time=begin_time)
+            if log_results:
+                ad_rx.log.info("Receivd MMS message is seen in logcat")
+                return True
         return False
 
 
@@ -3419,11 +3436,12 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad.messaging_droid = ad.start_new_session()
                 ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
                 ad.messaging_ed.start()
+
     for text in array_message:
+        begin_time = get_current_epoch_time()
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
-        result = False
         ad_rx.messaging_ed.clear_all_events()
         ad_tx.messaging_ed.clear_all_events()
         ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
@@ -3434,16 +3452,30 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
                                              MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
+                result = False
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
-                return False
+                # check log message as a work around for the missing sl4a
+                # event dispatcher event
+                log_results = ad.search_logcat(
+                    "ProcessSentMessageAction: Done sending SMS message",
+                    begin_time=begin_time)
+                if log_results:
+                    for log_result in log_results:
+                        if "status is SUCCEEDED" in log_result["log_message"]:
+                            ad_tx.log.info(
+                                "Found SMS send succeed log message")
+                            result = True
+                if not result:
+                    return result
 
             if not wait_for_matching_sms(
                     log,
                     ad_rx,
                     phonenumber_tx,
                     text,
-                    allow_multi_part_long_sms=True):
+                    allow_multi_part_long_sms=True,
+                    begin_time=begin_time):
                 ad_rx.log.error("No matching received SMS of length %s.",
                                 length)
                 return False
@@ -3505,10 +3537,10 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
                 ad.messaging_ed.start()
     for subject, message, filename in array_payload:
+        begin_time = get_current_epoch_time()
         ad_tx.log.info(
             "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        result = False
         ad_rx.ed.clear_all_events()
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         try:
@@ -3520,12 +3552,27 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                                              MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
-                return False
+                result = False
+                # check log message as a work around for the missing sl4a
+                # event dispatcher event
+                log_results = ad.search_logcat(
+                    "ProcessSentMessageAction: Done sending MMS message",
+                    begin_time=begin_time)
+                if log_results:
+                    for log_result in log_results:
+                        if "status is SUCCEEDED" in log_result["log_message"]:
+                            ad_tx.log.info(
+                                "Found MMS send succeed log message")
+                            result = True
+                if not result:
+                    return False
 
-            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
+            if not wait_for_matching_mms(
+                    log, ad_rx, phonenumber_tx, message,
+                    begin_time=begin_time):
                 return False
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
@@ -3580,10 +3627,10 @@ def mms_receive_verify_after_call_hangup_for_subscription(
                 ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
                 ad.messaging_ed.start()
     for subject, message, filename in array_payload:
+        begin_time = get_current_epoch_time()
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        result = False
         ad_rx.messaging_ed.clear_all_events()
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
@@ -3595,11 +3642,24 @@ def mms_receive_verify_after_call_hangup_for_subscription(
                                              MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 log.warning("No sent_success event.")
-
-            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
+                result = False
+                log_results = ad.search_logcat(
+                    "ProcessSentMessageAction: Done sending MMS message",
+                    begin_time=begin_time)
+                if log_results:
+                    for log_result in log_results:
+                        if "status is SUCCEEDED" in log_result["log_message"]:
+                            ad_tx.log.info(
+                                "Found MMS send succeed log message")
+                            result = True
+                if not result:
+                    return False
+            if not wait_for_matching_mms(
+                    log, ad_rx, phonenumber_tx, message,
+                    begin_time=begin_time):
                 return False
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
