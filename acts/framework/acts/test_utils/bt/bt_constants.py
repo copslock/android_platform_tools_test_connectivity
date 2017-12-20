@@ -541,3 +541,32 @@ gatt_server_responses = {
 }
 
 ### Bluetooth GATT Constants End ###
+
+### Chameleon Constants Begin ###
+
+# Chameleon audio bits per sample.
+audio_bits_per_sample_16 = 16
+audio_bits_per_sample_24 = 24
+audio_bits_per_sample_32 = 32
+
+# Chameleon audio sample rates.
+audio_sample_rate_44100 = 44100
+audio_sample_rate_48000 = 48000
+audio_sample_rate_88200 = 88200
+audio_sample_rate_96000 = 96000
+
+# Chameleon audio channel modes.
+audio_channel_mode_mono = 1
+audio_channel_mode_stereo = 2
+audio_channel_mode_8 = 8
+
+# Chameleon time delays.
+delay_after_binding_seconds = 0.5
+delay_before_record_seconds = 0.5
+silence_wait_seconds = 5
+
+# Chameleon bus endpoints.
+fpga_linein_bus_endpoint = 'Chameleon FPGA line-in'
+headphone_bus_endpoint = 'Cros device headphone'
+
+### Chameleon Constants End ###
