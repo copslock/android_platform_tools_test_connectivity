@@ -61,7 +61,8 @@ WAIT_FOR_DEVICE_TIMEOUT = 180
 ENCRYPTION_WINDOW = "CryptKeeper"
 DEFAULT_DEVICE_PASSWORD = "1111"
 RELEASE_ID_REGEXES = [
-    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'), re.compile(r'N[A-Za-z0-9]+')
+    re.compile(r'[A-Za-z0-9]+\.[0-9]+\.[0-9]+'),
+    re.compile(r'N[A-Za-z0-9]+')
 ]
 
 
@@ -393,8 +394,9 @@ class AndroidDevice:
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                       {"serial": self.serial}))
+            AndroidDeviceLoggerAdapter(logging.getLogger(), {
+                "serial": self.serial
+            }))
         self._droid_sessions = {}
         self._event_dispatchers = {}
         self.adb_logcat_process = None
@@ -882,8 +884,8 @@ class AndroidDevice:
 
         try:
             return bool(
-                self.adb.shell('pm list packages | grep -w "package:%s"' %
-                               package_name))
+                self.adb.shell(
+                    'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
             self.log.error('Could not determine if %s is installed. '
@@ -962,8 +964,8 @@ class AndroidDevice:
         utils.create_dir(br_path)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
-        out_name = "AndroidDevice%s_%s" % (self.serial, time_stamp.replace(
-            " ", "_").replace(":", "-"))
+        out_name = "AndroidDevice%s_%s" % (
+            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
         out_name = "%s.zip" % out_name if new_br else "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
         # in case device restarted, wait for adb interface to return
@@ -1271,7 +1273,7 @@ class AndroidDevice:
             return
         self.start_services(self.skip_sl4a)
 
-    def search_logcat(self, matching_string):
+    def search_logcat(self, matching_string, begin_time=None):
         """Search logcat message with given string.
 
         Args:
@@ -1285,8 +1287,14 @@ class AndroidDevice:
               "time_stamp": "2017-05-03 17:39:29.898",
               "datetime_obj": datetime object}]
         """
+        cmd_option = '-b all -d'
+        if begin_time:
+            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
+                begin_time)
+            cmd_option = '%s -t "%s"' % (cmd_option, log_begin_time)
         out = self.adb.logcat(
-            '-b all -d | grep "%s"' % matching_string, ignore_status=True)
+            '%s | grep "%s"' % (cmd_option, matching_string),
+            ignore_status=True)
         if not out: return []
         result = []
         logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),
