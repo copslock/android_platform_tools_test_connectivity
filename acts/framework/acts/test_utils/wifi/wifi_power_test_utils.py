@@ -212,14 +212,15 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(data=dict(
-        x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(data=dict(
-        z0=[mon_info['duration']],
-        y0=[round(avg_current, 2)],
-        x0=[round(avg_current * voltage, 2)],
-        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-        z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(
+        data=dict(x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(
+        data=dict(
+            z0=[mon_info['duration']],
+            y0=[round(avg_current, 2)],
+            x0=[round(avg_current * voltage, 2)],
+            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+            z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -349,15 +350,15 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     ad.log.info('DTIM updated and device back from reboot')
 
 
-def ap_setup(ap, network):
+def ap_setup(ap, network, bandwidth=80):
     """Set up the whirlwind AP with provided network info.
 
     Args:
         ap: access_point object of the AP
         network: dict with information of the network, including ssid, password
                  bssid, channel etc.
+        bandwidth: the operation bandwidth for the AP, default 80MHz
     """
-
     log = logging.getLogger()
     bss_settings = []
     ssid = network[wutils.WifiEnums.SSID_KEY]
@@ -373,7 +374,10 @@ def ap_setup(ap, network):
         ssid=ssid,
         security=security,
         bss_settings=bss_settings,
-        profile_name='whirlwind')
+        vht_bandwidth=bandwidth,
+        profile_name='whirlwind',
+        iface_wlan_2g=ap.wlan_2g,
+        iface_wlan_5g=ap.wlan_5g)
     ap.start_ap(config)
     log.info("AP started on channel {} with SSID {}".format(channel, ssid))
 
