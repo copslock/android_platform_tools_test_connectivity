@@ -181,7 +181,17 @@ class TelLiveStressTest(TelephonyBaseTest):
             the_number, message_type, length, ads[0].serial, ads[1].serial)
         self.log.info(log_msg)
         for ad in ads:
-            ad.droid.logI(log_msg)
+            try:
+                ad.droid.logI(log_msg)
+            except Exception as e:
+                ad.log.info("SL4A error: %s, restart SL4A service", e)
+                ad.start_services(ad.skip_sl4a)
+        text = "%s: " % log_msg
+        text_length = len(text)
+        if length < text_length:
+            text = text[:length]
+        else:
+            text += rand_ascii_str(length - text_length)
         message_content_map = {0: [text], 1: [(log_msg, text, None)]}
         incall_non_ims = [
             ad.droid.telecomIsInCall()
@@ -220,7 +230,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                                ads[1].serial)
         self.log.info(log_msg)
         for ad in ads:
-            ad.droid.logI(log_msg)
+            try:
+                ad.droid.logI(log_msg)
+            except Exception as e:
+                ad.log.info("SL4A error: %s, restart SL4A service", e)
+                ad.start_services(ad.skip_sl4a)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
@@ -302,10 +316,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
                     raise
             except Exception as e:
-                self.finishing_time = time.time()
                 raise
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
@@ -318,19 +330,15 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 ads = self.android_devices[:2]
                 random.shuffle(ads)
-                self.log.info("ads = %s", ads)
                 self._make_phone_call(ads, call_verification_func)
-                [ad.droid.goToSleepNow() for ad in ads]
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
                     raise
             except Exception as e:
-                self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
         if any([
@@ -355,10 +363,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
                     raise
             except Exception as e:
-                self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
         if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
@@ -372,17 +378,14 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ads = [self.dut, self.helper]
                 random.shuffle(ads)
                 self._send_message(ads)
-                self.dut.droid.goToSleepNow()
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
                     raise
             except Exception as e:
-                self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
         if self.result_info["SMS failure"] or (
@@ -422,18 +425,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                 elif tcpdump_pid is not None:
                     stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
                                      False)
-                self.dut.droid.goToSleepNow()
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
                     raise "Too many %s errors" % IGNORE_EXCEPTIONS
             except Exception as e:
                 self.log.error(e)
-                self.finishing_time = time.time()
                 raise
             self.log.info("%s", dict(self.result_info))
         if self.result_info["File download failure"] / self.result_info["Total file download"] > 0.1:
@@ -442,15 +442,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def parallel_tests(self, setup_func=None, call_verification_func=None):
-        self.log.info("Step 1")
         if setup_func and not setup_func():
             msg = "Test setup %s failed" % setup_func.__name__
             self.log.error(msg)
             fail(msg)
-        self.log.info("Step 2")
         if not call_verification_func:
             call_verification_func = is_phone_in_call
-        self.log.info("Step 3")
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(
