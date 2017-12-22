@@ -167,7 +167,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         min_length_map = {0: self.min_sms_length, 1: self.min_mms_length}
         length = random.randrange(min_length_map[selection],
                                   max_length_map[selection] + 1)
-        text = rand_ascii_str(length)
         message_func_map = {
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
@@ -182,10 +181,18 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info(log_msg)
         for ad in ads:
             try:
-                ad.droid.logI(log_msg)
-            except Exception as e:
+                for i in range(3):
+                    try:
+                        ad.droid.logI(log_msg)
+                        break
+                    except Exception:
+                        if i == 2:
+                            raise
+                        else:
+                            sleep(5)
+            except Exception:
                 ad.log.info("SL4A error: %s, restart SL4A service", e)
-                ad.start_services(ad.skip_sl4a)
+                raise
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -193,10 +200,13 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             text += rand_ascii_str(length - text_length)
         message_content_map = {0: [text], 1: [(log_msg, text, None)]}
-        incall_non_ims = [
-            ad.droid.telecomIsInCall()
-            and not ad.droid.telephonyIsImsRegistered() for ad in ads
-        ]
+        incall_non_ims = False
+        for ad in ads:
+            if ad.droid.telecomIsInCall() and (
+                    not ad.droid.telephonyIsImsRegistered()):
+                incall_non_ims = True
+                break
+
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             if message_type == "SMS":
@@ -206,7 +216,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                       (self.test_name, message_type,
                                        the_number), begin_time)
             else:
-                if any(incall_non_ims):
+                if incall_non_ims:
                     self.log.info(
                         "Device not in IMS, MMS in call is not support")
                     return True
@@ -231,10 +241,27 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info(log_msg)
         for ad in ads:
             try:
-                ad.droid.logI(log_msg)
-            except Exception as e:
+                for i in range(3):
+                    try:
+                        ad.droid.logI(log_msg)
+                        break
+                    except Exception:
+                        if i == 2:
+                            raise
+                        else:
+                            sleep(5)
+            except Exception:
                 ad.log.info("SL4A error: %s, restart SL4A service", e)
-                ad.start_services(ad.skip_sl4a)
+                try:
+                    self.terminate_all_sessions()
+                except Exception as e:
+                    ad.log.warning("Fail to terminate SL4A session: %s", e)
+                try:
+                    droid, ed = self.get_droid()
+                    ed.start()
+                except:
+                    self.log.exception("Failed to start sl4a!")
+                    raise
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
@@ -301,25 +328,25 @@ class TelLiveStressTest(TelephonyBaseTest):
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
-            self.dut.log.info(dict(self.result_info))
+            self.log.info(dict(self.result_info))
             try:
                 begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
-                crash_report = self.dut.check_crash_report(
-                    "checking_crash", begin_time, log_crash_report=True)
-                if crash_report:
-                    self.dut.log.error("Find new crash reports %s",
-                                       crash_report)
-                    failure += 1
-                    self.result_info["Crashes"] += 1
+                for ad in self.android_devices():
+                    crash_report = ad.check_crash_report(
+                        "checking_crash", begin_time, log_crash_report=True)
+                    if crash_report:
+                        ad.log.error("Find new crash reports %s", crash_report)
+                        failure += 1
+                        self.result_info["Crashes"] += 1
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
                     raise
-            except Exception as e:
+            except Exception:
                 raise
-            self.dut.log.info("Crashes found: %s", failure)
+            self.log.info("Crashes found: %s", failure)
         if failure:
             return False
         else:
@@ -354,8 +381,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         sub_id = self.dut.droid.subscriptionGetDefaultSubId()
         while time.time() < self.finishing_time:
             try:
-                ads = [self.dut, self.helper]
-                start_qxdm_loggers(self.log, ads)
+                ads = self.android_devices[:2]
                 self._make_phone_call(
                     ads, call_verification_func=is_phone_in_call_volte)
                 self._prefnetwork_mode_change(sub_id)
@@ -364,9 +390,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
                     raise
-            except Exception as e:
+            except Exception:
                 raise
-            self.log.info("%s", dict(self.result_info))
+            self.log.info(dict(self.result_info))
         if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
             return False
         else:
@@ -375,7 +401,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def message_test(self):
         while time.time() < self.finishing_time:
             try:
-                ads = [self.dut, self.helper]
+                ads = self.android_devices[:2]
                 random.shuffle(ads)
                 self._send_message(ads)
                 time.sleep(
@@ -387,7 +413,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     raise
             except Exception as e:
                 raise
-            self.log.info("%s", dict(self.result_info))
+            self.log.info(dict(self.result_info))
         if self.result_info["SMS failure"] or (
                 self.result_info["MMS failure"] / self.result_info["Total MMS"]
                 > 0.3):
