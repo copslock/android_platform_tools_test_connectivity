@@ -3432,20 +3432,12 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_tx.ed.pop_event(EventSmsSentSuccess,
                                    MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
-                result = False
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
                 # check log message as a work around for the missing sl4a
                 # event dispatcher event
-                log_results = ad.search_logcat(
-                    "SMS Message sent successfully", begin_time=begin_time)
-                if log_results:
-                    result = True
-                else:
-                    if not sms_mms_send_logcat_check(ad_tx, "sms", begin_time):
-                        return False
-                if not result:
-                    return result
+                if not sms_mms_send_logcat_check(ad_tx, "sms", begin_time):
+                    return False
 
             if not wait_for_matching_sms(
                     log,
