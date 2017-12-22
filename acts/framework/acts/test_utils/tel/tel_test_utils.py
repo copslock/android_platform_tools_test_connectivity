@@ -3330,7 +3330,7 @@ def wait_for_matching_sms(log,
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
             if begin_time:
-                if sms_mms_receive_logcat_check(ad_tx, "sms", begin_time):
+                if sms_mms_receive_logcat_check(ad_rx, "sms", begin_time):
                     ad_rx.log.info("Receivd SMS message is seen in logcat")
             return False
     else:
@@ -3346,7 +3346,7 @@ def wait_for_matching_sms(log,
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
             if begin_time:
-                if sms_mms_receive_logcat_check(ad_tx, "sms", begin_time):
+                if sms_mms_receive_logcat_check(ad_rx, "sms", begin_time):
                     ad_rx.log.info("Receivd SMS message is seen in logcat")
             if received_sms != '':
                 ad_rx.log.error("Only received partial matched SMS: %s",
@@ -3394,7 +3394,7 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
         if begin_time:
-            if sms_mms_receive_logcat_check(ad_tx, "mms", begin_time):
+            if sms_mms_receive_logcat_check(ad_rx, "mms", begin_time):
                 return True
         return False
 
