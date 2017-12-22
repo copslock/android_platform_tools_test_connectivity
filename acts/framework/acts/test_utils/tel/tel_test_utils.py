@@ -4974,10 +4974,14 @@ def start_nexuslogger(ad):
         ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
                      (qxdm_logger_apk, perm))
     time.sleep(2)
-    ad.log.info("Start %s" % qxdm_logger_apk)
-    ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
-    time.sleep(5)
-    return ad.is_apk_running(qxdm_logger_apk)
+    for i in range(3):
+        ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
+        ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
+        time.sleep(5)
+        if ad.is_apk_running(qxdm_logger_apk):
+            ad.send_keycode("HOME")
+            return True
+    return False
 
 
 def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
