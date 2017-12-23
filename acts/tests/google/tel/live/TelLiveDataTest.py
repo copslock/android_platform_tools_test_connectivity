@@ -131,10 +131,9 @@ class TelLiveDataTest(TelephonyBaseTest):
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
         try:
-            self.tcpdump_pid = None
-            self.tcpdump_file = None
-            (self.tcpdump_pid, self.tcpdump_file) = \
-          start_adb_tcpdump(self.android_devices[0], self.test_name, mask="all")
+            self.tcpdump_proc = [None, None]
+            self.tcpdump_proc[0] = start_adb_tcpdump(
+                self.android_devices[0], self.test_name, mask="all")
         except Exception as e:
             self.log.warning("Failed to start tcpdump collection", e)
             pass
@@ -143,9 +142,9 @@ class TelLiveDataTest(TelephonyBaseTest):
         TelephonyBaseTest.teardown_test(self)
         self.log.info("Inside Teardown Test")
         try:
-            if self.tcpdump_pid is not None:
-                stop_adb_tcpdump(self.android_devices[0], self.tcpdump_pid,
-                                 self.tcpdump_file, True)
+            if self.tcpdump_proc[0] is not None:
+                stop_adb_tcpdump(self.android_devices[0], self.tcpdump_proc[0],
+                                 True)
         except Exception as e:
             self.log.warning("Failed to stop tcpdump collection", e)
             pass
@@ -333,8 +332,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -373,8 +372,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -427,9 +426,9 @@ class TelLiveDataTest(TelephonyBaseTest):
         wifi_toggle_state(self.log, self.android_devices[0], False)
         self.android_devices[0].droid.telephonyToggleDataConnection(True)
         if (not wait_for_cell_data_connection(self.log,
-                                              self.android_devices[0], True) or
-                not verify_internet_connection(self.log,
-                                               self.android_devices[0])):
+                                              self.android_devices[0], True)
+                or not verify_internet_connection(self.log,
+                                                  self.android_devices[0])):
             self.log.error("Data not available on cell")
             return False
 
@@ -485,9 +484,9 @@ class TelLiveDataTest(TelephonyBaseTest):
                     raise _LocalException("Internet Accessible.")
 
             self.log.info("Step6 Verify phones still in call and Hang up.")
-            if not verify_incall_state(self.log, [
-                    self.android_devices[0], self.android_devices[1]
-            ], True):
+            if not verify_incall_state(
+                    self.log,
+                [self.android_devices[0], self.android_devices[1]], True):
                 return False
             if not hangup_call(self.log, self.android_devices[0]):
                 self.log.error("Failed to hang up call")
@@ -668,8 +667,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -711,8 +710,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -831,12 +830,12 @@ class TelLiveDataTest(TelephonyBaseTest):
         if not verify_http_connection(
                 self.log, self.provider, retry=0,
                 expected_state=provider_status):
-            self.provider.log.error("provider internet connection is not %s" %
-                                    provider_status)
+            self.provider.log.error(
+                "provider internet connection is not %s" % provider_status)
             return False
         else:
-            self.provider.log.info("provider internet connection is %s" %
-                                   provider_status)
+            self.provider.log.info(
+                "provider internet connection is %s" % provider_status)
         return True
 
     def _verify_bluetooth_tethering_connection(self,
@@ -851,8 +850,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if PAN connection and verification is successful,
             false if unsuccessful.
         """
-        if not self._enable_bluetooth_tethering_connection(self.provider,
-                                                           self.clients):
+        if not self._enable_bluetooth_tethering_connection(
+                self.provider, self.clients):
             return False
         if not self._test_internet_connection():
             self.log.error("Internet connection check failed")
@@ -892,8 +891,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                     "Internet connection check failed after disable tethering")
                 return False
             self.provider.log.info("Enable bluetooth tethering")
-            if not self._enable_bluetooth_tethering_connection(self.provider,
-                                                               self.clients):
+            if not self._enable_bluetooth_tethering_connection(
+                    self.provider, self.clients):
                 self.provider.log.error(
                     "Fail to re-enable bluetooth tethering")
                 return False
@@ -909,8 +908,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error(
                     "Internet connection check failed after disable bluetooth")
                 return False
-            if not self._enable_bluetooth_tethering_connection(self.provider,
-                                                               self.clients):
+            if not self._enable_bluetooth_tethering_connection(
+                    self.provider, self.clients):
                 self.provider.log.error(
                     "Fail to re-enable bluetooth tethering")
                 return False
@@ -1461,8 +1460,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("WiFi Tethering failed.")
             return False
 
-        if (not wait_for_wifi_data_connection(self.log, self.provider, True) or
-                not verify_internet_connection(self.log, self.provider)):
+        if (not wait_for_wifi_data_connection(self.log, self.provider, True)
+                or not verify_internet_connection(self.log, self.provider)):
             self.log.error("Provider data did not return to Wifi")
             return False
         return True
@@ -1534,9 +1533,9 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
 
             if not check_is_wifi_connected(
-                    self.log, self.clients[0], ssid) or (
-                        not verify_internet_connection(self.log,
-                                                       self.clients[0])):
+                    self.log, self.clients[0],
+                    ssid) or (not verify_internet_connection(
+                        self.log, self.clients[0])):
                 self.clients[0].log.error(
                     "Client wifi connection check failed!")
                 return False
@@ -1754,8 +1753,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         Returns:
             True if entitlement check returns True.
         """
-        if (not wait_for_cell_data_connection(self.log, self.provider, True) or
-                not verify_internet_connection(self.log, self.provider)):
+        if (not wait_for_cell_data_connection(self.log, self.provider, True)
+                or not verify_internet_connection(self.log, self.provider)):
             self.log.error("Failed cell data call for entitlement check.")
             return False
 
@@ -1798,8 +1797,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
             success_count, fail_count,
             str(100 * success_count / (success_count + fail_count))))
-        if success_count / (success_count + fail_count
-                            ) >= MINIMUM_SUCCESS_RATE:
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
         else:
             return False
@@ -1892,8 +1891,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.error("Client connect to WiFi failed.")
             result = False
         if not wifi_reset(self.log, ad_client):
-            self.log.error(
-                "Reset client WiFi failed. {}".format(ad_client.serial))
+            self.log.error("Reset client WiFi failed. {}".format(
+                ad_client.serial))
             result = False
         if not stop_wifi_tethering(self.log, ad_host):
             self.log.error("Stop WiFi tethering failed.")
@@ -2161,8 +2160,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
             self.provider.log.info("Reboot provider")
             self.provider.reboot()
-            time.sleep(WAIT_TIME_AFTER_REBOOT +
-                       WAIT_TIME_TETHERING_AFTER_REBOOT)
+            time.sleep(
+                WAIT_TIME_AFTER_REBOOT + WAIT_TIME_TETHERING_AFTER_REBOOT)
 
             self.log.info("After reboot check if tethering stopped.")
             if self.provider.droid.wifiIsApEnabled():
@@ -2200,8 +2199,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Make sure DUT can connect to live network by WIFI")
         if ((not ensure_wifi_connected(self.log, self.provider,
                                        self.wifi_network_ssid,
-                                       self.wifi_network_pass)) or
-            (not verify_internet_connection(self.log, self.provider))):
+                                       self.wifi_network_pass))
+                or (not verify_internet_connection(self.log, self.provider))):
             self.log.error("WiFi connect fail.")
             return False
 
@@ -2269,8 +2268,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.log.info("Make sure DUT can connect to live network by WIFI")
         if ((not ensure_wifi_connected(self.log, self.provider,
                                        self.wifi_network_ssid,
-                                       self.wifi_network_pass)) or
-            (not verify_internet_connection(self.log, self.provider))):
+                                       self.wifi_network_pass))
+                or (not verify_internet_connection(self.log, self.provider))):
             self.log.error("WiFi connect fail.")
             return False
 
@@ -2367,8 +2366,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2484,9 +2483,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         ad = self.android_devices[0]
         if not ensure_network_generation_for_subscription(
-                self.log, ad,
-                ad.droid.subscriptionGetDefaultDataSubId(), GEN_4G,
-                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                self.log, ad, ad.droid.subscriptionGetDefaultDataSubId(),
+                GEN_4G, MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             self.log.error("Device {} failed to reselect in {}s.".format(
                 ad.serial, MAX_WAIT_TIME_NW_SELECTION))
             return False
@@ -2514,9 +2512,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         ad = self.android_devices[0]
         if not ensure_network_generation_for_subscription(
-                self.log, ad,
-                ad.droid.subscriptionGetDefaultDataSubId(), GEN_3G,
-                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                self.log, ad, ad.droid.subscriptionGetDefaultDataSubId(),
+                GEN_3G, MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             self.log.error("Device {} failed to reselect in {}s.".format(
                 ad.serial, MAX_WAIT_TIME_NW_SELECTION))
             return False
@@ -2543,9 +2540,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         if not ensure_network_generation_for_subscription(
-                self.log, ad,
-                ad.droid.subscriptionGetDefaultDataSubId(), GEN_2G,
-                MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
+                self.log, ad, ad.droid.subscriptionGetDefaultDataSubId(),
+                GEN_2G, MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             self.log.error("Device {} failed to reselect in {}s.".format(
                 ad.serial, MAX_WAIT_TIME_NW_SELECTION))
             return False
@@ -2777,8 +2773,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             next_sim_slot_index = SIM2_SLOT_INDEX
         else:
@@ -2804,8 +2800,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                                      self.wifi_network_pass):
             self.log.error("WiFi connect fail.")
             return False
-        if (not wait_for_wifi_data_connection(self.log, ad, True) or
-                not verify_internet_connection(self.log, ad)):
+        if (not wait_for_wifi_data_connection(self.log, ad, True)
+                or not verify_internet_connection(self.log, ad)):
             self.log.error("Data is not on WiFi")
             return False
 
@@ -2926,8 +2922,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         current_data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
-        current_sim_slot_index = get_slot_index_from_subid(self.log, ad,
-                                                           current_data_sub_id)
+        current_sim_slot_index = get_slot_index_from_subid(
+            self.log, ad, current_data_sub_id)
         if current_sim_slot_index == SIM1_SLOT_INDEX:
             non_active_sim_slot_index = SIM2_SLOT_INDEX
         else:
