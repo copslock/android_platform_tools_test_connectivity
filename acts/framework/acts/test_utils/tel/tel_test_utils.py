@@ -5006,10 +5006,17 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         ad.adb.shell("killall -9 tcpdump")
     except AdbError:
         ad.log.warn("Killing existing tcpdump processes failed")
+    out = ad.adb.shell("ls -l /sdcard/tcpdump/")
+    if "No such file" in out or not out:
+        ad.adb.shell("mkdir /sdcard/tcpdump")
+    else:
+        ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
-    file_name = "/sdcard/tcpdump{}{}{}.pcap".format(ad.serial, test_name,
-                                                    begin_time)
+
+    file_name = "/sdcard/tcpdump/tcpdump{}{}{}.pcap".format(
+        ad.serial, test_name, begin_time)
     ad.log.info("tcpdump file is %s", file_name)
     if mask == "all":
         cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
@@ -5018,11 +5025,10 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         cmd = "adb -s {} shell tcpdump -i any -s0 -n -p udp port 500 or \
               udp port 4500 -w {}".format(ad.serial, file_name)
     ad.log.debug("%s" % cmd)
-    tcpdump_pid = start_standing_subprocess(cmd, 5)
-    return (tcpdump_pid, file_name)
+    return start_standing_subprocess(cmd, 5)
 
 
-def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file, pull_tcpdump=False):
+def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
@@ -5032,16 +5038,16 @@ def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file, pull_tcpdump=False):
         tcpdump_file: filename needed to pull out
 
     """
-    ad.log.debug("Stopping and pulling tcpdump if failed")
+    ad.log.info("Stopping and pulling tcpdump if any")
+    tcpdump_file = "/sdcard/tcpdump/"
     try:
-        stop_standing_subprocess(tcpdump_pid)
+        if proc is not None:
+            stop_standing_subprocess(proc)
     except Exception as e:
         ad.log.warning(e)
     if pull_tcpdump:
-        tcpdump_path = os.path.join(ad.log_path, "tcpdump")
-        create_dir(tcpdump_path)
-        ad.adb.pull("{} {}".format(tcpdump_file, tcpdump_path))
-    ad.adb.shell("rm -rf {}".format(tcpdump_file))
+        ad.adb.pull("/sdcard/tcpdump/ {}".format(ad.log_path))
+    ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
     return True
 
 
