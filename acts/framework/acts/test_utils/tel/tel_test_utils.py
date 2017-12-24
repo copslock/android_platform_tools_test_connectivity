@@ -3323,23 +3323,21 @@ def wait_for_matching_sms(log,
     """
     if not allow_multi_part_long_sms:
         try:
-            ad_rx.messaging_ed.wait_for_event(EventSmsReceived, is_sms_match,
-                                              MAX_WAIT_TIME_SMS_RECEIVE,
-                                              phonenumber_tx, text)
+            ad_rx.ed.wait_for_event(EventSmsReceived, is_sms_match,
+                                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
+                                    text)
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
             if begin_time:
-                log_results = ad_rx.search_logcat(
-                    "Received SMS message", begin_time=begin_time)
-                if log_results:
+                if sms_mms_receive_logcat_check(ad_rx, "sms", begin_time):
                     ad_rx.log.info("Receivd SMS message is seen in logcat")
             return False
     else:
         try:
             received_sms = ''
             while (text != ''):
-                event = ad_rx.messaging_ed.wait_for_event(
+                event = ad_rx.ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match,
                     MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx, text)
                 text = text[len(event['data']['Text']):]
@@ -3348,9 +3346,7 @@ def wait_for_matching_sms(log,
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
             if begin_time:
-                log_results = ad_rx.search_logcat(
-                    "Received SMS message", begin_time=begin_time)
-                if log_results:
+                if sms_mms_receive_logcat_check(ad_rx, "sms", begin_time):
                     ad_rx.log.info("Receivd SMS message is seen in logcat")
             if received_sms != '':
                 ad_rx.log.error("Only received partial matched SMS: %s",
@@ -3391,17 +3387,14 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
     """
     try:
         #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-        ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
-                                          MAX_WAIT_TIME_SMS_RECEIVE,
-                                          phonenumber_tx, text)
+        ad_rx.ed.wait_for_event(EventMmsDownloaded, is_mms_match,
+                                MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
+                                text)
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
         if begin_time:
-            log_results = ad_rx.search_logcat(
-                "Received MMS message", begin_time=begin_time)
-            if log_results:
-                ad_rx.log.info("Receivd MMS message is seen in logcat")
+            if sms_mms_receive_logcat_check(ad_rx, "mms", begin_time):
                 return True
         return False
 
@@ -3424,50 +3417,27 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     """
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
-    for ad in (ad_rx, ad_tx):
-        if not hasattr(ad, "messaging_droid"):
-            ad.messaging_droid = ad.start_new_session()
-            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-            ad.messaging_ed.start()
-        else:
-            try:
-                ad.messaging_droid.logI("Starting SMS Test")
-            except:
-                ad.messaging_droid = ad.start_new_session()
-                ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-                ad.messaging_ed.start()
 
     for text in array_message:
         begin_time = get_current_epoch_time()
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
-        ad_rx.messaging_ed.clear_all_events()
-        ad_tx.messaging_ed.clear_all_events()
-        ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
+        ad_rx.ed.clear_all_events()
+        ad_tx.ed.clear_all_events()
+        ad_rx.droid.smsStartTrackingIncomingSmsMessage()
         try:
-            ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text,
-                                                     True)
+            ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
             try:
-                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
-                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.ed.pop_event(EventSmsSentSuccess,
+                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
-                result = False
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
                 # check log message as a work around for the missing sl4a
                 # event dispatcher event
-                log_results = ad.search_logcat(
-                    "ProcessSentMessageAction: Done sending SMS message",
-                    begin_time=begin_time)
-                if log_results:
-                    for log_result in log_results:
-                        if "status is SUCCEEDED" in log_result["log_message"]:
-                            ad_tx.log.info(
-                                "Found SMS send succeed log message")
-                            result = True
-                if not result:
-                    return result
+                if not sms_mms_send_logcat_check(ad_tx, "sms", begin_time):
+                    return False
 
             if not wait_for_matching_sms(
                     log,
@@ -3480,7 +3450,7 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                                 length)
                 return False
         finally:
-            ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
+            ad_rx.droid.smsStopTrackingIncomingSmsMessage()
     return True
 
 
@@ -3500,6 +3470,42 @@ def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
     return mms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
         get_incoming_message_sub_id(ad_rx), array_message)
+
+
+def sms_mms_send_logcat_check(ad, type, begin_time):
+    type = type.upper()
+    log_results = ad.search_logcat(
+        "%s Message sent successfully" % type, begin_time=begin_time)
+    if log_results:
+        ad.log.info("Found SL4A %s sent succeessful log message" % type)
+        return True
+    else:
+        log_results = ad.search_logcat(
+            "ProcessSentMessageAction: Done sending %s message" % type,
+            begin_time=begin_time)
+        if log_results:
+            for log_result in log_results:
+                if "status is SUCCEEDED" in log_result["log_message"]:
+                    ad.log.info(
+                        "Found BugleDataModel %s send succeed log message" %
+                        type)
+                    return True
+    return False
+
+
+def sms_mms_receive_logcat_check(ad, type, begin_time):
+    type = type.upper()
+    log_results = ad.search_logcat(
+        "New %s Received" % type, begin_time=begin_time)
+    if log_results:
+        ad.log.info("Found SL4A %s received log message" % type)
+        return True
+    else:
+        log_results = ad.search_logcat(
+            "Received %s message" % type, begin_time=begin_time)
+        if log_results:
+            ad.log.info("Found %s received log message" % type)
+    return False
 
 
 #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
@@ -3525,46 +3531,26 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     for ad in (ad_rx, ad_tx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
-        if not hasattr(ad, "messaging_droid"):
-            ad.messaging_droid = ad.start_new_session()
-            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-            ad.messaging_ed.start()
-        else:
-            try:
-                ad.messaging_droid.logI("Starting MMS Test")
-            except:
-                ad.messaging_droid = ad.start_new_session()
-                ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-                ad.messaging_ed.start()
+
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
         ad_tx.log.info(
             "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
         ad_rx.ed.clear_all_events()
-        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
         try:
             ad_tx.ensure_screen_on()
-            ad_tx.messaging_droid.smsSendMultimediaMessage(
+            ad_tx.droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.ed.pop_event(EventMmsSentSuccess,
+                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
-                result = False
                 # check log message as a work around for the missing sl4a
                 # event dispatcher event
-                log_results = ad.search_logcat(
-                    "ProcessSentMessageAction: Done sending MMS message",
-                    begin_time=begin_time)
-                if log_results:
-                    for log_result in log_results:
-                        if "status is SUCCEEDED" in log_result["log_message"]:
-                            ad_tx.log.info(
-                                "Found MMS send succeed log message")
-                            result = True
-                if not result:
+                if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
                     return False
 
             if not wait_for_matching_mms(
@@ -3572,7 +3558,7 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                     begin_time=begin_time):
                 return False
         finally:
-            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
@@ -3614,52 +3600,31 @@ def mms_receive_verify_after_call_hangup_for_subscription(
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
-    for ad in (ad_rx, ad_tx):
-        if not hasattr(ad, "messaging_droid"):
-            ad.messaging_droid = ad.start_new_session()
-            ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-            ad.messaging_ed.start()
-        else:
-            try:
-                ad.messaging_droid.logI("Checking MMS Receive")
-            except:
-                ad.messaging_droid = ad.start_new_session()
-                ad.messaging_ed = ad.get_dispatcher(ad.messaging_droid)
-                ad.messaging_ed.start()
+
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.messaging_ed.clear_all_events()
-        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        ad_rx.ed.clear_all_events()
+        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
         try:
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                             MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.ed.pop_event(EventMmsSentSuccess,
+                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
             except Empty:
                 log.warning("No sent_success event.")
-                result = False
-                log_results = ad.search_logcat(
-                    "ProcessSentMessageAction: Done sending MMS message",
-                    begin_time=begin_time)
-                if log_results:
-                    for log_result in log_results:
-                        if "status is SUCCEEDED" in log_result["log_message"]:
-                            ad_tx.log.info(
-                                "Found MMS send succeed log message")
-                            result = True
-                if not result:
+                if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
                     return False
             if not wait_for_matching_mms(
                     log, ad_rx, phonenumber_tx, message,
                     begin_time=begin_time):
                 return False
         finally:
-            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
@@ -5001,10 +4966,14 @@ def start_nexuslogger(ad):
         ad.adb.shell("pm grant %s android.permission.%s_EXTERNAL_STORAGE" %
                      (qxdm_logger_apk, perm))
     time.sleep(2)
-    ad.log.info("Start %s" % qxdm_logger_apk)
-    ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
-    time.sleep(5)
-    return ad.is_apk_running(qxdm_logger_apk)
+    for i in range(3):
+        ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
+        ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
+        time.sleep(5)
+        if ad.is_apk_running(qxdm_logger_apk):
+            ad.send_keycode("HOME")
+            return True
+    return False
 
 
 def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
@@ -5037,10 +5006,17 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         ad.adb.shell("killall -9 tcpdump")
     except AdbError:
         ad.log.warn("Killing existing tcpdump processes failed")
+    out = ad.adb.shell("ls -l /sdcard/tcpdump/")
+    if "No such file" in out or not out:
+        ad.adb.shell("mkdir /sdcard/tcpdump")
+    else:
+        ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
-    file_name = "/sdcard/tcpdump{}{}{}.pcap".format(ad.serial, test_name,
-                                                    begin_time)
+
+    file_name = "/sdcard/tcpdump/tcpdump{}{}{}.pcap".format(
+        ad.serial, test_name, begin_time)
     ad.log.info("tcpdump file is %s", file_name)
     if mask == "all":
         cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
@@ -5049,11 +5025,10 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         cmd = "adb -s {} shell tcpdump -i any -s0 -n -p udp port 500 or \
               udp port 4500 -w {}".format(ad.serial, file_name)
     ad.log.debug("%s" % cmd)
-    tcpdump_pid = start_standing_subprocess(cmd, 5)
-    return (tcpdump_pid, file_name)
+    return start_standing_subprocess(cmd, 5)
 
 
-def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file, pull_tcpdump=False):
+def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
@@ -5063,16 +5038,16 @@ def stop_adb_tcpdump(ad, tcpdump_pid, tcpdump_file, pull_tcpdump=False):
         tcpdump_file: filename needed to pull out
 
     """
-    ad.log.debug("Stopping and pulling tcpdump if failed")
+    ad.log.info("Stopping and pulling tcpdump if any")
+    tcpdump_file = "/sdcard/tcpdump/"
     try:
-        stop_standing_subprocess(tcpdump_pid)
+        if proc is not None:
+            stop_standing_subprocess(proc)
     except Exception as e:
         ad.log.warning(e)
     if pull_tcpdump:
-        tcpdump_path = os.path.join(ad.log_path, "tcpdump")
-        create_dir(tcpdump_path)
-        ad.adb.pull("{} {}".format(tcpdump_file, tcpdump_path))
-    ad.adb.shell("rm -rf {}".format(tcpdump_file))
+        ad.adb.pull("/sdcard/tcpdump/ {}".format(ad.log_path))
+    ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
     return True
 
 
