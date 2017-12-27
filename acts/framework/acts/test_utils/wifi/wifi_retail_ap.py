@@ -166,6 +166,19 @@ class WifiRetailAP(object):
 
         self.configure_ap()
 
+    def band_lookup_by_channel(self, channel):
+        """ Function that gives band name by channel number.
+
+        Args:
+            channel: channel number to lookup
+        Returns:
+            band: name of band which this channel belongs to on this ap
+        """
+        for key, value in self.CHANNEL_BAND_MAP.items():
+            if channel in value:
+                return key
+        raise ValueError("Invalid channel passed in argument.")
+
 
 class NetgearR7000AP(WifiRetailAP):
     """ Class that implements Netgear R7500 AP.
@@ -179,6 +192,10 @@ class NetgearR7000AP(WifiRetailAP):
         self.CONFIG_PAGE_NOLOGIN = "http://{}/WLG_wireless_dual_band_r10.htm".format(
             self.ap_settings["ip_address"])
         self.NETWORKS = ["2G", "5G_1"]
+        self.CHANNEL_BAND_MAP = {
+            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "5G_1": [36, 40, 44, 48, 149, 153, 157, 161]
+        }
         self.CONFIG_PAGE_FIELDS = {
             ("2G", "ssid"): "ssid",
             ("5G_1", "ssid"): "ssid_an",
@@ -321,6 +338,10 @@ class NetgearR7500AP(WifiRetailAP):
         self.CONFIG_PAGE_NOLOGIN = "http://{}/".format(
             self.ap_settings["ip_address"])
         self.NETWORKS = ["2G", "5G_1"]
+        self.CHANNEL_BAND_MAP = {
+            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "5G_1": [36, 40, 44, 48, 149, 153, 157, 161]
+        }
         self.CONFIG_PAGE_FIELDS = {
             ("2G", "ssid"): "ssid",
             ("5G_1", "ssid"): "ssid_an",
@@ -475,6 +496,11 @@ class NetgearR8000AP(NetgearR7000AP):
         self.CONFIG_PAGE_NOLOGIN = "http://{}/WLG_wireless_dual_band_r8000.htm".format(
             self.ap_settings["ip_address"])
         self.NETWORKS = ["2G", "5G_1", "5G_2"]
+        self.CHANNEL_BAND_MAP = {
+            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "5G_1": [36, 40, 44, 48],
+            "5G_2": [149, 153, 157, 161]
+        }
         self.CONFIG_PAGE_FIELDS = {
             ("2G", "ssid"): "ssid",
             ("5G_1", "ssid"): "ssid_an",
