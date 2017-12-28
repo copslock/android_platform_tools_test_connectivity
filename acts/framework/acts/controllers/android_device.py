@@ -1060,10 +1060,6 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
-            self.adb.pull(
-                "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
-                timeout=PULL_TIMEOUT,
-                ignore_status=True)
         if diag_mdlog_cmd:
             self.log.debug("start qxdm logging by %s", diag_mdlog_cmd)
             self.adb.shell_nb(diag_mdlog_cmd)
