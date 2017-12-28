@@ -16,8 +16,8 @@
 
 import json
 import logging
+import math
 import os
-
 from acts import utils
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
@@ -69,7 +69,9 @@ class IPerfResult(object):
                 if "}\n" in iperf_output:
                     iperf_output = iperf_output[0:
                                                 iperf_output.index("}\n") + 1]
-                self.result = json.loads(''.join(iperf_output))
+                iperf_string = ''.join(iperf_output)
+                iperf_string = iperf_string.replace("-nan", '0')
+                self.result = json.loads(iperf_string)
         except ValueError:
             with open(result_path, 'r') as f:
                 # Possibly a result from interrupted iperf run, skip first line
@@ -83,7 +85,8 @@ class IPerfResult(object):
         Returns:
             True if the result contains throughput data. False otherwise.
         """
-        return ('end' in self.result) and ('sum' in self.result["end"])
+        return ('end' in self.result) and ('sum_received' in self.result["end"]
+                                           or 'sum' in self.result["end"])
 
     def get_json(self):
         """
@@ -100,11 +103,17 @@ class IPerfResult(object):
 
     @property
     def avg_rate(self):
-        """Average receiving rate in MB/s over the entire run.
+        """Average UDP rate in MB/s over the entire run.
+
+        This is the average UDP rate observed at the terminal the iperf result
+        is pulled from. Note that this rate can either be a transmitted or
+        received rate. When this is a transmit UDP rate, it is really not a
+        proper representation of the quality of the link as the transmitter
+        just floods its interface with packets.
 
         If the result is not from a success run, this property is None.
         """
-        if not self._has_data or 'sum' not in self.result['end']:
+        if not self._has_data() or 'sum' not in self.result['end']:
             return None
         bps = self.result['end']['sum']['bits_per_second']
         return bps / 8 / 1024 / 1024
@@ -116,7 +125,7 @@ class IPerfResult(object):
 
         If the result is not from a success run, this property is None.
         """
-        if not self._has_data or 'sum_received' not in self.result['end']:
+        if not self._has_data() or 'sum_received' not in self.result['end']:
             return None
         bps = self.result['end']['sum_received']['bits_per_second']
         return bps / 8 / 1024 / 1024
@@ -128,10 +137,44 @@ class IPerfResult(object):
 
         If the result is not from a success run, this property is None.
         """
-        if not self._has_data or 'sum_sent' not in self.result['end']:
+        if not self._has_data() or 'sum_sent' not in self.result['end']:
             return None
         bps = self.result['end']['sum_sent']['bits_per_second']
         return bps / 8 / 1024 / 1024
+
+    @property
+    def instantaneous_rates(self):
+        """Instantaneous received rate in MB/s over entire run. This data may
+        not exist if iperf was interrupted.
+
+        If the result is not from a success run, this property is None.
+        """
+        if not self._has_data():
+            return None
+        intervals = [
+            interval["sum"]["bits_per_second"] / 8 / 1024 / 1024
+            for interval in self.result["intervals"]
+        ]
+        return intervals
+
+    @property
+    def std_deviation(self):
+        """Standard deviation of rates in MB/s over entire run. This data may
+        not exist if iperf was interrupted.
+
+        If the result is not from a success run, this property is None.
+        Note that the last interval is ignored in the calculation as it is
+        from a very small measurement interval (not the specified iperf
+        reporting interval)
+        """
+        if not self._has_data():
+            return None
+        instantaneous_rates = self.instantaneous_rates[:-1]
+        avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
+        sqd_deviations = [(rate - avg_rate)**2 for rate in instantaneous_rates]
+        std_dev = math.sqrt(
+            math.fsum(sqd_deviations) / (len(sqd_deviations) - 1))
+        return std_dev
 
 
 class IPerfServer():
