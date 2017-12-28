@@ -15,14 +15,21 @@
 #   limitations under the License.
 
 ######################################################
-# Aware DW (Discovery Window) power mode values
+# Aware power settings values for interactive (high power) and
+# non-interactive (low power) modes
 ######################################################
 
-DW_24_INTERACTIVE = 1
-DW_5_INTERACTIVE = 1
+POWER_DW_24_INTERACTIVE = 1
+POWER_DW_5_INTERACTIVE = 1
+POWER_DISC_BEACON_INTERVAL_INTERACTIVE = 0
+POWER_NUM_SS_IN_DISC_INTERACTIVE = 0
+POWER_ENABLE_DW_EARLY_TERM_INTERACTIVE = 0
 
-DW_24_NON_INTERACTIVE = 4
-DW_5_NON_INTERACTIVE = 0
+POWER_DW_24_NON_INTERACTIVE = 4
+POWER_DW_5_NON_INTERACTIVE = 0
+POWER_DISC_BEACON_INTERVAL_NON_INTERACTIVE = 0
+POWER_NUM_SS_IN_DISC_NON_INTERACTIVE = 0
+POWER_ENABLE_DW_EARLY_TERM_NON_INTERACTIVE = 0
 
 ######################################################
 # Broadcast events

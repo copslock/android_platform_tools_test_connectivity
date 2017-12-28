@@ -92,8 +92,8 @@ class LatencyTest(AwareBaseTest):
     s_dut.pretty_name = "Subscriber"
 
     # override the default DW configuration
-    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
-    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(s_dut, dw_24ghz, dw_5ghz)
 
     latencies = []
     failed_discoveries = 0
@@ -174,8 +174,8 @@ class LatencyTest(AwareBaseTest):
     s_dut.pretty_name = "Subscriber"
 
     # override the default DW configuration
-    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
-    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(s_dut, dw_24ghz, dw_5ghz)
 
     # Publisher+Subscriber: attach and wait for confirmation
     p_id = p_dut.droid.wifiAwareAttach(False)
@@ -253,8 +253,8 @@ class LatencyTest(AwareBaseTest):
     s_dut = self.android_devices[1]
 
     # override the default DW configuration
-    autils.config_dw_all_modes(p_dut, dw_24ghz, dw_5ghz)
-    autils.config_dw_all_modes(s_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(p_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(s_dut, dw_24ghz, dw_5ghz)
 
     # Start up a discovery session
     (p_id, s_id, p_disc_id, s_disc_id,
@@ -341,8 +341,8 @@ class LatencyTest(AwareBaseTest):
     resp_dut.pretty_name = 'Responder'
 
     # override the default DW configuration
-    autils.config_dw_all_modes(init_dut, dw_24ghz, dw_5ghz)
-    autils.config_dw_all_modes(resp_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(init_dut, dw_24ghz, dw_5ghz)
+    autils.config_power_settings(resp_dut, dw_24ghz, dw_5ghz)
 
     # Initiator+Responder: attach and wait for confirmation & identity
     init_id = init_dut.droid.wifiAwareAttach(True)
@@ -438,8 +438,8 @@ class LatencyTest(AwareBaseTest):
       self.run_synchronization_latency(
           results=results,
           do_unsolicited_passive=True,
-          dw_24ghz=aconsts.DW_24_INTERACTIVE,
-          dw_5ghz=aconsts.DW_5_INTERACTIVE,
+          dw_24ghz=aconsts.POWER_DW_24_INTERACTIVE,
+          dw_5ghz=aconsts.POWER_DW_5_INTERACTIVE,
           num_iterations=10,
           startup_offset=startup_offset,
           timeout_period=20)
@@ -454,8 +454,8 @@ class LatencyTest(AwareBaseTest):
       self.run_synchronization_latency(
           results=results,
           do_unsolicited_passive=True,
-          dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
-          dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+          dw_24ghz=aconsts.POWER_DW_24_NON_INTERACTIVE,
+          dw_5ghz=aconsts.POWER_DW_5_NON_INTERACTIVE,
           num_iterations=10,
           startup_offset=startup_offset,
           timeout_period=20)
@@ -469,8 +469,8 @@ class LatencyTest(AwareBaseTest):
     self.run_discovery_latency(
         results=results,
         do_unsolicited_passive=True,
-        dw_24ghz=aconsts.DW_24_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_default_parameters finished", extras=results)
@@ -482,8 +482,8 @@ class LatencyTest(AwareBaseTest):
     self.run_discovery_latency(
         results=results,
         do_unsolicited_passive=True,
-        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_NON_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_discovery_latency_non_interactive_dws finished", extras=results)
@@ -510,8 +510,8 @@ class LatencyTest(AwareBaseTest):
     results = {}
     self.run_message_latency(
         results=results,
-        dw_24ghz=aconsts.DW_24_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_message_latency_default_dws finished", extras=results)
@@ -524,8 +524,8 @@ class LatencyTest(AwareBaseTest):
     results = {}
     self.run_message_latency(
         results=results,
-        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_NON_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_message_latency_non_interactive_dws finished", extras=results)
@@ -536,8 +536,8 @@ class LatencyTest(AwareBaseTest):
     results = {}
     self.run_ndp_oob_latency(
         results=results,
-        dw_24ghz=aconsts.DW_24_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_ndp_setup_latency_default_dws finished", extras=results)
@@ -549,8 +549,8 @@ class LatencyTest(AwareBaseTest):
     results = {}
     self.run_ndp_oob_latency(
         results=results,
-        dw_24ghz=aconsts.DW_24_NON_INTERACTIVE,
-        dw_5ghz=aconsts.DW_5_NON_INTERACTIVE,
+        dw_24ghz=aconsts.POWER_DW_24_NON_INTERACTIVE,
+        dw_5ghz=aconsts.POWER_DW_5_NON_INTERACTIVE,
         num_iterations=100)
     asserts.explicit_pass(
         "test_ndp_setup_latency_non_interactive_dws finished", extras=results)

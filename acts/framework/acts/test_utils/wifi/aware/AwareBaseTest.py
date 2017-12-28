@@ -85,9 +85,9 @@ class AwareBaseTest(BaseTestClass):
     """Set the power configuration DW parameters for the device based on any
     configuration overrides (if provided)"""
     if self.aware_default_power_mode == "INTERACTIVE":
-      autils.config_dw_high_power(ad)
+      autils.config_settings_high_power(ad)
     elif self.aware_default_power_mode == "NON_INTERACTIVE":
-      autils.config_dw_low_power(ad)
+      autils.config_settings_low_power(ad)
     else:
       asserts.assert_false(
           "The 'aware_default_power_mode' configuration must be INTERACTIVE or "
