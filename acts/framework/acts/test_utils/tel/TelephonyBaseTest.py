@@ -92,6 +92,10 @@ class TelephonyBaseTest(BaseTestClass):
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices,
                                utils.get_current_epoch_time())
+            for ad in self.android_devices:
+                ad.adb.pull(
+                    "/firmware/image/qdsp6m.qdb %s" % ad.log_path,
+                    ignore_status=True)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
 
