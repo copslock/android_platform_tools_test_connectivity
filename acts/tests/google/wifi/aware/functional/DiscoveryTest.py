@@ -831,7 +831,7 @@ class DiscoveryTest(AwareBaseTest):
         s_mf_1="goodbye there string")
 
   #######################################
-  # Multiple concurrent services key
+  # Multiple concurrent services
   #######################################
 
   def run_multiple_concurrent_services(self, type_x, type_y):
