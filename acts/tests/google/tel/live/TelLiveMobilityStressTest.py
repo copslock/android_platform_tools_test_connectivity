@@ -70,7 +70,7 @@ from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_3G
 from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_4G
 
 import socket
-from acts.controllers.sl4a_client import Sl4aProtocolError
+from acts.controllers.sl4a_lib.rpc_client import Sl4aProtocolError
 
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
 EXCEPTION_TOLERANCE = 20

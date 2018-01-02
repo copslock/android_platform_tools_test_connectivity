@@ -21,7 +21,7 @@ import collections
 import time
 
 from acts.test_decorators import test_tracker_info
-from acts.controllers.sl4a_types import Sl4aNetworkInfo
+from acts.controllers.sl4a_lib.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE

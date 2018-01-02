@@ -22,6 +22,7 @@ import os
 import re
 import sys
 
+from acts import tracelogger
 from acts.utils import create_dir
 
 log_line_format = "%(asctime)s.%(msecs).03d %(levelname)s %(message)s"
@@ -167,7 +168,8 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     fh_info = logging.FileHandler(os.path.join(log_path, 'test_run_info.txt'))
     fh_info.setFormatter(f_formatter)
     fh_info.setLevel(logging.INFO)
-    fh_error = logging.FileHandler(os.path.join(log_path, 'test_run_error.txt'))
+    fh_error = logging.FileHandler(
+        os.path.join(log_path, 'test_run_error.txt'))
     fh_error.setFormatter(f_formatter)
     fh_error.setLevel(logging.WARNING)
     log.addHandler(ch)
@@ -233,3 +235,23 @@ def normalize_log_line_timestamp(log_line_timestamp):
     norm_tp = norm_tp.replace(':', '-')
     return norm_tp
 
+
+class LoggerAdapter(logging.LoggerAdapter):
+    """A LoggerAdapter class that takes in a lambda for transforming logs."""
+
+    def __init__(self, logging_lambda):
+        self.logging_lambda = logging_lambda
+        super(LoggerAdapter, self).__init__(logging.getLogger(), {})
+
+    def process(self, msg, kwargs):
+        return self.logging_lambda(msg), kwargs
+
+
+def create_logger(logging_lambda=lambda message: message):
+    """Returns a logger with logging defined by a given lambda.
+
+    Args:
+        logging_lambda: A lambda of the form:
+            >>> lambda log_message: return 'string'
+    """
+    return tracelogger.TraceLogger(LoggerAdapter(logging_lambda))

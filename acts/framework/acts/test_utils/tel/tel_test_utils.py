@@ -30,7 +30,7 @@ from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
-from acts.controllers.event_dispatcher import EventDispatcher
+from acts.controllers.sl4a_lib.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
 from acts.test_utils.tel.tel_defines import CARD_POWER_UP
@@ -2163,7 +2163,7 @@ def http_file_download_by_chrome(ad,
     file_path = os.path.join(file_directory, file_name)
     # Remove pre-existing file
     ad.force_stop_apk("com.android.chrome")
-    file_to_be_delete =  os.path.join(file_directory, "*%s*" % file_name)
+    file_to_be_delete = os.path.join(file_directory, "*%s*" % file_name)
     ad.adb.shell("rm -f %s" % file_to_be_delete)
     ad.adb.shell("rm -rf /sdcard/Download/.*")
     ad.adb.shell("rm -f /sdcard/Download/.*")
@@ -3445,7 +3445,7 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         ad_rx.ed.clear_events(EventSmsReceived)
         ad_tx.ed.clear_events(EventSmsSentSuccess)
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
-        time.sleep(0.1) #sleep 100ms after starting event tracking
+        time.sleep(0.1)  #sleep 100ms after starting event tracking
         try:
             ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
             try:
@@ -5056,8 +5056,9 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
 
-    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (
-        ad.serial, test_name, begin_time)
+    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (ad.serial,
+                                                           test_name,
+                                                           begin_time)
     ad.log.info("tcpdump file is %s", file_name)
     if mask == "all":
         cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
@@ -5283,7 +5284,7 @@ def system_file_push(ad, src_file_path, dst_file_path):
     """
     cmd = "%s %s" % (src_file_path, dst_file_path)
     out = ad.adb.push(cmd, timeout=300, ignore_status=True)
-    skip_sl4a= True if "sl4a.apk" in src_file_path else False
+    skip_sl4a = True if "sl4a.apk" in src_file_path else False
     if "Read-only file system" in out:
         ad.log.info("Change read-only file system")
         ad.adb.disable_verity()
@@ -5400,7 +5401,7 @@ def print_radio_info(ad, extra_msg=""):
 def wait_for_state(state_check_func,
                    state,
                    max_wait_time=MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                   checking_interval=WAIT_TIME_BETWEEN_STATE_CHECK ,
+                   checking_interval=WAIT_TIME_BETWEEN_STATE_CHECK,
                    *args,
                    **kwargs):
     while max_wait_time >= 0:
@@ -5418,7 +5419,8 @@ def power_off_sim(ad, sim_slot_id=None):
             verify_func = ad.droid.telephonyGetSimState
             verify_args = []
         else:
-            ad.droid.telephonySetSimStateForSlotId(sim_slot_id, CARD_POWER_DOWN)
+            ad.droid.telephonySetSimStateForSlotId(sim_slot_id,
+                                                   CARD_POWER_DOWN)
             verify_func = ad.droid.telephonyGetSimStateForSlotId
             verify_args = [sim_slot_id]
     except Exception as e:
