@@ -28,8 +28,7 @@ import time
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
-from acts.controllers.android_device import AndroidDevice
-from acts.controllers.event_dispatcher import EventDispatcher
+from acts.controllers.sl4a_lib.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
@@ -2045,8 +2044,13 @@ def http_file_download_by_chrome(ad,
     file_path = os.path.join(file_directory, file_name)
     # Remove pre-existing file
     ad.force_stop_apk("com.android.chrome")
-    ad.adb.shell("rm %s" % file_path, ignore_status=True)
-    ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    file_to_be_delete = os.path.join(file_directory, "*%s*" % file_name)
+    ad.adb.shell("rm -f %s" % file_to_be_delete)
+    ad.adb.shell("rm -rf /sdcard/Download/.*")
+    ad.adb.shell("rm -f /sdcard/Download/.*")
+    total_rx_bytes_before = ad.droid.getTotalRxBytes()
+    mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
+    subscriber_mobile_data_usage_before = get_mobile_data_usage(ad)
     ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
     open_url_by_adb(ad, url)
@@ -3238,6 +3242,7 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         result = False
         ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
+        time.sleep(0.1)  #sleep 100ms after starting event tracking
         try:
             ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
 
@@ -4646,8 +4651,10 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
     ad.adb.shell("killall -9 tcpdump")
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
-    file_name = "/sdcard/tcpdump{}{}{}.pcap".format(ad.serial, test_name,
-                                                    begin_time)
+
+    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (ad.serial,
+                                                           test_name,
+                                                           begin_time)
     ad.log.info("tcpdump file is %s", file_name)
     if mask == "all":
         cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
@@ -4852,22 +4859,31 @@ def system_file_push(ad, src_file_path, dst_file_path):
 
     Push system file need to change some system setting and remount.
     """
-    try:
-        out = ad.adb.disable_verity()
-        ad.reboot()
+    cmd = "%s %s" % (src_file_path, dst_file_path)
+    out = ad.adb.push(cmd, timeout=300, ignore_status=True)
+    skip_sl4a = True if "sl4a.apk" in src_file_path else False
+    if "Read-only file system" in out:
+        ad.log.info("Change read-only file system")
+        ad.adb.disable_verity()
+        ad.reboot(skip_sl4a)
         ad.adb.remount()
-        out = ad.adb.push(
-            "%s %s" % (src_file_path, dst_file_path), timeout=300)
-        if "error" in out:
-            ad.log.error("Unable to push system file %s to %s due to %s",
-                         src_file_path, dst_file_path, out)
-            return False
-        ad.reboot()
-        return True
-    except Exception as e:
-        ad.log.error("Unable to push system file %s to %s due to %s",
-                     src_file_path, dst_file_path, e)
+        out = ad.adb.push(cmd, timeout=300, ignore_status=True)
+        if "Read-only file system" in out:
+            ad.reboot(skip_sl4a)
+            out = ad.adb.push(cmd, timeout=300, ignore_status=True)
+            if "error" in out:
+                ad.log.error("%s failed with %s", cmd, out)
+                return False
+            else:
+                ad.log.info("push %s succeed")
+                if skip_sl4a: ad.reboot(skip_sl4a)
+                return True
+        else:
+            return True
+    elif "error" in out:
         return False
+    else:
+        return True
 
 
 def flash_radio(ad, file_path, skip_setup_wizard=True):

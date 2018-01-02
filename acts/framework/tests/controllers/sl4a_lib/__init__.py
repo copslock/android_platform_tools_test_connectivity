@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-#   Copyright 2016 - The Android Open Source Project
+#   Copyright 2018 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -13,18 +13,3 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-from acts.base_test import BaseTestClass
-
-
-class SampleTest(BaseTestClass):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_make_toast", )
-
-    """Tests"""
-
-    def test_make_toast(self):
-        for ad in self.android_devices:
-            ad.droid.makeToast("Hello World.")
-        return True

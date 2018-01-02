@@ -31,9 +31,12 @@ import traceback
 import zipfile
 
 from acts.controllers import adb
+from acts import tracelogger
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
+from acts.libs.proc import job
+
 MAX_FILENAME_LEN = 255
 
 
@@ -887,3 +890,21 @@ def get_directory_size(path):
         for filename in filenames:
             total += os.path.getsize(os.path.join(dirpath, filename))
     return total
+
+
+def get_process_uptime(process):
+    """Returns the runtime in [[dd-]hh:]mm:ss, or '' if not running."""
+    pid = job.run('pidof %s' % process, ignore_status=True).stdout
+    runtime = ''
+    if pid:
+        runtime = job.run('ps -o etime= -p "%s"' % pid).stdout
+    return runtime
+
+
+def get_device_process_uptime(adb, process):
+    """Returns the uptime of a device process."""
+    pid = adb.shell('pidof %s' % process, ignore_status=True)
+    runtime = ''
+    if pid:
+        runtime = adb.shell('ps -o etime= -p "%s"' % pid)
+    return runtime
