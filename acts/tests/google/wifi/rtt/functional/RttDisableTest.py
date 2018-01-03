@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts import utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -24,15 +25,20 @@ from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 class RttDisableTest(RttBaseTest):
   """Test class for RTT ranging enable/disable flows."""
 
+  MODE_DISABLE_WIFI = 0
+  MODE_ENABLE_DOZE = 1
+  MODE_DISABLE_LOCATIONING = 2
+
   def __init__(self, controllers):
     RttBaseTest.__init__(self, controllers)
 
-  def run_disable_rtt(self, disable_wifi):
+  def run_disable_rtt(self, disable_mode):
     """Validate the RTT disabled flows: whether by disabling Wi-Fi or entering
     doze mode.
 
     Args:
-      disable_wifi: True to disable Wi-Fi, False to enable doze.
+      disable_mode: The particular mechanism in which RTT is disabled. One of
+                    the MODE_* constants.
     """
     dut = self.android_devices[0]
 
@@ -44,10 +50,13 @@ class RttDisableTest(RttBaseTest):
     asserts.assert_true(len(all_aps) > 0, "Need at least one visible AP!")
 
     # disable RTT and validate broadcast & API
-    if disable_wifi:
+    if disable_mode == self.MODE_DISABLE_WIFI:
       wutils.wifi_toggle_state(dut, False)
-    else:
+    elif disable_mode == self.MODE_ENABLE_DOZE:
       dut.adb.shell("cmd deviceidle force-idle")
+    elif disable_mode == self.MODE_DISABLE_LOCATIONING:
+      utils.set_location_service(dut, False)
+
     rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_NOT_AVAILABLE)
     asserts.assert_false(dut.droid.wifiIsRttAvailable(), "RTT is available")
 
@@ -60,10 +69,13 @@ class RttDisableTest(RttBaseTest):
                          "Invalid error code")
 
     # enable RTT and validate broadcast & API
-    if disable_wifi:
+    if disable_mode == self.MODE_DISABLE_WIFI:
       wutils.wifi_toggle_state(dut, True)
-    else:
+    elif disable_mode == self.MODE_ENABLE_DOZE:
       dut.adb.shell("cmd deviceidle unforce")
+    elif disable_mode == self.MODE_DISABLE_LOCATIONING:
+      utils.set_location_service(dut, True)
+
     rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
     asserts.assert_true(dut.droid.wifiIsRttAvailable(), "RTT is not available")
 
@@ -72,9 +84,14 @@ class RttDisableTest(RttBaseTest):
   def test_disable_wifi(self):
     """Validate that getting expected broadcast when Wi-Fi is disabled and that
     any range requests are rejected."""
-    self.run_disable_rtt(True)
+    self.run_disable_rtt(self.MODE_DISABLE_WIFI)
 
   def test_enable_doze(self):
     """Validate that getting expected broadcast when RTT is disabled due to doze
     mode and that any range requests are rejected."""
-    self.run_disable_rtt(False)
+    self.run_disable_rtt(self.MODE_ENABLE_DOZE)
+
+  def test_disable_location(self):
+    """Validate that getting expected broadcast when locationing is disabled and
+    that any range requests are rejected."""
+    self.run_disable_rtt(self.MODE_DISABLE_LOCATIONING)

@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts import utils
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
@@ -31,6 +32,7 @@ class RttBaseTest(BaseTestClass):
     self.unpack_userparams(required_params)
 
     for ad in self.android_devices:
+      utils.set_location_service(ad, True)
       asserts.skip_if(
           not ad.droid.doesDeviceSupportWifiRttFeature(),
           "Device under test does not support Wi-Fi RTT - skipping test")
