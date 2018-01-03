@@ -257,6 +257,26 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
             total_count += 1
             begin_time = get_current_epoch_time()
             try:
+                # ModePref change to non-LTE
+                network_preference_list = [
+                    NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
+                    NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA,
+                    NETWORK_MODE_GSM_ONLY
+                ]
+
+                for mode, sleep_time in zip([
+                        NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA,
+                        random.choice(network_preference_list),
+                        NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+                ], [
+                        random.randrange(2, WAIT_TIME_AFTER_MODE_CHANGE),
+                        random.randrange(2, WAIT_TIME_AFTER_MODE_CHANGE),
+                        WAIT_TIME_AFTER_MODE_CHANGE
+                ]):
+                    set_preferred_network_mode_pref(self.dut.log, self.dut,
+                                                    sub_id, mode)
+                    time.sleep(sleep_time)
+
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
                 duration = random.randrange(self.min_phone_call_duration,
@@ -299,33 +319,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
 
                     # Wait for few sec for call cleanup on nw side
                     time.sleep(5)
-
-                    # ModePref change to non-LTE
-                    network_preference_list = [
-                        NETWORK_MODE_TDSCDMA_GSM_WCDMA,
-                        NETWORK_MODE_WCDMA_ONLY, NETWORK_MODE_GLOBAL,
-                        NETWORK_MODE_CDMA, NETWORK_MODE_GSM_ONLY
-                    ]
-                    network_preference = random.choice(network_preference_list)
-                    set_preferred_network_mode_pref(self.dut.log, self.dut,
-                                                    sub_id, network_preference)
-                    time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
-                    self.dut.log.info("Current Voice RAT is %s",
-                                      get_current_voice_rat(
-                                          self.log, self.dut))
-
-                    for mode, sleep_time in zip([
-                            NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA,
-                            random.choice(network_preference_list),
-                            NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
-                    ], [
-                            random.randrange(2, WAIT_TIME_AFTER_MODE_CHANGE),
-                            random.randrange(2, WAIT_TIME_AFTER_MODE_CHANGE),
-                            WAIT_TIME_AFTER_MODE_CHANGE
-                    ]):
-                        set_preferred_network_mode_pref(
-                            self.dut.log, self.dut, sub_id, mode)
-                        time.sleep(sleep_time)
 
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
