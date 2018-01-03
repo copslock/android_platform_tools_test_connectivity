@@ -930,6 +930,49 @@ def wait_for_disconnect(ad):
         raise signals.TestFailure("Device did not disconnect from the network")
 
 
+def connect_to_wifi_network(ad, network):
+    """Connection logic for open and psk wifi networks.
+
+    Args:
+        params: A tuple of network info and AndroidDevice object.
+    """
+    droid = ad.droid
+    ed = ad.ed
+    SSID = network[WifiEnums.SSID_KEY]
+    ed.clear_all_events()
+    start_wifi_connection_scan(ad)
+    scan_results = droid.wifiGetScanResults()
+    assert_network_in_list({WifiEnums.SSID_KEY: SSID}, scan_results)
+    wifi_connect(ad, network, num_of_tries=3)
+
+
+def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
+    """Connect to the given network using network id and verify SSID.
+
+    Args:
+        network_id: int Network Id of the network.
+        network_ssid: string SSID of the network.
+
+    Returns: True if connect using network id was successful;
+             False otherwise.
+
+    """
+    ad.ed.clear_all_events()
+    start_wifi_connection_scan(ad)
+    scan_results = ad.droid.wifiGetScanResults()
+    assert_network_in_list({
+        WifiEnums.SSID_KEY: network_ssid
+    }, scan_results)
+    wifi_connect_by_id(ad, network_id)
+    connect_data = ad.droid.wifiGetConnectionInfo()
+    connect_ssid = connect_data[WifiEnums.SSID_KEY]
+    ad.log.debug("Expected SSID = %s Connected SSID = %s" %
+                   (network_ssid, connect_ssid))
+    if connect_ssid != network_ssid:
+        return False
+    return True
+
+
 def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True):
     """Connect an Android device to a wifi network.
 
