@@ -71,6 +71,8 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = None
         stop_qxdm_loggers(self.log, self.android_devices)
         for ad in self.android_devices:
+            if not unlock_sim(ad):
+                abort_all_tests(ad.log, "unable to unlock SIM")
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if ad.qxdm_log:
@@ -86,8 +88,6 @@ class TelephonyBaseTest(BaseTestClass):
                 set_qxdm_logger_command(ad, mask=qxdm_log_mask)
                 ad.adb.shell("rm %s" % os.path.join(ad.qxdm_logger_path, "*"))
             print_radio_info(ad)
-            if not unlock_sim(ad):
-                abort_all_tests(ad.log, "unable to unlock SIM")
 
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices,
