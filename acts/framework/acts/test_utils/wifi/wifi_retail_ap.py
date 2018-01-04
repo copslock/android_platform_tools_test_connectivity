@@ -158,13 +158,17 @@ class WifiRetailAP(object):
         for key, value in named_settings.items():
             settings_to_update[key] = value
 
+        updates_requested = False
         for key, value in settings_to_update.items():
             if (key in self.ap_settings):
-                self.ap_settings[key] = value
+                if self.ap_settings[key] != value:
+                    self.ap_settings[key] = value
+                    updates_requested = True
             else:
                 raise KeyError("Invalid setting passed to AP configuration.")
 
-        self.configure_ap()
+        if updates_requested:
+            self.configure_ap()
 
     def band_lookup_by_channel(self, channel):
         """ Function that gives band name by channel number.
@@ -191,6 +195,11 @@ class NetgearR7000AP(WifiRetailAP):
             self.ap_settings["admin_password"], self.ap_settings["ip_address"])
         self.CONFIG_PAGE_NOLOGIN = "http://{}/WLG_wireless_dual_band_r10.htm".format(
             self.ap_settings["ip_address"])
+        self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
+        self.CHROME_OPTIONS.add_argument("--no-proxy-server")
+        if self.ap_settings["headless_browser"]:
+            self.CHROME_OPTIONS.add_argument("--headless")
+            self.CHROME_OPTIONS.add_argument("--disable-gpu")
         self.NETWORKS = ["2G", "5G_1"]
         self.CHANNEL_BAND_MAP = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -225,9 +234,7 @@ class NetgearR7000AP(WifiRetailAP):
         }
         POWER_MODE_VALUES = {"1": "100%", "2": "75%", "3": "50%", "4": "25%"}
 
-        chrome_options = splinter.driver.webdriver.chrome.Options()
-        chrome_options.add_argument("--no-proxy-server")
-        with splinter.Browser("chrome", chrome_options) as browser:
+        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             # Visit URL
             browser.visit(self.CONFIG_PAGE)
             sleep(BROWSER_WAIT_SHORT)
@@ -260,9 +267,7 @@ class NetgearR7000AP(WifiRetailAP):
             "VHT80": "Up to 1300 Mbps"
         }
 
-        chrome_options = splinter.driver.webdriver.chrome.Options()
-        chrome_options.add_argument("--no-proxy-server")
-        with splinter.Browser("chrome", chrome_options) as browser:
+        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             # Visit URL
             browser.visit(self.CONFIG_PAGE)
             sleep(BROWSER_WAIT_SHORT)
@@ -337,6 +342,11 @@ class NetgearR7500AP(WifiRetailAP):
             self.ap_settings["admin_password"], self.ap_settings["ip_address"])
         self.CONFIG_PAGE_NOLOGIN = "http://{}/".format(
             self.ap_settings["ip_address"])
+        self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
+        self.CHROME_OPTIONS.add_argument("--no-proxy-server")
+        if self.ap_settings["headless_browser"]:
+            self.CHROME_OPTIONS.add_argument("--headless")
+            self.CHROME_OPTIONS.add_argument("--disable-gpu")
         self.NETWORKS = ["2G", "5G_1"]
         self.CHANNEL_BAND_MAP = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -369,9 +379,8 @@ class NetgearR7500AP(WifiRetailAP):
             "8": "VHT40",
             "9": "VHT80"
         }
-        chrome_options = splinter.driver.webdriver.chrome.Options()
-        chrome_options.add_argument("--no-proxy-server")
-        with splinter.Browser("chrome", chrome_options) as browser:
+
+        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             browser.visit(self.CONFIG_PAGE)
             browser.visit(self.CONFIG_PAGE_NOLOGIN)
             wireless_button = browser.find_by_id("wireless").first
@@ -414,9 +423,8 @@ class NetgearR7500AP(WifiRetailAP):
             "VHT40": "Up to 800 Mbps",
             "VHT80": "Up to 1733 Mbps"
         }
-        chrome_options = splinter.driver.webdriver.chrome.Options()
-        chrome_options.add_argument("--no-proxy-server")
-        with splinter.Browser("chrome", chrome_options) as browser:
+
+        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             browser.visit(self.CONFIG_PAGE)
             browser.visit(self.CONFIG_PAGE_NOLOGIN)
             wireless_button = browser.find_by_id("wireless").first
@@ -495,6 +503,11 @@ class NetgearR8000AP(NetgearR7000AP):
             self.ap_settings["admin_password"], self.ap_settings["ip_address"])
         self.CONFIG_PAGE_NOLOGIN = "http://{}/WLG_wireless_dual_band_r8000.htm".format(
             self.ap_settings["ip_address"])
+        self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
+        self.CHROME_OPTIONS.add_argument("--no-proxy-server")
+        if self.ap_settings["headless_browser"]:
+            self.CHROME_OPTIONS.add_argument("--headless")
+            self.CHROME_OPTIONS.add_argument("--disable-gpu")
         self.NETWORKS = ["2G", "5G_1", "5G_2"]
         self.CHANNEL_BAND_MAP = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
