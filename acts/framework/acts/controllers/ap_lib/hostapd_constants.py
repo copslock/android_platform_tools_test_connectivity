@@ -110,6 +110,7 @@ MODE_11AC_MIXED = 'ac-mixed'
 MODE_11AC_PURE = 'ac-only'
 
 N_CAPABILITY_LDPC = object()
+N_CAPABILITY_HT20 = object()
 N_CAPABILITY_HT40_PLUS = object()
 N_CAPABILITY_HT40_MINUS = object()
 N_CAPABILITY_GREENFIELD = object()
@@ -122,6 +123,7 @@ N_CAPABILITY_RX_STBC123 = object()
 N_CAPABILITY_DSSS_CCK_40 = object()
 N_CAPABILITIES_MAPPING = {
     N_CAPABILITY_LDPC: '[LDPC]',
+    N_CAPABILITY_HT20: '[HT20]',
     N_CAPABILITY_HT40_PLUS: '[HT40+]',
     N_CAPABILITY_HT40_MINUS: '[HT40-]',
     N_CAPABILITY_GREENFIELD: '[GF]',
@@ -212,10 +214,12 @@ VHT_CHANNEL_WIDTH_80_80 = 3
 # tolerate HT40+ on channel 7 (not allowed in the US).  We take the loose
 # definition so that we don't prohibit testing in either domain.
 HT40_ALLOW_MAP = {
-    N_CAPABILITY_HT40_MINUS_CHANNELS: tuple(
+    N_CAPABILITY_HT40_MINUS_CHANNELS:
+    tuple(
         itertools.chain(
             range(6, 14), range(40, 65, 8), range(104, 137, 8), [153, 161])),
-    N_CAPABILITY_HT40_PLUS_CHANNELS: tuple(
+    N_CAPABILITY_HT40_PLUS_CHANNELS:
+    tuple(
         itertools.chain(
             range(1, 8), range(36, 61, 8), range(100, 133, 8), [149, 157]))
 }
