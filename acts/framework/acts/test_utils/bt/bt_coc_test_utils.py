@@ -20,8 +20,10 @@ from acts import utils
 
 from acts.test_utils.bt.bt_constants import bt_default_timeout
 from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
+from acts.test_utils.bt.bt_constants import default_le_data_length
 from acts.test_utils.bt.bt_constants import gatt_phy
 from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import l2cap_coc_header_size
 from acts.test_utils.bt.bt_constants import le_connection_interval_time_step
 from acts.test_utils.bt.bt_constants import le_default_supervision_timeout
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
@@ -127,6 +129,7 @@ def orchestrate_coc_connection(
         is_ble,
         secured_conn=False,
         le_connection_interval=0,
+        le_tx_data_length=default_le_data_length,
         accept_timeout_ms=default_bluetooth_socket_timeout_ms):
     """Sets up the CoC connection between two Android devices.
 
@@ -135,7 +138,8 @@ def orchestrate_coc_connection(
         server_ad: the Android device accepting the connection.
         is_ble: using LE transport.
         secured_conn: using secured connection
-        le_connection_interval: LE Connection interval (only for LE)
+        le_connection_interval: LE Connection interval. 0 means use default.
+        le_tx_data_length: LE Data Length used by BT Controller to transmit.
         accept_timeout_ms: timeout while waiting for incoming connection.
     Returns:
         True if connection was successful or false if unsuccessful,
@@ -206,6 +210,11 @@ def orchestrate_coc_connection(
 
     client_ad.droid.bluetoothSocketConnBeginConnectThreadPsm(
         mac_address, is_ble, psm_value, secured_conn)
+
+    if (le_tx_data_length != default_le_data_length) and is_ble:
+        client_ad.log.info("orchestrate_coc_connection: call "
+                           "bluetoothSocketRequestMaximumTxDataLength")
+        client_ad.droid.bluetoothSocketRequestMaximumTxDataLength()
 
     end_time = time.time() + bt_default_timeout
     test_result = False
