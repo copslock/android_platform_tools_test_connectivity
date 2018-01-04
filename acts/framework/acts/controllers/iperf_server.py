@@ -106,12 +106,10 @@ class IPerfResult(object):
         """Average UDP rate in MB/s over the entire run.
 
         This is the average UDP rate observed at the terminal the iperf result
-        is pulled from. Note that this rate can either be a transmitted or
-        received rate. When this is a transmit UDP rate, it is really not a
-        proper representation of the quality of the link as the transmitter
-        just floods its interface with packets.
-
-        If the result is not from a success run, this property is None.
+        is pulled from. According to iperf3 documentation this is calculated
+        based on bytes sent and thus is not a good representation of the
+        quality of the link. If the result is not from a success run, this
+        property is None.
         """
         if not self._has_data() or 'sum' not in self.result['end']:
             return None
@@ -120,10 +118,10 @@ class IPerfResult(object):
 
     @property
     def avg_receive_rate(self):
-        """Average receiving rate in MB/s over the entire run. This data may
-        not exist if iperf was interrupted.
+        """Average receiving rate in MB/s over the entire run.
 
-        If the result is not from a success run, this property is None.
+        This data may not exist if iperf was interrupted. If the result is not
+        from a success run, this property is None.
         """
         if not self._has_data() or 'sum_received' not in self.result['end']:
             return None
@@ -132,10 +130,10 @@ class IPerfResult(object):
 
     @property
     def avg_send_rate(self):
-        """Average sending rate in MB/s over the entire run. This data may
-        not exist if iperf was interrupted.
+        """Average sending rate in MB/s over the entire run.
 
-        If the result is not from a success run, this property is None.
+        This data may not exist if iperf was interrupted. If the result is not
+        from a success run, this property is None.
         """
         if not self._has_data() or 'sum_sent' not in self.result['end']:
             return None
@@ -144,10 +142,10 @@ class IPerfResult(object):
 
     @property
     def instantaneous_rates(self):
-        """Instantaneous received rate in MB/s over entire run. This data may
-        not exist if iperf was interrupted.
+        """Instantaneous received rate in MB/s over entire run.
 
-        If the result is not from a success run, this property is None.
+        This data may not exist if iperf was interrupted. If the result is not
+        from a success run, this property is None.
         """
         if not self._has_data():
             return None
@@ -159,17 +157,30 @@ class IPerfResult(object):
 
     @property
     def std_deviation(self):
-        """Standard deviation of rates in MB/s over entire run. This data may
-        not exist if iperf was interrupted.
+        """Standard deviation of rates in MB/s over entire run.
 
-        If the result is not from a success run, this property is None.
-        Note that the last interval is ignored in the calculation as it is
-        from a very small measurement interval (not the specified iperf
-        reporting interval)
+        This data may not exist if iperf was interrupted. If the result is not
+        from a success run, this property is None.
+        """
+        return self.get_std_deviation(0)
+
+    def get_std_deviation(self, iperf_ignored_interval):
+        """Standard deviation of rates in MB/s over entire run.
+
+        This data may not exist if iperf was interrupted. If the result is not
+        from a success run, this property is None. A configurable number of
+        beginning (and the single last) intervals are ignored in the
+        calculation as they are inaccurate (e.g. the last is from a very small
+        interval)
+
+        Args:
+            iperf_ignored_interval: number of iperf interval to ignored in
+            calculating standard deviation
         """
         if not self._has_data():
             return None
-        instantaneous_rates = self.instantaneous_rates[:-1]
+        instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
+                                                       -1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
         sqd_deviations = [(rate - avg_rate)**2 for rate in instantaneous_rates]
         std_dev = math.sqrt(
