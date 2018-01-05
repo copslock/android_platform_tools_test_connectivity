@@ -472,6 +472,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
 
@@ -495,7 +496,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         return self._sms_test_mt(ads)
 
     @test_tracker_info(uuid="bb8e1a06-a4b5-4f9b-9ab2-408ace9a1deb")
@@ -518,6 +519,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -541,7 +543,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         return self._mms_test_mt(ads)
 
     @test_tracker_info(uuid="2c229a4b-c954-4ba3-94ba-178dc7784d03")
@@ -564,6 +566,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
 
@@ -587,6 +590,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mt(ads)
 
@@ -610,6 +614,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -633,6 +638,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -657,6 +663,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -683,6 +690,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -709,7 +717,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         return self._sms_test_mo(ads)
 
     @test_tracker_info(uuid="2186e152-bf83-4d6e-93eb-b4bf9ae2d76e")
@@ -733,6 +741,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mt(ads)
 
@@ -757,6 +766,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -781,6 +791,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -808,6 +819,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -835,6 +847,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -853,13 +866,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
-        if (not phone_setup_data_general(self.log, ads[1]) and
-                not phone_setup_voice_general(self.log, ads[1])):
+        if (not phone_setup_data_general(self.log, ads[1])
+                and not phone_setup_voice_general(self.log, ads[1])):
             self.log.error("Failed to setup PhoneB.")
             return False
         if not ensure_network_generation(self.log, ads[0], GEN_4G):
             self.log.error("DUT Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
 
@@ -879,13 +893,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
 
-        if (not phone_setup_data_general(self.log, ads[1]) and
-                not phone_setup_voice_general(self.log, ads[1])):
+        if (not phone_setup_data_general(self.log, ads[1])
+                and not phone_setup_voice_general(self.log, ads[1])):
             self.log.error("Failed to setup PhoneB.")
             return False
         if not ensure_network_generation(self.log, ads[0], GEN_4G):
             self.log.error("DUT Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mt(ads)
 
@@ -910,6 +925,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -934,6 +950,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -959,6 +976,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
         return self._mms_test_mo(ads)
@@ -985,6 +1003,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1009,7 +1028,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
@@ -1045,7 +1064,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
@@ -1081,7 +1100,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
                 self.log,
@@ -1117,7 +1136,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
                 self.log,
@@ -1154,7 +1173,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
         self.log.info("Begin In Call SMS Test.")
@@ -1193,7 +1212,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
         self.log.info("Begin In Call MMS Test.")
@@ -1235,6 +1254,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_sms_in_3g_call(ads)
 
@@ -1261,6 +1281,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_sms_in_3g_call(ads)
 
@@ -1287,6 +1308,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_mms_in_3g_call(ads)
 
@@ -1313,6 +1335,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_mms_in_3g_call(ads)
 
@@ -1340,6 +1363,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1369,7 +1393,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
         return self._mt_mms_in_3g_call(ads, wifi=True)
@@ -1397,6 +1421,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_sms_in_csfb_call(ads)
 
@@ -1423,6 +1448,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_sms_in_csfb_call(ads)
 
@@ -1449,6 +1475,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_mms_in_csfb_call(ads)
 
@@ -1475,6 +1502,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_mms_in_csfb_call(ads)
 
@@ -1502,6 +1530,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1531,6 +1560,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1559,6 +1589,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_sms_in_1x_call(ads)
 
@@ -1585,6 +1616,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_sms_in_1x_call(ads)
 
@@ -1612,6 +1644,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_mms_in_1x_call(ads)
 
@@ -1638,6 +1671,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_mms_in_1x_call(ads)
 
@@ -1665,6 +1699,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1693,6 +1728,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1721,6 +1757,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_sms_in_1x_call(ads)
 
@@ -1747,6 +1784,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_sms_in_1x_call(ads)
 
@@ -1773,6 +1811,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_mms_in_1x_call(ads)
 
@@ -1799,6 +1838,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_mms_in_1x_call(ads)
 
@@ -1825,6 +1865,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1853,6 +1894,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -1881,6 +1923,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
 
@@ -1907,6 +1950,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mt(ads)
 
@@ -1933,6 +1977,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -1959,6 +2004,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -1977,12 +2023,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
         phone_setup_voice_general(self.log, ads[0])
-        tasks = [(ensure_wifi_connected, (
-            self.log, ads[0], self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
+        tasks = [(ensure_wifi_connected,
+                  (self.log, ads[0], self.wifi_network_ssid,
+                   self.wifi_network_pass)), (phone_setup_voice_general,
+                                              (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
 
@@ -2001,12 +2049,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
         phone_setup_voice_general(self.log, ads[0])
-        tasks = [(ensure_wifi_connected, (
-            self.log, ads[0], self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
+        tasks = [(ensure_wifi_connected,
+                  (self.log, ads[0], self.wifi_network_ssid,
+                   self.wifi_network_pass)), (phone_setup_voice_general,
+                                              (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mt(ads)
 
@@ -2025,12 +2075,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
         phone_setup_voice_general(self.log, ads[0])
-        tasks = [(ensure_wifi_connected, (
-            self.log, ads[0], self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
+        tasks = [(ensure_wifi_connected,
+                  (self.log, ads[0], self.wifi_network_ssid,
+                   self.wifi_network_pass)), (phone_setup_voice_general,
+                                              (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mo(ads)
 
@@ -2049,12 +2101,14 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         ads = self.android_devices
         phone_setup_voice_general(self.log, ads[0])
-        tasks = [(ensure_wifi_connected, (
-            self.log, ads[0], self.wifi_network_ssid, self.wifi_network_pass)),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
+        tasks = [(ensure_wifi_connected,
+                  (self.log, ads[0], self.wifi_network_ssid,
+                   self.wifi_network_pass)), (phone_setup_voice_general,
+                                              (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mms_test_mt(ads)
 
@@ -2082,6 +2136,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -2119,6 +2174,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -2156,6 +2212,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
@@ -2193,6 +2250,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call MMS Test.")
         if not call_setup_teardown(
@@ -2225,6 +2283,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         if not video_call_setup_teardown(
                 self.log,
@@ -2258,6 +2317,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         if not video_call_setup_teardown(
                 self.log,
@@ -2291,6 +2351,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         if not video_call_setup_teardown(
                 self.log,
@@ -2324,6 +2385,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         if not video_call_setup_teardown(
                 self.log,
@@ -2361,6 +2423,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -2401,6 +2464,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         self.log.info("Begin In Call SMS Test.")
         if not call_setup_teardown(
@@ -2441,6 +2505,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mo_mms_in_2g_call(ads)
 
@@ -2467,6 +2532,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._mt_mms_in_2g_call(ads)
 
@@ -2493,6 +2559,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -2521,6 +2588,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
@@ -2551,6 +2619,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
             return self._sms_test_mo(ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
@@ -2580,6 +2649,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
             return self._sms_test_mt(ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
@@ -2609,6 +2679,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
             return not self._mms_test_mo(ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
@@ -2638,6 +2709,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
             return not self._mms_test_mt(ads)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
