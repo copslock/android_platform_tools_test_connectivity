@@ -454,20 +454,19 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
     def data_test(self):
         failure = 0
         total_count = 0
-        tcpdump_pid = None
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
             total_count += 1
             begin_time = get_current_epoch_time()
-            tcpdump_pid = None
+            self.tcpdump_proc = None
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
                 if self.result_info["File download failure"] < 1:
-                    (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
+                    self.tcpdump_proc = start_adb_tcpdump(
                         self.dut, "%s_download" % self.test_name, mask="all")
                 if not active_file_download_test(self.log, self.dut,
                                                  file_name):
@@ -481,9 +480,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
                         start_qxdm_loggers(self.log, self.android_devices)
-                elif tcpdump_pid is not None:
-                    stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
-                                     False)
+                elif self.tcpdump_proc is not None:
+                    stop_adb_tcpdump(self.dut, self.tcpdump_proc, False)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
