@@ -233,6 +233,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def _make_phone_call(self, ads, call_verification_func=None):
+        for ad in ads:
+            hangup_call(self.log, ad)
         self.result_info["Total Calls"] += 1
         the_number = self.result_info["Total Calls"]
         log_msg = "The %s-th phone call test from %s to %s" % (the_number,
