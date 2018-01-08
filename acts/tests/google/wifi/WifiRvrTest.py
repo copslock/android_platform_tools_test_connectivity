@@ -16,6 +16,7 @@
 
 import json
 import logging
+import math
 import os
 import time
 from acts import asserts
@@ -36,7 +37,7 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = ["rvrtest_params", "main_network"]
+        req_params = ["test_params", "main_network"]
         opt_params = ["RetailAccessPoints"]
         self.unpack_userparams(req_params, opt_params)
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -64,7 +65,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             data
         """
         test_name = self.current_test_name
-        gldn_path = os.path.join(self.rvrtest_params["golden_results_path"],
+        gldn_path = os.path.join(self.test_params["golden_results_path"],
                                  "{}.json".format(test_name))
         with open(gldn_path, 'r') as gldn_file:
             gldn_results = json.load(gldn_file)
@@ -77,8 +78,8 @@ class WifiRvrTest(base_test.BaseTestClass):
             abs_difference = abs(current_throughput - gldn_throughput)
             pct_difference = (abs_difference /
                               (gldn_throughput + EPSILON)) * 100
-            if (abs_difference > self.rvrtest_params["abs_tolerance"]
-                    and pct_difference > self.rvrtest_params["pct_tolerance"]):
+            if (abs_difference > self.test_params["abs_tolerance"]
+                    and pct_difference > self.test_params["pct_tolerance"]):
                 asserts.fail(
                     "Throughput at {}dB attenuation is beyond limits. "
                     "Throughput is {} Mbps. Expected {} Mbps.".format(
@@ -136,22 +137,33 @@ class WifiRvrTest(base_test.BaseTestClass):
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             try:
-                self.dut.run_iperf_client(
-                    self.rvrtest_params["iperf_server_address"],
+                client_status, client_output = self.dut.run_iperf_client(
+                    self.test_params["iperf_server_address"],
                     self.iperf_args,
-                    timeout=self.rvrtest_params["iperf_duration"] +
-                    TEST_TIMEOUT)
+                    timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
+                client_output_path = os.path.join(
+                    self.iperf_server.log_path,
+                    "iperf_client_output_{}_{}".format(self.current_test_name,
+                                                       str(atten)))
+                with open(client_output_path, 'w') as out_file:
+                    out_file.write("\n".join(client_output))
             except:
-                self.log.warning("Iperf measurement timed out.")
+                self.log.warning("TimeoutError: Iperf measurement timed out.")
             self.iperf_server.stop()
             # Parse and log result
+            if self.use_client_output:
+                iperf_file = client_output_path
+            else:
+                iperf_file = self.iperf_server.log_files[-1]
             try:
-                iperf_result = ipf.IPerfResult(self.iperf_server.log_files[-1])
-                curr_throughput = iperf_result.avg_receive_rate * 8
+                iperf_result = ipf.IPerfResult(iperf_file)
+                curr_throughput = (math.fsum(iperf_result.instantaneous_rates[
+                    self.test_params["iperf_ignored_interval"]:-1]) / len(
+                        iperf_result.instantaneous_rates[self.test_params[
+                            "iperf_ignored_interval"]:-1])) * 8
             except:
                 self.log.warning(
-                    "Cannot get iperf result, likely due to timeout. Setting to 0"
-                )
+                    "ValueError: Cannot get iperf result. Setting to 0")
                 curr_throughput = 0
             rvr_result.append(curr_throughput)
             self.log.info("Throughput at {0:d} dB is {1:.2f} Mbps".format(
@@ -173,9 +185,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             rvr_result: dict containing rvr_results and meta data
         """
         #Initialize RvR test parameters
-        self.rvr_atten_range = range(self.rvrtest_params["rvr_atten_start"],
-                                     self.rvrtest_params["rvr_atten_stop"],
-                                     self.rvrtest_params["rvr_atten_step"])
+        self.rvr_atten_range = range(self.test_params["rvr_atten_start"],
+                                     self.test_params["rvr_atten_stop"],
+                                     self.test_params["rvr_atten_step"])
         rvr_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
@@ -204,10 +216,16 @@ class WifiRvrTest(base_test.BaseTestClass):
         test_params = self.current_test_name.split("_")
         channel = int(test_params[4][2:])
         mode = test_params[5]
-        self.iperf_args = '-i 1 -t {}'.format(
-            self.rvrtest_params["iperf_duration"])
+        self.iperf_args = '-i 1 -t {} -J '.format(
+            self.test_params["iperf_duration"])
+        if test_params[2] == "UDP":
+            self.iperf_args = self.iperf_args + "-u -b {}".format(
+                self.test_params["UDP_rates"][mode])
         if test_params[3] == "DL":
             self.iperf_args = self.iperf_args + ' -R'
+            self.use_client_output = True
+        else:
+            self.use_client_output = False
         rvr_result = self.rvr_test_func(channel, mode)
         self.post_process_results(rvr_result)
         self.pass_fail_check(rvr_result)
@@ -313,4 +331,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         self._test_rvr()
 
     def test_rvr_TCP_UL_ch161_VHT20(self):
+        self._test_rvr()
+
+    # UDP Tests
+    def test_rvr_UDP_DL_ch161_VHT20(self):
+        self._test_rvr()
+
+    def test_rvr_UDP_UL_ch161_VHT20(self):
         self._test_rvr()
