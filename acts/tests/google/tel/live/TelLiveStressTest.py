@@ -340,7 +340,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
-                for ad in self.android_devices():
+                for ad in self.android_devices:
                     crash_report = ad.check_crash_report(
                         "checking_crash", begin_time, log_crash_report=True)
                     if crash_report:
