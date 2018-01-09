@@ -73,6 +73,8 @@ class TelephonyBaseTest(BaseTestClass):
         for ad in self.android_devices:
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
+            ad.wakeup_screen()
+            ad.adb.shell("input keyevent 82")
             ad.qxdm_log = getattr(ad, "qxdm_log", True)
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if ad.qxdm_log:
