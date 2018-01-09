@@ -3498,7 +3498,8 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
 def sms_mms_receive_logcat_check(ad, type, begin_time):
     type = type.upper()
     log_results = ad.search_logcat(
-        "New %s Received" % type, begin_time=begin_time)
+        "New %s Received" % type, begin_time=begin_time) or \
+        ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
     if log_results:
         ad.log.info("Found SL4A %s received log message" % type)
         return True
