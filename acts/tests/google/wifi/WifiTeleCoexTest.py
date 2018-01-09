@@ -127,9 +127,11 @@ class WifiTeleCoexTest(TelephonyBaseTest):
 
         self.log.debug("Toggling wifi ON")
         wifi_utils.wifi_toggle_state(self.dut, True)
+        # Sleep for 1s before getting new WiFi state.
+        time.sleep(1)
         if not self.dut.droid.wifiGetisWifiEnabled():
             raise signals.TestFailure("WiFi did not turn on after turning ON"
-                                      "Airplane mode")
+                                      " Airplane mode")
         asserts.assert_true(
             acts.utils.force_airplane_mode(self.dut, False),
             "Can not turn on airplane mode on: %s" % self.dut.serial)
@@ -159,6 +161,8 @@ class WifiTeleCoexTest(TelephonyBaseTest):
             3. Make a short sequence voice call between Phone A and B.
 
         """
+        # Sleep for 5s before getting new WiFi state.
+        time.sleep(5)
         wifi_info = self.dut.droid.wifiGetConnectionInfo()
         if wifi_info[WifiEnums.SSID_KEY] != self.wifi_network_ssid:
             raise signals.TestFailure("Phone failed to connect to %s network on"
