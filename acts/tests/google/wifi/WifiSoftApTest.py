@@ -47,6 +47,9 @@ class WifiSoftApTest(base_test.BaseTestClass):
         utils.require_sl4a((self.dut, self.dut_client))
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
+        # Set country code explicitly to "US".
+        self.dut.adb.shell("halutil -country %s" %
+            wutils.WifiEnums.CountryCode.US)
 
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
