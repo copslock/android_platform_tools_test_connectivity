@@ -230,6 +230,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         else:
             self.log.info("%s succeed", log_msg)
+            self.result_info["%s Success" % message_type] += 1
             return True
 
     def _make_phone_call(self, ads, call_verification_func=None):
@@ -302,6 +303,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                            the_number), begin_time)
                     return False
         self.log.info("Call setup and teardown succeed.")
+        self.result_info["Call Success"] += 1
         return True
 
     def _prefnetwork_mode_change(self, sub_id):
@@ -338,7 +340,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
-                for ad in self.android_devices():
+                for ad in self.android_devices:
                     crash_report = ad.check_crash_report(
                         "checking_crash", begin_time, log_crash_report=True)
                     if crash_report:
@@ -432,7 +434,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
             begin_time = get_current_epoch_time()
-            tcpdump_pid = None
+            self.tcpdump_proc = None
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
@@ -440,7 +442,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 file_name = file_names[selection]
                 start_qxdm_loggers(self.log, self.android_devices)
                 if self.result_info["File download failure"] < 1:
-                    (tcpdump_pid, tcpdump_file) = start_adb_tcpdump(
+                    self.tcpdump_proc = start_adb_tcpdump(
                         self.dut,
                         "%s_file_download" % self.test_name,
                         mask="all")
@@ -449,14 +451,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.result_info["File download failure"] += 1
                     if self.result_info["File download failure"] == 1:
                         if tcpdump_pid is not None:
-                            stop_adb_tcpdump(self.dut, tcpdump_pid,
-                                             tcpdump_file, True)
+                            stop_adb_tcpdump(self.dut, self.tcpdump_proc,
+                                             False)
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
-                elif tcpdump_pid is not None:
-                    stop_adb_tcpdump(self.dut, tcpdump_pid, tcpdump_file,
-                                     False)
+                else:
+                    self.result_info["File download Success"] += 1
+                    if self.tcpdump_proc is not None:
+                        stop_adb_tcpdump(self.dut, self.tcpdump_proc, False)
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
@@ -490,7 +493,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         for count in ("Call Setup Failure", "Call Maintenance Failure",
                       "Call Teardown Failure", "Total SMS", "SMS failure",
                       "Total MMS", "MMS failure", "Total file download",
-                      "File download failure"):
+                      "File download failure", "Call Success", "SMS Success",
+                      "MMS Success", "File download Success"):
             result_message = "%s, %s: %s" % (result_message, count,
                                              self.result_info[count])
         self.log.info(result_message)
@@ -510,7 +514,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                                         (self.crash_check_test, [])])
         result_message = "Total Calls: %s" % self.result_info["Total Calls"]
         for count in ("Call Setup Failure", "Call Maintenance Failure",
-                      "Call Teardown Failure", "RAT change failure"):
+                      "Call Teardown Failure", "RAT change failure",
+                      "Call Success"):
             result_message = "%s, %s: %s" % (result_message, count,
                                              self.result_info[count])
         if all(results):

@@ -188,6 +188,8 @@ class WifiPnoTest(WifiBaseTest):
         self.add_and_enable_dummy_networks(16)
         self.add_network_and_enable(self.pno_network_a)
         self.add_network_and_enable(self.pno_network_b)
+        # Force single scan so that both networks become preferred before PNO.
+        wutils.start_wifi_connection_scan(self.dut)
         self.trigger_pno_and_assert_connect("a_on_b_off", self.pno_network_a)
 
     """ Tests End """
