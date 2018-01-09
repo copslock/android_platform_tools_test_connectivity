@@ -171,11 +171,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many %s", e)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
             return False
@@ -188,6 +188,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             total_count += 1
             begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices, begin_time)
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total Calls"] += 1
@@ -210,7 +211,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self._take_bug_report(
                         "%s_call_initiation_failure" % self.test_name,
                         begin_time)
-                    start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
                 interval = min(60, duration)
@@ -224,7 +224,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         failure += 1
                         self._take_bug_report("%s_call_drop" % self.test_name,
                                               begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
                         self.dut.log.info("DUT is in call")
@@ -238,11 +237,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many %s", e)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
             return False
@@ -256,6 +255,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             total_count += 1
             begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices)
             try:
                 # ModePref change to non-LTE
                 network_preference_list = [
@@ -295,7 +295,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self._take_bug_report(
                         "%s_call_initiation_failure" % self.test_name,
                         begin_time)
-                    start_qxdm_loggers(self.log, self.android_devices)
                     continue
                 elapse_time = 0
                 interval = min(5, duration)
@@ -309,7 +308,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         failure += 1
                         self._take_bug_report(
                             "%s_not_in_volte" % self.test_name, begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                         break
                     else:
                         self.dut.log.info("DUT is in VoLTE call")
@@ -324,11 +322,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many %s", e)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("VoLTE test failure: %s/%s", failure,
                               total_count)
         if failure:
@@ -380,11 +378,11 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many %s", e)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("IMS test failure: %s/%s", failure, total_count)
         if failure:
             return "IMS test failure: %s/%s" % (failure, total_count)
@@ -403,6 +401,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         }
         while time.time() < self.finishing_time:
             begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices)
             try:
                 self.dut.log.info(dict(self.result_info))
                 total_count += 1
@@ -427,7 +426,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self._take_bug_report("%s_%s_failure" %
                                               (self.test_name,
                                                message_type), begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                     failure += 1
                 else:
                     self.dut.log.info(
@@ -439,11 +437,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
@@ -459,6 +456,7 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             total_count += 1
             begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices)
             self.tcpdump_proc = None
             try:
                 self.dut.log.info(dict(self.result_info))
@@ -479,7 +477,6 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                 elif self.tcpdump_proc is not None:
                     stop_adb_tcpdump(self.dut, self.tcpdump_proc, False)
                 self.dut.droid.goToSleepNow()
@@ -488,11 +485,10 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
