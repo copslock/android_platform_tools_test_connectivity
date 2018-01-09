@@ -187,12 +187,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                         break
                     except Exception:
                         if i == 2:
-                            raise
+                            return False
                         else:
                             sleep(5)
             except Exception:
                 ad.log.info("SL4A error: %s, restart SL4A service", e)
-                raise
+                return False
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -238,9 +238,10 @@ class TelLiveStressTest(TelephonyBaseTest):
             hangup_call(self.log, ad)
         self.result_info["Total Calls"] += 1
         the_number = self.result_info["Total Calls"]
-        log_msg = "The %s-th phone call test from %s to %s" % (the_number,
-                                                               ads[0].serial,
-                                                               ads[1].serial)
+        duration = random.randrange(self.min_phone_call_duration,
+                                    self.max_phone_call_duration)
+        log_msg = "The %s-th phone call test from %s to %s for %ssec duration"\
+                  % (the_number, ads[0].serial, ads[1].serial, duration)
         self.log.info(log_msg)
         for ad in ads:
             try:
@@ -250,7 +251,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         break
                     except Exception:
                         if i == 2:
-                            raise
+                            return False
                         else:
                             sleep(5)
             except Exception:
@@ -264,9 +265,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ed.start()
                 except:
                     self.log.exception("Failed to start sl4a!")
-                    raise
+                    return False
         begin_time = get_current_epoch_time()
-        start_qxdm_loggers(self.log, self.android_devices)
+        start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if not call_setup_teardown(
                 self.log, ads[0], ads[1], ad_hangup=None, wait_time_in_call=0):
             self.log.error("%s: Setup Call failed.", log_msg)
@@ -274,8 +275,6 @@ class TelLiveStressTest(TelephonyBaseTest):
             self._take_bug_report("%s_call_No_%s_setup_failure" %
                                   (self.test_name, the_number), begin_time)
             return False
-        duration = random.randrange(self.min_phone_call_duration,
-                                    self.max_phone_call_duration)
         elapsed_time = 0
         check_interval = 5
         while (elapsed_time < duration):
@@ -292,6 +291,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                                           (self.test_name,
                                            the_number), begin_time)
                     return False
+                else:
+                    ad.log.info("Call is in correct %s state at %s",
+                                call_verification_func.__name__, time_message)
         if not hangup_call(self.log, ads[0]):
             time.sleep(10)
             for ad in ads:
@@ -309,6 +311,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _prefnetwork_mode_change(self, sub_id):
         # ModePref change to non-LTE
         begin_time = get_current_epoch_time()
+        start_qxdm_loggers(self.log, self.android_devices)
         network_preference_list = [
             NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
             NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA, NETWORK_MODE_GSM_ONLY
@@ -351,9 +354,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise
-            except Exception:
-                raise
+                    return False
+            except Exception as e:
+                self.log.error(e)
+                return False
             self.log.info("Crashes found: %s", failure)
         if failure:
             return False
@@ -372,9 +376,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise
+                    return False
             except Exception as e:
-                raise
+                self.log.error(e)
+                return False
             self.log.info("%s", dict(self.result_info))
         if any([
                 self.result_info["Call Setup Failure"],
@@ -397,9 +402,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise
-            except Exception:
-                raise
+                    return False
+            except Exception as e:
+                self.log.error(e)
+                return False
             self.log.info(dict(self.result_info))
         if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
             return False
@@ -418,9 +424,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise
+                    return False
             except Exception as e:
-                raise
+                self.log.error(e)
+                return False
             self.log.info(dict(self.result_info))
         if self.result_info["SMS failure"] or (
                 self.result_info["MMS failure"] / self.result_info["Total MMS"]
@@ -434,13 +441,13 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
             begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices)
             self.tcpdump_proc = None
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
-                start_qxdm_loggers(self.log, self.android_devices)
                 if self.result_info["File download failure"] < 1:
                     self.tcpdump_proc = start_adb_tcpdump(
                         self.dut,
@@ -466,10 +473,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    raise "Too many %s errors" % IGNORE_EXCEPTIONS
+                    self.log.error("Too many %s errors", IGNORE_EXCEPTIONS)
+                    return False
             except Exception as e:
                 self.log.error(e)
-                raise
+                return False
             self.log.info("%s", dict(self.result_info))
         if self.result_info["File download failure"] / self.result_info["Total file download"] > 0.1:
             return False
