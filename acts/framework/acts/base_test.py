@@ -180,9 +180,15 @@ class BaseTestClass(object):
         self.current_test_name = test_name
         try:
             # Write test start token to adb log if android device is attached.
-            for ad in self.android_devices:
-                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
-        except:
+            if hasattr(self, 'android_devices'):
+                for ad in self.android_devices:
+                    if not ad.skip_sl4a:
+                        ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
+                                                       test_name))
+        except Exception as e:
+            self.log.warning(
+                'Unable to send BEGIN log command to all devices.')
+            self.log.warning('Error: %s' % e)
             pass
         return self.setup_test()
 
@@ -196,6 +202,7 @@ class BaseTestClass(object):
 
         Implementation is optional.
         """
+        return True
 
     def _teardown_test(self, test_name):
         """Proxy function to guarantee the base implementation of teardown_test
