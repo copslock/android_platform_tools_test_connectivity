@@ -71,6 +71,7 @@ class WifiEnums():
     PWD_KEY = "password"
     frequency_key = "frequency"
     APBAND_KEY = "apBand"
+    HIDDEN_KEY = "hiddenSSID"
 
     WIFI_CONFIG_APBAND_2G = 0
     WIFI_CONFIG_APBAND_5G = 1
@@ -732,7 +733,7 @@ def start_wifi_background_scan(ad, scan_setting):
     return event['data']
 
 
-def start_wifi_tethering(ad, ssid, password, band=None):
+def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
     """Starts wifi tethering on an android_device.
 
     Args:
@@ -741,6 +742,7 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         password: The password the soft AP should use.
         band: The band the soft AP should be set on. It should be either
             WifiEnums.WIFI_CONFIG_APBAND_2G or WifiEnums.WIFI_CONFIG_APBAND_5G.
+        hidden: boolean to indicate if the AP needs to be hidden or not.
 
     Returns:
         No return value. Error checks in this function will raise test failure signals
@@ -750,6 +752,8 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
+    if hidden:
+      config[WifiEnums.HIDDEN_KEY] = hidden
     asserts.assert_true(
         ad.droid.wifiSetWifiApConfiguration(config),
         "Failed to update WifiAp Configuration")

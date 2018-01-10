@@ -48,6 +48,9 @@ class WifiSoftApTest(base_test.BaseTestClass):
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
 
+        # Set country code explicitly to "US".
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut.droid.wifiGetVerboseLoggingLevel(), 1,
@@ -57,11 +60,13 @@ class WifiSoftApTest(base_test.BaseTestClass):
             "Failed to enable WiFi verbose logging on the client dut.")
 
     def teardown_class(self):
+        wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
+        self.dut_client.take_bug_report(test_name, begin_time)
 
     """ Helper Functions """
     def verify_return_to_wifi_enabled(self):
@@ -110,21 +115,50 @@ class WifiSoftApTest(base_test.BaseTestClass):
         config[wutils.WifiEnums.PWD_KEY] = ap_password
         return config
 
-    def confirm_softap_in_scan_results(self, ap_ssid):
+    def check_softap_in_scan_results(self, ap_ssid, max_tries=2):
+        """Check if the ap started by wifi tethering is seen in scan results.
+
+        Args:
+            ap_ssid: SSID of the ap we are looking for.
+            max_tries: Number of scans to try.
+        Returns:
+            True: if ap_ssid is found in scan results.
+            False: if ap_ssid is not found in scan results.
+        """
+        found = False
+        for num_tries in range(max_tries):
+            wutils.start_wifi_connection_scan(self.dut_client)
+            client_scan_results = self.dut_client.droid.wifiGetScanResults()
+            match_results = wutils.match_networks(
+                {wutils.WifiEnums.SSID_KEY: ap_ssid}, client_scan_results)
+            if len(match_results) > 0:
+                found = True
+                break
+        return found
+
+    def confirm_softap_in_scan_results(self, ap_ssid, max_tries=2):
         """Confirm the ap started by wifi tethering is seen in scan results.
 
         Args:
             ap_ssid: SSID of the ap we are looking for.
+            max_tries: Number of scans to try.
         """
-        #TODO(silberst): debug and remove the extra scan before submitting this test
-        wutils.start_wifi_connection_scan(self.dut_client)
-        client_scan_results = self.dut_client.droid.wifiGetScanResults()
-        wutils.start_wifi_connection_scan(self.dut_client)
-        client_scan_results = self.dut_client.droid.wifiGetScanResults()
-        for result in client_scan_results:
-            self.dut.log.debug("scan found: %s", result[wutils.WifiEnums.SSID_KEY])
-        wutils.assert_network_in_list({wutils.WifiEnums.SSID_KEY: ap_ssid},
-                                      client_scan_results)
+        assert_msg = "Failed to find " + ap_ssid + " in scan results on" \
+            " the client after " + str(max_tries) + " tries"
+        asserts.assert_true(
+            self.check_softap_in_scan_results(ap_ssid, max_tries), assert_msg)
+
+    def confirm_softap_not_in_scan_results(self, ap_ssid, max_tries=2):
+        """Confirm the ap started by wifi tethering is not seen in scan results.
+
+        Args:
+            ap_ssid: SSID of the ap we are looking for.
+            max_tries: Number of scans to try.
+        """
+        assert_msg = "Found " + ap_ssid + " in scan results on" \
+            " the client after " + str(max_tries) + " tries"
+        asserts.assert_false(
+            self.check_softap_in_scan_results(ap_ssid, max_tries), assert_msg)
 
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.
@@ -141,7 +175,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
             asserts.assert_true(self.dut.droid.telephonyIsDataEnabled(),
                                 "Failed to enable cell data for softap dut.")
 
-    def validate_full_tether_startup(self, band=None):
+    def validate_full_tether_startup(self, band=None, hidden=None):
         """Test full startup of wifi tethering
 
         1. Report current state.
@@ -159,7 +193,17 @@ class WifiSoftApTest(base_test.BaseTestClass):
         config = self.create_softap_config()
         wutils.start_wifi_tethering(self.dut,
                                     config[wutils.WifiEnums.SSID_KEY],
-                                    config[wutils.WifiEnums.PWD_KEY], band)
+                                    config[wutils.WifiEnums.PWD_KEY], band, hidden)
+        if hidden:
+            # First ensure it's not seen in scan results.
+            self.confirm_softap_not_in_scan_results(
+                config[wutils.WifiEnums.SSID_KEY])
+            # If the network is hidden, it should be saved on the client to be
+            # seen in scan results.
+            config[wutils.WifiEnums.HIDDEN_KEY] = True
+            ret = self.dut_client.droid.wifiAddNetwork(config)
+            asserts.assert_true(ret != -1, "Add network %r failed" % config)
+            self.dut_client.droid.wifiEnableNetwork(ret, 0)
         self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
         wutils.stop_wifi_tethering(self.dut)
         asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
@@ -224,6 +268,30 @@ class WifiSoftApTest(base_test.BaseTestClass):
         5. verify back to previous mode.
         """
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="d26ee4df-5dcb-4191-829f-05a10b1218a7")
+    def test_full_tether_startup_2G_hidden(self):
+        """Test full startup of wifi tethering in 2G band using hidden AP.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, True)
+
+    @test_tracker_info(uuid="229cd585-a789-4c9a-8948-89fa72de9dd5")
+    def test_full_tether_startup_5G_hidden(self):
+        """Test full startup of wifi tethering in 5G band using hidden AP.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, True)
 
     """ Tests End """
 
