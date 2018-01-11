@@ -18,8 +18,6 @@
 """
 
 import os
-import time
-import inspect
 import traceback
 
 import acts.controllers.diag_logger
@@ -36,13 +34,10 @@ from acts import utils
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
-from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import find_qxdm_logger_mask
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import print_radio_info
-from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
@@ -55,7 +50,6 @@ from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FORE
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
-from acts.utils import force_airplane_mode
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -152,6 +146,7 @@ class TelephonyBaseTest(BaseTestClass):
                 raise
             except Exception as e:
                 self.log.error(str(e))
+                self.log.error(traceback.format_exc())
                 return False
             finally:
                 # TODO: b/19002120 stop QXDM Logging
