@@ -703,11 +703,11 @@ class BaseTestClass(object):
         if getattr(ad, "qxdm_log", False):
             # Gather qxdm log modified 3 minutes earlier than test start time
             if begin_time:
-                epoch_time = begin_time - 1000 * 60 * 3
+                qxdm_begin_time = begin_time - 1000 * 60 * 3
             else:
-                epoch_time = None
+                qxdm_begin_time = None
             try:
-                ad.get_qxdm_logs(test_name, begin_time)
+                ad.get_qxdm_logs(test_name, qxdm_begin_time)
             except Exception as e:
                 ad.log.error("Failed to get QXDM log for %s with error %s",
                              test_name, e)
