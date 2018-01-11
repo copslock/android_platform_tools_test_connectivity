@@ -442,7 +442,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                  file_name):
                     self.result_info["File download failure"] += 1
                     if self.result_info["File download failure"] == 1:
-                        if tcpdump_pid is not None:
+                        if self.tcpdump_proc is not None:
                             stop_adb_tcpdump(self.dut, self.tcpdump_proc,
                                              False)
                         self._take_bug_report(

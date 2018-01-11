@@ -471,9 +471,8 @@ class TelLiveSinglePhoneStressTest(TelephonyBaseTest):
                     self.result_info["File download failure"] += 1
                     failure += 1
                     if self.result_info["File download failure"] == 1:
-                        if tcpdump_pid is not None:
-                            stop_adb_tcpdump(self.dut, tcpdump_pid,
-                                             tcpdump_file, True)
+                        if self.tcpdump_proc is not None:
+                            stop_adb_tcpdump(self.dut, self.tcpdump_proc, True)
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
