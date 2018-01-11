@@ -316,7 +316,7 @@ class TelephonyBaseTest(BaseTestClass):
             self.results.add_record(record)
             # only gather bug report for the first test case
             if i == 0:
-                self.on_fail(test_name, record.log_begin_time)
+                self.on_fail(test_name, record.begin_time)
 
     def on_pass(self, test_name, begin_time):
         self._cleanup_logger_sessions()
