@@ -23,12 +23,9 @@ from acts import base_test
 from acts import test_runner
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel import tel_data_utils
 from acts.test_utils.tel import tel_defines
-from acts.test_utils.tel.tel_data_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import http_file_download_by_chrome
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
@@ -42,15 +39,11 @@ class WifiTetheringTest(base_test.BaseTestClass):
     def setup_class(self):
         """ Setup devices for tethering and unpack params """
 
-        self.convert_byte_to_mb = 1024.0 * 1024.0
-        self.new_ssid = "wifi_tethering_test2"
-        self.data_usage_error = 1
-
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
-        req_params = ("network", "url", "download_file", "file_size")
+        req_params = ("network", "url")
         self.unpack_userparams(req_params)
-        self.file_size = int(self.file_size)
+        self.new_ssid = "wifi_tethering_test2"
 
         wutils.wifi_toggle_state(self.hotspot_device, False)
         self.hotspot_device.droid.telephonyToggleDataConnection(True)
@@ -64,24 +57,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
         for ad in self.tethered_devices:
             ad.droid.telephonyToggleDataConnection(False)
             wutils.wifi_test_device_init(ad)
-
-        # Set chrome browser start with no-first-run verification
-        # Give permission to read from and write to storage
-        commands = ["pm grant com.android.chrome "
-                    "android.permission.READ_EXTERNAL_STORAGE",
-                    "pm grant com.android.chrome "
-                    "android.permission.WRITE_EXTERNAL_STORAGE",
-                    "rm /data/local/chrome-command-line",
-                    "am set-debug-app --persistent com.android.chrome",
-                    'echo "chrome --no-default-browser-check --no-first-run '
-                    '--disable-fre" > /data/local/tmp/chrome-command-line']
-        for cmd in commands:
-            for dut in self.tethered_devices:
-                try:
-                    dut.adb.shell(cmd)
-                except adb.AdbError:
-                    self.log.warn("adb command %s failed on %s"
-                                  % (cmd, dut.serial))
 
     def teardown_class(self):
         """ Reset devices """
@@ -413,106 +388,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
             self.tethered_devices[0])
         wutils.stop_wifi_tethering(self.hotspot_device)
         return result
-
-    @test_tracker_info(uuid="d4e18031-0af0-4b29-a574-8707cd4029b7")
-    def test_wifi_tethering_verify_received_bytes(self):
-        """ Steps:
-
-            1. Start wifi hotspot and connect tethered device to it
-            2. Get the data usage on hotspot device
-            3. Download data on tethered device
-            4. Get the new data usage on hotspot device
-            5. Verify that hotspot device's data usage
-               increased by downloaded file size
-        """
-        wutils.toggle_wifi_off_and_on(self.hotspot_device)
-        dut = self.hotspot_device
-        self._start_wifi_tethering()
-        wutils.wifi_connect(self.tethered_devices[0], self.network)
-        subscriber_id = dut.droid.telephonyGetSubscriberId()
-
-        # get data usage limit
-        end_time = int(time.time() * 1000)
-        bytes_before_download = dut.droid.connectivityGetRxBytesForDevice(
-            subscriber_id, 0, end_time)
-        self.log.info("Data usage before download: %s MB" %
-                      (bytes_before_download/self.convert_byte_to_mb))
-
-        # download file
-        self.log.info("Download file of size %sMB" % self.file_size)
-        http_file_download_by_chrome(self.tethered_devices[0],
-                                     self.download_file,
-                                     self.file_size)
-
-        # get data usage limit after download
-        end_time = int(time.time() * 1000)
-        bytes_after_download = dut.droid.connectivityGetRxBytesForDevice(
-            subscriber_id, 0, end_time)
-        self.log.info("Data usage after download: %s MB" %
-                      (bytes_after_download/self.convert_byte_to_mb))
-
-        bytes_diff = bytes_after_download - bytes_before_download
-        wutils.stop_wifi_tethering(self.hotspot_device)
-
-        # verify data usage update is correct
-        bytes_used = bytes_diff/self.convert_byte_to_mb
-        self.log.info("Data usage on the device increased by %s" % bytes_used)
-        return bytes_used > self.file_size \
-            and bytes_used < self.file_size + self.data_usage_error
-
-    @test_tracker_info(uuid="07a00c96-4770-44a1-a9db-b3d02d6a12b6")
-    def test_wifi_tethering_data_usage_limit(self):
-        """ Steps:
-
-            1. Set the data usage limit to current data usage + 10MB
-            2. Start wifi tethering and connect a dut to the SSID
-            3. Download 20MB data on tethered device
-               a. file download should stop
-               b. tethered device will lose internet connectivity
-               c. data usage limit reached message should be displayed
-                  on the hotspot device
-            4. Verify data usage limit
-        """
-        wutils.toggle_wifi_off_and_on(self.hotspot_device)
-        dut = self.hotspot_device
-        data_usage_inc = 10 * self.convert_byte_to_mb
-        subscriber_id = dut.droid.telephonyGetSubscriberId()
-
-        self._start_wifi_tethering()
-        wutils.wifi_connect(self.tethered_devices[0], self.network)
-
-        # get current data usage
-        end_time = int(time.time() * 1000)
-        old_data_usage = dut.droid.connectivityQuerySummaryForDevice(
-            subscriber_id, 0, end_time)
-
-        # set data usage limit to current usage limit + 10MB
-        dut.droid.connectivitySetDataUsageLimit(
-            subscriber_id, str(int(old_data_usage + data_usage_inc)))
-
-        # download file - size 20MB
-        http_file_download_by_chrome(self.tethered_devices[0],
-                                     self.download_file,
-                                     self.file_size,
-                                     timeout=120)
-        end_time = int(time.time() * 1000)
-        new_data_usage = dut.droid.connectivityQuerySummaryForDevice(
-            subscriber_id, 0, end_time)
-
-        # test network connectivity on tethered device
-        asserts.assert_true(
-            not wutils.validate_connection(self.tethered_devices[0]),
-            "Tethered device has internet connectivity after data usage"
-            "limit is reached on hotspot device")
-        dut.droid.connectivityFactoryResetNetworkPolicies(subscriber_id)
-        wutils.stop_wifi_tethering(self.hotspot_device)
-
-        old_data_usage = (old_data_usage+data_usage_inc)/self.convert_byte_to_mb
-        new_data_usage = new_data_usage/self.convert_byte_to_mb
-        self.log.info("Expected data usage: %s MB" % old_data_usage)
-        self.log.info("Actual data usage: %s MB" % new_data_usage)
-
-        return (new_data_usage-old_data_usage) < self.data_usage_error
 
     @test_tracker_info(uuid="2bc344cb-0277-4f06-b6cc-65b3972086ed")
     def test_change_wifi_hotspot_ssid_when_hotspot_enabled(self):
