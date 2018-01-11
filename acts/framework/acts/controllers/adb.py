@@ -32,7 +32,7 @@ DEFAULT_ADB_PULL_TIMEOUT = 180
 # Uses a regex to be backwards compatible with previous versions of ADB
 # (N and above add the serial to the error msg).
 DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
-DEVICE_OFFLINE_REGEX = re.compile('device offline')
+DEVICE_OFFLINE_REGEX = re.compile('^error: device offline')
 
 
 def parsing_parcel_output(output):
