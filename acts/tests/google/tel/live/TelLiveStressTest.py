@@ -180,19 +180,16 @@ class TelLiveStressTest(TelephonyBaseTest):
             the_number, message_type, length, ads[0].serial, ads[1].serial)
         self.log.info(log_msg)
         for ad in ads:
-            try:
-                for i in range(3):
-                    try:
-                        ad.droid.logI(log_msg)
-                        break
-                    except Exception:
-                        if i == 2:
-                            return False
-                        else:
-                            sleep(5)
-            except Exception:
-                ad.log.info("SL4A error: %s, restart SL4A service", e)
-                return False
+            for i in range(3):
+                try:
+                    ad.droid.logI(log_msg)
+                    break
+                except Exception as e:
+                    if i == 2:
+                        ad.log.info("SL4A error: %s", e)
+                        raise
+                    else:
+                        sleep(5)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -244,28 +241,16 @@ class TelLiveStressTest(TelephonyBaseTest):
                   % (the_number, ads[0].serial, ads[1].serial, duration)
         self.log.info(log_msg)
         for ad in ads:
-            try:
-                for i in range(3):
-                    try:
-                        ad.droid.logI(log_msg)
-                        break
-                    except Exception:
-                        if i == 2:
-                            return False
-                        else:
-                            sleep(5)
-            except Exception:
-                ad.log.info("SL4A error: %s, restart SL4A service", e)
+            for i in range(3):
                 try:
-                    self.terminate_all_sessions()
+                    ad.droid.logI(log_msg)
+                    break
                 except Exception as e:
-                    ad.log.warning("Fail to terminate SL4A session: %s", e)
-                try:
-                    droid, ed = self.get_droid()
-                    ed.start()
-                except:
-                    self.log.exception("Failed to start sl4a!")
-                    return False
+                    if i == 2:
+                        ad.log.info("SL4A error: %s", e)
+                        raise
+                    else:
+                        sleep(5)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if not call_setup_teardown(
@@ -339,8 +324,8 @@ class TelLiveStressTest(TelephonyBaseTest):
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
-            self.log.info(dict(self.result_info))
             try:
+                self.log.info(dict(self.result_info))
                 begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
                 for ad in self.android_devices:
@@ -440,10 +425,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
         while time.time() < self.finishing_time:
-            begin_time = get_current_epoch_time()
-            start_qxdm_loggers(self.log, self.android_devices)
-            self.tcpdump_proc = None
             try:
+                begin_time = get_current_epoch_time()
+                start_qxdm_loggers(self.log, self.android_devices)
+                self.tcpdump_proc = None
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
