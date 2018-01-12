@@ -108,6 +108,11 @@ class TelLiveStressTest(TelephonyBaseTest):
 
         return True
 
+    def setup_test(self):
+        super(TelLiveStressTest, self).setup_test()
+        self.result_info = collections.defaultdict(int)
+        self._init_perf_json()
+
     def on_fail(self, test_name, begin_time):
         pass
 
@@ -334,21 +339,22 @@ class TelLiveStressTest(TelephonyBaseTest):
             "MMS Success", "File download Success")]
         return ", ".join(msg_list)
 
+    def _write_perf_json(self):
+        json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
+        with open(self.perf_file, 'w') as f:
+            f.write(json_str)
+
     def _init_perf_json(self):
         self.perf_file = os.path.join(
             self.log_path, "%s_perf_data.json" % self.test_name)
         self.perf_data = self.android_devices[0].build_info.copy()
         self.perf_data["model"] = self.android_devices[0].model
-        json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
-        with open(self.perf_file, 'w') as f:
-            f.write(json_str)
+        self._write_perf_json()
 
     def _update_perf_json(self):
         for result_key, result_value in self.result_info.items():
             self.perf_data[result_key] = result_value
-        json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
-        with open(self.perf_file, 'w') as f:
-            f.write(json_str)
+        self._write_perf_json()
 
     def crash_check_test(self):
         failure = 0
@@ -500,14 +506,13 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def parallel_tests(self, setup_func=None, call_verification_func=None):
+        self.log.info(self._get_result_message())
         if setup_func and not setup_func():
             msg = "Test setup %s failed" % setup_func.__name__
             self.log.error(msg)
             fail(msg)
         if not call_verification_func:
             call_verification_func = is_phone_in_call
-        self._init_perf_json()
-        self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(
             self.log, [(self.call_test, [call_verification_func]),
@@ -520,21 +525,23 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             fail(result_message)
 
+    def _get_result_message_rat_change(self):
+        msg_list = ["%s: %s" % (count, self.result_info[count]) for  count in (
+            "Total Calls", "Call Setup Failure", "Call Maintenance Failure",
+            "Call Teardown Failure", "RAT change failure", "Call Success")]
+        return ", ".join(msg_list)
+
     def parallel_volte_tests(self, setup_func=None):
+        self.log.info(self._get_result_message_rat_change())
         if setup_func and not setup_func():
             self.log.error("Test setup %s failed", setup_func.__name__)
             return False
-        self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log,
                                        [(self.volte_modechange_volte_test, []),
                                         (self.crash_check_test, [])])
-        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
-        for count in ("Call Setup Failure", "Call Maintenance Failure",
-                      "Call Teardown Failure", "RAT change failure",
-                      "Call Success"):
-            result_message = "%s, %s: %s" % (result_message, count,
-                                             self.result_info[count])
+        result_message = self._get_result_message_rate_change()
+        self.log.info(result_message)
         if all(results):
             explicit_pass(result_message)
         else:
