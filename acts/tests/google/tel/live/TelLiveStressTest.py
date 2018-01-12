@@ -336,7 +336,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _init_perf_json(self):
         self.perf_file = os.path.join(
-            self.log_path, "test_%s_perf_data.json" % self.test_name)
+            self.log_path, "%s_perf_data.json" % self.test_name)
         self.perf_data = self.android_devices[0].build_info.copy()
         self.perf_data["model"] = self.android_devices[0].model
         json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
