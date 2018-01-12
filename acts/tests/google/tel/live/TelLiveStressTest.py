@@ -189,7 +189,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.info("SL4A error: %s", e)
                         raise
                     else:
-                        sleep(5)
+                        time.sleep(5)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -250,7 +250,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.info("SL4A error: %s", e)
                         raise
                     else:
-                        sleep(5)
+                        time.sleep(5)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if not call_setup_teardown(
