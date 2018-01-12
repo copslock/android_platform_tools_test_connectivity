@@ -18,10 +18,14 @@
 """
 
 import collections
+import json
+import os
 import random
 import time
+from acts import records
 from acts.asserts import explicit_pass
 from acts.asserts import fail
+from acts.controllers import android_device
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
@@ -321,11 +325,37 @@ class TelLiveStressTest(TelephonyBaseTest):
             return False
         return True
 
+    def _get_result_message(self):
+        msg_list = ["%s: %s" % (count, self.result_info[count]) for  count in (
+            "Total Calls", "Call Setup Failure", "Call Maintenance Failure",
+            "Call Teardown Failure", "Total SMS", "SMS failure",
+            "Total MMS", "MMS failure", "Total file download",
+            "File download failure", "Call Success", "SMS Success",
+            "MMS Success", "File download Success")]
+        return ", ".join(msg_list)
+
+    def _init_perf_json(self):
+        self.perf_file = os.path.join(
+            self.log_path, "test_%s_perf_data.json" % self.test_name)
+        self.perf_data = self.android_devices[0].build_info.copy()
+        self.perf_data["model"] = self.android_devices[0].model
+        json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
+        with open(self.perf_file, 'w') as f:
+            f.write(json_str)
+
+    def _update_perf_json(self):
+        for result_key, result_value in self.result_info.items():
+            self.perf_data[result_key] = result_value
+        json_str = json.dumps(self.perf_data, indent=4, sort_keys=True)
+        with open(self.perf_file, 'w') as f:
+            f.write(json_str)
+
     def crash_check_test(self):
         failure = 0
         while time.time() < self.finishing_time:
             try:
                 self.log.info(dict(self.result_info))
+                self._update_perf_json()
                 begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
                 for ad in self.android_devices:
@@ -476,20 +506,14 @@ class TelLiveStressTest(TelephonyBaseTest):
             fail(msg)
         if not call_verification_func:
             call_verification_func = is_phone_in_call
+        self._init_perf_json()
         self.result_info = collections.defaultdict(int)
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(
             self.log, [(self.call_test, [call_verification_func]),
                        (self.message_test, []), (self.data_test, []),
                        (self.crash_check_test, [])])
-        result_message = "Total Calls: %s" % self.result_info["Total Calls"]
-        for count in ("Call Setup Failure", "Call Maintenance Failure",
-                      "Call Teardown Failure", "Total SMS", "SMS failure",
-                      "Total MMS", "MMS failure", "Total file download",
-                      "File download failure", "Call Success", "SMS Success",
-                      "MMS Success", "File download Success"):
-            result_message = "%s, %s: %s" % (result_message, count,
-                                             self.result_info[count])
+        result_message = self._get_result_message()
         self.log.info(result_message)
         if all(results):
             explicit_pass(result_message)
