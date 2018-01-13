@@ -2827,7 +2827,11 @@ def is_phone_in_call(log, ad):
         log: log object.
         ad:  android device.
     """
-    return ad.droid.telecomIsInCall()
+    try:
+        return ad.droid.telecomIsInCall()
+    except:
+        return "mCallState=2" in ad.adb.shell(
+            "dumpsys telephony.registry | grep mCallState")
 
 
 def is_phone_not_in_call(log, ad):
