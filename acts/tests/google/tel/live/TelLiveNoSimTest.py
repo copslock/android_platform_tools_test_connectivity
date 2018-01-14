@@ -37,11 +37,13 @@ from TelLiveEmergencyTest import TelLiveEmergencyTest
 
 class TelLiveNoSimTest(TelLiveEmergencyTest):
     def setup_class(self):
-        if self.dut.adb.getprop("gsm.sim.state") != SIM_STATE_ABSENT:
-            self.dut.log.error("Device has SIM in it")
-            return False
-        else:
-            self.dut.log.info("Device does NOT have SIM in it")
+        for ad in self.android_devices:
+            if ad.adb.getprop("gsm.sim.state") == SIM_STATE_ABSENT:
+                ad.log.info("Device has no SIM in it, set as DUT")
+                self.dut = ad
+                return True
+        self.log.error("No device meets no SIM requirement")
+        return False
 
     def setup_test(self):
         self.expected_call_result = False
