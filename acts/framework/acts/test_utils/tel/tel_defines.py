@@ -449,6 +449,10 @@ DATA_STATE_UNKNOWN = "UNKNOWN"
 DATA_ROAMING_ENABLE = 1
 DATA_ROAMING_DISABLE = 0
 
+# Constant for ConnectivityManager Data Connection
+TYPE_MOBILE = 0
+TYPE_WIFI = 1
+
 # Constant for Telephony Manager Call State
 TELEPHONY_STATE_RINGING = "RINGING"
 TELEPHONY_STATE_IDLE = "IDLE"
