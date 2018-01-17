@@ -2281,8 +2281,12 @@ def get_mobile_data_usage(ad, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     end_time = int(time.time() * 1000)
-    usage = ad.droid.connectivityQuerySummaryForDevice(
-        TYPE_MOBILE, subscriber_id, 0, end_time)
+    try:
+        usage = ad.droid.connectivityQuerySummaryForDevice(
+            TYPE_MOBILE, subscriber_id, 0, end_time)
+    except Exception as e:
+        usage = ad.droid.connectivityQuerySummaryForDevice(
+            subscriber_id, 0, end_time)
     ad.log.info("The mobile data usage for subscriber is %s", usage)
     return usage
 
