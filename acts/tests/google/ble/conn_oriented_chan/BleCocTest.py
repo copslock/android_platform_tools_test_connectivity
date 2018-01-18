@@ -36,10 +36,6 @@ from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 
 
 class BleCocTest(BluetoothBaseTest):
-    default_timeout = 10
-    coc_conn_psm1 = 0x00A1
-    coc_conn_psm2 = 0x00B1
-
     message = (
         "Space: the final frontier. These are the voyages of "
         "the starship Enterprise. Its continuing mission: to explore "
@@ -64,15 +60,15 @@ class BleCocTest(BluetoothBaseTest):
             self.server_ad.droid.bluetoothSocketConnStop()
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='6587792c-78fb-469f-9084-772c249f97de')
-    def test_coc_connection(self):
-        """Test Bluetooth LE CoC connection
+    @test_tracker_info(uuid='b6989966-c504-4934-bcd7-57fb4f7fde9c')
+    def test_coc_secured_connection(self):
+        """Test Bluetooth LE CoC secured connection
 
-        Test LE CoC though establishing a basic connection.
+        Test LE CoC though establishing a basic connection with security.
 
         Steps:
         1. Get the mac address of the server device.
-        2. Establish an LE CoC connection from the client to the server AD.
+        2. Establish an LE CoC Secured connection from the client to the server AD.
         3. Verify that the LE CoC connection is active from both the client and
         server.
         Expected Result:
@@ -85,11 +81,13 @@ class BleCocTest(BluetoothBaseTest):
         TAGS: BLE, CoC
         Priority: 1
         """
+        is_secured = True
         self.log.info(
-            "test_new_coc_connection: calling orchestrate_coc_connection but "
-            "isBle=1")
-        if not orchestrate_coc_connection(self.client_ad, self.server_ad, 1,
-                                          self.coc_conn_psm1):
+            "_test_coc_secured_connection: calling orchestrate_coc_connection but "
+            "isBle=1 and securedConn={}".format(is_secured))
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured)
+        if not status:
             return False
 
         self.client_ad.droid.bluetoothSocketConnStop()
@@ -97,15 +95,51 @@ class BleCocTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='12537d27-79c9-40a0-8bdb-d023b0e36b58')
-    def test_coc_connection_write_ascii(self):
-        """Test LE CoC writing and reading ascii data
+    @test_tracker_info(uuid='6587792c-78fb-469f-9084-772c249f97de')
+    def test_coc_insecured_connection(self):
+        """Test Bluetooth LE CoC insecured connection
 
-        Test LE CoC though establishing a connection.
+        Test LE CoC though establishing a basic connection with no security.
 
         Steps:
         1. Get the mac address of the server device.
-        2. Establish an LE CoC connection from the client to the server AD.
+        2. Establish an LE CoC Secured connection from the client to the server AD.
+        3. Verify that the LE CoC connection is active from both the client and
+        server.
+        Expected Result:
+        LE CoC connection is established then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BLE, CoC
+        Priority: 1
+        """
+        is_secured = False
+        self.log.info(
+            "test_coc_insecured_connection: calling orchestrate_coc_connection but "
+            "isBle=1 and securedConn={}".format(is_secured))
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured)
+        if not status:
+            return False
+
+        self.client_ad.droid.bluetoothSocketConnStop()
+        self.server_ad.droid.bluetoothSocketConnStop()
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='32a7b02e-f2b5-4193-b414-36c8815ac407')
+    def test_coc_secured_connection_write_ascii(self):
+        """Test LE CoC secured connection writing and reading ascii data
+
+        Test LE CoC though establishing a secured connection and reading and writing ascii data.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish an LE CoC connection from the client to the server AD. The security of
+        connection is TRUE.
         3. Verify that the LE CoC connection is active from both the client and
         server.
         4. Write data from the client and read received data from the server.
@@ -122,10 +156,59 @@ class BleCocTest(BluetoothBaseTest):
         TAGS: BLE, CoC
         Priority: 1
         """
-        self.log.info("test_cocs_connection_write_ascii: calling "
-                      "orchestrate_coc_connection")
-        if not orchestrate_coc_connection(self.client_ad, self.server_ad, 1,
-                                          self.coc_conn_psm1):
+        is_secured = True
+        self.log.info(
+            "test_coc_secured_connection_write_ascii: calling "
+            "orchestrate_coc_connection. is_secured={}".format(is_secured))
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured)
+        if not status:
+            return False
+        if not write_read_verify_data(self.client_ad, self.server_ad,
+                                      self.message, False):
+            return False
+        if not verify_server_and_client_connected(self.client_ad,
+                                                  self.server_ad):
+            return False
+
+        self.client_ad.droid.bluetoothSocketConnStop()
+        self.server_ad.droid.bluetoothSocketConnStop()
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='12537d27-79c9-40a0-8bdb-d023b0e36b58')
+    def test_coc_insecured_connection_write_ascii(self):
+        """Test LE CoC insecured connection writing and reading ascii data
+
+        Test LE CoC though establishing a connection.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish an LE CoC connection from the client to the server AD. The security of
+        connection is FALSE.
+        3. Verify that the LE CoC connection is active from both the client and
+        server.
+        4. Write data from the client and read received data from the server.
+        5. Verify data matches from client and server
+        6. Disconnect the LE CoC connection.
+
+        Expected Result:
+        LE CoC connection is established then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BLE, CoC
+        Priority: 1
+        """
+        is_secured = False
+        self.log.info(
+            "test_coc_secured_connection_write_ascii: calling "
+            "orchestrate_coc_connection. is_secured={}".format(is_secured))
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured)
+        if not status:
             return False
         if not write_read_verify_data(self.client_ad, self.server_ad,
                                       self.message, False):
@@ -140,10 +223,10 @@ class BleCocTest(BluetoothBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='214037f4-f0d1-47db-86a7-5230c71bdcac')
-    def test_coc_connection_throughput(self):
-        """Test LE CoC writing and measured data throughput
+    def test_coc_secured_connection_throughput(self):
+        """Test LE CoC writing and measured data throughput with security
 
-        Test CoC thoughput by establishing a connection and sending data.
+        Test CoC thoughput by establishing a secured connection and sending data.
 
         Steps:
         1. Get the mac address of the server device.
@@ -165,8 +248,12 @@ class BleCocTest(BluetoothBaseTest):
         Priority: 1
         """
 
+        is_secured = True
+        self.log.info(
+            "test_coc_secured_connection_throughput: calling "
+            "orchestrate_coc_connection. is_secured={}".format(is_secured))
         status, client_conn_id, server_conn_id = orchestrate_coc_connection(
-            self.client_ad, self.server_ad, 1, self.coc_conn_psm1)
+            self.client_ad, self.server_ad, True, is_secured)
         if not status:
             return False
 
