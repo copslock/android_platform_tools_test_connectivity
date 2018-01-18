@@ -3431,13 +3431,15 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
 
     for text in array_message:
-        begin_time = get_current_epoch_time()
+        # set begin_time 300ms before current time to system time discrepency
+        begin_time = get_current_epoch_time() - 300
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
         ad_rx.ed.clear_all_events()
         ad_tx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
+        time.sleep(0.1) #sleep 100ms after starting event tracking
         try:
             ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
             try:
