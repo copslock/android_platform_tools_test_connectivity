@@ -1318,7 +1318,7 @@ def initiate_emergency_dialer_call_by_adb(
         ad.log.error("initiate emergency call failed with error %s", e)
 
 
-def hung_up_call_by_adb(ad):
+def hangup_call_by_adb(ad):
     """Make emergency call by EmergencyDialer.
 
     Args:
