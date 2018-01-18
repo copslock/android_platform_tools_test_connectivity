@@ -18,26 +18,20 @@
 """
 
 import time
-import os
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALLEE_RINGING
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
-from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
-from acts.test_utils.tel.tel_test_utils import hung_up_call_by_adb
+from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
-from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
-from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
-from acts.test_utils.tel.tel_test_utils import STORY_LINE
 
 
 class TelLiveEmergencyTest(TelephonyBaseTest):
@@ -112,7 +106,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             time.sleep(1)
             call_numbers = len(dumpsys_telecom_call_info(self.dut))
             dial_result = dialing_func(self.log, self.dut, callee)
-            hung_up_call_by_adb(self.dut)
+            hangup_call_by_adb(self.dut)
             self.dut.send_keycode("BACK")
             self.dut.send_keycode("BACK")
             calls_info = dumpsys_telecom_call_info(self.dut)
