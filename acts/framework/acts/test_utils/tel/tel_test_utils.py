@@ -97,6 +97,8 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import TYPE_MOBILE
+from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
@@ -1316,7 +1318,7 @@ def initiate_emergency_dialer_call_by_adb(
         ad.log.error("initiate emergency call failed with error %s", e)
 
 
-def hung_up_call_by_adb(ad):
+def hangup_call_by_adb(ad):
     """Make emergency call by EmergencyDialer.
 
     Args:
@@ -2279,8 +2281,12 @@ def get_mobile_data_usage(ad, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     end_time = int(time.time() * 1000)
-    usage = ad.droid.connectivityQuerySummaryForDevice(subscriber_id, 0,
-                                                       end_time)
+    try:
+        usage = ad.droid.connectivityQuerySummaryForDevice(
+            TYPE_MOBILE, subscriber_id, 0, end_time)
+    except Exception as e:
+        usage = ad.droid.connectivityQuerySummaryForDevice(
+            subscriber_id, 0, end_time)
     ad.log.info("The mobile data usage for subscriber is %s", usage)
     return usage
 

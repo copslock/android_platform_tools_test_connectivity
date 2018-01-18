@@ -39,6 +39,7 @@ from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
@@ -79,7 +80,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if self.single_phone_test:
             self.android_devices = self.android_devices[:1]
             self.call_server_number = self.user_params.get(
-                "call_server_number", "+12123013000")
+                "call_server_number", "+17579328437")
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
@@ -249,7 +250,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not self.single_phone_test:
             random.shuffle(ads)
         for ad in ads:
-            hangup_call(self.log, ad)
+            hangup_call_by_adb(ad)
         self.result_info["Total Calls"] += 1
         the_number = self.result_info["Total Calls"]
         duration = random.randrange(self.min_phone_call_duration,
@@ -534,6 +535,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                        (self.crash_check_test, [])])
         result_message = self._get_result_message()
         self.log.info(result_message)
+        self._update_perf_json()
         if all(results):
             explicit_pass(result_message)
         else:
@@ -556,6 +558,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                         (self.crash_check_test, [])])
         result_message = self._get_result_message_rate_change()
         self.log.info(result_message)
+        self._update_perf_json()
         if all(results):
             explicit_pass(result_message)
         else:
