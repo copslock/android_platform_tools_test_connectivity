@@ -1399,7 +1399,7 @@ def orchestrate_coc_connection(
         client_ad,
         server_ad,
         is_ble,
-        psm_value,
+        secured_conn=False,
         accept_timeout_ms=default_bluetooth_socket_timeout_ms):
     """Sets up the CoC connection between two Android devices.
 
@@ -1425,7 +1425,7 @@ def orchestrate_coc_connection(
             # not find the advertisements from server_ad
             client_ad.log.info(
                 "orchestrate_coc_connection: Start BLE Advertisement and"
-                "Scanning")
+                "Scanning. Secured Connection={}".format(secured_conn))
             mac_address, adv_callback = (
                 get_mac_address_of_generic_advertisement(client_ad, server_ad))
         except BtTestUtilsError as err:
@@ -1436,11 +1436,16 @@ def orchestrate_coc_connection(
         mac_address = server_ad.droid.bluetoothGetLocalAddress()
         adv_callback = None
 
+    psm_value = 0
+    # 0 means to get assigned PSM value.
     server_ad.droid.bluetoothSocketConnBeginAcceptThreadPsm(
-        psm_value, accept_timeout_ms, is_ble)
+        psm_value, accept_timeout_ms, is_ble, secured_conn)
+
+    psm_value = server_ad.droid.bluetoothSocketConnGetPsm()
+    client_ad.log.info("Assigned PSM value={}".format(psm_value))
 
     client_ad.droid.bluetoothSocketConnBeginConnectThreadPsm(
-        mac_address, is_ble, psm_value)
+        mac_address, is_ble, psm_value, secured_conn)
 
     end_time = time.time() + bt_default_timeout
     test_result = False
