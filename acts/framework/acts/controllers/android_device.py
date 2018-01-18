@@ -1491,6 +1491,12 @@ class AndroidDevice:
         self.adb.shell(
             "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
         )
+        #Wait up to 5 seconds for user_setup_complete to be updated
+        for _ in range(5):
+            if self.is_user_setup_complete():
+                return
+            time.sleep(1)
+        #If fail to exit setup wizard, set local.prop and reboot
         if not self.is_user_setup_complete():
             self.adb.shell("echo ro.test_harness=1 > /data/local.prop")
             self.adb.shell("chmod 644 /data/local.prop")
