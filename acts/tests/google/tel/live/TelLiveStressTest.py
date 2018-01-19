@@ -80,7 +80,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if self.single_phone_test:
             self.android_devices = self.android_devices[:1]
             self.call_server_number = self.user_params.get(
-                "call_server_number", "+17579328437")
+                "call_server_number", "+17124325335")
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
