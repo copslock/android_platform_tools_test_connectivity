@@ -992,8 +992,6 @@ class AndroidDevice:
             current_time = utils.get_current_epoch_time()
             seconds = int(math.ceil((current_time - begin_time) / 1000.0))
             cmd = "%s -mtime -%ss" % (cmd, seconds)
-            self.log.debug("Find files modified in last %s seconds in %s",
-                           seconds, directory)
         for skip_file in skip_files:
             cmd = "%s ! -iname %s" % (cmd, skip_file)
         out = self.adb.shell(cmd, ignore_status=True)
@@ -1043,10 +1041,7 @@ class AndroidDevice:
         output = self.adb.shell("ps -ef | grep mdlog")
         match = re.search(r"diag_mdlog.*", output)
         log_path = None
-        diag_mdlog_cmd = None
-        qxdm_logs = None
         if match:
-            diag_mdlog_cmd = match.group(0)
             m = re.search(r"-o (\S+)", output)
             if m: log_path = m.group(1)
             # Neet to sleep 20 seconds for the log to be generated
@@ -1060,9 +1055,8 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
-        if diag_mdlog_cmd:
-            self.log.debug("start qxdm logging by %s", diag_mdlog_cmd)
-            self.adb.shell_nb(diag_mdlog_cmd)
+        else:
+            self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.log_path, test_name,
                                           "OMADM_Log")
