@@ -119,22 +119,33 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ad.log.error("Fail to remove google account due to %s", output)
         return False
 
+    def _install_account_util(self, ad):
+        account_util = self.user_params["account_util"]
+        if isinstance(account_util, list):
+            account_util = account_util[0]
+        ad.log.info("Install account_util %s", account_util)
+        ad.ensure_screen_on()
+        ad.adb.install("-r %s" % account_util, timeout=180)
+        time.sleep(3)
+        if not ad.is_apk_installed("com.google.android.tradefed.account"):
+            ad.log.info("com.google.android.tradefed.account is not installed")
+            return False
+        return True
+
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
             ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
                                            "account_util"):
-                account_util = self.user_params["account_util"]
-                if isinstance(account_util, list):
-                    account_util = account_util[0]
-                ad.log.info("Install account_util %s", account_util)
-                ad.ensure_screen_on()
-                ad.adb.install("-r %s" % account_util, timeout=180)
-            if not ad.is_apk_installed("com.google.android.tradefed.account"):
-                ad.log.error(
-                    "com.google.android.tradefed.account is not installed")
-                return False
+                for _ in range(2):
+                    if self._install_account_util(ad):
+                        break
+                else:
+                    ad.log.error(
+                        "Fail to install com.google.android.tradefed.account")
+                    return False
+            ad.force_stop_apk(_TYCHO_PKG)
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")
@@ -150,7 +161,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            self.start_tycho_init_activity(ad)
+            self.activate_fi_account(ad)
             if not self.check_project_fi_activated(ad):
                 ad.log.error("Fail to activate Fi account")
                 return False
@@ -194,7 +205,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ], package, package + '.' + activity_id, _INTENT_FLAGS)
         ad.droid.startActivityIntent(intent, False)
 
-    def start_tycho_init_activity(self, ad):
+    def activate_fi_account(self, ad):
         """Start Tycho InitActivity.
 
         For in-app Tycho activition (post-SUW tests), Tycho does not
@@ -208,13 +219,28 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
-        time.sleep(60)
-        ad.send_keycode("TAB")
-        ad.send_keycode("TAB")
-        ad.send_keycode("ENTER")
-        time.sleep(2)
-        ad.send_keycode("TAB")
-        ad.send_keycode("ENTER")
+        for i in range(20):
+            ad.send_keycode("WAKEUP")
+            time.sleep(1)
+            current_window = ad.get_my_current_focus_window()
+            if 'SwitchConfirmDialogActivity' in current_window:
+                ad.log.info("In Switch Confirmation Dialog")
+                if ad.adb.getprop("ro.build.version.release")[0] not in ("8", "O"):
+                    ad.send_keycode("TAB")
+                ad.send_keycode("TAB")
+                ad.send_keycode("ENTER")
+                time.sleep(10)
+            elif 'tycho.InitActivity' in current_window:
+                ad.log.info("In Tycho InitActivity")
+                ad.send_keycode("TAB")
+                ad.send_keycode("TAB")
+                ad.send_keycode("ENTER")
+                time.sleep(10)
+            elif 'tycho.AccountChooserActivity' in current_window:
+                ad.send_keycode("ENTER")
+            else:
+                ad.log.info("Finished activation process")
+                return
 
     def check_project_fi_activated(self, ad):
         for _ in range(10):
