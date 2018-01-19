@@ -28,7 +28,6 @@ import time
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
-from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
@@ -4930,11 +4929,15 @@ def stop_qxdm_logger(ad):
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
-    if begin_time and getattr(ad, "qxdm_logger_path"):
-        current_time = get_current_epoch_time()
-        seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
-        ad.adb.shell("find %s -type f -not -mtime %ss -delete" %
-                     (ad.qxdm_logger_path, seconds))
+    if getattr(ad, "qxdm_logger_path"):
+        if begin_time:
+            current_time = get_current_epoch_time()
+            seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
+            ad.adb.shell("find %s -type f -not -mtime -%ss -delete" %
+                         (ad.qxdm_logger_path, seconds))
+        elif len(ad.get_file_names(ad.qxdm_logger_path)) > 50:
+            ad.adb.shell("find %s -type f -not -mtime -600s -delete"
+                         % ad.qxdm_logger_path)
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
         if ad.qxdm_logger_command not in output:
@@ -4945,6 +4948,10 @@ def start_qxdm_logger(ad, begin_time=None):
                 # Only one diag_mdlog process can be run
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
+            ad.adb.shell_nb(ad.qxdm_logger_command)
+        elif not ad.get_file_names(ad.qxdm_logger_path, 60):
+            ad.log.debug("Existing diag_mdlog is not generating logs")
+            stop_qxdm_logger(ad)
             ad.adb.shell_nb(ad.qxdm_logger_command)
         return True
 
@@ -5242,19 +5249,22 @@ def system_file_push(ad, src_file_path, dst_file_path):
     """
     cmd = "%s %s" % (src_file_path, dst_file_path)
     out = ad.adb.push(cmd, timeout=300, ignore_status=True)
+    skip_sl4a= True if "sl4a.apk" in src_file_path else False
     if "Read-only file system" in out:
         ad.log.info("Change read-only file system")
-        out = ad.adb.disable_verity()
-        ad.reboot()
+        ad.adb.disable_verity()
+        ad.reboot(skip_sl4a)
         ad.adb.remount()
         out = ad.adb.push(cmd, timeout=300, ignore_status=True)
         if "Read-only file system" in out:
-            ad.reboot()
+            ad.reboot(skip_sl4a)
             out = ad.adb.push(cmd, timeout=300, ignore_status=True)
             if "error" in out:
                 ad.log.error("%s failed with %s", cmd, out)
                 return False
             else:
+                ad.log.info("push %s succeed")
+                if skip_sl4a: ad.reboot(skip_sl4a)
                 return True
         else:
             return True
