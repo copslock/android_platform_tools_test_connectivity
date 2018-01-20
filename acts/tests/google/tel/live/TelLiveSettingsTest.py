@@ -32,13 +32,15 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import flash_radio
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import power_off_sim
+from acts.test_utils.tel.tel_test_utils import power_on_sim
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
@@ -1342,3 +1344,50 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         tasks = [(set_qxdm_logger_command, [ad, " QC_Default.cfg"])
                  for ad in self.android_devices]
         return multithread_func(self.log, tasks)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e2734d66-6111-4e76-aa7b-d3b4cbcde4f1")
+    def test_check_carrier_id(self):
+        """Verify mobile_data_always_on can be enabled.
+
+        Steps:
+        1. Enable mobile_data_always_on by adb.
+        2. Verify the mobile data_always_on state.
+
+        Expected Results: mobile_data_always_on return 1.
+        """
+        result = True
+        if self.ad.adb.getprop("ro.build.version.release")[0] in (
+                "8", "O", "7", "N"):
+            raise signals.TestSkip("Not supported in this build")
+        self.ad.log.info("carrier_id = %s",
+                         self.ad.droid.telephonyGetSubscriptionCarrierId())
+        self.ad.log.info("carrier_name = %s",
+                         self.ad.droid.telephonyGetSubscriptionCarrierName())
+        if not power_off_sim(self.ad):
+            result = False
+        else:
+            carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+            carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+            self.ad.log.info(
+                "After SIM power down, carrier_id = %s(expecting -1), "
+                "carrier_name = %s(expecting None)",
+                carrier_id, carrier_name)
+            if carrier_id != -1 or carrier_name:
+                result = False
+        if not power_on_sim(self.ad):
+            abort_all_tests(self.ad.log, "Fail to power up SIM")
+            result = False
+        else:
+            if not ensure_phone_subscription(self.log, self.ad):
+                self.ad.log.error("Unable to find a valid subscription!")
+                result = False
+            carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+            carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+            self.ad.log.info(
+                "After SIM power up, carrier_id = %s, carrier_name = %s",
+                carrier_id, carrier_name)
+            if carrier_id == -1 or not carrier_name:
+                result = False
+        return result
+
