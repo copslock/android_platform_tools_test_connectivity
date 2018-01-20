@@ -30,6 +30,8 @@ from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
+from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
+from acts.test_utils.tel.tel_defines import CARD_POWER_UP
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
@@ -82,7 +84,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts.test_utils.tel.tel_defines import SIM_STATE_READY
-from acts.test_utils.tel.tel_defines import WAIT_TIME_SUPPLY_PUK_CODE
+from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
@@ -5375,3 +5377,45 @@ def wait_for_state(state_check_func,
         time.sleep(checking_interval)
         max_wait_time -= checking_interval
     return False
+
+
+def power_off_sim(ad, sim_slot_id=None):
+    try:
+        if sim_slot_id is None:
+            ad.droid.telephonySetSimPowerState(CARD_POWER_DOWN)
+            verify_func = ad.droid.telephonyGetSimState
+            verify_args = []
+        else:
+            ad.droid.telephonySetSimStateForSlotId(sim_slot_id, CARD_POWER_DOWN)
+            verify_func = ad.droid.telephonyGetSimStateForSlotId
+            verify_args = [sim_slot_id]
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, *verify_args):
+        return True
+    else:
+        ad.log.error("Fail to power of SIM slot")
+        return False
+
+
+def power_on_sim(ad, sim_slot_id=None):
+    try:
+        if sim_slot_id is None:
+            ad.droid.telephonySetSimPowerState(CARD_POWER_UP)
+            verify_func = ad.droid.telephonyGetSimState
+            verify_args = []
+        else:
+            ad.droid.telephonySetSimStateForSlotId(sim_slot_id, CARD_POWER_UP)
+            verify_func = ad.droid.telephonyGetSimStateForSlotId
+            verify_args = [sim_slot_id]
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    if wait_for_state(verify_func, SIM_STATE_READY, *verify_args):
+        return True
+    elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
+        unlock_sim()
+    else:
+        ad.log.error("Fail to power on SIM slot")
+        return False
