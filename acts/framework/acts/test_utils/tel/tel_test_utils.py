@@ -3519,6 +3519,7 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
             "Received %s message" % type, begin_time=begin_time)
         if log_results:
             ad.log.info("Found %s received log message" % type)
+            return True
     return False
 
 
@@ -3620,7 +3621,6 @@ def mms_receive_verify_after_call_hangup_for_subscription(
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
         try:
