@@ -28,9 +28,10 @@ import time
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
-from acts.controllers.android_device import AndroidDevice
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
+from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
+from acts.test_utils.tel.tel_defines import CARD_POWER_UP
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
@@ -83,7 +84,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts.test_utils.tel.tel_defines import SIM_STATE_READY
-from acts.test_utils.tel.tel_defines import WAIT_TIME_SUPPLY_PUK_CODE
+from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_IDLE
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_OFFHOOK
 from acts.test_utils.tel.tel_defines import TELEPHONY_STATE_RINGING
@@ -3431,13 +3432,15 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
 
     for text in array_message:
-        begin_time = get_current_epoch_time()
+        # set begin_time 300ms before current time to system time discrepency
+        begin_time = get_current_epoch_time() - 300
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
         ad_rx.ed.clear_all_events()
         ad_tx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
+        time.sleep(0.1) #sleep 100ms after starting event tracking
         try:
             ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
             try:
@@ -3518,6 +3521,7 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
             "Received %s message" % type, begin_time=begin_time)
         if log_results:
             ad.log.info("Found %s received log message" % type)
+            return True
     return False
 
 
@@ -3619,7 +3623,6 @@ def mms_receive_verify_after_call_hangup_for_subscription(
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.ed.clear_all_events()
         ad_rx.droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
         try:
@@ -4928,11 +4931,15 @@ def stop_qxdm_logger(ad):
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
-    if begin_time and getattr(ad, "qxdm_logger_path"):
-        current_time = get_current_epoch_time()
-        seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
-        ad.adb.shell("find %s -type f -not -mtime %ss -delete" %
-                     (ad.qxdm_logger_path, seconds))
+    if getattr(ad, "qxdm_logger_path"):
+        if begin_time:
+            current_time = get_current_epoch_time()
+            seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
+            ad.adb.shell("find %s -type f -not -mtime -%ss -delete" %
+                         (ad.qxdm_logger_path, seconds))
+        elif len(ad.get_file_names(ad.qxdm_logger_path)) > 50:
+            ad.adb.shell("find %s -type f -not -mtime -600s -delete"
+                         % ad.qxdm_logger_path)
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
         if ad.qxdm_logger_command not in output:
@@ -4943,6 +4950,10 @@ def start_qxdm_logger(ad, begin_time=None):
                 # Only one diag_mdlog process can be run
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
+            ad.adb.shell_nb(ad.qxdm_logger_command)
+        elif not ad.get_file_names(ad.qxdm_logger_path, 60):
+            ad.log.debug("Existing diag_mdlog is not generating logs")
+            stop_qxdm_logger(ad)
             ad.adb.shell_nb(ad.qxdm_logger_command)
         return True
 
@@ -5240,19 +5251,22 @@ def system_file_push(ad, src_file_path, dst_file_path):
     """
     cmd = "%s %s" % (src_file_path, dst_file_path)
     out = ad.adb.push(cmd, timeout=300, ignore_status=True)
+    skip_sl4a= True if "sl4a.apk" in src_file_path else False
     if "Read-only file system" in out:
         ad.log.info("Change read-only file system")
-        out = ad.adb.disable_verity()
-        ad.reboot()
+        ad.adb.disable_verity()
+        ad.reboot(skip_sl4a)
         ad.adb.remount()
         out = ad.adb.push(cmd, timeout=300, ignore_status=True)
         if "Read-only file system" in out:
-            ad.reboot()
+            ad.reboot(skip_sl4a)
             out = ad.adb.push(cmd, timeout=300, ignore_status=True)
             if "error" in out:
                 ad.log.error("%s failed with %s", cmd, out)
                 return False
             else:
+                ad.log.info("push %s succeed")
+                if skip_sl4a: ad.reboot(skip_sl4a)
                 return True
         else:
             return True
@@ -5363,3 +5377,45 @@ def wait_for_state(state_check_func,
         time.sleep(checking_interval)
         max_wait_time -= checking_interval
     return False
+
+
+def power_off_sim(ad, sim_slot_id=None):
+    try:
+        if sim_slot_id is None:
+            ad.droid.telephonySetSimPowerState(CARD_POWER_DOWN)
+            verify_func = ad.droid.telephonyGetSimState
+            verify_args = []
+        else:
+            ad.droid.telephonySetSimStateForSlotId(sim_slot_id, CARD_POWER_DOWN)
+            verify_func = ad.droid.telephonyGetSimStateForSlotId
+            verify_args = [sim_slot_id]
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, *verify_args):
+        return True
+    else:
+        ad.log.error("Fail to power of SIM slot")
+        return False
+
+
+def power_on_sim(ad, sim_slot_id=None):
+    try:
+        if sim_slot_id is None:
+            ad.droid.telephonySetSimPowerState(CARD_POWER_UP)
+            verify_func = ad.droid.telephonyGetSimState
+            verify_args = []
+        else:
+            ad.droid.telephonySetSimStateForSlotId(sim_slot_id, CARD_POWER_UP)
+            verify_func = ad.droid.telephonyGetSimStateForSlotId
+            verify_args = [sim_slot_id]
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    if wait_for_state(verify_func, SIM_STATE_READY, *verify_args):
+        return True
+    elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
+        unlock_sim()
+    else:
+        ad.log.error("Fail to power on SIM slot")
+        return False

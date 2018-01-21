@@ -392,74 +392,106 @@ def get_network_specifier(dut, id, dev_type, peer_mac, sec):
   return dut.droid.wifiAwareCreateNetworkSpecifierOob(
       id, dev_type, peer_mac, None, sec)
 
-def configure_dw(device, is_default, is_24_band, value):
-  """Use the command-line API to configure the DW (discovery window) setting
+def configure_power_setting(device, mode, name, value):
+  """Use the command-line API to configure the power setting
 
   Args:
     device: Device on which to perform configuration
-    is_default: True for the default setting, False for the non-interactive
-                setting
-    is_24_band: True for 2.4GHz band, False for 5GHz band
-    value: An integer 0 to 5
+    mode: The power mode being set, should be "default", "inactive", or "idle"
+    name: One of the power settings from 'wifiaware set-power'.
+    value: An integer.
   """
-  variable = 'dw_%s_%sghz' % ('default' if is_default else 'on_inactive', '24'
-                              if is_24_band else '5')
-  device.adb.shell("cmd wifiaware native_api set %s %d" % (variable, value))
+  device.adb.shell(
+    "cmd wifiaware native_api set-power %s %s %d" % (mode, name, value))
 
-def config_dw_high_power(device):
-  """Configure device's discovery window (DW) values to high power mode -
+def config_settings_high_power(device):
+  """Configure device's power settings values to high power mode -
   whether device is in interactive or non-interactive modes"""
-  configure_dw(
-      device, is_default=True, is_24_band=True, value=aconsts.DW_24_INTERACTIVE)
-  configure_dw(
-      device, is_default=True, is_24_band=False, value=aconsts.DW_5_INTERACTIVE)
-  configure_dw(
-      device,
-      is_default=False,
-      is_24_band=True,
-      value=aconsts.DW_24_INTERACTIVE)
-  configure_dw(
-      device,
-      is_default=False,
-      is_24_band=False,
-      value=aconsts.DW_5_INTERACTIVE)
+  configure_power_setting(device, "default", "dw_24ghz",
+                          aconsts.POWER_DW_24_INTERACTIVE)
+  configure_power_setting(device, "default", "dw_5ghz",
+                          aconsts.POWER_DW_5_INTERACTIVE)
+  configure_power_setting(device, "default", "disc_beacon_interval_ms",
+                          aconsts.POWER_DISC_BEACON_INTERVAL_INTERACTIVE)
+  configure_power_setting(device, "default", "num_ss_in_discovery",
+                          aconsts.POWER_NUM_SS_IN_DISC_INTERACTIVE)
+  configure_power_setting(device, "default", "enable_dw_early_term",
+                          aconsts.POWER_ENABLE_DW_EARLY_TERM_INTERACTIVE)
 
-def config_dw_low_power(device):
-  """Configure device's discovery window (DW) values to low power mode - whether
+  configure_power_setting(device, "inactive", "dw_24ghz",
+                          aconsts.POWER_DW_24_INTERACTIVE)
+  configure_power_setting(device, "inactive", "dw_5ghz",
+                          aconsts.POWER_DW_5_INTERACTIVE)
+  configure_power_setting(device, "inactive", "disc_beacon_interval_ms",
+                          aconsts.POWER_DISC_BEACON_INTERVAL_INTERACTIVE)
+  configure_power_setting(device, "inactive", "num_ss_in_discovery",
+                          aconsts.POWER_NUM_SS_IN_DISC_INTERACTIVE)
+  configure_power_setting(device, "inactive", "enable_dw_early_term",
+                          aconsts.POWER_ENABLE_DW_EARLY_TERM_INTERACTIVE)
+
+def config_settings_low_power(device):
+  """Configure device's power settings values to low power mode - whether
   device is in interactive or non-interactive modes"""
-  configure_dw(
-      device,
-      is_default=True,
-      is_24_band=True,
-      value=aconsts.DW_24_NON_INTERACTIVE)
-  configure_dw(
-      device,
-      is_default=True,
-      is_24_band=False,
-      value=aconsts.DW_5_NON_INTERACTIVE)
-  configure_dw(
-      device,
-      is_default=False,
-      is_24_band=True,
-      value=aconsts.DW_24_NON_INTERACTIVE)
-  configure_dw(
-      device,
-      is_default=False,
-      is_24_band=False,
-      value=aconsts.DW_5_NON_INTERACTIVE)
+  configure_power_setting(device, "default", "dw_24ghz",
+                          aconsts.POWER_DW_24_NON_INTERACTIVE)
+  configure_power_setting(device, "default", "dw_5ghz",
+                          aconsts.POWER_DW_5_NON_INTERACTIVE)
+  configure_power_setting(device, "default", "disc_beacon_interval_ms",
+                          aconsts.POWER_DISC_BEACON_INTERVAL_NON_INTERACTIVE)
+  configure_power_setting(device, "default", "num_ss_in_discovery",
+                          aconsts.POWER_NUM_SS_IN_DISC_NON_INTERACTIVE)
+  configure_power_setting(device, "default", "enable_dw_early_term",
+                          aconsts.POWER_ENABLE_DW_EARLY_TERM_NON_INTERACTIVE)
 
-def config_dw_all_modes(device, dw_24ghz, dw_5ghz):
+  configure_power_setting(device, "inactive", "dw_24ghz",
+                          aconsts.POWER_DW_24_NON_INTERACTIVE)
+  configure_power_setting(device, "inactive", "dw_5ghz",
+                          aconsts.POWER_DW_5_NON_INTERACTIVE)
+  configure_power_setting(device, "inactive", "disc_beacon_interval_ms",
+                          aconsts.POWER_DISC_BEACON_INTERVAL_NON_INTERACTIVE)
+  configure_power_setting(device, "inactive", "num_ss_in_discovery",
+                          aconsts.POWER_NUM_SS_IN_DISC_NON_INTERACTIVE)
+  configure_power_setting(device, "inactive", "enable_dw_early_term",
+                          aconsts.POWER_ENABLE_DW_EARLY_TERM_NON_INTERACTIVE)
+
+
+def config_power_settings(device, dw_24ghz, dw_5ghz, disc_beacon_interval=None,
+    num_ss_in_disc=None, enable_dw_early_term=None):
   """Configure device's discovery window (DW) values to the specified values -
   whether the device is in interactive or non-interactive mode.
 
   Args:
     dw_24ghz: DW interval in the 2.4GHz band.
     dw_5ghz: DW interval in the 5GHz band.
+    disc_beacon_interval: The discovery beacon interval (in ms). If None then
+                          not set.
+    num_ss_in_disc: Number of spatial streams to use for discovery. If None then
+                    not set.
+    enable_dw_early_term: If True then enable early termination of the DW. If
+                          None then not set.
   """
-  configure_dw(device, is_default=True, is_24_band=True, value=dw_24ghz)
-  configure_dw(device, is_default=True, is_24_band=False, value=dw_5ghz)
-  configure_dw(device, is_default=False, is_24_band=True, value=dw_24ghz)
-  configure_dw(device, is_default=False, is_24_band=False, value=dw_5ghz)
+  configure_power_setting(device, "default", "dw_24ghz", dw_24ghz)
+  configure_power_setting(device, "default", "dw_5ghz", dw_5ghz)
+  configure_power_setting(device, "inactive", "dw_24ghz", dw_24ghz)
+  configure_power_setting(device, "inactive", "dw_5ghz", dw_5ghz)
+
+  if disc_beacon_interval is not None:
+    configure_power_setting(device, "default", "disc_beacon_interval_ms",
+                            disc_beacon_interval)
+    configure_power_setting(device, "inactive", "disc_beacon_interval_ms",
+                            disc_beacon_interval)
+
+  if num_ss_in_disc is not None:
+    configure_power_setting(device, "default", "num_ss_in_discovery",
+                            num_ss_in_disc)
+    configure_power_setting(device, "inactive", "num_ss_in_discovery",
+                            num_ss_in_disc)
+
+  if enable_dw_early_term is not None:
+    configure_power_setting(device, "default", "enable_dw_early_term",
+                            enable_dw_early_term)
+    configure_power_setting(device, "inactive", "enable_dw_early_term",
+                            enable_dw_early_term)
 
 def create_discovery_config(service_name,
                           d_type,
