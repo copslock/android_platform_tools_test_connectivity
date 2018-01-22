@@ -117,7 +117,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         return True
 
-    @test_tracker_info(uuid="345e6ae9-4e9f-45e6-86a1-b661a84b6293")
+    @test_tracker_info(uuid="8abebda7-6646-4180-a37d-2f0acca63b64")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_to_video_long(self):
         """ Test VT<->VT call functionality.
@@ -608,8 +608,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
             call_id_requester, EVENT_VIDEO_SESSION_EVENT)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
             call_id_responder, EVENT_VIDEO_SESSION_EVENT)
-        self.log.info(
-            "Put In-Call UI on {} to background.".format(ad_requester.serial))
+        self.log.info("Put In-Call UI on {} to background.".format(
+            ad_requester.serial))
         ad_requester.droid.showHomeScreen()
         try:
             event_on_responder = ad_responder.ed.pop_event(
@@ -647,8 +647,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
                 VT_STATE_BIDIRECTIONAL_PAUSED, CALL_STATE_ACTIVE):
             return False
 
-        self.log.info(
-            "Put In-Call UI on {} to foreground.".format(ad_requester.serial))
+        self.log.info("Put In-Call UI on {} to foreground.".format(
+            ad_requester.serial))
         ad_requester.droid.telecomCallVideoStartListeningForEvent(
             call_id_requester, EVENT_VIDEO_SESSION_EVENT)
         ad_responder.droid.telecomCallVideoStartListeningForEvent(
@@ -1269,8 +1269,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Audio will goto earpiece in here
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
-                self.log.error(
-                    "{} Audio is not on EARPIECE.".format(ad.serial))
+                self.log.error("{} Audio is not on EARPIECE.".format(
+                    ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
@@ -1298,8 +1298,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Audio will goto earpiece in here
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
-                self.log.error(
-                    "{} Audio is not on EARPIECE.".format(ad.serial))
+                self.log.error("{} Audio is not on EARPIECE.".format(
+                    ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
@@ -1670,9 +1670,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Check if Conf Call is currently active
         if ads[0].droid.telecomCallGetCallState(
                 call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                           format(call_conf_id, ads[
-                               0].droid.telecomCallGetCallState(call_conf_id)))
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id,
+                    ads[0].droid.telecomCallGetCallState(call_conf_id)))
             return False
 
         self.log.info(
@@ -1688,8 +1689,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[1]], False):
             return False
 
-        if not (hangup_call(self.log, ads[2]) and
-                hangup_call(self.log, ads[0])):
+        if not (hangup_call(self.log, ads[2])
+                and hangup_call(self.log, ads[0])):
             self.log.error("Failed to clean up remaining calls")
             return False
         return True
@@ -1731,14 +1732,14 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
         if (CALL_PROPERTY_CONFERENCE not in ads[0]
                 .droid.telecomCallGetProperties(call_conf_id)):
-            self.log.error("Conf call id properties wrong: {}".format(ads[
-                0].droid.telecomCallGetProperties(call_conf_id)))
+            self.log.error("Conf call id properties wrong: {}".format(
+                ads[0].droid.telecomCallGetProperties(call_conf_id)))
             return False
 
         if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
                 .droid.telecomCallGetCapabilities(call_conf_id)):
-            self.log.error("Conf call id capabilities wrong: {}".format(ads[
-                0].droid.telecomCallGetCapabilities(call_conf_id)))
+            self.log.error("Conf call id capabilities wrong: {}".format(
+                ads[0].droid.telecomCallGetCapabilities(call_conf_id)))
             return False
 
         if (call_ab_id in calls) or (call_ac_id in calls):
@@ -1752,9 +1753,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # Check if Conf Call is currently active
         if ads[0].droid.telecomCallGetCallState(
                 call_conf_id) != CALL_STATE_ACTIVE:
-            self.log.error("Call_id:{}, state:{}, expected: STATE_ACTIVE".
-                           format(call_conf_id, ads[
-                               0].droid.telecomCallGetCallState(call_conf_id)))
+            self.log.error(
+                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
+                    call_conf_id,
+                    ads[0].droid.telecomCallGetCallState(call_conf_id)))
             return False
 
         if not hangup_call(self.log, ads[1]):
@@ -1768,8 +1770,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         if not verify_incall_state(self.log, [ads[1]], False):
             return False
 
-        if not (hangup_call(self.log, ads[2]) and
-                hangup_call(self.log, ads[0])):
+        if not (hangup_call(self.log, ads[2])
+                and hangup_call(self.log, ads[0])):
             self.log.error("Failed to clean up remaining calls")
             return False
 
@@ -2089,10 +2091,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ab, ads[1],
-                get_call_id_in_video_state(self.log, ads[1],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ab, ads[1],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[1],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(self.log, ads[1],
@@ -2159,8 +2161,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         return self._test_call_video_add_mt_voice_swap_downgrade_merge_drop(
             True)
 
-    def _test_call_video_add_mt_voice_swap_downgrade_merge_drop(self,
-                                                                use_cep=False):
+    def _test_call_video_add_mt_voice_swap_downgrade_merge_drop(
+            self, use_cep=False):
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
@@ -2242,10 +2244,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step5: Disable camera on PhoneA and PhoneB.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ab, ads[1],
-                get_call_id_in_video_state(self.log, ads[1],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ab, ads[1],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[1],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(self.log, ads[1],
@@ -2371,10 +2373,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ac, ads[2],
-                get_call_id_in_video_state(self.log, ads[2],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ac, ads[2],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[2],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(self.log, ads[2],
@@ -2502,10 +2504,10 @@ class TelLiveVideoTest(TelephonyBaseTest):
             return False
 
         self.log.info("Step4: Disable camera on PhoneA and PhoneC.")
-        if not video_call_downgrade(
-                self.log, ads[0], call_id_video_ac, ads[2],
-                get_call_id_in_video_state(self.log, ads[2],
-                                           VT_STATE_BIDIRECTIONAL)):
+        if not video_call_downgrade(self.log, ads[0], call_id_video_ac, ads[2],
+                                    get_call_id_in_video_state(
+                                        self.log, ads[2],
+                                        VT_STATE_BIDIRECTIONAL)):
             self.log.error("Failed to disable video on PhoneA.")
             return False
         if not video_call_downgrade(self.log, ads[2],
@@ -2564,8 +2566,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
             if wait_for_video_enabled(self.log, ads[0],
                                       MAX_WAIT_TIME_VOLTE_ENABLED):
                 self.log.error(
-                    "{} failed to <report vt enabled false> for {}s."
-                    .format(ads[0].serial, MAX_WAIT_TIME_VOLTE_ENABLED))
+                    "{} failed to <report vt enabled false> for {}s.".format(
+                        ads[0].serial, MAX_WAIT_TIME_VOLTE_ENABLED))
                 return False
             self.log.info(
                 "Step4 Attempt to make VT call, verify call is AUDIO_ONLY.")
