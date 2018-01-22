@@ -51,11 +51,6 @@ class WifiManagerTest(WifiBaseTest):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        # If running in a setup with attenuators, set attenuation on all
-        # channels to zero.
-        if getattr(self, "attenuators", []):
-            for a in self.attenuators:
-                a.set_atten(0)
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address"
@@ -75,7 +70,8 @@ class WifiManagerTest(WifiBaseTest):
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network = self.open_network[0]["2g"]
-        self.iperf_server.start()
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -87,7 +83,8 @@ class WifiManagerTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
 
     def teardown_class(self):
-        self.iperf_server.stop()
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -367,6 +364,53 @@ class WifiManagerTest(WifiBaseTest):
         self.log.debug("Scan results: %s", wifi_results)
         ssid = self.open_network[WifiEnums.SSID_KEY]
         wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, wifi_results)
+
+    @test_tracker_info(uuid="3ea09efb-6921-429e-afb1-705ef5a09afa")
+    def test_scan_with_wifi_off_and_location_scan_on(self):
+        """Put wifi in scan only mode"""
+        acts.utils.set_location_service(self.dut, True)
+        self.dut.droid.wifiScannerToggleAlwaysAvailable(True)
+        msg = "Failed to turn on location service's scan."
+        asserts.assert_true(self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)
+        wutils.wifi_toggle_state(self.dut, False)
+
+        """Test wifi connection scan can start and find expected networks."""
+        self.log.debug("Start regular wifi scan.")
+        wutils.start_wifi_connection_scan(self.dut)
+        wifi_results = self.dut.droid.wifiGetScanResults()
+        self.log.debug("Scan results: %s", wifi_results)
+        ssid = self.open_network[WifiEnums.SSID_KEY]
+        wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, wifi_results)
+
+        """Turn off location scan and wifi on at the end of the test"""
+        wutils.wifi_toggle_state(self.dut, True)
+        self.dut.droid.wifiScannerToggleAlwaysAvailable(False)
+        msg = "Failed to turn off location service's scan."
+        asserts.assert_true(not self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)
+        acts.utils.set_location_service(self.dut, False)
+
+    @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
+    def test_scan_with_wifi_off_and_location_scan_off(self):
+        """Turn off wifi and location scan"""
+        acts.utils.set_location_service(self.dut, True)
+        self.dut.droid.wifiScannerToggleAlwaysAvailable(False)
+        msg = "Failed to turn off location service's scan."
+        asserts.assert_true(not self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)
+        wutils.wifi_toggle_state(self.dut, False)
+
+        """Test wifi connection scan should fail."""
+        self.log.debug("Start regular wifi scan.")
+        self.dut.droid.wifiStartScan()
+        try:
+            self.dut.ed.pop_event("WifiManagerScanResultsAvailable", 60)
+        except queue.Empty:
+            self.log.debug("Wifi scan results not received.")
+        else:
+            asserts.fail("Wi-Fi scan results received")
+
+        """Turn wifi on at the end of the test"""
+        wutils.wifi_toggle_state(self.dut, True)
+        acts.utils.set_location_service(self.dut, False)
 
     @test_tracker_info(uuid="a4ad9930-a8fa-4868-81ed-a79c7483e502")
     def test_add_network(self):
