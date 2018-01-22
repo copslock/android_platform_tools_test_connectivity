@@ -828,7 +828,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 client.log.info("client internet connection state is %s",
                                 client_status)
         if not verify_http_connection(
-                self.log, self.provider, retry=0,
+                self.log, self.provider, retry=3,
                 expected_state=provider_status):
             self.provider.log.error(
                 "provider internet connection is not %s" % provider_status)
