@@ -51,11 +51,6 @@ class WifiManagerTest(WifiBaseTest):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        # If running in a setup with attenuators, set attenuation on all
-        # channels to zero.
-        if getattr(self, "attenuators", []):
-            for a in self.attenuators:
-                a.set_atten(0)
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address"
@@ -75,7 +70,8 @@ class WifiManagerTest(WifiBaseTest):
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network = self.open_network[0]["2g"]
-        self.iperf_server.start()
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -87,7 +83,8 @@ class WifiManagerTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
 
     def teardown_class(self):
-        self.iperf_server.stop()
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
