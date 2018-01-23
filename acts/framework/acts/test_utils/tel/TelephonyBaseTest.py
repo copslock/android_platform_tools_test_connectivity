@@ -283,6 +283,8 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phones_idle(self.log, self.android_devices)
         else:
             ensure_phones_default_state(self.log, self.android_devices)
+        for ad in self.android_devices:
+            ad.ed.clear_all_events()
 
     def teardown_test(self):
         return True
