@@ -5392,10 +5392,11 @@ def power_off_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, *verify_args):
+    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, 120, 10, *verify_args):
+        ad.log.info("SIM slot is powered off, SIM state is UNKNOWN")
         return True
     else:
-        ad.log.error("Fail to power of SIM slot")
+        ad.log.error("Fail to power off SIM slot")
         return False
 
 
@@ -5413,8 +5414,10 @@ def power_on_sim(ad, sim_slot_id=None):
         ad.log.error(e)
         return False
     if wait_for_state(verify_func, SIM_STATE_READY, *verify_args):
+        ad.log.info("SIM slot is powered on, SIM state is READY")
         return True
     elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
+        ad.log.info("SIM is locked, unlocking it")
         unlock_sim()
     else:
         ad.log.error("Fail to power on SIM slot")
