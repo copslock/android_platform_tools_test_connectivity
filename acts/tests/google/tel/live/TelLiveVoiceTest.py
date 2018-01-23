@@ -1268,7 +1268,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
 
-    @test_tracker_info(uuid="7049de19-3abf-48df-868f-18d0af829393")
+    @test_tracker_info(uuid="a7293d6c-0fdb-4842-984a-e4c6395fd41d")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_epdg_to_epdg_long_wfc_wifi_preferred(self):
         """ WiFi Preferred, WiFi calling to WiFi Calling test
@@ -1332,7 +1332,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
 
-    @test_tracker_info(uuid="2b926e4a-f493-41fa-98af-20d25ec132bb")
+    @test_tracker_info(uuid="3c751d79-7159-4407-a63c-96f835dd6cb0")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_epdg_to_epdg_long_apm_wfc_wifi_preferred(self):
         """ Airplane + WiFi Preferred, WiFi calling to WiFi Calling test
@@ -1364,7 +1364,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
 
-    @test_tracker_info(uuid="30d5d573-043f-4d8b-98e0-e7f7bc9b8d6f")
+    @test_tracker_info(uuid="9deab765-e2da-4826-bae8-ba8755551a1b")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_csfb_3g_to_csfb_3g_long(self):
         """ CSFB 3G to CSFB 3G call test
@@ -2734,7 +2734,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
 
-    @test_tracker_info(uuid="6e24e64f-aa0e-4101-89ed-4cc30c738c7e")
+    @test_tracker_info(uuid="947f3178-735b-4ac2-877c-a06a94972457")
     @TelephonyBaseTest.tel_test_wrap
     def test_call_2g_to_2g_long(self):
         """ Test 2g<->2g call functionality.
