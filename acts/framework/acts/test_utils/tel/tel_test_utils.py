@@ -92,6 +92,7 @@ from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
@@ -838,7 +839,7 @@ def wait_for_ringing_call_for_subscription(
         False: for errors
     """
     if not event_tracking_started:
-        ad.ed.clear_all_events()
+        ad.ed.clear_events(EventCallStateChanged)
         ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     event_ringing = None
     for i in range(retries):
@@ -893,7 +894,7 @@ def wait_for_call_offhook_event(
         False: if call offhook event is not received.
     """
     if not event_tracking_started:
-        ad.ed.clear_all_events()
+        ad.ed.clear_events(EventCallStateChanged)
         ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     try:
         ad.ed.wait_for_event(
@@ -939,7 +940,7 @@ def wait_and_answer_call_for_subscription(
         True: if incoming call is received and answered successfully.
         False: for errors
     """
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     try:
         if not _wait_for_droid_in_state(
@@ -1031,7 +1032,7 @@ def wait_and_reject_call_for_subscription(log,
         ad.log.error("Could not reject a call: phone never rang.")
         return False
 
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     if reject is True:
         # Delay between ringing and reject.
@@ -1080,7 +1081,7 @@ def hangup_call(log, ad):
     # short circuit in case no calls are active
     if not ad.droid.telecomIsInCall():
         return True
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
     ad.log.info("Hangup call.")
     ad.droid.telecomEndCall()
@@ -1195,7 +1196,7 @@ def initiate_call(log,
     Returns:
         result: if phone call is placed successfully.
     """
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventCallStateChanged)
     sub_id = get_outgoing_voice_sub_id(ad)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
 
@@ -1488,7 +1489,7 @@ def call_reject_leave_message_for_subscription(
 
         # ensure that all internal states are updated in telecom
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ad_callee.ed.clear_all_events()
+        ad_callee.ed.ad.ed.clear_events(EventCallStateChanged)
 
         if verify_caller_func and not verify_caller_func(log, ad_caller):
             raise _CallSequenceException("Caller not in correct state!")
@@ -2398,7 +2399,7 @@ def wait_for_cell_data_connection_for_subscription(
     data_state = ad.droid.telephonyGetDataConnectionState()
     if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
         return True
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventDataConnectionStateChanged)
     ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
         sub_id)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
@@ -2517,7 +2518,7 @@ def _wait_for_nw_data_connection(
         True if success.
         False if failed.
     """
-    ad.ed.clear_all_events()
+    ad.ed.clear_events(EventConnectivityChanged)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
     try:
         cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()
@@ -3437,8 +3438,8 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
-        ad_rx.ed.clear_all_events()
-        ad_tx.ed.clear_all_events()
+        ad_rx.ed.clear_events(EventSmsReceived)
+        ad_tx.ed.clear_events(EventSmsSentSuccess)
         ad_rx.droid.smsStartTrackingIncomingSmsMessage()
         time.sleep(0.1) #sleep 100ms after starting event tracking
         try:
@@ -3554,10 +3555,10 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
         ad_tx.log.info(
             "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.ed.clear_all_events()
+        ad_tx.ed.clear_events(EventMmsSentSuccess)
+        ad_rx.ed.clear_events(EventMmsDownloaded)
         ad_rx.droid.smsStartTrackingIncomingMmsMessage()
         try:
-            ad_tx.ensure_screen_on()
             ad_tx.droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
@@ -5367,8 +5368,8 @@ def print_radio_info(ad, extra_msg=""):
 
 def wait_for_state(state_check_func,
                    state,
-                   max_wait_time=60,
-                   checking_interval=10,
+                   max_wait_time=MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                   checking_interval=WAIT_TIME_BETWEEN_STATE_CHECK ,
                    *args,
                    **kwargs):
     while max_wait_time >= 0:
@@ -5392,10 +5393,13 @@ def power_off_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, 120, 10, *verify_args):
+    if wait_for_state(verify_func, SIM_STATE_UNKNOWN,
+                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
         ad.log.info("SIM slot is powered off, SIM state is UNKNOWN")
         return True
     else:
+        ad.log.info("SIM state = %s", verify_func(*verify_args))
         ad.log.error("Fail to power off SIM slot")
         return False
 
@@ -5413,7 +5417,9 @@ def power_on_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_READY, *verify_args):
+    if wait_for_state(verify_func, SIM_STATE_READY,
+                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
         ad.log.info("SIM slot is powered on, SIM state is READY")
         return True
     elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
