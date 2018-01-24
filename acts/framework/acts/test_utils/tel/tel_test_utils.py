@@ -92,6 +92,7 @@ from acts.test_utils.tel.tel_defines import VOICEMAIL_DELETE_DIGIT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_1XRTT_VOICE_ATTACH
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
@@ -5367,8 +5368,8 @@ def print_radio_info(ad, extra_msg=""):
 
 def wait_for_state(state_check_func,
                    state,
-                   max_wait_time=60,
-                   checking_interval=10,
+                   max_wait_time=MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                   checking_interval=WAIT_TIME_BETWEEN_STATE_CHECK ,
                    *args,
                    **kwargs):
     while max_wait_time >= 0:
@@ -5392,10 +5393,13 @@ def power_off_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_UNKNOWN, 120, 10, *verify_args):
+    if wait_for_state(verify_func, SIM_STATE_UNKNOWN,
+                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
         ad.log.info("SIM slot is powered off, SIM state is UNKNOWN")
         return True
     else:
+        ad.log.info("SIM state = %s", verify_func(*verify_args))
         ad.log.error("Fail to power off SIM slot")
         return False
 
@@ -5413,7 +5417,9 @@ def power_on_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_READY, *verify_args):
+    if wait_for_state(verify_func, SIM_STATE_READY,
+                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
         ad.log.info("SIM slot is powered on, SIM state is READY")
         return True
     elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
