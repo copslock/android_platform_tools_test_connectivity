@@ -29,6 +29,9 @@ MAX_WAIT_TIME_CALL_DROP = 60
 # Wait time between state check retry
 WAIT_TIME_BETWEEN_STATE_CHECK = 5
 
+# Max wait time for state change
+MAX_WAIT_TIME_FOR_STATE_CHANGE = 60
+
 # Max time to wait after caller make a call and before
 # callee start ringing
 MAX_WAIT_TIME_CALLEE_RINGING = 90

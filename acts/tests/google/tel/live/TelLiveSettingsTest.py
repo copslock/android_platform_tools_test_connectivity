@@ -37,6 +37,8 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import flash_radio
+from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import power_off_sim
@@ -1364,7 +1366,9 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                          self.ad.droid.telephonyGetSubscriptionCarrierId())
         self.ad.log.info("carrier_name = %s",
                          self.ad.droid.telephonyGetSubscriptionCarrierName())
-        if not power_off_sim(self.ad):
+        sub_id = get_outgoing_voice_sub_id(self.ad)
+        slot_index = get_slot_index_from_subid(self.log, self.ad, sub_id)
+        if not power_off_sim(self.ad, slot_index):
             result = False
         else:
             carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
@@ -1375,7 +1379,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 carrier_id, carrier_name)
             if carrier_id != -1 or carrier_name:
                 result = False
-        if not power_on_sim(self.ad):
+        if not power_on_sim(self.ad, slot_index):
             abort_all_tests(self.ad.log, "Fail to power up SIM")
             result = False
         else:
