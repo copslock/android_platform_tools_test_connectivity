@@ -692,6 +692,11 @@ def start_wifi_connection_scan(ad):
     ad.droid.wifiStartScan()
     try:
         ad.ed.pop_event("WifiManagerScanResultsAvailable", 60)
+        try:
+            ad.ed.pop_event("WifiManagerScanFailure", 60)
+            asserts.fail("Wi-Fi scan failed!")
+        except:
+            pass
     except Empty:
         asserts.fail("Wi-Fi results did not become available within 60s.")
 
