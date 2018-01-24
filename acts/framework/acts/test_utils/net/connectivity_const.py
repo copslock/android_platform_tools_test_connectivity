@@ -53,6 +53,10 @@ VPN_STATE_FAILED = 5
 # This is a random value as of now
 VPN_TIMEOUT = 15
 
+# Connectiivty Manager constants
+TYPE_MOBILE = 0
+TYPE_WIFI = 1
+
 # Constants for VpnProfile
 class VpnProfile(object):
     """ This class contains all the possible
