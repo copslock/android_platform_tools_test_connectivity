@@ -2518,7 +2518,7 @@ def _wait_for_nw_data_connection(
         True if success.
         False if failed.
     """
-    ad.ed.ad.ed.clear_events(EventConnectivityChanged)
+    ad.ed.clear_events(EventConnectivityChanged)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
     try:
         cur_data_connection_state = ad.droid.connectivityNetworkIsConnected()

@@ -125,8 +125,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.wifi_network_pass = self.user_params.get(
             "wifi_network_pass") or self.user_params.get(
                 "wifi_network_pass_2g")
-        self.provider = self.android_devices[-1]
-        self.clients = self.android_devices[:-1]
+        self.provider = self.android_devices[0]
+        self.clients = self.android_devices[1:]
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -1284,17 +1284,31 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
-        if not self._test_setup_tethering(RAT_4G):
-            self.log.error("Verify 4G Internet access failed.")
-            return False
+        num = len(self.android_devices)
+        for idx, ad in enumerate(self.android_devices):
+            self.provider = self.android_devices[idx]
+            self.clients = self.android_devices[:idx] + self.android_devices[
+                                                        idx+1:]
+            if not self._test_setup_tethering(RAT_4G):
+                ad.log.error("Verify 4G Internet access failed.")
+                continue
 
-        return wifi_tethering_setup_teardown(
-            self.log,
-            self.provider, [self.clients[0]],
-            ap_band=WIFI_CONFIG_APBAND_5G,
-            check_interval=10,
-            check_iteration=10)
+            if not self.provider.droid.carrierConfigIsTetheringModeAllowed(
+                TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
+                ad.log.info("Tethering is not entitled")
+                continue
+
+            if wifi_tethering_setup_teardown(self.log, self.provider,
+                                             [self.clients[0]],
+                                             ap_band=WIFI_CONFIG_APBAND_5G,
+                                             check_interval=10,
+                                             check_iteration=10):
+                return True
+            elif idx == num - 1:
+                self.log.error("Tethering is not working on all devices")
+                return False
+        self.log.error("Faile to enable tethering on all devices")
+        return False
 
     @test_tracker_info(uuid="59be8d68-f05b-4448-8584-de971174fd81")
     @TelephonyBaseTest.tel_test_wrap
@@ -1310,7 +1324,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
         if not self._test_setup_tethering(RAT_3G):
             self.log.error("Verify 3G Internet access failed.")
             return False
@@ -1336,7 +1349,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
         if not self._test_setup_tethering(RAT_3G):
             self.log.error("Verify 3G Internet access failed.")
             return False
@@ -1362,7 +1374,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        ads = self.android_devices
         if not self._test_setup_tethering(RAT_4G):
             self.log.error("Verify 4G Internet access failed.")
             return False
