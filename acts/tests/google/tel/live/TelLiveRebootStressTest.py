@@ -284,6 +284,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
+        self.number_of_devices = 2
         tel_cmd = "setprop persist.radio.enable_tel_mon user_enabled"
         if negative_test:
             tel_cmd = "setprop persist.radio.enable_tel_mon user_disabled"
@@ -369,6 +370,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """
         CHECK_INTERVAL = 10
 
+        self.number_of_devices = 2
         toggle_airplane_mode(self.log, self.dut, False)
         phone_setup_voice_general(self.log, self.ad_reference)
         fail_count = collections.defaultdict(int)
@@ -434,7 +436,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        CHECK_INTERVAL = 10
+        self.number_of_devices = 2
 
         toggle_airplane_mode(self.log, self.dut, False)
         phone_setup_voice_general(self.log, self.ad_reference)
@@ -519,6 +521,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
+        self.number_of_devices = 1
         ad = self.dut
         toggle_airplane_mode(self.log, ad, False)
         if not phone_setup_volte(self.log, ad):

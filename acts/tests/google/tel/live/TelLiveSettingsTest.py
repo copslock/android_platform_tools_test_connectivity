@@ -86,7 +86,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
         except KeyError:
             self.wifi_network_pass = None
-
+        self.number_of_devices = 1
         self.stress_test_number = self.get_stress_test_number()
 
     def _wifi_connected_enable_wfc_teardown_wfc(
@@ -1362,15 +1362,14 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if self.ad.adb.getprop("ro.build.version.release")[0] in (
                 "8", "O", "7", "N"):
             raise signals.TestSkip("Not supported in this build")
-        self.ad.log.info("carrier_id = %s",
-                         self.ad.droid.telephonyGetSubscriptionCarrierId())
-        self.ad.log.info("carrier_name = %s",
-                         self.ad.droid.telephonyGetSubscriptionCarrierName())
+        old_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+        old_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+        self.result_detail = "carrier_id = %s, carrier_name = %s" % (
+            old_carrier_id, old_carrier_name)
+        self.ad.log.info(self.result_detail)
         sub_id = get_outgoing_voice_sub_id(self.ad)
         slot_index = get_slot_index_from_subid(self.log, self.ad, sub_id)
-        if not power_off_sim(self.ad, slot_index):
-            result = False
-        else:
+        if power_off_sim(self.ad, slot_index):
             carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
             carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
             self.ad.log.info(
@@ -1386,12 +1385,16 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if not ensure_phone_subscription(self.log, self.ad):
                 self.ad.log.error("Unable to find a valid subscription!")
                 result = False
-            carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-            carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
-            self.ad.log.info(
-                "After SIM power up, carrier_id = %s, carrier_name = %s",
-                carrier_id, carrier_name)
-            if carrier_id == -1 or not carrier_name:
+            new_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+            new_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+            msg = "After SIM power up, new_carrier_id = %s, " \
+                  "new_carrier_name = %s" % (new_carrier_id, new_carrier_name)
+            if old_carrier_id != new_carrier_id or (
+                        old_carrier_name != new_carrier_name):
+                self.ad.log.error(msg)
+                self.result_detail = "%s %s" % (self.result_detail, msg)
                 result = False
+            else:
+                self.ad.log.info(msg)
         return result
 

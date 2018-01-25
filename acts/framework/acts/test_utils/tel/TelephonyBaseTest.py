@@ -17,11 +17,15 @@
     Base Class for Defining Common Telephony Test Functionality
 """
 
+import logging
 import os
+import re
 import traceback
 
 import acts.controllers.diag_logger
 
+from acts import asserts
+from acts import logger as acts_logger
 from acts.base_test import BaseTestClass
 from acts.keys import Config
 from acts.signals import TestSignal
@@ -38,6 +42,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import find_qxdm_logger_mask
 from acts.test_utils.tel.tel_test_utils import print_radio_info
+from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
@@ -58,6 +63,7 @@ class TelephonyBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
 
+        self.log_path = getattr(logging, "log_path", None)
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
@@ -65,6 +71,9 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = None
         stop_qxdm_loggers(self.log, self.android_devices)
         for ad in self.android_devices:
+            if not hasattr(ad, "init_log_path"):
+                ad.init_log_path = ad.log_path
+            ad.log_path = self.log_path
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
             ad.wakeup_screen()
@@ -90,7 +99,7 @@ class TelephonyBaseTest(BaseTestClass):
                                utils.get_current_epoch_time())
             for ad in self.android_devices:
                 ad.adb.pull(
-                    "/firmware/image/qdsp6m.qdb %s" % ad.log_path,
+                    "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
                     ignore_status=True)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
@@ -105,12 +114,14 @@ class TelephonyBaseTest(BaseTestClass):
             self.test_id = test_id
             log_string = "[Test ID] %s" % test_id
             self.log.info(log_string)
+            self.result_detail = ""
             no_crash = True
             try:
                 for ad in self.android_devices:
+                    ad.ed.clear_all_events()
+                    ad.log_path = self.log_path
                     if getattr(ad, "droid"):
                         ad.droid.logI("Started %s" % log_string)
-                # TODO: b/19002120 start QXDM Logging
                 result = fn(self, *args, **kwargs)
                 for ad in self.android_devices:
                     if getattr(ad, "droid"):
@@ -118,7 +129,13 @@ class TelephonyBaseTest(BaseTestClass):
                     new_crash = ad.check_crash_report(self.test_name,
                                                       self.begin_time, result)
                     if self.user_params.get("check_crash", True) and new_crash:
-                        ad.log.error("Find new crash reports %s", new_crash)
+                        msg = "Find new crash reports %s" % new_crash
+                        ad.log.error(msg)
+                        if self.result_detail:
+                            self.result_detail = "%s %s %s" % (
+                                self.result_detail, ad.serial, msg)
+                        else:
+                            self.result_detail = "%s %s" % (ad.serial, msg)
                         no_crash = False
                 if not result and self.user_params.get("telephony_auto_rerun"):
                     self.teardown_test()
@@ -141,15 +158,19 @@ class TelephonyBaseTest(BaseTestClass):
                         # still be considered a failure for reporting purposes.
                         self.log.info("Rerun indeterminate.")
                         result = False
-                return result and no_crash
-            except (TestSignal, TestAbortClass, TestAbortAll):
+                result = result and no_crash
+                if result:
+                    asserts.explicit_pass(self.result_detail)
+                else:
+                    asserts.fail(self.result_detail)
+            except (TestSignal, TestAbortClass, TestAbortAll) as signal:
+                signal.details = self.result_detail
                 raise
             except Exception as e:
                 self.log.error(str(e))
                 self.log.error(traceback.format_exc())
                 return False
             finally:
-                # TODO: b/19002120 stop QXDM Logging
                 for ad in self.android_devices:
                     try:
                         ad.adb.wait_for_device()
@@ -268,11 +289,19 @@ class TelephonyBaseTest(BaseTestClass):
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
+                if hasattr(ad, "init_log_path"):
+                    ad.log_path = ad.init_log_path
             return True
         except Exception as e:
             self.log.error("Failure with %s", e)
 
     def setup_test(self):
+        for ad in self.android_devices:
+            ad.ed.clear_all_events()
+            output = ad.adb.logcat("-t 1")
+            match = re.search(r"\d+-\d+\s\d+:\d+:\d+.\d+", output)
+            if match:
+                ad.test_log_begin_time = match.group(0)
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "diag_logger", None):
@@ -283,8 +312,6 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phones_idle(self.log, self.android_devices)
         else:
             ensure_phones_default_state(self.log, self.android_devices)
-        for ad in self.android_devices:
-            ad.ed.clear_all_events()
 
     def teardown_test(self):
         return True
@@ -301,6 +328,31 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_blocked(self, test_name, begin_time):
         self.on_fail(test_name, begin_time)
+
+    def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        result = BaseTestClass._ad_take_extra_logs(self, ad, test_name,
+                                                   begin_time)
+        log_begin_time = getattr(ad, "test_log_begin_time", None)\
+                         or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
+        log_path = os.path.join(self.log_path, test_name, "%s_%s.logcat" % (
+            ad.serial, begin_time))
+        try:
+            ad.adb.logcat('b all -d -t "%s" > %s' % (
+                log_begin_time, log_path), timeout=120)
+        except Exception as e:
+            ad.log.error("Failed to get logcat with error %s", e)
+            result = False
+        return result
+
+    def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report():
+            return
+        dev_num = getattr(self, "number_of_devices", None) or len(self.android_devices)
+        tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
+                 for ad in self.android_devices[:dev_num]]
+        tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
+                      for ad in self.android_devices[:dev_num]])
+        run_multithread_func(self.log, tasks)
 
     def _block_all_test_cases(self, tests):
         """Over-write _block_all_test_case in BaseTestClass."""

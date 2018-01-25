@@ -128,6 +128,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
         self.tcpdump_proc = [None, None]
+        self.number_of_devices = 2
 
     """ Tests Begin """
 
@@ -587,6 +588,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             self.tcpdump_proc[1] = start_adb_tcpdump(ads[1], self.test_name)
@@ -596,6 +598,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                           wifi_ssid, wifi_pwd))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
+                result = False
                 return False
 
             ad_ping = ads[0]
@@ -611,21 +614,22 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
             if not results[1]:
                 self.log.error("Call setup failed in active ICMP transfer.")
-                return False
             if results[0]:
                 self.log.info(
                     "ICMP transfer succeeded with parallel phone call.")
-                return True
             else:
                 self.log.error(
                     "ICMP transfer failed with parallel phone call.")
-                return False
+            result = all(results)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
             if self.tcpdump_proc[1] is not None:
-                stop_adb_tcpdump(ads[1], self.tcpdump_proc[1], True)
+                stop_adb_tcpdump(ads[1], self.tcpdump_proc[1], not result,
+                                 self.test_name)
                 self.tcpdump_proc[1] = None
 
     @test_tracker_info(uuid="a4a043c0-f4ba-4405-9262-42c752cc4487")
@@ -676,6 +680,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             self.tcpdump_proc[1] = start_adb_tcpdump(ads[1], self.test_name)
@@ -687,18 +692,22 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                        self.wifi_network_pass))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
+                result = False
                 return False
 
-            return two_phone_call_short_seq(self.log, ads[0], None,
+            result = two_phone_call_short_seq(self.log, ads[0], None,
                                             is_phone_in_call_not_iwlan, ads[1],
                                             None, is_phone_in_call_not_iwlan,
                                             None, WAIT_TIME_IN_CALL_FOR_IMS)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
             if self.tcpdump_proc[1] is not None:
-                stop_adb_tcpdump(ads[1], self.tcpdump_proc[1], True)
+                stop_adb_tcpdump(ads[1], self.tcpdump_proc[1], not result,
+                                 self.test_name)
                 self.tcpdump_proc[1] = None
 
     @test_tracker_info(uuid="0d63c250-d9e7-490c-8c48-0a6afbad5f88")
@@ -766,6 +775,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             tasks = [(phone_setup_iwlan,
@@ -774,15 +784,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_volte, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_volte, is_phone_in_call_volte, None,
                 WAIT_TIME_IN_CALL_FOR_IMS)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="6e0630a9-63b2-4ea1-8ec9-6560f001905c")
@@ -799,6 +812,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             tasks = [(phone_setup_iwlan,
@@ -807,15 +821,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_volte, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_volte, is_phone_in_call_volte, None,
                 WAIT_TIME_IN_CALL_FOR_IMS)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="51077985-2229-491f-9a54-1ff53871758c")
@@ -832,6 +849,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             tasks = [(phone_setup_iwlan,
@@ -840,15 +858,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_volte, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_volte, is_phone_in_call_volte, None,
                 WAIT_TIME_IN_CALL_FOR_IMS)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="fff9edcd-1ace-4f2d-a09b-06f3eea56cca")
@@ -865,6 +886,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             tasks = [(phone_setup_iwlan,
@@ -873,15 +895,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_volte, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_volte, is_phone_in_call_volte, None,
                 WAIT_TIME_IN_CALL_FOR_IMS)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="8591554e-4e38-406c-97bf-8921d5329c47")
@@ -898,6 +923,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -908,14 +934,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_csfb, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_csfb, is_phone_in_call_csfb, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="9711888d-5b1e-4d05-86e9-98f94f46098b")
@@ -932,6 +961,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -942,14 +972,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_csfb, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_csfb, is_phone_in_call_csfb, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="902c96a4-858f-43ff-bd56-6d7d27004320")
@@ -966,6 +999,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -976,14 +1010,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_csfb, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_csfb, is_phone_in_call_csfb, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="362a5396-ebda-4706-a73a-d805e5028fd7")
@@ -1000,6 +1037,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -1010,14 +1048,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_csfb, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_csfb, is_phone_in_call_csfb, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="647bb859-46bc-4e3e-b6ab-7944d3bbcc26")
@@ -1034,6 +1075,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -1044,14 +1086,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="3688ea1f-a52d-4a35-9df4-d5ed0985e49b")
@@ -1068,6 +1113,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -1078,14 +1124,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                result = False
+                return result
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="f4efc821-fbaf-4ec2-b89b-5a47354344f0")
@@ -1102,6 +1151,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -1112,14 +1162,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
+                result = False
                 return False
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="2b1345b7-3b62-44bd-91ad-9c5a4925b0e1")
@@ -1136,6 +1189,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        result = True
         try:
             self.tcpdump_proc[0] = start_adb_tcpdump(ads[0], self.test_name)
             # Turn OFF WiFi for Phone B
@@ -1146,14 +1200,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
+                result = False
                 return False
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+            return result
         finally:
             if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], True)
+                stop_adb_tcpdump(ads[0], self.tcpdump_proc[0], not result,
+                                 self.test_name)
                 self.tcpdump_proc[0] = None
 
     @test_tracker_info(uuid="7b3fea22-114a-442e-aa12-dde3b6001681")
