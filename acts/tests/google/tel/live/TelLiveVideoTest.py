@@ -98,6 +98,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -133,6 +134,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -167,6 +169,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -202,6 +205,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -247,6 +251,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -294,6 +299,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -351,6 +357,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -451,6 +458,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -484,6 +492,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -696,6 +705,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_to_video_mo_to_backgroundpause_foregroundresume(self):
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -722,6 +732,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_call_video_to_video_mt_to_backgroundpause_foregroundresume(self):
         ads = self.android_devices
+        self.number_of_devices = 2
         tasks = [(phone_setup_video, (self.log, ads[0])), (phone_setup_video,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -752,6 +763,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Hangup on PhoneC.
         Verify all phones not in call.
         """
+        self.number_of_devices = 3
         if not hangup_call(self.log, ads[1]):
             return False
         time.sleep(WAIT_TIME_IN_CALL)
@@ -774,6 +786,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Accept the call on Phone_C
         Verify both calls remain active.
         """
+        self.number_of_devices = 3
         # This test case is not supported by VZW.
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
@@ -845,6 +858,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         Accept the call on Phone_A
         Verify both calls remain active.
         """
+        self.number_of_devices = 3
         ads = self.android_devices
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
@@ -918,6 +932,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         # This test case is not supported by VZW.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -993,6 +1008,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # TODO (b/21437650):
         # Test will fail. After established 2nd call ~15s, Phone C will drop call.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1070,6 +1086,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         End Voice call on PhoneA.
         """
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
                                                            (self.log, ads[2]))]
@@ -1181,6 +1198,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
                                                            (self.log, ads[2]))]
@@ -1327,6 +1345,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         # This test case is not supported by VZW.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1401,6 +1420,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
         # Phone C will drop call.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1487,6 +1507,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
         # Phone C will drop call.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1570,6 +1591,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         """
         # This test case is not supported by VZW.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1647,6 +1669,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             True if succeed;
             False if failed.
         """
+        self.number_of_devices = 3
         self.log.info(
             "Merge - Step1: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
@@ -1710,6 +1733,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             call_id for conference
         """
 
+        self.number_of_devices = 2
         self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
         time.sleep(WAIT_TIME_IN_CALL)
@@ -1817,6 +1841,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
             self, use_cep=False):
         # This test case is not supported by VZW.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -1913,6 +1938,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
     def _test_call_volte_add_mt_video_accept_as_voice_merge_drop(
             self, use_cep=False):
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -2012,6 +2038,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
     def _test_call_video_add_mo_voice_swap_downgrade_merge_drop(self, use_cep):
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
                                                            (self.log, ads[2]))]
@@ -2164,6 +2191,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
     def _test_call_video_add_mt_voice_swap_downgrade_merge_drop(
             self, use_cep=False):
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_video, (self.log, ads[1])), (phone_setup_volte,
                                                            (self.log, ads[2]))]
@@ -2312,6 +2340,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
 
     def _test_call_volte_add_mo_video_downgrade_merge_drop(self, use_cep):
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
@@ -2443,6 +2472,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         # TODO: b/21437650 Test will fail. After established 2nd call ~15s,
         # Phone C will drop call.
         ads = self.android_devices
+        self.number_of_devices = 3
         tasks = [(phone_setup_video, (self.log, ads[0])),
                  (phone_setup_volte, (self.log, ads[1])), (phone_setup_video,
                                                            (self.log, ads[2]))]
