@@ -1068,8 +1068,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             result = False
         return result
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="135301ea-6d00-4233-98fd-cda706d61eb2")
+    @TelephonyBaseTest.tel_test_wrap
     def test_ims_factory_reset_to_volte_on_wfc_off(self):
         """Test VOLTE is enabled WFC is disabled after ims factory reset.
 
@@ -1100,8 +1100,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                     if not self.verify_volte_on_wfc_off(): result = False
         return result
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5318bf7a-4210-4b49-b361-9539d28f3e38")
+    @TelephonyBaseTest.tel_test_wrap
     def test_ims_factory_reset_to_volte_off_wfc_off(self):
         """Test VOLTE is enabled WFC is disabled after ims factory reset.
 
@@ -1132,8 +1132,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                     if not self.verify_volte_off_wfc_off(): result = False
         return result
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c6149bd6-7080-453d-af37-1f9bd350a764")
+    @TelephonyBaseTest.tel_test_wrap
     def test_telephony_factory_reset(self):
         """Test VOLTE is enabled WFC is disabled after telephony factory reset.
 
@@ -1150,8 +1150,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         self.ad.droid.telephonyFactoryReset()
         return self.verify_default_telephony_setting()
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="ce60740f-4d8e-4013-a7cf-65589e8a0893")
+    @TelephonyBaseTest.tel_test_wrap
     def test_factory_reset_by_wipe_to_volte_on_wfc_off(self):
         """Verify the network setting after factory reset by wipe.
 
@@ -1175,8 +1175,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if not self.verify_default_telephony_setting(): result = False
         return result
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="44e9291e-949b-4db1-a209-c6d41552ec27")
+    @TelephonyBaseTest.tel_test_wrap
     def test_factory_reset_by_wipe_to_volte_off_wfc_off(self):
         """Verify the network setting after factory reset by wipe.
 
@@ -1200,8 +1200,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if not self.verify_default_telephony_setting(): result = False
         return result
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="64deba57-c1c2-422f-b771-639c95edfbc0")
+    @TelephonyBaseTest.tel_test_wrap
     def test_disable_mobile_data_always_on(self):
         """Verify mobile_data_always_on can be disabled.
 
@@ -1217,8 +1217,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return self.ad.adb.shell(
             "settings get global mobile_data_always_on") == "0"
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="56ddcd5a-92b0-46c7-9c2b-d743794efb7c")
+    @TelephonyBaseTest.tel_test_wrap
     def test_enable_mobile_data_always_on(self):
         """Verify mobile_data_always_on can be enabled.
 
@@ -1234,8 +1234,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         return "1" in self.ad.adb.shell(
             "settings get global mobile_data_always_on")
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c2cc5b66-40af-4ba6-81cb-6c44ae34cbbb")
+    @TelephonyBaseTest.tel_test_wrap
     def test_push_new_radio_or_mbn(self):
         """Verify new mdn and radio can be push to device.
 
@@ -1351,8 +1351,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                  for ad in self.android_devices]
         return multithread_func(self.log, tasks)
 
-    @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e2734d66-6111-4e76-aa7b-d3b4cbcde4f1")
+    @TelephonyBaseTest.tel_test_wrap
     def test_check_carrier_id(self):
         """Verify mobile_data_always_on can be enabled.
 
