@@ -39,6 +39,7 @@ class TelLiveNoSimTest(TelLiveEmergencyTest):
 
     def setup_test(self):
         self.expected_call_result = False
+        self.android_devices = [self.dut]
 
     """ Tests Begin """
 

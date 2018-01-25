@@ -73,6 +73,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         abort_all_tests(self.log, "There is no locked SIM")
 
     def setup_class(self):
+        self.android_devices = [self.dut]
         pass
 
     def setup_test(self):
