@@ -1031,7 +1031,8 @@ class AndroidDevice:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
             test_name = test_name or time.strftime("%m-%d-%Y-%H-%M-%S")
-            crash_log_path = os.path.join(self.log_path, test_name, "Crashes")
+            crash_log_path = os.path.join(self.log_path, test_name,
+                                          "Crashes_%s" % self.serial)
             utils.create_dir(crash_log_path)
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
@@ -1051,7 +1052,8 @@ class AndroidDevice:
             return
         qxdm_logs = self.get_file_names(log_path, begin_time=begin_time)
         if qxdm_logs:
-            qxdm_log_path = os.path.join(self.log_path, test_name, "QXDM_Logs")
+            qxdm_log_path = os.path.join(self.log_path, test_name,
+                                         "QXDM_%s" % self.serial)
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
@@ -1059,7 +1061,7 @@ class AndroidDevice:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.log_path, test_name,
-                                          "OMADM_Log")
+                                          "OMADM_%s" % self.serial)
             utils.create_dir(omadm_log_path)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
