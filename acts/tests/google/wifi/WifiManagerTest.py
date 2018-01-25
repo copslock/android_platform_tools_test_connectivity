@@ -108,10 +108,8 @@ class WifiManagerTest(WifiBaseTest):
         droid = ad.droid
         ed = ad.ed
         SSID = network[WifiEnums.SSID_KEY]
-        ed.clear_all_events()
-        wutils.start_wifi_connection_scan(ad)
-        scan_results = droid.wifiGetScanResults()
-        wutils.assert_network_in_list({WifiEnums.SSID_KEY: SSID}, scan_results)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            ad, SSID);
         wutils.wifi_connect(ad, network, num_of_tries=3)
 
     def get_connection_data(self, dut, network):
@@ -529,12 +527,11 @@ class WifiManagerTest(WifiBaseTest):
     def test_scan(self):
         """Test wifi connection scan can start and find expected networks."""
         wutils.wifi_toggle_state(self.dut, True)
-        self.log.debug("Start regular wifi scan.")
-        wutils.start_wifi_connection_scan(self.dut)
-        wifi_results = self.dut.droid.wifiGetScanResults()
-        self.log.debug("Scan results: %s", wifi_results)
+
+        """Test wifi connection scan can start and find expected networks."""
         ssid = self.open_network[WifiEnums.SSID_KEY]
-        wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, wifi_results)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid);
 
     @test_tracker_info(uuid="3ea09efb-6921-429e-afb1-705ef5a09afa")
     def test_scan_with_wifi_off_and_location_scan_on(self):
@@ -543,12 +540,9 @@ class WifiManagerTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
         """Test wifi connection scan can start and find expected networks."""
-        self.log.debug("Start regular wifi scan.")
-        wutils.start_wifi_connection_scan(self.dut)
-        wifi_results = self.dut.droid.wifiGetScanResults()
-        self.log.debug("Scan results: %s", wifi_results)
         ssid = self.open_network[WifiEnums.SSID_KEY]
-        wutils.assert_network_in_list({WifiEnums.SSID_KEY: ssid}, wifi_results)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid);
 
     @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
     def test_scan_with_wifi_off_and_location_scan_off(self):
@@ -557,7 +551,6 @@ class WifiManagerTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
         """Test wifi connection scan should fail."""
-        self.log.debug("Start regular wifi scan.")
         self.dut.droid.wifiStartScan()
         try:
             self.dut.ed.pop_event("WifiManagerScanResultsAvailable", 60)
