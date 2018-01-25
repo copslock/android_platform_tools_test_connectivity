@@ -80,10 +80,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         # use the second one as sms/mms help device, use the third one
         # as the active call help device.
         self.caller = self.android_devices[0]
-        if len(self.android_devices) > 2:
-            self.callee = self.android_devices[2]
-        else:
-            self.callee = self.android_devices[1]
+        self.callee = self.android_devices[1]
+        self.number_of_devices = 2
         self.message_lengths = (50, 160, 180)
 
     def setup_class(self):
