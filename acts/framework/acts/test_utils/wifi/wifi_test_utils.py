@@ -1005,13 +1005,8 @@ def connect_to_wifi_network(ad, network):
     Args:
         params: A tuple of network info and AndroidDevice object.
     """
-    droid = ad.droid
-    ed = ad.ed
-    SSID = network[WifiEnums.SSID_KEY]
-    ed.clear_all_events()
-    start_wifi_connection_scan(ad)
-    scan_results = droid.wifiGetScanResults()
-    assert_network_in_list({WifiEnums.SSID_KEY: SSID}, scan_results)
+    start_wifi_connection_scan_and_ensure_network_found(
+        ad, network[WifiEnums.SSID_KEY])
     wifi_connect(ad, network, num_of_tries=3)
 
 
@@ -1026,12 +1021,8 @@ def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
              False otherwise.
 
     """
-    ad.ed.clear_all_events()
-    start_wifi_connection_scan(ad)
-    scan_results = ad.droid.wifiGetScanResults()
-    assert_network_in_list({
-        WifiEnums.SSID_KEY: network_ssid
-    }, scan_results)
+    start_wifi_connection_scan_and_ensure_network_found(
+        ad, network[WifiEnums.SSID_KEY])
     wifi_connect_by_id(ad, network_id)
     connect_data = ad.droid.wifiGetConnectionInfo()
     connect_ssid = connect_data[WifiEnums.SSID_KEY]
