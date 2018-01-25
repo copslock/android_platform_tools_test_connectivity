@@ -115,50 +115,23 @@ class WifiSoftApTest(base_test.BaseTestClass):
         config[wutils.WifiEnums.PWD_KEY] = ap_password
         return config
 
-    def check_softap_in_scan_results(self, ap_ssid, max_tries=2):
-        """Check if the ap started by wifi tethering is seen in scan results.
-
-        Args:
-            ap_ssid: SSID of the ap we are looking for.
-            max_tries: Number of scans to try.
-        Returns:
-            True: if ap_ssid is found in scan results.
-            False: if ap_ssid is not found in scan results.
-        """
-        found = False
-        for num_tries in range(max_tries):
-            wutils.start_wifi_connection_scan(self.dut_client)
-            client_scan_results = self.dut_client.droid.wifiGetScanResults()
-            match_results = wutils.match_networks(
-                {wutils.WifiEnums.SSID_KEY: ap_ssid}, client_scan_results)
-            if len(match_results) > 0:
-                found = True
-                break
-        return found
-
-    def confirm_softap_in_scan_results(self, ap_ssid, max_tries=2):
+    def confirm_softap_in_scan_results(self, ap_ssid):
         """Confirm the ap started by wifi tethering is seen in scan results.
 
         Args:
             ap_ssid: SSID of the ap we are looking for.
-            max_tries: Number of scans to try.
         """
-        assert_msg = "Failed to find " + ap_ssid + " in scan results on" \
-            " the client after " + str(max_tries) + " tries"
-        asserts.assert_true(
-            self.check_softap_in_scan_results(ap_ssid, max_tries), assert_msg)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut_client, ap_ssid);
 
-    def confirm_softap_not_in_scan_results(self, ap_ssid, max_tries=2):
+    def confirm_softap_not_in_scan_results(self, ap_ssid):
         """Confirm the ap started by wifi tethering is not seen in scan results.
 
         Args:
             ap_ssid: SSID of the ap we are looking for.
-            max_tries: Number of scans to try.
         """
-        assert_msg = "Found " + ap_ssid + " in scan results on" \
-            " the client after " + str(max_tries) + " tries"
-        asserts.assert_false(
-            self.check_softap_in_scan_results(ap_ssid, max_tries), assert_msg)
+        wutils.start_wifi_connection_scan_and_ensure_network_not_found(
+            self.dut_client, ap_ssid);
 
     def check_cell_data_and_enable(self):
         """Make sure that cell data is enabled if there is a sim present.

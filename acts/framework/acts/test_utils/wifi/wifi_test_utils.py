@@ -710,11 +710,77 @@ def start_wifi_connection_scan(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    ad.ed.clear_all_events()
     ad.droid.wifiStartScan()
     try:
         ad.ed.pop_event("WifiManagerScanResultsAvailable", 60)
     except Empty:
         asserts.fail("Wi-Fi results did not become available within 60s.")
+
+
+def start_wifi_connection_scan_and_check_for_network(ad, network_ssid,
+                                                     max_tries=2):
+    """
+    Start connectivity scans & checks if the |network_ssid| is seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    Returns:
+        True: if network_ssid is found in scan results.
+        False: if network_ssid is not found in scan results.
+    """
+    for num_tries in range(max_tries):
+        start_wifi_connection_scan(ad)
+        scan_results = ad.droid.wifiGetScanResults()
+        match_results = match_networks(
+            {WifiEnums.SSID_KEY: network_ssid}, scan_results)
+        if len(match_results) > 0:
+            return True
+    return False
+
+
+def start_wifi_connection_scan_and_ensure_network_found(ad, network_ssid,
+                                                        max_tries=2):
+    """
+    Start connectivity scans & ensure the |network_ssid| is seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+    This method asserts on failure!
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    """
+    ad.log.info("Starting scans to ensure %s is present", network_ssid)
+    assert_msg = "Failed to find " + network_ssid + " in scan results" \
+        " after " + str(max_tries) + " tries"
+    asserts.assert_true(start_wifi_connection_scan_and_check_for_network(
+        ad, network_ssid, max_tries), assert_msg)
+
+
+def start_wifi_connection_scan_and_ensure_network_not_found(ad, network_ssid,
+                                                            max_tries=2):
+    """
+    Start connectivity scans & ensure the |network_ssid| is not seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+    This method asserts on failure!
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    """
+    ad.log.info("Starting scans to ensure %s is not present", network_ssid)
+    assert_msg = "Found " + network_ssid + " in scan results" \
+        " after " + str(max_tries) + " tries"
+    asserts.assert_false(start_wifi_connection_scan_and_check_for_network(
+        ad, network_ssid, max_tries), assert_msg)
 
 
 def start_wifi_background_scan(ad, scan_setting):
