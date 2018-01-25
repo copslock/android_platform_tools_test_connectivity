@@ -22,6 +22,8 @@ sox -b 16 -r 48000 -c 2 -n audio_file_2k1k_10_sec.wav synth 10 sine 2000 sine 30
 sox -b 16 -r 48000 -c 2 -n audio_file_2k1k_300_sec.wav synth 300 sine 2000 sine 3000
 
 """
+import os
+import subprocess
 import time
 
 from acts.test_decorators import test_tracker_info
@@ -43,6 +45,7 @@ class BtChameleonTest(BtFunhausBaseTest):
 
     audio_file_2k1k_10_sec = "audio_file_2k1k_10_sec.wav"
     audio_file_2k1k_300_sec = "audio_file_2k1k_300_sec.wav"
+    android_sdcard_music_path = "/sdcard/Music"
 
     def __init__(self, controllers):
         BtFunhausBaseTest.__init__(self, controllers)
@@ -130,13 +133,27 @@ class BtChameleonTest(BtFunhausBaseTest):
         TAGS: Classic, A2DP, Chameleon
         Priority: 2
         """
+        sox_call = "{}{}".format("sox -b 16 -r 48000 -c 2 -n {}".format(
+            self.audio_file_2k1k_10_sec), " synth 10 sine 2000 sine 3000")
+        subprocess.call(sox_call, shell=True)
+        sox_audio_path = "{}/{}".format(
+            os.path.dirname(os.path.realpath(self.audio_file_2k1k_10_sec)),
+            self.audio_file_2k1k_10_sec)
+        sox_audio_path = os.path.join(
+            os.path.dirname(os.path.realpath(self.audio_file_2k1k_10_sec)),
+            self.audio_file_2k1k_10_sec)
+        self.dut.adb.push("{} {}".format(sox_audio_path,
+                                         self.android_sdcard_music_path))
         output_file_prefix_name = "{}_{}".format("test_2k1k_10_sec",
                                                  time.time())
         bits_per_sample = audio_bits_per_sample_32
         rate = audio_sample_rate_48000
         record_seconds = 10  # The length in seconds for how long to record
         channel = audio_channel_mode_8
-        audio_to_play = "/sdcard/Music/{}".format(self.audio_file_2k1k_10_sec)
+        audio_to_play = "{}/{}".format(self.android_sdcard_music_path,
+                                       self.audio_file_2k1k_10_sec)
+        audio_to_play = os.path.join(self.android_sdcard_music_path,
+                                     self.audio_file_2k1k_10_sec)
         return self._orchestrate_audio_quality_test(
             output_file_prefix_name=output_file_prefix_name,
             bits_per_sample=bits_per_sample,
@@ -180,13 +197,23 @@ class BtChameleonTest(BtFunhausBaseTest):
         TAGS: Classic, A2DP, Chameleon
         Priority: 2
         """
+        sox_call = "{}{}".format("sox -b 16 -r 48000 -c 2 -n {}".format(
+            self.audio_file_2k1k_300_sec), " synth 300 sine 2000 sine 3000")
+        subprocess.call(sox_call, shell=True)
+        sox_audio_path = os.path.join(
+            os.path.dirname(os.path.realpath(self.audio_file_2k1k_300_sec)),
+            self.audio_file_2k1k_300_sec)
+        self.dut.adb.push("{} {}".format(sox_audio_path,
+                                         self.android_sdcard_music_path))
         output_file_prefix_name = "{}_{}".format("test_2k1k_300_sec.wav",
                                                  time.time())
         bits_per_sample = audio_bits_per_sample_32
         rate = audio_sample_rate_48000
         record_seconds = 300  # The length in seconds for how long to record
         channel = audio_channel_mode_8
-        audio_to_play = "/sdcard/Music/{}".format(self.audio_file_2k1k_300_sec)
+        audio_to_play = os.path.join(self.android_sdcard_music_path,
+                                     self.audio_file_2k1k_300_sec)
+
         return self._orchestrate_audio_quality_test(
             output_file_prefix_name=output_file_prefix_name,
             bits_per_sample=bits_per_sample,
