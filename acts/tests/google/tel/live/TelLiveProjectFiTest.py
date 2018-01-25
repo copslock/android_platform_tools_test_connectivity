@@ -219,7 +219,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
-        for i in range(20):
+        for _ in range(20):
             ad.send_keycode("WAKEUP")
             time.sleep(1)
             current_window = ad.get_my_current_focus_window()

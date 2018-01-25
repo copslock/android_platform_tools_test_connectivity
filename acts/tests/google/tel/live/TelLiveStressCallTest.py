@@ -60,6 +60,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         super(TelLiveStressCallTest, self).setup_class()
         self.caller = self.android_devices[0]
         self.callee = self.android_devices[1]
+        self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")

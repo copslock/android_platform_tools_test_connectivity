@@ -86,7 +86,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
         except KeyError:
             self.wifi_network_pass = None
-
+        self.number_of_devices = 1
         self.stress_test_number = self.get_stress_test_number()
 
     def _wifi_connected_enable_wfc_teardown_wfc(
@@ -1368,9 +1368,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                          self.ad.droid.telephonyGetSubscriptionCarrierName())
         sub_id = get_outgoing_voice_sub_id(self.ad)
         slot_index = get_slot_index_from_subid(self.log, self.ad, sub_id)
-        if not power_off_sim(self.ad, slot_index):
-            result = False
-        else:
+        if power_off_sim(self.ad, slot_index):
             carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
             carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
             self.ad.log.info(

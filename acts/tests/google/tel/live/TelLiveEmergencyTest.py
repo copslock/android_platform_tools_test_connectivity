@@ -39,6 +39,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.dut = self.android_devices[0]
+        self.number_of_devices = 1
         fake_number = self.user_params.get("fake_emergency_number", "800")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.wifi_network_ssid = self.user_params.get(
@@ -56,7 +57,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         reset_device_password(self.dut, None)
 
     def change_emergency_number_list(self):
-        for i in range(5):
+        for _ in range(5):
             existing = self.dut.adb.getprop("ril.ecclist")
             self.dut.log.info("Existing ril.ecclist is: %s", existing)
             if self.fake_emergency_number in existing:

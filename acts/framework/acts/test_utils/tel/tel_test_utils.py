@@ -25,6 +25,7 @@ import os
 import urllib.parse
 import time
 
+from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
@@ -5040,7 +5041,7 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
 
-    file_name = "/sdcard/tcpdump/tcpdump{}{}{}.pcap".format(
+    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (
         ad.serial, test_name, begin_time)
     ad.log.info("tcpdump file is %s", file_name)
     if mask == "all":
@@ -5053,7 +5054,7 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
     return start_standing_subprocess(cmd, 5)
 
 
-def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False):
+def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False, test_name=""):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
@@ -5064,14 +5065,16 @@ def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False):
 
     """
     ad.log.info("Stopping and pulling tcpdump if any")
-    tcpdump_file = "/sdcard/tcpdump/"
     try:
         if proc is not None:
             stop_standing_subprocess(proc)
     except Exception as e:
         ad.log.warning(e)
     if pull_tcpdump:
-        ad.adb.pull("/sdcard/tcpdump/ {}".format(ad.log_path))
+        log_path = os.path.join(ad.log_path, test_name,
+                                "TCPDUMP_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.adb.pull("/sdcard/tcpdump/. %s" % log_path)
     ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
     return True
 
