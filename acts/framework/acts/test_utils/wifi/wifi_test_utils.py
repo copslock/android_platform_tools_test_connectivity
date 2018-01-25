@@ -754,7 +754,6 @@ def stop_wifi_tethering(ad):
     """
     ad.droid.wifiStartTrackingTetherStateChange()
     ad.droid.connectivityStopTethering(tel_defines.TETHERING_WIFI)
-    ad.droid.wifiSetApEnabled(False, None)
     try:
         ad.ed.pop_event("WifiManagerApDisabled", 30)
         ad.ed.wait_for_event("TetherStateChanged",
