@@ -24,6 +24,7 @@ import traceback
 
 import acts.controllers.diag_logger
 
+from acts import asserts
 from acts import logger as acts_logger
 from acts.base_test import BaseTestClass
 from acts.keys import Config
@@ -113,6 +114,7 @@ class TelephonyBaseTest(BaseTestClass):
             self.test_id = test_id
             log_string = "[Test ID] %s" % test_id
             self.log.info(log_string)
+            self.result_detail = ""
             no_crash = True
             try:
                 for ad in self.android_devices:
@@ -127,7 +129,13 @@ class TelephonyBaseTest(BaseTestClass):
                     new_crash = ad.check_crash_report(self.test_name,
                                                       self.begin_time, result)
                     if self.user_params.get("check_crash", True) and new_crash:
-                        ad.log.error("Find new crash reports %s", new_crash)
+                        msg = "Find new crash reports %s" % new_crash
+                        ad.log.error(msg)
+                        if self.result_detail:
+                            self.result_detail = "%s %s %s" % (
+                                self.result_detail, ad.serial, msg)
+                        else:
+                            self.result_detail = "%s %s" % (ad.serial, msg)
                         no_crash = False
                 if not result and self.user_params.get("telephony_auto_rerun"):
                     self.teardown_test()
@@ -150,15 +158,19 @@ class TelephonyBaseTest(BaseTestClass):
                         # still be considered a failure for reporting purposes.
                         self.log.info("Rerun indeterminate.")
                         result = False
-                return result and no_crash
-            except (TestSignal, TestAbortClass, TestAbortAll):
+                result = result and no_crash
+                if result:
+                    asserts.explicit_pass(self.result_detail)
+                else:
+                    asserts.fail(self.result_detail)
+            except (TestSignal, TestAbortClass, TestAbortAll) as signal:
+                signal.details = self.result_detail
                 raise
             except Exception as e:
                 self.log.error(str(e))
                 self.log.error(traceback.format_exc())
                 return False
             finally:
-                # TODO: b/19002120 stop QXDM Logging
                 for ad in self.android_devices:
                     try:
                         ad.adb.wait_for_device()
