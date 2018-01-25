@@ -21,7 +21,10 @@ import os
 import time
 
 from acts import signals
+from acts.utils import create_dir
 from acts.utils import unzip_maintain_permissions
+from acts.utils import get_current_epoch_time
+from acts.utils import exe_cmd
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
@@ -32,6 +35,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -222,8 +226,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if is_wfc_available_after_turn_off_apm and is_wfc_not_available:
             self.log.error("WFC is not available.")
             return False
-        elif (not is_wfc_available_after_turn_off_apm and
-              not is_wfc_not_available):
+        elif (not is_wfc_available_after_turn_off_apm
+              and not is_wfc_not_available):
             self.log.error("WFC is available.")
             return False
         return True
@@ -1359,8 +1363,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         Expected Results: mobile_data_always_on return 1.
         """
         result = True
-        if self.ad.adb.getprop("ro.build.version.release")[0] in (
-                "8", "O", "7", "N"):
+        if self.ad.adb.getprop("ro.build.version.release")[0] in ("8", "O",
+                                                                  "7", "N"):
             raise signals.TestSkip("Not supported in this build")
         old_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
         old_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
@@ -1374,8 +1378,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
             self.ad.log.info(
                 "After SIM power down, carrier_id = %s(expecting -1), "
-                "carrier_name = %s(expecting None)",
-                carrier_id, carrier_name)
+                "carrier_name = %s(expecting None)", carrier_id, carrier_name)
             if carrier_id != -1 or carrier_name:
                 result = False
         if not power_on_sim(self.ad, slot_index):
@@ -1398,3 +1401,52 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 self.ad.log.info(msg)
         return result
 
+    @TelephonyBaseTest.tel_test_wrap
+    def test_modem_power_anomaly_file_existence(self):
+        """Verify if the power anomaly file exists
+
+        1. Collect Bugreport
+        2. unzip bugreport
+        3. remane the .bin file to .tar
+        4. unzip dumpstate.tar
+        5. Verify if the file exists
+
+        """
+        ad = self.android_devices[0]
+        begin_time = get_current_epoch_time()
+        for i in range(3):
+            try:
+                bugreport_path = os.path.join(ad.log_path, self.test_name)
+                create_dir(bugreport_path)
+                ad.take_bug_report(self.test_name, begin_time)
+                break
+            except Exception as e:
+                ad.log.error("bugreport attempt %s error: %s", i + 1, e)
+        ad.log.info("Bugreport Path is %s" % bugreport_path)
+        try:
+            list_of_files = os.listdir(bugreport_path)
+            ad.log.info(list_of_files)
+            for filename in list_of_files:
+                if ".zip" in filename:
+                    ad.log.info(filename)
+                    file_path = os.path.join(bugreport_path, filename)
+                    ad.log.info(file_path)
+                    unzip_maintain_permissions(file_path, bugreport_path)
+            dumpstate_path = os.path.join(bugreport_path,
+                                          "dumpstate_board.bin")
+            if os.path.isfile(dumpstate_path):
+                os.rename(dumpstate_path,
+                          bugreport_path + "/dumpstate_board.tar")
+                os.chmod(bugreport_path + "/dumpstate_board.tar", 0o777)
+                current_dir = os.getcwd()
+                os.chdir(bugreport_path)
+                exe_cmd("tar -xvf %s" %
+                        (bugreport_path + "/dumpstate_board.tar"))
+                os.chdir(current_dir)
+                if os.path.isfile(bugreport_path + "/power_anomaly_data.txt"):
+                    ad.log.info("Modem Power Anomaly File Exists!!")
+                    return True
+            return False
+        except Exception as e:
+            ad.log.error(e)
+            return False
