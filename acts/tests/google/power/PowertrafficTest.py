@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import logging
+import math
 import os
 import time
 from acts import base_test
@@ -25,6 +26,8 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.controllers.iperf_server as ipf
+
+TEMP_FILE = '/sdcard/Download/tmp.log'
 
 
 class PowertrafficTest(base_test.BaseTestClass):
@@ -78,13 +81,24 @@ class PowertrafficTest(base_test.BaseTestClass):
         for key in bulk_params.keys():
             setattr(self, key, bulk_params[key])
 
-    def iperf_power_test_func(self, screen_status, band, bandwidth):
+    def iperf_power_test_func(self):
         """Test function for iperf power measurement at different RSSI level.
 
         Args:
             screen_status: screen ON or OFF
             band: desired band for AP to operate on
         """
+        # Decode test parameters for the current test
+        test_params = self.current_test_name.split('_')
+        screen_status = test_params[2][6:]
+        band = test_params[3]
+        traffic_direction = test_params[4]
+        traffic_type = test_params[5]
+        signal_level = test_params[6][:-4]
+        oper_mode = test_params[7]
+        bandwidth = int(test_params[8])
+
+        # Set device to rockbottom first
         wputils.dut_rockbottom(self.dut)
         wutils.wifi_toggle_state(self.dut, True)
 
@@ -104,8 +118,7 @@ class PowertrafficTest(base_test.BaseTestClass):
 
         # Set attenuator to desired level
         self.log.info('Set attenuation to desired RSSI level')
-        atten_setting = self.current_test_name[:self.current_test_name.find(
-            'rssi') + 4]
+        atten_setting = band + '_' + signal_level
         for i in range(self.num_atten):
             attenuation = self.atten_level[atten_setting][i]
             self.attenuators[i].set_atten(attenuation)
@@ -113,12 +126,23 @@ class PowertrafficTest(base_test.BaseTestClass):
         # Connect the phone to the AP
         wutils.wifi_connect(self.dut, network)
         time.sleep(5)
-        if screen_status == 'OFF':
+        if screen_status == 'off':
             self.dut.droid.goToSleepNow()
         RSSI = wputils.get_wifi_rssi(self.dut)
 
-        # Run IPERF session
-        iperf_args = '-i 1 -t %d > /dev/null' % self.iperf_duration
+        # Construct the iperf command based on the test params
+        iperf_args = '-i 1 -t %d -J' % self.iperf_duration
+        if traffic_type == "UDP":
+            iperf_args = iperf_args + "-u -b 2g"
+        if traffic_direction == "DL":
+            iperf_args = iperf_args + ' -R'
+            use_client_output = True
+        else:
+            use_client_output = False
+        # Parse the client side data to a file saved on the phone
+        iperf_args = iperf_args + ' > %s' % TEMP_FILE
+
+        # Run IPERF
         self.iperf_server.start()
         wputils.run_iperf_client_nonblocking(
             self.dut, self.iperf_server_address, iperf_args)
@@ -126,73 +150,244 @@ class PowertrafficTest(base_test.BaseTestClass):
         # Collect power data and plot
         file_path, avg_current = wputils.monsoon_data_collect_save(
             self.dut, self.mon_info, self.current_test_name, self.bug_report)
-        iperf_result = ipf.IPerfResult(self.iperf_server.log_files[-1])
+
+        # Get IPERF results
+        RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
+                                           "iperf_client_output_{}.log".format(
+                                               self.current_test_name))
+        PULL_FILE = '{} {}'.format(TEMP_FILE, RESULTS_DESTINATION)
+        self.dut.adb.pull(PULL_FILE)
+        # Calculate the average throughput
+        if use_client_output:
+            iperf_file = RESULTS_DESTINATION
+        else:
+            iperf_file = self.iperf_server.log_files[-1]
+        try:
+            iperf_result = ipf.IPerfResult(iperf_file)
+            throughput = (math.fsum(iperf_result.instantaneous_rates[:-1]) /
+                          len(iperf_result.instantaneous_rates[:-1])) * 8
+            self.log.info("The average throughput is {}".format(throughput))
+        except:
+            self.log.warning(
+                "ValueError: Cannot get iperf result. Setting to 0")
+            throughput = 0
 
         # Monsoon Power data plot with IPerf throughput information
-        tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
-            RSSI, (iperf_result.avg_receive_rate * 8))
+        tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(RSSI, throughput)
         wputils.monsoon_data_plot(self.mon_info, file_path, tag)
 
         # Pass and fail check
         wputils.pass_fail_check(self, avg_current)
 
-    # Test cases
-    @test_tracker_info(uuid='43d9b146-3547-4a27-9d79-c9341c32ccda')
-    def test_screenoff_iperf_2g_highrssi(self):
+    # Screen off TCP test cases
+    @test_tracker_info(uuid='93f79f74-88d9-4781-bff0-8899bed1c336')
+    def test_traffic_screenoff_2g_DL_TCP_highRSSI_HT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='147eff45-97d7-47c0-b306-f84d9adecd9b')
+    def test_traffic_screenoff_2g_DL_TCP_mediumRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='5982268b-57e4-40bf-848e-fee80fabf9d7')
+    def test_traffic_screenoff_2g_DL_TCP_lowRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='c71a8c77-d355-4a82-b9f1-7cc8b888abd8')
+    def test_traffic_screenoff_5g_DL_TCP_highRSSI_VHT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='307945a6-32b7-42d0-a26c-d439f1599963')
+    def test_traffic_screenoff_5g_DL_TCP_mediumRSSI_VHT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='e9a900a1-e263-45ad-bdf3-9c463f761d3c')
+    def test_traffic_screenoff_5g_DL_TCP_lowRSSI_VHT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='1d1d9a06-98e1-486e-a1db-2102708161ec')
+    def test_traffic_screenoff_5g_DL_TCP_highRSSI_VHT_40(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='feeaad15-6893-4d49-aaf6-bf9802780f5d')
+    def test_traffic_screenoff_5g_DL_TCP_mediumRSSI_VHT_40(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='f378679a-1c20-43a1-bff6-a6a5482a8e3d')
+    def test_traffic_screenoff_5g_DL_TCP_lowRSSI_VHT_40(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='6a05f133-49e5-4436-ba84-0746f04021ef')
+    def test_traffic_screenoff_5g_DL_TCP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='750bf1c3-2099-4b89-97dd-18f8e72df462')
+    def test_traffic_screenoff_5g_DL_TCP_mediumRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='1ea458af-1ae0-40ee-853d-ac57b51d3eda')
+    def test_traffic_screenoff_5g_DL_TCP_lowRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='43d9b146-3547-4a27-9d79-c9341c32ccda')
+    def test_traffic_screenoff_2g_UL_TCP_highRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='f00a868b-c8b1-4b36-8136-b39b5c2396a7')
-    def test_screenoff_iperf_2g_mediumrssi(self):
+    def test_traffic_screenoff_2g_UL_TCP_mediumRSSI_HT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='cd0c37ac-23fe-4dd1-9130-ccb2dfa71020')
-    def test_screenoff_iperf_2g_lowrssi(self):
+    def test_traffic_screenoff_2g_UL_TCP_lowRSSI_HT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_2G, 20)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='f9173d39-b46d-4d80-a5a5-7966f5eed9de')
-    def test_screenoff_iperf_5g_highrssi_20m(self):
+    def test_traffic_screenoff_5g_UL_TCP_highRSSI_VHT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='cf77e1dc-30bc-4df9-88be-408f1fddc24f')
-    def test_screenoff_iperf_5g_mediumrssi_20m(self):
+    def test_traffic_screenoff_5g_UL_TCP_mediumRSSI_VHT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='48f91745-22dc-47c9-ace6-c2719df651d6')
-    def test_screenoff_iperf_5g_lowrssi_20m(self):
+    def test_traffic_screenoff_5g_UL_TCP_lowRSSI_VHT_20(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 20)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='18456aa7-62f0-4560-a7dc-4d7e01f6aca5')
-    def test_screenoff_iperf_5g_highrssi_40m(self):
+    def test_traffic_screenoff_5g_UL_TCP_highRSSI_VHT_40(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='8ad237d7-f5e1-45e1-a4a2-a010628a4db9')
-    def test_screenoff_iperf_5g_mediumrssi_40m(self):
+    def test_traffic_screenoff_5g_UL_TCP_mediumRSSI_VHT_40(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='3e29173f-b950-4a41-a7f6-6cc0731bf477')
-    def test_screenoff_iperf_5g_lowrssi_40m(self):
+    def test_traffic_screenoff_5g_UL_TCP_lowRSSI_VHT_40(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 40)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='3d4cdb21-a1b0-4011-9956-ca0b7a9f3bec')
-    def test_screenoff_iperf_5g_highrssi_80m(self):
+    def test_traffic_screenoff_5g_UL_TCP_highRSSI_VHT_80(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='8427d3f0-9418-4b5c-aea9-7509e5959ce6')
-    def test_screenoff_iperf_5g_mediumrssi_80m(self):
+    def test_traffic_screenoff_5g_UL_TCP_mediumRSSI_VHT_80(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
+        self.iperf_power_test_func()
 
     @test_tracker_info(uuid='5ac91734-0323-464b-b04a-c7d3d7ff8cdf')
-    def test_screenoff_iperf_5g_lowrssi_80m(self):
+    def test_traffic_screenoff_5g_UL_TCP_lowRSSI_VHT_80(self):
 
-        self.iperf_power_test_func('OFF', hc.BAND_5G, 80)
+        self.iperf_power_test_func()
+
+    # Screen off UDP tests - only check 5g VHT 80
+    @test_tracker_info(uuid='1ab4a4e2-bce2-4ff8-be9d-f8ed2bb617cd')
+    def test_traffic_screenoff_5g_DL_UDP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='a2c66d63-e93f-42aa-a021-0c6cdfdc87b8')
+    def test_traffic_screenoff_5g_DL_UDP_mediumRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='68e6f92a-ae15-4e76-81e7-a7b491e181fe')
+    def test_traffic_screenoff_5g_DL_UDP_lowRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='258500f4-f177-43df-82a7-a64d66e90720')
+    def test_traffic_screenoff_5g_UL_UDP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='3d2d3d45-575d-4080-86f9-b32a96963032')
+    def test_traffic_screenoff_5g_UL_UDP_mediumRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='a17c7d0b-58ca-47b5-9f32-0b7a3d7d3d9d')
+    def test_traffic_screenoff_5g_UL_UDP_lowRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    # Screen on point check
+    @test_tracker_info(uuid='c1c71639-4463-4999-8f5d-7d9153402c79')
+    def test_traffic_screenon_2g_DL_TCP_highRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='40daebc4-45a2-4299-b724-e8cb917b86e8')
+    def test_traffic_screenon_5g_DL_TCP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='2e286f36-1a47-4895-a0e8-a161d6a9fd9f')
+    def test_traffic_screenon_2g_UL_TCP_highRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='9f6b52cb-b48a-4382-8061-3d3a511a261a')
+    def test_traffic_screenon_5g_UL_TCP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='59d79274-15cf-446b-a567-655c07f8a778')
+    def test_traffic_screenon_2g_DL_UDP_highRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='02891671-48cc-4186-9a95-3e02671477d0')
+    def test_traffic_screenon_5g_DL_UDP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='02821540-7b08-4e4f-a1f1-b455fd4cec6e')
+    def test_traffic_screenon_2g_UL_UDP_highRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='59ea06ac-3ac8-4ecc-abb1-bcde34f47358')
+    def test_traffic_screenon_2g_UL_UDP_mediumRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='0cbbd849-7b59-4143-95e7-92cf1fd955dc')
+    def test_traffic_screenon_2g_UL_UDP_lowRSSI_HT_20(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='d84f11d8-41a9-4ce8-a351-ebb0379d56c1')
+    def test_traffic_screenon_5g_UL_UDP_highRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='01b6087c-b39a-441d-90e9-da659aa0db7f')
+    def test_traffic_screenon_5g_UL_UDP_mediumRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
+
+    @test_tracker_info(uuid='7e16dcaa-128f-4874-ab52-2f43e25e6da8')
+    def test_traffic_screenon_5g_UL_UDP_lowRSSI_VHT_80(self):
+
+        self.iperf_power_test_func()
