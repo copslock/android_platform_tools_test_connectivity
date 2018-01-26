@@ -495,7 +495,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if self.tcpdump_proc is not None:
                             stop_adb_tcpdump(
                                 self.dut, self.tcpdump_proc, True,
-                                "%s_file_download" % self.test_name,)
+                                "%s_file_download_failure" % self.test_name,)
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
