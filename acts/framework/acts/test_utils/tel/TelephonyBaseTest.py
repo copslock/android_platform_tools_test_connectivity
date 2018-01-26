@@ -330,8 +330,29 @@ class TelephonyBaseTest(BaseTestClass):
         self.on_fail(test_name, begin_time)
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
-        result = BaseTestClass._ad_take_extra_logs(self, ad, test_name,
-                                                   begin_time)
+        extra_qxdm_logs_in_seconds = self.user_params.get(
+            "extra_qxdm_logs_in_seconds", 60 * 3)
+        result = True
+        if getattr(ad, "qxdm_log", False):
+            # Gather qxdm log modified 3 minutes earlier than test start time
+            if begin_time:
+                qxdm_begin_time = begin_time - 1000 * extra_qxdm_logs_in_seconds
+            else:
+                qxdm_begin_time = None
+            try:
+                ad.get_qxdm_logs(test_name, qxdm_begin_time)
+            except Exception as e:
+                ad.log.error("Failed to get QXDM log for %s with error %s",
+                             test_name, e)
+                result = False
+
+        try:
+            ad.check_crash_report(test_name, begin_time, log_crash_report=True)
+        except Exception as e:
+            ad.log.error("Failed to check crash report for %s with error %s",
+                         test_name, e)
+            result = False
+
         log_begin_time = getattr(ad, "test_log_begin_time", None)\
                          or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
         log_path = os.path.join(self.log_path, test_name, "%s_%s.logcat" % (
