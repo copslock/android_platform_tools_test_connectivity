@@ -24,6 +24,7 @@ from acts.libs.proc import job
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
+from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
@@ -212,15 +213,14 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(
-        data=dict(x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(
-        data=dict(
-            z0=[mon_info['duration']],
-            y0=[round(avg_current, 2)],
-            x0=[round(avg_current * voltage, 2)],
-            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-            z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(data=dict(
+        x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(data=dict(
+        z0=[mon_info['duration']],
+        y0=[round(avg_current, 2)],
+        x0=[round(avg_current * voltage, 2)],
+        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+        z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -234,15 +234,16 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
 
     plot_title = file_path[file_path.rfind('/') + 1:-4] + tag
     output_file("%s/%s.html" % (mon_info['data_path'], plot_title))
-    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,resize,reset,'
-             'hover,xwheel_zoom,ywheel_zoom,save')
+    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
     # Create a new plot with the datatable above
     plot = figure(
         plot_width=1300,
         plot_height=700,
         title=plot_title,
         tools=TOOLS,
-        webgl=True)
+        output_backend="webgl")
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
     plot.line('x0', 'y0', source=source, line_width=2)
     plot.circle('x0', 'y0', source=source, size=0.5, fill_color='color')
     plot.xaxis.axis_label = 'Time (s)'
@@ -393,14 +394,15 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
         Returns:
             plot: bokeh plot figure object
     """
-    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,resize,reset,'
-             'hover,xwheel_zoom,ywheel_zoom,save')
+    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
     plot = figure(
         plot_width=1300,
         plot_height=700,
         title=fig_property['title'],
         tools=TOOLS,
-        webgl=True)
+        output_backend="webgl")
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
     colors = [
         'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
         'yellow', 'darkred', 'goldenrod'
