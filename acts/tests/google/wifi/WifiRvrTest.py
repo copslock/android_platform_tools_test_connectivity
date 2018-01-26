@@ -48,9 +48,38 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
+        self.testclass_results = []
 
     def teardown_test(self):
         self.iperf_server.stop()
+
+    def teardown_class(self):
+        """Saves plot with all test results to enable comparison.
+        """
+        # Plot and save all results
+        x_data = []
+        y_data = []
+        legends = []
+        for result in self.testclass_results:
+            total_attenuation = [
+                att + result["fixed_attenuation"]
+                for att in result["attenuation"]
+            ]
+            x_data.append(total_attenuation)
+            y_data.append(result["throughput_receive"])
+            legends.append(result["test_name"])
+        x_label = 'Attenuation (dB)'
+        y_label = 'Throughput (Mbps)'
+        data_sets = [x_data, y_data]
+        fig_property = {
+            "title": "RvR Results",
+            "x_label": x_label,
+            "y_label": y_label,
+            "linewidth": 3,
+            "markersize": 10
+        }
+        output_file_path = "{}/{}.html".format(self.log_path, "rvr_results")
+        wputils.bokeh_plot(data_sets, legends, fig_property, output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
@@ -58,7 +87,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         Checks the RvR test result and compares to a golden file of results for
         the same configuration. The pass/fail tolerances are provided in the
         config file. Currently, the test fails if any a single point is out of
-        range of the corresponding point in the golden file.
+        range of the corresponding area in the golden file.
 
         Args:
             rvr_result: dict containing attenuation, throughput and other meta
@@ -69,21 +98,45 @@ class WifiRvrTest(base_test.BaseTestClass):
                                  "{}.json".format(test_name))
         with open(gldn_path, 'r') as gldn_file:
             gldn_results = json.load(gldn_file)
+            gldn_attenuation = [
+                att + gldn_results["fixed_attenuation"]
+                for att in gldn_results["attenuation"]
+            ]
         for idx, current_throughput in enumerate(
                 rvr_result["throughput_receive"]):
-            current_att = rvr_result["attenuation"][idx]
-            gldn_att_index = gldn_results["attenuation"].index(current_att)
-            gldn_throughput = gldn_results["throughput_receive"][
-                gldn_att_index]
-            abs_difference = abs(current_throughput - gldn_throughput)
-            pct_difference = (abs_difference /
-                              (gldn_throughput + EPSILON)) * 100
-            if (abs_difference > self.test_params["abs_tolerance"]
-                    and pct_difference > self.test_params["pct_tolerance"]):
+            current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
+            att_distances = [
+                abs(current_att - gldn_att) for gldn_att in gldn_attenuation
+            ]
+            sorted_distances = sorted(
+                enumerate(att_distances), key=lambda x: x[1])
+            closest_indeces = [dist[0] for dist in sorted_distances[0:2]]
+            closest_throughputs = [
+                gldn_results["throughput_receive"][index]
+                for index in closest_indeces
+            ]
+            closest_throughputs.sort()
+
+            allowed_throughput_range = [
+                max(closest_throughputs[0] - max(
+                    self.test_params["abs_tolerance"], closest_throughputs[0] *
+                    self.test_params["pct_tolerance"] / 100),
+                    0), closest_throughputs[1] +
+                max(self.test_params["abs_tolerance"], closest_throughputs[1] *
+                    self.test_params["pct_tolerance"] / 100)
+            ]
+            throughput_distance = [
+                current_throughput - throughput_limit
+                for throughput_limit in allowed_throughput_range
+            ]
+            if (throughput_distance[0] < -self.test_params["abs_tolerance"]
+                    or throughput_distance[1] >
+                    self.test_params["abs_tolerance"]):
                 asserts.fail(
                     "Throughput at {}dB attenuation is beyond limits. "
-                    "Throughput is {} Mbps. Expected {} Mbps.".format(
-                        current_att, current_throughput, gldn_throughput))
+                    "Throughput is {} Mbps. Expected within {} Mbps.".format(
+                        current_att, current_throughput,
+                        allowed_throughput_range))
         asserts.explicit_pass("Measurement finished for %s." % test_name)
 
     def post_process_results(self, rvr_result):
@@ -95,16 +148,19 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         # Save output as text file
         test_name = self.current_test_name
-        results_file_path = "{}/{}.txt".format(self.log_path,
-                                               self.current_test_name)
+        results_file_path = "{}/{}.json".format(self.log_path,
+                                                self.current_test_name)
         with open(results_file_path, 'w') as results_file:
             json.dump(rvr_result, results_file)
         # Plot and save
-        legends = self.current_test_name
+        legends = [self.current_test_name]
         x_label = 'Attenuation (dB)'
         y_label = 'Throughput (Mbps)'
-        data_sets = [[rvr_result["attenuation"]],
-                     [rvr_result["throughput_receive"]]]
+        total_attenuation = [
+            att + rvr_result["fixed_attenuation"]
+            for att in rvr_result["attenuation"]
+        ]
+        data_sets = [[total_attenuation], [rvr_result["throughput_receive"]]]
         fig_property = {
             "title": test_name,
             "x_label": x_label,
@@ -112,6 +168,20 @@ class WifiRvrTest(base_test.BaseTestClass):
             "linewidth": 3,
             "markersize": 10
         }
+        try:
+            gldn_path = os.path.join(self.test_params["golden_results_path"],
+                                     "{}.json".format(test_name))
+            with open(gldn_path, 'r') as gldn_file:
+                gldn_results = json.load(gldn_file)
+            legends.insert(0, "Golden Results")
+            gldn_attenuation = [
+                att + gldn_results["fixed_attenuation"]
+                for att in gldn_results["attenuation"]
+            ]
+            data_sets[0].insert(0, gldn_attenuation)
+            data_sets[1].insert(0, gldn_results["throughput_receive"])
+        except:
+            self.log.warning("ValueError: Golden file not found")
         output_file_path = "{}/{}.html".format(self.log_path, test_name)
         wputils.bokeh_plot(data_sets, legends, fig_property, output_file_path)
 
@@ -137,18 +207,18 @@ class WifiRvrTest(base_test.BaseTestClass):
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             try:
+                client_output = ""
                 client_status, client_output = self.dut.run_iperf_client(
                     self.test_params["iperf_server_address"],
                     self.iperf_args,
                     timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
-                client_output_path = os.path.join(
-                    self.iperf_server.log_path,
-                    "iperf_client_output_{}_{}".format(self.current_test_name,
-                                                       str(atten)))
-                with open(client_output_path, 'w') as out_file:
-                    out_file.write("\n".join(client_output))
             except:
                 self.log.warning("TimeoutError: Iperf measurement timed out.")
+            client_output_path = os.path.join(
+                self.iperf_server.log_path, "iperf_client_output_{}_{}".format(
+                    self.current_test_name, str(atten)))
+            with open(client_output_path, 'w') as out_file:
+                out_file.write("\n".join(client_output))
             self.iperf_server.stop()
             # Parse and log result
             if self.use_client_output:
@@ -198,13 +268,18 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Set attenuator to 0 dB
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         # Connect DUT to Network
+        wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = channel
-        wutils.wifi_connect(self.dut, self.main_network[band])
+        wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
         time.sleep(5)
         # Run RvR and log result
+        rvr_result["test_name"] = self.current_test_name
         rvr_result["ap_settings"] = self.access_point.ap_settings.copy()
         rvr_result["attenuation"] = list(self.rvr_atten_range)
+        rvr_result["fixed_attenuation"] = self.test_params[
+            "fixed_attenuation"][str(channel)]
         rvr_result["throughput_receive"] = self.rvr_test()
+        self.testclass_results.append(rvr_result)
         return rvr_result
 
     def _test_rvr(self):
