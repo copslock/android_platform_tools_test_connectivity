@@ -4936,11 +4936,11 @@ def start_qxdm_logger(ad, begin_time=None):
     if getattr(ad, "qxdm_logger_path"):
         if begin_time:
             current_time = get_current_epoch_time()
-            seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
+            seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
             ad.adb.shell("find %s -type f -not -mtime -%ss -delete" %
                          (ad.qxdm_logger_path, seconds))
         elif len(ad.get_file_names(ad.qxdm_logger_path)) > 50:
-            ad.adb.shell("find %s -type f -not -mtime -600s -delete"
+            ad.adb.shell("find %s -type f -not -mtime -900s -delete"
                          % ad.qxdm_logger_path)
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
