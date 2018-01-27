@@ -163,18 +163,13 @@ class TelephonyBaseTest(BaseTestClass):
                 else:
                     asserts.fail(self.result_detail)
             except (TestSignal, TestAbortClass, TestAbortAll) as signal:
-                signal.details = self.result_detail
+                if self.result_detail:
+                    signal.details = self.result_detail
                 raise
             except Exception as e:
                 self.log.error(str(e))
                 self.log.error(traceback.format_exc())
-                return False
-            finally:
-                for ad in self.android_devices:
-                    try:
-                        ad.adb.wait_for_device()
-                    except Exception as e:
-                        self.log.error(str(e))
+                asserts.fail(self.result_detail)
 
         return _safe_wrap_test_case
 
