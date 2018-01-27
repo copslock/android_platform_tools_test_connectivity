@@ -691,8 +691,6 @@ class BaseTestClass(object):
     def _ad_take_bugreport(self, ad, test_name, begin_time):
         for i in range(3):
             try:
-                bugreport_path = os.path.join(ad.log_path, test_name)
-                utils.create_dir(bugreport_path)
                 ad.take_bug_report(test_name, begin_time)
                 return True
             except Exception as e:
