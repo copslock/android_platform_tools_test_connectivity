@@ -118,7 +118,6 @@ class TelephonyBaseTest(BaseTestClass):
             no_crash = True
             try:
                 for ad in self.android_devices:
-                    ad.ed.clear_all_events()
                     ad.log_path = self.log_path
                     if getattr(ad, "droid"):
                         ad.droid.logI("Started %s" % log_string)
