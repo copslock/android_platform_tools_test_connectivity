@@ -22,7 +22,7 @@ import json
 import os
 import random
 import time
-from acts.asserts import explicit_pass
+
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -394,12 +394,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    return False
             except Exception as e:
                 self.log.error(e)
                 return False
             self.log.info("Crashes found: %s", failure)
+            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                return False
         if failure:
             return False
         else:
@@ -438,12 +438,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    return False
             except Exception as e:
                 self.log.error(e)
                 return False
             self.log.info(dict(self.result_info))
+            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                return False
         if self.result_info["Call Failure"] or self.result_info["RAT change failure"]:
             return False
         else:
@@ -458,12 +458,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    return False
             except Exception as e:
                 self.log.error(e)
                 return False
             self.log.info(dict(self.result_info))
+            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                return False
         if self.result_info["SMS failure"] or (
                 self.result_info["MMS failure"] / self.result_info["Total MMS"]
                 > 0.3):
@@ -495,7 +495,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if self.tcpdump_proc is not None:
                             stop_adb_tcpdump(
                                 self.dut, self.tcpdump_proc, True,
-                                "%s_file_download" % self.test_name,)
+                                "%s_file_download_failure" % self.test_name)
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
@@ -508,13 +508,13 @@ class TelLiveStressTest(TelephonyBaseTest):
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.log.error("Too many %s errors", IGNORE_EXCEPTIONS)
-                    return False
             except Exception as e:
                 self.log.error(e)
                 return False
             self.log.info("%s", dict(self.result_info))
+            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+                self.log.error("Too many %s errors", IGNORE_EXCEPTIONS)
+                return False
         if self.result_info["File download failure"] / self.result_info[
                 "Total file download"] > 0.1:
             return False
@@ -537,10 +537,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         result_message = self._get_result_message()
         self.log.info(result_message)
         self._update_perf_json()
-        if all(results):
-            explicit_pass(result_message)
-        else:
-            fail(result_message)
+        self.result_detail = result_message
+        return all(results)
 
     def _get_result_message_rat_change(self):
         msg_list = ["%s: %s" % (count, self.result_info[count]) for  count in (
@@ -560,10 +558,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         result_message = self._get_result_message_rate_change()
         self.log.info(result_message)
         self._update_perf_json()
-        if all(results):
-            explicit_pass(result_message)
-        else:
-            fail(result_message)
+        self.result_detail = result_message
+        return all(results)
 
     """ Tests Begin """
 

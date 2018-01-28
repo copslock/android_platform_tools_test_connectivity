@@ -2165,8 +2165,10 @@ def http_file_download_by_chrome(ad,
     file_path = os.path.join(file_directory, file_name)
     # Remove pre-existing file
     ad.force_stop_apk("com.android.chrome")
-    ad.adb.shell("rm %s" % file_path, ignore_status=True)
-    ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    file_to_be_delete =  os.path.join(file_directory, "*%s*" % file_name)
+    ad.adb.shell("rm -f %s" % file_to_be_delete)
+    ad.adb.shell("rm -rf /sdcard/Download/.*")
+    ad.adb.shell("rm -f /sdcard/Download/.*")
     total_rx_bytes_before = ad.droid.getTotalRxBytes()
     mobile_rx_bytes_before = ad.droid.getMobileRxBytes()
     subscriber_mobile_data_usage_before = get_mobile_data_usage(ad)
@@ -2180,7 +2182,9 @@ def http_file_download_by_chrome(ad,
             ad.log.info("%s is downloaded successfully", url)
             if remove_file_after_check:
                 ad.log.info("Remove the downloaded file %s", file_path)
-                ad.adb.shell("rm %s" % file_path, ignore_status=True)
+                ad.adb.shell("rm -f %s" % file_to_be_delete)
+                ad.adb.shell("rm -rf /sdcard/Download/.*")
+                ad.adb.shell("rm -f /sdcard/Download/.*")
             total_rx_bytes_increased = ad.droid.getTotalRxBytes(
             ) - total_rx_bytes_before
             mobile_rx_bytes_increased = ad.droid.getMobileRxBytes(
@@ -2232,8 +2236,9 @@ def http_file_download_by_chrome(ad,
         elapse_time += 30
     ad.log.warning("Fail to download file from %s", url)
     ad.force_stop_apk("com.android.chrome")
-    ad.adb.shell("rm %s" % file_path, ignore_status=True)
-    ad.adb.shell("rm %s.crdownload" % file_path, ignore_status=True)
+    ad.adb.shell("rm -f %s" % file_to_be_delete)
+    ad.adb.shell("rm -rf /sdcard/Download/.*")
+    ad.adb.shell("rm -f /sdcard/Download/.*")
     return False
 
 
@@ -4907,7 +4912,7 @@ def set_qxdm_logger_command(ad, mask=None):
     else:
         ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -n 100 -c" %
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
                                   (mask_path, ad.qxdm_logger_path))
         conf_path = os.path.split(ad.qxdm_logger_path)[0]
         conf_path = os.path.join(conf_path, "diag.conf")
@@ -4936,11 +4941,11 @@ def start_qxdm_logger(ad, begin_time=None):
     if getattr(ad, "qxdm_logger_path"):
         if begin_time:
             current_time = get_current_epoch_time()
-            seconds = int((current_time - begin_time) / 1000.0) + 5 * 60
+            seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
             ad.adb.shell("find %s -type f -not -mtime -%ss -delete" %
                          (ad.qxdm_logger_path, seconds))
         elif len(ad.get_file_names(ad.qxdm_logger_path)) > 50:
-            ad.adb.shell("find %s -type f -not -mtime -600s -delete"
+            ad.adb.shell("find %s -type f -not -mtime -900s -delete"
                          % ad.qxdm_logger_path)
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
