@@ -1374,13 +1374,22 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         sub_id = get_outgoing_voice_sub_id(self.ad)
         slot_index = get_slot_index_from_subid(self.log, self.ad, sub_id)
         if power_off_sim(self.ad, slot_index):
-            carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-            carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
-            self.ad.log.info(
-                "After SIM power down, carrier_id = %s(expecting -1), "
-                "carrier_name = %s(expecting None)", carrier_id, carrier_name)
-            if carrier_id != -1 or carrier_name:
-                result = False
+            for i in range(3):
+                carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+                msg = "After SIM power down, carrier_id = %s(expecting -1), " \
+                      "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
+                if carrier_id != -1 or carrier_name:
+                    if i==2:
+                        self.ad.log.error(msg)
+                        self.result_detail = "%s %s" % (self.result_detail, msg)
+                        result = False
+                    else:
+                        time.sleep(5)
+                else:
+                    self.ad.log.info(msg)
+                    break
+
         if not power_on_sim(self.ad, slot_index):
             abort_all_tests(self.ad.log, "Fail to power up SIM")
             result = False
