@@ -20,6 +20,7 @@
 import logging
 import os
 import re
+import shutil
 import traceback
 
 import acts.controllers.diag_logger
@@ -368,6 +369,12 @@ class TelephonyBaseTest(BaseTestClass):
         tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
                       for ad in self.android_devices[:dev_num]])
         run_multithread_func(self.log, tasks)
+        src_dir = os.path.join(self.log_path, test_name)
+        file_name = "%s_%s" % (src_dir, begin_time)
+        self.log.info("Zip folder %s to %s.zip", src_dir, file_name)
+        shutil.make_archive(file_name, "zip", src_dir)
+        shutil.rmtree(src_dir)
+
 
     def _block_all_test_cases(self, tests):
         """Over-write _block_all_test_case in BaseTestClass."""
