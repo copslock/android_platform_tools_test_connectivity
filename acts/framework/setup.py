@@ -34,6 +34,7 @@ install_requires = [
     'protobuf',
     'roman',
     'scapy-python3',
+    'pylibftdi',
 ]
 
 if sys.version_info < (3, ):
