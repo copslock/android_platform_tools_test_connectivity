@@ -18,20 +18,13 @@
 """
 
 import time
-import os
+
+from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_message
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import GEN_2G
-from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
@@ -40,14 +33,9 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts.test_utils.tel.tel_defines import RAT_3G
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -57,34 +45,24 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
-from acts.test_utils.tel.tel_test_utils import \
-    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
-from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_phone_number
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.tel.tel_test_utils import setup_sim
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
-from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -218,6 +196,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        if self.android_devices[0].droid.telephonyGetSimCountryIso() == "ca":
+            raise signals.TestSkip("7 digit dialing not supported")
+
         ads = self.android_devices
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
@@ -251,6 +232,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        if self.android_devices[0].droid.telephonyGetSimCountryIso() == "ca":
+            raise signals.TestSkip("10 digit dialing not supported")
+
         ads = self.android_devices
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
@@ -3141,7 +3125,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
+                              '"https://www.youtube.com/watch?v=RRZp7sVdhzQ"')
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
                                             ad_caller, None, None, 60))
         download_task = active_file_download_task(self.log, ad_download)
