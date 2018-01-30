@@ -853,11 +853,13 @@ class AndroidDevice:
             f_name = "adblog,{},{}.txt".format(self.model, self.serial)
             utils.create_dir(self.log_path)
             logcat_file_path = os.path.join(self.log_path, f_name)
-        try:
+        if hasattr(self, 'adb_logcat_param'):
             extra_params = self.adb_logcat_param
-        except AttributeError:
+        else:
             extra_params = "-b all"
-        cmd = "adb -s {} logcat -v threadtime {} >> {}".format(
+
+        # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
+        cmd = "adb -s {} logcat -T 1 -v threadtime {} >> {}".format(
             self.serial, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
