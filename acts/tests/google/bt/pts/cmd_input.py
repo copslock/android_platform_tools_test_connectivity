@@ -22,7 +22,7 @@ import acts.test_utils.bt.gatt_test_database as gatt_test_database
 from acts.test_utils.bt.ble_lib import BleLib
 from acts.test_utils.bt.bta_lib import BtaLib
 from acts.test_utils.bt.config_lib import ConfigLib
-from gattc_lib import GattClientLib
+from acts.test_utils.bt.gattc_lib import GattClientLib
 from gatts_lib import GattServerLib
 from rfcomm_lib import RfcommLib
 
