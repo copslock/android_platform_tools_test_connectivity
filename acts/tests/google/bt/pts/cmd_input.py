@@ -18,7 +18,7 @@ Python script for wrappers to various libraries.
 """
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import gatt_server_responses
-import acts.test_utils.bt.gatt_test_database
+import acts.test_utils.bt.gatt_test_database as gatt_test_database
 from acts.test_utils.bt.ble_lib import BleLib
 from acts.test_utils.bt.bta_lib import BtaLib
 from acts.test_utils.bt.config_lib import ConfigLib
