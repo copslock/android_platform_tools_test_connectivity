@@ -1750,22 +1750,21 @@ def call_setup_teardown_for_subscription(
             elapsed_time += CHECK_INTERVAL
             time_message = "at <%s>/<%s> second." % (elapsed_time,
                                                      wait_time_in_call)
-            if not verify_caller_func(log, ad_caller):
-                ad_caller.log.error("Caller is NOT in correct %s state at %s",
-                                    verify_caller_func.__name__, time_message)
-                result = False
-            else:
-                ad_caller.log.info("Caller is in correct %s state at %s",
-                                   verify_caller_func.__name__, time_message)
-            if not verify_callee_func(log, ad_callee):
-                ad_callee.log.error("Callee is NOT in correct %s state at %s",
-                                    verify_callee_func.__name__, time_message)
-                result = False
-            else:
-                ad_callee.log.info("Callee is in correct %s state at %s",
-                                   verify_callee_func.__name__, time_message)
-            if not result:
-                return result
+            for ad, call_func in [(ad_caller, verify_caller_func),
+                                  (ad_callee, verify_callee_func)]:
+                if not call_func(log, ad):
+                    ad.log.error("NOT in correct %s state at %s",
+                                 call_func.__name__, time_message)
+                    result = False
+                else:
+                    ad.log.info("In correct %s state at %s",
+                                call_func.__name__, time_message)
+                if not ad.droid.telecomCallGetAudioState():
+                    ad.log.error("Audio is not in call state at %s",
+                                 time_message)
+                    result = False
+                if not result:
+                    return result
         return result
     finally:
         if result and ad_hangup and not hangup_call(log, ad_hangup):
