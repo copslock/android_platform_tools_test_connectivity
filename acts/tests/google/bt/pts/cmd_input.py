@@ -18,16 +18,16 @@ Python script for wrappers to various libraries.
 """
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import gatt_server_responses
-from ble_lib import BleLib
-from bta_lib import BtaLib
-from config_lib import ConfigLib
-from gattc_lib import GattClientLib
-from gatts_lib import GattServerLib
-from rfcomm_lib import RfcommLib
+import acts.test_utils.bt.gatt_test_database as gatt_test_database
+from acts.test_utils.bt.ble_lib import BleLib
+from acts.test_utils.bt.bta_lib import BtaLib
+from acts.test_utils.bt.config_lib import ConfigLib
+from acts.test_utils.bt.gattc_lib import GattClientLib
+from acts.test_utils.bt.gatts_lib import GattServerLib
+from acts.test_utils.bt.rfcomm_lib import RfcommLib
 
 import time
 import cmd
-import gatt_test_database
 """Various Global Strings"""
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
@@ -377,8 +377,8 @@ class CmdInput(cmd.Cmd):
 
     def complete_gatts_setup_database(self, text, line, begidx, endidx):
         if not text:
-            completions = list(gatt_test_database.GATT_SERVER_DB_MAPPING.keys(
-            ))[:]
+            completions = list(
+                gatt_test_database.GATT_SERVER_DB_MAPPING.keys())[:]
         else:
             completions = [
                 s for s in gatt_test_database.GATT_SERVER_DB_MAPPING.keys()
@@ -924,8 +924,9 @@ class CmdInput(cmd.Cmd):
                     self.mac_addr):
                 self.log.info(
                     FAILURE.format(
-                        cmd, "bluetoothHspDisconnectAudio returned false for "
-                        + self.mac_addr))
+                        cmd,
+                        "bluetoothHspDisconnectAudio returned false for " +
+                        self.mac_addr))
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
@@ -957,8 +958,7 @@ class CmdInput(cmd.Cmd):
         """Get HID Report"""
         cmd = "Get HID Report"
         try:
-            self.pri_dut.droid.bluetoothHidGetReport(self.mac_addr, 1, 1,
-                                                     1024)
+            self.pri_dut.droid.bluetoothHidGetReport(self.mac_addr, 1, 1, 1024)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
@@ -966,8 +966,7 @@ class CmdInput(cmd.Cmd):
         """Get HID Report"""
         cmd = "Get HID Report"
         try:
-            self.pri_dut.droid.bluetoothHidSetReport(self.mac_addr, 1,
-                                                     "Test")
+            self.pri_dut.droid.bluetoothHidSetReport(self.mac_addr, 1, "Test")
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
