@@ -36,8 +36,8 @@ class RfcommLib():
         if len(line) > 0:
             uuid = line
         if uuid:
-            self.dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr,
-                                                             uuid)
+            self.dut.droid.bluetoothRfcommBeginConnectThread(
+                self.mac_addr, uuid)
         else:
             self.dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr)
 
@@ -69,8 +69,8 @@ class RfcommLib():
         if uuid:
             self.dut.droid.bluetoothRfcommBeginAcceptThread(uuid)
         else:
-            self.dut.droid.bluetoothRfcommBeginAcceptThread(bt_rfcomm_uuids[
-                'base_uuid'])
+            self.dut.droid.bluetoothRfcommBeginAcceptThread(
+                bt_rfcomm_uuids['base_uuid'])
 
     def stop(self):
         """Stop RFCOMM Connection"""

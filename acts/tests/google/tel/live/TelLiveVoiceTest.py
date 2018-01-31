@@ -18,20 +18,13 @@
 """
 
 import time
-import os
+
+from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_message
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import GEN_2G
-from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
@@ -40,14 +33,9 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts.test_utils.tel.tel_defines import RAT_3G
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
-from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
-from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -57,34 +45,25 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
-from acts.test_utils.tel.tel_test_utils import \
-    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
-from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
-from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_phone_number
-from acts.test_utils.tel.tel_test_utils import set_wfc_mode
-from acts.test_utils.tel.tel_test_utils import setup_sim
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
-from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
-from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -218,6 +197,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        if self.android_devices[0].droid.telephonyGetSimCountryIso() == "ca":
+            raise signals.TestSkip("7 digit dialing not supported")
+
         ads = self.android_devices
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
@@ -251,6 +233,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        if self.android_devices[0].droid.telephonyGetSimCountryIso() == "ca":
+            raise signals.TestSkip("10 digit dialing not supported")
+
         ads = self.android_devices
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
@@ -3141,11 +3126,24 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
+                              '"https://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+        if wait_for_state(
+                ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("Before call, audio is in MUSIC_state")
+        else:
+            ad_download.log.warning("Before call, audio is not in MUSIC state")
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
-                                            ad_caller, None, None, 60))
+                                            ad_caller, None, None, 30))
         download_task = active_file_download_task(self.log, ad_download)
         results = run_multithread_func(self.log, [download_task, call_task])
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info(
+                "After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")
             return False
@@ -3155,9 +3153,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         elif not allow_data_transfer_interruption:
             self.log.error("Data transfer failed with parallel phone call.")
             return False
-        ad_download.log.info("Retry data transfer after call hung up")
-        time.sleep(15)
-        return download_task[0](*download_task[1])
+        else:
+            ad_download.log.info("Retry data transfer after call hung up")
+            return download_task[0](*download_task[1])
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
     @TelephonyBaseTest.tel_test_wrap
@@ -3547,14 +3545,30 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download.log.info("Open an youtube video")
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
+                              '"http://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("Before call, audio is in MUSIC_state")
+        else:
+            ad_download.log.warning("Before call, audio is not in MUSIC state")
+
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
-                                   None, None, 60):
+                                   None, None, 30):
             self.log.error("Call setup failed in active youtube video")
-            return False
+            result = False
         else:
             self.log.info("Call setup succeed in active youtube video")
-            return True
+            result = True
+
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info(
+                "After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
+        return result
 
     @test_tracker_info(uuid="1dc9f03f-1b6c-4c17-993b-3acafdc26ea3")
     @TelephonyBaseTest.tel_test_wrap
