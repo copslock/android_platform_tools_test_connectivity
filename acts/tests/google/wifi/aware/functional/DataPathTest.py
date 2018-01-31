@@ -148,7 +148,8 @@ class DataPathTest(AwareBaseTest):
       use_peer_id,
       passphrase_to_use=None,
       pub_on_both=False,
-      pub_on_both_same=True):
+      pub_on_both_same=True,
+      expect_failure=False):
     """Runs the in-band data-path tests.
 
     Args:
@@ -163,6 +164,8 @@ class DataPathTest(AwareBaseTest):
                    publisher isn't used (existing to test use-case).
       pub_on_both_same: If True then the second publish uses an identical
                         service name, otherwise a different service name.
+      expect_failure: If True then don't expect NDP formation, otherwise expect
+                      NDP setup to succeed.
     """
     (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
      peer_id_on_pub) = self.set_up_discovery(ptype, stype, use_peer_id,
@@ -189,51 +192,59 @@ class DataPathTest(AwareBaseTest):
         s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id, peer_id_on_sub,
                                                     passphrase, pmk))
 
-    # Publisher & Subscriber: wait for network formation
-    p_net_event = autils.wait_for_event_with_keys(
-        p_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-    s_net_event = autils.wait_for_event_with_keys(
-        s_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+    if expect_failure:
+      # Publisher & Subscriber: fail on network formation
+      time.sleep(autils.EVENT_NDP_TIMEOUT)
+      autils.fail_on_event_with_keys(p_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                     (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+      autils.fail_on_event_with_keys(s_dut, cconsts.EVENT_NETWORK_CALLBACK, 0,
+                                     (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+    else:
+      # Publisher & Subscriber: wait for network formation
+      p_net_event = autils.wait_for_event_with_keys(
+          p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+      s_net_event = autils.wait_for_event_with_keys(
+          s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
-    p_aware_if = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    s_aware_if = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    self.log.info("Interface names: p=%s, s=%s", p_aware_if, s_aware_if)
+      p_aware_if = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      s_aware_if = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      self.log.info("Interface names: p=%s, s=%s", p_aware_if, s_aware_if)
 
-    p_ipv6 = p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split(
-        "%")[0]
-    s_ipv6 = s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split(
-        "%")[0]
-    self.log.info("Interface addresses (IPv6): p=%s, s=%s", p_ipv6, s_ipv6)
+      p_ipv6 = \
+      p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split("%")[0]
+      s_ipv6 = \
+      s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split("%")[0]
+      self.log.info("Interface addresses (IPv6): p=%s, s=%s", p_ipv6, s_ipv6)
 
-    # TODO: possibly send messages back and forth, prefer to use netcat/nc
+      # TODO: possibly send messages back and forth, prefer to use netcat/nc
 
-    # terminate sessions and wait for ON_LOST callbacks
-    p_dut.droid.wifiAwareDestroy(p_id)
-    s_dut.droid.wifiAwareDestroy(s_id)
+      # terminate sessions and wait for ON_LOST callbacks
+      p_dut.droid.wifiAwareDestroy(p_id)
+      s_dut.droid.wifiAwareDestroy(s_id)
 
-    autils.wait_for_event_with_keys(
-        p_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-    autils.wait_for_event_with_keys(
-        s_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+      autils.wait_for_event_with_keys(
+          p_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+      autils.wait_for_event_with_keys(
+          s_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
     # clean-up
     p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
     s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
 
   def run_oob_data_path_test(self, encr_type, use_peer_id,
-      setup_discovery_sessions=False):
+      setup_discovery_sessions=False, expect_failure=False):
     """Runs the out-of-band data-path tests.
 
     Args:
@@ -243,6 +254,8 @@ class DataPathTest(AwareBaseTest):
       setup_discovery_sessions: If True also set up a (spurious) discovery
         session (pub on both sides, sub on Responder side). Validates a corner
         case.
+      expect_failure: If True then don't expect NDP formation, otherwise expect
+                      NDP setup to succeed.
     """
     init_dut = self.android_devices[0]
     init_dut.pretty_name = "Initiator"
@@ -299,47 +312,57 @@ class DataPathTest(AwareBaseTest):
         init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
             init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, passphrase, pmk))
 
-    # Initiator & Responder: wait for network formation
-    init_net_event = autils.wait_for_event_with_keys(
-        init_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-    resp_net_event = autils.wait_for_event_with_keys(
-        resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
-        autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
-        (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+    if expect_failure:
+      # Initiator & Responder: fail on network formation
+      time.sleep(autils.EVENT_NDP_TIMEOUT)
+      autils.fail_on_event_with_keys(resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                                     0,
+                                     (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+      autils.fail_on_event_with_keys(init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                                     0,
+                                     (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+    else:
+      # Initiator & Responder: wait for network formation
+      init_net_event = autils.wait_for_event_with_keys(
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+      resp_net_event = autils.wait_for_event_with_keys(
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
-    init_aware_if = init_net_event["data"][
-      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    resp_aware_if = resp_net_event["data"][
-      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
+      init_aware_if = init_net_event["data"][
+        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      resp_aware_if = resp_net_event["data"][
+        cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+      self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
 
-    init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
-        init_aware_if).split("%")[0]
-    resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
-        resp_aware_if).split("%")[0]
-    self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
-                  resp_ipv6)
+      init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
+          init_aware_if).split("%")[0]
+      resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
+          resp_aware_if).split("%")[0]
+      self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
+                    resp_ipv6)
 
-    # TODO: possibly send messages back and forth, prefer to use netcat/nc
+      # TODO: possibly send messages back and forth, prefer to use netcat/nc
 
-    # terminate sessions and wait for ON_LOST callbacks
-    init_dut.droid.wifiAwareDestroy(init_id)
-    resp_dut.droid.wifiAwareDestroy(resp_id)
+      # terminate sessions and wait for ON_LOST callbacks
+      init_dut.droid.wifiAwareDestroy(init_id)
+      resp_dut.droid.wifiAwareDestroy(resp_id)
 
-    autils.wait_for_event_with_keys(
-        init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-    autils.wait_for_event_with_keys(
-        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
-        (cconsts.NETWORK_CB_KEY_EVENT,
-         cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+      autils.wait_for_event_with_keys(
+          init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+      autils.wait_for_event_with_keys(
+          resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LOST), (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
     # clean-up
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
@@ -1380,3 +1403,55 @@ class DataPathTest(AwareBaseTest):
     Flip Initiator and Responder roles.
     """
     self.run_multiple_ndi([self.PMK, self.PMK2], flip_init_resp=True)
+
+  #######################################
+
+  def test_ib_responder_any_usage(self):
+    """Verify that configuring an in-band (Aware discovery) Responder to receive
+    an NDP request from any peer is not permitted by current API level. Override
+    API check to validate that possible (i.e. that failure at current API level
+    is due to an API check and not some underlying failure).
+    """
+
+    # configure all devices to override API check and allow a Responder from ANY
+    for ad in self.android_devices:
+      autils.configure_ndp_allow_any_override(ad, True)
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False)
+
+    # configure all devices to respect API check - i.e. disallow a Responder
+    # from ANY
+    for ad in self.android_devices:
+      autils.configure_ndp_allow_any_override(ad, False)
+    self.run_ib_data_path_test(
+        ptype=aconsts.PUBLISH_TYPE_UNSOLICITED,
+        stype=aconsts.SUBSCRIBE_TYPE_PASSIVE,
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        expect_failure=True)
+
+  def test_oob_responder_any_usage(self):
+    """Verify that configuring an out-of-band (Aware discovery) Responder to
+    receive an NDP request from any peer is not permitted by current API level.
+    Override API check to validate that possible (i.e. that failure at current
+    API level is due to an API check and not some underlying failure).
+    """
+
+    # configure all devices to override API check and allow a Responder from ANY
+    for ad in self.android_devices:
+      autils.configure_ndp_allow_any_override(ad, True)
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False)
+
+    # configure all devices to respect API check - i.e. disallow a Responder
+    # from ANY
+    for ad in self.android_devices:
+      autils.configure_ndp_allow_any_override(ad, False)
+    self.run_oob_data_path_test(
+        encr_type=self.ENCR_TYPE_OPEN,
+        use_peer_id=False,
+        expect_failure=True)

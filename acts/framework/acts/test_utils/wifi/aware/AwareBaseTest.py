@@ -52,7 +52,7 @@ class AwareBaseTest(BaseTestClass):
       self.reset_device_parameters(ad)
       self.reset_device_statistics(ad)
       self.set_power_mode_parameters(ad)
-
+      autils.configure_ndp_allow_any_override(ad, True)
 
   def teardown_test(self):
     for ad in self.android_devices:
