@@ -63,6 +63,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
@@ -3126,10 +3127,23 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
                               '"https://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+        if wait_for_state(
+                ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("Before call, audio is in MUSIC_state")
+        else:
+            ad_download.log.warning("Before call, audio is not in MUSIC state")
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
-                                            ad_caller, None, None, 60))
+                                            ad_caller, None, None, 30))
         download_task = active_file_download_task(self.log, ad_download)
         results = run_multithread_func(self.log, [download_task, call_task])
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info(
+                "After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
         if not results[1]:
             self.log.error("Call setup failed in active data transfer.")
             return False
@@ -3139,9 +3153,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         elif not allow_data_transfer_interruption:
             self.log.error("Data transfer failed with parallel phone call.")
             return False
-        ad_download.log.info("Retry data transfer after call hung up")
-        time.sleep(15)
-        return download_task[0](*download_task[1])
+        else:
+            ad_download.log.info("Retry data transfer after call hung up")
+            return download_task[0](*download_task[1])
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
     @TelephonyBaseTest.tel_test_wrap
@@ -3531,14 +3545,30 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download.log.info("Open an youtube video")
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=D89C8T9yKpM"')
+                              '"http://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("Before call, audio is in MUSIC_state")
+        else:
+            ad_download.log.warning("Before call, audio is not in MUSIC state")
+
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
-                                   None, None, 60):
+                                   None, None, 30):
             self.log.error("Call setup failed in active youtube video")
-            return False
+            result = False
         else:
             self.log.info("Call setup succeed in active youtube video")
-            return True
+            result = True
+
+        if wait_for_state(
+            ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info(
+                "After call hangup, audio is back to music")
+        else:
+            ad_download.log.warning(
+                "After call hang up, audio is not back to music")
+        ad_download.force_stop_apk("com.google.android.youtube")
+        return result
 
     @test_tracker_info(uuid="1dc9f03f-1b6c-4c17-993b-3acafdc26ea3")
     @TelephonyBaseTest.tel_test_wrap
