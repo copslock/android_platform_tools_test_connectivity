@@ -28,8 +28,8 @@ from acts.test_utils.bt.bt_constants import gatt_event
 from acts.test_utils.bt.bt_constants import gatt_server_responses
 from acts.test_utils.bt.bt_constants import gatt_service_types
 from acts.test_utils.bt.bt_constants import small_timeout
+from acts.test_utils.bt.gatt_test_database import STRING_512BYTES
 
-from gatt_test_database import STRING_512BYTES
 from acts.utils import exe_cmd
 from math import ceil
 
@@ -57,14 +57,19 @@ class GattServerLib():
         """From the GATT Client, discover services and list all services,
         chars and descriptors.
         """
-        self.log.info("Listing Characteristics")
+        self.log.info("Service List:")
+        for service in self.dut.droid.gattGetServiceUuidList(self.gatt_server):
+            self.dut.log.info("GATT Server service uuid: {}".format(service))
+        self.log.info("Characteristics List:")
         for characteristic in self.characteristic_list:
             instance_id = self.dut.droid.gattServerGetCharacteristicInstanceId(
                 characteristic)
             uuid = self.dut.droid.gattServerGetCharacteristicUuid(
                 characteristic)
-            self.dut.log.info("GATT Server characteristic handle uuid: {} {}".
-                              format(hex(instance_id), uuid))
+            self.dut.log.info(
+                "GATT Server characteristic handle uuid: {} {}".format(
+                    hex(instance_id), uuid))
+        # TODO: add getting insance ids and uuids from each descriptor.
 
     def open(self):
         """Open an empty GATT Server instance"""
@@ -84,8 +89,8 @@ class GattServerLib():
             for btgs in self.gatt_server_list:
                 self.dut.droid.gattServerClose(btgs)
         except Exception as err:
-            self.log.error("Failed to close Bluetooth GATT Servers: {}".format(
-                err))
+            self.log.error(
+                "Failed to close Bluetooth GATT Servers: {}".format(err))
         self.characteristic_list = []
         self.descriptor_list = []
         self.gatt_server_list = []
@@ -128,8 +133,8 @@ class GattServerLib():
             self.log.debug("Found event: {}.".format(event))
             request_id = event['data']['requestId']
             if event['name'] == execute_write:
-                if ('execute' in event['data'] and
-                        event['data']['execute'] == True):
+                if ('execute' in event['data']
+                        and event['data']['execute'] == True):
                     for key in self.write_mapping:
                         value = self.write_mapping[key]
                         self.log.info("Writing key, value: {}, {}".format(
@@ -145,12 +150,12 @@ class GattServerLib():
             offset = event['data']['offset']
             instance_id = event['data']['instanceId']
             if (event['name'] == desc_write or event['name'] == char_write):
-                if ('preparedWrite' in event['data'] and
-                        event['data']['preparedWrite'] == True):
+                if ('preparedWrite' in event['data']
+                        and event['data']['preparedWrite'] == True):
                     value = event['data']['value']
                     if instance_id in self.write_mapping.keys():
-                        self.write_mapping[instance_id] = self.write_mapping[
-                            instance_id] + value
+                        self.write_mapping[
+                            instance_id] = self.write_mapping[instance_id] + value
                         self.log.info(
                             "New Prepared Write Value for {}: {}".format(
                                 instance_id, self.write_mapping[instance_id]))
@@ -183,8 +188,8 @@ class GattServerLib():
                 self.gatt_server, 0, request_id, status, offset, data)
 
     def _setup_service(self, serv):
-        service = self.dut.droid.gattServerCreateService(serv['uuid'],
-                                                         serv['type'])
+        service = self.dut.droid.gattServerCreateService(
+            serv['uuid'], serv['type'])
         if 'handles' in serv:
             self.dut.droid.gattServerServiceSetHandlesToReserve(
                 service, serv['handles'])
@@ -224,8 +229,8 @@ class GattServerLib():
         descriptor = self.dut.droid.gattServerCreateBluetoothGattDescriptor(
             desc['uuid'], desc['permissions'])
         if 'value' in desc:
-            self.dut.droid.gattServerDescriptorSetByteValue(descriptor,
-                                                            desc['value'])
+            self.dut.droid.gattServerDescriptorSetByteValue(
+                descriptor, desc['value'])
         if 'instance_id' in desc:
             self.dut.droid.gattServerDescriptorSetInstanceId(
                 descriptor, desc['instance_id'])
@@ -268,7 +273,7 @@ class GattServerLib():
             self.gatt_server_callback)
         char_write = gatt_event['char_write']['evt'].format(
             self.gatt_server_callback)
-        execute_write = gatt_event['char_exec_write']['evt'].format(
+        execute_write = gatt_event['exec_write']['evt'].format(
             self.gatt_server_callback)
         regex = "({}|{}|{}|{}|{})".format(desc_read, desc_write, char_read,
                                           char_write, execute_write)
@@ -327,8 +332,8 @@ class GattServerLib():
                 self.log.info(event)
                 request_id = event['data']['requestId']
                 if event['name'] == execute_write:
-                    if ('execute' in event['data'] and
-                            event['data']['execute'] == True):
+                    if ('execute' in event['data']
+                            and event['data']['execute'] == True):
                         for key in self.write_mapping:
                             value = self.write_mapping[key]
                             self.log.debug("Writing key, value: {}, {}".format(
@@ -341,15 +346,14 @@ class GattServerLib():
                     continue
                 offset = event['data']['offset']
                 instance_id = event['data']['instanceId']
-                if (event['name'] == desc_write or
-                        event['name'] == char_write):
-                    if ('preparedWrite' in event['data'] and
-                            event['data']['preparedWrite'] == True):
+                if (event['name'] == desc_write
+                        or event['name'] == char_write):
+                    if ('preparedWrite' in event['data']
+                            and event['data']['preparedWrite'] == True):
                         value = event['data']['value']
                         if instance_id in self.write_mapping:
                             self.write_mapping[
-                                instance_id] = self.write_mapping[
-                                    instance_id] + value
+                                instance_id] = self.write_mapping[instance_id] + value
                         else:
                             self.write_mapping[instance_id] = value
                     else:
