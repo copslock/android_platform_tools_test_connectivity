@@ -143,7 +143,6 @@ class GattClientLib():
             self.bluetooth_gatt, self.discovered_services_index,
             int(instance_id, 16), [int(write_value)])
 
-
     def mod_write_char_by_instance_id(self, line):
         """GATT Client Write to Char that doesn't have write permission"""
         args = line.split()
@@ -407,8 +406,9 @@ class GattClientLib():
                             self.bluetooth_gatt,
                             self.discovered_services_index, i, j, k)
                     except Exception as err:
-                        self.log.info("Failed to read to descriptor: {}".
-                                      format(descriptor_uuids[k]))
+                        self.log.info(
+                            "Failed to read to descriptor: {}".format(
+                                descriptor_uuids[k]))
 
     def write_all_char(self, line):
         """Write to every Characteristic on the GATT server"""
@@ -437,8 +437,9 @@ class GattClientLib():
                         j)
                     time.sleep(1)
                 except Exception as err:
-                    self.log.info("Failed to write to characteristic: {}".
-                                  format(characteristic_uuids[j]))
+                    self.log.info(
+                        "Failed to write to characteristic: {}".format(
+                            characteristic_uuids[j]))
 
     def write_all_desc(self, line):
         """ Write to every Descriptor on the GATT server """
@@ -474,8 +475,9 @@ class GattClientLib():
                             self.bluetooth_gatt,
                             self.discovered_services_index, i, j, k)
                     except Exception as err:
-                        self.log.info("Failed to write to descriptor: {}".
-                                      format(descriptor_uuids[k]))
+                        self.log.info(
+                            "Failed to write to descriptor: {}".format(
+                                descriptor_uuids[k]))
 
     def discover_service_by_uuid(self, line):
         """ Discover service by UUID """
