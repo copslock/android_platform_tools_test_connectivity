@@ -404,6 +404,22 @@ def configure_power_setting(device, mode, name, value):
   device.adb.shell(
     "cmd wifiaware native_api set-power %s %s %d" % (mode, name, value))
 
+def configure_ndp_allow_any_override(device, override_api_check):
+  """Use the command-line API to configure whether an NDP Responder may be
+  configured to accept an NDP request from ANY peer.
+
+  By default the target API level of the requesting app determines whether such
+  configuration is permitted. This allows overriding the API check and allowing
+  it.
+
+  Args:
+    device: Device on which to perform configuration.
+    override_api_check: True to allow a Responder to ANY configuration, False to
+                        perform the API level check.
+  """
+  device.adb.shell("cmd wifiaware state_mgr allow_ndp_any %s" % (
+    "true" if override_api_check else "false"))
+
 def config_settings_high_power(device):
   """Configure device's power settings values to high power mode -
   whether device is in interactive or non-interactive modes"""
