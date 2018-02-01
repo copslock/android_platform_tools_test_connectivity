@@ -3126,7 +3126,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"https://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+                              '"https://www.youtube.com/watch?v=VHF-XK0Vg1s"')
         if wait_for_state(
                 ad_download.droid.audioIsMusicActive, True, 15, 1):
             ad_download.log.info("Before call, audio is in MUSIC_state")
@@ -3545,7 +3545,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download.log.info("Open an youtube video")
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=RRZp7sVdhzQ"')
+                              '"http://www.youtube.com/watch?v=VHF-XK0Vg1s"')
         if wait_for_state(
             ad_download.droid.audioIsMusicActive, True, 15, 1):
             ad_download.log.info("Before call, audio is in MUSIC_state")
