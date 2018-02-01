@@ -1008,3 +1008,24 @@ class DiscoveryTest(AwareBaseTest):
     self.run_multiple_concurrent_services(
       type_x=[aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE],
       type_y=[aconsts.PUBLISH_TYPE_SOLICITED, aconsts.SUBSCRIBE_TYPE_ACTIVE])
+
+  #########################################################
+
+  def test_upper_lower_service_name_equivalence(self):
+    """Validate that Service Name is case-insensitive. Publish a service name
+    with mixed case, subscribe to the same service name with alternative case
+    and verify that discovery happens."""
+    p_dut = self.android_devices[0]
+    s_dut = self.android_devices[1]
+
+    pub_service_name = "GoogleAbCdEf"
+    sub_service_name = "GoogleaBcDeF"
+
+    autils.create_discovery_pair(p_dut, s_dut,
+                               p_config=autils.create_discovery_config(
+                                 pub_service_name,
+                                 aconsts.PUBLISH_TYPE_UNSOLICITED),
+                               s_config=autils.create_discovery_config(
+                                 sub_service_name,
+                                 aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                               device_startup_offset=self.device_startup_offset)
