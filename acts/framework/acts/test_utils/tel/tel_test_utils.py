@@ -4935,7 +4935,7 @@ def stop_qxdm_logger(ad):
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
-    if getattr(ad, "qxdm_logger_path"):
+    if getattr(ad, "qxdm_logger_path", None):
         if begin_time:
             current_time = get_current_epoch_time()
             seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
