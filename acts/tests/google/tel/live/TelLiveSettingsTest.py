@@ -44,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import flash_radio
 from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
+from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import power_off_sim
 from acts.test_utils.tel.tel_test_utils import power_on_sim
@@ -54,6 +55,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
+from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
@@ -1389,11 +1391,38 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 else:
                     self.ad.log.info(msg)
                     break
+        else:
+            if self.ad.model in ("taimen", "walleye"):
+                msg = "Power off SIM slot is not working"
+                self.ad.log.error(msg)
+                result = False
+            else:
+                msg = "Power off SIM slot is not supported"
+                self.ad.log.warning(msg)
+            self.result_detail = "%s %s" % (self.result_detail, msg)
 
         if not power_on_sim(self.ad, slot_index):
             abort_all_tests(self.ad.log, "Fail to power up SIM")
             result = False
         else:
+            if is_sim_locked(self.ad):
+                self.ad.log.info("Sim is locked")
+                carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
+                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+                msg = "In locked SIM, carrier_id = %s(expecting -1), " \
+                      "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
+                if carrier_id != -1 or carrier_name:
+                    self.ad.log.error(msg)
+                    self.result_detail = "%s %s" % (self.result_detail, msg)
+                    result = False
+                else:
+                    self.ad.log.info(msg)
+                unlock_sim(self.ad)
+            elif getattr(ad, "is_sim_locked", False):
+                ad.log.error(
+                    "After SIM slot power cycle, SIM in not in lock edstate")
+                return = False
+
             if not ensure_phone_subscription(self.log, self.ad):
                 self.ad.log.error("Unable to find a valid subscription!")
                 result = False

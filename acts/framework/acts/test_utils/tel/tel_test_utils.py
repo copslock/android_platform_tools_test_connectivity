@@ -83,6 +83,8 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+from acts.test_utils.tel.tel_defines import SIM_STATE_LOADED
+from acts.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
 from acts.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
@@ -538,12 +540,8 @@ def is_sim_ready(log, ad, sim_slot_id=None):
 
 
 def is_sim_ready_by_adb(log, ad):
-    if ad.adb.getprop("gsm.sim.state") == SIM_STATE_READY:
-        ad.log.debug("SIM state is ready")
-        return True
-    else:
-        ad.log.debug("Sim state is not ready")
-        return False
+    state = ad.adb.getprop("gsm.sim.state")
+    return state == SIM_STATE_READY or state == SIM_STATE_LOADED
 
 
 def wait_for_sim_ready_by_adb(log, ad, wait_time=90):
@@ -5169,7 +5167,10 @@ def reset_device_password(ad, device_password=None):
     screen_lock = ad.is_screen_lock_enabled()
     if device_password:
         refresh_sl4a_session(ad)
-        ad.droid.setDevicePassword(device_password)
+        try:
+            ad.droid.setDevicePassword(device_password)
+        except Exception as e:
+            ad.log.warning("setDevicePassword failed with %s", e)
         time.sleep(2)
         if screen_lock:
             # existing password changed
@@ -5190,7 +5191,10 @@ def reset_device_password(ad, device_password=None):
             ad.unlock_screen(password="1111")
             refresh_sl4a_session(ad)
             ad.ensure_screen_on()
-            ad.droid.disableDevicePassword()
+            try:
+                ad.droid.disableDevicePassword()
+            except Exception as e:
+                ad.log.warning("disableDevicePassword failed with %s", e)
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
     refresh_sl4a_session(ad)
@@ -5198,11 +5202,17 @@ def reset_device_password(ad, device_password=None):
         ad.start_adb_logcat()
 
 
-def is_sim_locked(ad):
+def get_sim_state(ad):
     try:
-        return ad.droid.telephonyGetSimState() == SIM_STATE_PIN_REQUIRED
+        state = ad.droid.telephonyGetSimState()
     except:
-        return ad.adb.getprop("gsm.sim.state") == SIM_STATE_PIN_REQUIRED
+        state = ad.adb.getprop("gsm.sim.state")
+    return state
+
+
+def is_sim_locked(ad):
+    state = get_sim_state(ad)
+    return state == SIM_STATE_PIN_REQUIRED or state == SIM_STATE_NOT_READY
 
 
 def unlock_sim(ad):
@@ -5213,14 +5223,16 @@ def unlock_sim(ad):
     #                   "puk_pin": "1234"}]
     if not is_sim_locked(ad):
         return True
+    else:
+        ad.is_sim_locked = True
     puk_pin = getattr(ad, "puk_pin", "1111")
     try:
         if not hasattr(ad, 'puk'):
             ad.log.info("Enter SIM pin code")
-            result = ad.droid.telephonySupplyPin(puk_pin)
+            ad.droid.telephonySupplyPin(puk_pin)
         else:
             ad.log.info("Enter PUK code and pin")
-            result = ad.droid.telephonySupplyPuk(ad.puk, puk_pin)
+            ad.droid.telephonySupplyPuk(ad.puk, puk_pin)
     except:
         # if sl4a is not available, use adb command
         ad.unlock_screen(puk_pin)
@@ -5407,7 +5419,7 @@ def power_off_sim(ad, sim_slot_id=None):
         return True
     else:
         ad.log.info("SIM state = %s", verify_func(*verify_args))
-        ad.log.error("Fail to power off SIM slot")
+        ad.log.warning("Fail to power off SIM slot")
         return False
 
 
@@ -5430,8 +5442,8 @@ def power_on_sim(ad, sim_slot_id=None):
         ad.log.info("SIM slot is powered on, SIM state is READY")
         return True
     elif verify_func(*verify_args) == SIM_STATE_PIN_REQUIRED:
-        ad.log.info("SIM is locked, unlocking it")
-        unlock_sim()
+        ad.log.info("SIM is pin locked")
+        return True
     else:
         ad.log.error("Fail to power on SIM slot")
         return False
