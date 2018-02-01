@@ -718,8 +718,36 @@ def start_wifi_connection_scan(ad):
         asserts.fail("Wi-Fi results did not become available within 60s.")
 
 
+def start_wifi_connection_scan_and_return_status(ad):
+    """
+    Starts a wifi connection scan and wait for results to become available
+    or a scan failure to be reported.
+
+    Args:
+        ad: An AndroidDevice object.
+    Returns:
+        True: if scan succeeded & results are available
+        False: if scan failed
+    """
+    ad.ed.clear_all_events()
+    ad.droid.wifiStartScan()
+    try:
+        events = ad.ed.pop_events(
+            "WifiManagerScan(ResultsAvailable|Failure)", 60)
+    except Empty:
+        asserts.fail(
+            "Wi-Fi scan results/failure did not become available within 60s.")
+    # If there are multiple matches, we check for atleast one success.
+    for event in events:
+        if event["name"] == "WifiManagerScanResultsAvailable":
+            return True
+        elif event["name"] == "WifiManagerScanFailure":
+            ad.log.debug("Scan failure received")
+    return False
+
+
 def start_wifi_connection_scan_and_check_for_network(ad, network_ssid,
-                                                     max_tries=2):
+                                                     max_tries=3):
     """
     Start connectivity scans & checks if the |network_ssid| is seen in
     scan results. The method performs a max of |max_tries| connectivity scans
@@ -734,17 +762,17 @@ def start_wifi_connection_scan_and_check_for_network(ad, network_ssid,
         False: if network_ssid is not found in scan results.
     """
     for num_tries in range(max_tries):
-        start_wifi_connection_scan(ad)
-        scan_results = ad.droid.wifiGetScanResults()
-        match_results = match_networks(
-            {WifiEnums.SSID_KEY: network_ssid}, scan_results)
-        if len(match_results) > 0:
-            return True
+        if start_wifi_connection_scan_and_return_status(ad):
+            scan_results = ad.droid.wifiGetScanResults()
+            match_results = match_networks(
+                {WifiEnums.SSID_KEY: network_ssid}, scan_results)
+            if len(match_results) > 0:
+                return True
     return False
 
 
 def start_wifi_connection_scan_and_ensure_network_found(ad, network_ssid,
-                                                        max_tries=2):
+                                                        max_tries=3):
     """
     Start connectivity scans & ensure the |network_ssid| is seen in
     scan results. The method performs a max of |max_tries| connectivity scans
@@ -764,7 +792,7 @@ def start_wifi_connection_scan_and_ensure_network_found(ad, network_ssid,
 
 
 def start_wifi_connection_scan_and_ensure_network_not_found(ad, network_ssid,
-                                                            max_tries=2):
+                                                            max_tries=3):
     """
     Start connectivity scans & ensure the |network_ssid| is not seen in
     scan results. The method performs a max of |max_tries| connectivity scans
