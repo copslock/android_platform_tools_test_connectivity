@@ -1419,7 +1419,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                     self.ad.log.info(msg)
                 unlock_sim(self.ad)
             elif getattr(self.ad, "is_sim_locked", False):
-                ad.log.error(
+                self.ad.log.error(
                     "After SIM slot power cycle, SIM in not in locked state")
                 return False
 
