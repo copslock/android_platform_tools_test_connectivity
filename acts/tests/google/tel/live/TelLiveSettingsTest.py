@@ -1420,8 +1420,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 unlock_sim(self.ad)
             elif getattr(ad, "is_sim_locked", False):
                 ad.log.error(
-                    "After SIM slot power cycle, SIM in not in lock edstate")
-                return = False
+                    "After SIM slot power cycle, SIM in not in locked state")
+                return False
 
             if not ensure_phone_subscription(self.log, self.ad):
                 self.ad.log.error("Unable to find a valid subscription!")
