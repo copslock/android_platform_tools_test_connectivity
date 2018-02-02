@@ -1418,7 +1418,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 else:
                     self.ad.log.info(msg)
                 unlock_sim(self.ad)
-            elif getattr(ad, "is_sim_locked", False):
+            elif getattr(self.ad, "is_sim_locked", False):
                 ad.log.error(
                     "After SIM slot power cycle, SIM in not in locked state")
                 return False
