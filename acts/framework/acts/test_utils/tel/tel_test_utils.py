@@ -5224,8 +5224,7 @@ def get_sim_state(ad):
 
 
 def is_sim_locked(ad):
-    state = get_sim_state(ad)
-    return state == SIM_STATE_PIN_REQUIRED or state == SIM_STATE_NOT_READY
+    return get_sim_state(ad) == SIM_STATE_PIN_REQUIRED
 
 
 def unlock_sim(ad):
