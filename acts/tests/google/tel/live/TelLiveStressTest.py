@@ -186,8 +186,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             1: mms_send_receive_verify
         }
         message_type = message_type_map[selection]
-        self.result_info["Total %s" % message_type] += 1
-        the_number = self.result_info["Total %s" % message_type]
+        the_number = self.result_info["Total %s" % message_type] + 1
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         log_msg = "The %s-th %s test: of length %s from %s to %s" % (
@@ -220,6 +219,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
+            self.result_info["Total %s" % message_type] += 1
             if message_type == "SMS":
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s failure" % message_type] += 1
@@ -241,6 +241,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                the_number), begin_time)
             return False
         else:
+            self.result_info["Total %s" % message_type] += 1
             self.log.info("%s succeed", log_msg)
             self.result_info["%s Success" % message_type] += 1
             return True
@@ -251,8 +252,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             random.shuffle(ads)
         for ad in ads:
             hangup_call_by_adb(ad)
-        self.result_info["Total Calls"] += 1
-        the_number = self.result_info["Total Calls"]
+        the_number = self.result_info["Total Calls"] + 1
         duration = random.randrange(self.min_phone_call_duration,
                                     self.max_phone_call_duration)
         if self.single_phone_test:
@@ -409,6 +409,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 self._make_phone_call(call_verification_func)
+                self.result_info["Total Calls"] += 1
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
@@ -434,6 +435,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 self._make_phone_call(call_verification_func=is_phone_in_call_volte)
+                self.result_info["Total Calls"] += 1
                 self._prefnetwork_mode_change(sub_id)
             except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
@@ -480,7 +482,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 start_qxdm_loggers(self.log, self.android_devices)
                 self.tcpdump_proc = None
                 self.dut.log.info(dict(self.result_info))
-                self.result_info["Total file download"] += 1
                 selection = random.randrange(0, len(file_names))
                 file_name = file_names[selection]
                 if self.result_info["File download failure"] < 1:
@@ -503,6 +504,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.result_info["File download Success"] += 1
                     if self.tcpdump_proc is not None:
                         stop_adb_tcpdump(self.dut, self.tcpdump_proc, False)
+                self.result_info["Total file download"] += 1
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
