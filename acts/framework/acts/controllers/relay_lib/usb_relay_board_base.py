@@ -27,7 +27,7 @@ class UsbRelayBoardBase(RelayBoard):
     def __init__(self, config):
         self.status_dict = dict()
         self.device = config["device"]
-        super(UsbRelayBoardBaseClass, self).__init__(config)
+        super(UsbRelayBoardBase, self).__init__(config)
         self.address = {
             1: 0x1,
             2: 0x2,
