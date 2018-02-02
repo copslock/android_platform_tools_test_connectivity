@@ -536,7 +536,7 @@ def wait_for_dhcp(intf):
     ip = '0.0.0.0'
     while ip == '0.0.0.0':
         ip = scapy.get_if_addr(intf)
-    log.info('DHCP address assigned to {}'.format(intf))
+    log.info('DHCP address assigned to {} as {}'.format(intf, ip))
     return ip
 
 
@@ -551,9 +551,8 @@ def reset_host_interface(intf):
     intf_up_cmd = 'ifconfig %s up' % intf
     try:
         job.run(intf_down_cmd)
-        time.sleep(3)
+        time.sleep(10)
         job.run(intf_up_cmd)
-        time.sleep(3)
         log.info('{} has been reset'.format(intf))
     except job.Error:
         raise Exception('No such interface')
