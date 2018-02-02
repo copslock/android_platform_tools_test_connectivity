@@ -51,7 +51,7 @@ class I6sHeadset(GenericRelayDevice):
 
     def clean_up(self):
         """Turns off headset."""
-        self.relays[Buttons.Pair.value].set_nc_for(PAIRING_MODE_WAIT_TIME)
+        self.relays[Buttons.Pair.value].set_no_for(PAIRING_MODE_WAIT_TIME)
 
     def ensure_config_contains_relay(self, relay_name):
         """
@@ -65,11 +65,11 @@ class I6sHeadset(GenericRelayDevice):
 
     def pairing_mode(self):
         """Sets relay in paring mode."""
-        self.relays[Buttons.Pair.value].set_no()
+        self.relays[Buttons.Pair.value].set_no_for(PAIRING_MODE_WAIT_TIME)
 
     def power_on(self):
         """Power on relay."""
-        self.relays[Buttons.Power.value].set_no()
+        self.relays[Buttons.Power.value].set_no_for(WAIT_TIME)
 
     def play_pause(self):
         """
@@ -77,31 +77,31 @@ class I6sHeadset(GenericRelayDevice):
             Play state : if there is no A2DP_streaming.
             Pause state : if there is A2DP_streaming.
         """
-        self.relays[Buttons.Play_pause.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Play_pause.value].set_no_for(WAIT_TIME)
 
     def skip_next(self):
         """Skips to next song from relay_device."""
-        self.relays[Buttons.Next.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Next.value].set_no_for(WAIT_TIME)
 
     def skip_previous(self):
         """Skips to previous song from relay_device."""
-        self.relays[Buttons.Previous.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Previous.value].set_no_for(WAIT_TIME)
 
     def volume_up(self):
         """Increases volume from relay_device."""
-        self.relays[Buttons.Volume_up.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Volume_up.value].set_no_for(WAIT_TIME)
 
     def volume_down(self):
         """Decreases volume from relay_device."""
-        self.relays[Buttons.Volume_down.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Volume_down.value].set_no_for(WAIT_TIME)
 
     def initiate_call_from_hf(self):
         """Initiate call from relay device."""
         for i in range(0, 2):
-            self.relays[Buttons.Initiate_Call.value].set_nc_for(WAIT_TIME)
+            self.relays[Buttons.Initiate_Call.value].set_no_for(WAIT_TIME)
         return True
 
     def accept_call(self):
         """Accepts call from relay device."""
-        self.relays[Buttons.Answer_Call.value].set_nc_for(WAIT_TIME)
+        self.relays[Buttons.Answer_Call.value].set_no_for(WAIT_TIME)
         return True
