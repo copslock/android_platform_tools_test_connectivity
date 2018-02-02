@@ -29,6 +29,7 @@ from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
+from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.event_dispatcher import EventDispatcher
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
@@ -4869,21 +4870,29 @@ def get_number_from_tel_uri(uri):
         return None
 
 
-def find_qxdm_logger_mask(ad, mask):
+def find_qxdm_log_mask(ad, mask="default.cfg"):
     """Find QXDM logger mask."""
     if "/" not in mask:
         # Call nexuslogger to generate log mask
         start_nexuslogger(ad)
         # Find the log mask path
-        for path in ("/data/vendor/radio/diag_logs", "/data/diag_logs"):
-            if mask in ad.adb.shell("ls %s/cfg" % path, ignore_status=True):
-                ad.qxdm_logger_path = os.path.join(path, "logs")
-                return "%s/cfg/%s" % (path, mask)
+        for path in (DEFAULT_QXDM_LOG_PATH, "/data/diag_logs",
+                     "/vendor/etc/mdlog/"):
+            out = ad.adb.shell("find %s -type f -iname %s" % (
+                path, mask), ignore_status=True)
+            if out and "No such" not in out and "Permission denied" not in out:
+                if path.startswith("/vendor/"):
+                    ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+                else:
+                    ad.qxdm_log_path = path
+                return out.split("\n")[0]
+        if mask in ad.adb.shell("ls /vendor/etc/mdlog/"):
+            ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+            return "%s/%s" % ("/vendor/etc/mdlog/", mask)
     else:
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
-            paths = mask.rsplit("/", 2)
-            ad.qxdm_logger_path = os.path.join(paths[0], "logs")
+            ad.qxdm_log_path = "/data/vendor/radio/diag_logs"
             return mask
     ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
 
@@ -4896,23 +4905,25 @@ def set_qxdm_logger_command(ad, mask=None):
 
     """
     ## Neet to check if log mask will be generated without starting nexus logger
+    masks = []
+    mask_path = None
     if mask:
-        mask_path = find_qxdm_logger_mask(ad, mask)
-    else:
-        for mask in ("QC_Default.cfg", "default.cfg"):
-            mask_path = find_qxdm_logger_mask(ad, mask)
-            if mask_path: break
+        masks = [mask]
+    masks.extend(["QC_Default.cfg", "default.cfg"])
+    for mask in masks:
+        mask_path = find_qxdm_log_mask(ad, mask)
+        if mask_path: break
     if not mask_path:
-        ad.log.error("Cannot find mask %s", mask)
+        ad.log.error("Cannot find QXDM mask %s", mask)
         ad.qxdm_logger_command = None
         return False
     else:
         ad.log.info("Use QXDM log mask %s", mask_path)
-        ad.log.debug("qxdm_logger_path = %s", ad.qxdm_logger_path)
+        ad.log.debug("qxdm_log_path = %s", ad.qxdm_log_path)
+        output_path = os.path.join(ad.qxdm_log_path, "logs")
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
-                                  (mask_path, ad.qxdm_logger_path))
-        conf_path = os.path.split(ad.qxdm_logger_path)[0]
-        conf_path = os.path.join(conf_path, "diag.conf")
+                                  (mask_path, output_path))
+        conf_path = os.path.join(ad.qxdm_log_path, "diag.conf")
         # Enable qxdm always on so that after device reboot, qxdm will be
         # turned on automatically
         ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
@@ -4935,15 +4946,17 @@ def stop_qxdm_logger(ad):
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
-    if getattr(ad, "qxdm_logger_path", None):
+    if getattr(ad, "qxdm_log_path", None):
+        seconds = None
         if begin_time:
             current_time = get_current_epoch_time()
             seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
-            ad.adb.shell("find %s -type f -not -mtime -%ss -delete" %
-                         (ad.qxdm_logger_path, seconds))
-        elif len(ad.get_file_names(ad.qxdm_logger_path)) > 50:
-            ad.adb.shell("find %s -type f -not -mtime -900s -delete"
-                         % ad.qxdm_logger_path)
+        elif len(ad.get_file_names(ad.qxdm_log_path)) > 50:
+            seconds = 900
+        if seconds:
+            ad.adb.shell(
+                "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" % (
+                ad.qxdm_log_path, seconds))
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
         if ad.qxdm_logger_command not in output:
@@ -4955,7 +4968,7 @@ def start_qxdm_logger(ad, begin_time=None):
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             ad.adb.shell_nb(ad.qxdm_logger_command)
-        elif not ad.get_file_names(ad.qxdm_logger_path, 60):
+        elif not ad.get_file_names(ad.qxdm_log_path, 60):
             ad.log.debug("Existing diag_mdlog is not generating logs")
             stop_qxdm_logger(ad)
             ad.adb.shell_nb(ad.qxdm_logger_command)
