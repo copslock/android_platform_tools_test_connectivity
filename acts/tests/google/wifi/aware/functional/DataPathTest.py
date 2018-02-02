@@ -17,6 +17,7 @@
 import time
 
 from acts import asserts
+from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
@@ -1455,3 +1456,82 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_OPEN,
         use_peer_id=False,
         expect_failure=True)
+
+  #######################################
+
+  def run_multiple_regulatory_domains(self, use_ib, init_domain, resp_domain):
+    """Verify that a data-path setup with two conflicting regulatory domains
+    works (the result should be run in Channel 6 - but that is not tested).
+
+    Args:
+      use_ib: True to use in-band discovery, False to use out-of-band discovery.
+      init_domain: The regulatory domain of the Initiator/Subscriber.
+      resp_domain: The regulator domain of the Responder/Publisher.
+    """
+    init_dut = self.android_devices[0]
+    resp_dut = self.android_devices[1]
+
+    utils.set_regulatory_domain(init_dut, init_domain)
+    utils.set_regulatory_domain(resp_dut, resp_domain)
+
+    if use_ib:
+      (resp_req_key, init_req_key, resp_aware_if, init_aware_if, resp_ipv6,
+       init_ipv6) = autils.create_ib_ndp(resp_dut, init_dut,
+                                         autils.create_discovery_config(
+                                           "GoogleTestXyz",
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                         autils.create_discovery_config(
+                                           "GoogleTestXyz",
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                         self.device_startup_offset)
+    else:
+      (init_req_key, resp_req_key, init_aware_if, resp_aware_if, init_ipv6,
+       resp_ipv6) = autils.create_oob_ndp(init_dut, resp_dut)
+
+    self.log.info("Interface names: I=%s, R=%s", init_aware_if, resp_aware_if)
+    self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
+                  resp_ipv6)
+
+    # clean-up
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  def test_multiple_regulator_domains_ib_us_jp(self):
+    """Verify data-path setup across multiple regulator domains.
+
+    - Uses in-band discovery
+    - Subscriber=US, Publisher=JP
+    """
+    self.run_multiple_regulatory_domains(use_ib=True,
+                                         init_domain="US",
+                                         resp_domain="JP")
+
+  def test_multiple_regulator_domains_ib_jp_us(self):
+    """Verify data-path setup across multiple regulator domains.
+
+    - Uses in-band discovery
+    - Subscriber=JP, Publisher=US
+    """
+    self.run_multiple_regulatory_domains(use_ib=True,
+                                         init_domain="JP",
+                                         resp_domain="US")
+
+  def test_multiple_regulator_domains_oob_us_jp(self):
+    """Verify data-path setup across multiple regulator domains.
+
+    - Uses out-f-band discovery
+    - Initiator=US, Responder=JP
+    """
+    self.run_multiple_regulatory_domains(use_ib=False,
+                                         init_domain="US",
+                                         resp_domain="JP")
+
+  def test_multiple_regulator_domains_oob_jp_us(self):
+    """Verify data-path setup across multiple regulator domains.
+
+    - Uses out-of-band discovery
+    - Initiator=JP, Responder=US
+    """
+    self.run_multiple_regulatory_domains(use_ib=False,
+                                         init_domain="JP",
+                                         resp_domain="US")
