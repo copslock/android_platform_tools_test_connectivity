@@ -24,10 +24,10 @@ import time
 from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
+from acts.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
-from acts.test_utils.bt.bt_test_utils import orchestrate_coc_connection
-from acts.test_utils.bt.bt_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
@@ -54,10 +54,8 @@ class BleCocTest(BluetoothBaseTest):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def teardown_test(self):
-        if verify_server_and_client_connected(
-                self.client_ad, self.server_ad, log=False):
-            self.client_ad.droid.bluetoothSocketConnStop()
-            self.server_ad.droid.bluetoothSocketConnStop()
+        self.client_ad.droid.bluetoothSocketConnStop()
+        self.server_ad.droid.bluetoothSocketConnStop()
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='b6989966-c504-4934-bcd7-57fb4f7fde9c')
@@ -90,8 +88,6 @@ class BleCocTest(BluetoothBaseTest):
         if not status:
             return False
 
-        self.client_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bluetoothSocketConnStop()
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -125,8 +121,6 @@ class BleCocTest(BluetoothBaseTest):
         if not status:
             return False
 
-        self.client_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bluetoothSocketConnStop()
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -171,8 +165,6 @@ class BleCocTest(BluetoothBaseTest):
                                                   self.server_ad):
             return False
 
-        self.client_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bluetoothSocketConnStop()
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -217,8 +209,6 @@ class BleCocTest(BluetoothBaseTest):
                                                   self.server_ad):
             return False
 
-        self.client_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bluetoothSocketConnStop()
         return True
 
     @BluetoothBaseTest.bt_test_wrap
@@ -249,14 +239,6 @@ class BleCocTest(BluetoothBaseTest):
         """
 
         is_secured = True
-        self.log.info(
-            "test_coc_secured_connection_throughput: calling "
-            "orchestrate_coc_connection. is_secured={}".format(is_secured))
-        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
-            self.client_ad, self.server_ad, True, is_secured)
-        if not status:
-            return False
-
         # The num_iterations is that number of repetitions of each
         # set of buffers r/w.
         # number_buffers is the total number of data buffers to transmit per
@@ -265,6 +247,15 @@ class BleCocTest(BluetoothBaseTest):
         number_buffers = 100
         buffer_size = 23
         num_iterations = 3
+        self.log.info(
+            "test_coc_secured_connection_throughput: calling "
+            "orchestrate_coc_connection. is_secured={}".format(is_secured))
+
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured)
+        if not status:
+            return False
+
         list_server_ad = [self.server_ad]
         list_client_conn_id = [client_conn_id]
         data_rate = do_multi_connection_throughput(
@@ -276,6 +267,67 @@ class BleCocTest(BluetoothBaseTest):
             "test_coc_connection_throughput: throughput=%d bytes per sec",
             data_rate)
 
-        self.client_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bluetoothSocketConnStop()
+        return True
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='6dc019bb-c3bf-4c98-978e-e2c5755058d7')
+    def test_coc_insecured_connection_throughput_20CI(self):
+        """Test LE CoC writing and measured data throughput without security and 20msec
+        connection interval.
+
+        Test CoC thoughput by establishing an insecured connection and sending data
+        with 20msec Connection Interval.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish a L2CAP CoC connection from the client to the server AD.
+        3. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        4. Write data from the client to server.
+        5. Verify data matches from client and server
+        6. Disconnect the L2CAP CoC connections.
+
+        Expected Result:
+        CoC connection is established then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BLE, CoC
+        Priority: 2
+        """
+
+        is_secured = False
+        le_connection_interval = 20
+        # The num_iterations is that number of repetitions of each
+        # set of buffers r/w.
+        # number_buffers is the total number of data buffers to transmit per
+        # set of buffers r/w.
+        # buffer_size is the number of bytes per L2CAP data buffer.
+        number_buffers = 100
+        buffer_size = 117
+        num_iterations = 5
+        self.log.info(
+            "test_coc_secured_connection_throughput: calling "
+            "orchestrate_coc_connection. is_secured={}, Connection Interval={}msec".
+            format(is_secured, le_connection_interval))
+
+        status, client_conn_id, server_conn_id = orchestrate_coc_connection(
+            self.client_ad, self.server_ad, True, is_secured,
+            le_connection_interval)
+        if not status:
+            return False
+
+        list_server_ad = [self.server_ad]
+        list_client_conn_id = [client_conn_id]
+        data_rate = do_multi_connection_throughput(
+            self.client_ad, list_server_ad, list_client_conn_id,
+            num_iterations, number_buffers, buffer_size)
+        if data_rate <= 0:
+            return False
+        self.log.info(
+            "test_coc_connection_throughput: throughput=%d bytes per sec",
+            data_rate)
+
         return True
