@@ -24,10 +24,10 @@ import time
 from queue import Empty
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
+from acts.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
-from acts.test_utils.bt.bt_test_utils import orchestrate_coc_connection
-from acts.test_utils.bt.bt_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
@@ -48,15 +48,13 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def teardown_test(self):
-        if verify_server_and_client_connected(
-                self.client_ad, self.server_ad, log=False):
-            self.client_ad.droid.bluetoothSocketConnStop()
-            self.server_ad.droid.bluetoothSocketConnStop()
+        self.client_ad.droid.bluetoothSocketConnStop()
+        self.server_ad.droid.bluetoothSocketConnStop()
 
-    def _run_coc_connection_throughput_2_conn(self, is_secured):
-        """Test LE CoC data throughput on two connections
-
-        Test Data Throughput of 2 L2CAP CoC connections. 3 phones are required.
+    def _run_coc_connection_throughput_2_conn(self,
+                                              is_secured,
+                                              le_connection_interval=0):
+        """Function to test Data Throughput of 2 L2CAP CoC connections. 3 phones are required.
 
         Steps:
         1. Get the mac address of the server device.
@@ -80,9 +78,17 @@ class BleCoc2ConnTest(BluetoothBaseTest):
           Pass if True
           Fail if False
 
-        TAGS: BLE, CoC
-        Priority: 1
         """
+
+        # The num_iterations is that number of repetitions of each
+        # set of buffers r/w.
+        # number_buffers is the total number of data buffers to transmit per
+        # set of buffers r/w.
+        # buffer_size is the number of bytes per L2CAP data buffer.
+        num_iterations = 10
+        number_buffers = 100
+        # Note: A 117 octets buffer size would fix nicely to a 123 bytes Data Length
+        buffer_size = 117
 
         # Make sure at least 3 phones are setup
         if len(self.android_devices) <= 2:
@@ -94,31 +100,24 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         # when secured.
         self.log.info(
             "test_coc_connection_throughput_2_conn: calling "
-            "orchestrate_coc_connection for server1. is_secured={}".format(
-                is_secured))
+            "orchestrate_coc_connection for server1. is_secured={}, Interval={}".
+            format(is_secured, le_connection_interval))
         status, client_conn_id1, server_conn_id1 = orchestrate_coc_connection(
-            self.client_ad, self.server_ad, True, is_secured)
+            self.client_ad, self.server_ad, True, is_secured,
+            le_connection_interval)
         if not status:
             return False
 
         self.log.info(
             "test_coc_connection_throughput_2_conn: calling "
-            "orchestrate_coc_connection for server2. is_secured={}".format(
-                is_secured))
+            "orchestrate_coc_connection for server2. is_secured={}, Interval={}".
+            format(is_secured, le_connection_interval))
         status, client_conn_id2, server_conn_id2 = orchestrate_coc_connection(
-            self.client_ad, self.server2_ad, True, is_secured)
+            self.client_ad, self.server2_ad, True, is_secured,
+            le_connection_interval)
         if not status:
             return False
 
-        # The num_iterations is that number of repetitions of each
-        # set of buffers r/w.
-        # number_buffers is the total number of data buffers to transmit per
-        # set of buffers r/w.
-        # buffer_size is the number of bytes per L2CAP data buffer.
-        num_iterations = 10
-        number_buffers = 100
-        # Note: A 117 octets buffer size would fix nicely to a 123 bytes Data Length
-        buffer_size = 117
         list_server_ad = [self.server_ad, self.server2_ad]
         list_client_conn_id = [client_conn_id1, client_conn_id2]
         data_rate = do_multi_connection_throughput(
@@ -146,6 +145,20 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         3 phones are required.
 
         Steps:
+        1. Get the mac address of the server device.
+        2. Establish a L2CAP CoC connection from the client to the server#1 AD.
+        The connection is insecured.
+        3. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        4. Establish a L2CAP CoC connection from the client to the server#2 AD.
+        The connection is insecured.
+        5. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        6. Write data from the client to both server#1 and server#2.
+        7. Verify data matches from client and server
+        8. Disconnect the 2 L2CAP CoC connections.
+
+
         See description in _run_coc_connection_throughput_2_conn()
 
         Expected Result:
@@ -157,10 +170,10 @@ class BleCoc2ConnTest(BluetoothBaseTest):
           Fail if False
 
         TAGS: BLE, CoC
-        Priority: 1
+        Priority: 2
         """
 
-        status = self._run_coc_connection_throughput_2_conn(False)
+        status = self._run_coc_connection_throughput_2_conn(False, 0)
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -172,7 +185,18 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         3 phones are required.
 
         Steps:
-        See description in _run_coc_connection_throughput_2_conn()
+        1. Get the mac address of the server device.
+        2. Establish a L2CAP CoC connection from the client to the server#1 AD.
+        The connection is secured.
+        3. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        4. Establish a L2CAP CoC connection from the client to the server#2 AD.
+        The connection is secured.
+        5. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        6. Write data from the client to both server#1 and server#2.
+        7. Verify data matches from client and server
+        8. Disconnect the 2 L2CAP CoC connections.
 
         Expected Result:
         L2CAP CoC connections are established, data written to both servers,
@@ -183,8 +207,47 @@ class BleCoc2ConnTest(BluetoothBaseTest):
           Fail if False
 
         TAGS: BLE, CoC
-        Priority: 1
+        Priority: 2
         """
 
-        status = self._run_coc_connection_throughput_2_conn(True)
+        status = self._run_coc_connection_throughput_2_conn(True, 0)
+        return status
+
+    @BluetoothBaseTest.bt_test_wrap
+    @test_tracker_info(uuid='b198f8cc-26af-44bd-bb4d-7dc8f8645617')
+    def test_coc_insecured_connection_throughput_2_conn_20CI(self):
+        """Test LE CoC data throughput with 20msec connection intervals
+
+        Test data throughput of 2 L2CAP CoC insecured connections with 20msec connection interval
+        3 phones are required.
+
+        Steps:
+        1. Get the mac address of the server device.
+        2. Establish a L2CAP CoC connection from the client to the server#1 AD.
+        The connection is insecured.
+        3. Set the connection interval to 20 msec.
+        4. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        5. Establish a L2CAP CoC connection from the client to the server#2 AD.
+        The connection is insecured.
+        6. Set the connection interval to 20 msec.
+        7. Verify that the L2CAP CoC connection is active from both the client
+        and server.
+        8. Write data from the client to both server#1 and server#2.
+        9. Verify data matches from client and server
+        10. Disconnect the 2 L2CAP CoC connections.
+
+        Expected Result:
+        L2CAP CoC connections are established, data written to both servers,
+        then disconnected succcessfully.
+
+        Returns:
+          Pass if True
+          Fail if False
+
+        TAGS: BLE, CoC
+        Priority: 2
+        """
+
+        status = self._run_coc_connection_throughput_2_conn(False, 20)
         return status

@@ -22,6 +22,8 @@ default_bluetooth_socket_timeout_ms = 10000
 pan_connect_timeout = 5
 bt_discovery_timeout = 3
 small_timeout = 0.0001
+le_connection_interval_time_step = 1.25
+le_default_supervision_timeout = 2000
 
 java_integer = {"min": -2147483648, "max": 2147483647}
 
