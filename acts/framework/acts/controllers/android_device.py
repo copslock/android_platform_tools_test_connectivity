@@ -23,7 +23,6 @@ import logging
 import math
 import os
 import re
-import shellescape
 import socket
 import time
 
@@ -52,6 +51,7 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/vendor/ramdump/bluetooth")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
+DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -987,13 +987,16 @@ class AndroidDevice:
                       full_out_path)
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
 
-    def get_file_names(self, directory, begin_time=None, skip_files=[]):
+    def get_file_names(self, directory, begin_time=None, skip_files=[],
+                       match_string=None):
         """Get files names with provided directory."""
         cmd = "find %s -type f" % directory
         if begin_time:
             current_time = utils.get_current_epoch_time()
             seconds = int(math.ceil((current_time - begin_time) / 1000.0))
             cmd = "%s -mtime -%ss" % (cmd, seconds)
+        if match_string:
+            cmd = "%s -iname %s" % (cmd, match_string)
         for skip_file in skip_files:
             cmd = "%s ! -iname %s" % (cmd, skip_file)
         out = self.adb.shell(cmd, ignore_status=True)
@@ -1041,18 +1044,11 @@ class AndroidDevice:
 
     def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
-        output = self.adb.shell("ps -ef | grep mdlog")
-        match = re.search(r"diag_mdlog.*", output)
-        log_path = None
-        if match:
-            m = re.search(r"-o (\S+)", output)
-            if m: log_path = m.group(1)
-            # Neet to sleep 20 seconds for the log to be generated
-            time.sleep(20)
-        log_path = log_path or getattr(self, "qxdm_logger_path", None)
-        if not log_path:
-            return
-        qxdm_logs = self.get_file_names(log_path, begin_time=begin_time)
+        # Sleep 10 seconds for the buffered log to be written in qxdm log file
+        time.sleep(10)
+        log_path = getattr(self, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
+        qxdm_logs = self.get_file_names(log_path, begin_time=begin_time,
+                                        match_string="*.qmdl")
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.log_path, test_name,
                                          "QXDM_%s" % self.serial)

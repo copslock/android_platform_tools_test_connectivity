@@ -29,10 +29,10 @@ from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import is_sim_ready
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
-from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 
 CARRIER_AUTO = "auto"
@@ -219,7 +219,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
-        for _ in range(20):
+        for _ in range(30):
             ad.send_keycode("WAKEUP")
             time.sleep(1)
             current_window = ad.get_my_current_focus_window()
@@ -243,13 +243,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 return
 
     def check_project_fi_activated(self, ad):
-        for _ in range(10):
-            if ad.adb.getprop("gsm.sim.state") == "READY" and (
-                    "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") or
-                    "Fi Network" in ad.adb.getprop("gsm.operator.alpha")):
+        for _ in range(20):
+            if is_sim_ready(self.log, ad) and (
+                    ad.droid.telephonyGetSimOperatorName() == "Fi Network"):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
                 return True
-            time.sleep(30)
+            time.sleep(5)
 
     def start_tycho_activation(self, ad):
         """Start the Tycho client and register to cellular network.
@@ -307,7 +306,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         except KeyError:
             ad.log.error('Unknown Mobile Country Code/Mobile Network Code %s',
                          mcc_mnc)
-        raise
+            raise
 
     def switch_sim(self, ad):
         """Requests switch between physical sim and esim.
@@ -321,11 +320,11 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             Error: whenever a device is not set to the desired carrier within
                    the timeout window.
         """
-        old_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        old_sim_operator = ad.droid.telephonyGetSimOperatorName()
         ad.log.info("Before SIM switch, SIM operator = %s", old_sim_operator)
         send_dialer_secret_code(ad, "794824746")
         time.sleep(10)
-        new_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        new_sim_operator = ad.droid.telephonyGetSimOperatorName()
         ad.log.info("After SIM switch, SIM operator = %s", new_sim_operator)
         refresh_droid_config(self.log, ad)
         return old_sim_operator != new_sim_operator
@@ -437,6 +436,13 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         switching_preferences = ad.adb.shell("cat %s" % _SWITCHING_PREF_FILE)
         return 'InProgress\" value=\"true' in switching_preferences
 
+    def check_network_carrier(self, ad, carrier):
+        current_carrier = self.get_active_carrier(ad)
+        ad.log.info("Current network carrier is %s", current_carrier)
+        is_in_switch = self.is_carrier_switch_in_progress(ad)
+        ad.log.info("Device in carrier switch progress mode")
+        return current_carrier == carrier and is_in_switch
+
     def wait_for_carrier_switch_completed(self,
                                           ad,
                                           carrier,
@@ -455,22 +461,25 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         Return:
             True or False for successful/unsuccessful switch.
         """
-        while timeout >= 0:
-            if self.get_active_carrier(ad) == carrier and (
-                    not self.is_carrier_switch_in_progress(ad)):
-                ad.log.info("Switched to %s", carrier)
-                return True
-            time.sleep(check_interval)
-            timeout -= check_interval
-        ad.log.error("Carrier is %s. Fail to switch to %s",
-                     self.get_active_carrier(ad), carrier)
-        return False
+        check_args = [ad, carrier]
+        if wait_for_state(self.check_network_carrier, True, check_interval,
+                          timeout, *check_args):
+            ad.log.info("Switched to %s successfully", carrier)
+            ad.send_keycode("ENTER")
+            return True
+        else:
+            ad.log.error("Carrier is %s. Fail to switch to %s",
+                         self.get_active_carrier(ad), carrier)
+            return False
 
     def operator_network_switch(self, ad, carrier):
-        if "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") and (
-                not self.set_active_carrier(ad, carrier)):
-            ad.log.error("Failed to switch to %s", carrier)
-            return False
+        if ad.droid.telephonyGetSimOperatorName() == "Fi Network":
+            for i in range(3):
+                if self.set_active_carrier(ad, carrier):
+                    break
+                elif i == 2:
+                    ad.log.error("Failed to switch to %s", carrier)
+                    return False
         if not ensure_phone_subscription(self.log, ad):
             ad.log.error("Unable to find a valid subscription!")
             return False
@@ -478,12 +487,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         return True
 
     def network_switch_test(self, carrier):
-        result = True
         tasks = [(self.operator_network_switch, [ad, carrier])
                  for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             abort_all_tests(self.log,
                             "Unable to switch to network %s" % carrier)
+        return True
 
     """ Tests Begin """
 
@@ -500,6 +509,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                  for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             abort_all_tests(self.log, "Unable to activate Fi account!")
+        return True
 
     @test_tracker_info(uuid="6bfbcc1d-e318-4964-bf36-5b82f086860d")
     @TelephonyBaseTest.tel_test_wrap

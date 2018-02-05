@@ -22,11 +22,10 @@ from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
-from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
-from acts.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
+from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
@@ -39,7 +38,6 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         self.logger_sessions = []
-
         fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         for ad in self.android_devices:
@@ -54,21 +52,15 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             reset_device_password(ad, None)
             ad.reboot()
             for _ in range(10):
-                sim_state = ad.adb.getprop("gsm.sim.state")
-                if sim_state == SIM_STATE_READY:
+                if is_sim_ready_by_adb(self.log, ad):
+                    ad.log.info("SIM is not locked")
                     break
-                elif sim_state == SIM_STATE_PIN_REQUIRED:
+                elif is_sim_locked(ad):
                     ad.log.info("SIM is locked")
                     self.dut = ad
                     return
                 else:
                     time.sleep(5)
-            if not is_sim_locked(ad):
-                ad.log.info("SIM is not locked")
-            else:
-                ad.log.info("SIM is locked")
-                self.dut = ad
-                return
         self.log.error("There is no locked SIM in this testbed")
         abort_all_tests(self.log, "There is no locked SIM")
 

@@ -46,6 +46,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
@@ -120,6 +121,10 @@ class TelLivePreflightTest(TelephonyBaseTest):
         self.log.info("After OTA upgrade: %s", device_info)
         self.results.add_controller_info("AndroidDevice", device_info)
         for ad in self.android_devices:
+            if is_sim_locked(ad):
+                ad.log.info("After OTA, SIM keeps the locked state")
+            elif getattr(ad, "is_sim_locked", False):
+                ad.log.error("After OTA, SIM loses the locked state")
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
         return True

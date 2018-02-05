@@ -28,6 +28,7 @@ import acts.controllers.diag_logger
 from acts import asserts
 from acts import logger as acts_logger
 from acts.base_test import BaseTestClass
+from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.keys import Config
 from acts.signals import TestSignal
 from acts.signals import TestAbortClass
@@ -41,7 +42,6 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
-from acts.test_utils.tel.tel_test_utils import find_qxdm_logger_mask
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
@@ -83,16 +83,14 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if ad.qxdm_log:
                 if qxdm_log_mask_cfg:
-                    qxdm_mask_path = find_qxdm_logger_mask(ad, "default.cfg")
-                    qxdm_mask_path = os.path.split(qxdm_mask_path)[0]
+                    qxdm_mask_path = DEFAULT_QXDM_LOG_PATH
+                    ad.adb.shell("mkdir %s" % qxdm_mask_path)
                     ad.log.info("Push %s to %s", qxdm_log_mask_cfg,
                                 qxdm_mask_path)
                     ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
                     mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
-                    qxdm_log_mask = os.path.join(qxdm_mask_path,
-                                                 mask_file_name)
+                    qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
                 set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-                ad.adb.shell("rm %s" % os.path.join(ad.qxdm_logger_path, "*"))
             print_radio_info(ad)
 
         if getattr(self, "qxdm_log", True):
