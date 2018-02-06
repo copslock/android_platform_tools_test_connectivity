@@ -100,7 +100,7 @@ MAX_WAIT_TIME_VIDEO_SESSION_EVENT = 10
 MAX_WAIT_TIME_USER_PLANE_DATA = 20
 
 # Max time to wait for tethering entitlement check
-MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 15
+MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 60
 
 # Max time to wait for voice mail count report correct result.
 MAX_WAIT_TIME_VOICE_MAIL_COUNT = 90
