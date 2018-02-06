@@ -217,7 +217,6 @@ class EventDispatcher:
                        event_name,
                        predicate,
                        timeout=DEFAULT_TIMEOUT,
-                       consume_events=True,
                        *args,
                        **kwargs):
         """Wait for an event that satisfies a predicate to appear.
@@ -232,10 +231,10 @@ class EventDispatcher:
             predicate: A function that takes an event and returns True if the
                 predicate is satisfied, False otherwise.
             timeout: Number of seconds to wait.
-            consume_events: Whether or not to consume events while searching
-                for the desired event.
             *args: Optional positional args passed to predicate().
             **kwargs: Optional keyword args passed to predicate().
+                consume_ignored_events: Whether or not to consume events while
+                    searching for the desired event. Defaults to True if unset.
 
         Returns:
             The event that satisfies the predicate.
@@ -246,6 +245,7 @@ class EventDispatcher:
         """
         deadline = time.time() + timeout
         ignored_events = []
+        consume_events = kwargs.pop('consume_ignored_events', True)
         while True:
             event = None
             try:
