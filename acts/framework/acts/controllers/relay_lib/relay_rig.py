@@ -16,10 +16,12 @@
 from acts.controllers.relay_lib.errors import RelayConfigError
 from acts.controllers.relay_lib.helpers import validate_key
 from acts.controllers.relay_lib.rdl_relay_board import RdlRelayBoard
+from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
 from acts.controllers.relay_lib.sain_smart_8_channel_usb_relay_board import SainSmart8ChannelUsbRelayBoard
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.fugu_remote import FuguRemote
 from acts.controllers.relay_lib.i6s_headset import I6sHeadset
+from acts.controllers.relay_lib.logitech_headset import LogitechAudioReceiver
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 from acts.controllers.relay_lib.ak_xb10_speaker import AkXB10Speaker
 from acts.controllers.relay_lib.dongles import SingleButtonDongle
@@ -60,6 +62,7 @@ class RelayRig:
         'GenericRelayDevice': lambda x, rig: GenericRelayDevice(x, rig),
         'FuguRemote': lambda x, rig: FuguRemote(x, rig),
         'I6sHeadset': lambda x, rig: I6sHeadset(x, rig),
+        "LogitechAudioReceiver" :lambda x, rig: LogitechAudioReceiver(x, rig),
         'SonyXB2Speaker': lambda x, rig: SonyXB2Speaker(x, rig),
         'AkXB10Speaker': lambda x, rig: AkXB10Speaker(x, rig),
         'SingleButtonDongle': lambda x, rig: SingleButtonDongle(x, rig),
