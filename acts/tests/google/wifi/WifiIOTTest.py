@@ -37,7 +37,6 @@ class WifiIOTTest(WifiBaseTest):
     """
 
     def __init__(self, controllers):
-        self.attenuators = None
         WifiBaseTest.__init__(self, controllers)
 
     def setup_class(self):
