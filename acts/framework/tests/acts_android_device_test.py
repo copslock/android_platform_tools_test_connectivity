@@ -22,6 +22,8 @@ import tempfile
 import unittest
 
 from acts import base_test
+from acts import logger
+from acts.controllers.sl4a_lib import rpc_client
 from acts.controllers import android_device
 
 # Mock log path for a test run.
@@ -469,6 +471,39 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_apk_process_id_process_cannot_find(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_value = "does_not_contain_value"
+        self.assertEqual(None, ad.get_package_pid("some_package"))
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_apk_process_id_process_exists_second_try(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_multiple = True
+        ad.adb.return_value = ["", "system 1 2 3 4  S com.some_package"]
+        self.assertEqual(1, ad.get_package_pid("some_package"))
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_apk_process_id_bad_return(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_value = "bad_return_index_error"
+        self.assertEqual(None, ad.get_package_pid("some_package"))
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_get_apk_process_id_bad_return(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb.return_value = "bad return value error"
+        self.assertEqual(None, ad.get_package_pid("some_package"))
 
 
 if __name__ == "__main__":
