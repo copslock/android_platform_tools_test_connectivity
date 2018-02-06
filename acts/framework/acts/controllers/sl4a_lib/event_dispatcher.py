@@ -15,43 +15,60 @@
 #   limitations under the License.
 
 from concurrent.futures import ThreadPoolExecutor
-import logging
 import queue
 import re
-import socket
 import threading
 import time
-import traceback
+
+from acts import logger
+from acts.controllers.sl4a_lib import rpc_client
 
 
 class EventDispatcherError(Exception):
-    pass
+    """The base class for all EventDispatcher exceptions."""
 
 
 class IllegalStateError(EventDispatcherError):
-    """Raise when user tries to put event_dispatcher into an illegal state.
-    """
+    """Raise when user tries to put event_dispatcher into an illegal state."""
 
 
 class DuplicateError(EventDispatcherError):
-    """Raise when a duplicate is being created and it shouldn't.
-    """
+    """Raise when two event handlers have been assigned to an event name."""
 
 
 class EventDispatcher:
-    """Class managing events for an sl4a connection.
+    """A class for managing the events for an SL4A Session.
+
+    Attributes:
+        _serial: The serial of the device.
+        _rpc_client: The rpc client for that session.
+        _started: A bool that holds whether or not the event dispatcher is
+                  running.
+        _executor: The thread pool executor for running event handlers and
+                   polling.
+        _event_dict: A dictionary of str eventName = Queue<Event> eventQueue
+        _handlers: A dictionary of str eventName => (lambda, args) handler
+        _lock: A lock that prevents multiple reads/writes to the event queues.
+        log: The EventDispatcher's logger.
     """
 
     DEFAULT_TIMEOUT = 60
 
-    def __init__(self, droid):
-        self.droid = droid
-        self.started = False
-        self.executor = None
-        self.poller = None
-        self.event_dict = {}
-        self.handlers = {}
-        self.lock = threading.RLock()
+    def __init__(self, serial, rpc_client):
+        self._serial = serial
+        self._rpc_client = rpc_client
+        self._started = False
+        self._executor = None
+        self._event_dict = {}
+        self._handlers = {}
+        self._lock = threading.RLock()
+
+        def _log_formatter(message):
+            """Defines the formatting used in the logger."""
+            return '[E Dispatcher|%s|%s] %s' % (self._serial,
+                                                self._rpc_client.uid, message)
+
+        self.log = logger.create_logger(_log_formatter)
 
     def poll_events(self):
         """Continuously polls all types of events from sl4a.
@@ -61,40 +78,41 @@ class EventDispatcher:
         corresponding event immediately upon event discovery, and the event
         won't be stored. If exceptions occur, stop the dispatcher and return
         """
-        while self.started:
-            event_obj = None
-            event_name = None
+        while self._started:
             try:
-                event_obj = self.droid.eventWait(50000)
-            except Exception as e:
-                if self.started:
-                    logging.error("Exception %s happened during polling.", e)
-                    logging.info(traceback.format_exc())
-                    raise
+                event_obj = self._rpc_client.eventWait(50000)
+            except rpc_client.Sl4aConnectionError as e:
+                if self._rpc_client.is_alive:
+                    self.log.warning('Closing due to closed session.')
+                    break
+                else:
+                    self.log.warning('Closing due to error: %s.' % e)
+                    self.close()
+                    raise e
             if not event_obj:
                 continue
             elif 'name' not in event_obj:
-                logging.error("Received Malformed event {}".format(event_obj))
+                self.log.error('Received Malformed event {}'.format(event_obj))
                 continue
             else:
                 event_name = event_obj['name']
             # if handler registered, process event
-            if event_name in self.handlers:
+            if event_name == 'EventDispatcherShutdown':
+                self.log.debug('Received shutdown signal.')
+                # closeSl4aSession has been called, which closes the event
+                # dispatcher. Stop execution on this polling thread.
+                return
+            if event_name in self._handlers:
                 self.handle_subscribed_event(event_obj, event_name)
-            if event_name == "EventDispatcherShutdown":
-                # closeSl4aSession() has been called, which breaks the
-                # connection with SL4A. Close the event dispatcher on the ACTS
-                # side.
-                break
             else:
-                self.lock.acquire()
-                if event_name in self.event_dict:  # otherwise, cache event
-                    self.event_dict[event_name].put(event_obj)
+                self._lock.acquire()
+                if event_name in self._event_dict:  # otherwise, cache event
+                    self._event_dict[event_name].put(event_obj)
                 else:
                     q = queue.Queue()
                     q.put(event_obj)
-                    self.event_dict[event_name] = q
-                self.lock.release()
+                    self._event_dict[event_name] = q
+                self._lock.release()
 
     def register_handler(self, handler, event_name, args):
         """Registers an event handler.
@@ -112,17 +130,17 @@ class EventDispatcher:
             DuplicateError: Raised if attempts to register more than one
                 handler for one type of event.
         """
-        if self.started:
-            raise IllegalStateError(("Can't register service after polling is"
-                                     " started"))
-        self.lock.acquire()
+        if self._started:
+            raise IllegalStateError('Cannot register service after polling is '
+                                    'started.')
+        self._lock.acquire()
         try:
-            if event_name in self.handlers:
+            if event_name in self._handlers:
                 raise DuplicateError(
                     'A handler for {} already exists'.format(event_name))
-            self.handlers[event_name] = (handler, args)
+            self._handlers[event_name] = (handler, args)
         finally:
-            self.lock.release()
+            self._lock.release()
 
     def start(self):
         """Starts the event dispatcher.
@@ -133,32 +151,24 @@ class EventDispatcher:
             IllegalStateError: Can't start a dispatcher again when it's already
                 running.
         """
-        if not self.started:
-            self.started = True
-            self.executor = ThreadPoolExecutor(max_workers=32)
-            self.poller = self.executor.submit(self.poll_events)
+        if not self._started:
+            self._started = True
+            self._executor = ThreadPoolExecutor(max_workers=32)
+            self._executor.submit(self.poll_events)
         else:
             raise IllegalStateError("Dispatcher is already started.")
 
-    def clean_up(self):
-        """Clean up and release resources after the event dispatcher polling
-        loop has been broken.
+    def close(self):
+        """Clean up and release resources.
 
-        The following things happen:
-        1. Clear all events and flags.
-        2. Close the sl4a client the event_dispatcher object holds.
-        3. Shut down executor without waiting.
+        This function should only be called after a
+        rpc_client.closeSl4aSession() call.
         """
-        uid = self.droid.uid
-        if not self.started:
+        if not self._started:
             return
-        self.started = False
+        self._started = False
+        self._executor.shutdown(wait=True)
         self.clear_all_events()
-        self.droid.close()
-        self.poller.set_result("Done")
-        # The polling thread is guaranteed to finish after a max of 60 seconds,
-        # so we don't wait here.
-        self.executor.shutdown(wait=False)
 
     def pop_event(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Pop an event from its queue.
@@ -179,15 +189,15 @@ class EventDispatcher:
             IllegalStateError: Raised if pop is called before the dispatcher
                 starts polling.
         """
-        if not self.started:
+        if not self._started:
             raise IllegalStateError(
-                "Dispatcher needs to be started before popping.")
+                'Dispatcher needs to be started before popping.')
 
         e_queue = self.get_event_q(event_name)
 
         if not e_queue:
-            raise TypeError(
-                "Failed to get an event queue for {}".format(event_name))
+            raise IllegalStateError(
+                'Failed to get an event queue for {}'.format(event_name))
 
         try:
             # Block for timeout
@@ -207,6 +217,7 @@ class EventDispatcher:
                        event_name,
                        predicate,
                        timeout=DEFAULT_TIMEOUT,
+                       consume_events=True,
                        *args,
                        **kwargs):
         """Wait for an event that satisfies a predicate to appear.
@@ -221,6 +232,8 @@ class EventDispatcher:
             predicate: A function that takes an event and returns True if the
                 predicate is satisfied, False otherwise.
             timeout: Number of seconds to wait.
+            consume_events: Whether or not to consume events while searching
+                for the desired event.
             *args: Optional positional args passed to predicate().
             **kwargs: Optional keyword args passed to predicate().
 
@@ -232,18 +245,24 @@ class EventDispatcher:
                 found before time out.
         """
         deadline = time.time() + timeout
-
+        ignored_events = []
         while True:
             event = None
             try:
                 event = self.pop_event(event_name, 1)
+                if not consume_events:
+                    ignored_events.append(event)
             except queue.Empty:
                 pass
 
             if event and predicate(event, *args, **kwargs):
+                for ignored_event in ignored_events:
+                    self.get_event_q(event_name).put(ignored_event)
                 return event
 
             if time.time() > deadline:
+                for ignored_event in ignored_events:
+                    self.get_event_q(event_name).put(ignored_event)
                 raise queue.Empty(
                     'Timeout after {}s waiting for event: {}'.format(
                         timeout, event_name))
@@ -272,12 +291,12 @@ class EventDispatcher:
                 starts polling.
             queue.Empty: Raised if no event was found before time out.
         """
-        if not self.started:
+        if not self._started:
             raise IllegalStateError(
                 "Dispatcher needs to be started before popping.")
         deadline = time.time() + timeout
         while True:
-            #TODO: fix the sleep loop
+            # TODO: fix the sleep loop
             results = self._match_and_pop(regex_pattern)
             if len(results) != 0 or time.time() > deadline:
                 break
@@ -293,16 +312,16 @@ class EventDispatcher:
         match (in a sense of regular expression) regex_pattern.
         """
         results = []
-        self.lock.acquire()
-        for name in self.event_dict.keys():
+        self._lock.acquire()
+        for name in self._event_dict.keys():
             if re.match(regex_pattern, name):
-                q = self.event_dict[name]
+                q = self._event_dict[name]
                 if q:
                     try:
                         results.append(q.get(False))
-                    except:
+                    except queue.Empty:
                         pass
-        self.lock.release()
+        self._lock.release()
         return results
 
     def get_event_q(self, event_name):
@@ -310,21 +329,15 @@ class EventDispatcher:
 
         If no event of this name has been polled, wait for one to.
 
-        Returns:
-            queue: A queue storing all the events of the specified name.
-                None if timed out.
-            timeout: Number of seconds to wait for the operation.
-
-        Raises:
-            queue.Empty: Raised if the queue does not exist and timeout has
-                passed.
+        Returns: A queue storing all the events of the specified name.
         """
-        self.lock.acquire()
-        if not event_name in self.event_dict or self.event_dict[event_name] is None:
-            self.event_dict[event_name] = queue.Queue()
-        self.lock.release()
+        self._lock.acquire()
+        if (event_name not in self._event_dict
+                or self._event_dict[event_name] is None):
+            self._event_dict[event_name] = queue.Queue()
+        self._lock.release()
 
-        event_queue = self.event_dict[event_name]
+        event_queue = self._event_dict[event_name]
         return event_queue
 
     def handle_subscribed_event(self, event_obj, event_name):
@@ -337,8 +350,8 @@ class EventDispatcher:
             event_obj: Json object of the event.
             event_name: Name of the event to call handler for.
         """
-        handler, args = self.handlers[event_name]
-        self.executor.submit(handler, event_obj, *args)
+        handler, args = self._handlers[event_name]
+        self._executor.submit(handler, event_obj, *args)
 
     def _handle(self, event_handler, event_name, user_args, event_timeout,
                 cond, cond_timeout):
@@ -380,9 +393,9 @@ class EventDispatcher:
                 If blocking call worker.result() is triggered, the handler
                 needs to return something to unblock.
         """
-        worker = self.executor.submit(self._handle, event_handler, event_name,
-                                      user_args, event_timeout, cond,
-                                      cond_timeout)
+        worker = self._executor.submit(self._handle, event_handler, event_name,
+                                       user_args, event_timeout, cond,
+                                       cond_timeout)
         return worker
 
     def pop_all(self, event_name):
@@ -401,19 +414,19 @@ class EventDispatcher:
             IllegalStateError: Raised if pop is called before the dispatcher
                 starts polling.
         """
-        if not self.started:
+        if not self._started:
             raise IllegalStateError(("Dispatcher needs to be started before "
                                      "popping."))
         results = []
         try:
-            self.lock.acquire()
+            self._lock.acquire()
             while True:
-                e = self.event_dict[event_name].get(block=False)
+                e = self._event_dict[event_name].get(block=False)
                 results.append(e)
         except (queue.Empty, KeyError):
             return results
         finally:
-            self.lock.release()
+            self._lock.release()
 
     def clear_events(self, event_name):
         """Clear all events of a particular name.
@@ -421,17 +434,17 @@ class EventDispatcher:
         Args:
             event_name: Name of the events to be popped.
         """
-        self.lock.acquire()
+        self._lock.acquire()
         try:
             q = self.get_event_q(event_name)
             q.queue.clear()
         except queue.Empty:
             return
         finally:
-            self.lock.release()
+            self._lock.release()
 
     def clear_all_events(self):
         """Clear all event queues and their cached events."""
-        self.lock.acquire()
-        self.event_dict.clear()
-        self.lock.release()
+        self._lock.acquire()
+        self._event_dict.clear()
+        self._lock.release()
