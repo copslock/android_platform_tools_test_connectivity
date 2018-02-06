@@ -157,7 +157,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name, bug_report):
     tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
     #Resets the battery status right before the test started
     ad.adb.shell(RESET_BATTERY_STATS)
-    begin_time = utils.get_current_human_time()
+    begin_time = utils.get_current_epoch_time()
     #Start the power measurement using monsoon
     result = mon_info['dut'].measure_power(
         mon_info['freq'],
