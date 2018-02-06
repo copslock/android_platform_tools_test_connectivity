@@ -63,7 +63,7 @@ from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
-from acts.controllers.sl4a_client import Sl4aProtocolError
+from acts.controllers.sl4a_lib.rpc_client import Sl4aProtocolError
 
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
 EXCEPTION_TOLERANCE = 20

@@ -17,26 +17,19 @@
 import mock
 import unittest
 from acts.controllers import android_device
-from acts.controllers import sl4a_client
 from acts.libs.ota.ota_runners import ota_runner
 from acts.libs.ota.ota_tools import ota_tool
 from acts.libs.ota.ota_tools import adb_sideload_ota_tool
 
 
-def get_mock_android_device(serial='',
-                            host_port=None,
-                            device_port=sl4a_client.DEFAULT_DEVICE_SIDE_PORT,
-                            ssh_connection=None):
+def get_mock_android_device(serial='', ssh_connection=None):
     """Returns a mocked AndroidDevice with a mocked adb/fastboot."""
     with mock.patch('acts.controllers.adb.AdbProxy') as adb_proxy, (
             mock.patch('acts.controllers.fastboot.FastbootProxy')) as fb_proxy:
         fb_proxy.return_value.devices.return_value = ""
         ret = mock.Mock(
             android_device.AndroidDevice(
-                serial=serial,
-                host_port=host_port,
-                device_port=device_port,
-                ssh_connection=ssh_connection))
+                serial=serial, ssh_connection=ssh_connection))
         fb_proxy.reset_mock()
         return ret
 
