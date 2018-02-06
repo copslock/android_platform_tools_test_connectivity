@@ -22,8 +22,16 @@ default_bluetooth_socket_timeout_ms = 10000
 pan_connect_timeout = 5
 bt_discovery_timeout = 3
 small_timeout = 0.0001
+
+# LE specifications related constants
 le_connection_interval_time_step = 1.25
 le_default_supervision_timeout = 2000
+default_le_data_length = 23
+
+# Headers of LE L2CAP Connection-oriented Channels. See section 3.4, Vol 3, Part A, Version 5.0.
+l2cap_header_size = 4
+l2cap_coc_sdu_length_field_size = 2
+l2cap_coc_header_size = l2cap_header_size + l2cap_coc_sdu_length_field_size
 
 java_integer = {"min": -2147483648, "max": 2147483647}
 
