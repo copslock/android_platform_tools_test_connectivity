@@ -18,8 +18,7 @@
 """
 
 import time
-import os
-import re
+
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CARRIER_SPT
@@ -30,6 +29,7 @@ from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import is_sim_ready
+from acts.test_utils.tel.tel_test_utils import log_screen_shot
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
@@ -223,6 +223,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             ad.send_keycode("WAKEUP")
             time.sleep(1)
             current_window = ad.get_my_current_focus_window()
+            log_screen_shot(ad, self.test_name)
             if 'SwitchConfirmDialogActivity' in current_window:
                 ad.log.info("In Switch Confirmation Dialog")
                 if ad.adb.getprop("ro.build.version.release")[0] not in ("8", "O"):
@@ -236,6 +237,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 ad.send_keycode("TAB")
                 ad.send_keycode("ENTER")
                 time.sleep(10)
+
             elif 'tycho.AccountChooserActivity' in current_window:
                 ad.send_keycode("ENTER")
             else:
