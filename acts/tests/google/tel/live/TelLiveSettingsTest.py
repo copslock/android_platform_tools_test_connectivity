@@ -46,10 +46,10 @@ from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import is_droid_in_rat_family
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import is_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import power_off_sim
 from acts.test_utils.tel.tel_test_utils import power_on_sim
 from acts.test_utils.tel.tel_test_utils import print_radio_info
-from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import system_file_push

@@ -654,6 +654,11 @@ device_capabilities = {
         tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
         tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
         tel_defines.CAPABILITY_VT
+    ],
+    "default": [
+        tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
+        tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
+        tel_defines.CAPABILITY_VT
     ]
 }
 
@@ -673,5 +678,6 @@ operator_capabilities = {
         tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
         tel_defines.CAPABILITY_WFC
     ],
-    tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE]
+    tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE],
+    "default": [tel_defines.CAPABILITY_PHONE]
 }
