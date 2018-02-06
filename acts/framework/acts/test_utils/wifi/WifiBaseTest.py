@@ -37,7 +37,7 @@ from acts.controllers.ap_lib import hostapd_security
 class WifiBaseTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
-        if hasattr(self, 'attenuators'):
+        if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
 
