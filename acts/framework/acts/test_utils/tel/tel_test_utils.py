@@ -5461,3 +5461,13 @@ def power_on_sim(ad, sim_slot_id=None):
     else:
         ad.log.error("Fail to power on SIM slot")
         return False
+
+
+def log_screen_shot(ad, test_name):
+    file_name = "/sdcard/Pictures/screencap_%s.png" % (
+        utils.get_current_epoch_time())
+    screen_shot_path = os.path.join(ad.log_path, test_name,
+                                    "Screenshot_%s" % ad.serial)
+    utils.create_dir(screen_shot_path)
+    ad.adb.shell("screencap -p %s" % file_name)
+    ad.adb.pull("%s %s" % (file_name, screen_shot_path))
