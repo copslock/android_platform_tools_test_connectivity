@@ -13,21 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import logging
-import math
 import os
-import time
 import traceback
 
 from acts import asserts
-from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
 from acts import tracelogger
 from acts import utils
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
+from concurrent.futures import ThreadPoolExecutor
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -434,15 +430,11 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_exception, tr_record)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
-            # Keep supporting return False for now.
-            # TODO(angli): Deprecate return False support.
             if verdict or (verdict is None):
                 # Test passed.
                 tr_record.test_pass()
                 self._exec_procedure_func(self._on_pass, tr_record)
                 return
-            # Test failed because it didn't return True.
-            # This should be removed eventually.
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
@@ -748,11 +740,12 @@ class BaseTestClass(object):
         if self._skip_bug_report():
             return
 
-        tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
-                 for ad in self.android_devices]
-        tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
-                      for ad in self.android_devices])
-        run_multithread_func(self.log, tasks)
+        executor = ThreadPoolExecutor(max_workers=10)
+        for ad in getattr(self, 'android_devices', []):
+            executor.submit(self._ad_take_bugreport, ad, test_name, begin_time)
+            executor.submit(self._ad_take_extra_logs, ad, test_name,
+                            begin_time)
+        executor.shutdown()
 
     def _reboot_device(self, ad):
         ad.log.info("Rebooting device.")
