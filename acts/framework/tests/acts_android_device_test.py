@@ -23,7 +23,7 @@ import unittest
 
 from acts import base_test
 from acts import logger
-from acts.controllers import sl4a_client
+from acts.controllers.sl4a_lib import rpc_client
 from acts.controllers import android_device
 
 # Mock log path for a test run.
@@ -524,32 +524,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_not_running(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        with mock.patch.object(ad, 'get_package_pid', return_value=None):
-            self.assertEqual(False, ad.is_rogue_sl4a_running())
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_is_running_valid(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.adb.return_value = sl4a_client.DEFAULT_DEVICE_SIDE_PORT
-        with mock.patch.object(ad, 'get_package_pid', return_value="12345"):
-            self.assertEqual(False, ad.is_rogue_sl4a_running())
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_is_running_rogue(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.adb.return_value = ""
-        with mock.patch.object(ad, 'get_package_pid', return_value="12345"):
-            self.assertEqual(True, ad.is_rogue_sl4a_running())
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
