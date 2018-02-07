@@ -48,12 +48,16 @@ class PowerdtimTest(base_test.BaseTestClass):
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
 
-        Bring down the AP interface.
+        Bring down the AP interface and connect device back on.
         """
+        self.log.info('Tearing down the test case')
         self.access_point.close()
+        self.mon.usb('on')
 
     def teardown_class(self):
 
+        self.log.info('Tearing down the test class')
+        self.access_point.close()
         self.mon.usb('on')
 
     def unpack_testparams(self, bulk_params):

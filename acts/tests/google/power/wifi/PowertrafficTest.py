@@ -60,15 +60,18 @@ class PowertrafficTest(base_test.BaseTestClass):
         Bring down the AP interface, delete the bridge interface, stop IPERF
         server and reset the ethernet interface for iperf traffic
         """
+        self.log.info('Tearing down the test case')
         self.iperf_server.stop()
         self.access_point.bridge.teardown(self.brconfigs)
         self.access_point.close()
         wputils.reset_host_interface(self.pkt_sender.interface)
+        self.mon.usb('on')
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
 
         """
+        self.log.info('Tearing down the test class')
         self.mon.usb('on')
         self.access_point.close()
 
@@ -131,7 +134,8 @@ class PowertrafficTest(base_test.BaseTestClass):
         RSSI = wputils.get_wifi_rssi(self.dut)
 
         # Construct the iperf command based on the test params
-        iperf_args = '-i 1 -t %d -J' % self.iperf_duration
+        iperf_args = '-i 1 -t {} -p {} -J'.format(self.iperf_duration,
+                                                  self.iperf_server.port)
         if traffic_type == "UDP":
             iperf_args = iperf_args + "-u -b 2g"
         if traffic_direction == "DL":
