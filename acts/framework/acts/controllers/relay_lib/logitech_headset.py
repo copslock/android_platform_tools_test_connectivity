@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """
 Device Details:
 https://www.logitech.com/en-in/product/bluetooth-audio-adapter#specification-tabular
@@ -34,7 +33,6 @@ class Buttons(enum.Enum):
 
 
 class LogitechAudioReceiver(GenericRelayDevice):
-
     def __init__(self, config, relay_rig):
         GenericRelayDevice.__init__(self, config, relay_rig)
         self.mac_address = validate_key('mac_address', config, str,
