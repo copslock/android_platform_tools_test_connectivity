@@ -5122,6 +5122,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     except Exception as e:
         ad.log.error(e)
         status = False
+    time.sleep(30) #sleep time after fastboot wipe
     for _ in range(2):
         try:
             ad.log.info("Reboot in fastboot")
@@ -5319,7 +5320,6 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         ad.fastboot.flash("radio %s" % file_path, timeout=300)
     except Exception as e:
         ad.log.error(e)
-        status = False
     for _ in range(2):
         try:
             ad.log.info("Reboot in fastboot")
@@ -5332,6 +5332,7 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
     if not ad.ensure_screen_on():
         ad.log.error("User window cannot come up")
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+    unlock_sim(ad)
 
 
 def set_preferred_apn_by_adb(ad, pref_apn_name):
@@ -5393,9 +5394,9 @@ def set_apm_mode_on_by_serial(ad, serial_id):
 
 def print_radio_info(ad, extra_msg=""):
     for prop in ("gsm.version.baseband", "persist.radio.ver_info",
-                 "persist.radio.cnv.ver_info", "persist.radio.ci_status"):
+                 "persist.radio.cnv.ver_info"):
         output = ad.adb.getprop(prop)
-        if output: ad.log.info("%s%s = %s", extra_msg, prop, output)
+        ad.log.info("%s%s = %s", extra_msg, prop, output)
 
 
 def wait_for_state(state_check_func,
