@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import os
 from acts import base_test
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -33,6 +34,7 @@ class PowerbaselineTest(base_test.BaseTestClass):
 
     def setup_class(self):
 
+        self.log = logging.getLogger()
         self.dut = self.android_devices[0]
         req_params = ['baselinetest_params']
         self.unpack_userparams(req_params)
@@ -45,7 +47,17 @@ class PowerbaselineTest(base_test.BaseTestClass):
         self.mon_info = wputils.create_monsoon_info(self)
 
     def teardown_class(self):
+        """Tearing down the entire test class.
+        
+        """
+        self.log.info('Tearing down the test class')
+        self.mon.usb('on')
 
+    def teardown_test(self):
+        """Tearing down the test case.
+        
+        """
+        self.log.info('Tearing down the test')
         self.mon.usb('on')
 
     def unpack_testparams(self, bulk_params):

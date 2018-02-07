@@ -53,11 +53,14 @@ class PowerroamingTest(base_test.BaseTestClass):
 
         Bring down all AP interfaces
         """
+        self.log.info('Tearing down the test case')
+        self.mon.usb('on')
         for ap in self.access_points:
             ap.close()
 
     def teardown_class(self):
 
+        self.log.info('Tearing down the test class')
         self.mon.usb('on')
 
     def unpack_testparams(self, bulk_params):
