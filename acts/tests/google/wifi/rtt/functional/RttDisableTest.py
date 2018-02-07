@@ -53,7 +53,7 @@ class RttDisableTest(RttBaseTest):
     if disable_mode == self.MODE_DISABLE_WIFI:
       wutils.wifi_toggle_state(dut, False)
     elif disable_mode == self.MODE_ENABLE_DOZE:
-      dut.adb.shell("cmd deviceidle force-idle")
+      asserts.assert_true(utils.enable_doze(dut), "Can't enable doze")
     elif disable_mode == self.MODE_DISABLE_LOCATIONING:
       utils.set_location_service(dut, False)
 
@@ -72,7 +72,7 @@ class RttDisableTest(RttBaseTest):
     if disable_mode == self.MODE_DISABLE_WIFI:
       wutils.wifi_toggle_state(dut, True)
     elif disable_mode == self.MODE_ENABLE_DOZE:
-      dut.adb.shell("cmd deviceidle unforce")
+      asserts.assert_true(utils.disable_doze(dut), "Can't disable doze")
     elif disable_mode == self.MODE_DISABLE_LOCATIONING:
       utils.set_location_service(dut, True)
 

@@ -44,6 +44,7 @@ class AwareBaseTest(BaseTestClass):
           "Device under test does not support Wi-Fi Aware - skipping test")
       wutils.wifi_toggle_state(ad, True)
       ad.droid.wifiP2pClose()
+      utils.set_location_service(ad, True)
       aware_avail = ad.droid.wifiIsAwareAvailable()
       if not aware_avail:
         self.log.info('Aware not available. Waiting ...')
