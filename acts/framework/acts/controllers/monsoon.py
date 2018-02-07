@@ -935,9 +935,18 @@ class Monsoon(object):
             self.mon.StopDataCollection()
             self.log.info("Finished taking samples, reconnecting to dut.")
             self.usb("on")
-            self._wait_for_device(self.dut)
+            # If wait for device failed, reset monsoon and try it again, if
+            # this still fails, then raise
+            try:
+                self._wait_for_device(self.dut)
+            except acts.utils.TimeoutError:
+                self.log.info('Retry-reset monsoon and connect again')
+                self.usb('off')
+                time.sleep(1)
+                self.usb.usb('on')
+                self._wait_for_device(self.dut)
             # Wait for device to come back online.
-            time.sleep(10)
+            time.sleep(2)
             self.dut.start_services(skip_sl4a=getattr(self.dut, "skip_sl4a",
                                                       False))
             # Release wake lock to put device into sleep.
