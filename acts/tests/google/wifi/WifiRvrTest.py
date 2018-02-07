@@ -23,6 +23,7 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -48,6 +49,13 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
+        try:
+            self.gldn_files_list
+        except:
+            self.gldn_files_list = [
+                os.path.join(self.test_params["golden_results_path"], file)
+                for file in os.listdir(self.test_params["golden_results_path"])
+            ]
         self.testclass_results = []
 
     def teardown_test(self):
@@ -94,8 +102,11 @@ class WifiRvrTest(base_test.BaseTestClass):
             data
         """
         test_name = self.current_test_name
-        gldn_path = os.path.join(self.test_params["golden_results_path"],
-                                 "{}.json".format(test_name))
+        gldn_path = [
+            file_name for file_name in self.gldn_files_list
+            if test_name in file_name
+        ]
+        gldn_path = gldn_path[0]
         with open(gldn_path, 'r') as gldn_file:
             gldn_results = json.load(gldn_file)
             gldn_attenuation = [
@@ -169,8 +180,11 @@ class WifiRvrTest(base_test.BaseTestClass):
             "markersize": 10
         }
         try:
-            gldn_path = os.path.join(self.test_params["golden_results_path"],
-                                     "{}.json".format(test_name))
+            gldn_path = [
+                file_name for file_name in self.gldn_files_list
+                if test_name in file_name
+            ]
+            gldn_path = gldn_path[0]
             with open(gldn_path, 'r') as gldn_file:
                 gldn_results = json.load(gldn_file)
             legends.insert(0, "Golden Results")
@@ -236,7 +250,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     "ValueError: Cannot get iperf result. Setting to 0")
                 curr_throughput = 0
             rvr_result.append(curr_throughput)
-            self.log.info("Throughput at {0:d} dB is {1:.2f} Mbps".format(
+            self.log.info("Throughput at {0:.2f} dB is {1:.2f} Mbps".format(
                 atten, curr_throughput))
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         return rvr_result
@@ -255,9 +269,21 @@ class WifiRvrTest(base_test.BaseTestClass):
             rvr_result: dict containing rvr_results and meta data
         """
         #Initialize RvR test parameters
-        self.rvr_atten_range = range(self.test_params["rvr_atten_start"],
-                                     self.test_params["rvr_atten_stop"],
-                                     self.test_params["rvr_atten_step"])
+        if self.test_params["rvr_atten_step"] not in [0.25, 0.5, 0.75, 1]:
+            self.log.warning(
+                "Attenuation step not supported. Attenuation vector may not be applied exactly."
+            )
+        num_atten_steps = int((self.test_params["rvr_atten_stop"] -
+                               self.test_params["rvr_atten_start"]) /
+                              self.test_params["rvr_atten_step"])
+        self.rvr_atten_range = [
+            self.test_params["rvr_atten_start"] +
+            x * self.test_params["rvr_atten_step"]
+            for x in range(0, num_atten_steps)
+        ]
+        #self.rvr_atten_range = range(self.test_params["rvr_atten_start"],
+        #                             self.test_params["rvr_atten_stop"],
+        #                             self.test_params["rvr_atten_step"])
         rvr_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
@@ -268,6 +294,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Set attenuator to 0 dB
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         # Connect DUT to Network
+        wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = channel
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
@@ -305,112 +332,204 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.post_process_results(rvr_result)
         self.pass_fail_check(rvr_result)
 
+
     #Test cases
+class WifiRvr_2GHz_Test(WifiRvrTest):
+    @test_tracker_info(uuid='e7586217-3739-44a4-a87b-d790208b04b9')
     def test_rvr_TCP_DL_ch1_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='06b3e979-255c-482f-b570-d347fba048b6')
     def test_rvr_TCP_UL_ch1_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='e912db87-dbfb-4e86-b91c-827e6c53e840')
     def test_rvr_TCP_DL_ch6_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='ddafbe78-bd19-48fc-b653-69b23b1ab8dd')
     def test_rvr_TCP_UL_ch6_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='6fcb7fd8-4438-4913-a1c8-ea35050c79dd')
     def test_rvr_TCP_DL_ch11_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='a165884e-c928-46d9-b459-f550ceb0074f')
     def test_rvr_TCP_UL_ch11_VHT20(self):
         self._test_rvr()
 
+
+class WifiRvr_UNII1_Test(WifiRvrTest):
+    @test_tracker_info(uuid='a48ee2b4-3fb9-41fd-b292-0051bfc3b0cc')
     def test_rvr_TCP_DL_ch36_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='68f94e6b-b4ff-4839-904b-ec45cc661b89')
     def test_rvr_TCP_UL_ch36_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='a8b00098-5c07-44bb-ae17-5d0489786c62')
     def test_rvr_TCP_DL_ch36_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='ecfb4284-1794-4508-b35e-be56fa4c9035')
     def test_rvr_TCP_UL_ch36_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='6190c1a6-08f2-4a27-a65f-7321801f2cd6')
     def test_rvr_TCP_DL_ch36_VHT80(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='ae12712d-0ac3-4317-827d-544acfa4910c')
     def test_rvr_TCP_UL_ch36_VHT80(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='c8f8d107-5176-484b-a0d9-7a63aef8677e')
     def test_rvr_TCP_DL_ch40_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='6fa823c9-54bf-450d-b2c3-31a46fc73386')
     def test_rvr_TCP_UL_ch40_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='aa6cd955-eaef-4552-87a4-c4a0df59e184')
     def test_rvr_TCP_DL_ch44_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='14ad4b1c-7c8f-4650-be74-daf813021ad3')
     def test_rvr_TCP_UL_ch44_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='a5fdb54c-60e2-4cc6-a9ec-1a17e7827823')
     def test_rvr_TCP_DL_ch44_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='112113f1-7f50-4112-81b5-d9a4fdf153e7')
     def test_rvr_TCP_UL_ch44_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='cda3886c-8776-4077-acfd-cfe128772e2f')
     def test_rvr_TCP_DL_ch48_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='2e5ad031-6404-4e71-b3b3-8a3bb2c85d4f')
     def test_rvr_TCP_UL_ch48_VHT20(self):
         self._test_rvr()
 
+
+class WifiRvr_UNII3_Test(WifiRvrTest):
+    @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
     def test_rvr_TCP_DL_ch149_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='59f0443f-822d-4347-9c52-310f0b812500')
     def test_rvr_TCP_UL_ch149_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='3b1524b3-af15-41f1-8fca-9ee9b687d59a')
     def test_rvr_TCP_DL_ch149_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='36670787-3bfb-4e8b-8881-e88eb608ed46')
     def test_rvr_TCP_UL_ch149_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='8350cddd-7c62-4fad-bdae-a8267d321aa3')
     def test_rvr_TCP_DL_ch149_VHT80(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='7432fccb-526e-44d4-b0f4-2c343ca53188')
     def test_rvr_TCP_UL_ch149_VHT80(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='037eec49-2bae-49e3-949e-5af2885dc84b')
     def test_rvr_TCP_DL_ch153_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='04d5d873-7d5a-4590-bff3-093edeb92380')
     def test_rvr_TCP_UL_ch153_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='4ff83f6e-b130-4a88-8ced-04a09c6af666')
     def test_rvr_TCP_DL_ch157_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='c3436402-977e-40a5-a7eb-e2c886379d43')
     def test_rvr_TCP_UL_ch157_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='797a218b-1a8e-4233-835b-61b3f057f480')
     def test_rvr_TCP_DL_ch157_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='38d3e825-6e2c-4931-b0fd-aa19c5d1ef40')
     def test_rvr_TCP_UL_ch157_VHT40(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='993e98c5-0647-4ed6-b62e-ab386ada37af')
     def test_rvr_TCP_DL_ch161_VHT20(self):
         self._test_rvr()
 
+    @test_tracker_info(uuid='3bf9c844-749a-47d8-ac46-89249bd92c4a')
     def test_rvr_TCP_UL_ch161_VHT20(self):
         self._test_rvr()
 
+
     # UDP Tests
-    def test_rvr_UDP_DL_ch161_VHT20(self):
+class WifiRvr_SampleUDP_Test(WifiRvrTest):
+    @test_tracker_info(uuid='05614f92-38fa-4289-bcff-d4b4a2a2ad5b')
+    def test_rvr_UDP_DL_ch6_VHT20(self):
         self._test_rvr()
 
-    def test_rvr_UDP_UL_ch161_VHT20(self):
+    @test_tracker_info(uuid='577632e9-fb2f-4a2b-b3c3-affee8264008')
+    def test_rvr_UDP_UL_ch6_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='6f3fcc28-5f0c-49e6-8810-69c5873ecafa')
+    def test_rvr_UDP_DL_ch36_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='8e518aaa-e61f-4c1d-b12f-1bbd550ec3e5')
+    def test_rvr_UDP_UL_ch36_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='fd68ff32-c789-4a86-9924-2f5aeb3c9651')
+    def test_rvr_UDP_DL_ch149_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='29d03492-fc0b-42d0-aa15-c0c838ba50c1')
+    def test_rvr_UDP_UL_ch149_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='044c414c-ac5e-4e28-9b56-a602e0cc9724')
+    def test_rvr_UDP_DL_ch36_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='9cd16689-5053-4ffa-813c-d901384a105c')
+    def test_rvr_UDP_UL_ch36_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='4e4b1e73-30ce-4005-9c34-8c0280bdb293')
+    def test_rvr_UDP_DL_ch36_VHT80(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='780166a1-1847-45c2-b509-71612c82309d')
+    def test_rvr_UDP_UL_ch36_VHT80(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='05abdb89-9744-479e-8443-cb8b9427f5e3')
+    def test_rvr_UDP_DL_ch149_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='a321590a-4cbc-4044-9c2b-24e90f444213')
+    def test_rvr_UDP_UL_ch149_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='041fd613-24d9-4606-bca3-0ae0d8436b5e')
+    def test_rvr_UDP_DL_ch149_VHT80(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='69aab23d-1408-4cdd-9f57-2520a1e9cea8')
+    def test_rvr_UDP_UL_ch149_VHT80(self):
         self._test_rvr()
