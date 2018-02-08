@@ -50,9 +50,7 @@ def create(configs):
     Returns:
         A new AccessPoint.
     """
-    return [
-        AccessPoint(settings.from_config(c['ssh_config'])) for c in configs
-    ]
+    return [AccessPoint(c) for c in configs]
 
 
 def destroy(aps):
@@ -86,10 +84,9 @@ _ApInstance = collections.namedtuple('_ApInstance', ['hostapd', 'subnet'])
 # These ranges were split this way since each physical radio can have up
 # to 8 SSIDs so for the 2GHz radio the DHCP range will be
 # 192.168.1 - 8 and the 5Ghz radio will be 192.168.9 - 16
-_AP_2GHZ_SUBNET_STR = '192.168.1.0/24'
-_AP_5GHZ_SUBNET_STR = '192.168.9.0/24'
-_AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_2GHZ_SUBNET_STR))
-_AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_5GHZ_SUBNET_STR))
+_AP_2GHZ_SUBNET_STR_DEFAULT = '192.168.1.0/24'
+_AP_5GHZ_SUBNET_STR_DEFAULT = '192.168.9.0/24'
+
 # The last digit of the ip for the bridge interface
 BRIDGE_IP_LAST = '100'
 
@@ -103,12 +100,24 @@ class AccessPoint(object):
         dhcp_settings: The dhcp server settings being used.
     """
 
-    def __init__(self, ssh_settings):
+    def __init__(self, configs):
         """
         Args:
-            ssh_settings: acts.controllers.utils_lib.ssh.SshSettings instance.
+            configs: configs for the access point from config file.
         """
-        self.ssh_settings = ssh_settings
+        self.ssh_settings = settings.from_config(configs['ssh_config'])
+        if 'ap_subnet' in configs:
+            self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
+            self._AP_5G_SUBNET_STR = configs['ap_subnet']['5g']
+        else:
+            self._AP_2G_SUBNET_STR = _AP_2GHZ_SUBNET_STR_DEFAULT
+            self._AP_5G_SUBNET_STR = _AP_5GHZ_SUBNET_STR_DEFAULT
+
+        self._AP_2G_SUBNET = dhcp_config.Subnet(
+            ipaddress.ip_network(self._AP_2G_SUBNET_STR))
+        self._AP_5G_SUBNET = dhcp_config.Subnet(
+            ipaddress.ip_network(self._AP_5G_SUBNET_STR))
+
         self.ssh = connection.SshConnection(self.ssh_settings)
 
         # Singleton utilities for running various commands.
@@ -180,10 +189,10 @@ class AccessPoint(object):
 
         if hostapd_config.frequency < 5000:
             interface = self.wlan_2g
-            subnet = _AP_2GHZ_SUBNET
+            subnet = self._AP_2G_SUBNET
         else:
             interface = self.wlan_5g
-            subnet = _AP_5GHZ_SUBNET
+            subnet = self._AP_5G_SUBNET
 
         # In order to handle dhcp servers on any interface, the initiation of
         # the dhcp server must be done after the wlan interfaces are figured
@@ -232,9 +241,9 @@ class AccessPoint(object):
                             counter)
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is self.wlan_2g:
-                    starting_ip_range = _AP_2GHZ_SUBNET_STR
+                    starting_ip_range = self._AP_2G_SUBNET_STR
                 else:
-                    starting_ip_range = _AP_5GHZ_SUBNET_STR
+                    starting_ip_range = self._AP_5G_SUBNET_STR
                 a, b, c, d = starting_ip_range.split('.')
                 dhcp_bss[bss] = dhcp_config.Subnet(
                     ipaddress.ip_network('%s.%s.%s.%s' %
@@ -361,10 +370,10 @@ class AccessPoint(object):
 
         if channel < 15:
             iface_wlan = self.wlan_2g
-            subnet_str = _AP_2GHZ_SUBNET_STR
+            subnet_str = self._AP_2G_SUBNET_STR
         else:
             iface_wlan = self.wlan_5g
-            subnet_str = _AP_5GHZ_SUBNET_STR
+            subnet_str = self._AP_5G_SUBNET_STR
 
         iface_lan = self.lan
 
