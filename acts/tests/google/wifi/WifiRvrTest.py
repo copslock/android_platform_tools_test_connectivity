@@ -39,7 +39,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         req_params = ["test_params", "main_network"]
-        opt_params = ["RetailAccessPoints"]
+        opt_params = ["RetailAccessPoints", "gldn_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
@@ -49,9 +49,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
-        try:
-            self.gldn_files_list
-        except:
+        if not hasattr(self, "gldn_files_list"):
             self.gldn_files_list = [
                 os.path.join(self.test_params["golden_results_path"], file)
                 for file in os.listdir(self.test_params["golden_results_path"])
