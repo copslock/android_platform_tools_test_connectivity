@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts import utils
 from acts.base_test import BaseTestClass
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
@@ -43,6 +44,7 @@ class AwareBaseTest(BaseTestClass):
           "Device under test does not support Wi-Fi Aware - skipping test")
       wutils.wifi_toggle_state(ad, True)
       ad.droid.wifiP2pClose()
+      utils.set_location_service(ad, True)
       aware_avail = ad.droid.wifiIsAwareAvailable()
       if not aware_avail:
         self.log.info('Aware not available. Waiting ...')
@@ -52,6 +54,7 @@ class AwareBaseTest(BaseTestClass):
       self.reset_device_parameters(ad)
       self.reset_device_statistics(ad)
       self.set_power_mode_parameters(ad)
+      utils.set_regulatory_domain(ad, "US")
       autils.configure_ndp_allow_any_override(ad, True)
 
   def teardown_test(self):

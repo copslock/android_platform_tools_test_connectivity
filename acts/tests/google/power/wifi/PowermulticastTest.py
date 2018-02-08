@@ -69,15 +69,18 @@ class PowermulticastTest(base_test.BaseTestClass):
         Bring down the AP interface, delete the bridge interface, stop the
         packet sender, and reset the ethernet interface for the packet sender
         """
+        self.log.info('Tearing down the test case')
         self.pkt_sender.stop_sending(ignore_status=True)
         self.access_point.bridge.teardown(self.brconfigs)
         self.access_point.close()
         wputils.reset_host_interface(self.pkt_sender.interface)
+        self.mon.usb('on')
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
 
         """
+        self.log.info('Tearing down the test class')
         self.mon.usb('on')
         self.pkt_sender.stop_sending(ignore_status=True)
         self.access_point.close()
