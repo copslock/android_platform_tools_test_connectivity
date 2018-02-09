@@ -65,6 +65,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.logger_sessions = []
 
         self.log_path = getattr(logging, "log_path", None)
+        self.qxdm_log = self.user_params.get("qxdm_log", True)
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
@@ -75,13 +76,14 @@ class TelephonyBaseTest(BaseTestClass):
             if not hasattr(ad, "init_log_path"):
                 ad.init_log_path = ad.log_path
             ad.log_path = self.log_path
+            print_radio_info(ad)
             if not unlock_sim(ad):
                 abort_all_tests(ad.log, "unable to unlock SIM")
             ad.wakeup_screen()
             ad.adb.shell("input keyevent 82")
-            ad.qxdm_log = getattr(ad, "qxdm_log", True)
-            qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
+            ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
             if ad.qxdm_log:
+                qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
                 if qxdm_log_mask_cfg:
                     qxdm_mask_path = DEFAULT_QXDM_LOG_PATH
                     ad.adb.shell("mkdir %s" % qxdm_mask_path)
@@ -91,15 +93,12 @@ class TelephonyBaseTest(BaseTestClass):
                     mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
                     qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
                 set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-            print_radio_info(ad)
-
-        if getattr(self, "qxdm_log", True):
-            start_qxdm_loggers(self.log, self.android_devices,
-                               utils.get_current_epoch_time())
-            for ad in self.android_devices:
                 ad.adb.pull(
                     "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
                     ignore_status=True)
+
+        start_qxdm_loggers(self.log, self.android_devices,
+                           utils.get_current_epoch_time())
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
 
@@ -326,7 +325,7 @@ class TelephonyBaseTest(BaseTestClass):
         extra_qxdm_logs_in_seconds = self.user_params.get(
             "extra_qxdm_logs_in_seconds", 60 * 3)
         result = True
-        if getattr(ad, "qxdm_log", False):
+        if getattr(ad, "qxdm_log", True):
             # Gather qxdm log modified 3 minutes earlier than test start time
             if begin_time:
                 qxdm_begin_time = begin_time - 1000 * extra_qxdm_logs_in_seconds
