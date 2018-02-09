@@ -943,7 +943,7 @@ class Monsoon(object):
                 self.log.info('Retry-reset monsoon and connect again')
                 self.usb('off')
                 time.sleep(1)
-                self.usb.usb('on')
+                self.usb('on')
                 self._wait_for_device(self.dut)
             # Wait for device to come back online.
             time.sleep(2)
