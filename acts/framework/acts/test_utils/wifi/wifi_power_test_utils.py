@@ -134,7 +134,7 @@ def pass_fail_check(test_class, test_result):
     asserts.explicit_pass("Measurement finished for %s." % test_name)
 
 
-def monsoon_data_collect_save(ad, mon_info, test_name, bug_report):
+def monsoon_data_collect_save(ad, mon_info, test_name):
     """Current measurement and save the log file.
 
     Collect current data using Monsoon box and return the path of the
@@ -157,7 +157,6 @@ def monsoon_data_collect_save(ad, mon_info, test_name, bug_report):
     tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
     #Resets the battery status right before the test started
     ad.adb.shell(RESET_BATTERY_STATS)
-    begin_time = utils.get_current_epoch_time()
     #Start the power measurement using monsoon
     result = mon_info['dut'].measure_power(
         mon_info['freq'],
@@ -168,8 +167,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name, bug_report):
     avg_current = result.average_current
     monsoon.MonsoonData.save_to_text_file([result], data_path)
     log.info("Power measurement done")
-    if bool(bug_report) == True:
-        ad.take_bug_report(test_name, begin_time)
+
     return data_path, avg_current
 
 

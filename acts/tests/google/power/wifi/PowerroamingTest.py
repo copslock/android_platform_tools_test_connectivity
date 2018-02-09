@@ -18,6 +18,7 @@ import logging
 import os
 import time
 from acts import base_test
+from acts import utils
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants as wc
@@ -105,9 +106,13 @@ class PowerroamingTest(base_test.BaseTestClass):
                 self.atten_level[self.current_test_name][i])
             for i in range(self.num_atten)
         ]
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -148,9 +153,13 @@ class PowerroamingTest(base_test.BaseTestClass):
             self.attenuators[i].set_atten(self.atten_level[wc.AP_AUX][i])
             for i in range(self.num_atten)
         ]
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -175,17 +184,21 @@ class PowerroamingTest(base_test.BaseTestClass):
             for i in range(self.num_atten)
         ]
         # Toggle between two networks
+        begin_time = utils.get_current_epoch_time()
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
             file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name, 0)
+                self.dut, self.mon_info, self.current_test_name)
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
             file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name, 0)
+                self.dut, self.mon_info, self.current_test_name)
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         avg_current = dt.source.data['y0'][0]
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -208,17 +221,21 @@ class PowerroamingTest(base_test.BaseTestClass):
             for i in range(self.num_atten)
         ]
         # Toggle between two networks
+        begin_time = utils.get_current_epoch_time()
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
             file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name, 0)
+                self.dut, self.mon_info, self.current_test_name)
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
             file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name, 0)
+                self.dut, self.mon_info, self.current_test_name)
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         avg_current = dt.source.data['y0'][0]
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -250,8 +267,12 @@ class PowerroamingTest(base_test.BaseTestClass):
             for i in range(self.num_atten)
         ]
         self.dut.droid.goToSleepNow()
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
