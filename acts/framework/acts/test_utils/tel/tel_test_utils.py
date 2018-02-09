@@ -2359,7 +2359,7 @@ def _connection_state_change(_event, target_state, connection_type):
 
 
 def wait_for_cell_data_connection(
-        log, ad, state, timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value for default
        data subscription.
 
@@ -2373,7 +2373,7 @@ def wait_for_cell_data_connection(
             If True, it will wait for status to be DATA_STATE_CONNECTED.
             If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
         timeout_value: wait for cell data timeout value.
-            This is optional, default value is EventDispatcher.DEFAULT_TIMEOUT
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 
     Returns:
         True if success.
@@ -2396,7 +2396,7 @@ def _is_network_connected_state_match(log, ad,
 
 
 def wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
+        log, ad, sub_id, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value for specified
        subscrption id.
 
@@ -2411,7 +2411,7 @@ def wait_for_cell_data_connection_for_subscription(
             If True, it will wait for status to be DATA_STATE_CONNECTED.
             If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
         timeout_value: wait for cell data timeout value.
-            This is optional, default value is EventDispatcher.DEFAULT_TIMEOUT
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 
     Returns:
         True if success.
@@ -2458,8 +2458,7 @@ def wait_for_cell_data_connection_for_subscription(
         # The bug is tracked here: b/22612607
         # So we use _is_network_connected_state_match.
 
-        if _wait_for_droid_in_state(log, ad,
-                                    MAX_WAIT_TIME_CONNECTION_STATE_UPDATE,
+        if _wait_for_droid_in_state(log, ad, timeout_value,
                                     _is_network_connected_state_match, state):
             return _wait_for_nw_data_connection(
                 log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
@@ -2472,7 +2471,7 @@ def wait_for_cell_data_connection_for_subscription(
 
 
 def wait_for_wifi_data_connection(
-        log, ad, state, timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value and connection is by WiFi.
 
     Args:
@@ -2482,7 +2481,7 @@ def wait_for_wifi_data_connection(
             If True, it will wait for status to be DATA_STATE_CONNECTED.
             If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
         timeout_value: wait for network data timeout value.
-            This is optional, default value is EventDispatcher.DEFAULT_TIMEOUT
+            This is optional, default value is MAX_WAIT_TIME_NW_SELECTION
 
     Returns:
         True if success.
@@ -2496,7 +2495,7 @@ def wait_for_wifi_data_connection(
 def wait_for_data_connection(log,
                              ad,
                              state,
-                             timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
+                             timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value.
 
     Wait for the data connection status to be DATA_STATE_CONNECTED
@@ -2509,7 +2508,7 @@ def wait_for_data_connection(log,
             If True, it will wait for status to be DATA_STATE_CONNECTED.
             If False, it will wait for status ti be DATA_STATE_DISCONNECTED.
         timeout_value: wait for network data timeout value.
-            This is optional, default value is EventDispatcher.DEFAULT_TIMEOUT
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 
     Returns:
         True if success.
@@ -2523,7 +2522,7 @@ def _wait_for_nw_data_connection(
         ad,
         is_connected,
         connection_type=None,
-        timeout_value=EventDispatcher.DEFAULT_TIMEOUT):
+        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value.
 
     Wait for the data connection status to be DATA_STATE_CONNECTED
@@ -2538,7 +2537,7 @@ def _wait_for_nw_data_connection(
         connection_type: expected connection type.
             This is optional, if it is None, then any connection type will return True.
         timeout_value: wait for network data timeout value.
-            This is optional, default value is EventDispatcher.DEFAULT_TIMEOUT
+            This is optional, default value is MAX_WAIT_TIME_CONNECTION_STATE_UPDATE
 
     Returns:
         True if success.
@@ -2580,7 +2579,7 @@ def _wait_for_nw_data_connection(
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
         if _wait_for_droid_in_state(
-                log, ad, MAX_WAIT_TIME_CONNECTION_STATE_UPDATE,
+                log, ad, timeout_value,
                 _is_network_connected_state_match, is_connected):
             current_type = get_internet_connection_type(log, ad)
             ad.log.info("current data connection type: %s", current_type)
