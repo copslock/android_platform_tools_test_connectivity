@@ -18,7 +18,7 @@
 # TIMERS
 ###############################################
 # Max time to wait for phone data/network connection state update
-MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 20
+MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 60
 
 # Max time to wait for network reselection
 MAX_WAIT_TIME_NW_SELECTION = 180
