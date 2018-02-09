@@ -19,8 +19,8 @@ import math
 import os
 import time
 from acts import base_test
+from acts import utils
 from acts.controllers.ap_lib import bridge_interface as bi
-from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -152,8 +152,9 @@ class PowertrafficTest(base_test.BaseTestClass):
             self.dut, self.iperf_server_address, iperf_args)
 
         # Collect power data and plot
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
 
         # Get IPERF results
         RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
@@ -179,7 +180,10 @@ class PowertrafficTest(base_test.BaseTestClass):
         # Monsoon Power data plot with IPerf throughput information
         tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(RSSI, throughput)
         wputils.monsoon_data_plot(self.mon_info, file_path, tag)
-
+        
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Pass and fail check
         wputils.pass_fail_check(self, avg_current)
 
