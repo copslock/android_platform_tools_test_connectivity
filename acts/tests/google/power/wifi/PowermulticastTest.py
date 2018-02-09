@@ -19,6 +19,7 @@ import os
 import time
 
 from acts import base_test
+from acts import utils
 from acts.controllers.ap_lib import bridge_interface as bi
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
@@ -137,9 +138,13 @@ class PowermulticastTest(base_test.BaseTestClass):
         self.pkt_sender.start_sending(packet, self.interval)
 
         # Measure current and plot
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
 
         # Compute pass or fail check
         wputils.pass_fail_check(self, avg_current)
