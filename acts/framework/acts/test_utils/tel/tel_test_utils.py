@@ -4966,6 +4966,7 @@ def stop_qxdm_logger(ad):
 
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
+    if not getattr(ad, "qxdm_log", True): return
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
     if getattr(ad, "qxdm_log_path", None):
         seconds = None
@@ -4997,8 +4998,9 @@ def start_qxdm_logger(ad, begin_time=None):
 
 
 def start_qxdm_loggers(log, ads, begin_time=None):
-    tasks = [(start_qxdm_logger, [ad, begin_time]) for ad in ads]
-    run_multithread_func(log, tasks)
+    tasks = [(start_qxdm_logger, [ad, begin_time]) for ad in ads if getattr(
+        ad, "qxdm_log", True)]
+    if tasks: run_multithread_func(log, tasks)
 
 
 def stop_qxdm_loggers(log, ads):
