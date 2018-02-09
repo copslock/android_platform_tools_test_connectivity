@@ -18,6 +18,7 @@ import logging
 import os
 import time
 from acts import base_test
+from acts import utils
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -113,9 +114,13 @@ class PowerscanTest(base_test.BaseTestClass):
         self.dut.adb.shell_nb(scan_command)
         self.dut.droid.goToSleepNow()
         # Collect power data and plot
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -241,9 +246,13 @@ class PowerscanTest(base_test.BaseTestClass):
         self.dut.droid.wakeUpNow()
         self.log.info('Now turn on screen to trigger scans')
         self.dut.adb.shell(UNLOCK_SCREEN)
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         wputils.pass_fail_check(self, avg_current)
 
     @test_tracker_info(uuid='9a836e5b-8128-4dd2-8e96-e79177810bdd')
@@ -268,9 +277,13 @@ class PowerscanTest(base_test.BaseTestClass):
         self.dut.droid.wakeUpNow()
         self.log.info('Now turn on screen to trigger scans')
         self.dut.adb.shell(UNLOCK_SCREEN)
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -298,9 +311,13 @@ class PowerscanTest(base_test.BaseTestClass):
                 self.atten_level[self.current_test_name][i])
             for i in range(self.num_atten)
         ]
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
 
@@ -328,8 +345,12 @@ class PowerscanTest(base_test.BaseTestClass):
                 self.atten_level[self.current_test_name][i])
             for i in range(self.num_atten)
         ]
+        begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
-            self.dut, self.mon_info, self.current_test_name, self.bug_report)
+            self.dut, self.mon_info, self.current_test_name)
         wputils.monsoon_data_plot(self.mon_info, file_path)
+        # Take Bugreport
+        if bool(self.bug_report) == True:
+            self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
         wputils.pass_fail_check(self, avg_current)
