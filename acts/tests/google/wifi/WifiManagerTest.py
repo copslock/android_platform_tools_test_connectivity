@@ -76,6 +76,7 @@ class WifiManagerTest(WifiBaseTest):
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
@@ -521,9 +522,6 @@ class WifiManagerTest(WifiBaseTest):
 
     @test_tracker_info(uuid="71556e06-7fb1-4e2b-9338-b01f1f8e286e")
     def test_scan(self):
-        """Test wifi connection scan can start and find expected networks."""
-        wutils.wifi_toggle_state(self.dut, True)
-
         """Test wifi connection scan can start and find expected networks."""
         ssid = self.open_network[WifiEnums.SSID_KEY]
         wutils.start_wifi_connection_scan_and_ensure_network_found(
