@@ -26,7 +26,7 @@ import time
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -169,7 +170,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
-    def _send_message(self):
+    def _send_message(self, max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
         if self.single_phone_test:
             ads = [self.dut, self.dut]
         else:
@@ -218,7 +219,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 break
 
         if not message_func_map[selection](self.log, ads[0], ads[1],
-                                           message_content_map[selection]):
+                                           message_content_map[selection],
+                                           max_wait_time):
             self.result_info["Total %s" % message_type] += 1
             if message_type == "SMS":
                 self.log.error("%s fails", log_msg)
@@ -366,7 +368,8 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _init_perf_json(self):
         self.perf_file = os.path.join(
-            self.log_path, "%s_perf_data.json" % self.test_name)
+            self.log_path, "%s_perf_data_%s.json" % (
+                self.test_name, self.begin_time))
         self.perf_data = self.android_devices[0].build_info.copy()
         self.perf_data["model"] = self.android_devices[0].model
         self._write_perf_json()
@@ -451,10 +454,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def message_test(self):
+    def message_test(self, max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
         while time.time() < self.finishing_time:
             try:
-                self._send_message()
+                self._send_message(max_wait_time=max_wait_time)
                 time.sleep(
                     random.randrange(self.min_sleep_time, self.max_sleep_time))
             except IGNORE_EXCEPTIONS as e:
@@ -545,10 +548,13 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _get_result_message_rat_change(self):
         msg_list = ["%s: %s" % (count, self.result_info[count]) for  count in (
             "Total Calls", "Call Setup Failure", "Call Maintenance Failure",
-            "Call Teardown Failure", "RAT change failure", "Call Success")]
+            "Call Teardown Failure", "Total SMS", "SMS failure",
+            "Total MMS", "MMS failure", "Total file download",
+            "File download failure", "Call Success", "SMS Success",
+            "MMS Success", "File download Success", "RAT change failure")]
         return ", ".join(msg_list)
 
-    def parallel_volte_tests(self, setup_func=None):
+    def parallel_with_network_change_tests(self, setup_func=None):
         self.log.info(self._get_result_message_rat_change())
         if setup_func and not setup_func():
             self.log.error("Test setup %s failed", setup_func.__name__)
@@ -556,6 +562,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.finishing_time = time.time() + self.max_run_time
         results = run_multithread_func(self.log,
                                        [(self.volte_modechange_volte_test, []),
+                                        (self.message_test,
+                                         [5*MAX_WAIT_TIME_SMS_RECEIVE]),
+                                        (self.data_test, []),
                                         (self.crash_check_test, [])])
         result_message = self._get_result_message_rate_change()
         self.log.info(result_message)
@@ -615,7 +624,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_modeprefchange_parallel_stress(self):
         """ VoLTE Mode Pref call stress test"""
-        return self.parallel_volte_tests(
+        return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
 
     """ Tests End """

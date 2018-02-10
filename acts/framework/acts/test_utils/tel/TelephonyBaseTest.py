@@ -81,6 +81,16 @@ class TelephonyBaseTest(BaseTestClass):
                 abort_all_tests(ad.log, "unable to unlock SIM")
             ad.wakeup_screen()
             ad.adb.shell("input keyevent 82")
+            if len(ad._sl4a_manager.sessions) < 2:
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+            else:
+                session_id = sorted(ad._sl4a_manager.sessions.keys())[1]
+                ad.messaging_droid = ad._sl4a_manager.sessions[
+                    session_id].rpc_client
+                ad.messaging_ed = ad._sl4a_manager.sessions[
+                    session_id].get_event_dispatcher()
+                ad.messaging_ed.start()
             ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
             if ad.qxdm_log:
                 qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
@@ -366,6 +376,7 @@ class TelephonyBaseTest(BaseTestClass):
         tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
                       for ad in self.android_devices[:dev_num]])
         run_multithread_func(self.log, tasks)
+        if not self.user_params.get("zip_log", True): return
         src_dir = os.path.join(self.log_path, test_name)
         file_name = "%s_%s" % (src_dir, begin_time)
         self.log.info("Zip folder %s to %s.zip", src_dir, file_name)
