@@ -3322,7 +3322,8 @@ def is_sms_partial_match(event, phonenumber_tx, text):
             and text.startswith(event['data']['Text']))
 
 
-def sms_send_receive_verify(log, ad_tx, ad_rx, array_message):
+def sms_send_receive_verify(log, ad_tx, ad_rx, array_message,
+                            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send SMS, receive SMS, and verify content and sender's number.
 
         Send (several) SMS from droid_tx to droid_rx.
@@ -3338,7 +3339,7 @@ def sms_send_receive_verify(log, ad_tx, ad_rx, array_message):
     subid_tx = get_outgoing_message_sub_id(ad_tx)
     subid_rx = get_incoming_message_sub_id(ad_rx)
     return sms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message)
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
 
 
 def wait_for_matching_sms(log,
@@ -3346,7 +3347,8 @@ def wait_for_matching_sms(log,
                           phonenumber_tx,
                           text,
                           allow_multi_part_long_sms=True,
-                          begin_time=None):
+                          begin_time=None,
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Wait for matching incoming SMS.
 
     Args:
@@ -3362,9 +3364,9 @@ def wait_for_matching_sms(log,
     """
     if not allow_multi_part_long_sms:
         try:
-            ad_rx.ed.wait_for_event(EventSmsReceived, is_sms_match,
-                                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
-                                    text)
+            ad_rx.messaging_ed.wait_for_event(EventSmsReceived, is_sms_match,
+                                              max_wait_time, phonenumber_tx,
+                                              text)
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
@@ -3376,9 +3378,9 @@ def wait_for_matching_sms(log,
         try:
             received_sms = ''
             while (text != ''):
-                event = ad_rx.ed.wait_for_event(
+                event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match,
-                    MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx, text)
+                    max_wait_time, phonenumber_tx, text)
                 text = text[len(event['data']['Text']):]
                 received_sms += event['data']['Text']
             return True
@@ -3410,7 +3412,8 @@ def is_mms_match(event, phonenumber_tx, text):
     return True
 
 
-def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
+def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None,
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Wait for matching incoming SMS.
 
     Args:
@@ -3426,9 +3429,8 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
     """
     try:
         #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-        ad_rx.ed.wait_for_event(EventMmsDownloaded, is_mms_match,
-                                MAX_WAIT_TIME_SMS_RECEIVE, phonenumber_tx,
-                                text)
+        ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
+                                          max_wait_time, phonenumber_tx, text)
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
@@ -3438,8 +3440,9 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None):
         return False
 
 
-def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
-                                             subid_rx, array_message):
+def sms_send_receive_verify_for_subscription(
+            log, ad_tx, ad_rx, subid_tx, subid_rx, array_message,
+            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send SMS, receive SMS, and verify content and sender's number.
 
         Send (several) SMS from droid_tx to droid_rx.
@@ -3457,21 +3460,24 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
 
+    for ad in (ad_tx, ad_rx):
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid = ad.droid
+            ad.messaging_ed = ad.ed
     for text in array_message:
         # set begin_time 300ms before current time to system time discrepency
         begin_time = get_current_epoch_time() - 300
         length = len(text)
         ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
                        phonenumber_tx, phonenumber_rx, length, text)
-        ad_rx.ed.clear_events(EventSmsReceived)
-        ad_tx.ed.clear_events(EventSmsSentSuccess)
-        ad_rx.droid.smsStartTrackingIncomingSmsMessage()
-        time.sleep(0.1)  #sleep 100ms after starting event tracking
         try:
-            ad_tx.droid.smsSendTextMessage(phonenumber_rx, text, True)
+            ad_rx.messaging_ed.clear_events(EventSmsReceived)
+            ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
+            ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
+            time.sleep(0.1)  #sleep 100ms after starting event tracking
+            ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text, True)
             try:
-                ad_tx.ed.pop_event(EventSmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess, max_wait_time)
             except Empty:
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
@@ -3490,12 +3496,16 @@ def sms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                 ad_rx.log.error("No matching received SMS of length %s.",
                                 length)
                 return False
+        except Exception as e:
+            log.error("Exception error %s", e)
+            raise
         finally:
-            ad_rx.droid.smsStopTrackingIncomingSmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
     return True
 
 
-def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
+def mms_send_receive_verify(log, ad_tx, ad_rx, array_message,
+                            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -3510,7 +3520,7 @@ def mms_send_receive_verify(log, ad_tx, ad_rx, array_message):
     """
     return mms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
-        get_incoming_message_sub_id(ad_rx), array_message)
+        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
 
 
 def sms_mms_send_logcat_check(ad, type, begin_time):
@@ -3552,8 +3562,9 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
 
 
 #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
-def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
-                                             subid_rx, array_payload):
+def mms_send_receive_verify_for_subscription(
+            log, ad_tx, ad_rx, subid_tx, subid_rx, array_payload,
+            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -3574,21 +3585,23 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
     for ad in (ad_rx, ad_tx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid = ad.droid
+            ad.messaging_ed = ad.ed
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
         ad_tx.log.info(
             "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_tx.ed.clear_events(EventMmsSentSuccess)
-        ad_rx.ed.clear_events(EventMmsDownloaded)
-        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
+        ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
+        ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         try:
-            ad_tx.droid.smsSendMultimediaMessage(
+            ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
-                ad_tx.ed.pop_event(EventMmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
                 # check log message as a work around for the missing sl4a
@@ -3600,12 +3613,17 @@ def mms_send_receive_verify_for_subscription(log, ad_tx, ad_rx, subid_tx,
                     log, ad_rx, phonenumber_tx, message,
                     begin_time=begin_time):
                 return False
+        except Exception as e:
+            log.error("Exception error %s", e)
+            raise
         finally:
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
     return True
 
 
-def mms_receive_verify_after_call_hangup(log, ad_tx, ad_rx, array_message):
+def mms_receive_verify_after_call_hangup(
+            log, ad_tx, ad_rx, array_message,
+            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
         Hangup call from droid_tx to droid_rx.
@@ -3620,12 +3638,13 @@ def mms_receive_verify_after_call_hangup(log, ad_tx, ad_rx, array_message):
     """
     return mms_receive_verify_after_call_hangup_for_subscription(
         log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
-        get_incoming_message_sub_id(ad_rx), array_message)
+        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
 
 
 #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
 def mms_receive_verify_after_call_hangup_for_subscription(
-        log, ad_tx, ad_rx, subid_tx, subid_rx, array_payload):
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_payload,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
         Hangup call from droid_tx to droid_rx.
@@ -3649,14 +3668,13 @@ def mms_receive_verify_after_call_hangup_for_subscription(
         ad_rx.log.info(
             "Waiting MMS from %s to %s, subject: %s, message: %s, file: %s.",
             phonenumber_tx, phonenumber_rx, subject, message, filename)
-        ad_rx.droid.smsStartTrackingIncomingMmsMessage()
+        ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         time.sleep(5)
         try:
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.ed.pop_event(EventMmsSentSuccess,
-                                   MAX_WAIT_TIME_SMS_SENT_SUCCESS)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
             except Empty:
                 log.warning("No sent_success event.")
                 if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
