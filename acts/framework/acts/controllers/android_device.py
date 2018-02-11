@@ -766,6 +766,23 @@ class AndroidDevice:
         utils.stop_standing_subprocess(self.adb_logcat_process)
         self.adb_logcat_process = None
 
+    def get_apk_uid(self, apk_name):
+        """Get the uid of the given apk.
+
+        Args:
+        apk_name: Name of the package, e.g., com.android.phone.
+
+        Returns:
+        Linux UID for the apk.
+        """
+        output = self.adb.shell("dumpsys package %s | grep userId=" % apk_name,
+                                ignore_status=True)
+        result = re.search(r"userId=(\d+)", output)
+        if result:
+            return result.group(1)
+        else:
+            None
+
     def is_apk_installed(self, package_name):
         """Check if the given apk is already installed.
 
