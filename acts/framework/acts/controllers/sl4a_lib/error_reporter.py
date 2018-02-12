@@ -68,20 +68,22 @@ class ErrorReporter(object):
             return False
 
         self._current_request_count += 1
-        ticket = self._get_report_ticket()
-        if not ticket:
+
+        try:
+            ticket = self._get_report_ticket()
+            if not ticket:
+                return False
+
+            report = ErrorLogger('%s|%s' % (self.name, ticket))
+
+            (self.report_on_adb(sl4a_manager.adb, report)
+             and self.report_device_processes(sl4a_manager.adb, report) and
+             self.report_sl4a_state(rpc_connection, sl4a_manager.adb, report)
+             and self.report_sl4a_session(sl4a_manager, sl4a_session, report))
+
+            return True
+        finally:
             self._current_request_count -= 1
-            return False
-
-        report = ErrorLogger('%s|%s' % (self.name, ticket))
-
-        (self.report_on_adb(sl4a_manager.adb, report)
-         and self.report_device_processes(sl4a_manager.adb, report)
-         and self.report_sl4a_state(rpc_connection, sl4a_manager.adb, report)
-         and self.report_sl4a_session(sl4a_manager, sl4a_session, report))
-
-        self._current_request_count -= 1
-        return True
 
     def report_on_adb(self, adb, report):
         """Creates an error report for ADB. Returns false if ADB has failed."""
@@ -190,7 +192,7 @@ class ErrorReporter(object):
 
     def report_sl4a_session(self, sl4a_manager, session, report):
         """Reports the state of an SL4A session."""
-        if session.server_port not in sl4a_manager.sl4a_port_in_use:
+        if session.server_port not in sl4a_manager.sl4a_ports_in_use:
             report.warning('SL4A server port %s not found in set of open '
                            'ports %s' % (session.server_port,
                                          sl4a_manager.sl4a_ports_in_use))
