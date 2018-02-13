@@ -18,6 +18,7 @@ import queue
 import time
 
 from acts import asserts
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -29,8 +30,18 @@ class RangeApTest(RttBaseTest):
   # Number of RTT iterations
   NUM_ITER = 10
 
+  # Maximum failure rate (%) for APs supporting IEEE 802.11mc
+  MAX_FAILURE_RATE_80211MC_SUPPORTING_APS = 10
+
+  # Maximum failure rate (%) for APs which do not support IEEE 802.11mc (and
+  # hence executing one-sided RTT)
+  MAX_FAILURE_RATE_ONE_SIDED_RTT_APS = 50
+
   # Allowed absolute margin of distance measurements (in mm)
   DISTANCE_MARGIN_MM = 1000
+
+  # Maximum ratio (%) of tests which are allowed to exceed the margin
+  MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS = 10
 
   # Maximum expected RSSI
   MAX_EXPECTED_RSSI = 200
@@ -97,9 +108,9 @@ class RangeApTest(RttBaseTest):
 
     events = self.run_ranging(dut, aps=aps, iter_count=self.NUM_ITER,
                           time_between_iterations=self.TIME_BETWEEN_ITERATIONS)
-    self.verify_results(events)
+    return self.analyze_results(events)
 
-  def verify_results(self, all_aps_events):
+  def analyze_results(self, all_aps_events):
     """Verifies the results of the RTT experiment.
 
     Args:
@@ -111,7 +122,7 @@ class RangeApTest(RttBaseTest):
           self.DISTANCE_MARGIN_MM, self.MAX_EXPECTED_RSSI)
       all_stats[bssid] = stats
     self.log.info("Stats: %s", all_stats)
-    asserts.explicit_pass("RTT test done", extras=all_stats)
+    return all_stats
 
   #############################################################################
 
@@ -121,14 +132,36 @@ class RangeApTest(RttBaseTest):
     rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
                                                                  repeat=10)
     dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
-    self.run_ranging_and_analyze(dut, rtt_supporting_aps)
+    stats = self.run_ranging_and_analyze(dut, rtt_supporting_aps)
+
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      asserts.assert_true(stat['num_failures'] <=
+              self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
+                          * self.NUM_ITER / 100,
+              "Failure rate is too high", extras=stats)
+      asserts.assert_true(stat['num_range_out_of_margin'] <=
+              self.MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS
+                          * self.NUM_ITER / 100,
+              "Results exceeding error margin rate is too high", extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
 
   def test_rtt_non_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
     dut = self.android_devices[0]
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
-    self.run_ranging_and_analyze(dut, non_rtt_aps)
+    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      asserts.assert_true(stat['num_failures'] <=
+                          self.MAX_FAILURE_RATE_ONE_SIDED_RTT_APS
+                          * self.NUM_ITER / 100,
+                          "Failure rate is too high", extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
 
   def test_rtt_non_80211mc_supporting_aps_wo_privilege(self):
     """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs with the
@@ -137,7 +170,19 @@ class RangeApTest(RttBaseTest):
     rutils.config_privilege_override(dut, True)
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
-    self.run_ranging_and_analyze(dut, non_rtt_aps)
+    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
+        "All one-sided RTT requests must fail when executed without privilege",
+                          extras=stats)
+      for code in stat['status_codes']:
+        asserts.assert_true(code ==
+        rconsts.EVENT_CB_RANGING_STATUS_RESPONDER_DOES_NOT_SUPPORT_IEEE80211MC,
+                            "Expected non-support error code", extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
 
   def test_rtt_mixed_80211mc_supporting_aps_wo_privilege(self):
     """Scan for APs and perform RTT on one supporting and one non-supporting
@@ -149,6 +194,47 @@ class RangeApTest(RttBaseTest):
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     mix_list = [rtt_aps[0], non_rtt_aps[0]]
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", mix_list)
-    self.run_ranging_and_analyze(dut, mix_list)
+    stats = self.run_ranging_and_analyze(dut, mix_list)
 
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      if bssid == rtt_aps[0][wutils.WifiEnums.BSSID_KEY]:
+        asserts.assert_true(stat['num_failures'] <=
+                            self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
+                            * self.NUM_ITER / 100,
+                            "Failure rate is too high", extras=stats)
+        asserts.assert_true(stat['num_range_out_of_margin'] <=
+                            self.MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS
+                            * self.NUM_ITER / 100,
+                            "Results exceeding error margin rate is too high",
+                            extras=stats)
+      else:
+        asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
+        "All one-sided RTT requests must fail when executed without privilege",
+                            extras=stats)
+        for code in stat['status_codes']:
+          asserts.assert_true(code ==
+            rconsts.EVENT_CB_RANGING_STATUS_RESPONDER_DOES_NOT_SUPPORT_IEEE80211MC,
+                              "Expected non-support error code", extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
 
+  def test_rtt_non_80211mc_supporting_ap_faked_as_supporting(self):
+    """Scan for APs which do not support IEEE 802.11mc, maliciously modify the
+    Responder config to indicate support and pass-through to service. Verify
+    that get an error result.
+    """
+    dut = self.android_devices[0]
+    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    non_rtt_aps = non_rtt_aps[0:1] # pick first
+    non_rtt_aps[0][rconsts.SCAN_RESULT_KEY_RTT_RESPONDER] = True # falsify
+    dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
+                          "Failures expected for falsified responder config",
+                          extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
