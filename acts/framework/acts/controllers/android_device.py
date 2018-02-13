@@ -1114,6 +1114,9 @@ class AndroidDevice:
         self.root_adb()
         if stop_at_lock_screen:
             return
+        if not self.ensure_screen_on():
+            self.log.error("User window cannot come up")
+            raise AndroidDeviceError("User window cannot come up")
         self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string, begin_time=None):
