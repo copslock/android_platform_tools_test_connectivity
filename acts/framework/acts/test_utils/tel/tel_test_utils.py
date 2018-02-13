@@ -3582,6 +3582,7 @@ def mms_send_receive_verify_for_subscription(
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+
     for ad in (ad_rx, ad_tx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
@@ -3591,12 +3592,12 @@ def mms_send_receive_verify_for_subscription(
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
-        ad_tx.log.info(
-            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
-            phonenumber_tx, phonenumber_rx, subject, message, filename)
         ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
         ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        ad_tx.log.info(
+            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
         try:
             ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
@@ -5222,8 +5223,8 @@ def reset_device_password(ad, device_password=None):
     unlock_sim(ad)
     screen_lock = ad.is_screen_lock_enabled()
     if device_password:
-        refresh_sl4a_session(ad)
         try:
+            refresh_sl4a_session(ad)
             ad.droid.setDevicePassword(device_password)
         except Exception as e:
             ad.log.warning("setDevicePassword failed with %s", e)
@@ -5251,6 +5252,7 @@ def reset_device_password(ad, device_password=None):
                 ad.droid.disableDevicePassword()
             except Exception as e:
                 ad.log.warning("disableDevicePassword failed with %s", e)
+                fastboot_wipe(ad)
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
     refresh_sl4a_session(ad)
