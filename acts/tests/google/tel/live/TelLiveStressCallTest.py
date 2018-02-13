@@ -60,7 +60,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         super(TelLiveStressCallTest, self).setup_class()
         self.caller = self.android_devices[0]
         self.callee = self.android_devices[1]
-        self.android_devices[:2]
+        self.number_of_devices = 2
         self.user_params["telephony_auto_rerun"] = False
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
@@ -198,7 +198,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         for i in range(1, self.phone_call_iteration + 1):
             msg = "Stress Call Test %s Iteration: <%s> / <%s>" % (
                 self.test_name, i, self.phone_call_iteration)
-            begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+            begin_time = get_current_epoch_time()
             self.log.info(msg)
             iteration_result = True
             ensure_phones_idle(self.log, self.android_devices)
@@ -237,7 +237,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
 
             self.log.info("%s %s", msg, iteration_result)
             if not iteration_result:
-                self._take_bug_report("%s_%s" % (self.test_name, i),
+                self._take_bug_report("%s_CallNo_%s" % (self.test_name, i),
                                       begin_time)
                 start_qxdm_loggers(self.log, self.android_devices)
 
