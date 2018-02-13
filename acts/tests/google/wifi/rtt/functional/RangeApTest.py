@@ -18,9 +18,6 @@ import queue
 import time
 
 from acts import asserts
-from acts.test_utils.wifi.aware import aware_const as aconsts
-from acts.test_utils.wifi.aware import aware_test_utils as autils
-from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -85,23 +82,21 @@ class RangeApTest(RttBaseTest):
 
     return events
 
-  def run_rtt_supporting_ap_only(self):
-    """Scan for APs and perform RTT only to those which support 802.11mc
+  def run_ranging_and_analyze(self, dut, aps):
+    """Run ranging on the specified APs and analyze results.
+
+    Args:
+      dut: Device under test.
+      aps: List of APs.
     """
-    dut = self.android_devices[0]
     max_peers = dut.droid.wifiRttMaxPeersInRequest()
-    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
-    dut.log.info("RTT Supporting APs=%s", rtt_supporting_aps)
 
-    asserts.assert_true(
-        len(rtt_supporting_aps) > 0,
-        "Need at least one AP which supports 802.11mc!")
-    if len(rtt_supporting_aps) > max_peers:
-      rtt_supporting_aps = rtt_supporting_aps[0:max_peers]
+    asserts.assert_true(len(aps) > 0, "Need at least one AP!")
+    if len(aps) > max_peers:
+      aps = aps[0:max_peers]
 
-    events = self.run_ranging(dut, aps=rtt_supporting_aps,
-                              iter_count=self.NUM_ITER,
-                              time_between_iterations=self.TIME_BETWEEN_ITERATIONS)
+    events = self.run_ranging(dut, aps=aps, iter_count=self.NUM_ITER,
+                          time_between_iterations=self.TIME_BETWEEN_ITERATIONS)
     self.verify_results(events)
 
   def verify_results(self, all_aps_events):
@@ -120,22 +115,40 @@ class RangeApTest(RttBaseTest):
 
   #############################################################################
 
-  def test_rtt_supporting_ap_only(self):
+  def test_rtt_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
-    self.run_rtt_supporting_ap_only()
-
-  def test_rtt_all_aps(self):
-    """Scan for APs and perform RTT on the first 10 visible APs"""
     dut = self.android_devices[0]
-    max_peers = dut.droid.wifiRttMaxPeersInRequest()
-    all_aps = rutils.scan_networks(dut)
-    if len(all_aps) > max_peers:
-      all_aps = all_aps[0:max_peers]
-    dut.log.info("Visible APs=%s", all_aps)
+    rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
+                                                                 repeat=10)
+    dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
+    self.run_ranging_and_analyze(dut, rtt_supporting_aps)
 
-    events = self.run_ranging(dut, aps=all_aps,
-        iter_count=self.NUM_ITER,
-        time_between_iterations=self.TIME_BETWEEN_ITERATIONS)
-    self.verify_results(events)
+  def test_rtt_non_80211mc_supporting_aps(self):
+    """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
+    dut = self.android_devices[0]
+    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    self.run_ranging_and_analyze(dut, non_rtt_aps)
+
+  def test_rtt_non_80211mc_supporting_aps_wo_privilege(self):
+    """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs with the
+    device not having privilege access (expect failures)."""
+    dut = self.android_devices[0]
+    rutils.config_privilege_override(dut, True)
+    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    self.run_ranging_and_analyze(dut, non_rtt_aps)
+
+  def test_rtt_mixed_80211mc_supporting_aps_wo_privilege(self):
+    """Scan for APs and perform RTT on one supporting and one non-supporting
+    IEEE 802.11mc APs with the device not having privilege access (expect
+    failures)."""
+    dut = self.android_devices[0]
+    rutils.config_privilege_override(dut, True)
+    rtt_aps = rutils.scan_with_rtt_support_constraint(dut, True)
+    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    mix_list = [rtt_aps[0], non_rtt_aps[0]]
+    dut.log.debug("Visible non-IEEE 802.11mc APs=%s", mix_list)
+    self.run_ranging_and_analyze(dut, mix_list)
 
 
