@@ -219,7 +219,8 @@ def validate_aware_peer_id_result(range_result, peer_id, description):
                        '%s: MAC Address not empty!' % description)
 
 
-def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
+def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi,
+    reference_lci, reference_lcr):
   """Extract statistics from a list of RTT results. Returns a dictionary
    with results:
      - num_samples
@@ -235,12 +236,19 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
      - rssi_mean
      - rssi_std_dev
      - status_codes
+     - lcis: extracted list of all of the individual LCI
+     - lcrs: extracted list of all of the individual LCR
+     - any_lci_mismatch: True/False - checks if all LCI results are identical to
+                         the reference LCI.
+     - any_lcr_mismatch: True/False - checks if all LCR results are identical to
+                         the reference LCR.
 
   Args:
     results: List of RTT results.
     range_reference_mm: Reference value for the distance (in mm)
     range_margin_mm: Acceptable absolute margin for distance (in mm)
     max_rssi: Acceptable maximum RSSI value.
+    reference_lci, reference_lcr: Reference values for LCI and LCR.
 
   Returns: A dictionary of stats.
   """
@@ -250,6 +258,8 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
   stats['num_failures'] = 0
   stats['num_range_out_of_margin'] = 0
   stats['num_invalid_rssi'] = 0
+  stats['any_lci_mismatch'] = False
+  stats['any_lcr_mismatch'] = False
 
   range_max_mm = range_reference_mm + range_margin_mm
   range_min_mm = range_reference_mm - range_margin_mm
@@ -258,6 +268,8 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
   distance_std_devs = []
   rssis = []
   status_codes = []
+  lcis = []
+  lcrs = []
 
   for i in range(len(results)):
     result = results[i]
@@ -283,6 +295,13 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
     if not 0 <= rssi <= max_rssi:
       stats['num_invalid_rssi'] = stats['num_invalid_rssi'] + 1
 
+    lcis.append(result[rconsts.EVENT_CB_RANGING_KEY_LCI])
+    if (result[rconsts.EVENT_CB_RANGING_KEY_LCI] != reference_lci):
+      stats['any_lci_mismatch'] = True
+    lcrs.append(result[rconsts.EVENT_CB_RANGING_KEY_LCR])
+    if (result[rconsts.EVENT_CB_RANGING_KEY_LCR] != reference_lcr):
+      stats['any_lcr_mismatch'] = True
+
   stats['distances'] = distances
   if len(distances) > 0:
     stats['distance_mean'] = statistics.mean(distances)
@@ -295,5 +314,7 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi):
   if len(rssis) > 1:
     stats['rssi_std_dev'] = statistics.stdev(rssis)
   stats['status_codes'] = status_codes
+  stats['lcis'] = lcis
+  stats['lcrs'] = lcrs
 
   return stats
