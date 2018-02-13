@@ -50,7 +50,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         #if there is no locked SIM, reboot the device and check again
         for ad in self.android_devices:
             reset_device_password(ad, None)
-            ad.reboot()
+            ad.reboot(stop_at_lock_screen=True)
             for _ in range(10):
                 if is_sim_ready_by_adb(self.log, ad):
                     ad.log.info("SIM is not locked")
@@ -69,9 +69,9 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         pass
 
     def setup_test(self):
-        # reboot the device to SIM lock inquiry page if SIM is not locked
-        if not is_sim_locked(self.dut):
-            self.dut.reboot(stop_at_lock_screen=True)
+        if not self.dut.ensure_screen_on():
+            self.dut.error("Unable to get to user window")
+            return False
         self.expected_call_result = False
 
     """ Tests Begin """
@@ -149,6 +149,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
+        self.dut.log.info("Turn off airplane mode")
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
         self.dut.log.info("Set screen lock pin")
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
@@ -175,18 +176,15 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
-        try:
-            toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            self.dut.log.info("Set screen lock pin")
-            reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
-            self.dut.log.info("Reboot device to screen lock screen")
-            self.dut.reboot(stop_at_lock_screen=True)
-            if self.fake_emergency_call_test():
-                return True
-            else:
-                return False
-        finally:
-            toggle_airplane_mode_by_adb(self.log, self.dut, False)
+        toggle_airplane_mode_by_adb(self.log, self.dut, True)
+        self.dut.log.info("Set screen lock pin")
+        reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
+        self.dut.log.info("Reboot device to screen lock screen")
+        self.dut.reboot(stop_at_lock_screen=True)
+        if self.fake_emergency_call_test():
+            return True
+        else:
+            return False
 
     @test_tracker_info(uuid="1e01927a-a077-466d-8bf8-52dca87ab87c")
     @TelephonyBaseTest.tel_test_wrap
