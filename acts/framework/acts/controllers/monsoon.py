@@ -185,38 +185,45 @@ class MonsoonProxy(object):
             "eventCode",
             "eventData",
         ]
-
-        self._SendStruct("BBB", 0x01, 0x00, 0x00)
-        while 1:  # Keep reading, discarding non-status packets
-            read_bytes = self._ReadPacket()
-            if not read_bytes:
-                return None
-            calsize = struct.calcsize(STATUS_FORMAT)
-            if len(read_bytes) != calsize or read_bytes[0] != 0x10:
-                logging.warning("Wanted status, dropped type=0x%02x, len=%d",
-                                read_bytes[0], len(read_bytes))
-                continue
-            status = dict(
-                zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT, read_bytes)))
-            p_type = status["packetType"]
-            if p_type != 0x10:
-                raise MonsoonError("Package type %s is not 0x10." % p_type)
-            for k in status.keys():
-                if k.endswith("VoltageSetting"):
-                    status[k] = 2.0 + status[k] * 0.01
-                elif k.endswith("FineCurrent"):
-                    pass  # needs calibration data
-                elif k.endswith("CoarseCurrent"):
-                    pass  # needs calibration data
-                elif k.startswith("voltage") or k.endswith("Voltage"):
-                    status[k] = status[k] * 0.000125
-                elif k.endswith("Resistor"):
-                    status[k] = 0.05 + status[k] * 0.0001
-                    if k.startswith("aux") or k.startswith("defAux"):
-                        status[k] += 0.05
-                elif k.endswith("CurrentLimit"):
-                    status[k] = 8 * (1023 - status[k]) / 1023.0
-            return status
+        timeout = time.time() + 60
+        read_bytes = None
+        while time.time() < timeout and not read_bytes:
+          # Keep reading, discarding non-status packets
+            try:
+                # When MonsoonError happens, data gets corrupted, send command
+                # and read output until the error goes away
+                self._SendStruct("BBB", 0x01, 0x00, 0x00)
+                read_bytes = self._ReadPacket()
+            except MonsoonError:
+                self._FlushInput()
+                read_bytes = None
+        if not read_bytes:
+            raise MonsoonError("Monsoon Error when reading data")
+        calsize = struct.calcsize(STATUS_FORMAT)
+        if len(read_bytes) != calsize or read_bytes[0] != 0x10:
+            logging.warning("Wanted status, dropped type=0x%02x, len=%d",
+                            read_bytes[0], len(read_bytes))
+        status = dict(
+            zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT, read_bytes)))
+        p_type = status["packetType"]
+        if p_type != 0x10:
+            raise MonsoonError("Package type %s is not 0x10." % p_type)
+        for k in status.keys():
+            if k.endswith("VoltageSetting"):
+                status[k] = 2.0 + status[k] * 0.01
+            elif k.endswith("FineCurrent"):
+                pass  # needs calibration data
+            elif k.endswith("CoarseCurrent"):
+                pass  # needs calibration data
+            elif k.startswith("voltage") or k.endswith("Voltage"):
+                status[k] = status[k] * 0.000125
+            elif k.endswith("Resistor"):
+                status[k] = 0.05 + status[k] * 0.0001
+                if k.startswith("aux") or k.startswith("defAux"):
+                    status[k] += 0.05
+            elif k.endswith("CurrentLimit"):
+                status[k] = 8 * (1023 - status[k]) / 1023.0
+        return status
 
     def RampVoltage(self, start, end):
         v = start
@@ -291,9 +298,17 @@ class MonsoonProxy(object):
         """Return some current samples. Call StartDataCollection() first.
         """
         while 1:  # loop until we get data or a timeout
-            _bytes = self._ReadPacket()
+            timeout = time.time() + 60
+            _bytes = None
+            while time.time() < timeout and not _bytes:
+                # Error happens when reading Monsoon data because Monsoon is
+                # in a unknown state, but would recover after some time.
+                try:
+                    _bytes = self._ReadPacket()
+                except MonsoonError:
+                    _bytes = None
             if not _bytes:
-                return None
+                raise MonsoonError("Monsoon Error when reading data")
             if len(_bytes) < 4 + 8 + 1 or _bytes[0] < 0x20 or _bytes[0] > 0x2F:
                 logging.warning("Wanted data, dropped type=0x%02x, len=%d",
                                 _bytes[0], len(_bytes))
@@ -353,8 +368,7 @@ class MonsoonProxy(object):
         """
         len_char = self.ser.read(1)
         if not len_char:
-            logging.error("Reading from serial port timed out.")
-            return None
+            raise MonsoonError("Reading from serial port timed out.")
 
         data_len = ord(len_char)
         if not data_len:
@@ -362,16 +376,14 @@ class MonsoonProxy(object):
         result = self.ser.read(int(data_len))
         result = bytearray(result)
         if len(result) != data_len:
-            logging.error("Length mismatch, expected %d bytes, got %d bytes.",
+            raise MonsoonError("Length mismatch, expected %d bytes, got %d bytes.",
                           data_len, len(result))
-            return None
         body = result[:-1]
         checksum = (sum(struct.unpack("B" * len(body), body)) + data_len) % 256
         if result[-1] != checksum:
-            logging.error(
+            raise MonsoonError(
                 "Invalid checksum from serial port! Expected %s, got %s",
                 hex(checksum), hex(result[-1]))
-            return None
         return result[:-1]
 
     def _FlushInput(self):
