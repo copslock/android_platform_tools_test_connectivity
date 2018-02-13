@@ -219,7 +219,7 @@ def validate_aware_peer_id_result(range_result, peer_id, description):
                        '%s: MAC Address not empty!' % description)
 
 
-def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi,
+def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
     reference_lci, reference_lcr):
   """Extract statistics from a list of RTT results. Returns a dictionary
    with results:
@@ -247,7 +247,7 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi,
     results: List of RTT results.
     range_reference_mm: Reference value for the distance (in mm)
     range_margin_mm: Acceptable absolute margin for distance (in mm)
-    max_rssi: Acceptable maximum RSSI value.
+    min_rssi: Acceptable minimum RSSI value.
     reference_lci, reference_lcr: Reference values for LCI and LCR.
 
   Returns: A dictionary of stats.
@@ -292,7 +292,7 @@ def extract_stats(results, range_reference_mm, range_margin_mm, max_rssi,
 
     rssi = result[rconsts.EVENT_CB_RANGING_KEY_RSSI]
     rssis.append(rssi)
-    if not 0 <= rssi <= max_rssi:
+    if not min_rssi <= rssi <= 0:
       stats['num_invalid_rssi'] = stats['num_invalid_rssi'] + 1
 
     lcis.append(result[rconsts.EVENT_CB_RANGING_KEY_LCI])

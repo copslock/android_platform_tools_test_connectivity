@@ -43,8 +43,8 @@ class RangeApTest(RttBaseTest):
   # Maximum ratio (%) of tests which are allowed to exceed the margin
   MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS = 10
 
-  # Maximum expected RSSI
-  MAX_EXPECTED_RSSI = 200
+  # Minimum expected RSSI
+  MIN_EXPECTED_RSSI = -100
 
   # Time gap (in seconds) between iterations
   TIME_BETWEEN_ITERATIONS = 0
@@ -120,7 +120,7 @@ class RangeApTest(RttBaseTest):
     for bssid, events in all_aps_events.items():
       stats = rutils.extract_stats(events, self.rtt_reference_distance_mm,
                                    self.DISTANCE_MARGIN_MM,
-                                   self.MAX_EXPECTED_RSSI,
+                                   self.MIN_EXPECTED_RSSI,
                                    self.lci_reference,
                                    self.lcr_reference)
       all_stats[bssid] = stats
