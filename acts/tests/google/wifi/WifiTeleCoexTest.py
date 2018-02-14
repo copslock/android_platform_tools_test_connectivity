@@ -195,6 +195,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         wifi_utils.toggle_wifi_off_and_on(self.dut)
         self.validate_cellular_and_wifi()
+        return True
 
 
     @test_tracker_info(uuid="caf22447-6354-4a2e-99e5-0ff235fc8f20")
@@ -216,6 +217,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         wifi_utils.toggle_airplane_mode_on_and_off(self.dut)
         self.validate_cellular_and_wifi()
+        return True
 
 
     @test_tracker_info(uuid="dd888b35-f820-409a-89af-4b0f6551e4d6")
@@ -239,6 +241,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         self.stress_toggle_airplane_and_wifi(1)
         self.validate_cellular_and_wifi()
+        return True
 
 
     @test_tracker_info(uuid="15db5b7e-827e-4bc8-8e77-7fcce343a323")
@@ -260,6 +263,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         self.stress_toggle_wifi(self.stress_count)
         self.validate_cellular_and_wifi()
+        return True
 
 
     @test_tracker_info(uuid="80a2f1bf-5e41-453a-9b8e-be3b41d4d313")
@@ -281,6 +285,7 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         self.stress_toggle_airplane(self.stress_count)
         self.validate_cellular_and_wifi()
+        return True
 
 
     @test_tracker_info(uuid="b88ad3e7-6462-4280-ad57-22d0ac91fdd8")
@@ -305,3 +310,4 @@ class WifiTeleCoexTest(TelephonyBaseTest):
         self.connect_to_wifi(self.dut, self.network)
         self.stress_toggle_airplane_and_wifi(self.stress_count)
         self.validate_cellular_and_wifi()
+        return True
