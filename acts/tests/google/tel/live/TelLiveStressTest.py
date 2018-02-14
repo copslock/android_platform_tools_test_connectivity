@@ -476,8 +476,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut, "%s_file_download" % self.test_name, mask="all")
         self.result_info["File Download Total"] += 1
         if not active_file_download_test(self.log, self.dut, file_name):
-            self.result_info["File download failure"] += 1
-            if self.result_info["File download failure"] == 1:
+            self.result_info["File Download Failure"] += 1
+            if self.result_info["File Download Failure"] == 1:
                 if self.tcpdump_proc is not None:
                     stop_adb_tcpdump(
                         self.dut, self.tcpdump_proc, True,
