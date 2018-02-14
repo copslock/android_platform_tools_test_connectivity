@@ -1225,6 +1225,10 @@ def initiate_call(log,
             "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
             " Telephony State:%s", callee_number, ad.droid.telecomIsInCall(),
             ad.droid.telephonyGetCallState(), ad.droid.telecomGetCallState())
+        reasons = ad.search_logcat(
+            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause")
+        if reasons:
+            ad.log.info(reasons[-1]["log_message"])
         return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
@@ -1703,7 +1707,7 @@ def call_setup_teardown_for_subscription(
 
     """
     CHECK_INTERVAL = 5
-    result = True
+    begin_time = get_current_epoch_time()
 
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
@@ -1725,7 +1729,6 @@ def call_setup_teardown_for_subscription(
                 callee_number,
                 wait_time_betwn_call_initcheck=extra_sleep):
             ad_caller.log.error("Initiate call failed.")
-            result = False
             return False
         else:
             ad_caller.log.info("Caller initate call successfully")
@@ -1737,7 +1740,6 @@ def call_setup_teardown_for_subscription(
                 caller=ad_caller,
                 incall_ui_display=incall_ui_display):
             ad_callee.log.error("Answer call fail.")
-            result = False
             return False
         else:
             ad_callee.log.info("Callee answered the call successfully")
@@ -1772,6 +1774,11 @@ def call_setup_teardown_for_subscription(
             result = False
         if not result:
             for ad in [ad_caller, ad_callee]:
+                reasons = ad.search_logcat(
+                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                    begin_time)
+                if reasons:
+                    ad.log.info(reasons[-1]["log_message"])
                 try:
                     if ad.droid.telecomIsInCall():
                         ad.droid.telecomEndCall()
