@@ -112,7 +112,8 @@ class Sl4aManager(object):
             lambda msg: '[SL4A Manager|%s] %s' % (adb.serial, msg))
         self.sessions = {}
         self._started = False
-        self.error_reporter = error_reporter.ErrorReporter('SL4A')
+        self.error_reporter = error_reporter.ErrorReporter(
+            'SL4A %s' % adb.serial)
 
     @property
     def sl4a_ports_in_use(self):
