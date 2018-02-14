@@ -279,8 +279,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not call_setup_result:
             self.log.error("%s: Setup Call failed.", log_msg)
             self.result_info["Call Setup Failure"] += 1
-            self._take_bug_report("%s_call_No_%s_setup_failure" %
-                                  (self.test_name, the_number), begin_time)
+            failure_reason = "setup"
             result = False
         else:
             elapsed_time = 0
@@ -296,29 +295,37 @@ class TelLiveStressTest(TelephonyBaseTest):
                             "Call is NOT in correct %s state at %s",
                             call_verification_func.__name__, time_message)
                         self.result_info["Call Maintenance Failure"] += 1
-                        self._take_bug_report(
-                            "%s_call_No_%s_maintenance_failure" % (
-                                self.test_name, the_number), begin_time)
+                        failure_reason = "maintenance"
+                        reasons = ad.search_logcat(
+                            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                            begin_time)
+                        if reasons:
+                            ad.log.info(reasons[-1]["log_message"])
                         hangup_call(self.log, ads[0])
                         result =  False
                     else:
                         ad.log.info(
                             "Call is in correct %s state at %s",
                             call_verification_func.__name__, time_message)
+                if not result:
+                    break
         if not hangup_call(self.log, ads[0]):
             time.sleep(10)
             for ad in ads:
                 if ad.droid.telecomIsInCall():
                     ad.log.error("Still in call after hungup")
                     self.result_info["Call Teardown Failure"] += 1
-                    self._take_bug_report("%s_call_No_%s_teardown_failure" %
-                                          (self.test_name,
-                                           the_number), begin_time)
+                    failure_reason = "teardown"
                     result = False
         else:
             self.log.info("Call setup and teardown succeed.")
             self.result_info["Call Success"] += 1
         self.result_info["Call Total"] += 1
+        if not result:
+            self._take_bug_report("%s_call_No_%s_%s_failure" %
+                                  (self.test_name, the_number, failure_reason),
+                                  begin_time)
+
         return result
 
     def _prefnetwork_mode_change(self, sub_id):
