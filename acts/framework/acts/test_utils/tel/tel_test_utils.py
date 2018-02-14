@@ -1225,6 +1225,10 @@ def initiate_call(log,
             "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
             " Telephony State:%s", callee_number, ad.droid.telecomIsInCall(),
             ad.droid.telephonyGetCallState(), ad.droid.telecomGetCallState())
+        reasons = ad.search_logcat(
+            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause")
+        if reasons:
+            ad.log.info(reasons[-1]["log_message"])
         return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
@@ -1703,7 +1707,7 @@ def call_setup_teardown_for_subscription(
 
     """
     CHECK_INTERVAL = 5
-    result = True
+    begin_time = get_current_epoch_time()
 
     caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
     callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
@@ -1725,7 +1729,6 @@ def call_setup_teardown_for_subscription(
                 callee_number,
                 wait_time_betwn_call_initcheck=extra_sleep):
             ad_caller.log.error("Initiate call failed.")
-            result = False
             return False
         else:
             ad_caller.log.info("Caller initate call successfully")
@@ -1737,7 +1740,6 @@ def call_setup_teardown_for_subscription(
                 caller=ad_caller,
                 incall_ui_display=incall_ui_display):
             ad_callee.log.error("Answer call fail.")
-            result = False
             return False
         else:
             ad_callee.log.info("Callee answered the call successfully")
@@ -1772,6 +1774,11 @@ def call_setup_teardown_for_subscription(
             result = False
         if not result:
             for ad in [ad_caller, ad_callee]:
+                reasons = ad.search_logcat(
+                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                    begin_time)
+                if reasons:
+                    ad.log.info(reasons[-1]["log_message"])
                 try:
                     if ad.droid.telecomIsInCall():
                         ad.droid.telecomEndCall()
@@ -1953,14 +1960,10 @@ def active_file_download_task(log, ad, file_name="5MB"):
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
-    if not ad.curl_capable:
-        url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
-        return (http_file_download_by_chrome, (ad, url, file_size, True,
-                                               timeout))
-    else:
-        url = "http://146.148.91.8/download/" + file_name + ".zip"
-        return (http_file_download_by_curl, (ad, url, output_path, file_size,
-                                             True, timeout))
+    #url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
+    url = "http://146.148.91.8/download/" + file_name + ".zip"
+    return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
+                                         True, timeout))
 
 
 def active_file_download_test(log, ad, file_name="5MB"):
@@ -2080,24 +2083,27 @@ def http_file_download_by_curl(ad,
     curl_cmd += " --url %s > %s" % (url, file_path)
     accounting_apk = "com.android.server.telecom" #"com.quicinc.cne.CNEService"
     result = True
+    begin_time = int(time.time() * 1000 - 2*60*60*1000)
+    end_time = int(time.time() * 1000 + 2*60*60*1000)
     try:
         data_accounting = {
             "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-            "curl_mobile_data_usage": get_mobile_data_usage(ad, None,
-                                                            accounting_apk)}
+            "subscriber_mobile_data_usage":  get_mobile_data_usage(
+                ad, None, None, begin_time, end_time),
+            "curl_mobile_data_usage": get_mobile_data_usage(
+                ad, None, accounting_apk, begin_time, end_time)}
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
         ad.adb.shell(curl_cmd, timeout=timeout)
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded to %s successfully", url, file_path)
-            time.sleep(60)
             new_data_accounting = {
                 "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-                "curl_mobile_data_usage": get_mobile_data_usage(ad, None,
-                                                                accounting_apk)
+                "subscriber_mobile_data_usage":  get_mobile_data_usage(
+                    ad, None, None, begin_time, end_time),
+                "curl_mobile_data_usage": get_mobile_data_usage(
+                    ad, None, accounting_apk, begin_time, end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {key: value - data_accounting[key]
@@ -2159,11 +2165,15 @@ def http_file_download_by_chrome(ad,
     ad.adb.shell("rm -f %s" % file_to_be_delete)
     ad.adb.shell("rm -rf /sdcard/Download/.*")
     ad.adb.shell("rm -f /sdcard/Download/.*")
+    begin_time = int(time.time() * 1000 - 2*60*60*1000)
+    end_time = int(time.time() * 1000 + 2*60*60*1000)
     data_accounting = {
         "total_rx_bytes": ad.droid.getTotalRxBytes(),
         "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-        "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-        "chrome_mobile_data_usage": get_mobile_data_usage(ad, None, chrome_apk)}
+        "subscriber_mobile_data_usage":  get_mobile_data_usage(
+            ad, None, None, begin_time, end_time),
+        "chrome_mobile_data_usage": get_mobile_data_usage(
+            ad, None, chrome_apk, begin_time, end_time)}
     ad.log.info("Before downloading: %s", data_accounting)
     ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
@@ -2179,12 +2189,13 @@ def http_file_download_by_chrome(ad,
                 ad.adb.shell("rm -f %s" % file_to_be_delete)
                 ad.adb.shell("rm -rf /sdcard/Download/.*")
                 ad.adb.shell("rm -f /sdcard/Download/.*")
-            time.sleep(60)
+            #time.sleep(30)
             new_data_accounting = {
                 "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-                "chrome_mobile_data_usage": get_mobile_data_usage(ad, None,
-                                                                  chrome_apk)
+                "subscriber_mobile_data_usage":  get_mobile_data_usage(
+                    ad, None, None, begin_time, end_time),
+                "chrome_mobile_data_usage": get_mobile_data_usage(
+                    ad, None, chrome_apk, begin_time, end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {key: value - data_accounting[key]
@@ -2242,26 +2253,33 @@ def http_file_download_by_sl4a(ad,
     file_folder, file_name = _generate_file_directory_and_file_name(
         url, out_path)
     file_path = os.path.join(file_folder, file_name)
+    ad.adb.shell("rm -f %s" % file_path)
     accounting_apk = SL4A_APK_NAME
     result = True
+    begin_time = int(time.time() * 1000 - 2*60*60*1000)
+    end_time = int(time.time() * 1000 + 2*60*60*1000)
     try:
+        if not getattr(ad, "downloading_droid", None):
+            ad.downloading_droid, ad.downloading_ed = ad.get_droid()
+            ad.downloading_ed.start()
         data_accounting = {
             "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-            "sl4a_mobile_data_usage": get_mobile_data_usage(ad, None,
-                                                            accounting_apk)}
+            "subscriber_mobile_data_usage":  get_mobile_data_usage(
+                ad, None, None, begin_time, end_time),
+            "sl4a_mobile_data_usage": get_mobile_data_usage(
+                ad, None, accounting_apk, begin_time, end_time)}
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
-        ad.droid.httpDownloadFile(url, file_path, timeout=timeout)
+        ad.downloading_droid.httpDownloadFile(url, file_path, timeout=timeout)
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded successfully", url)
-            time.sleep(60)
             new_data_accounting = {
                 "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(ad),
-                "sl4a_mobile_data_usage": get_mobile_data_usage(ad, None,
-                                                                accounting_apk)
+                "subscriber_mobile_data_usage":  get_mobile_data_usage(
+                    ad, None, None, begin_time, end_time),
+                "sl4a_mobile_data_usage": get_mobile_data_usage(
+                    ad, None, accounting_apk, begin_time, end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {key: value - data_accounting[key]
@@ -2292,30 +2310,31 @@ def http_file_download_by_sl4a(ad,
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
-def get_mobile_data_usage(ad, subscriber_id=None, apk=None):
+def get_mobile_data_usage(ad, subscriber_id=None, apk=None, begin_time=None,
+                          end_time=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    end_time = int(time.time() * 1000 + 600000)
+    if begin_time is None:
+        begin_time = 0
+    if end_time is None:
+        end_time = int(time.time() * 1000 + 2*60*60*1000)
     if apk:
         uid = ad.get_apk_uid(apk)
         try:
-            usage = ad.droid.getUidRxBytes(uid)
-            ### connectivityQueryDetailsForUid not working, use getUidRxBytes
-            ### for now b/73089497
-            #usage = ad.droid.connectivityQueryDetailsForUid(
-            #    TYPE_MOBILE, subscriber_id, 0, end_time, uid)
+            usage = ad.droid.connectivityQueryDetailsForUid(
+                TYPE_MOBILE, subscriber_id, begin_time, end_time, uid)
         except Exception:
             usage = ad.droid.cconnectivityQueryDetailsForUid(
-                subscriber_id, 0, end_time, uid)
+                subscriber_id, begin_time, end_time, uid)
         ad.log.debug("The mobile data usage for apk %s is %s", apk, usage)
     else:
         try:
             usage = ad.droid.connectivityQuerySummaryForDevice(
-                TYPE_MOBILE, subscriber_id, 0, end_time)
+                TYPE_MOBILE, subscriber_id, begin_time, end_time)
         except Exception:
             usage = ad.droid.connectivityQuerySummaryForDevice(
-                subscriber_id, 0, end_time)
-        ad.log.info("The mobile data usage for subscriber is %s", usage)
+                subscriber_id, begin_time, end_time)
+        ad.log.debug("The mobile data usage for subscriber is %s", usage)
     return usage
 
 
@@ -3462,8 +3481,8 @@ def sms_send_receive_verify_for_subscription(
 
     for ad in (ad_tx, ad_rx):
         if not getattr(ad, "messaging_droid", None):
-            ad.messaging_droid = ad.droid
-            ad.messaging_ed = ad.ed
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
     for text in array_message:
         # set begin_time 300ms before current time to system time discrepency
         begin_time = get_current_epoch_time() - 300
@@ -3582,21 +3601,22 @@ def mms_send_receive_verify_for_subscription(
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+
     for ad in (ad_rx, ad_tx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
         if not getattr(ad, "messaging_droid", None):
-            ad.messaging_droid = ad.droid
-            ad.messaging_ed = ad.ed
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
-        ad_tx.log.info(
-            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
-            phonenumber_tx, phonenumber_rx, subject, message, filename)
         ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
         ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
+        ad_tx.log.info(
+            "Sending MMS from %s to %s, subject: %s, message: %s, file: %s.",
+            phonenumber_tx, phonenumber_rx, subject, message, filename)
         try:
             ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
@@ -3662,7 +3682,10 @@ def mms_receive_verify_after_call_hangup_for_subscription(
 
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
-
+    for ad in (ad_tx, ad_rx):
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
         ad_rx.log.info(
@@ -5222,8 +5245,8 @@ def reset_device_password(ad, device_password=None):
     unlock_sim(ad)
     screen_lock = ad.is_screen_lock_enabled()
     if device_password:
-        refresh_sl4a_session(ad)
         try:
+            refresh_sl4a_session(ad)
             ad.droid.setDevicePassword(device_password)
         except Exception as e:
             ad.log.warning("setDevicePassword failed with %s", e)
@@ -5251,6 +5274,7 @@ def reset_device_password(ad, device_password=None):
                 ad.droid.disableDevicePassword()
             except Exception as e:
                 ad.log.warning("disableDevicePassword failed with %s", e)
+                fastboot_wipe(ad)
             time.sleep(2)
             ad.adb.wait_for_device(timeout=180)
     refresh_sl4a_session(ad)

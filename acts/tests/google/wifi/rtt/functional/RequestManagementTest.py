@@ -55,7 +55,7 @@ class RequestManagementTest(RttBaseTest):
     all_uids = [1000, 20, 30] # 1000 = System Server (makes requests foreground)
     some_uids = [20, 30]
 
-    aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
+    aps = rutils.scan_with_rtt_support_constraint(dut, True, repeat=10)
     dut.log.info("RTT Supporting APs=%s", aps)
 
     asserts.assert_true(
@@ -109,7 +109,7 @@ class RequestManagementTest(RttBaseTest):
     # background uid will be throttled on the next run of this script
     fake_uid = [random.randint(10, 9999)]
 
-    aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=10)
+    aps = rutils.scan_with_rtt_support_constraint(dut, True, repeat=10)
     dut.log.info("RTT Supporting APs=%s", aps)
 
     asserts.assert_true(
