@@ -1960,8 +1960,8 @@ def active_file_download_task(log, ad, file_name="5MB"):
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
-    #url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
-    url = "http://146.148.91.8/download/" + file_name + ".zip"
+    url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
+    #url = "http://146.148.91.8/download/" + file_name + ".zip"
     return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
                                          True, timeout))
 
