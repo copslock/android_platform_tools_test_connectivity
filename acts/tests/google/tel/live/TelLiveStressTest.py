@@ -23,6 +23,7 @@ import os
 import random
 import time
 
+from acts import utils
 from acts.asserts import fail
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -317,14 +318,20 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.result_info["Call Teardown Failure"] += 1
                     failure_reason = "teardown"
                     result = False
-        else:
-            self.log.info("Call setup and teardown succeed.")
-            self.result_info["Call Success"] += 1
         self.result_info["Call Total"] += 1
         if not result:
-            self._take_bug_report("%s_call_No_%s_%s_failure" %
-                                  (self.test_name, the_number, failure_reason),
-                                  begin_time)
+            self.log.info("%s test failed", log_msg)
+            test_name = "%s_call_No_%s_%s_failure" % (
+                self.test_name, the_number, failure_reason)
+            for ad in ads:
+                log_path = os.path.join(
+                    self.log_path, test_name, "%s_binder" % ad.serial)
+                utils.create_dir(log_path)
+                ad.adb.pull("/sys/kernel/debug/binder %s" % log_path)
+            self._take_bug_report(test_name, begin_time)
+        else:
+            self.log.info("%s test succeed", log_msg)
+            self.result_info["Call Success"] += 1
 
         return result
 
@@ -469,8 +476,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut, "%s_file_download" % self.test_name, mask="all")
         self.result_info["File Download Total"] += 1
         if not active_file_download_test(self.log, self.dut, file_name):
-            self.result_info["File download failure"] += 1
-            if self.result_info["File download failure"] == 1:
+            self.result_info["File Download Failure"] += 1
+            if self.result_info["File Download Failure"] == 1:
                 if self.tcpdump_proc is not None:
                     stop_adb_tcpdump(
                         self.dut, self.tcpdump_proc, True,
