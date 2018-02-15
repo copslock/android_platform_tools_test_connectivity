@@ -220,7 +220,7 @@ def validate_aware_peer_id_result(range_result, peer_id, description):
 
 
 def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
-    reference_lci, reference_lcr):
+    reference_lci=[], reference_lcr=[]):
   """Extract statistics from a list of RTT results. Returns a dictionary
    with results:
      - num_samples

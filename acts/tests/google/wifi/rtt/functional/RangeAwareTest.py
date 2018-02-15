@@ -33,8 +33,14 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
   # Number of RTT iterations
   NUM_ITER = 10
 
+  # Maximum failure rate (%)
+  MAX_FAILURE_RATE = 10
+
   # Allowed absolute margin of distance measurements (in mm)
   DISTANCE_MARGIN_MM = 1000
+
+  # Maximum ratio (%) of tests which are allowed to exceed the margin
+  MAX_MARGIN_EXCEEDED_RATE = 10
 
   # Maximum expected RSSI
   MAX_EXPECTED_RSSI = 200
@@ -156,6 +162,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
       time_between_roles: Number of seconds to wait when switching between
                           Initiator and Responder roles (only matters if
                           do_both_directions=True).
+      enable_ranging: True to enable Ranging, False to disable.
 
     Returns: a list of the events containing the RTT results (or None for a
     failed measurement). If both directions are tested then returns a list of
@@ -218,11 +225,38 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
       stats_reverse_direction = rutils.extract_stats(results_reverse_direction,
           self.rtt_reference_distance_mm, self.DISTANCE_MARGIN_MM,
           self.MAX_EXPECTED_RSSI)
-    self.log.info("Stats: %s", stats)
+    self.log.debug("Stats: %s", stats)
     if stats_reverse_direction is not None:
-      self.log.info("Stats in reverse direction: %s", stats_reverse_direction)
-    asserts.explicit_pass("RTT Aware test done",
-                          extras=(stats, stats_reverse_direction))
+      self.log.debug("Stats in reverse direction: %s", stats_reverse_direction)
+
+    extras = stats if stats_reverse_direction is None else [stats,
+                                                        stats_reverse_direction]
+
+    asserts.assert_true(stats['num_no_results'] == 0,
+                        "Missing (timed-out) results", extras=extras)
+    asserts.assert_true(
+        stats['num_failures'] <= self.MAX_FAILURE_RATE * self.NUM_ITER / 100,
+        "Failure rate is too high", extras=extras)
+    asserts.assert_true(
+        stats['num_range_out_of_margin']
+          <= self.MAX_MARGIN_EXCEEDED_RATE * self.NUM_ITER / 100,
+        "Results exceeding error margin rate is too high", extras=extras)
+
+    if stats_reverse_direction is not None:
+      asserts.assert_true(stats_reverse_direction['num_no_results'] == 0,
+                          "Missing (timed-out) results",
+                          extras=extras)
+      asserts.assert_true(
+          stats_reverse_direction['num_failures']
+            <= self.MAX_FAILURE_RATE * self.NUM_ITER / 100,
+          "Failure rate is too high", extras=extras)
+      asserts.assert_true(
+          stats_reverse_direction['num_range_out_of_margin']
+          <= self.MAX_MARGIN_EXCEEDED_RATE * self.NUM_ITER / 100,
+          "Results exceeding error margin rate is too high",
+          extras=extras)
+
+    asserts.explicit_pass("RTT Aware test done", extras=extras)
 
   #############################################################################
 
@@ -267,3 +301,91 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
         time_between_roles=self.TIME_BETWEEN_ROLES)
     self.verify_results(rtt_results1, rtt_results2)
+
+  def test_rtt_without_initiator_aware(self):
+    """Try to perform RTT operation when there is no local Aware session (on the
+    Initiator). The Responder is configured normally: Aware on and a Publisher
+    with Ranging enable. Should FAIL."""
+    init_dut = self.android_devices[0]
+    resp_dut = self.android_devices[1]
+
+    # Enable a Responder and start a Publisher
+    resp_id = resp_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    resp_ident_event = autils.wait_for_event(resp_dut,
+                                         aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    resp_mac = resp_ident_event['data']['mac']
+
+    resp_config = autils.add_ranging_to_pub(
+        autils.create_discovery_config(self.SERVICE_NAME,
+                                       aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True)
+    resp_dut.droid.wifiAwarePublish(resp_id, resp_config)
+    autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Initiate an RTT to Responder (no Aware started on Initiator!)
+    results = []
+    num_no_responses = 0
+    num_successes = 0
+    for i in range(self.NUM_ITER):
+      result = self.run_rtt_discovery(init_dut, resp_mac=resp_mac)
+      self.log.debug("result: %s", result)
+      results.append(result)
+      if result is None:
+        num_no_responses = num_no_responses + 1
+      elif (result[rconsts.EVENT_CB_RANGING_KEY_STATUS]
+            == rconsts.EVENT_CB_RANGING_STATUS_SUCCESS):
+        num_successes = num_successes + 1
+
+    asserts.assert_equal(num_no_responses, 0, "No RTT response?",
+                         extras=results)
+    asserts.assert_equal(num_successes, 0, "Aware RTT w/o Aware should FAIL!",
+                         extras=results)
+    asserts.explicit_pass("RTT Aware test done", extras=results)
+
+  def test_rtt_without_responder_aware(self):
+    """Try to perform RTT operation when there is no peer Aware session (on the
+    Responder). Should FAIL."""
+    init_dut = self.android_devices[0]
+    resp_dut = self.android_devices[1]
+
+    # Enable a Responder and start a Publisher
+    resp_id = resp_dut.droid.wifiAwareAttach(True)
+    autils.wait_for_event(resp_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    resp_ident_event = autils.wait_for_event(resp_dut,
+                                             aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    resp_mac = resp_ident_event['data']['mac']
+
+    resp_config = autils.add_ranging_to_pub(
+        autils.create_discovery_config(self.SERVICE_NAME,
+                                       aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True)
+    resp_dut.droid.wifiAwarePublish(resp_id, resp_config)
+    autils.wait_for_event(resp_dut, aconsts.SESSION_CB_ON_PUBLISH_STARTED)
+
+    # Disable Responder
+    resp_dut.droid.wifiAwareDestroy(resp_id)
+
+    # Enable the Initiator
+    init_id = init_dut.droid.wifiAwareAttach()
+    autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Initiate an RTT to Responder (no Aware started on Initiator!)
+    results = []
+    num_no_responses = 0
+    num_successes = 0
+    for i in range(100):
+      result = self.run_rtt_discovery(init_dut, resp_mac=resp_mac)
+      self.log.debug("result: %s", result)
+      results.append(result)
+      if result is None:
+        num_no_responses = num_no_responses + 1
+      elif (result[rconsts.EVENT_CB_RANGING_KEY_STATUS]
+            == rconsts.EVENT_CB_RANGING_STATUS_SUCCESS):
+        num_successes = num_successes + 1
+
+    asserts.assert_equal(num_no_responses, 0, "No RTT response?",
+                         extras=results)
+    asserts.assert_equal(num_successes, 0, "Aware RTT w/o Aware should FAIL!",
+                         extras=results)
+    asserts.explicit_pass("RTT Aware test done", extras=results)
