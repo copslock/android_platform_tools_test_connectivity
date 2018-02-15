@@ -1044,7 +1044,7 @@ def wait_for_disconnect(ad):
         ad.droid.wifiStartTrackingStateChange()
         event = ad.ed.pop_event("WifiNetworkDisconnected", 10)
         ad.droid.wifiStopTrackingStateChange()
-    except queue.Empty:
+    except Empty:
         raise signals.TestFailure("Device did not disconnect from the network")
 
 
