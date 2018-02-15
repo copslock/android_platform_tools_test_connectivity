@@ -261,3 +261,98 @@ class RangeApTest(RttBaseTest):
                           "Failures expected for falsified responder config",
                           extras=stats)
     asserts.explicit_pass("RTT test done", extras=stats)
+
+  #########################################################################
+  #
+  # LEGACY API test code
+  #
+  #########################################################################
+
+  def test_legacy_rtt_80211mc_supporting_aps(self):
+    """Scan for APs and perform RTT only to those which support 802.11mc - using
+    the LEGACY API!"""
+    dut = self.android_devices[0]
+    rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
+                                                                 repeat=10)
+    dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
+
+    rtt_configs = []
+    for ap in rtt_supporting_aps:
+      rtt_configs.append(self.rtt_config_from_scan_result(ap))
+    dut.log.debug("RTT configs=%s", rtt_configs)
+
+    results = []
+    num_missing = 0
+    for i in range(self.NUM_ITER):
+        idx = dut.droid.wifiRttStartRanging(rtt_configs)
+        event = None
+        try:
+          events = dut.ed.pop_events("WifiRttRanging%d" % idx, 30)
+          dut.log.debug("Event=%s", events)
+          for event in events:
+            results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS])
+        except queue.Empty:
+          self.log.debug("Waiting for RTT event timed out.")
+          results.append([])
+          num_missing = num_missing + 1
+
+    # basic error checking:
+    # 1. no missing
+    # 2. overall (all BSSIDs) success rate > threshold
+    asserts.assert_equal(num_missing, 0,
+                         "Missing results (timeout waiting for event)",
+                         extras=results)
+
+    num_results = 0
+    num_errors = 0
+    for result_group in results:
+      num_results = num_results + len(result_group)
+      for result in result_group:
+        if result["status"] != 0:
+          num_errors = num_errors + 1
+
+    asserts.assert_true(
+      num_errors <= self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
+        * num_results / 100,
+      "Failure rate is too high", extras=results)
+    asserts.explicit_pass("RTT test done", extras=results)
+
+  def rtt_config_from_scan_result(self, scan_result):
+    """Creates an Rtt configuration based on the scan result of a network.
+    """
+    WifiEnums = wutils.WifiEnums
+    ScanResult = WifiEnums.ScanResult
+    RttParam = WifiEnums.RttParam
+    RttBW = WifiEnums.RttBW
+    RttPreamble = WifiEnums.RttPreamble
+    RttType = WifiEnums.RttType
+
+    scan_result_channel_width_to_rtt = {
+      ScanResult.CHANNEL_WIDTH_20MHZ: RttBW.BW_20_SUPPORT,
+      ScanResult.CHANNEL_WIDTH_40MHZ: RttBW.BW_40_SUPPORT,
+      ScanResult.CHANNEL_WIDTH_80MHZ: RttBW.BW_80_SUPPORT,
+      ScanResult.CHANNEL_WIDTH_160MHZ: RttBW.BW_160_SUPPORT,
+      ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ: RttBW.BW_160_SUPPORT
+    }
+    p = {}
+    freq = scan_result[RttParam.frequency]
+    p[RttParam.frequency] = freq
+    p[RttParam.BSSID] = scan_result[WifiEnums.BSSID_KEY]
+    if freq > 5000:
+      p[RttParam.preamble] = RttPreamble.PREAMBLE_VHT
+    else:
+      p[RttParam.preamble] = RttPreamble.PREAMBLE_HT
+    cf0 = scan_result[RttParam.center_freq0]
+    if cf0 > 0:
+      p[RttParam.center_freq0] = cf0
+    cf1 = scan_result[RttParam.center_freq1]
+    if cf1 > 0:
+      p[RttParam.center_freq1] = cf1
+    cw = scan_result["channelWidth"]
+    p[RttParam.channel_width] = cw
+    p[RttParam.bandwidth] = scan_result_channel_width_to_rtt[cw]
+    if scan_result["is80211McRTTResponder"]:
+      p[RttParam.request_type] = RttType.TYPE_TWO_SIDED
+    else:
+      p[RttParam.request_type] = RttType.TYPE_ONE_SIDED
+    return p
