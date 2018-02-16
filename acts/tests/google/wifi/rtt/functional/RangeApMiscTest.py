@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import queue
-
 from acts import asserts
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
@@ -65,6 +63,8 @@ class RangeApMiscTest(RttBaseTest):
                              "LCI mismatch", extras=stats)
         asserts.assert_false(stat['any_lcr_mismatch'],
                              "LCR mismatch", extras=stats)
+        asserts.assert_equal(stat['num_invalid_rssi'], 0, "Invalid RSSI",
+                            extras=stats)
         asserts.assert_true(stat['num_failures'] <=
                             self.rtt_max_failure_rate_two_sided_rtt_percentage
                             * stat['num_results'] / 100,

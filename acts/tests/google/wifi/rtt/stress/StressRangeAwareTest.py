@@ -123,6 +123,8 @@ class StressRangeAwareTest(AwareBaseTest, RttBaseTest):
                          "LCI mismatch", extras=stats)
     asserts.assert_false(stats['any_lcr_mismatch'],
                          "LCR mismatch", extras=stats)
+    asserts.assert_equal(stats['num_invalid_rssi'], 0, "Invalid RSSI",
+                         extras=stats)
     asserts.assert_true(
         stats['num_failures'] <=
         self.rtt_max_failure_rate_two_sided_rtt_percentage

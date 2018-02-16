@@ -227,6 +227,8 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                          "LCI mismatch", extras=extras)
     asserts.assert_false(stats['any_lcr_mismatch'],
                          "LCR mismatch", extras=extras)
+    asserts.assert_equal(stats['num_invalid_rssi'], 0, "Invalid RSSI",
+                         extras=extras)
     asserts.assert_true(
         stats['num_failures'] <=
           self.rtt_max_failure_rate_two_sided_rtt_percentage
@@ -246,6 +248,8 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                            "LCI mismatch", extras=extras)
       asserts.assert_false(stats['any_lcr_mismatch'],
                            "LCR mismatch", extras=extras)
+      asserts.assert_equal(stats['num_invalid_rssi'], 0, "Invalid RSSI",
+                           extras=extras)
       asserts.assert_true(
           stats_reverse_direction['num_failures']
             <= self.rtt_max_failure_rate_two_sided_rtt_percentage

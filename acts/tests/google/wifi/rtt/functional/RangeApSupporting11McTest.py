@@ -58,6 +58,8 @@ class RangeApSupporting11McTest(RttBaseTest):
                            "LCI mismatch", extras=stats)
       asserts.assert_false(stat['any_lcr_mismatch'],
                            "LCR mismatch", extras=stats)
+      asserts.assert_equal(stat['num_invalid_rssi'], 0, "Invalid RSSI",
+                          extras=stats)
       asserts.assert_true(stat['num_failures'] <=
               self.rtt_max_failure_rate_two_sided_rtt_percentage
                           * stat['num_results'] / 100,
