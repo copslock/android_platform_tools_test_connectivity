@@ -2357,11 +2357,33 @@ def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
-def trigger_modem_crash(log, ad, timeout=10):
+def trigger_modem_crash(ad, timeout=120):
     cmd = "echo restart > /sys/kernel/debug/msm_subsys/modem"
-    ad.log.info("Triggering Modem Crash using adb command %s", cmd)
-    ad.adb.shell(cmd, timeout=timeout)
+    ad.log.info("Triggering Modem Crash from kernel using adb command %s", cmd)
+    ad.adb.shell(cmd)
+    time.sleep(timeout)
     return True
+
+
+def trigger_modem_crash_by_modem(ad, timeout=120):
+    begin_time = get_current_epoch_time()
+    ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+    stop_qxdm_logger(ad)
+    ad.log.info("Crash modem by ModemCommandInstrumentation")
+    ad.adb.shell(
+        'am instrument -w -e request "4b 25 03 00" -e response wait '
+        '"com.google.mdstest/com.google.mdstest.instrument.'
+        'ModemCommandInstrumentation"', ignore_status=True)
+    time.sleep(timeout) # sleep time for sl4a stability
+    reasons = ad.search_logcat("modem subsystem failure reason", begin_time)
+    if reasons:
+        ad.log.info("Modem crash is triggered successfully")
+        ad.log.info(reasons[-1]["log_message"])
+        return True
+    else:
+        ad.log.info("Modem crash is not triggered successfully")
+        return False
 
 
 def _connection_state_change(_event, target_state, connection_type):
@@ -5214,6 +5236,12 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             time.sleep(10)
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
     return status
+
+
+def reboot_device(ad):
+    ad.reboot()
+    ad.ensure_screen_on()
+    unlock_sim(ad)
 
 
 def unlocking_device(ad, device_password=None):
