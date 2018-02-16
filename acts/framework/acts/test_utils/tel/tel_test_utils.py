@@ -2271,7 +2271,12 @@ def http_file_download_by_sl4a(ad,
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
-        ad.downloading_droid.httpDownloadFile(url, file_path, timeout=timeout)
+        try:
+             ad.downloading_droid.httpDownloadFile(url, file_path,
+                                                   timeout=timeout)
+        except Exception as e:
+            ad.log.warning("SL4A file download error: %s", e)
+            return False
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded successfully", url)
             new_data_accounting = {
