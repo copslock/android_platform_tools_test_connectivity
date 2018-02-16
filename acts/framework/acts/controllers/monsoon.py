@@ -192,6 +192,7 @@ class MonsoonProxy(object):
             try:
                 # When MonsoonError happens, data gets corrupted, send command
                 # and read output until the error goes away
+                self._FlushInput()
                 self._SendStruct("BBB", 0x01, 0x00, 0x00)
                 read_bytes = self._ReadPacket()
             except MonsoonError:
