@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import queue
-import time
 
 from acts import asserts
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -30,102 +29,11 @@ class RangeApTest(RttBaseTest):
   # Number of RTT iterations
   NUM_ITER = 10
 
-  # Maximum failure rate (%) for APs supporting IEEE 802.11mc
-  MAX_FAILURE_RATE_80211MC_SUPPORTING_APS = 10
-
-  # Maximum failure rate (%) for APs which do not support IEEE 802.11mc (and
-  # hence executing one-sided RTT)
-  MAX_FAILURE_RATE_ONE_SIDED_RTT_APS = 50
-
-  # Allowed absolute margin of distance measurements (in mm)
-  DISTANCE_MARGIN_MM = 1000
-
-  # Maximum ratio (%) of tests which are allowed to exceed the margin
-  MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS = 10
-
-  # Minimum expected RSSI
-  MIN_EXPECTED_RSSI = -100
-
   # Time gap (in seconds) between iterations
   TIME_BETWEEN_ITERATIONS = 0
 
   def __init__(self, controllers):
     RttBaseTest.__init__(self, controllers)
-
-  def run_ranging(self, dut, aps, iter_count, time_between_iterations):
-    """Executing ranging to the set of APs.
-
-    Args:
-      dut: Device under test
-      aps: A list of APs (Access Points) to range to.
-      iter_count: Number of measurements to perform.
-      time_between_iterations: Number of seconds to wait between iterations.
-    Returns: a list of the events containing the RTT results (or None for a
-    failed measurement).
-    """
-    events = {} # need to keep track per BSSID!
-    for ap in aps:
-      events[ap["BSSID"]] = []
-
-    for i in range(iter_count):
-      if i != 0 and time_between_iterations != 0:
-        time.sleep(time_between_iterations)
-
-      id = dut.droid.wifiRttStartRangingToAccessPoints(aps)
-      try:
-        event = dut.ed.pop_event(rutils.decorate_event(
-            rconsts.EVENT_CB_RANGING_ON_RESULT, id), rutils.EVENT_TIMEOUT)
-        range_results = event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS]
-        asserts.assert_equal(
-            len(aps),
-            len(range_results),
-            'Mismatch in length of scan results and range results')
-        for result in range_results:
-          bssid = result[rconsts.EVENT_CB_RANGING_KEY_MAC_AS_STRING]
-          asserts.assert_true(bssid in events,
-                              "Result BSSID %s not in requested AP!?" % bssid)
-          asserts.assert_equal(len(events[bssid]), i,
-                               "Duplicate results for BSSID %s!?" % bssid)
-          events[bssid].append(result)
-      except queue.Empty:
-        for ap in aps:
-          events[ap["BSSID"]].append(None)
-
-    return events
-
-  def run_ranging_and_analyze(self, dut, aps):
-    """Run ranging on the specified APs and analyze results.
-
-    Args:
-      dut: Device under test.
-      aps: List of APs.
-    """
-    max_peers = dut.droid.wifiRttMaxPeersInRequest()
-
-    asserts.assert_true(len(aps) > 0, "Need at least one AP!")
-    if len(aps) > max_peers:
-      aps = aps[0:max_peers]
-
-    events = self.run_ranging(dut, aps=aps, iter_count=self.NUM_ITER,
-                          time_between_iterations=self.TIME_BETWEEN_ITERATIONS)
-    return self.analyze_results(events)
-
-  def analyze_results(self, all_aps_events):
-    """Verifies the results of the RTT experiment.
-
-    Args:
-      all_aps_events: Dictionary of APs, each a list of RTT result events.
-    """
-    all_stats = {}
-    for bssid, events in all_aps_events.items():
-      stats = rutils.extract_stats(events, self.rtt_reference_distance_mm,
-                                   self.DISTANCE_MARGIN_MM,
-                                   self.MIN_EXPECTED_RSSI,
-                                   self.lci_reference,
-                                   self.lcr_reference)
-      all_stats[bssid] = stats
-    self.log.info("Stats: %s", all_stats)
-    return all_stats
 
   #############################################################################
 
@@ -135,22 +43,28 @@ class RangeApTest(RttBaseTest):
     rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
                                                                  repeat=10)
     dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
-    stats = self.run_ranging_and_analyze(dut, rtt_supporting_aps)
+    events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
+                                self.TIME_BETWEEN_ITERATIONS)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference)
+    dut.log.debug("Stats=%s", stats)
 
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
       asserts.assert_false(stat['any_lci_mismatch'],
-                           "LCI mismatch, extras=stats")
+                           "LCI mismatch", extras=stats)
       asserts.assert_false(stat['any_lcr_mismatch'],
-                           "LCR mismatch, extras=stats")
+                           "LCR mismatch", extras=stats)
       asserts.assert_true(stat['num_failures'] <=
-              self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
-                          * self.NUM_ITER / 100,
+              self.rtt_max_failure_rate_two_sided_rtt_percentage
+                          * stat['num_results'] / 100,
               "Failure rate is too high", extras=stats)
       asserts.assert_true(stat['num_range_out_of_margin'] <=
-              self.MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS
-                          * self.NUM_ITER / 100,
+              self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage
+                          * stat['num_success_results'] / 100,
               "Results exceeding error margin rate is too high", extras=stats)
     asserts.explicit_pass("RTT test done", extras=stats)
 
@@ -159,19 +73,30 @@ class RangeApTest(RttBaseTest):
     dut = self.android_devices[0]
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
-    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+    events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
+                                self.TIME_BETWEEN_ITERATIONS)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference)
+    dut.log.debug("Stats=%s", stats)
 
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
       asserts.assert_false(stat['any_lci_mismatch'],
-                           "LCI mismatch, extras=stats")
+                           "LCI mismatch", extras=stats)
       asserts.assert_false(stat['any_lcr_mismatch'],
-                           "LCR mismatch, extras=stats")
+                           "LCR mismatch", extras=stats)
       asserts.assert_true(stat['num_failures'] <=
-                          self.MAX_FAILURE_RATE_ONE_SIDED_RTT_APS
-                          * self.NUM_ITER / 100,
+                          self.rtt_max_failure_rate_one_sided_rtt_percentage
+                          * stat['num_results'] / 100,
                           "Failure rate is too high", extras=stats)
+      asserts.assert_true(stat['num_range_out_of_margin'] <=
+                self.rtt_max_margin_exceeded_rate_one_sided_rtt_percentage
+                          * stat['num_success_results'] / 100,
+                "Results exceeding error margin rate is too high",
+                extras=stats)
     asserts.explicit_pass("RTT test done", extras=stats)
 
   def test_rtt_non_80211mc_supporting_aps_wo_privilege(self):
@@ -181,15 +106,17 @@ class RangeApTest(RttBaseTest):
     rutils.config_privilege_override(dut, True)
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
-    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+    events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
+                                self.TIME_BETWEEN_ITERATIONS)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference)
+    dut.log.debug("Stats=%s", stats)
 
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
-      asserts.assert_false(stat['any_lci_mismatch'],
-                           "LCI mismatch, extras=stats")
-      asserts.assert_false(stat['any_lcr_mismatch'],
-                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
         "All one-sided RTT requests must fail when executed without privilege",
                           extras=stats)
@@ -209,25 +136,31 @@ class RangeApTest(RttBaseTest):
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     mix_list = [rtt_aps[0], non_rtt_aps[0]]
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", mix_list)
-    stats = self.run_ranging_and_analyze(dut, mix_list)
+    events = rutils.run_ranging(dut, mix_list, self.NUM_ITER,
+                                self.TIME_BETWEEN_ITERATIONS)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference)
+    dut.log.debug("Stats=%s", stats)
 
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
-      asserts.assert_false(stat['any_lci_mismatch'],
-                           "LCI mismatch, extras=stats")
-      asserts.assert_false(stat['any_lcr_mismatch'],
-                           "LCR mismatch, extras=stats")
       if bssid == rtt_aps[0][wutils.WifiEnums.BSSID_KEY]:
+        asserts.assert_false(stat['any_lci_mismatch'],
+                             "LCI mismatch", extras=stats)
+        asserts.assert_false(stat['any_lcr_mismatch'],
+                             "LCR mismatch", extras=stats)
         asserts.assert_true(stat['num_failures'] <=
-                            self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
-                            * self.NUM_ITER / 100,
+                            self.rtt_max_failure_rate_two_sided_rtt_percentage
+                            * stat['num_results'] / 100,
                             "Failure rate is too high", extras=stats)
         asserts.assert_true(stat['num_range_out_of_margin'] <=
-                            self.MAX_MARGIN_EXCEEDED_RATE_80211MC_SUPPORTING_APS
-                            * self.NUM_ITER / 100,
-                            "Results exceeding error margin rate is too high",
-                            extras=stats)
+                    self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage
+                    * stat['num_success_results'] / 100,
+                    "Results exceeding error margin rate is too high",
+                    extras=stats)
       else:
         asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
         "All one-sided RTT requests must fail when executed without privilege",
@@ -248,15 +181,17 @@ class RangeApTest(RttBaseTest):
     non_rtt_aps = non_rtt_aps[0:1] # pick first
     non_rtt_aps[0][rconsts.SCAN_RESULT_KEY_RTT_RESPONDER] = True # falsify
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
-    stats = self.run_ranging_and_analyze(dut, non_rtt_aps)
+    events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
+                                self.TIME_BETWEEN_ITERATIONS)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference)
+    dut.log.debug("Stats=%s", stats)
 
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
-      asserts.assert_false(stat['any_lci_mismatch'],
-                           "LCI mismatch, extras=stats")
-      asserts.assert_false(stat['any_lcr_mismatch'],
-                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
                           "Failures expected for falsified responder config",
                           extras=stats)
@@ -311,11 +246,12 @@ class RangeApTest(RttBaseTest):
         if result["status"] != 0:
           num_errors = num_errors + 1
 
+    extras = [results, {"num_results": num_results, "num_errors": num_errors}]
     asserts.assert_true(
-      num_errors <= self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
+      num_errors <= self.rtt_max_failure_rate_two_sided_rtt_percentage
         * num_results / 100,
-      "Failure rate is too high", extras=results)
-    asserts.explicit_pass("RTT test done", extras=results)
+      "Failure rate is too high", extras=extras)
+    asserts.explicit_pass("RTT test done", extras=extras)
 
   def rtt_config_from_scan_result(self, scan_result):
     """Creates an Rtt configuration based on the scan result of a network.

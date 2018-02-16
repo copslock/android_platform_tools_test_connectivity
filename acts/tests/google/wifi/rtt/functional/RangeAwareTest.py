@@ -33,18 +33,6 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
   # Number of RTT iterations
   NUM_ITER = 10
 
-  # Maximum failure rate (%)
-  MAX_FAILURE_RATE = 10
-
-  # Allowed absolute margin of distance measurements (in mm)
-  DISTANCE_MARGIN_MM = 1000
-
-  # Maximum ratio (%) of tests which are allowed to exceed the margin
-  MAX_MARGIN_EXCEEDED_RATE = 10
-
-  # Maximum expected RSSI
-  MAX_EXPECTED_RSSI = 200
-
   # Time gap (in seconds) between iterations
   TIME_BETWEEN_ITERATIONS = 0
 
@@ -219,12 +207,13 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                                 reverse direction. Optional.
     """
     stats = rutils.extract_stats(results, self.rtt_reference_distance_mm,
-                          self.DISTANCE_MARGIN_MM, self.MAX_EXPECTED_RSSI)
+                                 self.rtt_reference_distance_margin_mm,
+                                 self.rtt_min_expected_rssi_dbm)
     stats_reverse_direction = None
     if results_reverse_direction is not None:
       stats_reverse_direction = rutils.extract_stats(results_reverse_direction,
-          self.rtt_reference_distance_mm, self.DISTANCE_MARGIN_MM,
-          self.MAX_EXPECTED_RSSI)
+          self.rtt_reference_distance_mm, self.rtt_reference_distance_margin_mm,
+          self.rtt_min_expected_rssi_dbm)
     self.log.debug("Stats: %s", stats)
     if stats_reverse_direction is not None:
       self.log.debug("Stats in reverse direction: %s", stats_reverse_direction)
@@ -234,25 +223,38 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
     asserts.assert_true(stats['num_no_results'] == 0,
                         "Missing (timed-out) results", extras=extras)
+    asserts.assert_false(stats['any_lci_mismatch'],
+                         "LCI mismatch", extras=extras)
+    asserts.assert_false(stats['any_lcr_mismatch'],
+                         "LCR mismatch", extras=extras)
     asserts.assert_true(
-        stats['num_failures'] <= self.MAX_FAILURE_RATE * self.NUM_ITER / 100,
+        stats['num_failures'] <=
+          self.rtt_max_failure_rate_two_sided_rtt_percentage
+          * stats['num_results'] / 100,
         "Failure rate is too high", extras=extras)
     asserts.assert_true(
         stats['num_range_out_of_margin']
-          <= self.MAX_MARGIN_EXCEEDED_RATE * self.NUM_ITER / 100,
+          <= self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage
+             * stats['num_success_results'] / 100,
         "Results exceeding error margin rate is too high", extras=extras)
 
     if stats_reverse_direction is not None:
       asserts.assert_true(stats_reverse_direction['num_no_results'] == 0,
                           "Missing (timed-out) results",
                           extras=extras)
+      asserts.assert_false(stats['any_lci_mismatch'],
+                           "LCI mismatch", extras=extras)
+      asserts.assert_false(stats['any_lcr_mismatch'],
+                           "LCR mismatch", extras=extras)
       asserts.assert_true(
           stats_reverse_direction['num_failures']
-            <= self.MAX_FAILURE_RATE * self.NUM_ITER / 100,
+            <= self.rtt_max_failure_rate_two_sided_rtt_percentage
+                * stats['num_results'] / 100,
           "Failure rate is too high", extras=extras)
       asserts.assert_true(
           stats_reverse_direction['num_range_out_of_margin']
-          <= self.MAX_MARGIN_EXCEEDED_RATE * self.NUM_ITER / 100,
+            <= self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage
+                * stats['num_success_results'] / 100,
           "Results exceeding error margin rate is too high",
           extras=extras)
 
@@ -374,7 +376,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     results = []
     num_no_responses = 0
     num_successes = 0
-    for i in range(100):
+    for i in range(self.NUM_ITER):
       result = self.run_rtt_discovery(init_dut, resp_mac=resp_mac)
       self.log.debug("result: %s", result)
       results.append(result)
