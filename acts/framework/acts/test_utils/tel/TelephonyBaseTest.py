@@ -275,6 +275,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def teardown_class(self):
         stop_qxdm_loggers(self.log, self.android_devices)
+        ensure_phones_default_state(self.log, self.android_devices)
         try:
             for ad in self.android_devices:
                 ad.droid.disableDevicePassword()
