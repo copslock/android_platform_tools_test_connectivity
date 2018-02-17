@@ -119,7 +119,10 @@ class RangeApTest(RttBaseTest):
     all_stats = {}
     for bssid, events in all_aps_events.items():
       stats = rutils.extract_stats(events, self.rtt_reference_distance_mm,
-          self.DISTANCE_MARGIN_MM, self.MAX_EXPECTED_RSSI)
+                                   self.DISTANCE_MARGIN_MM,
+                                   self.MAX_EXPECTED_RSSI,
+                                   self.lci_reference,
+                                   self.lcr_reference)
       all_stats[bssid] = stats
     self.log.info("Stats: %s", all_stats)
     return all_stats
@@ -137,6 +140,10 @@ class RangeApTest(RttBaseTest):
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch, extras=stats")
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] <=
               self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
                           * self.NUM_ITER / 100,
@@ -157,6 +164,10 @@ class RangeApTest(RttBaseTest):
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch, extras=stats")
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] <=
                           self.MAX_FAILURE_RATE_ONE_SIDED_RTT_APS
                           * self.NUM_ITER / 100,
@@ -175,6 +186,10 @@ class RangeApTest(RttBaseTest):
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch, extras=stats")
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
         "All one-sided RTT requests must fail when executed without privilege",
                           extras=stats)
@@ -199,6 +214,10 @@ class RangeApTest(RttBaseTest):
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch, extras=stats")
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch, extras=stats")
       if bssid == rtt_aps[0][wutils.WifiEnums.BSSID_KEY]:
         asserts.assert_true(stat['num_failures'] <=
                             self.MAX_FAILURE_RATE_80211MC_SUPPORTING_APS
@@ -234,6 +253,10 @@ class RangeApTest(RttBaseTest):
     for bssid, stat in stats.items():
       asserts.assert_true(stat['num_no_results'] == 0,
                           "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch, extras=stats")
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch, extras=stats")
       asserts.assert_true(stat['num_failures'] == self.NUM_ITER,
                           "Failures expected for falsified responder config",
                           extras=stats)
