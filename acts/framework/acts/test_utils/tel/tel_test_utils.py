@@ -1962,8 +1962,8 @@ def active_file_download_task(log, ad, file_name="5MB"):
     output_path = "/sdcard/Download/" + file_name + ".zip"
     url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
     #url = "http://146.148.91.8/download/" + file_name + ".zip"
-    return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
-                                         True, timeout))
+    return (http_file_download_by_sl4a, (ad, url, output_path, file_size, True,
+                                         timeout))
 
 
 def active_file_download_test(log, ad, file_name="5MB"):
@@ -2081,17 +2081,20 @@ def http_file_download_by_curl(ad,
     if retry:
         curl_cmd += " --retry %s" % retry
     curl_cmd += " --url %s > %s" % (url, file_path)
-    accounting_apk = "com.android.server.telecom" #"com.quicinc.cne.CNEService"
+    accounting_apk = "com.android.server.telecom"  #"com.quicinc.cne.CNEService"
     result = True
-    begin_time = int(time.time() * 1000 - 2*60*60*1000)
-    end_time = int(time.time() * 1000 + 2*60*60*1000)
+    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
+    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     try:
         data_accounting = {
-            "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":  get_mobile_data_usage(
-                ad, None, None, begin_time, end_time),
-            "curl_mobile_data_usage": get_mobile_data_usage(
-                ad, None, accounting_apk, begin_time, end_time)}
+            "mobile_rx_bytes":
+            ad.droid.getMobileRxBytes(),
+            "subscriber_mobile_data_usage":
+            get_mobile_data_usage(ad, None, None, begin_time, end_time),
+            "curl_mobile_data_usage":
+            get_mobile_data_usage(ad, None, accounting_apk, begin_time,
+                                  end_time)
+        }
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
@@ -2099,21 +2102,25 @@ def http_file_download_by_curl(ad,
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded to %s successfully", url, file_path)
             new_data_accounting = {
-                "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(
-                    ad, None, None, begin_time, end_time),
-                "curl_mobile_data_usage": get_mobile_data_usage(
-                    ad, None, accounting_apk, begin_time, end_time)
+                "mobile_rx_bytes":
+                ad.droid.getMobileRxBytes(),
+                "subscriber_mobile_data_usage":
+                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                "curl_mobile_data_usage":
+                get_mobile_data_usage(ad, None, accounting_apk, begin_time,
+                                      end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {key: value - data_accounting[key]
-                               for key, value in new_data_accounting.items()}
+            accounting_diff = {
+                key: value - data_accounting[key]
+                for key, value in new_data_accounting.items()
+            }
             ad.log.info("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key, value,
-                                       expected_file_size)
+                        ad.log.warning("%s diff is %s less than %s", key,
+                                       value, expected_file_size)
                         ad.data_accounting["%s_failure" % key] += 1
             else:
                 for key, value in accounting_diff.items():
@@ -2121,7 +2128,8 @@ def http_file_download_by_curl(ad,
                         ad.log.error("%s diff is %s. File download is "
                                      "consuming mobile data", key, value)
                         result = False
-            ad.log.info("data_accounting_failure: %s", dict(ad.data_accounting))
+            ad.log.info("data_accounting_failure: %s", dict(
+                ad.data_accounting))
             return result
         else:
             ad.log.warning("Fail to download %s", url)
@@ -2165,15 +2173,18 @@ def http_file_download_by_chrome(ad,
     ad.adb.shell("rm -f %s" % file_to_be_delete)
     ad.adb.shell("rm -rf /sdcard/Download/.*")
     ad.adb.shell("rm -f /sdcard/Download/.*")
-    begin_time = int(time.time() * 1000 - 2*60*60*1000)
-    end_time = int(time.time() * 1000 + 2*60*60*1000)
+    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
+    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     data_accounting = {
-        "total_rx_bytes": ad.droid.getTotalRxBytes(),
-        "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-        "subscriber_mobile_data_usage":  get_mobile_data_usage(
-            ad, None, None, begin_time, end_time),
-        "chrome_mobile_data_usage": get_mobile_data_usage(
-            ad, None, chrome_apk, begin_time, end_time)}
+        "total_rx_bytes":
+        ad.droid.getTotalRxBytes(),
+        "mobile_rx_bytes":
+        ad.droid.getMobileRxBytes(),
+        "subscriber_mobile_data_usage":
+        get_mobile_data_usage(ad, None, None, begin_time, end_time),
+        "chrome_mobile_data_usage":
+        get_mobile_data_usage(ad, None, chrome_apk, begin_time, end_time)
+    }
     ad.log.info("Before downloading: %s", data_accounting)
     ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
@@ -2191,21 +2202,25 @@ def http_file_download_by_chrome(ad,
                 ad.adb.shell("rm -f /sdcard/Download/.*")
             #time.sleep(30)
             new_data_accounting = {
-                "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(
-                    ad, None, None, begin_time, end_time),
-                "chrome_mobile_data_usage": get_mobile_data_usage(
-                    ad, None, chrome_apk, begin_time, end_time)
+                "mobile_rx_bytes":
+                ad.droid.getMobileRxBytes(),
+                "subscriber_mobile_data_usage":
+                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                "chrome_mobile_data_usage":
+                get_mobile_data_usage(ad, None, chrome_apk, begin_time,
+                                      end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {key: value - data_accounting[key]
-                               for key, value in new_data_accounting.items()}
+            accounting_diff = {
+                key: value - data_accounting[key]
+                for key, value in new_data_accounting.items()
+            }
             ad.log.info("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key, value,
-                                       expected_file_size)
+                        ad.log.warning("%s diff is %s less than %s", key,
+                                       value, expected_file_size)
                         ad.data_accounting["%s_failure" % key] += 1
             else:
                 for key, value in accounting_diff.items():
@@ -2256,40 +2271,52 @@ def http_file_download_by_sl4a(ad,
     ad.adb.shell("rm -f %s" % file_path)
     accounting_apk = SL4A_APK_NAME
     result = True
-    begin_time = int(time.time() * 1000 - 2*60*60*1000)
-    end_time = int(time.time() * 1000 + 2*60*60*1000)
+    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
+    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     try:
         if not getattr(ad, "downloading_droid", None):
             ad.downloading_droid, ad.downloading_ed = ad.get_droid()
             ad.downloading_ed.start()
         data_accounting = {
-            "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":  get_mobile_data_usage(
-                ad, None, None, begin_time, end_time),
-            "sl4a_mobile_data_usage": get_mobile_data_usage(
-                ad, None, accounting_apk, begin_time, end_time)}
+            "mobile_rx_bytes":
+            ad.droid.getMobileRxBytes(),
+            "subscriber_mobile_data_usage":
+            get_mobile_data_usage(ad, None, None, begin_time, end_time),
+            "sl4a_mobile_data_usage":
+            get_mobile_data_usage(ad, None, accounting_apk, begin_time,
+                                  end_time)
+        }
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
-        ad.downloading_droid.httpDownloadFile(url, file_path, timeout=timeout)
+        try:
+            ad.downloading_droid.httpDownloadFile(
+                url, file_path, timeout=timeout)
+        except Exception as e:
+            ad.log.warning("SL4A file download error: %s", e)
+            return False
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded successfully", url)
             new_data_accounting = {
-                "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":  get_mobile_data_usage(
-                    ad, None, None, begin_time, end_time),
-                "sl4a_mobile_data_usage": get_mobile_data_usage(
-                    ad, None, accounting_apk, begin_time, end_time)
+                "mobile_rx_bytes":
+                ad.droid.getMobileRxBytes(),
+                "subscriber_mobile_data_usage":
+                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                "sl4a_mobile_data_usage":
+                get_mobile_data_usage(ad, None, accounting_apk, begin_time,
+                                      end_time)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {key: value - data_accounting[key]
-                               for key, value in new_data_accounting.items()}
+            accounting_diff = {
+                key: value - data_accounting[key]
+                for key, value in new_data_accounting.items()
+            }
             ad.log.info("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key, value,
-                                       expected_file_size)
+                        ad.log.warning("%s diff is %s less than %s", key,
+                                       value, expected_file_size)
                         ad.data_accounting["%s_failure"] += 1
             else:
                 for key, value in accounting_diff.items():
@@ -2310,14 +2337,17 @@ def http_file_download_by_sl4a(ad,
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
-def get_mobile_data_usage(ad, subscriber_id=None, apk=None, begin_time=None,
+def get_mobile_data_usage(ad,
+                          subscriber_id=None,
+                          apk=None,
+                          begin_time=None,
                           end_time=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     if begin_time is None:
         begin_time = 0
     if end_time is None:
-        end_time = int(time.time() * 1000 + 2*60*60*1000)
+        end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     if apk:
         uid = ad.get_apk_uid(apk)
         try:
@@ -2352,11 +2382,33 @@ def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
-def trigger_modem_crash(log, ad, timeout=10):
+def trigger_modem_crash(ad, timeout=120):
     cmd = "echo restart > /sys/kernel/debug/msm_subsys/modem"
-    ad.log.info("Triggering Modem Crash using adb command %s", cmd)
-    ad.adb.shell(cmd, timeout=timeout)
+    ad.log.info("Triggering Modem Crash from kernel using adb command %s", cmd)
+    ad.adb.shell(cmd)
+    time.sleep(timeout)
     return True
+
+
+def trigger_modem_crash_by_modem(ad, timeout=120):
+    begin_time = get_current_epoch_time()
+    ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+    stop_qxdm_logger(ad)
+    cmd = ('am instrument -w -e request "4b 25 03 00" '
+           '"com.google.mdstest/com.google.mdstest.instrument.'
+           'ModemCommandInstrumentation"')
+    ad.log.info("Crash modem by %s", cmd)
+    ad.adb.shell(cmd, ignore_status=True)
+    time.sleep(timeout)  # sleep time for sl4a stability
+    reasons = ad.search_logcat("modem subsystem failure reason", begin_time)
+    if reasons:
+        ad.log.info("Modem crash is triggered successfully")
+        ad.log.info(reasons[-1]["log_message"])
+        return True
+    else:
+        ad.log.info("Modem crash is not triggered successfully")
+        return False
 
 
 def _connection_state_change(_event, target_state, connection_type):
@@ -2415,7 +2467,11 @@ def _is_network_connected_state_match(log, ad,
 
 
 def wait_for_cell_data_connection_for_subscription(
-        log, ad, sub_id, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+        log,
+        ad,
+        sub_id,
+        state,
+        timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value for specified
        subscrption id.
 
@@ -2511,10 +2567,8 @@ def wait_for_wifi_data_connection(
         log, ad, state, NETWORK_CONNECTION_TYPE_WIFI, timeout_value)
 
 
-def wait_for_data_connection(log,
-                             ad,
-                             state,
-                             timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
+def wait_for_data_connection(
+        log, ad, state, timeout_value=MAX_WAIT_TIME_CONNECTION_STATE_UPDATE):
     """Wait for data connection status to be expected value.
 
     Wait for the data connection status to be DATA_STATE_CONNECTED
@@ -2597,9 +2651,9 @@ def _wait_for_nw_data_connection(
         # data connection state.
         # Otherwise, the network state will not be correct.
         # The bug is tracked here: b/20921915
-        if _wait_for_droid_in_state(
-                log, ad, timeout_value,
-                _is_network_connected_state_match, is_connected):
+        if _wait_for_droid_in_state(log, ad, timeout_value,
+                                    _is_network_connected_state_match,
+                                    is_connected):
             current_type = get_internet_connection_type(log, ad)
             ad.log.info("current data connection type: %s", current_type)
             if not connection_type:
@@ -3341,7 +3395,10 @@ def is_sms_partial_match(event, phonenumber_tx, text):
             and text.startswith(event['data']['Text']))
 
 
-def sms_send_receive_verify(log, ad_tx, ad_rx, array_message,
+def sms_send_receive_verify(log,
+                            ad_tx,
+                            ad_rx,
+                            array_message,
                             max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send SMS, receive SMS, and verify content and sender's number.
 
@@ -3398,8 +3455,8 @@ def wait_for_matching_sms(log,
             received_sms = ''
             while (text != ''):
                 event = ad_rx.messaging_ed.wait_for_event(
-                    EventSmsReceived, is_sms_partial_match,
-                    max_wait_time, phonenumber_tx, text)
+                    EventSmsReceived, is_sms_partial_match, max_wait_time,
+                    phonenumber_tx, text)
                 text = text[len(event['data']['Text']):]
                 received_sms += event['data']['Text']
             return True
@@ -3431,7 +3488,11 @@ def is_mms_match(event, phonenumber_tx, text):
     return True
 
 
-def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None,
+def wait_for_matching_mms(log,
+                          ad_rx,
+                          phonenumber_tx,
+                          text,
+                          begin_time=None,
                           max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Wait for matching incoming SMS.
 
@@ -3460,8 +3521,13 @@ def wait_for_matching_mms(log, ad_rx, phonenumber_tx, text, begin_time=None,
 
 
 def sms_send_receive_verify_for_subscription(
-            log, ad_tx, ad_rx, subid_tx, subid_rx, array_message,
-            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        log,
+        ad_tx,
+        ad_rx,
+        subid_tx,
+        subid_rx,
+        array_message,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send SMS, receive SMS, and verify content and sender's number.
 
         Send (several) SMS from droid_tx to droid_rx.
@@ -3494,9 +3560,11 @@ def sms_send_receive_verify_for_subscription(
             ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
             ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
             time.sleep(0.1)  #sleep 100ms after starting event tracking
-            ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text, True)
+            ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text,
+                                                     True)
             try:
-                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess, max_wait_time)
+                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
+                                             max_wait_time)
             except Empty:
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
@@ -3523,7 +3591,10 @@ def sms_send_receive_verify_for_subscription(
     return True
 
 
-def mms_send_receive_verify(log, ad_tx, ad_rx, array_message,
+def mms_send_receive_verify(log,
+                            ad_tx,
+                            ad_rx,
+                            array_message,
                             max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send MMS, receive MMS, and verify content and sender's number.
 
@@ -3582,8 +3653,13 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
 
 #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
 def mms_send_receive_verify_for_subscription(
-            log, ad_tx, ad_rx, subid_tx, subid_rx, array_payload,
-            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        log,
+        ad_tx,
+        ad_rx,
+        subid_tx,
+        subid_rx,
+        array_payload,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -3621,7 +3697,8 @@ def mms_send_receive_verify_for_subscription(
             ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             max_wait_time)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
                 # check log message as a work around for the missing sl4a
@@ -3642,8 +3719,8 @@ def mms_send_receive_verify_for_subscription(
 
 
 def mms_receive_verify_after_call_hangup(
-            log, ad_tx, ad_rx, array_message,
-            max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+        log, ad_tx, ad_rx, array_message,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
         Hangup call from droid_tx to droid_rx.
@@ -3663,7 +3740,12 @@ def mms_receive_verify_after_call_hangup(
 
 #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
 def mms_receive_verify_after_call_hangup_for_subscription(
-        log, ad_tx, ad_rx, subid_tx, subid_rx, array_payload,
+        log,
+        ad_tx,
+        ad_rx,
+        subid_tx,
+        subid_rx,
+        array_payload,
         max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
     """Verify the suspanded MMS during call will send out after call release.
 
@@ -3697,7 +3779,8 @@ def mms_receive_verify_after_call_hangup_for_subscription(
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             max_wait_time)
             except Empty:
                 log.warning("No sent_success event.")
                 if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
@@ -4940,8 +5023,8 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
         # Find the log mask path
         for path in (DEFAULT_QXDM_LOG_PATH, "/data/diag_logs",
                      "/vendor/etc/mdlog/"):
-            out = ad.adb.shell("find %s -type f -iname %s" % (
-                path, mask), ignore_status=True)
+            out = ad.adb.shell(
+                "find %s -type f -iname %s" % (path, mask), ignore_status=True)
             if out and "No such" not in out and "Permission denied" not in out:
                 if path.startswith("/vendor/"):
                     ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
@@ -5018,8 +5101,8 @@ def start_qxdm_logger(ad, begin_time=None):
             seconds = 900
         if seconds:
             ad.adb.shell(
-                "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" % (
-                ad.qxdm_log_path, seconds))
+                "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" %
+                (ad.qxdm_log_path, seconds))
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
         if ad.qxdm_logger_command not in output:
@@ -5039,8 +5122,8 @@ def start_qxdm_logger(ad, begin_time=None):
 
 
 def start_qxdm_loggers(log, ads, begin_time=None):
-    tasks = [(start_qxdm_logger, [ad, begin_time]) for ad in ads if getattr(
-        ad, "qxdm_log", True)]
+    tasks = [(start_qxdm_logger, [ad, begin_time]) for ad in ads
+             if getattr(ad, "qxdm_log", True)]
     if tasks: run_multithread_func(log, tasks)
 
 
@@ -5186,7 +5269,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     except Exception as e:
         ad.log.error(e)
         status = False
-    time.sleep(30) #sleep time after fastboot wipe
+    time.sleep(30)  #sleep time after fastboot wipe
     for _ in range(2):
         try:
             ad.log.info("Reboot in fastboot")
@@ -5209,6 +5292,12 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             time.sleep(10)
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
     return status
+
+
+def reboot_device(ad):
+    ad.reboot()
+    ad.ensure_screen_on()
+    unlock_sim(ad)
 
 
 def unlocking_device(ad, device_password=None):

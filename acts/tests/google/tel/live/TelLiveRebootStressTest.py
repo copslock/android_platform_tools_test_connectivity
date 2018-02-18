@@ -20,6 +20,7 @@
 import collections
 import time
 
+from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.controllers.sl4a_lib.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -41,11 +42,14 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
+from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -81,10 +85,11 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.android_devices) > 1 else None
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
-        self.dut_capabilities = set(device_capabilities.get(
-            self.dut_model, device_capabilities["default"])) & set(
-            operator_capabilities.get(self.dut_operator,
-                                      operator_capabilities["default"]))
+        self.dut_capabilities = set(
+            device_capabilities.get(
+                self.dut_model, device_capabilities["default"])) & set(
+                    operator_capabilities.get(
+                        self.dut_operator, operator_capabilities["default"]))
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
 
@@ -201,11 +206,19 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def _check_tethering(self):
         self.log.info("Check tethering")
-        if not self.dut.droid.carrierConfigIsTetheringModeAllowed(
-            TETHERING_MODE_WIFI,
-            MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
-            self.log.error("Tethering Entitlement check failed.")
-            return False
+        for i in range(3):
+            try:
+                if not self.dut.droid.carrierConfigIsTetheringModeAllowed(
+                        TETHERING_MODE_WIFI,
+                        MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
+                    self.log.error("Tethering Entitlement check failed.")
+                    if i == 2: return False
+                    time.sleep(10)
+            except Exception as e:
+                if i == 2:
+                    self.dut.log.error(e)
+                    return False
+                time.sleep(10)
         if not wifi_tethering_setup_teardown(
                 self.log,
                 self.dut, [self.ad_reference],
@@ -258,55 +271,109 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         self.number_of_devices = 2
-        tel_cmd = "setprop persist.radio.enable_tel_mon user_enabled"
-        if negative_test:
-            tel_cmd = "setprop persist.radio.enable_tel_mon user_disabled"
-
-        # Reboot
         ads = self.android_devices
+        # Ensure apk is running/not running
+        monitor_apk = None
+        for apk in ("com.google.telephonymonitor",
+                    "com.google.android.connectivitymonitor"):
+            if ads[0].is_apk_installed(apk):
+                ads[0].log.info("apk %s is installed", apk)
+                monitor_apk = apk
+                break
+        if not monitor_apk:
+            ads[0].log.info(
+                "ConnectivityMonitor|TelephonyMonitor is not installed")
+            return False
+
         ads[0].adb.shell(
             "am start -n com.android.settings/.DevelopmentSettings",
             ignore_status=True)
-        ads[0].adb.shell(tel_cmd, ignore_status=True)
-        ads[0].log.info("reboot!")
-        ads[0].reboot()
-        ads[0].log.info("wait %d secs for radio up." % WAIT_TIME_AFTER_REBOOT)
-        time.sleep(WAIT_TIME_AFTER_REBOOT)
+        cmd = "setprop persist.radio.enable_tel_mon user_enabled"
+        ads[0].log.info(cmd)
+        ads[0].adb.shell(cmd)
 
-        # Ensure apk is running/not running
-        if not ads[0].is_apk_running("com.google.telephonymonitor"):
-            ads[0].log.debug("TelephonyMonitor is not running")
-        else:
-            ads[0].log.debug("TelephonyMonitor not running")
+        if not ads[0].is_apk_running(monitor_apk):
+            ads[0].log.info("%s is not running", monitor_apk)
+            # Reboot
+            ads = self.android_devices
+            ads[0].log.info("reboot to bring up %s", monitor_apk)
+            reboot_device(ads[0])
+            for i in range(30):
+                if ads[0].is_apk_running(monitor_apk):
+                    ads[0].log.info("%s is running after reboot", monitor_apk)
+                    break
+                elif i == 19:
+                    ads[0].log.error("%s is not running after reboot",
+                                     monitor_apk)
+                    return False
+                else:
+                    ads[0].log.info(
+                        "%s is not running after reboot. Wait and check again",
+                        monitor_apk)
+                    time.sleep(30)
 
-        if not call_setup_teardown(self.log, ads[0], ads[1], ad_hangup=None,
-                                   wait_time_in_call=10):
+        ads[0].adb.shell(
+            "am start -n com.android.settings/.DevelopmentSettings",
+            ignore_status=True)
+        monitor_setting = ads[0].adb.getprop("persist.radio.enable_tel_mon")
+        ads[0].log.info("radio.enable_tel_mon setting is %s", monitor_setting)
+        expected_monitor_setting = "disabled" if negative_test else "user_enabled"
+        cmd = "setprop persist.radio.enable_tel_mon %s" % (
+            expected_monitor_setting)
+        if monitor_setting != expected_monitor_setting:
+            ads[0].log.info(cmd)
+            ads[0].adb.shell(cmd)
+
+        if not call_setup_teardown(
+                self.log, ads[0], ads[1], ad_hangup=None,
+                wait_time_in_call=10):
             self.log.error("Call setup failed")
             return False
 
         # Modem SSR
         time.sleep(5)
-        ads[1].log.info("Triggering ModemSSR")
-        ads[1].adb.shell(
-            "echo restart > /sys/kernel/debug/msm_subsys/modem",
-            ignore_status=True)
-        time.sleep(60)
+        ads[0].log.info("Triggering ModemSSR")
+        if (not ads[0].is_apk_installed("com.google.mdstest")
+            ) or ads[0].adb.getprop("ro.build.version.release")[0] in (
+                "8", "O", "7", "N") or self.dut.model in ("angler", "bullhead",
+                                                          "sailfish",
+                                                          "marlin"):
+            trigger_modem_crash(self.dut)
+        else:
+            trigger_modem_crash_by_modem(self.dut)
 
+        try:
+            if ads[0].droid.telecomIsInCall():
+                ads[0].log.info("Still in call after call drop trigger event")
+                return False
+            else:
+                reasons = self.dut.search_logcat(
+                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause")
+                if reasons:
+                    ads[0].log.info(reasons[-1]["log_message"])
+        except Exception as e:
+            ads[0].log.error(e)
         # Parse logcat for UI notification
+        result = True
         if not negative_test:
             if ads[0].search_logcat("Bugreport notification title Call Drop:"):
-                ads[0].log.info("User got the Call Drop Notification")
+                ads[0].log.info(
+                    "User got Call Drop Notification with TelephonyMonitor on")
             else:
-                ads[0].log.error("User didn't get Call Drop Notify in 1 min")
-                return False
-            return True
+                ads[0].log.error(
+                    "User didn't get Call Drop Notify with TelephonyMonitor on"
+                )
+                result = False
         else:
             if ads[0].search_logcat("Bugreport notification title Call Drop:"):
-                ads[0].log.error("User got the Call Drop Notification")
-                return False
+                ads[0].log.error("User got the Call Drop Notification with "
+                                 "TelephonyMonitor off")
+                result = False
             else:
-                ads[0].log.info("User didn't get Call Drop Notify in 1 min")
-                return True
+                ads[0].log.info("User didn't get Call Drop Notify with "
+                                "TelephonyMonitor off")
+        reboot_device(ads[0])
+        return result
 
     def _reboot_stress_test(self, **kwargs):
         """Reboot Reliability Test
@@ -355,11 +422,12 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if method in kwargs: required_methods.append(method)
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}>".
-                          format(self.test_name, i, self.stress_test_number))
+            self.log.info(
+                "Reboot Stress Test {} Iteration: <{}> / <{}>".format(
+                    self.test_name, i, self.stress_test_number))
 
             self.log.info("{} reboot!".format(self.dut.serial))
-            self.dut.reboot()
+            reboot_device(self.dut)
             self.log.info("{} wait {}s for radio up.".format(
                 self.dut.serial, WAIT_TIME_AFTER_REBOOT))
             time.sleep(WAIT_TIME_AFTER_REBOOT)
@@ -368,9 +436,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 if not test_method_mapping[check]():
                     fail_count[check] += 1
                     iteration_result = "fail"
-            self.log.info("Reboot Stress Test {} Iteration: <{}> / <{}> {}".
-                          format(self.test_name, i, self.stress_test_number,
-                                 iteration_result))
+            self.log.info(
+                "Reboot Stress Test {} Iteration: <{}> / <{}> {}".format(
+                    self.test_name, i, self.stress_test_number,
+                    iteration_result))
 
             # TODO: Check if crash happens.
 
@@ -425,10 +494,14 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 required_methods.append(method)
 
         result = True
-        self.dut.log.info("Crash recover test by killing process <%s>", process)
+        self.dut.log.info("Crash recover test by killing process <%s>",
+                          process)
         if process == "modem":
-            trigger_modem_crash(self.log, self.dut)
-            time.sleep(WAIT_TIME_AFTER_CRASH * 2)
+            self.dut.log.info("Crash modem from kernal")
+            trigger_modem_crash(self.dut)
+        elif process == "modem-crash":
+            self.dut.log.info("Crash modem from modem")
+            trigger_modem_crash_by_modem(self.dut)
         elif process == "netmgrd" and "check_wfc" in required_methods:
             self.log.info("Skipping netmgrd based on b/65558142")
             return
@@ -440,8 +513,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 result = False
             if process in ("netd", "system_server"):
                 self.dut.stop_services()
-            self.dut.adb.shell(
-                "kill -9 %s" % process_pid, ignore_status=True)
+            self.dut.adb.shell("kill -9 %s" % process_pid, ignore_status=True)
             self.dut.log.info("Wait %s sec for process %s come up.",
                               WAIT_TIME_AFTER_CRASH, process)
             time.sleep(WAIT_TIME_AFTER_CRASH)
@@ -449,8 +521,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 self.dut.start_services()
             process_pid_new = self.dut.adb.shell("pidof %s" % process)
             if process_pid == process_pid_new:
-                self.dut.log.error("Process %s has the same pid: old:%s new:%s",
-                                   process, process_pid, process_pid_new)
+                self.dut.log.error(
+                    "Process %s has the same pid: old:%s new:%s", process,
+                    process_pid, process_pid_new)
         if is_sim_locked(self.dut):
             unlock_sim(self.dut)
         for check in required_methods:
@@ -491,7 +564,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d",
                         self.test_name, i, self.stress_test_number)
             ad.log.info("reboot!")
-            ad.reboot()
+            reboot_device(ad)
             iteration_result = "pass"
 
             time.sleep(30)
@@ -557,7 +630,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                              self.stress_test_number)
                 test_result = False
         return test_result
-
 
     """ Tests Begin """
 
@@ -725,6 +797,29 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         return self._crash_recovery_test(process="modem")
+
+    @test_tracker_info(uuid="ce5f4d63-7f3d-48b7-831d-2c1d5db60733")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_crash_recovery_crash_modem_from_modem(self):
+        """Crash Recovery Test
+
+        Steps:
+            1. Crash modem
+            2. Post crash recovery, verify Voice, Data, SMS, VoLTE, VT
+
+        Expected Results:
+            No crash happens in functional test, features work fine.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if (not self.dut.is_apk_installed("com.google.mdstest")) or (
+                self.dut.adb.getprop("ro.build.version.release")[0] in
+            ("8", "O", "7", "N")) or self.dut.model in ("angler", "bullhead",
+                                                        "sailfish", "marlin"):
+            raise signals.TestSkip(
+                "com.google.mdstest not installed or supported")
+        return self._crash_recovery_test(process="modem-crash")
 
     @test_tracker_info(uuid="489284e8-77c9-4961-97c8-b6f1a833ff90")
     @TelephonyBaseTest.tel_test_wrap
