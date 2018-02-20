@@ -18,7 +18,6 @@ from builtins import str
 
 import argparse
 import multiprocessing
-import os
 import signal
 import sys
 import traceback
@@ -91,8 +90,8 @@ def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
     Each test run will be in its own process.
 
     Args:
-        parsed_config: A list of dicts, each is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_configs: A list of dicts, each is a set of configs for one
+                        test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -145,11 +144,6 @@ def main(argv):
     """This is a sample implementation of a cli entry point for ACTS test
     execution.
 
-    Alternatively, you could directly invoke an ACTS test script:
-
-        python3 MyTest.py -c my_config.json
-
-    See acts.test_runner.main for more details.
     Or you could implement your own cli entry point using acts.config_parser
     functions and acts.test_runner.execute_one_test_class.
     """
@@ -227,7 +221,7 @@ def main(argv):
         '-r',
         '--random',
         action="store_true",
-        help=("If set, tests will be executed in random order."))
+        help="If set, tests will be executed in random order.")
     parser.add_argument(
         '-ti',
         '--test_case_iterations',
