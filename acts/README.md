@@ -93,7 +93,7 @@ $ python
 Above, the command `act.py -c acts_sanity_test_config.json -tc IntegrationTest`
 was run to verify ACTS was properly set up.
 Below are the components of that command:
-- `acts.py`: is the script that runs the test
+- `act.py`: is the script that runs the test
 -  -c acts_sanity_test_config: is the flag and name of the configuration file
 to be used in the test
 -  -tc IntegrationTest: is the name of the test case
