@@ -1100,7 +1100,7 @@ def hangup_call(log, ad):
             return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChange()
-    return True
+    return not ad.droid.telecomIsInCall()
 
 
 def disconnect_call_by_id(log, ad, call_id):
@@ -1766,12 +1766,12 @@ def call_setup_teardown_for_subscription(
                                  time_message)
                     result = False
                 if not result:
-                    return result
-        return result
-    finally:
-        if result and ad_hangup and not hangup_call(log, ad_hangup):
+                    break
+        if ad_hangup and not hangup_call(log, ad_hangup):
             ad_hangup.log.info("Failed to hang up the call")
             result = False
+        return result
+    finally:
         if not result:
             for ad in [ad_caller, ad_callee]:
                 reasons = ad.search_logcat(
@@ -3968,14 +3968,29 @@ def ensure_network_generation_for_subscription(
     current_network_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
                 sub_id)
-
-    if (current_network_preference is not network_preference
-            and not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-                network_preference, sub_id)):
-        ad.log.error(
-            "Network preference is %s. Set Preferred Networks to %s failed.",
-            current_network_preference, network_preference)
-        return False
+    for _ in range(3):
+        if current_network_preference == network_preference:
+            break
+        if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+                network_preference, sub_id):
+            ad.log.info(
+                "Network preference is %s. Set Preferred Networks to %s failed.",
+                current_network_preference, network_preference)
+            reasons = ad.search_logcat(
+                "REQUEST_SET_PREFERRED_NETWORK_TYPE error")
+            if reasons:
+                reason_log = reasons[-1]["log_message"]
+                ad.log.info(reason_log)
+                if "DEVICE_IN_USE" in reason_log:
+                    time.sleep(5)
+                else:
+                    ad.log.error("Failed to set Preferred Networks to %s",
+                                 network_preference)
+                    return False
+            else:
+                ad.log.error("Failed to set Preferred Networks to %s",
+                             network_preference)
+                return False
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):

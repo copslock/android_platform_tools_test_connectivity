@@ -91,7 +91,8 @@ class TelephonyBaseTest(BaseTestClass):
                                 qxdm_mask_path)
                     ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
                     mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
-                    qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
+                    qxdm_log_mask = os.path.join(qxdm_mask_path,
+                                                 mask_file_name)
                 set_qxdm_logger_command(ad, mask=qxdm_log_mask)
                 ad.adb.pull(
                     "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
@@ -348,11 +349,12 @@ class TelephonyBaseTest(BaseTestClass):
 
         log_begin_time = getattr(ad, "test_log_begin_time", None)\
                          or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
-        log_path = os.path.join(self.log_path, test_name, "%s_%s.logcat" % (
-            ad.serial, begin_time))
+        log_path = os.path.join(self.log_path, test_name,
+                                "%s_%s.logcat" % (ad.serial, begin_time))
         try:
-            ad.adb.logcat('b all -d -t "%s" > %s' % (
-                log_begin_time, log_path), timeout=120)
+            ad.adb.logcat(
+                'b all -d -t "%s" > %s' % (log_begin_time, log_path),
+                timeout=120)
         except Exception as e:
             ad.log.error("Failed to get logcat with error %s", e)
             result = False
@@ -361,19 +363,19 @@ class TelephonyBaseTest(BaseTestClass):
     def _take_bug_report(self, test_name, begin_time):
         if self._skip_bug_report():
             return
-        dev_num = getattr(self, "number_of_devices", None) or len(self.android_devices)
+        dev_num = getattr(self, "number_of_devices", None) or len(
+            self.android_devices)
         tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
                  for ad in self.android_devices[:dev_num]]
         tasks.extend([(self._ad_take_extra_logs, (ad, test_name, begin_time))
                       for ad in self.android_devices[:dev_num]])
         run_multithread_func(self.log, tasks)
-        if not self.user_params.get("zip_log", True): return
+        if not self.user_params.get("zip_log", False): return
         src_dir = os.path.join(self.log_path, test_name)
         file_name = "%s_%s" % (src_dir, begin_time)
         self.log.info("Zip folder %s to %s.zip", src_dir, file_name)
         shutil.make_archive(file_name, "zip", src_dir)
         shutil.rmtree(src_dir)
-
 
     def _block_all_test_cases(self, tests):
         """Over-write _block_all_test_case in BaseTestClass."""
