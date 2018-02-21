@@ -59,6 +59,7 @@ class TelLivePostflightTest(TelephonyBaseTest):
                                           "Crashes")
                 utils.create_dir(crash_path)
                 ad.pull_files(crash_diff, crash_path)
+                self._ad_take_bugreport(ad, self.test_name, self.begin_time)
         if msg:
             fail(msg)
         return True
