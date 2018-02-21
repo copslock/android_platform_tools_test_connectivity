@@ -518,14 +518,24 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                               WAIT_TIME_AFTER_CRASH, process)
             time.sleep(WAIT_TIME_AFTER_CRASH)
             if process in ("netd", "system_server"):
-                self.dut.start_services()
+                self.dut.ensure_screen_on()
+                try:
+                    self.dut.start_services(self.dut.skip_sl4a)
+                except Exception as e:
+                    self.dut.log.warning(e)
             process_pid_new = self.dut.adb.shell("pidof %s" % process)
             if process_pid == process_pid_new:
                 self.dut.log.error(
                     "Process %s has the same pid: old:%s new:%s", process,
                     process_pid, process_pid_new)
-        if is_sim_locked(self.dut):
-            unlock_sim(self.dut)
+        try:
+            self.dut.droid.logI("Start testing after restarting %s" % process)
+        except Exception:
+            self.dut.ensure_screen_on()
+            self.dut.start_services(self.dut.skip_sl4a)
+            if is_sim_locked(self.dut):
+                unlock_sim(self.dut)
+
         for check in required_methods:
             if not test_method_mapping[check]():
                 self.dut.log.error("%s check failed after %s restart", check,
