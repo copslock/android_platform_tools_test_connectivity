@@ -680,10 +680,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 result = False
                 return False
 
-            result = two_phone_call_short_seq(self.log, ads[0], None,
-                                            is_phone_in_call_not_iwlan, ads[1],
-                                            None, is_phone_in_call_not_iwlan,
-                                            None, WAIT_TIME_IN_CALL_FOR_IMS)
+            result = two_phone_call_short_seq(
+                self.log, ads[0], None, is_phone_in_call_not_iwlan, ads[1],
+                None, is_phone_in_call_not_iwlan, None,
+                WAIT_TIME_IN_CALL_FOR_IMS)
             return result
         finally:
             if self.tcpdump_proc[0] is not None:
@@ -3126,9 +3126,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"https://www.youtube.com/watch?v=RRZp7sVdhzQ"')
-        if wait_for_state(
-                ad_download.droid.audioIsMusicActive, True, 15, 1):
+                              '"https://www.youtube.com/watch?v=VHF-XK0Vg1s"')
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
             ad_download.log.info("Before call, audio is in MUSIC_state")
         else:
             ad_download.log.warning("Before call, audio is not in MUSIC state")
@@ -3136,10 +3135,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                             ad_caller, None, None, 30))
         download_task = active_file_download_task(self.log, ad_download)
         results = run_multithread_func(self.log, [download_task, call_task])
-        if wait_for_state(
-            ad_download.droid.audioIsMusicActive, True, 15, 1):
-            ad_download.log.info(
-                "After call hangup, audio is back to music")
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("After call hangup, audio is back to music")
         else:
             ad_download.log.warning(
                 "After call hang up, audio is not back to music")
@@ -3545,9 +3542,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download.log.info("Open an youtube video")
         ad_download.ensure_screen_on()
         ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"http://www.youtube.com/watch?v=RRZp7sVdhzQ"')
-        if wait_for_state(
-            ad_download.droid.audioIsMusicActive, True, 15, 1):
+                              '"https://www.youtube.com/watch?v=VHF-XK0Vg1s"')
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
             ad_download.log.info("Before call, audio is in MUSIC_state")
         else:
             ad_download.log.warning("Before call, audio is not in MUSIC state")
@@ -3560,10 +3556,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.info("Call setup succeed in active youtube video")
             result = True
 
-        if wait_for_state(
-            ad_download.droid.audioIsMusicActive, True, 15, 1):
-            ad_download.log.info(
-                "After call hangup, audio is back to music")
+        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
+            ad_download.log.info("After call hangup, audio is back to music")
         else:
             ad_download.log.warning(
                 "After call hang up, audio is not back to music")
