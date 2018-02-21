@@ -1302,6 +1302,7 @@ def initiate_emergency_dialer_call_by_adb(
     try:
         # Make a Call
         ad.wakeup_screen()
+        ad.send_keycode("MENU")
         ad.log.info("Call %s", callee_number)
         ad.adb.shell("am start -a com.android.phone.EmergencyDialer.DIAL")
         ad.adb.shell(
@@ -5294,8 +5295,6 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         except Exception as e:
             ad.log.error("Exception error %s", e)
     ad.root_adb()
-    if not ad.ensure_screen_on():
-        ad.log.error("User window cannot come up")
     if result:
         # Try to reinstall for three times as the device might not be
         # ready to apk install shortly after boot complete.
@@ -5305,8 +5304,31 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             ad.log.info("Re-install sl4a")
             ad.adb.install("-r /tmp/base.apk", ignore_status=True)
             time.sleep(10)
-    ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
+    try:
+        ad.start_adb_logcat()
+    except:
+        ad.log.exception("Failed to start adb logcat!")
+    if skip_setup_wizard:
+        ad.exit_setup_wizard()
+    if ad.skip_sl4a: return status
+    bring_up_sl4a(ad)
+
     return status
+
+
+def bring_up_sl4a(ad, attemps=3):
+    for i in range(attemps):
+        try:
+            droid, ed = ad.get_droid()
+            ed.start()
+            ad.log.info("Broght up new sl4a session")
+        except Exception as e:
+            if i < attemps - 1:
+                ad.log.info(e)
+                time.sleep(10)
+            else:
+                ad.log.error(e)
+                raise
 
 
 def reboot_device(ad):
@@ -5340,8 +5362,7 @@ def refresh_sl4a_session(ad):
         ad.terminate_all_sessions()
         ad.ensure_screen_on()
         ad.log.info("Open new sl4a connection")
-        droid, ed = ad.get_droid()
-        ed.start()
+        bring_up_sl4a(ad)
 
 
 def reset_device_password(ad, device_password=None):
@@ -5354,6 +5375,12 @@ def reset_device_password(ad, device_password=None):
             ad.droid.setDevicePassword(device_password)
         except Exception as e:
             ad.log.warning("setDevicePassword failed with %s", e)
+            try:
+                ad.droid.setDevicePassword(device_password, "1111")
+            except Exception as e:
+                ad.log.warning(
+                    "setDevicePassword providing previous password error: %s",
+                    e)
         time.sleep(2)
         if screen_lock:
             # existing password changed
