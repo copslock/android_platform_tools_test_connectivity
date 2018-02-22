@@ -353,7 +353,7 @@ class TelephonyBaseTest(BaseTestClass):
                                 "%s_%s.logcat" % (ad.serial, begin_time))
         try:
             ad.adb.logcat(
-                'b all -d -t "%s" > %s' % (log_begin_time, log_path),
+                'b all -d -v year -t "%s" > %s' % (log_begin_time, log_path),
                 timeout=120)
         except Exception as e:
             ad.log.error("Failed to get logcat with error %s", e)
