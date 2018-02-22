@@ -75,8 +75,8 @@ class TelLiveStressTest(TelephonyBaseTest):
     def setup_class(self):
         super(TelLiveStressTest, self).setup_class()
         self.dut = self.android_devices[0]
-        self.single_phone_test = self.user_params.get(
-            "single_phone_test", False)
+        self.single_phone_test = self.user_params.get("single_phone_test",
+                                                      False)
         if len(self.android_devices) == 1:
             self.single_phone_test = True
         if self.single_phone_test:
@@ -171,7 +171,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
-    def _send_message(self, max_wait_time=2*MAX_WAIT_TIME_SMS_RECEIVE):
+    def _send_message(self, max_wait_time=2 * MAX_WAIT_TIME_SMS_RECEIVE):
         if self.single_phone_test:
             ads = [self.dut, self.dut]
         else:
@@ -272,7 +272,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if self.single_phone_test:
             call_setup_result = initiate_call(
-                self.log, self.dut, self.call_server_number,
+                self.log,
+                self.dut,
+                self.call_server_number,
                 wait_time_betwn_call_initcheck=5)
         else:
             call_setup_result = call_setup_teardown(
@@ -289,12 +291,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                 check_interval = min(check_interval, duration - elapsed_time)
                 time.sleep(check_interval)
                 elapsed_time += check_interval
-                time_message = "at <%s>/<%s> second." % (elapsed_time, duration)
+                time_message = "at <%s>/<%s> second." % (elapsed_time,
+                                                         duration)
                 for ad in ads:
                     if not call_verification_func(self.log, ad):
-                        ad.log.error(
-                            "Call is NOT in correct %s state at %s",
-                            call_verification_func.__name__, time_message)
+                        ad.log.error("Call is NOT in correct %s state at %s",
+                                     call_verification_func.__name__,
+                                     time_message)
                         self.result_info["Call Maintenance Failure"] += 1
                         failure_reason = "maintenance"
                         reasons = ad.search_logcat(
@@ -303,11 +306,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                         if reasons:
                             ad.log.info(reasons[-1]["log_message"])
                         hangup_call(self.log, ads[0])
-                        result =  False
+                        result = False
                     else:
-                        ad.log.info(
-                            "Call is in correct %s state at %s",
-                            call_verification_func.__name__, time_message)
+                        ad.log.info("Call is in correct %s state at %s",
+                                    call_verification_func.__name__,
+                                    time_message)
                 if not result:
                     break
         if not hangup_call(self.log, ads[0]):
@@ -321,18 +324,26 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Call Total"] += 1
         if not result:
             self.log.info("%s test failed", log_msg)
-            test_name = "%s_call_No_%s_%s_failure" % (
-                self.test_name, the_number, failure_reason)
+            test_name = "%s_call_No_%s_%s_failure" % (self.test_name,
+                                                      the_number,
+                                                      failure_reason)
             for ad in ads:
-                log_path = os.path.join(
-                    self.log_path, test_name, "%s_binder" % ad.serial)
+                log_path = os.path.join(self.log_path, test_name,
+                                        "%s_binder" % ad.serial)
                 utils.create_dir(log_path)
                 ad.adb.pull("/sys/kernel/debug/binder %s" % log_path)
             self._take_bug_report(test_name, begin_time)
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
-
+            if self.result_info["Call Total"] % 50 == 0:
+                test_name = "%s_call_No_%s_success_binder_logs" % (
+                    self.test_name, the_number)
+                for ad in ads:
+                    log_path = os.path.join(self.log_path, test_name,
+                                            "%s_binder" % ad.serial)
+                    utils.create_dir(log_path)
+                    ad.adb.pull("/sys/kernel/debug/binder %s" % log_path)
         return result
 
     def _prefnetwork_mode_change(self, sub_id):
@@ -367,8 +378,10 @@ class TelLiveStressTest(TelephonyBaseTest):
             return True
 
     def _get_result_message(self):
-        msg_list = ["%s: %s" % (count, self.result_info[count])
-                    for count in sorted(self.result_info.keys())]
+        msg_list = [
+            "%s: %s" % (count, self.result_info[count])
+            for count in sorted(self.result_info.keys())
+        ]
         return ", ".join(msg_list)
 
     def _write_perf_json(self):
@@ -377,9 +390,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             f.write(json_str)
 
     def _init_perf_json(self):
-        self.perf_file = os.path.join(
-            self.log_path, "%s_perf_data_%s.json" % (
-                self.test_name, self.begin_time))
+        self.perf_file = os.path.join(self.log_path, "%s_perf_data_%s.json" %
+                                      (self.test_name, self.begin_time))
         self.perf_data = self.android_devices[0].build_info.copy()
         self.perf_data["model"] = self.android_devices[0].model
         self._write_perf_json()
@@ -433,9 +445,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error(e)
                 return False
             self.log.info("%s", dict(self.result_info))
-        if any([self.result_info["Call Setup Failure"],
+        if any([
+                self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
-                self.result_info["Call Teardown Failure"]]):
+                self.result_info["Call Teardown Failure"]
+        ]):
             return False
         else:
             return True
@@ -508,8 +522,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
                 self.log.error("Too many %s errors", IGNORE_EXCEPTIONS)
                 return False
-        if self.result_info["File Download Failure"] / self.result_info[
-                "File Download Total"] > 0.1:
+        if self.result_info["File Download Failure"] / self.result_info["File Download Total"] > 0.1:
             return False
         else:
             return True
@@ -552,8 +565,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log.info(dict(self.result_info))
             if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
                 return False
-        if self.result_info["Call Failure"] or self.result_info[
-                "RAT Change Failure"] or self.result_info["SMS Failure"]:
+        if self.result_info["Call Failure"] or self.result_info["RAT Change Failure"] or self.result_info["SMS Failure"]:
             return False
         else:
             return True
