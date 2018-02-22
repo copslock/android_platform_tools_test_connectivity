@@ -751,7 +751,7 @@ class AndroidDevice:
             extra_params = "-b all"
 
         # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
-        cmd = "adb -s {} logcat -T 1 -v threadtime {} >> {}".format(
+        cmd = "adb -s {} logcat -T 1 -v year {} >> {}".format(
             self.serial, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
@@ -775,8 +775,8 @@ class AndroidDevice:
         Returns:
         Linux UID for the apk.
         """
-        output = self.adb.shell("dumpsys package %s | grep userId=" % apk_name,
-                                ignore_status=True)
+        output = self.adb.shell(
+            "dumpsys package %s | grep userId=" % apk_name, ignore_status=True)
         result = re.search(r"userId=(\d+)", output)
         if result:
             return result.group(1)
@@ -896,7 +896,10 @@ class AndroidDevice:
                       full_out_path)
         self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
 
-    def get_file_names(self, directory, begin_time=None, skip_files=[],
+    def get_file_names(self,
+                       directory,
+                       begin_time=None,
+                       skip_files=[],
                        match_string=None):
         """Get files names with provided directory."""
         cmd = "find %s -type f" % directory
@@ -944,7 +947,7 @@ class AndroidDevice:
             if crashes:
                 crash_reports.extend(crashes)
         if crash_reports and log_crash_report:
-            test_name = test_name or time.strftime("%m-%d-%Y-%H-%M-%S")
+            test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
             crash_log_path = os.path.join(self.log_path, test_name,
                                           "Crashes_%s" % self.serial)
             utils.create_dir(crash_log_path)
@@ -956,8 +959,8 @@ class AndroidDevice:
         # Sleep 10 seconds for the buffered log to be written in qxdm log file
         time.sleep(10)
         log_path = getattr(self, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
-        qxdm_logs = self.get_file_names(log_path, begin_time=begin_time,
-                                        match_string="*.qmdl")
+        qxdm_logs = self.get_file_names(
+            log_path, begin_time=begin_time, match_string="*.qmdl")
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.log_path, test_name,
                                          "QXDM_%s" % self.serial)
@@ -1150,7 +1153,7 @@ class AndroidDevice:
               "time_stamp": "2017-05-03 17:39:29.898",
               "datetime_obj": datetime object}]
         """
-        cmd_option = '-b all -d'
+        cmd_option = '-b all -v year -d'
         if begin_time:
             log_begin_time = acts_logger.epoch_to_log_line_timestamp(
                 begin_time)
@@ -1163,7 +1166,7 @@ class AndroidDevice:
         logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),
                           out)
         for log in logs:
-            time_stamp = "%s-%s" % (datetime.now().year, log[0])
+            time_stamp = log[0]
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
             result.append({
                 "log_message": "".join(log),
