@@ -20,7 +20,7 @@ import queue
 import time
 
 import acts.base_test
-import acts.signals
+import acts.signals as signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
