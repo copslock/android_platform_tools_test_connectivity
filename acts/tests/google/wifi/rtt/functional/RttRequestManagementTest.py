@@ -23,7 +23,7 @@ from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
-class RequestManagementTest(RttBaseTest):
+class RttRequestManagementTest(RttBaseTest):
   """Test class for RTT request management flows."""
 
   SPAMMING_LIMIT = 20

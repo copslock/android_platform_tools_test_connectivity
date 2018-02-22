@@ -16,7 +16,6 @@
 
 from acts import asserts
 from acts import utils
-from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -51,7 +50,10 @@ class RttDisableTest(RttBaseTest):
 
     # disable RTT and validate broadcast & API
     if disable_mode == self.MODE_DISABLE_WIFI:
-      wutils.wifi_toggle_state(dut, False)
+      # disabling Wi-Fi is not sufficient: since scan mode (and hence RTT) will
+      # remain enabled - we need to disable the Wi-Fi chip aka Airplane Mode
+      asserts.assert_true(utils.force_airplane_mode(dut, True),
+                          "Can not turn on airplane mode on: %s" % dut.serial)
     elif disable_mode == self.MODE_ENABLE_DOZE:
       asserts.assert_true(utils.enable_doze(dut), "Can't enable doze")
     elif disable_mode == self.MODE_DISABLE_LOCATIONING:
@@ -70,7 +72,8 @@ class RttDisableTest(RttBaseTest):
 
     # enable RTT and validate broadcast & API
     if disable_mode == self.MODE_DISABLE_WIFI:
-      wutils.wifi_toggle_state(dut, True)
+      asserts.assert_true(utils.force_airplane_mode(dut, False),
+                          "Can not turn off airplane mode on: %s" % dut.serial)
     elif disable_mode == self.MODE_ENABLE_DOZE:
       asserts.assert_true(utils.disable_doze(dut), "Can't disable doze")
     elif disable_mode == self.MODE_DISABLE_LOCATIONING:

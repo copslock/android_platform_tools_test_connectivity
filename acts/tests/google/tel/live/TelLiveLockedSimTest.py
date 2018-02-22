@@ -27,7 +27,10 @@ from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
+from acts.test_utils.tel.tel_test_utils import refresh_sl4a_session
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
+from acts.test_utils.tel.tel_test_utils import unlocking_device
+from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from TelLiveEmergencyTest import TelLiveEmergencyTest
 
@@ -58,6 +61,8 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
                 elif is_sim_locked(ad):
                     ad.log.info("SIM is locked")
                     self.dut = ad
+                    ad.ensure_screen_on()
+                    ad.start_services(ad.skip_sl4a)
                     return
                 else:
                     time.sleep(5)
@@ -69,10 +74,10 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         pass
 
     def setup_test(self):
-        if not self.dut.ensure_screen_on():
-            self.dut.error("Unable to get to user window")
-            return False
         self.expected_call_result = False
+        unlocking_device(self.dut)
+        refresh_sl4a_session(self.dut)
+        unlock_sim(self.dut)
 
     """ Tests Begin """
 
@@ -90,6 +95,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
+        self.expected_call_result = True
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
         return self.fake_emergency_call_test()
 
@@ -107,8 +113,9 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
+        self.expected_call_result = True
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
-        return self.fake_emergency_call_test(by_emergency_dialer=False)
+        return self.fake_emergency_call_test(by_emergency_dialer=True)
 
     @test_tracker_info(uuid="1990f166-66a7-4092-b448-c179a9194371")
     @TelephonyBaseTest.tel_test_wrap
@@ -125,6 +132,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
+        self.expected_call_result = True
         try:
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
             if self.fake_emergency_call_test():

@@ -43,9 +43,11 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         fake_number = self.user_params.get("fake_emergency_number", "800")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g")
         self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g")
 
     def setup_test(self):
         if not unlock_sim(self.dut):
@@ -87,7 +89,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             "sqlite3 %s \"INSERT INTO qcril_emergency_source_mcc_table VALUES('%s','%s','','')\""
             % (qcril_database_path, mcc, self.fake_emergency_number))
 
-    def fake_emergency_call_test(self, by_emergency_dialer=True):
+    def fake_emergency_call_test(self, by_emergency_dialer=True, attemps=3):
         self.dut.log.info("ServiceState is in %s",
                           get_service_state_by_adb(self.log, self.dut))
         if by_emergency_dialer:
@@ -99,7 +101,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             # otherwise the number will be in dialer without dial out
             # with sl4a fascade. Need further investigation
             callee = "+%s" % self.fake_emergency_number
-        for _ in range(2):
+        for i in range(attemps):
             result = True
             if not self.change_emergency_number_list():
                 self.dut.log.error("Unable to add number to ril.ecclist")
@@ -129,15 +131,23 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             ecclist = self.dut.adb.getprop("ril.ecclist")
             self.dut.log.info("ril.ecclist = %s", ecclist)
             if self.fake_emergency_number in ecclist:
-                # Tested with the right ril.ecclist. No need to retry
-                self.dut.log.error("%s is in ril-ecclist, but call failed",
-                                   self.fake_emergency_number)
-                return result
+                if i == attemps - 1:
+                    self.dut.log.error("%s is in ril-ecclist, but call failed",
+                                       self.fake_emergency_number)
+                else:
+                    self.dut.log.warning(
+                        "%s is in ril-ecclist, but call failed, try again",
+                        self.fake_emergency_number)
             else:
-                self.dut.log.info("%s is not in ril-ecclist",
-                                  self.fake_emergency_number)
-                result = True
+                if i == attemps - 1:
+                    self.dut.log.error("Fail to write %s to ril-ecclist",
+                                       self.fake_emergency_number)
+                else:
+                    self.dut.log.info("%s is not in ril-ecclist",
+                                      self.fake_emergency_number)
         self.dut.log.info("fake_emergency_call_test result is %s", result)
+        import pdb
+        pdb.set_trace()
         return result
 
     """ Tests Begin """

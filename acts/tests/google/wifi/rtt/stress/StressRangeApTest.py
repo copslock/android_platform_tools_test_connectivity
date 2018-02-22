@@ -16,7 +16,6 @@
 
 from acts import asserts
 from acts.base_test import BaseTestClass
-from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
@@ -24,79 +23,57 @@ from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 class StressRangeApTest(RttBaseTest):
   """Test class for stress testing of RTT ranging to Access Points"""
 
-  NUM_ITERATIONS = 10
-  PASS_RATE = 0.9 # 90% of iterations must pass
-
   def __init__(self, controllers):
     BaseTestClass.__init__(self, controllers)
 
   #############################################################################
 
-  def run_rtt_supporting_ap_only(self, use_queue):
+  def test_rtt_supporting_ap_only(self):
     """Scan for APs and perform RTT only to those which support 802.11mc.
 
     Stress test: repeat ranging to the same AP. Verify rate of success and
     stability of results.
-
-    Args:
-      use_queue: True to use the request queue (i.e. not wait for results before
-      sending the next ranging request), False to wait for results before
-      requesting another range.
     """
     dut = self.android_devices[0]
-    rtt_supporting_aps = rutils.scan_for_rtt_supporting_networks(dut, repeat=2)
-    dut.log.info("RTT Supporting APs=%s", rtt_supporting_aps)
+    rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
+                                                                 repeat=10)
+    dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
 
+    num_iter = self.stress_test_min_iteration_count
+
+    max_peers = dut.droid.wifiRttMaxPeersInRequest()
     asserts.assert_true(
         len(rtt_supporting_aps) > 0,
         "Need at least one AP which supports 802.11mc!")
-    rtt_supporting_aps = rtt_supporting_aps[0:1] # pick one
+    if len(rtt_supporting_aps) > max_peers:
+      rtt_supporting_aps = rtt_supporting_aps[0:max_peers]
 
-    # run all iterations
-    results = []
-    if use_queue:
-      ids = []
-      for i in range(self.NUM_ITERATIONS):
-        ids.append(dut.droid.wifiRttStartRangingToAccessPoints(rtt_supporting_aps))
-      for i in range(self.NUM_ITERATIONS):
-        event = rutils.wait_for_event(dut,
-                                      rutils.decorate_event(
-                                          rconsts.EVENT_CB_RANGING_ON_RESULT,
-                                          ids[i]))
-        results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
-    else:
-      for i in range(self.NUM_ITERATIONS):
-        id = dut.droid.wifiRttStartRangingToAccessPoints(rtt_supporting_aps)
-        event = rutils.wait_for_event(dut,
-                                      rutils.decorate_event(
-                                          rconsts.EVENT_CB_RANGING_ON_RESULT,
-                                          id))
-        results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
+    events = rutils.run_ranging(dut, rtt_supporting_aps, num_iter, 0,
+                                self.stress_test_target_run_time_sec)
+    stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                   self.rtt_reference_distance_margin_mm,
+                                   self.rtt_min_expected_rssi_dbm,
+                                   self.lci_reference, self.lcr_reference,
+                                   summary_only=True)
+    dut.log.debug("Stats=%s", stats)
 
-    # review results (TODO: copy margin code from WifiRttManagerTest.py)
-    num_success = 0
-    for result in results:
-      if (result[rconsts.EVENT_CB_RANGING_KEY_STATUS] ==
-          rconsts.EVENT_CB_RANGING_STATUS_SUCCESS):
-        num_success = num_success + 1
+    for bssid, stat in stats.items():
+      asserts.assert_true(stat['num_no_results'] == 0,
+                          "Missing (timed-out) results", extras=stats)
+      asserts.assert_false(stat['any_lci_mismatch'],
+                           "LCI mismatch", extras=stats)
+      asserts.assert_false(stat['any_lcr_mismatch'],
+                           "LCR mismatch", extras=stats)
+      asserts.assert_equal(stat['num_invalid_rssi'], 0, "Invalid RSSI",
+                          extras=stats)
+      asserts.assert_true(stat['num_failures'] <=
+                          self.rtt_max_failure_rate_two_sided_rtt_percentage
+                          * stat['num_results'] / 100,
+                          "Failure rate is too high", extras=stats)
+      asserts.assert_true(stat['num_range_out_of_margin'] <=
+                    self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage
+                    * stat['num_success_results'] / 100,
+                    "Results exceeding error margin rate is too high",
+                    extras=stats)
+    asserts.explicit_pass("RTT test done", extras=stats)
 
-    asserts.assert_true(num_success >= self.PASS_RATE * self.NUM_ITERATIONS,
-                        "Success rate too low", extras=results)
-
-  def test_rtt_supporting_ap_only_no_queue(self):
-    """Scan for APs and perform RTT only to those which support 802.11mc. Tests
-    without queueing requests.
-
-    Stress test: repeat ranging to the same AP. Verify rate of success and
-    stability of results.
-    """
-    self.run_rtt_supporting_ap_only(use_queue=False)
-
-  def test_rtt_supporting_ap_only_queue(self):
-    """Scan for APs and perform RTT only to those which support 802.11mc. Uses
-    range request queue.
-
-    Stress test: repeat ranging to the same AP. Verify rate of success and
-    stability of results.
-    """
-    self.run_rtt_supporting_ap_only(use_queue=True)
