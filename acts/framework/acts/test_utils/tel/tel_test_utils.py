@@ -1745,6 +1745,10 @@ def call_setup_teardown_for_subscription(
         else:
             ad_callee.log.info("Callee answered the call successfully")
 
+        for ad in (ad_caller, ad_callee):
+            if not wait_for_in_call_active(ad):
+                result = False
+
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
             CHECK_INTERVAL = min(CHECK_INTERVAL,
@@ -2971,6 +2975,40 @@ def wait_for_droid_in_call(log, ad, max_time):
         Return False if timeout.
     """
     return _wait_for_droid_in_state(log, ad, max_time, is_phone_in_call)
+
+
+def is_phone_in_call_active(ad, call_id=None):
+    """Return True if phone in active call.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        call_id: the call id
+    """
+    if not call_id:
+        call_id = ad.droid.telecomCallGetCallIds()[0]
+    call_state = ad.droid.telecomCallGetCallState(call_id)
+    ad.log.info("%s state is %s", call_id, call_state)
+    return call_state == "ACTIVE"
+
+
+def wait_for_in_call_active(ad, timeout=5, interval=1, call_id=None):
+    """Wait for call reach active state.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        call_id: the call id
+    """
+    if not call_id:
+        call_id = ad.droid.telecomCallGetCallIds()[0]
+    args = [ad, call_id]
+    if not wait_for_state(is_phone_in_call_active, True, timeout, interval,
+                          *args):
+        ad.log.error("Call did not reach ACTIVE state")
+        return False
+    else:
+        return True
 
 
 def wait_for_telecom_ringing(log, ad, max_time=MAX_WAIT_TIME_TELECOM_RINGING):
