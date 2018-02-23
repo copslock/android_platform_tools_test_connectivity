@@ -51,6 +51,7 @@ from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
+from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -65,10 +66,7 @@ from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
-from acts.controllers.sl4a_lib.rpc_client import Sl4aProtocolError
-
-IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
-EXCEPTION_TOLERANCE = 20
+EXCEPTION_TOLERANCE = 5
 
 
 class TelLiveStressTest(TelephonyBaseTest):
@@ -275,7 +273,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log,
                 self.dut,
                 self.call_server_number,
-                wait_time_betwn_call_initcheck=5)
+                wait_time_betwn_call_initcheck=5) and wait_for_in_call_active(
+                    self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
                 self.log, ads[0], ads[1], ad_hangup=None, wait_time_in_call=0)
@@ -416,14 +415,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.error("Find new crash reports %s", crash_report)
                         failure += 1
                         self.result_info["Crashes"] += 1
-            except IGNORE_EXCEPTIONS as e:
+            except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-            except Exception as e:
-                self.log.error(e)
-                return False
             self.log.info("Crashes found: %s", failure)
-            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
                 return False
         if failure:
             return False
@@ -434,17 +431,15 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 self._make_phone_call(call_verification_func)
-                time.sleep(
-                    random.randrange(self.min_sleep_time, self.max_sleep_time))
-            except IGNORE_EXCEPTIONS as e:
+            except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-                if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    return False
-            except Exception as e:
-                self.log.error(e)
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
@@ -458,17 +453,15 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 self._send_message(max_wait_time=max_wait_time)
-                time.sleep(
-                    random.randrange(self.min_sleep_time, self.max_sleep_time))
-            except IGNORE_EXCEPTIONS as e:
+            except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-            except Exception as e:
-                self.log.error(e)
-                return False
             self.log.info(dict(self.result_info))
-            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
                 return False
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
         if self.result_info["SMS Failure"] or (
                 self.result_info["MMS Failure"] / self.result_info["MMS Total"]
                 > 0.3):
@@ -510,18 +503,15 @@ class TelLiveStressTest(TelephonyBaseTest):
         while time.time() < self.finishing_time:
             try:
                 self._data_download()
-                time.sleep(
-                    random.randrange(self.min_sleep_time, self.max_sleep_time))
-            except IGNORE_EXCEPTIONS as e:
+            except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-            except Exception as e:
-                self.log.error(e)
-                return False
             self.log.info("%s", dict(self.result_info))
-            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                self.log.error("Too many %s errors", IGNORE_EXCEPTIONS)
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
                 return False
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
         if self.result_info["File Download Failure"] / self.result_info["File Download Total"] > 0.1:
             return False
         else:
@@ -556,14 +546,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                      (self._make_phone_call, [is_phone_in_call_volte]),
                      (self._send_message, [])])
                 self._prefnetwork_mode_change(sub_id)
-            except IGNORE_EXCEPTIONS as e:
+            except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
-            except Exception as e:
-                self.log.error(e)
-                return False
             self.log.info(dict(self.result_info))
-            if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
                 return False
         if self.result_info["Call Failure"] or self.result_info["RAT Change Failure"] or self.result_info["SMS Failure"]:
             return False
