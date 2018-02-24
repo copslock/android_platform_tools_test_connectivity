@@ -660,6 +660,7 @@ def setup_phone_wireless(test_class,
     """
     # Initialize the dut to rock-bottom state
     dut_rockbottom(test_class.dut)
+    brconfigs = None
     time.sleep(1)
 
     if regular_mode:
@@ -687,7 +688,7 @@ def setup_phone_wireless(test_class,
                 test_class.attenuators[attn].set_atten(
                     test_class.atten_level['zero_atten'][attn])
             test_class.log.info('Set attenuation level to all zero')
-            ap_setup(test_class.access_point, network)
+            brconfigs = ap_setup(test_class.access_point, network)
             wutils.wifi_connect(test_class.dut, network)
     else:
         wutils.wifi_toggle_state(test_class.dut, False)
@@ -699,3 +700,8 @@ def setup_phone_wireless(test_class,
         test_class.dut.droid.goToSleepNow()
         test_class.dut.log.info('Screen is OFF')
     time.sleep(1)
+
+    if brconfigs:
+        return brconfigs
+    else:
+        return None
