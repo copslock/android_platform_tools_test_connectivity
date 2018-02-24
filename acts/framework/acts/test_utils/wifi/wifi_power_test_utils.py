@@ -21,6 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
 from acts.libs.proc import job
+from acts.controllers.ap_lib import bridge_interface as bi
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
@@ -64,6 +65,7 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
+MONSOON_RECOVER_TIME = 60
 
 
 def dut_rockbottom(ad):
@@ -121,17 +123,22 @@ def pass_fail_check(test_class, test_result):
 
     Args:
         test_class: the specific test class where test is running
-        avg_current: the average current as the test result
+        test_result: the average current as the test result
     """
     test_name = test_class.current_test_name
     current_threshold = test_class.threshold[test_name]
-    asserts.assert_true(
-        abs(test_result - current_threshold) / current_threshold <
-        THRESHOLD_TOLERANCE,
-        ("Measured average current in [%s]: %s, which is "
-         "more than %d percent off than acceptable threshold %.2fmA") %
-        (test_name, test_result, THRESHOLD_TOLERANCE * 100, current_threshold))
-    asserts.explicit_pass("Measurement finished for %s." % test_name)
+    if test_result:
+        asserts.assert_true(
+            abs(test_result - current_threshold) / current_threshold <
+            THRESHOLD_TOLERANCE,
+            ("Measured average current in [%s]: %s, which is "
+             "more than %d percent off than acceptable threshold %.2fmA") %
+            (test_name, test_result, THRESHOLD_TOLERANCE * 100,
+             current_threshold))
+        asserts.explicit_pass("Measurement finished for %s." % test_name)
+    else:
+        asserts.fail(
+            "Something happened, measurement is not complete, test failed")
 
 
 def monsoon_data_collect_save(ad, mon_info, test_name):
@@ -152,21 +159,29 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                    measurement
         avg_current: the average current of the test
     """
-    log = logging.getLogger()
-    log.info("Starting power measurement with monsoon box")
-    tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
-    #Resets the battery status right before the test started
-    ad.adb.shell(RESET_BATTERY_STATS)
-    #Start the power measurement using monsoon
-    result = mon_info['dut'].measure_power(
-        mon_info['freq'],
-        mon_info['duration'],
-        tag=tag,
-        offset=mon_info['offset'])
-    data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
-    avg_current = result.average_current
-    monsoon.MonsoonData.save_to_text_file([result], data_path)
-    log.info("Power measurement done")
+    try:
+        log = logging.getLogger()
+        log.info("Starting power measurement with monsoon box")
+        tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
+        #Resets the battery status right before the test started
+        ad.adb.shell(RESET_BATTERY_STATS)
+        #Start the power measurement using monsoon
+        result = mon_info['dut'].measure_power(
+            mon_info['freq'],
+            mon_info['duration'],
+            tag=tag,
+            offset=mon_info['offset'])
+        data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
+        avg_current = result.average_current
+        monsoon.MonsoonData.save_to_text_file([result], data_path)
+        log.info("Power measurement done")
+    except monsoon.MonsoonError:
+        # For exceptions due to Monsoon error, wait until Monsoon recovers
+        log.warning(
+            'Monsoon Exception happened during data collection, stop this test and wait for the system to recover'
+        )
+        avg_current = 0
+        time.sleep(MONSOON_RECOVER_TIME)
 
     return data_path, avg_current
 
@@ -211,14 +226,15 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(data=dict(
-        x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(data=dict(
-        z0=[mon_info['duration']],
-        y0=[round(avg_current, 2)],
-        x0=[round(avg_current * voltage, 2)],
-        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-        z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(
+        data=dict(x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(
+        data=dict(
+            z0=[mon_info['duration']],
+            y0=[round(avg_current, 2)],
+            x0=[round(avg_current * voltage, 2)],
+            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+            z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -357,6 +373,8 @@ def ap_setup(ap, network, bandwidth=80):
         network: dict with information of the network, including ssid, password
                  bssid, channel etc.
         bandwidth: the operation bandwidth for the AP, default 80MHz
+    Returns:
+        brconfigs: the bridge interface configs
     """
     log = logging.getLogger()
     bss_settings = []
@@ -377,8 +395,13 @@ def ap_setup(ap, network, bandwidth=80):
         profile_name='whirlwind',
         iface_wlan_2g=ap.wlan_2g,
         iface_wlan_5g=ap.wlan_5g)
+    config_bridge = ap.generate_bridge_configs(channel)
+    brconfigs = bi.BridgeInterfaceConfigs(config_bridge[0], config_bridge[1],
+                                          config_bridge[2])
+    ap.bridge.startup(brconfigs)
     ap.start_ap(config)
     log.info("AP started on channel {} with SSID {}".format(channel, ssid))
+    return brconfigs
 
 
 def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
