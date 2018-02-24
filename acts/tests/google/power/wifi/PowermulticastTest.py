@@ -20,7 +20,6 @@ import time
 
 from acts import base_test
 from acts import utils
-from acts.controllers.ap_lib import bridge_interface as bi
 from acts.controllers.ap_lib import hostapd_constants as hc
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -110,13 +109,8 @@ class PowermulticastTest(base_test.BaseTestClass):
             self.attenuators[attn].set_atten(
                 self.atten_level['zero_atten'][attn])
         self.log.info('Set attenuation level to all zero')
-        channel = network['channel']
         iface_eth = self.pkt_sender.interface
-        brconfigs = self.access_point.generate_bridge_configs(channel)
-        self.brconfigs = bi.BridgeInterfaceConfigs(brconfigs[0], brconfigs[1],
-                                                   brconfigs[2])
-        self.access_point.bridge.startup(self.brconfigs)
-        wputils.ap_setup(self.access_point, network)
+        self.brconfigs = wputils.ap_setup(self.access_point, network)
         wutils.wifi_connect(self.dut, network)
 
         # Wait for DHCP with timeout of 60 seconds

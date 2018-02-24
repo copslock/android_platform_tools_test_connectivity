@@ -52,6 +52,7 @@ class PowerdtimTest(base_test.BaseTestClass):
         Bring down the AP interface and connect device back on.
         """
         self.log.info('Tearing down the test case')
+        self.access_point.bridge.teardown(self.brconfigs)
         self.access_point.close()
         self.mon.usb('on')
 
@@ -89,8 +90,9 @@ class PowerdtimTest(base_test.BaseTestClass):
             self.attenuators[i].set_atten(self.atten_level['zero_atten'][i])
             for i in range(self.num_atten)
         ]
-        self.log.info('Set attenuation level to connect the main AP')
-        wputils.ap_setup(self.access_point, network)
+        self.log.info('Set attenuation level to connect to the AP')
+        # Set up the AP
+        self.brconfigs = wputils.ap_setup(self.access_point, network, 20)
         wutils.wifi_connect(self.dut, network)
         if screen_status == 'OFF':
             self.dut.droid.goToSleepNow()

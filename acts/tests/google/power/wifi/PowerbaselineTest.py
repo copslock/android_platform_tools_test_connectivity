@@ -49,14 +49,14 @@ class PowerbaselineTest(base_test.BaseTestClass):
 
     def teardown_class(self):
         """Tearing down the entire test class.
-        
+
         """
         self.log.info('Tearing down the test class')
         self.mon.usb('on')
 
     def teardown_test(self):
         """Tearing down the test case.
-        
+
         """
         self.log.info('Tearing down the test')
         self.mon.usb('on')
