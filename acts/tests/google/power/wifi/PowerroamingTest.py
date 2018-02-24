@@ -56,6 +56,8 @@ class PowerroamingTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        self.access_point_main.bridge.teardown(self.brconfigs_main)
+        self.access_point_aux.bridge.teardown(self.brconfigs_aux)
         for ap in self.access_points:
             ap.close()
 
@@ -82,9 +84,11 @@ class PowerroamingTest(base_test.BaseTestClass):
         """
         # Setup both APs
         network_main = self.main_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_main, network_main)
+        self.brconfigs_main = wputils.ap_setup(self.access_point_main,
+                                               network_main)
         network_aux = self.aux_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_aux, network_aux)
+        self.brconfigs_aux = wputils.ap_setup(self.access_point_aux,
+                                              network_aux)
         # Initialize the dut to rock-bottom state
         wputils.dut_rockbottom(self.dut)
         wutils.wifi_toggle_state(self.dut, True)
@@ -127,7 +131,8 @@ class PowerroamingTest(base_test.BaseTestClass):
         network_aux = self.aux_network[hc.BAND_2G]
         # Set the same SSID for the AUX AP for fastroaming purpose
         network_aux[wc.SSID] = network_main[wc.SSID]
-        wputils.ap_setup(self.access_point_aux, network_aux)
+        self.brconfigs_aux = wputils.ap_setup(self.access_point_aux,
+                                              network_aux)
         # Set attenuator and add two networks to the phone
         self.log.info('Set attenuation to connect device to the aux AP')
         [
@@ -137,7 +142,8 @@ class PowerroamingTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, network_aux)
         time.sleep(5)
         # Setup the main AP
-        wputils.ap_setup(self.access_point_main, network_main)
+        self.brconfigs_main = wputils.ap_setup(self.access_point_main,
+                                               network_main)
         # Set attenuator to connect the phone to main AP
         self.log.info('Set attenuation to connect device to the main AP')
         [
@@ -168,9 +174,11 @@ class PowerroamingTest(base_test.BaseTestClass):
 
         # Setup both APs
         network_main = self.main_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_main, network_main)
+        self.brconfigs_main = wputils.ap_setup(self.access_point_main,
+                                               network_main)
         network_aux = self.aux_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_aux, network_aux)
+        self.brconfigs_aux = wputils.ap_setup(self.access_point_aux,
+                                              network_aux)
         # Initialize the dut to rock-bottom state
         wputils.dut_rockbottom(self.dut)
         wutils.wifi_toggle_state(self.dut, True)
@@ -207,9 +215,11 @@ class PowerroamingTest(base_test.BaseTestClass):
 
         # Setup both APs
         network_main = self.main_network[hc.BAND_5G]
-        wputils.ap_setup(self.access_point_main, network_main)
+        self.brconfigs_main = wputils.ap_setup(self.access_point_main,
+                                               network_main)
         network_aux = self.aux_network[hc.BAND_5G]
-        wputils.ap_setup(self.access_point_aux, network_aux)
+        self.brconfigs_aux = wputils.ap_setup(self.access_point_aux,
+                                              network_aux)
         # Initialize the dut to rock-bottom state
         wputils.dut_rockbottom(self.dut)
         wutils.wifi_toggle_state(self.dut, True)
@@ -244,9 +254,11 @@ class PowerroamingTest(base_test.BaseTestClass):
 
         # Setup both APs
         network_main = self.main_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_main, network_main)
+        self.brconfigs_main = wputils.ap_setup(self.access_point_main,
+                                               network_main)
         network_aux = self.aux_network[hc.BAND_2G]
-        wputils.ap_setup(self.access_point_aux, network_aux)
+        self.brconfigs_aux = wputils.ap_setup(self.access_point_aux,
+                                              network_aux)
         # Initialize the dut to rock-bottom state
         wputils.dut_rockbottom(self.dut)
         wutils.wifi_toggle_state(self.dut, True)
