@@ -20,7 +20,6 @@ import os
 import time
 from acts import base_test
 from acts import utils
-from acts.controllers.ap_lib import bridge_interface as bi
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -107,12 +106,8 @@ class PowertrafficTest(base_test.BaseTestClass):
 
         # Set up the AP
         network = self.main_network[band]
-        channel = network['channel']
-        configs = self.access_point.generate_bridge_configs(channel)
-        self.brconfigs = bi.BridgeInterfaceConfigs(configs[0], configs[1],
-                                                   configs[2])
-        self.access_point.bridge.startup(self.brconfigs)
-        wputils.ap_setup(self.access_point, network, bandwidth)
+        self.brconfigs = wputils.ap_setup(self.access_point, network,
+                                          bandwidth)
 
         # Wait for DHCP on the ethernet port and get IP as Iperf server address
         # Time out in 60 seconds if not getting DHCP address
@@ -180,7 +175,7 @@ class PowertrafficTest(base_test.BaseTestClass):
         # Monsoon Power data plot with IPerf throughput information
         tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(RSSI, throughput)
         wputils.monsoon_data_plot(self.mon_info, file_path, tag)
-        
+
         # Take Bugreport
         if bool(self.bug_report) == True:
             self.dut.take_bug_report(self.test_name, begin_time)
