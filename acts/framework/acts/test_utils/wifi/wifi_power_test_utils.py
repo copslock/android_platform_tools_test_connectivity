@@ -65,7 +65,9 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
-MONSOON_RECOVER_TIME = 60
+MONSOON_RECOVER_TIME_MAX = 300
+MONSOON_RETRY_INTERVAL = 30
+MEASUREMENT_RETRY_COUNT = 3
 
 
 def dut_rockbottom(ad):
@@ -141,6 +143,28 @@ def pass_fail_check(test_class, test_result):
             "Something happened, measurement is not complete, test failed")
 
 
+def monsoon_recover(mon, time_max, retry_interval):
+    """Test loop to wait for monsoon recover from unexpected error.
+
+    Wait for a certain time duration, then quit.
+    Args:
+        mon: monsoon object
+    """
+    mon_status = False
+    time_start = time.time()
+    while time.time() < time_start + time_max and not mon_status:
+        try:
+            mon.usb("on")
+            mon_status = True
+            logging.info("Monsoon recovered from unexpected error")
+            return mon_status
+        except monsoon.MonsoonError:
+            time.sleep(retry_interval)
+            continue
+    logging.warning("Couldn't recover monsoon from unexpected error")
+    return mon_status
+
+
 def monsoon_data_collect_save(ad, mon_info, test_name):
     """Current measurement and save the log file.
 
@@ -159,31 +183,50 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                    measurement
         avg_current: the average current of the test
     """
-    try:
-        log = logging.getLogger()
-        log.info("Starting power measurement with monsoon box")
-        tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
+
+    log = logging.getLogger()
+    tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
+    test_status = False
+    retry = 1
+    while retry <= MEASUREMENT_RETRY_COUNT and not test_status:
         #Resets the battery status right before the test started
         ad.adb.shell(RESET_BATTERY_STATS)
-        #Start the power measurement using monsoon
-        result = mon_info['dut'].measure_power(
-            mon_info['freq'],
-            mon_info['duration'],
-            tag=tag,
-            offset=mon_info['offset'])
-        data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
-        avg_current = result.average_current
-        monsoon.MonsoonData.save_to_text_file([result], data_path)
-        log.info("Power measurement done")
-    except monsoon.MonsoonError:
-        # For exceptions due to Monsoon error, wait until Monsoon recovers
+        log.info("Starting power measurement with monsoon box, try #{}".format(
+            retry))
+        try:
+            #Start the power measurement using monsoon
+            result = mon_info['dut'].measure_power(
+                mon_info['freq'],
+                mon_info['duration'],
+                tag=tag,
+                offset=mon_info['offset'])
+            data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
+            avg_current = result.average_current
+            monsoon.MonsoonData.save_to_text_file([result], data_path)
+            log.info("Power measurement done within {} try".format(retry))
+            test_status = True
+            return data_path, avg_current
+        except monsoon.MonsoonError:
+            log.warning("Monsoon is in unexpected state, try to recover")
+            mon_status = monsoon_recover(mon_info['dut'],
+                                         MONSOON_RECOVER_TIME_MAX,
+                                         MONSOON_RETRY_INTERVAL)
+            if mon_status:
+                retry += 1
+                continue
+            else:
+                log.warning(
+                    "Monsoon stuck in unexpected state, skip this test")
+                break
+    if mon_status:
+        log.info(
+            "Measurement exceeds maximum retry limit, test failed and skipped")
+    else:
         log.warning(
-            'Monsoon Exception happened during data collection, stop this test and wait for the system to recover'
+            "Test failed due to MonsoonError, recover before resuming other test"
         )
-        avg_current = 0
-        time.sleep(MONSOON_RECOVER_TIME)
-
-    return data_path, avg_current
+        monsoon_recover(mon_info['dut'], MONSOON_RECOVER_TIME_MAX,
+                        MONSOON_RETRY_INTERVAL)
 
 
 def monsoon_data_plot(mon_info, file_path, tag=""):
