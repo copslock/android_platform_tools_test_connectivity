@@ -21,6 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
 from acts.libs.proc import job
+from acts.controllers.ap_lib import bridge_interface as bi
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
@@ -64,6 +65,9 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
+MONSOON_RECOVER_TIME_MAX = 300
+MONSOON_RETRY_INTERVAL = 30
+MEASUREMENT_RETRY_COUNT = 3
 
 
 def dut_rockbottom(ad):
@@ -121,17 +125,44 @@ def pass_fail_check(test_class, test_result):
 
     Args:
         test_class: the specific test class where test is running
-        avg_current: the average current as the test result
+        test_result: the average current as the test result
     """
     test_name = test_class.current_test_name
     current_threshold = test_class.threshold[test_name]
-    asserts.assert_true(
-        abs(test_result - current_threshold) / current_threshold <
-        THRESHOLD_TOLERANCE,
-        ("Measured average current in [%s]: %s, which is "
-         "more than %d percent off than acceptable threshold %.2fmA") %
-        (test_name, test_result, THRESHOLD_TOLERANCE * 100, current_threshold))
-    asserts.explicit_pass("Measurement finished for %s." % test_name)
+    if test_result:
+        asserts.assert_true(
+            abs(test_result - current_threshold) / current_threshold <
+            THRESHOLD_TOLERANCE,
+            ("Measured average current in [%s]: %s, which is "
+             "more than %d percent off than acceptable threshold %.2fmA") %
+            (test_name, test_result, THRESHOLD_TOLERANCE * 100,
+             current_threshold))
+        asserts.explicit_pass("Measurement finished for %s." % test_name)
+    else:
+        asserts.fail(
+            "Something happened, measurement is not complete, test failed")
+
+
+def monsoon_recover(mon, time_max, retry_interval):
+    """Test loop to wait for monsoon recover from unexpected error.
+
+    Wait for a certain time duration, then quit.
+    Args:
+        mon: monsoon object
+    """
+    mon_status = False
+    time_start = time.time()
+    while time.time() < time_start + time_max and not mon_status:
+        try:
+            mon.usb("on")
+            mon_status = True
+            logging.info("Monsoon recovered from unexpected error")
+            return mon_status
+        except monsoon.MonsoonError:
+            time.sleep(retry_interval)
+            continue
+    logging.warning("Couldn't recover monsoon from unexpected error")
+    return mon_status
 
 
 def monsoon_data_collect_save(ad, mon_info, test_name):
@@ -152,23 +183,50 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                    measurement
         avg_current: the average current of the test
     """
-    log = logging.getLogger()
-    log.info("Starting power measurement with monsoon box")
-    tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
-    #Resets the battery status right before the test started
-    ad.adb.shell(RESET_BATTERY_STATS)
-    #Start the power measurement using monsoon
-    result = mon_info['dut'].measure_power(
-        mon_info['freq'],
-        mon_info['duration'],
-        tag=tag,
-        offset=mon_info['offset'])
-    data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
-    avg_current = result.average_current
-    monsoon.MonsoonData.save_to_text_file([result], data_path)
-    log.info("Power measurement done")
 
-    return data_path, avg_current
+    log = logging.getLogger()
+    tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
+    test_status = False
+    retry = 1
+    while retry <= MEASUREMENT_RETRY_COUNT and not test_status:
+        #Resets the battery status right before the test started
+        ad.adb.shell(RESET_BATTERY_STATS)
+        log.info("Starting power measurement with monsoon box, try #{}".format(
+            retry))
+        try:
+            #Start the power measurement using monsoon
+            result = mon_info['dut'].measure_power(
+                mon_info['freq'],
+                mon_info['duration'],
+                tag=tag,
+                offset=mon_info['offset'])
+            data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
+            avg_current = result.average_current
+            monsoon.MonsoonData.save_to_text_file([result], data_path)
+            log.info("Power measurement done within {} try".format(retry))
+            test_status = True
+            return data_path, avg_current
+        except monsoon.MonsoonError:
+            log.warning("Monsoon is in unexpected state, try to recover")
+            mon_status = monsoon_recover(mon_info['dut'],
+                                         MONSOON_RECOVER_TIME_MAX,
+                                         MONSOON_RETRY_INTERVAL)
+            if mon_status:
+                retry += 1
+                continue
+            else:
+                log.warning(
+                    "Monsoon stuck in unexpected state, skip this test")
+                break
+    if mon_status:
+        log.info(
+            "Measurement exceeds maximum retry limit, test failed and skipped")
+    else:
+        log.warning(
+            "Test failed due to MonsoonError, recover before resuming other test"
+        )
+        monsoon_recover(mon_info['dut'], MONSOON_RECOVER_TIME_MAX,
+                        MONSOON_RETRY_INTERVAL)
 
 
 def monsoon_data_plot(mon_info, file_path, tag=""):
@@ -211,14 +269,15 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(data=dict(
-        x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(data=dict(
-        z0=[mon_info['duration']],
-        y0=[round(avg_current, 2)],
-        x0=[round(avg_current * voltage, 2)],
-        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-        z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(
+        data=dict(x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(
+        data=dict(
+            z0=[mon_info['duration']],
+            y0=[round(avg_current, 2)],
+            x0=[round(avg_current * voltage, 2)],
+            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+            z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -357,6 +416,8 @@ def ap_setup(ap, network, bandwidth=80):
         network: dict with information of the network, including ssid, password
                  bssid, channel etc.
         bandwidth: the operation bandwidth for the AP, default 80MHz
+    Returns:
+        brconfigs: the bridge interface configs
     """
     log = logging.getLogger()
     bss_settings = []
@@ -377,8 +438,13 @@ def ap_setup(ap, network, bandwidth=80):
         profile_name='whirlwind',
         iface_wlan_2g=ap.wlan_2g,
         iface_wlan_5g=ap.wlan_5g)
+    config_bridge = ap.generate_bridge_configs(channel)
+    brconfigs = bi.BridgeInterfaceConfigs(config_bridge[0], config_bridge[1],
+                                          config_bridge[2])
+    ap.bridge.startup(brconfigs)
     ap.start_ap(config)
     log.info("AP started on channel {} with SSID {}".format(channel, ssid))
+    return brconfigs
 
 
 def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
@@ -637,6 +703,7 @@ def setup_phone_wireless(test_class,
     """
     # Initialize the dut to rock-bottom state
     dut_rockbottom(test_class.dut)
+    brconfigs = None
     time.sleep(1)
 
     if regular_mode:
@@ -664,7 +731,7 @@ def setup_phone_wireless(test_class,
                 test_class.attenuators[attn].set_atten(
                     test_class.atten_level['zero_atten'][attn])
             test_class.log.info('Set attenuation level to all zero')
-            ap_setup(test_class.access_point, network)
+            brconfigs = ap_setup(test_class.access_point, network)
             wutils.wifi_connect(test_class.dut, network)
     else:
         wutils.wifi_toggle_state(test_class.dut, False)
@@ -676,3 +743,8 @@ def setup_phone_wireless(test_class,
         test_class.dut.droid.goToSleepNow()
         test_class.dut.log.info('Screen is OFF')
     time.sleep(1)
+
+    if brconfigs:
+        return brconfigs
+    else:
+        return None
