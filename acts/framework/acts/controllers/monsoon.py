@@ -190,12 +190,11 @@ class MonsoonProxy(object):
         while 1:  # Keep reading, discarding non-status packets
             read_bytes = self._ReadPacket()
             if not read_bytes:
-                return None
+                raise MonsoonError("Failed to read Monsoon status")
             calsize = struct.calcsize(STATUS_FORMAT)
             if len(read_bytes) != calsize or read_bytes[0] != 0x10:
-                logging.warning("Wanted status, dropped type=0x%02x, len=%d",
+                raise MonsoonError("Wanted status, dropped type=0x%02x, len=%d",
                                 read_bytes[0], len(read_bytes))
-                raise MonsoonError("Packet length not match with expectation")
             status = dict(
                 zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT, read_bytes)))
             p_type = status["packetType"]
@@ -241,7 +240,12 @@ class MonsoonProxy(object):
         Returns:
             Current Output Voltage (in unit of v).
         """
-        return self.GetStatus()["outputVoltageSetting"]
+        try:
+            return self.GetStatus()["outputVoltageSetting"]
+        # Catch potential errors such as struct.error, TypeError and other
+        # unknown errors which would bring down the whole test
+        except Exception as e:
+            raise MonsoonError("Error getting Monsoon voltage")
 
     def SetMaxCurrent(self, i):
         """Set the max output current.
@@ -274,7 +278,12 @@ class MonsoonProxy(object):
         Returns:
             Current USB passthrough mode.
         """
-        return self.GetStatus()["usbPassthroughMode"]
+        try:
+            return self.GetStatus()["usbPassthroughMode"]
+        # Catch potential errors such as struct.error, TypeError and other
+        # unknown errors which would bring down the whole test
+        except Exception as e:
+            raise MonsoonError("Error reading Monsoon USB passthrough status")
 
     def StartDataCollection(self):
         """Tell the device to start collecting and sending measurement data.
