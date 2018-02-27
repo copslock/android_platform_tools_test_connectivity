@@ -1748,6 +1748,9 @@ def call_setup_teardown_for_subscription(
         for ad in (ad_caller, ad_callee):
             if not wait_for_in_call_active(ad):
                 result = False
+            if not ad.droid.telecomCallGetAudioState():
+                ad.log.error("Audio is not in call state")
+                result = False
 
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
@@ -1882,7 +1885,7 @@ def verify_http_connection(log,
         state = ad.droid.pingHost(url)
         ad.log.info("Connection to %s is %s", url, state)
         if expected_state == state:
-            ad.log.info("Verify Internet connection state=%s succeeded",
+            ad.log.info("Verify Internet connection state is %s succeeded",
                         str(expected_state))
             return True
         if i < retry:
@@ -2282,6 +2285,15 @@ def http_file_download_by_sl4a(ad,
         if not getattr(ad, "downloading_droid", None):
             ad.downloading_droid, ad.downloading_ed = ad.get_droid()
             ad.downloading_ed.start()
+        else:
+            try:
+                if not ad.downloading_droid.is_live:
+                    ad.downloading_droid, ad.downloading_ed = ad.get_droid()
+                    ad.downloading_ed.start()
+            except Exception as e:
+                ad.log.info(e)
+                ad.downloading_droid, ad.downloading_ed = ad.get_droid()
+                ad.downloading_ed.start()
         data_accounting = {
             "mobile_rx_bytes":
             ad.droid.getMobileRxBytes(),
@@ -3588,6 +3600,16 @@ def sms_send_receive_verify_for_subscription(
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
+        else:
+            try:
+                if not ad.messaging_droid.is_live:
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+            except Exception as e:
+                ad.log.info(e)
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+
     for text in array_message:
         # set begin_time 300ms before current time to system time discrepency
         begin_time = get_current_epoch_time() - 300
