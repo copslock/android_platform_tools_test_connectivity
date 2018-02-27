@@ -302,7 +302,7 @@ class MonsoonProxy(object):
         while 1:  # loop until we get data or a timeout
             _bytes = self._ReadPacket()
             if not _bytes:
-                return None
+                raise MonsoonError("Data collection failed due to empty data")
             if len(_bytes) < 4 + 8 + 1 or _bytes[0] < 0x20 or _bytes[0] > 0x2F:
                 logging.warning("Wanted data, dropped type=0x%02x, len=%d",
                                 _bytes[0], len(_bytes))
