@@ -2371,7 +2371,7 @@ def get_mobile_data_usage(ad,
             usage = ad.droid.connectivityQueryDetailsForUid(
                 TYPE_MOBILE, subscriber_id, begin_time, end_time, uid)
         except Exception:
-            usage = ad.droid.cconnectivityQueryDetailsForUid(
+            usage = ad.droid.connectivityQueryDetailsForUid(
                 subscriber_id, begin_time, end_time, uid)
         ad.log.debug("The mobile data usage for apk %s is %s", apk, usage)
     else:
