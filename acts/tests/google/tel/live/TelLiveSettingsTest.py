@@ -21,6 +21,7 @@ import os
 import time
 
 from acts import signals
+from acts.keys import Config
 from acts.utils import create_dir
 from acts.utils import unzip_maintain_permissions
 from acts.utils import get_current_epoch_time
@@ -1265,6 +1266,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 continue
             if not os.path.exists(path):
                 self.log.error("path %s does not exist", path)
+                self.log.info(self.user_params)
                 path = os.path.join(self.user_params[Config.key_config_path],
                                     path)
                 if not os.path.exists(path):
@@ -1378,13 +1380,15 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if power_off_sim(self.ad, slot_index):
             for i in range(3):
                 carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
+                )
                 msg = "After SIM power down, carrier_id = %s(expecting -1), " \
                       "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
                 if carrier_id != -1 or carrier_name:
-                    if i==2:
+                    if i == 2:
                         self.ad.log.error(msg)
-                        self.result_detail = "%s %s" % (self.result_detail, msg)
+                        self.result_detail = "%s %s" % (self.result_detail,
+                                                        msg)
                         result = False
                     else:
                         time.sleep(5)
@@ -1402,13 +1406,15 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self.result_detail = "%s %s" % (self.result_detail, msg)
 
         if not power_on_sim(self.ad, slot_index):
-            abort_all_tests(self.ad.log, "Fail to power up SIM")
+            self.ad.log.error("Fail to power up SIM")
             result = False
+            setattr(self.ad, "reboot_to_recover", True)
         else:
             if is_sim_locked(self.ad):
                 self.ad.log.info("Sim is locked")
                 carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
+                )
                 msg = "In locked SIM, carrier_id = %s(expecting -1), " \
                       "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
                 if carrier_id != -1 or carrier_name:
@@ -1427,11 +1433,12 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 self.ad.log.error("Unable to find a valid subscription!")
                 result = False
             new_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-            new_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+            new_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
+            )
             msg = "After SIM power up, new_carrier_id = %s, " \
                   "new_carrier_name = %s" % (new_carrier_id, new_carrier_name)
-            if old_carrier_id != new_carrier_id or (
-                        old_carrier_name != new_carrier_name):
+            if old_carrier_id != new_carrier_id or (old_carrier_name !=
+                                                    new_carrier_name):
                 self.ad.log.error(msg)
                 self.result_detail = "%s %s" % (self.result_detail, msg)
                 result = False
