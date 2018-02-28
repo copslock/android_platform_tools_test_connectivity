@@ -85,15 +85,19 @@ class WifiRvrTest(base_test.BaseTestClass):
             "markersize": 10
         }
         output_file_path = "{}/{}.html".format(self.log_path, "rvr_results")
-        wputils.bokeh_plot(data_sets, legends, fig_property, output_file_path)
+        wputils.bokeh_plot(
+            data_sets,
+            legends,
+            fig_property,
+            shaded_region=None,
+            output_file_path=output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
 
-        Checks the RvR test result and compares to a golden file of results for
+        Checks the RvR test result and compares to a throughput limites for
         the same configuration. The pass/fail tolerances are provided in the
-        config file. Currently, the test fails if any a single point is out of
-        range of the corresponding area in the golden file.
+        config file.
 
         Args:
             rvr_result: dict containing attenuation, throughput and other meta
@@ -105,12 +109,54 @@ class WifiRvrTest(base_test.BaseTestClass):
             if test_name in file_name
         ]
         gldn_path = gldn_path[0]
+        throughput_limits = self.compute_throughput_limits(
+            gldn_path, rvr_result)
+
+        failure_count = 0
+        for idx, current_throughput in enumerate(
+                rvr_result["throughput_receive"]):
+            current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
+            if (current_throughput < throughput_limits["lower_limit"][idx]
+                    or current_throughput >
+                    throughput_limits["upper_limit"][idx]):
+                failure_count = failure_count + 1
+                self.log.info(
+                    "Throughput at {}dB attenuation is beyond limits. "
+                    "Throughput is {} Mbps. Expected within [{}, {}] Mbps.".
+                    format(current_att, current_throughput,
+                           throughput_limits["lower_limit"][idx],
+                           throughput_limits["upper_limit"][idx]))
+        if failure_count >= self.test_params["failure_count_tolerance"]:
+            asserts.fail(
+                "Test failed. Found {} points outside throughput limits.".
+                format(failure_count))
+        asserts.explicit_pass(
+            "Test passed. Found {} points outside throughput limits.".format(
+                failure_count))
+
+    def compute_throughput_limits(self, gldn_path, rvr_result):
+        """Compute throughput limits for current test.
+
+        Checks the RvR test result and compares to a throughput limites for
+        the same configuration. The pass/fail tolerances are provided in the
+        config file.
+
+        Args:
+            gldn_path: path to golden file used to generate limits
+            rvr_result: dict containing attenuation, throughput and other meta
+            data
+        Returns:
+            throughput_limits: dict containing attenuation and throughput limit data
+        """
         with open(gldn_path, 'r') as gldn_file:
             gldn_results = json.load(gldn_file)
             gldn_attenuation = [
                 att + gldn_results["fixed_attenuation"]
                 for att in gldn_results["attenuation"]
             ]
+        attenuation = []
+        lower_limit = []
+        upper_limit = []
         for idx, current_throughput in enumerate(
                 rvr_result["throughput_receive"]):
             current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
@@ -119,34 +165,27 @@ class WifiRvrTest(base_test.BaseTestClass):
             ]
             sorted_distances = sorted(
                 enumerate(att_distances), key=lambda x: x[1])
-            closest_indeces = [dist[0] for dist in sorted_distances[0:2]]
+            closest_indeces = [dist[0] for dist in sorted_distances[0:3]]
             closest_throughputs = [
                 gldn_results["throughput_receive"][index]
                 for index in closest_indeces
             ]
             closest_throughputs.sort()
 
-            allowed_throughput_range = [
+            attenuation.append(current_att)
+            lower_limit.append(
                 max(closest_throughputs[0] - max(
                     self.test_params["abs_tolerance"], closest_throughputs[0] *
-                    self.test_params["pct_tolerance"] / 100),
-                    0), closest_throughputs[1] +
-                max(self.test_params["abs_tolerance"], closest_throughputs[1] *
-                    self.test_params["pct_tolerance"] / 100)
-            ]
-            throughput_distance = [
-                current_throughput - throughput_limit
-                for throughput_limit in allowed_throughput_range
-            ]
-            if (throughput_distance[0] < -self.test_params["abs_tolerance"]
-                    or throughput_distance[1] >
-                    self.test_params["abs_tolerance"]):
-                asserts.fail(
-                    "Throughput at {}dB attenuation is beyond limits. "
-                    "Throughput is {} Mbps. Expected within {} Mbps.".format(
-                        current_att, current_throughput,
-                        allowed_throughput_range))
-        asserts.explicit_pass("Measurement finished for %s." % test_name)
+                    self.test_params["pct_tolerance"] / 100), 0))
+            upper_limit.append(closest_throughputs[-1] + max(
+                self.test_params["abs_tolerance"], closest_throughputs[-1] *
+                self.test_params["pct_tolerance"] / 100))
+        throughput_limits = {
+            "attenuation": attenuation,
+            "lower_limit": lower_limit,
+            "upper_limit": upper_limit
+        }
+        return throughput_limits
 
     def post_process_results(self, rvr_result):
         """Saves plots and JSON formatted results.
@@ -192,10 +231,18 @@ class WifiRvrTest(base_test.BaseTestClass):
             ]
             data_sets[0].insert(0, gldn_attenuation)
             data_sets[1].insert(0, gldn_results["throughput_receive"])
+            throughput_limits = self.compute_throughput_limits(
+                gldn_path, rvr_result)
+            shaded_region = {
+                "x_vector": throughput_limits["attenuation"],
+                "lower_limit": throughput_limits["lower_limit"],
+                "upper_limit": throughput_limits["upper_limit"]
+            }
         except:
             self.log.warning("ValueError: Golden file not found")
         output_file_path = "{}/{}.html".format(self.log_path, test_name)
-        wputils.bokeh_plot(data_sets, legends, fig_property, output_file_path)
+        wputils.bokeh_plot(data_sets, legends, fig_property, shaded_region,
+                           output_file_path)
 
     def rvr_test(self):
         """Test function to run RvR.
@@ -267,10 +314,6 @@ class WifiRvrTest(base_test.BaseTestClass):
             rvr_result: dict containing rvr_results and meta data
         """
         #Initialize RvR test parameters
-        if self.test_params["rvr_atten_step"] not in [0.25, 0.5, 0.75, 1]:
-            self.log.warning(
-                "Attenuation step not supported. Attenuation vector may not be applied exactly."
-            )
         num_atten_steps = int((self.test_params["rvr_atten_stop"] -
                                self.test_params["rvr_atten_start"]) /
                               self.test_params["rvr_atten_step"])
@@ -279,9 +322,6 @@ class WifiRvrTest(base_test.BaseTestClass):
             x * self.test_params["rvr_atten_step"]
             for x in range(0, num_atten_steps)
         ]
-        #self.rvr_atten_range = range(self.test_params["rvr_atten_start"],
-        #                             self.test_params["rvr_atten_stop"],
-        #                             self.test_params["rvr_atten_step"])
         rvr_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
@@ -333,6 +373,13 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     #Test cases
 class WifiRvr_2GHz_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
+                      "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+                      "test_rvr_TCP_DL_ch11_VHT20",
+                      "test_rvr_TCP_UL_ch11_VHT20")
+
     @test_tracker_info(uuid='e7586217-3739-44a4-a87b-d790208b04b9')
     def test_rvr_TCP_DL_ch1_VHT20(self):
         self._test_rvr()
@@ -359,6 +406,17 @@ class WifiRvr_2GHz_Test(WifiRvrTest):
 
 
 class WifiRvr_UNII1_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
+            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
+            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20")
+
     @test_tracker_info(uuid='a48ee2b4-3fb9-41fd-b292-0051bfc3b0cc')
     def test_rvr_TCP_DL_ch36_VHT20(self):
         self._test_rvr()
@@ -417,6 +475,17 @@ class WifiRvr_UNII1_Test(WifiRvrTest):
 
 
 class WifiRvr_UNII3_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
+            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
     @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
     def test_rvr_TCP_DL_ch149_VHT20(self):
         self._test_rvr()
@@ -476,6 +545,17 @@ class WifiRvr_UNII3_Test(WifiRvrTest):
 
     # UDP Tests
 class WifiRvr_SampleUDP_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT40", "test_rvr_UDP_UL_ch36_VHT40",
+            "test_rvr_UDP_DL_ch36_VHT80", "test_rvr_UDP_UL_ch36_VHT80",
+            "test_rvr_UDP_DL_ch149_VHT20", "test_rvr_UDP_UL_ch149_VHT20",
+            "test_rvr_UDP_DL_ch149_VHT40", "test_rvr_UDP_UL_ch149_VHT40",
+            "test_rvr_UDP_DL_ch149_VHT80", "test_rvr_UDP_UL_ch149_VHT80")
+
     @test_tracker_info(uuid='05614f92-38fa-4289-bcff-d4b4a2a2ad5b')
     def test_rvr_UDP_DL_ch6_VHT20(self):
         self._test_rvr()

@@ -597,8 +597,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         failed_tests = self.feature_validator(**kwargs)
         crash_report = self.dut.check_crash_report(
             self.test_name, begin_time, log_crash_report=True)
-        if crash_report:
-            fail_count["crashes"] += 1
         if failed_tests or crash_report:
             if failed_tests:
                 self.dut.log.error("%s failed after %s restart", failed_tests,

@@ -66,8 +66,10 @@ GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
 MONSOON_RECOVER_TIME_MAX = 300
-MONSOON_RETRY_INTERVAL = 30
+MONSOON_RETRY_INTERVAL = 60
+MONSOON_WAIT = 60
 MEASUREMENT_RETRY_COUNT = 3
+MIN_PERCENT_SAMPLE = 95
 
 
 def dut_rockbottom(ad):
@@ -146,7 +148,7 @@ def pass_fail_check(test_class, test_result):
 def monsoon_recover(mon, time_max, retry_interval):
     """Test loop to wait for monsoon recover from unexpected error.
 
-    Wait for a certain time duration, then quit.
+    Wait for a certain time duration, then quit.0
     Args:
         mon: monsoon object
     """
@@ -157,6 +159,7 @@ def monsoon_recover(mon, time_max, retry_interval):
             mon.usb("on")
             mon_status = True
             logging.info("Monsoon recovered from unexpected error")
+            time.sleep(5)
             return mon_status
         except monsoon.MonsoonError:
             time.sleep(retry_interval)
@@ -186,47 +189,81 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
 
     log = logging.getLogger()
     tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
-    test_status = False
+    data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
+    total_expected_samples = mon_info['freq'] * (
+        mon_info['duration'] + mon_info['offset'])
+    min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
+    # Retry counter
     retry = 1
-    while retry <= MEASUREMENT_RETRY_COUNT and not test_status:
-        #Resets the battery status right before the test started
-        ad.adb.shell(RESET_BATTERY_STATS)
-        log.info("Starting power measurement with monsoon box, try #{}".format(
-            retry))
+    # Indicator that need to recover monsoon from serial port errors
+    need_usb_on = 0
+    # Indicator that need to re-collect data
+    need_collect_data = 1
+    while retry <= MEASUREMENT_RETRY_COUNT:
         try:
-            #Start the power measurement using monsoon
-            result = mon_info['dut'].measure_power(
-                mon_info['freq'],
-                mon_info['duration'],
-                tag=tag,
-                offset=mon_info['offset'])
-            data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
+            # If need to retake data
+            if need_collect_data == 1:
+                # If monsoon needs to be recovered
+                if need_usb_on == 1:
+                    time.sleep(MONSOON_WAIT)
+                    mon_info['dut'].usb('on')
+                #Resets the battery status right before the test started
+                ad.adb.shell(RESET_BATTERY_STATS)
+                log.info(
+                    "Starting power measurement with monsoon box, try #{}".
+                    format(retry))
+                #Start the power measurement using monsoon
+                result = mon_info['dut'].measure_power(
+                    mon_info['freq'],
+                    mon_info['duration'],
+                    tag=tag,
+                    offset=mon_info['offset'])
+            # If no need to retake data but monsoon needs to be recovered
+            elif need_usb_on == 1:
+                time.sleep(MONSOON_WAIT)
+                mon_info['dut'].usb('on')
+            # Return measurement results if no error happens
             avg_current = result.average_current
             monsoon.MonsoonData.save_to_text_file([result], data_path)
             log.info("Power measurement done within {} try".format(retry))
-            test_status = True
             return data_path, avg_current
-        except monsoon.MonsoonError:
-            log.warning("Monsoon is in unexpected state, try to recover")
-            mon_status = monsoon_recover(mon_info['dut'],
-                                         MONSOON_RECOVER_TIME_MAX,
-                                         MONSOON_RETRY_INTERVAL)
-            if mon_status:
+        # Catch monsoon errors
+        except monsoon.MonsoonError as e:
+            # If captured samples are less than min required, re-take
+            if len(result.__data_points) <= min_required_samples:
+                need_collect_data = 1
+                log.warning(
+                    'More than {} percent of samples are missing due to monsoon error. Need to take one more measurement'.
+                    format(100 - MIN_PERCENT_SAMPLE))
+                mon_status = monsoon_recover(mon_info['dut'],
+                                             MONSOON_RECOVER_TIME_MAX,
+                                             MONSOON_RETRY_INTERVAL)
+                if mon_status:
+                    need_usb_on = 0
+                else:
+                    need_usb_on = 1
                 retry += 1
                 continue
+            # No need to retake data, just recover monsoon
             else:
                 log.warning(
-                    "Monsoon stuck in unexpected state, skip this test")
-                break
-    if mon_status:
-        log.info(
-            "Measurement exceeds maximum retry limit, test failed and skipped")
-    else:
-        log.warning(
-            "Test failed due to MonsoonError, recover before resuming other test"
+                    'Error happened trying to reconnect to DUT, no need to re-collect data'
+                )
+                need_collect_data = 0
+                mon_status = monsoon_recover(mon_info['dut'],
+                                             MONSOON_RECOVER_TIME_MAX,
+                                             MONSOON_RETRY_INTERVAL)
+                if mon_status:
+                    # Here should be all set, go back to return
+                    need_usb_on = 0
+                else:
+                    need_usb_on = 1
+                    retry += 1
+                continue
+    if retry > MEASUREMENT_RETRY_COUNT:
+        log.error(
+            'Tried our best, test still failed due to Monsoon serial port error'
         )
-        monsoon_recover(mon_info['dut'], MONSOON_RECOVER_TIME_MAX,
-                        MONSOON_RETRY_INTERVAL)
 
 
 def monsoon_data_plot(mon_info, file_path, tag=""):
@@ -269,15 +306,14 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(
-        data=dict(x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(
-        data=dict(
-            z0=[mon_info['duration']],
-            y0=[round(avg_current, 2)],
-            x0=[round(avg_current * voltage, 2)],
-            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-            z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(data=dict(
+        x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(data=dict(
+        z0=[mon_info['duration']],
+        y0=[round(avg_current, 2)],
+        x0=[round(avg_current * voltage, 2)],
+        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+        z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -447,7 +483,11 @@ def ap_setup(ap, network, bandwidth=80):
     return brconfigs
 
 
-def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
+def bokeh_plot(data_sets,
+               legends,
+               fig_property,
+               shaded_region=None,
+               output_file_path=None):
     """Plot bokeh figs.
         Args:
             data_sets: data sets including lists of x_data and lists of y_data
@@ -455,6 +495,8 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
             legends: list of legend for each curve
             fig_property: dict containing the plot property, including title,
                       lables, linewidth, circle size, etc.
+            shaded_region: optional dict containing data for plot shading
+            output_file_path: optional path at which to save figure
         Returns:
             plot: bokeh plot figure object
     """
@@ -471,6 +513,14 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
         'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
         'yellow', 'darkred', 'goldenrod'
     ]
+    if shaded_region:
+        band_x = shaded_region["x_vector"]
+        band_x.extend(shaded_region["x_vector"][::-1])
+        band_y = shaded_region["lower_limit"]
+        band_y.extend(shaded_region["upper_limit"][::-1])
+        plot.patch(
+            band_x, band_y, color='#7570B3', line_alpha=0.1, fill_alpha=0.1)
+
     for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
         index_now = legends.index(legend)
         color = colors[index_now % len(colors)]
@@ -478,6 +528,7 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
             x_data, y_data, legend=str(legend), line_width=3, color=color)
         plot.circle(
             x_data, y_data, size=10, legend=str(legend), fill_color=color)
+
     #Plot properties
     plot.xaxis.axis_label = fig_property['x_label']
     plot.yaxis.axis_label = fig_property['y_label']
