@@ -334,8 +334,9 @@ class TelephonyBaseTest(BaseTestClass):
                          test_name, e)
             result = False
 
-        log_begin_time = getattr(ad, "test_log_begin_time", None)\
-                         or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
+        log_begin_time = getattr(
+            ad, "test_log_begin_time", None
+        ) or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
         log_path = os.path.join(self.log_path, test_name,
                                 "%s_%s.logcat" % (ad.serial, begin_time))
         try:
