@@ -1937,7 +1937,7 @@ def _check_file_existance(ad, file_path, expected_file_size=None):
         return False
 
 
-def active_file_download_task(log, ad, file_name="5MB"):
+def check_curl_availability(ad):
     if not hasattr(ad, "curl_capable"):
         try:
             out = ad.adb.shell("/data/curl --version")
@@ -1949,7 +1949,10 @@ def active_file_download_task(log, ad, file_name="5MB"):
         except Exception:
             setattr(ad, "curl_capable", False)
             ad.log.info("curl is unavailable, use chrome to download file")
+    return ad.curl_capable
 
+
+def active_file_download_task(log, ad, file_name="5MB", method="chrome"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
@@ -1969,13 +1972,23 @@ def active_file_download_task(log, ad, file_name="5MB"):
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
     url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
-    #url = "http://146.148.91.8/download/" + file_name + ".zip"
-    return (http_file_download_by_sl4a, (ad, url, output_path, file_size, True,
-                                         timeout))
+    if method == "sl4a":
+        return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
+                                             True, timeout))
+    if method == "curl" and check_curl_availability(ad):
+        url = "http://146.148.91.8/download/" + file_name + ".zip"
+        return (http_file_download_by_curl, (ad, url, output_path, file_size,
+                                             True, timeout))
+    elif method == "sl4a":
+        return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
+                                             True, timeout))
+    else:
+        return (http_file_download_by_chrome, (ad, url, file_size, True,
+                                               timeout))
 
 
-def active_file_download_test(log, ad, file_name="5MB"):
-    task = active_file_download_task(log, ad, file_name)
+def active_file_download_test(log, ad, file_name="5MB", method="chrome"):
+    task = active_file_download_task(log, ad, file_name, method=method)
     return task[0](*task[1])
 
 
@@ -2091,17 +2104,14 @@ def http_file_download_by_curl(ad,
     curl_cmd += " --url %s > %s" % (url, file_path)
     accounting_apk = "com.android.server.telecom"  #"com.quicinc.cne.CNEService"
     result = True
-    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
-    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     try:
         data_accounting = {
             "mobile_rx_bytes":
             ad.droid.getMobileRxBytes(),
             "subscriber_mobile_data_usage":
-            get_mobile_data_usage(ad, None, None, begin_time, end_time),
+            get_mobile_data_usage(ad, None, None),
             "curl_mobile_data_usage":
-            get_mobile_data_usage(ad, None, accounting_apk, begin_time,
-                                  end_time)
+            get_mobile_data_usage(ad, None, accounting_apk)
         }
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download %s to %s by adb shell command %s", url,
@@ -2113,10 +2123,9 @@ def http_file_download_by_curl(ad,
                 "mobile_rx_bytes":
                 ad.droid.getMobileRxBytes(),
                 "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                get_mobile_data_usage(ad, None, None),
                 "curl_mobile_data_usage":
-                get_mobile_data_usage(ad, None, accounting_apk, begin_time,
-                                      end_time)
+                get_mobile_data_usage(ad, None, accounting_apk)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {
@@ -2181,17 +2190,12 @@ def http_file_download_by_chrome(ad,
     ad.adb.shell("rm -f %s" % file_to_be_delete)
     ad.adb.shell("rm -rf /sdcard/Download/.*")
     ad.adb.shell("rm -f /sdcard/Download/.*")
-    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
-    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     data_accounting = {
-        "total_rx_bytes":
-        ad.droid.getTotalRxBytes(),
-        "mobile_rx_bytes":
-        ad.droid.getMobileRxBytes(),
-        "subscriber_mobile_data_usage":
-        get_mobile_data_usage(ad, None, None, begin_time, end_time),
-        "chrome_mobile_data_usage":
-        get_mobile_data_usage(ad, None, chrome_apk, begin_time, end_time)
+        "total_rx_bytes": ad.droid.getTotalRxBytes(),
+        "mobile_rx_bytes": ad.droid.getMobileRxBytes(),
+        "subscriber_mobile_data_usage": get_mobile_data_usage(ad, None, None),
+        "chrome_mobile_data_usage": get_mobile_data_usage(
+            ad, None, chrome_apk)
     }
     ad.log.info("Before downloading: %s", data_accounting)
     ad.ensure_screen_on()
@@ -2213,10 +2217,9 @@ def http_file_download_by_chrome(ad,
                 "mobile_rx_bytes":
                 ad.droid.getMobileRxBytes(),
                 "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                get_mobile_data_usage(ad, None, None),
                 "chrome_mobile_data_usage":
-                get_mobile_data_usage(ad, None, chrome_apk, begin_time,
-                                      end_time)
+                get_mobile_data_usage(ad, None, chrome_apk)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {
@@ -2279,8 +2282,6 @@ def http_file_download_by_sl4a(ad,
     ad.adb.shell("rm -f %s" % file_path)
     accounting_apk = SL4A_APK_NAME
     result = True
-    begin_time = int(time.time() * 1000 - 2 * 60 * 60 * 1000)
-    end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
     try:
         if not getattr(ad, "downloading_droid", None):
             ad.downloading_droid, ad.downloading_ed = ad.get_droid()
@@ -2298,10 +2299,9 @@ def http_file_download_by_sl4a(ad,
             "mobile_rx_bytes":
             ad.droid.getMobileRxBytes(),
             "subscriber_mobile_data_usage":
-            get_mobile_data_usage(ad, None, None, begin_time, end_time),
+            get_mobile_data_usage(ad, None, None),
             "sl4a_mobile_data_usage":
-            get_mobile_data_usage(ad, None, accounting_apk, begin_time,
-                                  end_time)
+            get_mobile_data_usage(ad, None, accounting_apk)
         }
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
@@ -2318,10 +2318,9 @@ def http_file_download_by_sl4a(ad,
                 "mobile_rx_bytes":
                 ad.droid.getMobileRxBytes(),
                 "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None, begin_time, end_time),
+                get_mobile_data_usage(ad, None, None),
                 "sl4a_mobile_data_usage":
-                get_mobile_data_usage(ad, None, accounting_apk, begin_time,
-                                      end_time)
+                get_mobile_data_usage(ad, None, accounting_apk)
             }
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {
@@ -2354,17 +2353,18 @@ def http_file_download_by_sl4a(ad,
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
-def get_mobile_data_usage(ad,
-                          subscriber_id=None,
-                          apk=None,
-                          begin_time=None,
-                          end_time=None):
+def get_mobile_data_usage(ad, subscriber_id=None, apk=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    if begin_time is None:
-        begin_time = 0
-    if end_time is None:
-        end_time = int(time.time() * 1000 + 2 * 60 * 60 * 1000)
+    if not getattr(ad, "data_metering_begin_time", None) or not getattr(
+            ad, "data_metering_end_time", None):
+        current_time = int(time.time() * 1000)
+        setattr(ad, "data_metering_begin_time",
+                current_time - 24 * 60 * 60 * 1000)
+        setattr(ad, "data_metering_end_time",
+                current_time + 30 * 24 * 60 * 60 * 1000)
+    begin_time = ad.data_metering_begin_time
+    end_time = ad.data_metering_end_time
     if apk:
         uid = ad.get_apk_uid(apk)
         try:
@@ -3620,9 +3620,9 @@ def sms_send_receive_verify_for_subscription(
             ad_rx.messaging_ed.clear_events(EventSmsReceived)
             ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
             ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
-            time.sleep(0.1)  #sleep 100ms after starting event tracking
+            time.sleep(1)  #sleep 100ms after starting event tracking
             ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text,
-                                                     True)
+                                                     False)
             try:
                 ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
                                              max_wait_time)
@@ -3679,7 +3679,8 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
     log_results = ad.search_logcat(
         "%s Message sent successfully" % type, begin_time=begin_time)
     if log_results:
-        ad.log.info("Found SL4A %s sent succeessful log message" % type)
+        ad.log.info("Found %s sent succeessful log message: %s", type,
+                    log_results[-1]["log_message"])
         return True
     else:
         log_results = ad.search_logcat(
@@ -3689,8 +3690,8 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
             for log_result in log_results:
                 if "status is SUCCEEDED" in log_result["log_message"]:
                     ad.log.info(
-                        "Found BugleDataModel %s send succeed log message" %
-                        type)
+                        "Found BugleDataModel %s send succeed log message: %s",
+                        type, log_result["log_message"])
                     return True
     return False
 
@@ -3701,13 +3702,15 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
         "New %s Received" % type, begin_time=begin_time) or \
         ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
     if log_results:
-        ad.log.info("Found SL4A %s received log message" % type)
+        ad.log.info("Found SL4A %s received log message: %s", type,
+                    log_results[-1]["log_message"])
         return True
     else:
         log_results = ad.search_logcat(
             "Received %s message" % type, begin_time=begin_time)
         if log_results:
-            ad.log.info("Found %s received log message" % type)
+            ad.log.info("Found %s received log message: %s", type,
+                        log_results[-1]["log_message"])
             return True
     return False
 
