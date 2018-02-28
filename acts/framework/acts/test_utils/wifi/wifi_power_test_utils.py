@@ -269,15 +269,14 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(
-        data=dict(x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(
-        data=dict(
-            z0=[mon_info['duration']],
-            y0=[round(avg_current, 2)],
-            x0=[round(avg_current * voltage, 2)],
-            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-            z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(data=dict(
+        x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(data=dict(
+        z0=[mon_info['duration']],
+        y0=[round(avg_current, 2)],
+        x0=[round(avg_current * voltage, 2)],
+        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+        z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -447,7 +446,11 @@ def ap_setup(ap, network, bandwidth=80):
     return brconfigs
 
 
-def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
+def bokeh_plot(data_sets,
+               legends,
+               fig_property,
+               shaded_region=None,
+               output_file_path=None):
     """Plot bokeh figs.
         Args:
             data_sets: data sets including lists of x_data and lists of y_data
@@ -455,6 +458,8 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
             legends: list of legend for each curve
             fig_property: dict containing the plot property, including title,
                       lables, linewidth, circle size, etc.
+            shaded_region: optional dict containing data for plot shading
+            output_file_path: optional path at which to save figure
         Returns:
             plot: bokeh plot figure object
     """
@@ -471,6 +476,14 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
         'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
         'yellow', 'darkred', 'goldenrod'
     ]
+    if shaded_region:
+        band_x = shaded_region["x_vector"]
+        band_x.extend(shaded_region["x_vector"][::-1])
+        band_y = shaded_region["lower_limit"]
+        band_y.extend(shaded_region["upper_limit"][::-1])
+        plot.patch(
+            band_x, band_y, color='#7570B3', line_alpha=0.1, fill_alpha=0.1)
+
     for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
         index_now = legends.index(legend)
         color = colors[index_now % len(colors)]
@@ -478,6 +491,7 @@ def bokeh_plot(data_sets, legends, fig_property, output_file_path=None):
             x_data, y_data, legend=str(legend), line_width=3, color=color)
         plot.circle(
             x_data, y_data, size=10, legend=str(legend), fill_color=color)
+
     #Plot properties
     plot.xaxis.axis_label = fig_property['x_label']
     plot.yaxis.axis_label = fig_property['y_label']
