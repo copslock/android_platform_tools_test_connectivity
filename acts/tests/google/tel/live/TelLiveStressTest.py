@@ -193,16 +193,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             the_number, message_type, length, ads[0].serial, ads[1].serial)
         self.log.info(log_msg)
         for ad in self.android_devices:
-            for i in range(3):
+            for session in ad._sl4a_manager.sessions.values():
                 try:
-                    ad.droid.logI(log_msg)
+                    session.rpc_client.logI(log_msg)
                     break
                 except Exception as e:
-                    if i == 2:
-                        ad.log.info("SL4A error: %s", e)
-                        raise
-                    else:
-                        time.sleep(5)
+                    ad.log.warning(e)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -265,7 +261,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 the_number, ads[0].serial, ads[1].serial, duration)
         self.log.info(log_msg)
         for ad in ads:
-            ad.droid.logI(log_msg)
+            try:
+                ad.droid.logI(log_msg)
+            except Exception as e:
+                ad.log.warning(e)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if self.single_phone_test:
