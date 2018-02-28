@@ -23,6 +23,8 @@ from acts.libs.ota.ota_runners import ota_runner
 class MockAndroidDevice(object):
     def __init__(self, serial):
         self.serial = serial
+        self.log = mock.Mock()
+        self.take_bug_report = mock.MagicMock()
 
 
 class MockOtaRunner(object):
