@@ -641,7 +641,7 @@ class CmdInput(cmd.Cmd):
         return completions
 
     def complete_bta_set_scan_mode(self, text, line, begidx, endidx):
-        completions = [e.name for e in bt_scan_mode_types]
+        completions = list(bt_scan_mode_types.keys())[:]
         if not text:
             completions = completions[:]
         else:
