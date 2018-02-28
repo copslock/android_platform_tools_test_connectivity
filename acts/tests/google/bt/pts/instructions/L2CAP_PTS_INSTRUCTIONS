@@ -102,19 +102,19 @@ TC_L2CAP_COS_ECH_BV_01_C
   bta_enable
 
 TC_L2CAP_EXF_BV_01_C
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE
+  bta_set_scan_mode connectable
 
 TC_L2CAP_EXF_BV_02_C
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE
+  bta_set_scan_mode connectable
 
 TC_L2CAP_EXF_BV_03_C
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE
+  bta_set_scan_mode connectable
 
 TC_L2CAP_EXF_BV_05_C
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE
+  bta_set_scan_mode connectable
 
 TC_L2CAP_CMC_BV_09_C
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE
+  bta_set_scan_mode connectable
 
 TC_L2CAP_CMC_BV_10_C
   rfcomm_connect
