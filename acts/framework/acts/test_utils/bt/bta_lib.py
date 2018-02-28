@@ -32,10 +32,7 @@ class BtaLib():
 
     def set_scan_mode(self, scan_mode):
         """Set the Scan mode of the Bluetooth Adapter"""
-        for mode in bt_scan_mode_types:
-            if scan_mode == mode.name:
-                set_bt_scan_mode(self.dut, mode.value)
-                return
+        set_bt_scan_mode(self.dut, bt_scan_mode_types[scan_mode])
 
     def set_device_name(self, line):
         """Set Bluetooth Adapter Name"""
