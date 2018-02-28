@@ -395,6 +395,7 @@ class AndroidDevice:
         self.crash_report = None
         self.data_accounting = collections.defaultdict(int)
         self._sl4a_manager = sl4a_manager.Sl4aManager(self.adb)
+        self.last_logcat_timestamp = None
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -749,10 +750,13 @@ class AndroidDevice:
             extra_params = self.adb_logcat_param
         else:
             extra_params = "-b all"
-
+        if self.last_logcat_timestamp:
+            begin_at = '-T "%s"' % self.last_logcat_timestamp
+        else:
+            begin_at = '-T 1'
         # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
-        cmd = "adb -s {} logcat -T 1 -v year {} >> {}".format(
-            self.serial, extra_params, logcat_file_path)
+        cmd = "adb -s {} logcat {} -v year {} >> {}".format(
+            self.serial, begin_at, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
@@ -763,6 +767,13 @@ class AndroidDevice:
             raise AndroidDeviceError(
                 "Android device %s does not have an ongoing adb logcat collection."
                 % self.serial)
+        # Set the last timestamp to the current timestamp. This may cause
+        # a race condition that allows the same line to be logged twice,
+        # but it does not pose a problem for our logging purposes.
+        logcat_output = self.adb.logcat('-t 1 -v year')
+        next_line = logcat_output.find('\n')
+        self.last_logcat_timestamp = logcat_output[next_line + 1:
+                                                   next_line + 24]
         utils.stop_standing_subprocess(self.adb_logcat_process)
         self.adb_logcat_process = None
 
@@ -1361,12 +1372,12 @@ class AndroidDevice:
         self.adb.shell(
             "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
         )
-        #Wait up to 5 seconds for user_setup_complete to be updated
+        # Wait up to 5 seconds for user_setup_complete to be updated
         for _ in range(5):
             if self.is_user_setup_complete():
                 return
             time.sleep(1)
-        #If fail to exit setup wizard, set local.prop and reboot
+        # If fail to exit setup wizard, set local.prop and reboot
         if not self.is_user_setup_complete():
             self.adb.shell("echo ro.test_harness=1 > /data/local.prop")
             self.adb.shell("chmod 644 /data/local.prop")
