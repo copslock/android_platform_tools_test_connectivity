@@ -75,6 +75,10 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = None
         stop_qxdm_loggers(self.log, self.android_devices)
         for ad in self.android_devices:
+            try:
+                ad.adb.shell("killall -9 tcpdump")
+            except AdbError:
+                ad.log.warn("Killing existing tcpdump processes failed")
             if not hasattr(ad, "init_log_path"):
                 ad.init_log_path = ad.log_path
             ad.log_path = self.log_path

@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -80,7 +81,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if self.single_phone_test:
             self.android_devices = self.android_devices[:1]
             self.call_server_number = self.user_params.get(
-                "call_server_number", "+17124325335")
+                "call_server_number", STORY_LINE)
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
@@ -473,29 +474,19 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
-        self.tcpdump_proc = None
         self.dut.log.info(dict(self.result_info))
         selection = random.randrange(0, len(file_names))
         file_name = file_names[selection]
-        if self.result_info["File Download Failure"] < 1:
-            self.tcpdump_proc = start_adb_tcpdump(
-                self.dut, "%s_file_download" % self.test_name, mask="all")
         self.result_info["File Download Total"] += 1
-        if not active_file_download_test(self.log, self.dut, file_name):
+        if not active_file_download_test(
+                self.log, self.dut, file_name, method="sl4a"):
             self.result_info["File Download Failure"] += 1
             if self.result_info["File Download Failure"] == 1:
-                if self.tcpdump_proc is not None:
-                    stop_adb_tcpdump(
-                        self.dut, self.tcpdump_proc, True,
-                        "%s_file_download_failure" % self.test_name)
-                    self._take_bug_report(
-                        "%s_file_download_failure" % self.test_name,
-                        begin_time)
+                self._take_bug_report(
+                    "%s_file_download_failure" % self.test_name, begin_time)
             return False
         else:
             self.result_info["File Download Success"] += 1
-            if self.tcpdump_proc is not None:
-                stop_adb_tcpdump(self.dut, self.tcpdump_proc, False)
             return True
 
     def data_test(self):
