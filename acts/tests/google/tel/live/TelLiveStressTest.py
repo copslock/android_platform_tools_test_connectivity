@@ -415,6 +415,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.error("Find new crash reports %s", crash_report)
                         failure += 1
                         self.result_info["Crashes"] += 1
+                        for crash in crash_report:
+                            if "ramdump_modem" in crash:
+                                self.result_info["Crashes-Modem"] += 1
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
