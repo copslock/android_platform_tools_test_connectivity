@@ -199,6 +199,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
     need_usb_on = 0
     # Indicator that need to re-collect data
     need_collect_data = 1
+    result = None
     while retry <= MEASUREMENT_RETRY_COUNT:
         try:
             # If need to retake data
@@ -213,11 +214,13 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                     "Starting power measurement with monsoon box, try #{}".
                     format(retry))
                 #Start the power measurement using monsoon
+                mon_info['dut'].disconnect_dut()
                 result = mon_info['dut'].measure_power(
                     mon_info['freq'],
                     mon_info['duration'],
                     tag=tag,
                     offset=mon_info['offset'])
+                mon_info['dut'].reconnect_dut()
             # If no need to retake data but monsoon needs to be recovered
             elif need_usb_on == 1:
                 time.sleep(MONSOON_WAIT)
@@ -228,9 +231,9 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
             log.info("Power measurement done within {} try".format(retry))
             return data_path, avg_current
         # Catch monsoon errors
-        except monsoon.MonsoonError as e:
+        except monsoon.MonsoonError:
             # If captured samples are less than min required, re-take
-            if len(result.__data_points) <= min_required_samples:
+            if not result or len(result.__data_points) <= min_required_samples:
                 need_collect_data = 1
                 log.warning(
                     'More than {} percent of samples are missing due to monsoon error. Need to take one more measurement'.
@@ -306,14 +309,15 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     color = ['navy'] * len(current_data)
 
     #Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(data=dict(
-        x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(data=dict(
-        z0=[mon_info['duration']],
-        y0=[round(avg_current, 2)],
-        x0=[round(avg_current * voltage, 2)],
-        z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-        z2=[round(avg_current * mon_info['duration'], 2)]))
+    source = ColumnDataSource(
+        data=dict(x0=time_relative, y0=current_data, color=color))
+    s2 = ColumnDataSource(
+        data=dict(
+            z0=[mon_info['duration']],
+            y0=[round(avg_current, 2)],
+            x0=[round(avg_current * voltage, 2)],
+            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
+            z2=[round(avg_current * mon_info['duration'], 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
