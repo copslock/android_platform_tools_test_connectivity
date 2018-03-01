@@ -233,7 +233,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
         # Catch monsoon errors
         except monsoon.MonsoonError:
             # If captured samples are less than min required, re-take
-            if not result or len(result.__data_points) <= min_required_samples:
+            if not result or len(result._data_points) <= min_required_samples:
                 need_collect_data = 1
                 log.warning(
                     'More than {} percent of samples are missing due to monsoon error. Need to take one more measurement'.
