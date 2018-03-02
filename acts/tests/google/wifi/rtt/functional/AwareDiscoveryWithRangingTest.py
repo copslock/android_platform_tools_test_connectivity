@@ -16,6 +16,7 @@
 
 import time
 
+from acts import asserts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -78,18 +79,23 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
 
     # Subscriber: wait or fail on service discovery
     if expect_discovery:
-      autils.wait_for_event(
-          s_dut,
-          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED_WITHIN_RANGE if expect_range
-            else aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+      event = autils.wait_for_event(s_dut,
+                                    aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+      if expect_range:
+        asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                            "Discovery with ranging expected!")
+      else:
+        asserts.assert_false(
+          aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+          "Discovery with ranging NOT expected!")
     else:
-      time.sleep(autils.EVENT_TIMEOUT)  # single timeout for both events
-      autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED,
-                           timeout=0)
-      autils.fail_on_event(
-          s_dut,
-          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED_WITHIN_RANGE,
-          timeout=0)
+      autils.fail_on_event(s_dut, aconsts.SESSION_CB_ON_SERVICE_DISCOVERED)
+
+    # (single) sleep for timeout period and then verify that no further events
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
+
 
   #########################################################################
   # Run discovery with ranging configuration.
@@ -146,7 +152,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with max such that always within range (large
       max)
 
-    Expect: no discovery
+    Expect: normal discovery (as if no ranging performed) - no distance
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -158,7 +164,8 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                                            aconsts.SUBSCRIBE_TYPE_PASSIVE),
             min_distance_mm=None,
             max_distance_mm=1000000),
-        expect_discovery=False)
+        expect_discovery=True,
+        expect_range=False)
 
   def test_ranged_discovery_solicited_active_pnorange_smax_inrange(self):
     """Verify discovery with ranging:
@@ -167,7 +174,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with max such that always within range (large
       max)
 
-    Expect: no discovery
+    Expect: normal discovery (as if no ranging performed) - no distance
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -179,7 +186,8 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                                            aconsts.SUBSCRIBE_TYPE_ACTIVE),
             min_distance_mm=None,
             max_distance_mm=1000000),
-        expect_discovery=False)
+        expect_discovery=True,
+        expect_range=False)
 
   def test_ranged_discovery_unsolicited_passive_pnorange_smin_outofrange(self):
     """Verify discovery with ranging:
@@ -188,7 +196,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with min such that always out of range (large
       min)
 
-    Expect: no discovery
+    Expect: normal discovery (as if no ranging performed) - no distance
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -200,7 +208,8 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                                            aconsts.SUBSCRIBE_TYPE_PASSIVE),
             min_distance_mm=1000000,
             max_distance_mm=None),
-        expect_discovery=False)
+        expect_discovery=True,
+        expect_range=False)
 
   def test_ranged_discovery_solicited_active_pnorange_smin_outofrange(self):
     """Verify discovery with ranging:
@@ -209,7 +218,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with min such that always out of range (large
       min)
 
-    Expect: no discovery
+    Expect: normal discovery (as if no ranging performed) - no distance
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -221,7 +230,8 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                                            aconsts.SUBSCRIBE_TYPE_ACTIVE),
             min_distance_mm=1000000,
             max_distance_mm=None),
-        expect_discovery=False)
+        expect_discovery=True,
+        expect_range=False)
 
   def test_ranged_discovery_unsolicited_passive_prange_smin_inrange(self):
     """Verify discovery with ranging:
@@ -357,7 +367,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Publisher enables ranging
     - Subscriber enables ranging with min such that out of range (min=large)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -377,7 +387,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Publisher enables ranging
     - Subscriber enables ranging with max such that in range (max=0)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -398,7 +408,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with min/max such that out of range (min=large,
       max=large+1)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -418,7 +428,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Publisher enables ranging
     - Subscriber enables ranging with min such that out of range (min=large)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -438,7 +448,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Publisher enables ranging
     - Subscriber enables ranging with max such that out of range (max=0)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
@@ -459,7 +469,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     - Subscriber enables ranging with min/max such that out of range (min=large,
       max=large+1)
 
-    Expect: discovery with distance
+    Expect: no discovery
     """
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
