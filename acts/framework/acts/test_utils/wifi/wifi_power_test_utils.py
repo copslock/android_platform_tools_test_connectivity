@@ -69,6 +69,7 @@ MONSOON_RECOVER_TIME_MAX = 300
 MONSOON_RETRY_INTERVAL = 60
 MONSOON_WAIT = 60
 MEASUREMENT_RETRY_COUNT = 3
+RECOVER_MONSOON_RETRY_COUNT = 3
 MIN_PERCENT_SAMPLE = 95
 
 
@@ -193,26 +194,20 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
     total_expected_samples = mon_info['freq'] * (
         mon_info['duration'] + mon_info['offset'])
     min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
-    # Retry counter
-    retry = 1
-    # Indicator that need to recover monsoon from serial port errors
-    need_usb_on = 0
+    # Retry counter for monsoon data aquisition
+    retry_measure = 1
     # Indicator that need to re-collect data
     need_collect_data = 1
     result = None
-    while retry <= MEASUREMENT_RETRY_COUNT:
+    while retry_measure <= MEASUREMENT_RETRY_COUNT:
         try:
             # If need to retake data
             if need_collect_data == 1:
-                # If monsoon needs to be recovered
-                if need_usb_on == 1:
-                    time.sleep(MONSOON_WAIT)
-                    mon_info['dut'].usb('on')
                 #Resets the battery status right before the test started
                 ad.adb.shell(RESET_BATTERY_STATS)
                 log.info(
                     "Starting power measurement with monsoon box, try #{}".
-                    format(retry))
+                    format(retry_measure))
                 #Start the power measurement using monsoon
                 mon_info['dut'].disconnect_dut()
                 result = mon_info['dut'].measure_power(
@@ -221,52 +216,56 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                     tag=tag,
                     offset=mon_info['offset'])
                 mon_info['dut'].reconnect_dut()
-            # If no need to retake data but monsoon needs to be recovered
-            elif need_usb_on == 1:
-                time.sleep(MONSOON_WAIT)
-                mon_info['dut'].usb('on')
-            # Return measurement results if no error happens
+            # Reconnect to dut
+            else:
+                mon_info['dut'].reconnect_dut()
+            # Reconnect and return measurement results if no error happens
             avg_current = result.average_current
             monsoon.MonsoonData.save_to_text_file([result], data_path)
-            log.info("Power measurement done within {} try".format(retry))
+            log.info(
+                "Power measurement done within {} try".format(retry_measure))
             return data_path, avg_current
-        # Catch monsoon errors
+        # Catch monsoon errors during measurement
         except monsoon.MonsoonError:
-            # If captured samples are less than min required, re-take
-            if not result or len(result._data_points) <= min_required_samples:
-                need_collect_data = 1
-                log.warning(
-                    'More than {} percent of samples are missing due to monsoon error. Need to take one more measurement'.
-                    format(100 - MIN_PERCENT_SAMPLE))
+            # Break early if it's one count away from limit
+            if retry_measure == MEASUREMENT_RETRY_COUNT:
+                log.error('Test failed after maximum measurement retry')
+                break
+
+            log.warning('Monsoon error happened, now try to recover')
+            # Retry loop to recover monsoon from error
+            retry_monsoon = 1
+            while retry_monsoon <= RECOVER_MONSOON_RETRY_COUNT:
                 mon_status = monsoon_recover(mon_info['dut'],
                                              MONSOON_RECOVER_TIME_MAX,
                                              MONSOON_RETRY_INTERVAL)
                 if mon_status:
-                    need_usb_on = 0
+                    break
                 else:
-                    need_usb_on = 1
-                retry += 1
-                continue
-            # No need to retake data, just recover monsoon
+                    retry_monsoon += 1
+
+            # Break the loop to end test if failed to recover monsoon
+            if not mon_status:
+                log.error('Tried our best, still failed to recover monsoon')
+                break
             else:
-                log.warning(
-                    'Error happened trying to reconnect to DUT, no need to re-collect data'
-                )
-                need_collect_data = 0
-                mon_status = monsoon_recover(mon_info['dut'],
-                                             MONSOON_RECOVER_TIME_MAX,
-                                             MONSOON_RETRY_INTERVAL)
-                if mon_status:
-                    # Here should be all set, go back to return
-                    need_usb_on = 0
+                # If there is no data or captured samples are less than min
+                # required, re-take
+                if not result:
+                    log.warning('No data taken, need to remeasure')
+                elif len(result._data_points) <= min_required_samples:
+                    log.warning(
+                        'More than {} percent of samples are missing due to monsoon error. Need to remeasure'.
+                        format(100 - MIN_PERCENT_SAMPLE))
                 else:
-                    need_usb_on = 1
-                    retry += 1
-                continue
-    if retry > MEASUREMENT_RETRY_COUNT:
-        log.error(
-            'Tried our best, test still failed due to Monsoon serial port error'
-        )
+                    need_collect_data = 0
+                    log.warning(
+                        'Data collected is valid, try reconnect to DUT to finish test'
+                    )
+                retry_measure += 1
+
+    if retry_measure > MEASUREMENT_RETRY_COUNT:
+        log.error('Test failed after maximum measurement retry')
 
 
 def monsoon_data_plot(mon_info, file_path, tag=""):
