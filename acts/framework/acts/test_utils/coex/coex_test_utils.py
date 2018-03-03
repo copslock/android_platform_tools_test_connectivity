@@ -18,10 +18,10 @@ import json
 import logging
 import math
 import os
-import pandas
 import re
 import subprocess
 import time
+import xlsxwriter
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -873,36 +873,47 @@ def wifi_connection_check(pri_ad, ssid):
     return False
 
 
-def xlsheet(pri_ad, test_result):
+def xlsheet(pri_ad, test_result, attenuation_range=range(0, 1, 1)):
     """Parses the output and writes in spreadsheet.
 
     Args:
         pri_ad: An android device.
         test_result: final output of testrun.
+        attenuation_range: list of attenuation values.
     """
+    r = 0
+    c = 0
+    i = 0
     test_result = json.loads(test_result)
     file_name = '/'.join((pri_ad.log_path,
                           test_result["Results"][0]["Test Class"] + ".xlsx"))
-    result = [(i["Test Name"], i["Result"], ' '.join(i["Extras"]),
+    workbook = xlsxwriter.Workbook(file_name)
+    worksheet = workbook.add_worksheet()
+    wb_format = workbook.add_format()
+    wb_format.set_text_wrap()
+    worksheet.set_column('A:A', 50)
+    worksheet.set_column('B:B', 10)
+    wb_format = workbook.add_format({'bold': True})
+    worksheet.write(r, c, "Test_case_name", wb_format)
+    worksheet.write(r, c + 1, "Result", wb_format)
+    if len(attenuation_range) > 1:
+        for idx in attenuation_range:
+            c += 1
+            worksheet.write(r, c + 1, str(idx) + "db", wb_format)
+    else:
+        worksheet.write(r, c + 2, "Iperf_throughput", wb_format)
+        c += 1
+
+    worksheet.write(r, (c + 2), "Throughput_Result", wb_format)
+    result = [(i["Test Name"], i["Result"], (i["Extras"]),
                throughput_pass_fail_check(i["Extras"]))
               for i in test_result["Results"]]
 
-    try:
-        data_obj = pandas.DataFrame(
-            result,
-            columns=[
-                "Test Name", "Result", "Iperf Throughput", "Throughput Result"
-            ])
-    except Exception as err:
-        logging.info("Error in writing into xlsheet {}".format(err))
-        return False
-
-    writer = pandas.ExcelWriter(file_name, engine='xlsxwriter')
-    data_obj.to_excel(writer, sheet_name='Sheet1')
-    workbook = writer.book
-    for column in (1, 4):
-        writer.sheets['Sheet1'].set_column(column, column, 40)
-    workbook.add_format({
-        'bold': True,
-        'text_wrap': True,
-    })
+    for row, line in enumerate(result):
+        for col, cell in enumerate(line):
+            if isinstance(cell, list):
+                for i in range(len(cell)):
+                    worksheet.write(row + 1, col, cell[i])
+                    col += 1
+            else:
+                worksheet.write(row + 1, col + i, cell)
