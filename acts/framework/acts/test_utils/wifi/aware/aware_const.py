@@ -94,8 +94,6 @@ SESSION_CB_ON_SESSION_CONFIG_UPDATED = "WifiAwareSessionOnSessionConfigUpdated"
 SESSION_CB_ON_SESSION_CONFIG_FAILED = "WifiAwareSessionOnSessionConfigFailed"
 SESSION_CB_ON_SESSION_TERMINATED = "WifiAwareSessionOnSessionTerminated"
 SESSION_CB_ON_SERVICE_DISCOVERED = "WifiAwareSessionOnServiceDiscovered"
-SESSION_CB_ON_SERVICE_DISCOVERED_WITHIN_RANGE = \
-  "WifiAwareSessionOnServiceDiscoveredWithinRange"
 SESSION_CB_ON_MESSAGE_SENT = "WifiAwareSessionOnMessageSent"
 SESSION_CB_ON_MESSAGE_SEND_FAILED = "WifiAwareSessionOnMessageSendFailed"
 SESSION_CB_ON_MESSAGE_RECEIVED = "WifiAwareSessionOnMessageReceived"

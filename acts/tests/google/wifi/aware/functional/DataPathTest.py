@@ -662,7 +662,7 @@ class DataPathTest(AwareBaseTest):
   #            or different from the primary session.
   # pub_type: Type of publish discovery session: unsolicited or solicited.
   # sub_type: Type of subscribe discovery session: passive or active.
-  # encr_type: Encription type: open, passphrase
+  # encr_type: Encryption type: open, passphrase
   # peer_spec: Peer specification method: any or specific
   #
   # Note: In-Band means using Wi-Fi Aware for discovery and referring to the
@@ -739,7 +739,7 @@ class DataPathTest(AwareBaseTest):
   # names is: test_oob_<encr_type>_<peer_spec>
   # where:
   #
-  # encr_type: Encription type: open, passphrase
+  # encr_type: Encryption type: open, passphrase
   # peer_spec: Peer specification method: any or specific
   #
   # Optionally set up an extra discovery session to test coexistence. If so
@@ -1326,41 +1326,41 @@ class DataPathTest(AwareBaseTest):
 
   @test_tracker_info(uuid="2d728163-11cc-46ba-a973-c8e1e71397fc")
   def test_multiple_ndi_open_passphrase(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using passphrase). The result should use two
     different NDIs"""
     self.run_multiple_ndi([None, self.PASSPHRASE])
 
   @test_tracker_info(uuid="5f2c32aa-20b2-41f0-8b1e-d0b68df73ada")
   def test_multiple_ndi_open_pmk(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using pmk). The result should use two
     different NDIs"""
     self.run_multiple_ndi([None, self.PMK])
 
   @test_tracker_info(uuid="34467659-bcfb-40cd-ba25-7e50560fca63")
   def test_multiple_ndi_passphrase_pmk(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one using passphrase, one using pmk). The result should use
     two different NDIs"""
     self.run_multiple_ndi([self.PASSPHRASE, self.PMK])
 
   @test_tracker_info(uuid="d9194ce6-45b6-41b1-9cc8-ada79968966d")
   def test_multiple_ndi_passphrases(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different passphrases). The result should use two
     different NDIs"""
     self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2])
 
   @test_tracker_info(uuid="879df795-62d2-40d4-a862-bd46d8f7e67f")
   def test_multiple_ndi_pmks(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different PMKS). The result should use two different
     NDIs"""
     self.run_multiple_ndi([self.PMK, self.PMK2])
 
   def test_multiple_ndi_open_passphrase_flip(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using passphrase). The result should use two
     different NDIs.
 
@@ -1369,7 +1369,7 @@ class DataPathTest(AwareBaseTest):
     self.run_multiple_ndi([None, self.PASSPHRASE], flip_init_resp=True)
 
   def test_multiple_ndi_open_pmk_flip(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using pmk). The result should use two
     different NDIs
 
@@ -1378,7 +1378,7 @@ class DataPathTest(AwareBaseTest):
     self.run_multiple_ndi([None, self.PMK], flip_init_resp=True)
 
   def test_multiple_ndi_passphrase_pmk_flip(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one using passphrase, one using pmk). The result should use
     two different NDIs
 
@@ -1387,7 +1387,7 @@ class DataPathTest(AwareBaseTest):
     self.run_multiple_ndi([self.PASSPHRASE, self.PMK], flip_init_resp=True)
 
   def test_multiple_ndi_passphrases_flip(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different passphrases). The result should use two
     different NDIs
 
@@ -1397,7 +1397,7 @@ class DataPathTest(AwareBaseTest):
                           flip_init_resp=True)
 
   def test_multiple_ndi_pmks_flip(self):
-    """Verify that can between 2 DUTs can create 2 NDPs with different security
+    """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different PMKS). The result should use two different
     NDIs
 
@@ -1535,3 +1535,279 @@ class DataPathTest(AwareBaseTest):
     self.run_multiple_regulatory_domains(use_ib=False,
                                          init_domain="JP",
                                          resp_domain="US")
+
+  ########################################################################
+
+  def run_mix_ib_oob(self, same_request, ib_first, inits_on_same_dut):
+    """Validate that multiple network requests issued using both in-band and
+    out-of-band discovery behave as expected.
+
+    The same_request parameter controls whether identical single NDP is
+    expected, if True, or whether multiple NDPs on different NDIs are expected,
+    if False.
+
+    Args:
+      same_request: Issue canonically identical requests (same NMI peer, same
+                    passphrase) if True, if False use different passphrases.
+      ib_first: If True then the in-band network is requested first, otherwise
+                (if False) then the out-of-band network is requested first.
+      inits_on_same_dut: If True then the Initiators are run on the same device,
+                         otherwise (if False) then the Initiators are run on
+                         different devices. Note that Subscribe == Initiator.
+    """
+    if not same_request:
+      asserts.skip_if(self.android_devices[0].aware_capabilities[
+                        aconsts.CAP_MAX_NDI_INTERFACES] < 2 or
+                      self.android_devices[1].aware_capabilities[
+                        aconsts.CAP_MAX_NDI_INTERFACES] < 2,
+                      "DUTs do not support enough NDIs")
+
+    (p_dut, s_dut, p_id, s_id, p_disc_id, s_disc_id, peer_id_on_sub,
+     peer_id_on_pub_null) = self.set_up_discovery(
+        aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE, False)
+
+    p_id2, p_mac = autils.attach_with_identity(p_dut)
+    s_id2, s_mac = autils.attach_with_identity(s_dut)
+
+    if inits_on_same_dut:
+      resp_dut = p_dut
+      resp_id = p_id2
+      resp_mac = p_mac
+
+      init_dut = s_dut
+      init_id = s_id2
+      init_mac = s_mac
+    else:
+      resp_dut = s_dut
+      resp_id = s_id2
+      resp_mac = s_mac
+
+      init_dut = p_dut
+      init_id = p_id2
+      init_mac = p_mac
+
+    passphrase = None if same_request else self.PASSPHRASE
+
+    if ib_first:
+      # request in-band network (to completion)
+      p_req_key = self.request_network(
+          p_dut,
+          p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, None))
+      s_req_key = self.request_network(
+          s_dut,
+          s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id,
+                                                      peer_id_on_sub))
+
+      # Publisher & Subscriber: wait for network formation
+      p_net_event = autils.wait_for_event_with_keys(
+          p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+      s_net_event = autils.wait_for_event_with_keys(
+          s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+    # request out-of-band network
+    resp_req_key = autils.request_network(resp_dut,
+          resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, passphrase))
+    init_req_key = autils.request_network(init_dut,
+          init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+              init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, passphrase))
+
+    resp_net_event = autils.wait_for_event_with_keys(
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+    init_net_event = autils.wait_for_event_with_keys(
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+        autils.EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+
+    if not ib_first:
+      # request in-band network (to completion)
+      p_req_key = self.request_network(
+          p_dut,
+          p_dut.droid.wifiAwareCreateNetworkSpecifier(p_disc_id, None))
+      s_req_key = self.request_network(
+          s_dut,
+          s_dut.droid.wifiAwareCreateNetworkSpecifier(s_disc_id,
+                                                      peer_id_on_sub))
+
+      # Publisher & Subscriber: wait for network formation
+      p_net_event = autils.wait_for_event_with_keys(
+          p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+      s_net_event = autils.wait_for_event_with_keys(
+          s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+          autils.EVENT_NDP_TIMEOUT,
+          (cconsts.NETWORK_CB_KEY_EVENT,
+           cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+          (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+    # extract net info
+    pub_interface = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    sub_interface = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    resp_interface = resp_net_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    init_interface = init_net_event["data"][
+      cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
+    self.log.info(
+        "Interface names: Pub=%s, Sub=%s, Resp=%s, Init=%s", pub_interface,
+        sub_interface, resp_interface, init_interface)
+
+    pub_ipv6 = \
+    p_dut.droid.connectivityGetLinkLocalIpv6Address(pub_interface).split("%")[0]
+    sub_ipv6 = \
+    s_dut.droid.connectivityGetLinkLocalIpv6Address(sub_interface).split("%")[0]
+    resp_ipv6 = \
+    resp_dut.droid.connectivityGetLinkLocalIpv6Address(resp_interface).split(
+      "%")[0]
+    init_ipv6 = \
+    init_dut.droid.connectivityGetLinkLocalIpv6Address(init_interface).split(
+      "%")[0]
+
+    self.log.info(
+      "Interface addresses (IPv6): Pub=%s, Sub=%s, Resp=%s, Init=%s", pub_ipv6,
+      sub_ipv6, resp_ipv6, init_ipv6)
+
+    # validate NDP/NDI conditions (using interface names & ipv6)
+    if same_request:
+      asserts.assert_equal(pub_interface,
+         resp_interface if inits_on_same_dut else init_interface,
+         "NDP interfaces don't match on Pub/other")
+      asserts.assert_equal(sub_interface,
+         init_interface if inits_on_same_dut else resp_interface,
+         "NDP interfaces don't match on Sub/other")
+
+      asserts.assert_equal(pub_ipv6,
+                           resp_ipv6 if inits_on_same_dut else init_ipv6,
+                           "NDP IPv6 don't match on Pub/other")
+      asserts.assert_equal(sub_ipv6,
+                           init_ipv6 if inits_on_same_dut else resp_ipv6,
+                           "NDP IPv6 don't match on Sub/other")
+    else:
+      asserts.assert_false(pub_interface == (
+        resp_interface if inits_on_same_dut else init_interface),
+                           "NDP interfaces match on Pub/other")
+      asserts.assert_false(sub_interface == (
+        init_interface if inits_on_same_dut else resp_interface),
+                           "NDP interfaces match on Sub/other")
+
+      asserts.assert_false(pub_ipv6 ==
+                           (resp_ipv6 if inits_on_same_dut else init_ipv6),
+                           "NDP IPv6 match on Pub/other")
+      asserts.assert_false(sub_ipv6 ==
+                           (init_ipv6 if inits_on_same_dut else resp_ipv6),
+                           "NDP IPv6 match on Sub/other")
+
+    # release requests
+    p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
+    s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
+    resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
+    init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+  def test_identical_ndps_mix_ib_oob_ib_first_same_polarity(self):
+    """Validate that a single NDP is created for multiple identical requests
+    which are issued through either in-band (ib) or out-of-band (oob) APIs.
+
+    The in-band request is issued first. Both Initiators (Sub == Initiator) are
+    run on the same device.
+    """
+    self.run_mix_ib_oob(same_request=True,
+                        ib_first=True,
+                        inits_on_same_dut=True)
+
+  def test_identical_ndps_mix_ib_oob_oob_first_same_polarity(self):
+    """Validate that a single NDP is created for multiple identical requests
+    which are issued through either in-band (ib) or out-of-band (oob) APIs.
+
+    The out-of-band request is issued first. Both Initiators (Sub == Initiator)
+    are run on the same device.
+    """
+    self.run_mix_ib_oob(same_request=True,
+                        ib_first=False,
+                        inits_on_same_dut=True)
+
+  def test_identical_ndps_mix_ib_oob_ib_first_diff_polarity(self):
+    """Validate that a single NDP is created for multiple identical requests
+    which are issued through either in-band (ib) or out-of-band (oob) APIs.
+
+    The in-band request is issued first. Initiators (Sub == Initiator) are
+    run on different devices.
+    """
+    self.run_mix_ib_oob(same_request=True,
+                        ib_first=True,
+                        inits_on_same_dut=False)
+
+  def test_identical_ndps_mix_ib_oob_oob_first_diff_polarity(self):
+    """Validate that a single NDP is created for multiple identical requests
+    which are issued through either in-band (ib) or out-of-band (oob) APIs.
+
+    The out-of-band request is issued first. Initiators (Sub == Initiator) are
+    run on different devices.
+    """
+    self.run_mix_ib_oob(same_request=True,
+                        ib_first=False,
+                        inits_on_same_dut=False)
+
+  def test_multiple_ndis_mix_ib_oob_ib_first_same_polarity(self):
+    """Validate that multiple NDIs are created for NDPs which are requested with
+    different security configurations. Use a mix of in-band and out-of-band APIs
+    to request the different NDPs.
+
+    The in-band request is issued first. Initiators (Sub == Initiator) are
+    run on the same device.
+    """
+    self.run_mix_ib_oob(same_request=False,
+                        ib_first=True,
+                        inits_on_same_dut=True)
+
+  def test_multiple_ndis_mix_ib_oob_oob_first_same_polarity(self):
+    """Validate that multiple NDIs are created for NDPs which are requested with
+    different security configurations. Use a mix of in-band and out-of-band APIs
+    to request the different NDPs.
+
+    The out-of-band request is issued first. Initiators (Sub == Initiator) are
+    run on the same device.
+    """
+    self.run_mix_ib_oob(same_request=False,
+                        ib_first=False,
+                        inits_on_same_dut=True)
+
+  def test_multiple_ndis_mix_ib_oob_ib_first_diff_polarity(self):
+    """Validate that multiple NDIs are created for NDPs which are requested with
+    different security configurations. Use a mix of in-band and out-of-band APIs
+    to request the different NDPs.
+
+    The in-band request is issued first. Initiators (Sub == Initiator) are
+    run on different devices.
+    """
+    self.run_mix_ib_oob(same_request=False,
+                        ib_first=True,
+                        inits_on_same_dut=False)
+
+  def test_multiple_ndis_mix_ib_oob_oob_first_diff_polarity(self):
+    """Validate that multiple NDIs are created for NDPs which are requested with
+    different security configurations. Use a mix of in-band and out-of-band APIs
+    to request the different NDPs.
+
+    The out-of-band request is issued first. Initiators (Sub == Initiator) are
+    run on different devices.
+    """
+    self.run_mix_ib_oob(same_request=False,
+                        ib_first=False,
+                        inits_on_same_dut=False)

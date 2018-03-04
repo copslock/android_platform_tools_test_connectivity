@@ -1723,6 +1723,10 @@ def call_setup_teardown_for_subscription(
         msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
     ad_caller.log.info(msg)
 
+    for ad in (ad_caller, ad_callee):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        setattr(ad, "call_ids", call_ids)
+        ad.log.info("Before making call, existing phone calls %s", call_ids)
     try:
         if not initiate_call(
                 log,
@@ -1746,7 +1750,9 @@ def call_setup_teardown_for_subscription(
             ad_callee.log.info("Callee answered the call successfully")
 
         for ad in (ad_caller, ad_callee):
-            if not wait_for_in_call_active(ad):
+            call_ids = ad.droid.telecomCallGetCallIds()
+            new_call_id = list(set(call_ids) - set(ad.call_ids))[0]
+            if not wait_for_in_call_active(ad, call_id=new_call_id):
                 result = False
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")

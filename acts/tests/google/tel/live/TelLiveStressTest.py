@@ -76,12 +76,19 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut = self.android_devices[0]
         self.single_phone_test = self.user_params.get("single_phone_test",
                                                       False)
+        # supported file download methods: chrome, sl4a, curl
+        self.file_download_method = self.user_params.get(
+            "file_download_method", "sl4a")
         if len(self.android_devices) == 1:
             self.single_phone_test = True
         if self.single_phone_test:
             self.android_devices = self.android_devices[:1]
             self.call_server_number = self.user_params.get(
                 "call_server_number", STORY_LINE)
+            if self.file_download_method == "sl4a":
+                # with single device, do not use sl4a file download
+                # due to stability issue
+                self.file_download_method = "chrome"
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
@@ -232,8 +239,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                     return True
                 else:
                     self.log.error("%s fails", log_msg)
-                    self.result_info["MMS failure"] += 1
-                    if self.result_info["MMS failure"] == 1:
+                    self.result_info["MMS Failure"] += 1
+                    if self.result_info["MMS Failure"] == 1:
                         self._take_bug_report("%s_%s_No_%s_failure" %
                                               (self.test_name, message_type,
                                                the_number), begin_time)
@@ -415,6 +422,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.error("Find new crash reports %s", crash_report)
                         failure += 1
                         self.result_info["Crashes"] += 1
+                        for crash in crash_report:
+                            if "ramdump_modem" in crash:
+                                self.result_info["Crashes-Modem"] += 1
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -479,7 +489,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_name = file_names[selection]
         self.result_info["File Download Total"] += 1
         if not active_file_download_test(
-                self.log, self.dut, file_name, method="sl4a"):
+                self.log, self.dut, file_name,
+                method=self.file_download_method):
             self.result_info["File Download Failure"] += 1
             if self.result_info["File Download Failure"] == 1:
                 self._take_bug_report(
