@@ -65,9 +65,7 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
-MONSOON_RECOVER_TIME_MAX = 300
-MONSOON_RETRY_INTERVAL = 60
-MONSOON_WAIT = 60
+MONSOON_RETRY_INTERVAL = 300
 MEASUREMENT_RETRY_COUNT = 3
 RECOVER_MONSOON_RETRY_COUNT = 3
 MIN_PERCENT_SAMPLE = 95
@@ -146,27 +144,24 @@ def pass_fail_check(test_class, test_result):
             "Something happened, measurement is not complete, test failed")
 
 
-def monsoon_recover(mon, time_max, retry_interval):
+def monsoon_recover(mon):
     """Test loop to wait for monsoon recover from unexpected error.
 
     Wait for a certain time duration, then quit.0
     Args:
         mon: monsoon object
     """
-    mon_status = False
-    time_start = time.time()
-    while time.time() < time_start + time_max and not mon_status:
-        try:
-            mon.usb("on")
-            mon_status = True
-            logging.info("Monsoon recovered from unexpected error")
-            time.sleep(5)
-            return mon_status
-        except monsoon.MonsoonError:
-            time.sleep(retry_interval)
-            continue
-    logging.warning("Couldn't recover monsoon from unexpected error")
-    return mon_status
+    try:
+        mon.reconnect_monsoon()
+        time.sleep(2)
+        mon.usb('on')
+        logging.info("Monsoon recovered from unexpected error")
+        time.sleep(2)
+        return True
+    except monsoon.MonsoonError:
+        logging.info(mon.mon.ser.in_waiting)
+        logging.warning("Unable to recover monsoon from unexpected error")
+        return False
 
 
 def monsoon_data_collect_save(ad, mon_info, test_name):
@@ -227,6 +222,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
             return data_path, avg_current
         # Catch monsoon errors during measurement
         except monsoon.MonsoonError:
+            log.info(mon_info['dut'].mon.ser.in_waiting)
             # Break early if it's one count away from limit
             if retry_measure == MEASUREMENT_RETRY_COUNT:
                 log.error('Test failed after maximum measurement retry')
@@ -236,13 +232,13 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
             # Retry loop to recover monsoon from error
             retry_monsoon = 1
             while retry_monsoon <= RECOVER_MONSOON_RETRY_COUNT:
-                mon_status = monsoon_recover(mon_info['dut'],
-                                             MONSOON_RECOVER_TIME_MAX,
-                                             MONSOON_RETRY_INTERVAL)
+                mon_status = monsoon_recover(mon_info['dut'])
                 if mon_status:
                     break
                 else:
                     retry_monsoon += 1
+                    log.warning('Wait for {} second then try again'.format(MONSOON_RETRY_INTERVAL))
+                    time.sleep(MONSOON_RETRY_INTERVAL)
 
             # Break the loop to end test if failed to recover monsoon
             if not mon_status:
