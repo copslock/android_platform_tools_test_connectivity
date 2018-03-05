@@ -641,6 +641,8 @@ class Monsoon(object):
         if "device" in kwargs:
             device = kwargs["device"]
         self.mon = MonsoonProxy(serialno=serial, device=device)
+        self.dev = self.mon.ser.name
+        self.serial = serial
         self.dut = None
 
     def attach_device(self, dut):
@@ -920,7 +922,7 @@ class Monsoon(object):
         try:
             self.dut.stop_services()
             time.sleep(1)
-            self.usb("off")
+            self.usb("auto")
         except Exception as e:
             raise MonsoonError(
                 "Error happended trying to disconnect DUT from Monsoon")
@@ -934,7 +936,6 @@ class Monsoon(object):
         """
         self.log.info("Reconnecting dut.")
         try:
-            self.usb("on")
             # If wait for device failed, reset monsoon and try it again, if
             # this still fails, then raise
             try:
@@ -982,4 +983,21 @@ class Monsoon(object):
             data.tag = tag
             self.log.info("Measurement summary: %s", repr(data))
         finally:
+            self.mon.StopDataCollection()
             return data
+
+    def reconnect_monsoon(self):
+        """Reconnect Monsoon to serial port.
+        
+        """
+        logging.info("Close serial connection")
+        self.mon.ser.close()
+        logging.info("Reset serial port")
+        time.sleep(5)
+        logging.info("Open serial connection")
+        self.mon.ser.open()
+        self.mon.ser.flush()
+        self.mon.ser.reset_input_buffer()
+        self.mon.ser.reset_output_buffer()
+        
+        
