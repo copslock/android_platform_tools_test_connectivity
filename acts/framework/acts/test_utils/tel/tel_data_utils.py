@@ -24,6 +24,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
+from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
@@ -169,8 +170,8 @@ def wifi_tethering_setup_teardown(log,
                     return False
 
             client.log.info("Client check Internet connection.")
-            if (not wait_for_wifi_data_connection(log, client, True) or
-                    not verify_internet_connection(log, client)):
+            if (not wait_for_wifi_data_connection(log, client, True)
+                    or not verify_internet_connection(log, client)):
                 client.log.error("No WiFi Data on client")
                 return False
 
@@ -179,8 +180,8 @@ def wifi_tethering_setup_teardown(log,
             return False
 
     finally:
-        if (do_cleanup and
-            (not wifi_tethering_cleanup(log, provider, client_list))):
+        if (do_cleanup
+                and (not wifi_tethering_cleanup(log, provider, client_list))):
             return False
     return True
 
@@ -247,12 +248,12 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
     try:
 
         if not ensure_network_generation_for_subscription(
-                log, ad,
-                get_default_data_sub_id(ad), nw_gen,
+                log, ad, get_default_data_sub_id(ad), nw_gen,
                 MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
             ad.log.error("Device failed to register in %s", nw_gen)
             return False
 
+        start_youtube_video(ad)
         # Ensure WiFi can connect to live network
         ad.log.info("Make sure phone can connect to live network by WIFI")
         if not ensure_wifi_connected(log, ad, wifi_network_ssid,
@@ -265,34 +266,35 @@ def wifi_cell_switching(log, ad, wifi_network_ssid, wifi_network_pass, nw_gen):
         toggle_airplane_mode(log, ad, False)
         wifi_toggle_state(log, ad, True)
         ad.droid.telephonyToggleDataConnection(True)
-        if (not wait_for_wifi_data_connection(log, ad, True) or
-                not verify_internet_connection(log, ad)):
+        if (not wait_for_wifi_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
             ad.log.error("Data is not on WiFi")
             return False
 
         log.info("Step2 WiFi is Off, Data is on Cell.")
         wifi_toggle_state(log, ad, False)
-        if (not wait_for_cell_data_connection(log, ad, True) or
-                not verify_internet_connection(log, ad)):
+        if (not wait_for_cell_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
             ad.log.error("Data did not return to cell")
             return False
 
         log.info("Step3 WiFi is On, Data is on WiFi.")
         wifi_toggle_state(log, ad, True)
-        if (not wait_for_wifi_data_connection(log, ad, True) or
-                not verify_internet_connection(log, ad)):
+        if (not wait_for_wifi_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
             ad.log.error("Data did not return to WiFi")
             return False
 
         log.info("Step4 WiFi is Off, Data is on Cell.")
         wifi_toggle_state(log, ad, False)
-        if (not wait_for_cell_data_connection(log, ad, True) or
-                not verify_internet_connection(log, ad)):
+        if (not wait_for_cell_data_connection(log, ad, True)
+                or not verify_internet_connection(log, ad)):
             ad.log.error("Data did not return to cell")
             return False
         return True
 
     finally:
+        ad.force_stop_apk("com.google.android.youtube")
         wifi_toggle_state(log, ad, False)
 
 
@@ -395,9 +397,8 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
     if getattr(ad, 'roaming', False):
         wait_time = 2 * wait_time
     if not ensure_network_generation_for_subscription(
-            log, ad,
-            get_default_data_sub_id(ad), nw_gen, MAX_WAIT_TIME_NW_SELECTION,
-            NETWORK_SERVICE_DATA):
+            log, ad, get_default_data_sub_id(ad), nw_gen,
+            MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
         ad.log.error("Device failed to connect to %s in %s seconds.", nw_gen,
                      wait_time)
         return False
@@ -435,15 +436,14 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         if not is_droid_in_network_generation_for_subscription(
-                log, ad,
-                get_default_data_sub_id(ad), nw_gen, NETWORK_SERVICE_DATA):
+                log, ad, get_default_data_sub_id(ad), nw_gen,
+                NETWORK_SERVICE_DATA):
             ad.log.error("Failed: droid is no longer on correct network")
-            ad.log.info(
-                "Expected:%s, Current:%s", nw_gen,
-                rat_generation_from_rat(
-                    get_network_rat_for_subscription(
-                        log, ad,
-                        get_default_data_sub_id(ad), NETWORK_SERVICE_DATA)))
+            ad.log.info("Expected:%s, Current:%s", nw_gen,
+                        rat_generation_from_rat(
+                            get_network_rat_for_subscription(
+                                log, ad, get_default_data_sub_id(ad),
+                                NETWORK_SERVICE_DATA)))
             return False
         return True
     finally:
