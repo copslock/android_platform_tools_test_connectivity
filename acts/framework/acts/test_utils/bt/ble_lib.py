@@ -21,10 +21,10 @@ from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
 from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_constants import small_timeout
-from acts.test_utils.bt.bt_test_utils import adv_fail
+from acts.test_utils.bt.bt_constants import adv_fail
 from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_test_utils import advertising_set_on_own_address_read
-from acts.test_utils.bt.bt_test_utils import advertising_set_started
+from acts.test_utils.bt.bt_constants import advertising_set_on_own_address_read
+from acts.test_utils.bt.bt_constants import advertising_set_started
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
 
 import time
@@ -32,11 +32,10 @@ import os
 
 
 class BleLib():
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut):
         self.advertisement_list = []
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
         self.default_timeout = 5
         self.set_advertisement_list = []
         self.generic_uuid = "0000{}-0000-1000-8000-00805f9b34fb"
@@ -178,3 +177,35 @@ class BleLib():
             return
         self.dut.droid.bleStopBleAdvertising(callback_id)
         self.advertisement_list.remove(callback_id)
+
+    def start_max_advertisements(self, line):
+        scan_response = None
+        if line:
+            scan_response = bool(line)
+        while (True):
+            try:
+                self.dut.droid.bleSetAdvertiseSettingsAdvertiseMode(
+                    ble_advertise_settings_modes['low_latency'])
+                self.dut.droid.bleSetAdvertiseSettingsIsConnectable(True)
+                advertise_callback, advertise_data, advertise_settings = (
+                    generate_ble_advertise_objects(self.dut.droid))
+                if scan_response:
+                    self.dut.droid.bleStartBleAdvertisingWithScanResponse(
+                        advertise_callback, advertise_data, advertise_settings,
+                        advertise_data)
+                else:
+                    self.dut.droid.bleStartBleAdvertising(
+                        advertise_callback, advertise_data, advertise_settings)
+                if self._verify_ble_adv_started(advertise_callback):
+                    self.log.info(
+                        "Tracking Callback ID: {}".format(advertise_callback))
+                    self.advertisement_list.append(advertise_callback)
+                    self.log.info(self.advertisement_list)
+                else:
+                    self.log.info("Advertisements active: {}".format(
+                        len(self.advertisement_list)))
+                    return False
+            except Exception as err:
+                self.log.info("Advertisements active: {}".format(
+                    len(self.advertisement_list)))
+                return True
