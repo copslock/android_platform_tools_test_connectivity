@@ -262,6 +262,7 @@ class GattServerLib():
             expected_event = gatt_cb_strings['serv_added'].format(
                 self.gatt_server_callback)
             self.dut.ed.pop_event(expected_event, 10)
+        return self.gatt_server, self.gatt_server_callback
 
     def send_continuous_response(self, user_input):
         """Send the same response"""
