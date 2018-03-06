@@ -22,6 +22,7 @@ import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import GEN_2G
@@ -52,6 +53,7 @@ from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import phone_number_formatter
@@ -65,6 +67,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
@@ -3124,13 +3127,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ad_callee = self.android_devices[0]
         ad_download = self.android_devices[0]
 
-        ad_download.ensure_screen_on()
-        ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"https://www.youtube.com/watch?v=VHF-XK0Vg1s"')
-        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
-            ad_download.log.info("Before call, audio is in MUSIC_state")
-        else:
-            ad_download.log.warning("Before call, audio is not in MUSIC state")
+        start_youtube_video(ad_download)
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
                                             ad_caller, None, None, 30))
         download_task = active_file_download_task(self.log, ad_download)
@@ -3539,14 +3536,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ad_callee = self.android_devices[0]
         ad_download = self.android_devices[0]
 
-        ad_download.log.info("Open an youtube video")
-        ad_download.ensure_screen_on()
-        ad_download.adb.shell('am start -a android.intent.action.VIEW -d '
-                              '"https://www.youtube.com/watch?v=VHF-XK0Vg1s"')
-        if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
-            ad_download.log.info("Before call, audio is in MUSIC_state")
-        else:
-            ad_download.log.warning("Before call, audio is not in MUSIC state")
+        start_youtube_video(ad_download)
 
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
                                    None, None, 30):
@@ -3931,6 +3921,96 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 WAIT_TIME_IN_CALL_FOR_IMS)
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="7955f1ae-84b1-4c33-9e59-af930605672a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_volte_in_call_wifi_toggling(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA in VoLTE.
+        2. Make Sure PhoneB in VoLTE.
+        3. Call from PhoneA to PhoneB.
+        4. Toggling Wifi connnection in call.
+        5. Verify call is active.
+        6. Hung up the call on PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        result = True
+        tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
+                                                           (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
+                                   5):
+            self.log.error("Call setup failed")
+            return False
+        else:
+            self.log.info("Call setup succeed")
+
+        if not wifi_cell_switching(self.log, ads[0], self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_4G):
+            ads[0].log.error("Faile to do WIFI and Cell switch in call")
+            result = False
+
+        if not is_phone_in_call_active(ads[0]):
+            return False
+        else:
+            if not ads[0].droid.telecomCallGetAudioState():
+                ads[0].log.error("Audio is not on call")
+                result = False
+            else:
+                ads[0].log.info("Audio is on call")
+            hangup_call(self.log, ads[0])
+            return result
+
+    @test_tracker_info(uuid="187bf7b5-d122-4914-82c0-b0709272ee12")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_csfb_in_call_wifi_toggling(self):
+        """ General voice to voice call.
+
+        1. Make Sure PhoneA in CSFB.
+        2. Make Sure PhoneB in CSFB.
+        3. Call from PhoneA to PhoneB.
+        4. Toggling Wifi connnection in call.
+        5. Verify call is active.
+        6. Hung up the call on PhoneA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = self.android_devices
+        result = True
+        tasks = [(phone_setup_csfb, (self.log, ads[0])), (phone_setup_csfb,
+                                                          (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        if not call_setup_teardown(self.log, ads[0], ads[1], None, None, None,
+                                   5):
+            self.log.error("Call setup failed")
+            return False
+        else:
+            self.log.info("Call setup succeed")
+
+        if not wifi_cell_switching(self.log, ads[0], self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_3G):
+            ads[0].log.error("Faile to do WIFI and Cell switch in call")
+            result = False
+
+        if not is_phone_in_call_active(ads[0]):
+            return False
+        else:
+            if not ads[0].droid.telecomCallGetAudioState():
+                ads[0].log.error("Audio is not on call")
+                result = False
+            else:
+                ads[0].log.info("Audio is on call")
+            hangup_call(self.log, ads[0])
+            return result
 
 
 """ Tests End """
