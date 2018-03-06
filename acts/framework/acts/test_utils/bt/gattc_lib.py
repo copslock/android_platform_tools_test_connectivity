@@ -20,10 +20,12 @@ GATT Client Libraries
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_constants import gatt_cb_strings
 from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
 from acts.test_utils.bt.bt_constants import gatt_descriptor
 from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
 
 import time
@@ -31,20 +33,47 @@ import os
 
 
 class GattClientLib():
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut, target_mac_addr=None):
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
         self.gatt_callback = None
         self.bluetooth_gatt = None
         self.discovered_services_index = None
+        self.target_mac_addr = target_mac_addr
         self.generic_uuid = "0000{}-0000-1000-8000-00805f9b34fb"
+
+    def set_target_mac_addr(self, mac_addr):
+        self.target_mac_addr = mac_addr
+
+    def connect_over_le_based_off_name(self, autoconnect, name):
+        """Perform GATT connection over LE"""
+        self.dut.droid.bleSetScanSettingsScanMode(
+            ble_scan_settings_modes['low_latency'])
+        filter_list = self.dut.droid.bleGenFilterList()
+        scan_settings = self.dut.droid.bleBuildScanSetting()
+        scan_callback = self.dut.droid.bleGenScanCallback()
+        event_name = scan_result.format(scan_callback)
+        self.dut.droid.bleSetScanFilterDeviceName("BLE Rect")
+        self.dut.droid.bleBuildScanFilter(filter_list)
+        self.dut.droid.bleStartBleScan(filter_list, scan_settings,
+                                       scan_callback)
+
+        try:
+            event = self.dut.ed.pop_event(event_name, 10)
+            self.log.info("Found scan result: {}".format(event))
+        except Exception:
+            self.log.info("Didn't find any scan results.")
+        mac_addr = event['data']['Result']['deviceInfo']['address']
+        self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
+            self.dut, mac_addr, autoconnect, transport=gatt_transport['le'])
+        self.dut.droid.bleStopBleScan(scan_callback)
+        self.discovered_services_index = None
 
     def connect_over_le(self, autoconnect):
         """Perform GATT connection over LE"""
         self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
             self.dut,
-            self.mac_addr,
+            self.target_mac_addr,
             autoconnect,
             transport=gatt_transport['le'])
         self.discovered_services_index = None
@@ -52,10 +81,14 @@ class GattClientLib():
     def connect_over_bredr(self):
         """Perform GATT connection over BREDR"""
         self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
-            self.dut, self.mac_addr, False, transport=gatt_transport['bredr'])
+            self.dut,
+            self.target_mac_addr,
+            False,
+            transport=gatt_transport['bredr'])
 
     def disconnect(self):
         """Perform GATT disconnect"""
+        cmd = "Disconnect GATT connection"
         try:
             disconnect_gatt_connection(self.dut, self.bluetooth_gatt,
                                        self.gatt_callback)
