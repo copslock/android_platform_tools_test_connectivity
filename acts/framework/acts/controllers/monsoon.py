@@ -48,7 +48,9 @@ def create(configs):
 
 
 def destroy(objs):
-    return
+    for obj in objs:
+        fcntl.flock(obj.mon._tempfile, fcntl.LOCK_UN)
+        obj.mon._tempfile.close()
 
 
 class MonsoonError(acts.signals.ControllerError):
@@ -106,7 +108,7 @@ class MonsoonProxy(object):
                     pass
 
                 try:  # use a lockfile to ensure exclusive access
-                    fcntl.lockf(self._tempfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(self._tempfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except IOError as e:
                     logging.error("device %s is in use", dev)
                     continue
@@ -988,7 +990,7 @@ class Monsoon(object):
 
     def reconnect_monsoon(self):
         """Reconnect Monsoon to serial port.
-        
+
         """
         logging.info("Close serial connection")
         self.mon.ser.close()
@@ -996,8 +998,5 @@ class Monsoon(object):
         time.sleep(5)
         logging.info("Open serial connection")
         self.mon.ser.open()
-        self.mon.ser.flush()
         self.mon.ser.reset_input_buffer()
         self.mon.ser.reset_output_buffer()
-        
-        
