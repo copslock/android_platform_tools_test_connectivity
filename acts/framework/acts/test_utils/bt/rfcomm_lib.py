@@ -24,11 +24,14 @@ import pprint
 
 
 class RfcommLib():
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut, target_mac_addr=None):
         self.advertisement_list = []
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
+        self.target_mac_addr = target_mac_addr
+
+    def set_target_mac_addr(self, mac_addr):
+        self.target_mac_addr = mac_addr
 
     def connect(self, line):
         """Perform an RFCOMM connect"""
@@ -37,17 +40,18 @@ class RfcommLib():
             uuid = line
         if uuid:
             self.dut.droid.bluetoothRfcommBeginConnectThread(
-                self.mac_addr, uuid)
+                self.target_mac_addr, uuid)
         else:
-            self.dut.droid.bluetoothRfcommBeginConnectThread(self.mac_addr)
+            self.dut.droid.bluetoothRfcommBeginConnectThread(
+                self.target_mac_addr)
 
     def open_rfcomm_socket(self):
         """Open rfcomm socket"""
-        self.dut.droid.rfcommCreateRfcommSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateRfcommSocket(self.target_mac_addr, 1)
 
     def open_l2cap_socket(self):
         """Open L2CAP socket"""
-        self.dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateL2capSocket(self.target_mac_addr, 1)
 
     def write(self, line):
         """Write String data over an RFCOMM connection"""
@@ -78,4 +82,4 @@ class RfcommLib():
 
     def open_l2cap_socket(self):
         """Open L2CAP socket"""
-        self.dut.droid.rfcommCreateL2capSocket(self.mac_addr, 1)
+        self.dut.droid.rfcommCreateL2capSocket(self.target_mac_addr, 1)
