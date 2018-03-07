@@ -61,7 +61,7 @@ class GattServerExampleTest(BluetoothBaseTest):
 
     @BluetoothBaseTest.bt_test_wrap
     def test_create_gatt_server_db_example(self):
-        gatts = GattServerLib(log=self.log, mac_addr=None, dut=self.dut)
+        gatts = GattServerLib(log=self.log, dut=self.dut)
         gatts.setup_gatts_db(database=gatt_server_read_descriptor_sample)
         self.log.info(gatts.list_all_uuids())
         return True
