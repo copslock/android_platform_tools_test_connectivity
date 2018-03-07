@@ -158,7 +158,7 @@ def orchestrate_coc_connection(
             client_ad.log.info(
                 "Orchestrate_coc_connection: Start BLE advertisement and"
                 "scanning. Secured Connection={}".format(secured_conn))
-            mac_address, adv_callback = (
+            mac_address, adv_callback, scan_callback = (
                 get_mac_address_of_generic_advertisement(client_ad, server_ad))
         except BtTestUtilsError as err:
             raise BtCoCTestUtilsError(
@@ -181,6 +181,7 @@ def orchestrate_coc_connection(
                 False,
                 transport=gatt_transport['le'],
                 opportunistic=False)
+            client_ad.droid.bleStopBleScan(scan_callback)
         except GattTestUtilsError as err:
             client_ad.log.error(err)
             return False, None, None
