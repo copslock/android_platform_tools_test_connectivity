@@ -27,7 +27,6 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
 
     def __init__(self, controllers):
         CoexBaseTest.__init__(self, controllers)
-        self.tests = ("test_performance_a2dp_streaming_tcp_ul",)
 
     def setup_test(self):
         CoexBaseTest.setup_test(self)

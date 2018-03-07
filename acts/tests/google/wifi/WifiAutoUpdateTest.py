@@ -81,12 +81,13 @@ class WifiAutoUpdateTest(WifiBaseTest):
 
         self.wifi_config_list = []
 
+        # Disabling WiFi setup before OTA for debugging.
         # Setup WiFi and add few open and wpa networks before OTA.
-        self.add_network_and_enable(self.open_network[0]['2g'])
-        self.add_network_and_enable(self.reference_networks[0]['5g'])
+        # self.add_network_and_enable(self.open_network[0]['2g'])
+        # self.add_network_and_enable(self.reference_networks[0]['5g'])
 
         # Add few dummy networks to the list.
-        self.add_and_enable_dummy_networks()
+        # self.add_and_enable_dummy_networks()
 
         # Run OTA below, if ota fails then abort all tests.
         try:

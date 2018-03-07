@@ -14,11 +14,22 @@
 
 GATT
 =================================================================
+Note: Bug in PTS forces GATT operations to be over BR/EDR. To run tests over
+LE disable BR/EDR in ICS when running tests.
+
 TC_CL_GAC_BV_01_C
   gattc_connect_over_le
   gattc_request_mtu 23
   [Read PTS Handle and Size]
   gattc_write_char_by_instance_id [handle] [size]
+  gattc_disconnect
+
+#Potential new instructions for SIG testcase rewrite
+TC_CL_GAC_BV_01_C
+  gattc_connect_over_le
+  gattc_request_mtu 23
+  [Read PTS Handle and Size]
+  gattc_write_invalid_char_by_instance_id [handle] [size]
   gattc_disconnect
 
 TC_CL_GAD_BV_01_C

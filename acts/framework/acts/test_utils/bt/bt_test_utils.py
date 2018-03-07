@@ -65,6 +65,7 @@ from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_constants import scan_failed
 from acts.test_utils.bt.bt_constants import hid_id_keyboard
+
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
@@ -514,8 +515,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         raise BtTestUtilsError(
             "Scanner did not find advertisement {}".format(err))
     mac_address = event['data']['Result']['deviceInfo']['address']
-    scan_ad.droid.bleStopBleScan(scan_callback)
-    return mac_address, advertise_callback
+    return mac_address, advertise_callback, scan_callback
 
 
 def enable_bluetooth(droid, ed):

@@ -44,14 +44,12 @@ class GattServerLib():
     gatt_server_callback = None
     gatt_server_list = []
     log = None
-    mac_addr = None
     service_list = []
     write_mapping = {}
 
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut):
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
 
     def list_all_uuids(self):
         """From the GATT Client, discover services and list all services,
@@ -262,6 +260,7 @@ class GattServerLib():
             expected_event = gatt_cb_strings['serv_added'].format(
                 self.gatt_server_callback)
             self.dut.ed.pop_event(expected_event, 10)
+        return self.gatt_server, self.gatt_server_callback
 
     def send_continuous_response(self, user_input):
         """Send the same response"""

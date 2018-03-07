@@ -1958,7 +1958,18 @@ def check_curl_availability(ad):
     return ad.curl_capable
 
 
-def active_file_download_task(log, ad, file_name="5MB", method="chrome"):
+def start_youtube_video(ad, url="https://www.youtube.com/watch?v=VHF-XK0Vg1s"):
+    ad.log.info("Open an youtube video")
+    ad.ensure_screen_on()
+    ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+    if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
+        ad.log.info("Started a video in youtube, audio is in MUSIC_state")
+    else:
+        ad.log.warning(
+            "Started a video in youtube, but audio is not in MUSIC state")
+
+
+def active_file_download_task(log, ad, file_name="5MB", method="sl4a"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
@@ -1993,7 +2004,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="chrome"):
                                                timeout))
 
 
-def active_file_download_test(log, ad, file_name="5MB", method="chrome"):
+def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
     task = active_file_download_task(log, ad, file_name, method=method)
     return task[0](*task[1])
 
@@ -2136,7 +2147,7 @@ def http_file_download_by_curl(ad,
             ad.log.info("After downloading: %s", new_data_accounting)
             accounting_diff = {
                 key: value - data_accounting[key]
-                for key, value in new_data_accounting.items()
+                for key, value in new_data_accounting.items() if value
             }
             ad.log.info("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
@@ -2362,6 +2373,7 @@ def http_file_download_by_sl4a(ad,
 def get_mobile_data_usage(ad, subscriber_id=None, apk=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
+
     if not getattr(ad, "data_metering_begin_time", None) or not getattr(
             ad, "data_metering_end_time", None):
         current_time = int(time.time() * 1000)
@@ -2371,24 +2383,26 @@ def get_mobile_data_usage(ad, subscriber_id=None, apk=None):
                 current_time + 30 * 24 * 60 * 60 * 1000)
     begin_time = ad.data_metering_begin_time
     end_time = ad.data_metering_end_time
+
     if apk:
         uid = ad.get_apk_uid(apk)
-        try:
-            usage = ad.droid.connectivityQueryDetailsForUid(
-                TYPE_MOBILE, subscriber_id, begin_time, end_time, uid)
-        except Exception:
-            usage = ad.droid.connectivityQueryDetailsForUid(
-                subscriber_id, begin_time, end_time, uid)
-        ad.log.debug("The mobile data usage for apk %s is %s", apk, usage)
+        ad.log.info("apk %s uid = %s", apk, uid)
+        func = ad.droid.connectivityQueryDetailsForUid
+        func_args = [[TYPE_MOBILE, subscriber_id, begin_time, end_time, uid],
+                     [subscriber_id, begin_time, end_time, uid]]
     else:
+        func = ad.droid.connectivityQuerySummaryForDevice
+        func_args = [[TYPE_MOBILE, subscriber_id, begin_time, end_time],
+                     [subscriber_id, begin_time, end_time]]
+    for args in func_args:
         try:
-            usage = ad.droid.connectivityQuerySummaryForDevice(
-                TYPE_MOBILE, subscriber_id, begin_time, end_time)
-        except Exception:
-            usage = ad.droid.connectivityQuerySummaryForDevice(
-                subscriber_id, begin_time, end_time)
-        ad.log.debug("The mobile data usage for subscriber is %s", usage)
-    return usage
+            usage = func(*args)
+            ad.log.info("%s mobile data usage is %s", apk
+                        if apk else "Subscriber", usage)
+            return usage
+        except Exception as e:
+            ad.log.warning(e)
+    return None
 
 
 def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
