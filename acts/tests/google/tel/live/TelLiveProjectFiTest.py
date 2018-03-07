@@ -31,6 +31,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import is_sim_ready
 from acts.test_utils.tel.tel_test_utils import log_screen_shot
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
 from acts.test_utils.tel.tel_test_utils import wait_for_state
@@ -72,6 +73,7 @@ class ActionTypeId(object):
 
 class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
+        self.activation_attemps = self.user_params.get("activation_attemps", 2)
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get(
                 "wifi_network_ssid_2g") or self.user_params.get(
@@ -134,6 +136,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
 
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
+            if self.check_project_fi_activated(ad):
+                ad.log.info("Project Fi is activated already")
+                return True
             ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
@@ -161,10 +166,18 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            self.activate_fi_account(ad)
-            if not self.check_project_fi_activated(ad):
-                ad.log.error("Fail to activate Fi account")
-                return False
+            for i in range(1, self.activation_attemps + 1):
+                if i == self.activation_attemps:
+                    ad.log.info("Reboot and try Fi activation again")
+                    reboot_device(ad)
+                self.activate_fi_account(ad)
+                if not self.check_project_fi_activated(ad):
+                    ad.log.error("Fail to activate Fi account on attempt-%s",
+                                 i)
+                    if i == self.activation_attemps:
+                        return False
+                else:
+                    ad.log.info("Fi account is activated successfully")
         elif "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha"):
             ad.log.error("Google account is not provided for Fi Network")
             return False
@@ -185,9 +198,10 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
           action_type: The action type id to create the intent
         """
         ad.log.info('Starting service %s/.%s.', package, service_id)
-        intent = ad.droid.makeIntent(action_type, None, None, extras, [
-            'android.intent.category.DEFAULT'
-        ], package, package + '.' + service_id, _INTENT_FLAGS)
+        intent = ad.droid.makeIntent(action_type, None, None, extras,
+                                     ['android.intent.category.DEFAULT'],
+                                     package, package + '.' + service_id,
+                                     _INTENT_FLAGS)
         ad.droid.startServiceIntent(intent)
 
     def start_activity(self, ad, package, activity_id, extras=None):
@@ -200,9 +214,10 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
           extras: (dict) extras needed to specify with the activity id
         """
         ad.log.info('Starting activity %s/.%s.', package, activity_id)
-        intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras, [
-            'android.intent.category.LAUNCHER'
-        ], package, package + '.' + activity_id, _INTENT_FLAGS)
+        intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras,
+                                     ['android.intent.category.LAUNCHER'],
+                                     package, package + '.' + activity_id,
+                                     _INTENT_FLAGS)
         ad.droid.startActivityIntent(intent, False)
 
     def activate_fi_account(self, ad):
@@ -217,6 +232,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         Args:
           ad: Android device need to start Tycho InitActivity.
         """
+        ad.force_stop_apk(_TYCHO_PKG)
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
         for _ in range(30):
@@ -226,7 +242,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             log_screen_shot(ad, self.test_name)
             if 'SwitchConfirmDialogActivity' in current_window:
                 ad.log.info("In Switch Confirmation Dialog")
-                if ad.adb.getprop("ro.build.version.release")[0] not in ("8", "O"):
+                if ad.adb.getprop("ro.build.version.release")[0] not in ("8",
+                                                                         "O"):
                     ad.send_keycode("TAB")
                 ad.send_keycode("TAB")
                 ad.send_keycode("ENTER")
@@ -509,7 +526,11 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         tasks = [(self._account_registration, [ad])
                  for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
+        try:
+            if not multithread_func(self.log, tasks):
+                abort_all_tests(self.log, "Unable to activate Fi account!")
+        except Exception as e:
+            self.log.error(e)
             abort_all_tests(self.log, "Unable to activate Fi account!")
         return True
 
