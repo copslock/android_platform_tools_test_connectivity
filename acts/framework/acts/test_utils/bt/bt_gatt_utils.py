@@ -106,7 +106,7 @@ def orchestrate_gatt_connection(cen_ad,
     if mac_address is None:
         if transport == gatt_transport['le']:
             try:
-                mac_address, adv_callback = (
+                mac_address, adv_callback, scan_callback = (
                     get_mac_address_of_generic_advertisement(cen_ad, per_ad))
             except BtTestUtilsError as err:
                 raise GattTestUtilsError(
