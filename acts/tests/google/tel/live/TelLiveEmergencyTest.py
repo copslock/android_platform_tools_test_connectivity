@@ -146,8 +146,6 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                     self.dut.log.info("%s is not in ril-ecclist",
                                       self.fake_emergency_number)
         self.dut.log.info("fake_emergency_call_test result is %s", result)
-        import pdb
-        pdb.set_trace()
         return result
 
     """ Tests Begin """
