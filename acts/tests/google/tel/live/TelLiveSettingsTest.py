@@ -1446,6 +1446,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 self.ad.log.info(msg)
         return result
 
+    @test_tracker_info(uuid="67f50d11-a987-4e79-9a20-1569d365511b")
     @TelephonyBaseTest.tel_test_wrap
     def test_modem_power_anomaly_file_existence(self):
         """Verify if the power anomaly file exists
@@ -1458,6 +1459,11 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         """
         ad = self.android_devices[0]
+        cmd = ("am broadcast -a "
+              "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+              "-e \"ce.cm.power_anomaly_data_enable\" \"true\"")
+        ad.adb.shell(cmd)
+        time.sleep(60)
         begin_time = get_current_epoch_time()
         for i in range(3):
             try:
@@ -1491,6 +1497,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 if os.path.isfile(bugreport_path + "/power_anomaly_data.txt"):
                     ad.log.info("Modem Power Anomaly File Exists!!")
                     return True
+            ad.log.info("Modem Power Anomaly File DO NOT Exist!!")
             return False
         except Exception as e:
             ad.log.error(e)
