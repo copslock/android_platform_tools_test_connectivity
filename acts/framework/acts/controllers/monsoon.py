@@ -355,6 +355,8 @@ class MonsoonProxy(object):
     def _SendStruct(self, fmt, *args):
         """Pack a struct (without length or checksum) and send it.
         """
+        # Flush out the input buffer before sending data
+        self._FlushInput()
         data = struct.pack(fmt, *args)
         data_len = len(data) + 1
         checksum = (data_len + sum(bytearray(data))) % 256
@@ -387,7 +389,7 @@ class MonsoonProxy(object):
 
     def _FlushInput(self):
         """ Flush all read data until no more available. """
-        self.ser.flush()
+        self.ser.reset_input_buffer()
         flushed = 0
         while True:
             ready_r, ready_w, ready_x = select.select([self.ser], [],
@@ -397,7 +399,8 @@ class MonsoonProxy(object):
             elif len(ready_r) > 0:
                 flushed += 1
                 self.ser.read(1)  # This may cause underlying buffering.
-                self.ser.flush()  # Flush the underlying buffer too.
+                self.ser.reset_input_buffer(
+                )  # Flush the underlying buffer too.
             else:
                 break
         # if flushed > 0:
@@ -917,9 +920,24 @@ class Monsoon(object):
     def disconnect_dut(self):
         """Disconnect DUT from monsoon.
 
+        Stop the sl4a service on the DUT and disconnect USB connection
         raises:
             MonsoonError: monsoon erro trying to disconnect usb
+        """
+        try:
+            self.dut.stop_services()
+            time.sleep(1)
+            self.usb("off")
+        except Exception as e:
+            raise MonsoonError(
+                "Error happended trying to disconnect DUT from Monsoon")
+
+    def monsoon_usb_auto(self):
+        """Set monsoon USB to auto to ready the device for power measurement.
+
         Stop the sl4a service on the DUT and disconnect USB connection
+        raises:
+            MonsoonError: monsoon erro trying to set usbpassthrough to auto
         """
         try:
             self.dut.stop_services()
@@ -927,7 +945,7 @@ class Monsoon(object):
             self.usb("auto")
         except Exception as e:
             raise MonsoonError(
-                "Error happended trying to disconnect DUT from Monsoon")
+                "Error happended trying to set Monsoon usbpassthrough to auto")
 
     def reconnect_dut(self):
         """Reconnect DUT to monsoon and start sl4a services.
