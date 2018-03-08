@@ -204,7 +204,7 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                     "Starting power measurement with monsoon box, try #{}".
                     format(retry_measure))
                 #Start the power measurement using monsoon
-                mon_info['dut'].disconnect_dut()
+                mon_info['dut'].monsoon_usb_auto()
                 result = mon_info['dut'].measure_power(
                     mon_info['freq'],
                     mon_info['duration'],
@@ -237,7 +237,8 @@ def monsoon_data_collect_save(ad, mon_info, test_name):
                     break
                 else:
                     retry_monsoon += 1
-                    log.warning('Wait for {} second then try again'.format(MONSOON_RETRY_INTERVAL))
+                    log.warning('Wait for {} second then try again'.format(
+                        MONSOON_RETRY_INTERVAL))
                     time.sleep(MONSOON_RETRY_INTERVAL)
 
             # Break the loop to end test if failed to recover monsoon
