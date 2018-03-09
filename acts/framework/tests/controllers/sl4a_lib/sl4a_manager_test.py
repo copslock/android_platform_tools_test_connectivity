@@ -72,7 +72,8 @@ class Sl4aManagerFactoryTest(unittest.TestCase):
 
 class Sl4aManagerTest(unittest.TestCase):
     """Tests the sl4a_manager.Sl4aManager class."""
-    FIND_PORT_RETRIES = 0
+    ATTEMPT_INTERVAL = .25
+    MAX_WAIT_ON_SERVER_SECONDS = 1
     _SL4A_LAUNCH_SERVER_CMD = ''
     _SL4A_CLOSE_SERVER_CMD = ''
     _SL4A_ROOT_FIND_PORT_CMD = ''
@@ -82,8 +83,10 @@ class Sl4aManagerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Copy all module constants before testing begins.
-        Sl4aManagerTest.FIND_PORT_RETRIES = \
-            sl4a_manager.FIND_PORT_RETRIES
+        Sl4aManagerTest.ATTEMPT_INTERVAL = \
+            sl4a_manager.ATTEMPT_INTERVAL
+        Sl4aManagerTest.MAX_WAIT_ON_SERVER_SECONDS = \
+            sl4a_manager.MAX_WAIT_ON_SERVER_SECONDS
         Sl4aManagerTest._SL4A_LAUNCH_SERVER_CMD = \
             sl4a_manager._SL4A_LAUNCH_SERVER_CMD
         Sl4aManagerTest._SL4A_CLOSE_SERVER_CMD = \
@@ -97,8 +100,10 @@ class Sl4aManagerTest(unittest.TestCase):
 
     def setUp(self):
         # Restore all module constants at the beginning of each test case.
-        sl4a_manager.FIND_PORT_RETRIES = \
-            Sl4aManagerTest.FIND_PORT_RETRIES
+        sl4a_manager.ATTEMPT_INTERVAL = \
+            Sl4aManagerTest.ATTEMPT_INTERVAL
+        sl4a_manager.MAX_WAIT_ON_SERVER_SECONDS = \
+            Sl4aManagerTest.MAX_WAIT_ON_SERVER_SECONDS
         sl4a_manager._SL4A_LAUNCH_SERVER_CMD = \
             Sl4aManagerTest._SL4A_LAUNCH_SERVER_CMD
         sl4a_manager._SL4A_CLOSE_SERVER_CMD = \
@@ -143,7 +148,8 @@ class Sl4aManagerTest(unittest.TestCase):
         # One call for each session
         self.assertSetEqual(set(returned_ports), {12345, 15973, 67890, 75638})
 
-    def test_start_sl4a_server_uses_all_retries(self):
+    @mock.patch('time.sleep', return_value=None)
+    def test_start_sl4a_server_uses_all_retries(self, _):
         """Tests sl4a_manager.Sl4aManager.start_sl4a_server().
 
         Tests to ensure that _start_sl4a_server retries and successfully returns
@@ -154,19 +160,21 @@ class Sl4aManagerTest(unittest.TestCase):
 
         side_effects = []
         expected_port = 12345
-        for _ in range(sl4a_manager.FIND_PORT_RETRIES - 1):
+        for _ in range(int(sl4a_manager.MAX_WAIT_ON_SERVER_SECONDS /
+                           sl4a_manager.ATTEMPT_INTERVAL) - 1):
             side_effects.append(None)
         side_effects.append(expected_port)
 
         manager = sl4a_manager.create_sl4a_manager(adb)
         manager._get_open_listening_port = mock.Mock(side_effect=side_effects)
         try:
-            found_port = manager.start_sl4a_server(0, try_interval=0)
+            found_port = manager.start_sl4a_server(0)
             self.assertTrue(found_port)
         except rpc_client.Sl4aConnectionError:
             self.fail('start_sl4a_server failed to respect FIND_PORT_RETRIES.')
 
-    def test_start_sl4a_server_fails_all_retries(self):
+    @mock.patch('time.sleep', return_value=None)
+    def test_start_sl4a_server_fails_all_retries(self, _):
         """Tests sl4a_manager.Sl4aManager.start_sl4a_server().
 
         Tests to ensure that start_sl4a_server throws an error if all retries
@@ -176,13 +184,14 @@ class Sl4aManagerTest(unittest.TestCase):
         adb.shell = lambda _, **kwargs: ''
 
         side_effects = []
-        for _ in range(sl4a_manager.FIND_PORT_RETRIES):
+        for _ in range(int(sl4a_manager.MAX_WAIT_ON_SERVER_SECONDS /
+                           sl4a_manager.ATTEMPT_INTERVAL)):
             side_effects.append(None)
 
         manager = sl4a_manager.create_sl4a_manager(adb)
         manager._get_open_listening_port = mock.Mock(side_effect=side_effects)
         try:
-            manager.start_sl4a_server(0, try_interval=0)
+            manager.start_sl4a_server(0)
             self.fail('Sl4aConnectionError was not thrown.')
         except rpc_client.Sl4aConnectionError:
             pass
@@ -336,6 +345,7 @@ class Sl4aManagerTest(unittest.TestCase):
 
         manager = sl4a_manager.create_sl4a_manager(adb)
         manager.is_sl4a_installed = lambda: True
+        manager._get_open_listening_port = lambda: ''
         try:
             manager.start_sl4a_service()
         except rpc_client.MissingSl4AError:
@@ -412,6 +422,7 @@ class Sl4aManagerTest(unittest.TestCase):
         session_5.terminate = lambda *args, **kwargs: called_on(session_5)
         manager.sessions[5] = session_5
 
+        manager._get_all_ports = lambda: []
         manager.terminate_all_sessions()
         # No duplicates calls to terminate.
         self.assertEqual(
@@ -428,7 +439,9 @@ class Sl4aManagerTest(unittest.TestCase):
         closed_ports = list()
 
         def close(command):
-            closed_ports.append(command)
+            if str.isdigit(command):
+                closed_ports.append(command)
+            return ''
 
         adb = mock.Mock()
         adb.shell = close
@@ -437,6 +450,7 @@ class Sl4aManagerTest(unittest.TestCase):
 
         manager = sl4a_manager.Sl4aManager(adb)
         manager._sl4a_ports = set(ports_to_close)
+        manager._get_all_ports = lambda: []
         manager.terminate_all_sessions()
 
         # No duplicate calls to close port
