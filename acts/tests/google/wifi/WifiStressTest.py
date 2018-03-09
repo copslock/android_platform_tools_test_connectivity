@@ -177,7 +177,7 @@ class WifiStressTest(WifiBaseTest):
         self.scan_and_connect_by_ssid(self.wpa_5g)
         # Start IPerf traffic from server to phone.
         # Download data for 5 hours.
-        sec = 5*60*60
+        sec = 60
         args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
         self.log.info("Running iperf client {}".format(args))
         result, data = self.dut.run_iperf_client(self.iperf_server_address,
@@ -243,6 +243,9 @@ class WifiStressTest(WifiBaseTest):
         self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
         config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
         config[wutils.WifiEnums.PWD_KEY] = ap_password
+        # Set country code explicitly to "US".
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         for count in range(self.stress_count):
             initial_wifi_state = self.dut.droid.wifiCheckState()
             wutils.start_wifi_tethering(self.dut,
