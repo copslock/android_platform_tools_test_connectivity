@@ -68,6 +68,7 @@ from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
 EXCEPTION_TOLERANCE = 5
+BINDER_LOGS = ["/sys/kernel/debug/binder"]
 
 
 class TelLiveStressTest(TelephonyBaseTest):
@@ -78,7 +79,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                       False)
         # supported file download methods: chrome, sl4a, curl
         self.file_download_method = self.user_params.get(
-            "file_download_method", "sl4a")
+            "file_download_method", "curl")
         if len(self.android_devices) == 1:
             self.single_phone_test = True
         if self.single_phone_test:
@@ -88,7 +89,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.file_download_method == "sl4a":
                 # with single device, do not use sl4a file download
                 # due to stability issue
-                self.file_download_method = "chrome"
+                self.file_download_method = "curl"
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = False
@@ -335,9 +336,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                       failure_reason)
             for ad in ads:
                 log_path = os.path.join(self.log_path, test_name,
-                                        "%s_binder" % ad.serial)
+                                        "%s_binder_logs" % ad.serial)
                 utils.create_dir(log_path)
-                ad.adb.pull("/sys/kernel/debug/binder %s" % log_path)
+                ad.pull_files(BINDER_LOGS, log_path)
             self._take_bug_report(test_name, begin_time)
         else:
             self.log.info("%s test succeed", log_msg)
@@ -347,9 +348,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.test_name, the_number)
                 for ad in ads:
                     log_path = os.path.join(self.log_path, test_name,
-                                            "%s_binder" % ad.serial)
+                                            "%s_binder_logs" % ad.serial)
                     utils.create_dir(log_path)
-                    ad.adb.pull("/sys/kernel/debug/binder %s" % log_path)
+                    ad.pull_files(BINDER_LOGS, log_path)
         return result
 
     def _prefnetwork_mode_change(self, sub_id):
