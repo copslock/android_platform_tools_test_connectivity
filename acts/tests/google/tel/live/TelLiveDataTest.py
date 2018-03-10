@@ -650,8 +650,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(
-                self.log, [self.android_devices[0]])
+            ensure_phones_default_state(self.log, [self.android_devices[0]])
             wifi_reset(self.log, self.android_devices[0])
             wifi_toggle_state(self.log, self.android_devices[0], False)
 
@@ -693,8 +692,7 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         for i in range(1, self.stress_test_number + 1):
 
-            ensure_phones_default_state(
-                self.log, [self.android_devices[0]])
+            ensure_phones_default_state(self.log, [self.android_devices[0]])
             wifi_reset(self.log, self.android_devices[0])
             wifi_toggle_state(self.log, self.android_devices[0], False)
 
@@ -1254,7 +1252,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return wifi_tethering_setup_teardown(
             self.log,
-            self.provider, self.clients,
+            self.provider,
+            self.clients,
             ap_band=WIFI_CONFIG_APBAND_2G,
             check_interval=10,
             check_iteration=10)
@@ -1276,22 +1275,26 @@ class TelLiveDataTest(TelephonyBaseTest):
         num = len(self.android_devices)
         for idx, ad in enumerate(self.android_devices):
             self.provider = self.android_devices[idx]
-            self.clients = self.android_devices[:idx] + self.android_devices[
-                                                        idx+1:]
+            self.clients = self.android_devices[:
+                                                idx] + self.android_devices[idx
+                                                                            +
+                                                                            1:]
             if not self._test_setup_tethering(RAT_4G):
                 ad.log.error("Verify 4G Internet access failed.")
                 continue
 
             if not self.provider.droid.carrierConfigIsTetheringModeAllowed(
-                TETHERING_MODE_WIFI, MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
+                    TETHERING_MODE_WIFI,
+                    MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
                 ad.log.info("Tethering is not entitled")
                 continue
 
-            if wifi_tethering_setup_teardown(self.log, self.provider,
-                                             [self.clients[0]],
-                                             ap_band=WIFI_CONFIG_APBAND_5G,
-                                             check_interval=10,
-                                             check_iteration=10):
+            if wifi_tethering_setup_teardown(
+                    self.log,
+                    self.provider, [self.clients[0]],
+                    ap_band=WIFI_CONFIG_APBAND_5G,
+                    check_interval=10,
+                    check_iteration=10):
                 self.android_devices = [self.provider] + self.clients
                 return True
             elif idx == num - 1:
@@ -1320,7 +1323,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return wifi_tethering_setup_teardown(
             self.log,
-            self.provider, self.clients,
+            self.provider,
+            self.clients,
             ap_band=WIFI_CONFIG_APBAND_2G,
             check_interval=10,
             check_iteration=10)
@@ -1345,7 +1349,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return wifi_tethering_setup_teardown(
             self.log,
-            self.provider, self.clients,
+            self.provider,
+            self.clients,
             ap_band=WIFI_CONFIG_APBAND_5G,
             check_interval=10,
             check_iteration=10)
@@ -1798,7 +1803,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return wifi_tethering_setup_teardown(
             self.log,
-            self.provider, self.clients,
+            self.provider,
+            self.clients,
             ap_band=WIFI_CONFIG_APBAND_2G,
             check_interval=10,
             check_iteration=10,
@@ -1827,7 +1833,8 @@ class TelLiveDataTest(TelephonyBaseTest):
 
         return wifi_tethering_setup_teardown(
             self.log,
-            self.provider, self.clients,
+            self.provider,
+            self.clients,
             ap_band=WIFI_CONFIG_APBAND_2G,
             check_interval=10,
             check_iteration=10,
@@ -3013,7 +3020,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         # download file - size 5MB twice
         try:
             for _ in range(2):
-                if not active_file_download_test(self.log, dut, "5MB"):
+                if not active_file_download_test(self.log, dut, "5MB",
+                                                 "chrome"):
                     if get_mobile_data_usage(
                             dut, subscriber_id) + 5 * 1000 * 1000 < data_limit:
                         dut.log.error(
