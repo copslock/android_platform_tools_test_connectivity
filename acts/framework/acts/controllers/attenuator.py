@@ -37,22 +37,27 @@ def create(configs):
         inst_cnt = c["InstrumentCount"]
         attn_inst = module.AttenuatorInstrument(inst_cnt)
         attn_inst.model = attn_model
+
+        ip_address = c[Config.key_address.value]
+        port = c[Config.key_port.value]
+
         for attempt_number in range(1, _ATTENUATOR_OPEN_RETRIES + 1):
             try:
-                insts = attn_inst.open(c[Config.key_address.value],
-                                       c[Config.key_port.value])
+                insts = attn_inst.open(ip_address, port)
             except Exception as e:
                 logging.error('Attempt %s to open connection to attenuator '
                               'failed: %s' % (attempt_number, e))
                 if attempt_number == _ATTENUATOR_OPEN_RETRIES:
                     ping_output = job.run(
-                        'ping %s -c 1 -w 1' % c[Config.key_address.value])
+                        'ping %s -c 1 -w 1' % ip_address, ignore_status=True)
                     if ping_output.exit_status == 1:
                         logging.error('Unable to ping attenuator at %s' %
-                                      c[Config.key_address.value])
+                                      ip_address)
                     else:
                         logging.error('Able to ping attenuator at %s' %
-                                      c[Config.key_address.value])
+                                      ip_address)
+                        job.run('echo "q" | telnet %s %s' % (ip_address, port),
+                                ignore_status=True)
                     raise
         for i in range(inst_cnt):
             attn = Attenuator(attn_inst, idx=i)
