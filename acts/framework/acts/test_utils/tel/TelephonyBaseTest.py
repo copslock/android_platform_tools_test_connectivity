@@ -119,21 +119,20 @@ class TelephonyBaseTest(BaseTestClass):
             self.test_id = test_id
             self.result_detail = ""
             tries = 2 if self.user_params.get("telephony_auto_rerun") else 1
+            for ad in self.android_devices:
+                ad.log_path = self.log_path
             for i in range(tries):
                 result = True
-                log_string = "[Test ID] %s" % test_id
                 if i > 1:
-                    log_string = "[Rerun]%s" % log_string
+                    log_string = "[Rerun Test %s]" % test_name
                     self.teardown_test()
                     self.setup_test()
-                self.log.info(log_string)
-                for ad in self.android_devices:
-                    ad.log_path = self.log_path
-                    try:
-                        ad.droid.logI("Started %s" % log_string)
-                    except Exception as e:
-                        ad.log.warning(e)
-                        refresh_sl4a_session(ad)
+                    self.log.info(log_string)
+                    for ad in self.android_devices:
+                        try:
+                            ad.droid.logI("Started %s" % log_string)
+                        except Exception as e:
+                            ad.log.warning(e)
                 try:
                     result = fn(self, *args, **kwargs)
                 except (TestSignal, TestAbortClass, TestAbortAll) as signal:
@@ -149,7 +148,7 @@ class TelephonyBaseTest(BaseTestClass):
                     except Exception as e:
                         ad.log.warning(e)
                         refresh_sl4a_session(ad)
-                if result: break
+                if result is not False: break
             if self.user_params.get("check_crash", True):
                 new_crash = ad.check_crash_report(self.test_name,
                                                   self.begin_time, True)
@@ -159,7 +158,7 @@ class TelephonyBaseTest(BaseTestClass):
                     self.result_detail = "%s %s %s" % (self.result_detail,
                                                        ad.serial, msg)
                     result = False
-            if result:
+            if result is not False:
                 asserts.explicit_pass(self.result_detail)
             else:
                 asserts.fail(self.result_detail)
@@ -226,25 +225,30 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.adb.shell(cmd)
 
             # Curl for 2016/7 devices
-            try:
-                if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
+            if not getattr(ad, "curl_capable", False):
+                try:
                     out = ad.adb.shell("/data/curl --version")
                     if not out or "not found" in out:
-                        tel_data = self.user_params.get("tel_data", "tel_data")
-                        if isinstance(tel_data, list):
-                            tel_data = tel_data[0]
-                        curl_file_path = os.path.join(tel_data, "curl")
-                        if not os.path.isfile(curl_file_path):
-                            curl_file_path = os.path.join(
-                                self.user_params[Config.key_config_path],
-                                curl_file_path)
-                        if os.path.isfile(curl_file_path):
-                            ad.log.info("Pushing Curl to /data dir")
-                            ad.adb.push("%s /data" % (curl_file_path))
-                            ad.adb.shell(
-                                "chmod 777 /data/curl", ignore_status=True)
-            except Exception:
-                ad.log.info("Failed to push curl on this device")
+                        if int(ad.adb.getprop(
+                                "ro.product.first_api_level")) >= 25:
+                            tel_data = self.user_params.get(
+                                "tel_data", "tel_data")
+                            if isinstance(tel_data, list):
+                                tel_data = tel_data[0]
+                            curl_file_path = os.path.join(tel_data, "curl")
+                            if not os.path.isfile(curl_file_path):
+                                curl_file_path = os.path.join(
+                                    self.user_params[Config.key_config_path],
+                                    curl_file_path)
+                            if os.path.isfile(curl_file_path):
+                                ad.log.info("Pushing Curl to /data dir")
+                                ad.adb.push("%s /data" % (curl_file_path))
+                                ad.adb.shell(
+                                    "chmod 777 /data/curl", ignore_status=True)
+                    else:
+                        setattr(ad, "curl_capable", True)
+                except Exception:
+                    ad.log.info("Failed to push curl on this device")
 
             # Ensure that a test class starts from a consistent state that
             # improves chances of valid network selection and facilitates
