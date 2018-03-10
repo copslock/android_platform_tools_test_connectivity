@@ -60,7 +60,10 @@ class PowertrafficTest(base_test.BaseTestClass):
         server and reset the ethernet interface for iperf traffic
         """
         self.log.info('Tearing down the test case')
-        self.iperf_server.stop()
+        try:
+            self.iperf_server.stop()
+        except utils.ActsUtilsError:
+            pass
         self.access_point.bridge.teardown(self.brconfigs)
         self.access_point.close()
         wputils.reset_host_interface(self.pkt_sender.interface)
