@@ -1377,6 +1377,13 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         self.ad.log.info(self.result_detail)
         sub_id = get_outgoing_voice_sub_id(self.ad)
         slot_index = get_slot_index_from_subid(self.log, self.ad, sub_id)
+
+        if self.ad.model in ("angler", "bullhead", "marlin", "sailfish"):
+            msg = "Power off SIM slot is not supported"
+            self.ad.log.warning("%s, test finished", msg)
+            self.result_detail = "%s, %s" % (self.result_detail, msg)
+            return result
+
         if power_off_sim(self.ad, slot_index):
             for i in range(3):
                 carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
@@ -1387,8 +1394,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 if carrier_id != -1 or carrier_name:
                     if i == 2:
                         self.ad.log.error(msg)
-                        self.result_detail = "%s %s" % (self.result_detail,
-                                                        msg)
+                        self.result_detail = "%s, %s" % (self.result_detail,
+                                                         msg)
                         result = False
                     else:
                         time.sleep(5)
@@ -1396,14 +1403,10 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                     self.ad.log.info(msg)
                     break
         else:
-            if self.ad.model in ("taimen", "walleye"):
-                msg = "Power off SIM slot is not working"
-                self.ad.log.error(msg)
-                result = False
-            else:
-                msg = "Power off SIM slot is not supported"
-                self.ad.log.warning(msg)
-            self.result_detail = "%s %s" % (self.result_detail, msg)
+            msg = "Power off SIM slot is not working"
+            self.ad.log.error(msg)
+            result = False
+            self.result_detail = "%s, %s" % (self.result_detail, msg)
 
         if not power_on_sim(self.ad, slot_index):
             self.ad.log.error("Fail to power up SIM")
@@ -1419,7 +1422,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                       "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
                 if carrier_id != -1 or carrier_name:
                     self.ad.log.error(msg)
-                    self.result_detail = "%s %s" % (self.result_detail, msg)
+                    self.result_detail = "%s, %s" % (self.result_detail, msg)
                     result = False
                 else:
                     self.ad.log.info(msg)
@@ -1440,7 +1443,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if old_carrier_id != new_carrier_id or (old_carrier_name !=
                                                     new_carrier_name):
                 self.ad.log.error(msg)
-                self.result_detail = "%s %s" % (self.result_detail, msg)
+                self.result_detail = "%s, %s" % (self.result_detail, msg)
                 result = False
             else:
                 self.ad.log.info(msg)
@@ -1460,8 +1463,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         cmd = ("am broadcast -a "
-              "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
-              "-e \"ce.cm.power_anomaly_data_enable\" \"true\"")
+               "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+               "-e \"ce.cm.power_anomaly_data_enable\" \"true\"")
         ad.adb.shell(cmd)
         time.sleep(60)
         begin_time = get_current_epoch_time()
