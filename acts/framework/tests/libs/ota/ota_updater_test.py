@@ -44,6 +44,9 @@ class MockOtaRunner(object):
     def can_update(self):
         return self.can_update_value
 
+    def validate_update(self):
+        pass
+
 
 class OtaUpdaterTests(unittest.TestCase):
     """Tests the methods in the ota_updater module."""

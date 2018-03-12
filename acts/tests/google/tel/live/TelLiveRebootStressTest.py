@@ -29,8 +29,10 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_OMADM
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_PROVISIONING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
+from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
+from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_CRASH
@@ -44,27 +46,32 @@ from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
+from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
+from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import power_off_sim
 from acts.test_utils.tel.tel_test_utils import power_on_sim
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts.test_utils.tel.tel_test_utils import unlock_sim
+from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
+from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
+from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
+from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
+from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
+from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
@@ -79,9 +86,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
-        self.stress_test_number = self.get_stress_test_number()
+        self.stress_test_number = int(
+            self.user_params.get("stress_test_number", 10))
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-
+        self.skip_reset_between_cases = False
         try:
             self.wifi_network_pass = self.user_params["wifi_network_pass"]
         except KeyError:
@@ -102,38 +110,38 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
-        methods = [("check_subscription",
-                    self._check_subscription), ("check_data",
-                                                self._check_data),
-                   ("check_call_setup_teardown",
-                    self._check_call_setup_teardown), ("check_sms",
-                                                       self._check_sms),
-                   ("check_mms", self._check_mms), ("check_lte_data",
-                                                    self._check_lte_data),
-                   ("check_volte",
-                    self._check_volte), ("check_vt",
-                                         self._check_vt), ("check_wfc",
-                                                           self._check_wfc),
-                   ("check_3g", self._check_3g), ("check_tethering",
-                                                  self._check_tethering)]
-        self.testing_methods = []
-        for name, func in methods:
+        self.default_testing_kwargs = {}
+        for method in ("_check_volte", "_check_vt", "_check_csfb",
+                       "_check_tethering", "_check_wfc_apm",
+                       "_check_wfc_nonapm", "_check_3g"):
+            func = getattr(self, method)
             check_result = func()
-            self.dut.log.info("%s is %s before tests start", name,
+            self.dut.log.info("%s is %s before tests start", method,
                               check_result)
             if check_result:
-                self.testing_methods.append((name, func))
-        self.log.info("Working features: %s", self.testing_methods)
+                self.default_testing_kwargs[method] = check_result
+        self.dut.log.info("Tested: %s", self.default_testing_kwargs)
+
+    def teardown_test(self):
+        self._set_volte_provisioning()
 
     def feature_validator(self, **kwargs):
         failed_tests = []
-        for name, func in self.testing_methods:
-            if kwargs.get(name, True):
+        for method in ("_check_subscription", "_check_data",
+                       "_check_call_setup_teardown", "_check_sms",
+                       "_check_mms"):
+            func = getattr(self, method)
+            if not func():
+                self.log.error("%s failed", method)
+                failed_tests.append(method)
+        for method, result in kwargs.items():
+            if kwargs.get(method, False):
+                func = getattr(self, method)
                 if not func():
-                    self.log.error("%s failed", name)
-                    failed_tests.append(name)
+                    self.log.error("%s failed", method)
+                    failed_tests.append(method)
                 else:
-                    self.log.info("%s succeeded", name)
+                    self.log.info("%s succeeded", method)
         if failed_tests:
             self.log.error("%s failed", failed_tests)
         return failed_tests
@@ -145,20 +153,42 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _check_provision(self):
+    def _check_volte_provisioning(self):
         if CAPABILITY_OMADM in self.dut_capabilities:
             if not wait_for_state(self.dut.droid.imsIsVolteProvisionedOnDevice,
                                   True):
-                self.log.error("VoLTE provisioning check fails.")
+                self.dut.log.error("VoLTE provisioning is disabled.")
                 return False
             else:
+                self.dut.log.info("VoLTE provision is enabled")
                 return True
-        return False
+        return True
 
-    def _clear_provisioning(self):
+    def _check_volte_provisioning_disabled(self):
         if CAPABILITY_OMADM in self.dut_capabilities:
-            self.log.info("Clear Provisioning bit")
+            if not wait_for_state(self.dut.droid.imsIsVolteProvisionedOnDevice,
+                                  False):
+                self.dut.log.error("VoLTE provisioning is not disabled.")
+                return False
+            else:
+                self.dut.log.info("VoLTE provision is disabled")
+                return True
+        return True
+
+    def _set_volte_provisioning(self):
+        if CAPABILITY_OMADM in self.dut_capabilities:
+            self.dut.log.info("Set VoLTE Provisioning bit")
+            self.dut.droid.imsSetVolteProvisioning(True)
+
+    def _clear_volte_provisioning(self):
+        if CAPABILITY_OMADM in self.dut_capabilities:
+            self.dut.log.info("Clear VoLTE Provisioning bit")
             self.dut.droid.imsSetVolteProvisioning(False)
+            if self.dut.droid.imsIsVolteProvisionedOnDevice():
+                self.dut.log.error("VoLTE is still provisioned")
+                return False
+            else:
+                self.dut.log.info("VoLTE provisioning is disabled")
         return True
 
     def _check_call_setup_teardown(self):
@@ -185,7 +215,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def _check_data(self):
         if not verify_http_connection(self.log, self.dut):
-            self.log.error("Data connection is not available.")
+            self.dut.log.error("Data connection is not available.")
             return False
         return True
 
@@ -197,9 +227,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return float(total_sum / total_count)
 
     def _check_lte_data(self):
-        self.log.info("Check LTE data.")
-        if not phone_setup_csfb(self.log, self.dut):
-            self.log.error("Failed to setup LTE data.")
+        if not is_droid_in_network_generation(self.log, self.dut, GEN_4G,
+                                              NETWORK_SERVICE_DATA):
+            self.dut.log.error("Data is not on 4G network")
             return False
         if not verify_http_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
@@ -207,6 +237,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return True
 
     def _check_volte(self):
+        self._set_volte_provisioning()
+        if not self._check_volte_provisioning():
+            return False
         if CAPABILITY_VOLTE in self.dut_capabilities:
             self.log.info("Check VoLTE")
             if not phone_setup_volte(self.log, self.dut):
@@ -217,11 +250,55 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                                        self.dut, is_phone_in_call_volte):
                 self.log.error("VoLTE Call Failed.")
                 return False
-            if not sms_send_receive_verify(self.log, self.dut,
-                                           self.ad_reference,
-                                           [rand_ascii_str(50)]):
-                self.log.error("SMS failed")
+            if not self._check_lte_data():
                 return False
+        return True
+
+    def _check_csfb(self):
+        if not phone_setup_csfb(self.log, self.dut):
+            self.log.error("Failed to setup CSFB.")
+            return False
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_csfb):
+            self.dut.log.error("VoLTE Call Failed.")
+            return False
+        if not wait_for_network_generation(
+                self.log, self.dut, GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            self.dut.log.error("Data service failed to camp to 4G")
+            return False
+        if not verify_http_connection(self.log, self.dut):
+            self.log.error("Data not available on cell.")
+            return False
+        return True
+
+    def _check_volte_enabled(self):
+        if phone_idle_volte(self.log, self.dut):
+            self.dut.log.info("VoLTE is enabled")
+        else:
+            self.dut.log.error("VoLTE is not enabled")
+            return False
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_volte):
+            self.log.error("VoLTE Call Failed.")
+            return False
+        if not self._check_lte_data():
+            return False
+        return True
+
+    def _check_csfb_enabled(self):
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_csfb):
+            self.log.error("CSFB Call Failed.")
+            return False
+        if not wait_for_network_generation(
+                self.log, self.dut, GEN_4G,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            self.dut.log.error("Data service failed to camp to 4G")
+            return False
+        if not verify_http_connection(self.log, self.dut):
+            self.log.error("Data not available on cell.")
+            return False
         return True
 
     def _check_vt(self):
@@ -241,9 +318,24 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                     verify_callee_func=is_phone_in_call_video_bidirectional):
                 self.log.error("VT Call Failed.")
                 return False
+            else:
+                return True
+        return False
+
+    def _check_vt_enabled(self):
+        if not video_call_setup_teardown(
+                self.log,
+                self.dut,
+                self.ad_reference,
+                self.dut,
+                video_state=VT_STATE_BIDIRECTIONAL,
+                verify_caller_func=is_phone_in_call_video_bidirectional,
+                verify_callee_func=is_phone_in_call_video_bidirectional):
+            self.log.error("VT Call Failed.")
+            return False
         return True
 
-    def _check_wfc(self):
+    def _check_wfc_apm(self):
         if CAPABILITY_WFC in self.dut_capabilities:
             self.log.info("Check WFC")
             if not phone_setup_iwlan(
@@ -255,11 +347,44 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                                        self.dut, is_phone_in_call_iwlan):
                 self.log.error("WFC Call Failed.")
                 return False
-            if not sms_send_receive_verify(self.log, self.dut,
-                                           self.ad_reference,
-                                           [rand_ascii_str(50)]):
-                self.log.error("SMS failed")
+            else:
+                return True
+        return False
+
+    def _check_wfc_nonapm(self):
+        if CAPABILITY_WFC in self.dut_capabilities:
+            self.log.info("Check WFC")
+            if not phone_setup_iwlan(
+                    self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
+                    self.wifi_network_ssid, self.wifi_network_pass):
+                self.log.error("Failed to setup WFC.")
                 return False
+            if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                       self.dut, is_phone_in_call_iwlan):
+                self.log.error("WFC Call Failed.")
+                return False
+            else:
+                return True
+        return False
+
+    def _check_wfc_enabled(self):
+        if not wait_for_wifi_data_connection(self.log, self.dut, True):
+            self.dut.log.error("Failed to connect to WIFI")
+            return False
+        if not wait_for_wfc_enabled(self.log, self.dut):
+            self.dut.log.error("WFC is not enabled")
+            return False
+        if not wait_for_network_rat(
+                self.log,
+                self.dut,
+                RAT_FAMILY_WLAN,
+                voice_or_data=NETWORK_SERVICE_DATA):
+            ad.log.info("Data rat can not go to iwlan mode successfully")
+            return False
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_iwlan):
+            self.log.error("WFC Call Failed.")
+            return False
         return True
 
     def _check_3g(self):
@@ -276,7 +401,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             return False
         if not sms_send_receive_verify(self.log, self.dut, self.ad_reference,
                                        [rand_ascii_str(50)]):
-            self.log.error("SMS failed")
+            self.log.error("SMS failed in 3G")
             return False
         return True
 
@@ -455,15 +580,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         """Reboot Reliability Test
 
         Arguments:
-            check_provision: whether to check provisioning after reboot.
-            check_call_setup_teardown: whether to check setup and teardown a call.
-            check_lte_data: whether to check the LTE data.
-            check_volte: whether to check Voice over LTE.
-            check_wfc: whether to check Wifi Calling.
-            check_3g: whether to check 3G.
-            check_tethering: whether to check Tethering.
-            check_data_roaming: whether to check Data Roaming.
-            clear_provision: whether to clear provisioning before reboot.
+            function_name: function to be checked
 
         Expected Results:
             No crash happens in stress test.
@@ -472,8 +589,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         self.number_of_devices = 2
-        toggle_airplane_mode(self.log, self.dut, False)
-        phone_setup_voice_general(self.log, self.ad_reference)
         fail_count = collections.defaultdict(int)
         test_result = True
 
@@ -481,7 +596,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.log.info("Reboot Stress Test %s Iteration: <%s> / <%s>",
                           self.test_name, i, self.stress_test_number)
             begin_time = get_current_epoch_time()
-            self.dut.log.info("Reboot")
             reboot_device(self.dut)
             self.log.info("{} wait {}s for radio up.".format(
                 self.dut.serial, WAIT_TIME_AFTER_REBOOT))
@@ -528,10 +642,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 "imsdatadaemon", "ims_rtp_daemon",
                 "com.android.ims.rcsservice", "system_server", "cnd",
                 "modem"
-            check_lte_data: whether to check the LTE data.
-            check_volte: whether to check Voice over LTE.
-            check_vt: whether to check VT
-            check_wfc: whether to check Wifi Calling.
 
         Expected Results:
             All Features should work as intended post crash recovery
@@ -709,23 +819,14 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
     @test_tracker_info(uuid="4d9b425b-f804-45f4-8f47-0ba3f01a426b")
     @TelephonyBaseTest.tel_test_wrap
     def test_reboot_stress(self):
-        """Reboot Reliability Test
+        """Reboot with VoLTE Test
 
         Steps:
             1. Reboot DUT.
-            2. Check Provisioning bit (if support provisioning)
-            3. Wait for DUT to camp on LTE, Verify Data.
-            4. Enable VoLTE, check IMS registration. Wait for DUT report VoLTE
-                enabled, make VoLTE call. And verify VoLTE SMS.
-                (if support VoLTE)
-            5. Connect WiFi, enable WiFi Calling, wait for DUT report WiFi
-                Calling enabled and make a WFC call and verify SMS.
-                Disconnect WiFi. (if support WFC)
-            6. Wait for DUT to camp on 3G, Verify Data.
-            7. Make CS call and verify SMS.
-            8. Verify Tethering Entitlement Check and Verify WiFi Tethering.
-            9. Check crashes.
-            10. Repeat Step 1~9 for N times. (before reboot, clear Provisioning
+            2. Wait for DUT to camp
+            3. Verify Subscription, Call, Data, Messaging, Tethering
+            4. Check crashes.
+            5. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
                 bit if provisioning is supported)
 
         Expected Results:
@@ -734,27 +835,21 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._reboot_stress_test(
-            check_provision=True,
-            check_call_setup_teardown=True,
-            check_lte_data=True,
-            check_volte=True,
-            check_wfc=True,
-            check_3g=True,
-            check_tethering=True,
-            check_data_roaming=False,
-            clear_provision=True)
+        return self._reboot_stress_test(**self.default_testing_kwargs)
 
     @test_tracker_info(uuid="8b0e2c06-02bf-40fd-a374-08860e482757")
     @TelephonyBaseTest.tel_test_wrap
-    def test_reboot_stress(self):
-        """Reboot Reliability Test
+    def test_reboot_stress_check_phone_call_only(self):
+        """Reboot with VoLTE Test
 
         Steps:
-            1. Reboot DUT.
-            2. Check phone call .
-            3. Check crashes.
-            4. Repeat Step 1~9 for N times. (before reboot, clear Provisioning
+            1. Reboot DUT with volte enabled.
+            2. Wait for DUT to camp on LTE, Verify Data.
+            3. Check VoLTE is enabled by default, check IMS registration.
+               Wait for DUT report VoLTE enabled, make VoLTE call.
+               And verify VoLTE SMS. (if support VoLTE)
+            4. Check crashes.
+            5. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
                 bit if provisioning is supported)
 
         Expected Results:
@@ -763,7 +858,164 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._reboot_stress_test()
+        if not self._check_call_setup_teardown():
+            self.dut.log.error("Call setup test failed before reboot test")
+            return False
+        kwargs = {
+            "_check_subscription": True,
+            "_check_data": True,
+            "_check_call_setup_teardown": True
+        }
+        return self._reboot_stress_test(**kwargs)
+
+    @test_tracker_info(uuid="39a822e5-0360-44ce-97c7-f75468eba8d7")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_volte_enabled(self):
+        """Reboot with VoLTE Test
+
+        Steps:
+            1. Reboot DUT with volte enabled.
+            2. Wait for DUT to camp on LTE, Verify Data.
+            3. Check VoLTE is enabled by default, check IMS registration.
+               Wait for DUT report VoLTE enabled, make VoLTE call.
+               And verify VoLTE SMS. (if support VoLTE)
+            4. Check crashes.
+            5. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if CAPABILITY_VOLTE not in self.dut_capabilities:
+            raise signals.TestSkip("VOLTE is not supported")
+        if not self._check_volte():
+            self.dut.log.error("VoLTE test failed before reboot test")
+            return False
+        kwargs = {"_check_volte_enabled": True}
+        if self.default_testing_kwargs.get("_check_vt", False):
+            kwargs["_check_vt_enabled"] = True
+        return self._reboot_stress_test(**kwargs)
+
+    @test_tracker_info(uuid="3dace255-01a6-46ba-87e0-35396d406c95")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_csfb(self):
+        """Reboot with VoLTE Test
+
+        Steps:
+            1. Reboot DUT with CSFB.
+            2. Wait for DUT to camp on LTE, Verify Data.
+            3. Check call in CSFB after rebooting.
+            4. Check crashes.
+            5. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if not self._check_csfb():
+            self.dut.log.error("CSFB test failed before reboot test")
+            return False
+        kwargs = {"_check_csfb_enabled": True}
+        return self._reboot_stress_test(**kwargs)
+
+    @test_tracker_info(uuid="326f5ba4-8819-49bc-af87-6b3c07532de3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_volte_provisioning_disabled(self):
+        """Reboot with VoLTE Test
+
+        Steps:
+            1. Reboot DUT with volte provisioning disabled.
+            2. Wait for DUT to camp on LTE, Verify Data.
+            3. Check VoLTE is disabled after rebooting.
+            4. Check crashes.
+            5. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if CAPABILITY_OMADM not in self.dut_capabilities:
+            raise signals.TestSkip("OMADM is not supported")
+        self._clear_volte_provisioning()
+        if not self._check_csfb():
+            self.dut.log.error("CSFB test failed before reboot test")
+            return False
+        kwargs = {
+            "_check_volte_provisioning_disabled": True,
+            "_check_csfb_enabled": True
+        }
+        return self._reboot_stress_test(**kwargs)
+
+    @test_tracker_info(uuid="6c243b53-379a-4cda-9848-84fcec4019bd")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_wfc_apm(self):
+        """Reboot with WFC in APM Test
+
+        Steps:
+            1. Reboot DUT with wfc in apm mode.
+            2. Check phone call.
+            3. Check crashes.
+            4. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if CAPABILITY_WFC not in self.dut_capabilities:
+            raise signals.TestSkip("WFC is not supported")
+        if not self.default_testing_kwargs.get("_check_wfc_apm", False):
+            raise signals.TestSkip("WFC in airplane mode is not supported")
+        kwargs = {"_check_data": True, "_check_wfc_enabled": True}
+        if self.default_testing_kwargs.get("_check_vt", False):
+            kwargs["_check_vt_enabled"] = True
+        if not self._check_wfc_apm():
+            self.dut.log.error("WFC in APM test failed before reboot test")
+            return False
+        for method in ():
+            kwargs[method] = True
+        return self._reboot_stress_test(**kwargs)
+
+    @test_tracker_info(uuid="d0439c53-98fa-4303-b097-12ba2462295d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_reboot_stress_wfc_nonapm(self):
+        """Reboot with WFC in APM Test
+
+        Steps:
+            1. Reboot DUT with wfc in apm mode.
+            2. Check phone call .
+            3. Check crashes.
+            4. Repeat Step 1~4 for N times. (before reboot, clear Provisioning
+                bit if provisioning is supported)
+
+        Expected Results:
+            No crash happens in stress test.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        if CAPABILITY_WFC not in self.dut_capabilities:
+            raise signals.TestSkip("WFC is not supported")
+        if not self.default_testing_kwargs.get("_check_wfc_nonapm", False):
+            raise signals.TestSkip("WFC in non-airplane mode is not supported")
+        kwargs = {"_check_wfc_enabled": True}
+        if self.default_testing_kwargs.get("_check_vt", False):
+            kwargs["_check_vt_enabled"] = True
+        if not self._check_wfc_nonapm():
+            self.dut.log.error("WFC test failed before reboot test")
+            return False
+        return self._reboot_stress_test(**kwargs)
 
     @test_tracker_info(uuid="109d59ff-a488-4a68-87fd-2d8d0c035326")
     @TelephonyBaseTest.tel_test_wrap
@@ -810,7 +1062,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="modem")
+        return self._crash_recovery_test(
+            process="modem", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="ce5f4d63-7f3d-48b7-831d-2c1d5db60733")
     @TelephonyBaseTest.tel_test_wrap
@@ -833,7 +1086,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                                                         "sailfish", "marlin"):
             raise signals.TestSkip(
                 "com.google.mdstest not installed or supported")
-        return self._crash_recovery_test(process="modem-crash")
+        return self._crash_recovery_test(
+            process="modem-crash", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="489284e8-77c9-4961-97c8-b6f1a833ff90")
     @TelephonyBaseTest.tel_test_wrap
@@ -850,7 +1104,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="rild")
+        return self._crash_recovery_test(
+            process="rild", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="e1b34b2c-99e6-4966-a11c-88cedc953b47")
     @TelephonyBaseTest.tel_test_wrap
@@ -867,7 +1122,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="netmgrd")
+        return self._crash_recovery_test(
+            process="netmgrd", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="fa34f994-bc49-4444-9187-87691c94b4f4")
     @TelephonyBaseTest.tel_test_wrap
@@ -884,7 +1140,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="com.android.phone")
+        return self._crash_recovery_test(
+            process="com.android.phone", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="6f5a24bb-3cf3-4362-9675-36a6be90282f")
     @TelephonyBaseTest.tel_test_wrap
@@ -901,7 +1158,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="imsqmidaemon")
+        return self._crash_recovery_test(
+            process="imsqmidaemon", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="7a8dc971-054b-47e7-9e57-3bb7b39937d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -918,7 +1176,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="imsdatadaemon")
+        return self._crash_recovery_test(
+            process="imsdatadaemon", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="350ca58c-01f2-4a61-baff-530b8b24f1f6")
     @TelephonyBaseTest.tel_test_wrap
@@ -935,7 +1194,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="ims_rtp_daemon")
+        return self._crash_recovery_test(
+            process="ims_rtp_daemon", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="af78f33a-2b50-4c55-a302-3701b655c557")
     @TelephonyBaseTest.tel_test_wrap
@@ -952,7 +1212,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="com.android.ims.rcsservice")
+        return self._crash_recovery_test(
+            process="com.android.ims.rcsservice",
+            **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="8119aeef-84ba-415c-88ea-6eba35bd91fd")
     @TelephonyBaseTest.tel_test_wrap
@@ -969,7 +1231,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="system_server")
+        return self._crash_recovery_test(
+            process="system_server", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="c3891aca-9e1a-4e37-9f2f-23f12ef0a86f")
     @TelephonyBaseTest.tel_test_wrap
@@ -986,7 +1249,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="cnd")
+        return self._crash_recovery_test(
+            process="cnd", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="c1b661b9-d5cf-4a22-90a9-3fd55ddc2f3f")
     @TelephonyBaseTest.tel_test_wrap
@@ -1003,7 +1267,8 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test(process="sim")
+        return self._crash_recovery_test(
+            process="sim", **self.default_testing_kwargs)
 
     @test_tracker_info(uuid="b6d2fccd-5dfd-4637-aa3b-257837bfba54")
     @TelephonyBaseTest.tel_test_wrap

@@ -437,10 +437,12 @@ class AndroidDevice:
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        if self.is_adb_logcat_on:
-            self.stop_adb_logcat()
-        self.terminate_all_sessions()
-        self.stop_sl4a()
+        try:
+            if self.is_adb_logcat_on:
+                self.stop_adb_logcat()
+        finally:
+            self.terminate_all_sessions()
+            self.stop_sl4a()
 
     def is_connected(self):
         out = self.adb.devices()
@@ -765,17 +767,22 @@ class AndroidDevice:
         """
         if not self.is_adb_logcat_on:
             raise AndroidDeviceError(
-                "Android device %s does not have an ongoing adb logcat collection."
-                % self.serial)
+                "Android device %s does not have an ongoing adb logcat "
+                "collection." % self.serial)
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
         # but it does not pose a problem for our logging purposes.
-        logcat_output = self.adb.logcat('-t 1 -v year')
-        next_line = logcat_output.find('\n')
-        self.last_logcat_timestamp = logcat_output[next_line + 1:
-                                                   next_line + 24]
-        utils.stop_standing_subprocess(self.adb_logcat_process)
-        self.adb_logcat_process = None
+        try:
+            logcat_output = self.adb.logcat('-t 1 -v year')
+            next_line = logcat_output.find('\n')
+            self.last_logcat_timestamp = logcat_output[next_line + 1:
+                                                       next_line + 24]
+        except Exception as e:
+            self.log.error('Unable to parse the last logcat timestamp before '
+                           'shutting down the logcat process: %s' % e)
+        finally:
+            utils.stop_standing_subprocess(self.adb_logcat_process)
+            self.adb_logcat_process = None
 
     def get_apk_uid(self, apk_name):
         """Get the uid of the given apk.

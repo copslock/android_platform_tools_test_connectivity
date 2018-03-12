@@ -2119,52 +2119,13 @@ def http_file_download_by_curl(ad,
     if retry:
         curl_cmd += " --retry %s" % retry
     curl_cmd += " --url %s > %s" % (url, file_path)
-    accounting_apk = "com.android.server.telecom"  #"com.quicinc.cne.CNEService"
-    result = True
     try:
-        data_accounting = {
-            "mobile_rx_bytes":
-            ad.droid.getMobileRxBytes(),
-            "subscriber_mobile_data_usage":
-            get_mobile_data_usage(ad, None, None),
-            "curl_mobile_data_usage":
-            get_mobile_data_usage(ad, None, accounting_apk)
-        }
-        ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
         ad.adb.shell(curl_cmd, timeout=timeout)
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded to %s successfully", url, file_path)
-            new_data_accounting = {
-                "mobile_rx_bytes":
-                ad.droid.getMobileRxBytes(),
-                "subscriber_mobile_data_usage":
-                get_mobile_data_usage(ad, None, None),
-                "curl_mobile_data_usage":
-                get_mobile_data_usage(ad, None, accounting_apk)
-            }
-            ad.log.info("After downloading: %s", new_data_accounting)
-            accounting_diff = {
-                key: value - data_accounting[key]
-                for key, value in new_data_accounting.items() if value
-            }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
-            if getattr(ad, "on_mobile_data", False):
-                for key, value in accounting_diff.items():
-                    if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
-                                       value, expected_file_size)
-                        ad.data_accounting["%s_failure" % key] += 1
-            else:
-                for key, value in accounting_diff.items():
-                    if value >= expected_file_size:
-                        ad.log.error("%s diff is %s. File download is "
-                                     "consuming mobile data", key, value)
-                        result = False
-            ad.log.info("data_accounting_failure: %s", dict(
-                ad.data_accounting))
-            return result
+            return True
         else:
             ad.log.warning("Fail to download %s", url)
             return False
@@ -2308,8 +2269,8 @@ def http_file_download_by_sl4a(ad,
                 if not ad.downloading_droid.is_live:
                     ad.downloading_droid, ad.downloading_ed = ad.get_droid()
                     ad.downloading_ed.start()
-            except Exception as e:
-                ad.log.info(e)
+            except Exception:
+                ad.log.info("Start new sl4a session for file download")
                 ad.downloading_droid, ad.downloading_ed = ad.get_droid()
                 ad.downloading_ed.start()
         data_accounting = {
@@ -2415,7 +2376,7 @@ def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
 def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.info("Remove subscriber mobile data usage limit")
+    ad.log.debug("Remove subscriber mobile data usage limit")
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
@@ -3625,8 +3586,8 @@ def sms_send_receive_verify_for_subscription(
                 if not ad.messaging_droid.is_live:
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
-            except Exception as e:
-                ad.log.info(e)
+            except Exception:
+                ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
 
@@ -3762,12 +3723,21 @@ def mms_send_receive_verify_for_subscription(
     phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
 
-    for ad in (ad_rx, ad_tx):
+    for ad in (ad_tx, ad_rx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
+        else:
+            try:
+                if not ad.messaging_droid.is_live:
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+            except Exception:
+                ad.log.info("Create new sl4a session for messaging")
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
@@ -5749,5 +5719,8 @@ def log_screen_shot(ad, test_name):
     screen_shot_path = os.path.join(ad.log_path, test_name,
                                     "Screenshot_%s" % ad.serial)
     utils.create_dir(screen_shot_path)
-    ad.adb.shell("screencap -p %s" % file_name)
-    ad.adb.pull("%s %s" % (file_name, screen_shot_path))
+    try:
+        ad.adb.shell("screencap -p %s" % file_name)
+        ad.adb.pull("%s %s" % (file_name, screen_shot_path))
+    except:
+        ad.log.error("Fail to log screen shot")
