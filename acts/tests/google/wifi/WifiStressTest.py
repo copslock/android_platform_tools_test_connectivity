@@ -53,7 +53,7 @@ class WifiStressTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
-            "stress_count"]
+            "stress_count", "stress_hours"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
@@ -177,7 +177,7 @@ class WifiStressTest(WifiBaseTest):
         self.scan_and_connect_by_ssid(self.wpa_5g)
         # Start IPerf traffic from server to phone.
         # Download data for 5 hours.
-        sec = 60
+        sec = self.stress_hours * 60 * 60
         args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
         self.log.info("Running iperf client {}".format(args))
         result, data = self.dut.run_iperf_client(self.iperf_server_address,
