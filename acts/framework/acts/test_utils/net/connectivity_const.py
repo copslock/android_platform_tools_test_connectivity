@@ -57,6 +57,12 @@ VPN_TIMEOUT = 15
 TYPE_MOBILE = 0
 TYPE_WIFI = 1
 
+# Multipath preference constants
+MULTIPATH_PREFERENCE_NONE = 0
+MULTIPATH_PREFERENCE_HANDOVER = 1 << 0
+MULTIPATH_PREFERENCE_RELIABILITY = 1 << 1
+MULTIPATH_PREFERENCE_PERFORMANCE = 1 << 2
+
 # Constants for VpnProfile
 class VpnProfile(object):
     """ This class contains all the possible
