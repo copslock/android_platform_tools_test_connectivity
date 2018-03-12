@@ -80,7 +80,7 @@ class WifiDiagnosticsTest(WifiBaseTest):
 
     """Tests"""
 
-    @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
+    @test_tracker_info(uuid="d6f1661b-6732-4939-8c28-f20917774ec0")
     def test_ringbuffers_are_dumped_during_lsdebug(self):
         """Steps:
         1. Connect to a open network.
