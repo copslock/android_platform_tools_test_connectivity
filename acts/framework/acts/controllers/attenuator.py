@@ -72,7 +72,8 @@ def create(configs):
 
 
 def destroy(objs):
-    return
+    for attn in objs:
+        attn.instrument.close()
 
 
 """Classes for accessing, managing, and manipulating attenuators.
