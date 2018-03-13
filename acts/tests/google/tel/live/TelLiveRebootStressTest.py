@@ -1267,6 +1267,11 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
+        if self.dut.adb.getprop("ro.build.version.release")[0] in (
+                "8", "O", "7", "N") or self.dut.model in ("angler", "bullhead",
+                                                          "marlin",
+                                                          "sailfish"):
+            raise signals.TestSkip("Power off SIM is not supported")
         return self._crash_recovery_test(
             process="sim", **self.default_testing_kwargs)
 
