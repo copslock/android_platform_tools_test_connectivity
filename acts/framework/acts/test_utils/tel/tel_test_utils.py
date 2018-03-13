@@ -5410,12 +5410,17 @@ def unlocking_device(ad, device_password=None):
 def refresh_sl4a_session(ad):
     try:
         ad.droid.logI("Checking SL4A connection")
-        ad.log.info("Existing sl4a session is active")
-    except:
+        ad.log.debug("Existing sl4a session is active")
+        return True
+    except Exception as e:
+        ad.log.error("Existing sl4a session is NOT active: %s", e)
+    try:
         ad.terminate_all_sessions()
-        ad.ensure_screen_on()
-        ad.log.info("Open new sl4a connection")
-        bring_up_sl4a(ad)
+    except Exception as e:
+        ad.log.info("terminate_all_sessions with error %s", e)
+    ad.ensure_screen_on()
+    ad.log.info("Open new sl4a connection")
+    bring_up_sl4a(ad)
 
 
 def reset_device_password(ad, device_password=None):

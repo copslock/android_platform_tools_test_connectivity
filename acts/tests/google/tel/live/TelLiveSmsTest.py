@@ -18,7 +18,7 @@
 """
 
 import time
-from queue import Empty
+from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import GEN_3G
@@ -1244,8 +1244,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1271,8 +1270,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1298,8 +1296,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1325,8 +1322,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1353,8 +1349,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1383,8 +1378,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1411,8 +1405,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1438,8 +1431,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1465,8 +1457,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1492,8 +1483,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1520,8 +1510,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1550,8 +1539,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this csfb wcdma MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this csfb MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1579,8 +1567,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x SMS test.")
-            return False
+            raise signals.TestSkip("Not CDMA phone, abort this 1x SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1606,8 +1593,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x SMS test.")
-            return False
+            raise signals.TestSkip("Not CDMA phone, abort this 1x SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1634,8 +1620,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x MMS test.")
-            return False
+            raise signals.TestSkip("Not CDMA phone, abort this 1x MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1661,8 +1646,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x MMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1689,8 +1674,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x MMS test.")
-            return False
+            raise signals.TestSkip("Not CDMA phone, abort this 1x MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1718,8 +1702,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this 1x MMS test.")
-            return False
+            raise signals.TestSkip("Not CDMA phone, abort this 1x MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1747,8 +1730,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x SMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1774,8 +1757,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x SMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1801,8 +1784,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x SMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1828,8 +1811,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x MMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1855,8 +1838,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x SMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x SMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1884,8 +1867,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is CDMA phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            self.log.error("Not CDMA phone, abort this csfb 1x MMS test.")
-            return False
+            raise signals.TestSkip(
+                "Not CDMA phone, abort this csfb 1x MMS test.")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2413,8 +2396,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM SMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2454,8 +2436,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm SMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM SMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2495,8 +2476,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM SMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2522,8 +2502,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM MMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2549,8 +2528,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM MMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2578,8 +2556,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
         # Make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this gsm MMS test.")
-            return False
+            raise signals.TestSkip("Not GSM phone, abort this GSM MMS test.")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]

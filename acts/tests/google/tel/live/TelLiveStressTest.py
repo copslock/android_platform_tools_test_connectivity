@@ -80,6 +80,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         # supported file download methods: chrome, sl4a, curl
         self.file_download_method = self.user_params.get(
             "file_download_method", "curl")
+        self.get_binder_logs = self.user_params.get("get_binder_logs", False)
         if len(self.android_devices) == 1:
             self.single_phone_test = True
         if self.single_phone_test:
@@ -202,12 +203,21 @@ class TelLiveStressTest(TelephonyBaseTest):
             the_number, message_type, length, ads[0].serial, ads[1].serial)
         self.log.info(log_msg)
         for ad in self.android_devices:
-            for session in ad._sl4a_manager.sessions.values():
+            if not getattr(ad, "messaging_droid", None):
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+            else:
                 try:
-                    session.rpc_client.logI(log_msg)
-                    break
-                except Exception as e:
-                    ad.log.warning(e)
+                    if not ad.messaging_droid.is_live:
+                        ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                        ad.messaging_ed.start()
+                    else:
+                        ad.messaging_ed.clear_all_events()
+                except Exception:
+                    ad.log.info("Create new sl4a session for messaging")
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+            ad.messaging_droid.logI(log_msg)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -269,11 +279,22 @@ class TelLiveStressTest(TelephonyBaseTest):
             log_msg = "The %s-th phone call test from %s to %s for %ssec" % (
                 the_number, ads[0].serial, ads[1].serial, duration)
         self.log.info(log_msg)
-        for ad in ads:
-            try:
-                ad.droid.logI(log_msg)
-            except Exception as e:
-                ad.log.warning(e)
+        for ad in self.android_devices:
+            if not getattr(ad, "droid", None):
+                ad.droid, ad.ed = ad.get_droid()
+                ad.ed.start()
+            else:
+                try:
+                    if not ad.droid.is_live:
+                        ad.droid, ad.ed = ad.get_droid()
+                        ad.ed.start()
+                    else:
+                        ad.ed.clear_all_events()
+                except Exception:
+                    ad.log.info("Create new sl4a session for phone call")
+                    ad.droid, ad.ed = ad.get_droid()
+                    ad.ed.start()
+            ad.droid.logI(log_msg)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         if self.single_phone_test:
@@ -343,7 +364,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
-            if self.result_info["Call Total"] % 50 == 0:
+            if self.get_binder_logs and self.result_info["Call Total"] % 50 == 0:
                 test_name = "%s_call_No_%s_success_binder_logs" % (
                     self.test_name, the_number)
                 for ad in ads:
@@ -415,10 +436,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.info(dict(self.result_info))
                 self._update_perf_json()
                 begin_time = get_current_epoch_time()
+                test_name = "found_crash_%s" % begin_time
                 time.sleep(self.crash_check_interval)
                 for ad in self.android_devices:
                     crash_report = ad.check_crash_report(
-                        "checking_crash", begin_time, log_crash_report=True)
+                        test_name, begin_time, log_crash_report=True)
                     if crash_report:
                         ad.log.error("Find new crash reports %s", crash_report)
                         failure += 1
@@ -426,6 +448,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         for crash in crash_report:
                             if "ramdump_modem" in crash:
                                 self.result_info["Crashes-Modem"] += 1
+                        self.take_bug_report(test_name, begin_time)
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
