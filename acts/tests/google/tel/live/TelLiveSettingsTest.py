@@ -1370,8 +1370,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if self.ad.adb.getprop("ro.build.version.release")[0] in ("8", "O",
                                                                   "7", "N"):
             raise signals.TestSkip("Not supported in this build")
-        old_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-        old_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName()
+        old_carrier_id = self.ad.droid.telephonyGetSimCarrierId()
+        old_carrier_name = self.ad.droid.telephonyGetSimCarrierIdName()
         self.result_detail = "carrier_id = %s, carrier_name = %s" % (
             old_carrier_id, old_carrier_name)
         self.ad.log.info(self.result_detail)
@@ -1386,9 +1386,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
 
         if power_off_sim(self.ad, slot_index):
             for i in range(3):
-                carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
-                )
+                carrier_id = self.ad.droid.telephonyGetSimCarrierId()
+                carrier_name = self.ad.droid.telephonyGetSimCarrierIdName()
                 msg = "After SIM power down, carrier_id = %s(expecting -1), " \
                       "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
                 if carrier_id != -1 or carrier_name:
@@ -1415,9 +1414,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         else:
             if is_sim_locked(self.ad):
                 self.ad.log.info("Sim is locked")
-                carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-                carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
-                )
+                carrier_id = self.ad.droid.telephonyGetSimCarrierId()
+                carrier_name = self.ad.droid.telephonyGetSimCarrierIdName()
                 msg = "In locked SIM, carrier_id = %s(expecting -1), " \
                       "carrier_name = %s(expecting None)" % (carrier_id, carrier_name)
                 if carrier_id != -1 or carrier_name:
@@ -1435,9 +1433,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if not ensure_phone_subscription(self.log, self.ad):
                 self.ad.log.error("Unable to find a valid subscription!")
                 result = False
-            new_carrier_id = self.ad.droid.telephonyGetSubscriptionCarrierId()
-            new_carrier_name = self.ad.droid.telephonyGetSubscriptionCarrierName(
-            )
+            new_carrier_id = self.ad.droid.telephonyGetSimCarrierId()
+            new_carrier_name = self.ad.droid.telephonyGetSimCarrierIdName()
             msg = "After SIM power up, new_carrier_id = %s, " \
                   "new_carrier_name = %s" % (new_carrier_id, new_carrier_name)
             if old_carrier_id != new_carrier_id or (old_carrier_name !=
