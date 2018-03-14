@@ -536,7 +536,7 @@ def is_sim_ready(log, ad, sim_slot_id=None):
     else:
         status = ad.droid.telephonyGetSimStateForSlotId(sim_slot_id)
     if status != SIM_STATE_READY:
-        log.info("Sim not ready")
+        ad.log.info("Sim state is %s, not ready", status)
         return False
     return True
 
@@ -617,7 +617,8 @@ def _wait_for_bluetooth_in_state(log, ad, state, max_wait):
             False: _BLUETOOTH_STATE_OFF_EVENT,
             True: _BLUETOOTH_STATE_ON_EVENT
         }[state]
-        ad.ed.pop_event(event, max_wait)
+        event = ad.ed.pop_event(event, max_wait)
+        ad.log.info("Got event %s", event['name'])
         return True
     except Empty:
         ad.log.error("Time out: bluetooth state still in %s, expecting %s",
@@ -697,6 +698,7 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                 timeout=MAX_WAIT_TIME_AIRPLANEMODE_EVENT,
                 field=ServiceStateContainer.SERVICE_STATE,
                 value_list=service_state_list)
+            ad.log.info("Got event %s", event)
         except Empty:
             pass
         if event is None:
@@ -904,6 +906,7 @@ def wait_for_call_offhook_event(
             timeout=timeout,
             field=CallStateContainer.CALL_STATE,
             value=TELEPHONY_STATE_OFFHOOK)
+        ad.log.info("Got event %s", TELEPHONY_STATE_OFFHOOK)
     except Empty:
         ad.log.info("No event for call state change to OFFHOOK")
         return False
@@ -1521,7 +1524,7 @@ def call_reject_leave_message_for_subscription(
             event = ad_callee.ed.wait_for_event(
                 EventMessageWaitingIndicatorChanged,
                 _is_on_message_waiting_event_true)
-            log.info(event)
+            ad_callee.log.info("Got event %s", event)
         except Empty:
             ad_callee.log.warning("No expected event %s",
                                   EventMessageWaitingIndicatorChanged)
@@ -2639,7 +2642,7 @@ def _wait_for_nw_data_connection(
             event = ad.ed.wait_for_event(
                 EventConnectivityChanged, _connection_state_change,
                 timeout_value, is_connected, connection_type)
-            ad.log.info("received event: %s", event)
+            ad.log.info("Got event: %s", event)
         except Empty:
             pass
 
@@ -3475,6 +3478,7 @@ def wait_for_matching_sms(log,
             ad_rx.messaging_ed.wait_for_event(EventSmsReceived, is_sms_match,
                                               max_wait_time, phonenumber_tx,
                                               text)
+            ad_rx.log.info("Got event %s", EventSmsReceived)
             return True
         except Empty:
             ad_rx.log.error("No matched SMS received event.")
@@ -3486,9 +3490,10 @@ def wait_for_matching_sms(log,
         try:
             received_sms = ''
             while (text != ''):
-                event = ad_rx.messaging_ed.wait_for_event(
+                ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
                     phonenumber_tx, text)
+                ad_rx.log.info("Got event %s", eventSmsReceived)
                 text = text[len(event['data']['Text']):]
                 received_sms += event['data']['Text']
             return True
@@ -3543,6 +3548,7 @@ def wait_for_matching_mms(log,
         #TODO: add mms matching after mms message parser is added in sl4a. b/34276948
         ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
                                           max_wait_time, phonenumber_tx, text)
+        ad_rx.log.info("Got event %s", EventMmsDownloaded)
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
@@ -3607,6 +3613,7 @@ def sms_send_receive_verify_for_subscription(
             try:
                 ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
                                              max_wait_time)
+                ad_tx.log.info("Got event %s", EventSmsSentSuccess)
             except Empty:
                 ad_tx.log.error("No sent_success event for SMS of length %s.",
                                 length)
@@ -3753,6 +3760,7 @@ def mms_send_receive_verify_for_subscription(
             try:
                 ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
                                              max_wait_time)
+                ad_tx.log.info("Got event %s", EventMmsSentSuccess)
             except Empty:
                 ad_tx.log.warning("No sent_success event.")
                 # check log message as a work around for the missing sl4a
@@ -3833,8 +3841,9 @@ def mms_receive_verify_after_call_hangup_for_subscription(
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                             max_wait_time)
+                event = ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                                     max_wait_time)
+                ad_tx.log.info("Got event %s", event['name'])
             except Empty:
                 log.warning("No sent_success event.")
                 if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
@@ -5410,12 +5419,17 @@ def unlocking_device(ad, device_password=None):
 def refresh_sl4a_session(ad):
     try:
         ad.droid.logI("Checking SL4A connection")
-        ad.log.info("Existing sl4a session is active")
-    except:
+        ad.log.debug("Existing sl4a session is active")
+        return True
+    except Exception as e:
+        ad.log.error("Existing sl4a session is NOT active: %s", e)
+    try:
         ad.terminate_all_sessions()
-        ad.ensure_screen_on()
-        ad.log.info("Open new sl4a connection")
-        bring_up_sl4a(ad)
+    except Exception as e:
+        ad.log.info("terminate_all_sessions with error %s", e)
+    ad.ensure_screen_on()
+    ad.log.info("Open new sl4a connection")
+    bring_up_sl4a(ad)
 
 
 def reset_device_password(ad, device_password=None):

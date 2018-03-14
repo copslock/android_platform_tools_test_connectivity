@@ -124,13 +124,13 @@ class TelephonyBaseTest(BaseTestClass):
             for i in range(tries):
                 result = True
                 if i > 1:
-                    log_string = "[Rerun Test %s]" % test_name
+                    log_string = "[Test Case] RERUN %s" % test_name
                     self.teardown_test()
                     self.setup_test()
                     self.log.info(log_string)
                     for ad in self.android_devices:
                         try:
-                            ad.droid.logI("Started %s" % log_string)
+                            ad.droid.logI(log_string)
                         except Exception as e:
                             ad.log.warning(e)
                 try:
@@ -142,12 +142,6 @@ class TelephonyBaseTest(BaseTestClass):
                 except Exception as e:
                     self.log.error(traceback.format_exc())
                     asserts.fail(self.result_detail)
-                for ad in self.android_devices:
-                    try:
-                        ad.droid.logI("Finished %s" % log_string)
-                    except Exception as e:
-                        ad.log.warning(e)
-                        refresh_sl4a_session(ad)
                 if result is not False: break
             if self.user_params.get("check_crash", True):
                 new_crash = ad.check_crash_report(self.test_name,
@@ -289,7 +283,9 @@ class TelephonyBaseTest(BaseTestClass):
 
     def setup_test(self):
         for ad in self.android_devices:
-            ad.ed.clear_all_events()
+            for session in ad._sl4a_manager.sessions.values():
+                ed = session.get_event_dispatcher()
+                ed.clear_all_events()
             output = ad.adb.logcat("-t 1")
             match = re.search(r"\d+-\d+\s\d+:\d+:\d+.\d+", output)
             if match:
@@ -307,7 +303,6 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_exception(self, test_name, begin_time):
         self._pull_diag_logs(test_name, begin_time)
-        self._take_bug_report(test_name, begin_time)
         self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
