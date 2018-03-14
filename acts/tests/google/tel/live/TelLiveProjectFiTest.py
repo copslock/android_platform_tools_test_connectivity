@@ -51,6 +51,21 @@ _SWITCHING_PREF_FILE = (
 _INTENT_FLAGS = int(0x00008000 | 0x10000000 | 0x00080000 | 0x00020000)
 _TYCHO_PKG = 'com.google.android.apps.tycho'
 _MAX_WAIT_TIME = 600
+_TYCHO_VERBOSE_LOGGING_CMDS = [
+    "setprop log.tag.Tycho VERBOSE",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_request_logging true",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_sensitive_logging true",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_ample_logging true"
+]
 
 
 class TychoClassId(object):
@@ -135,6 +150,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         return True
 
     def _account_registration(self, ad):
+        for cmd in _TYCHO_VERBOSE_LOGGING_CMDS:
+            ad.adb.shell(cmd)
         if hasattr(ad, "user_account"):
             if self.check_project_fi_activated(ad, retries=1):
                 ad.log.info("Project Fi is activated already")
@@ -178,6 +195,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                         return False
                 else:
                     ad.log.info("Fi account is activated successfully")
+                    break
         elif "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha"):
             ad.log.error("Google account is not provided for Fi Network")
             return False
