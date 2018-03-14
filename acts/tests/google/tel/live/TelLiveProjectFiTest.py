@@ -136,7 +136,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
 
     def _account_registration(self, ad):
         if hasattr(ad, "user_account"):
-            if self.check_project_fi_activated(ad):
+            if self.check_project_fi_activated(ad, retries=1):
                 ad.log.info("Project Fi is activated already")
                 return True
             ad.exit_setup_wizard()
@@ -261,8 +261,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 ad.log.info("Finished activation process")
                 return
 
-    def check_project_fi_activated(self, ad):
-        for _ in range(20):
+    def check_project_fi_activated(self, ad, retries=20):
+        for _ in range(retries):
             if is_sim_ready(self.log, ad) and (
                     ad.droid.telephonyGetSimOperatorName() == "Fi Network"):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
