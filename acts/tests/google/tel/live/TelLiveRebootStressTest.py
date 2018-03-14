@@ -127,9 +127,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def feature_validator(self, **kwargs):
         failed_tests = []
-        for method in ("_check_subscription", "_check_data",
-                       "_check_call_setup_teardown", "_check_sms",
-                       "_check_mms"):
+        for method in ("_check_subscription", "_check_data", "_check_mms_mt",
+                       "_check_sms_mt", "_check_call_setup_teardown",
+                       "_check_sms", "_check_mms"):
             func = getattr(self, method)
             if not func():
                 self.log.error("%s failed", method)
@@ -201,17 +201,40 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
     def _check_sms(self):
         if not sms_send_receive_verify(self.log, self.dut, self.ad_reference,
                                        [rand_ascii_str(180)]):
-            self.log.error("SMS test failed")
+            self.log.error("SMS send test failed")
             return False
-        return True
+        else:
+            self.log.info("SMS send test passed")
+            return True
 
     def _check_mms(self):
         message_array = [("Test Message", rand_ascii_str(180), None)]
         if not mms_send_receive_verify(self.log, self.dut, self.ad_reference,
                                        message_array):
-            self.log.error("MMS test failed")
+            self.log.error("MMS test sendfailed")
             return False
-        return True
+        else:
+            self.log.info("MMS send test passed")
+            return True
+
+    def _check_sms_mt(self):
+        if not sms_send_receive_verify(self.log, self.ad_reference, self.dut,
+                                       [rand_ascii_str(180)]):
+            self.log.error("SMS receive test failed")
+            return False
+        else:
+            self.log.info("SMS receive test passed")
+            return True
+
+    def _check_mms_mt(self):
+        message_array = [("Test Message", rand_ascii_str(180), None)]
+        if not mms_send_receive_verify(self.log, self.ad_reference, self.dut,
+                                       message_array):
+            self.log.error("MMS receive test failed")
+            return False
+        else:
+            self.log.info("MMS receive test passed")
+            return True
 
     def _check_data(self):
         if not verify_http_connection(self.log, self.dut):
@@ -260,7 +283,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             return False
         if not call_setup_teardown(self.log, self.dut, self.ad_reference,
                                    self.dut, is_phone_in_call_csfb):
-            self.dut.log.error("VoLTE Call Failed.")
+            self.dut.log.error("CSFB Call Failed.")
             return False
         if not wait_for_network_generation(
                 self.log, self.dut, GEN_4G,
@@ -337,7 +360,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def _check_wfc_apm(self):
         if CAPABILITY_WFC in self.dut_capabilities:
-            self.log.info("Check WFC")
+            self.log.info("Check WFC in APM")
             if not phone_setup_iwlan(
                     self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
                     self.wifi_network_ssid, self.wifi_network_pass):
@@ -352,8 +375,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return False
 
     def _check_wfc_nonapm(self):
-        if CAPABILITY_WFC in self.dut_capabilities:
-            self.log.info("Check WFC")
+        if CAPABILITY_WFC in self.dut_capabilities and (
+                self.dut_operator == "tmo"):
+            self.log.info("Check WFC in NonAPM")
             if not phone_setup_iwlan(
                     self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
                     self.wifi_network_ssid, self.wifi_network_pass):
@@ -593,8 +617,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         test_result = True
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Reboot Stress Test %s Iteration: <%s> / <%s>",
-                          self.test_name, i, self.stress_test_number)
+            test_msg = "Reboot Stress Test %s Iteration <%s> / <%s>" % (
+                self.test_name, i, self.stress_test_number)
+            self.log.info("%s: started", test_msg)
             begin_time = get_current_epoch_time()
             reboot_device(self.dut)
             self.log.info("{} wait {}s for radio up.".format(
@@ -611,25 +636,18 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if crash_report:
                 fail_count["crashes"] += 1
             if failed_tests or crash_report:
-                self.log.error(
-                    "Reboot Stress Test Iteration <%s> / <%s> FAIL",
-                    i,
-                    self.stress_test_number,
-                )
+                self.log.error("%s FAIL with %s and crashes %s", test_msg,
+                               failed_tests, crash_report)
                 self._take_bug_report("%s_%s" % (self.test_name, i),
                                       begin_time)
             else:
-                self.log.info(
-                    "Reboot Stress Test Iteration <%s> / <%s> PASS",
-                    i,
-                    self.stress_test_number,
-                )
-            self.log.info("Total failure count: %s", list(fail_count))
+                self.log.info("%s PASS", test_msg)
+            self.log.info("Total failure count: %s", dict(fail_count))
 
         for failure, count in fail_count.items():
             if count:
-                self.log.error("%s %s failures in %s iterations", count,
-                               failure, self.stress_test_number)
+                self.log.error("%s failure count = %s in total %s iterations",
+                               failure, count, self.stress_test_number)
                 test_result = False
         return test_result
 
