@@ -14,12 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-"""
-Helper module for common telnet capability to communicate with AttenuatorInstrument(s).
+"""A helper module to communicate over telnet with AttenuatorInstruments.
 
 User code shouldn't need to directly access this class.
 """
-
 
 import telnetlib
 from acts.controllers import attenuator
@@ -30,11 +28,13 @@ def _ascii_string(uc_string):
 
 
 class _TNHelper(object):
-    #This is an internal helper class for Telnet+SCPI command-based instruments.
-    #It should only be used by those implemention control libraries and not by any user code
-    # directly
+    """An internal helper class for Telnet+SCPI command-based instruments.
 
-    def __init__(self, tx_cmd_separator="\n", rx_cmd_separator="\n", prompt=""):
+    It should only be used by those implementation control libraries and not by
+    any user code directly.
+    """
+
+    def __init__(self, tx_cmd_separator='\n', rx_cmd_separator='\n', prompt=''):
         self._tn = None
 
         self.tx_cmd_separator = tx_cmd_separator
@@ -58,25 +58,28 @@ class _TNHelper(object):
 
     def cmd(self, cmd_str, wait_ret=True):
         if not isinstance(cmd_str, str):
-            raise TypeError("Invalid command string", cmd_str)
+            raise TypeError('Invalid command string', cmd_str)
 
         if not self.is_open():
-            raise attenuator.InvalidOperationError("Telnet connection not open for commands")
+            raise attenuator.InvalidOperationError(
+                'Telnet connection not open for commands')
 
         cmd_str.strip(self.tx_cmd_separator)
         self._tn.read_until(_ascii_string(self.prompt), 2)
-        self._tn.write(_ascii_string(cmd_str+self.tx_cmd_separator))
+        self._tn.write(_ascii_string(cmd_str + self.tx_cmd_separator))
 
         if wait_ret is False:
             return None
 
-        match_idx, match_val, ret_text = \
-            self._tn.expect([_ascii_string("\S+"+self.rx_cmd_separator)], 1)
+        match_idx, match_val, ret_text = self._tn.expect(
+            [_ascii_string('\S+' + self.rx_cmd_separator)], 1)
 
         if match_idx == -1:
-            raise attenuator.InvalidDataError("Telnet command failed to return valid data")
+            raise attenuator.InvalidDataError(
+                'Telnet command failed to return valid data')
 
         ret_text = ret_text.decode()
-        ret_text = ret_text.strip(self.tx_cmd_separator + self.rx_cmd_separator + self.prompt)
+        ret_text = ret_text.strip(
+            self.tx_cmd_separator + self.rx_cmd_separator + self.prompt)
 
         return ret_text
