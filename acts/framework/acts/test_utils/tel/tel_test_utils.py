@@ -3493,7 +3493,7 @@ def wait_for_matching_sms(log,
                 ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
                     phonenumber_tx, text)
-                ad_rx.log.info("Got event %s", eventSmsReceived)
+                ad_rx.log.info("Got event %s", EventSmsReceived)
                 text = text[len(event['data']['Text']):]
                 received_sms += event['data']['Text']
             return True
