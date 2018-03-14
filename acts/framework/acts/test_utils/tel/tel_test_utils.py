@@ -2514,7 +2514,7 @@ def wait_for_cell_data_connection_for_subscription(
                 log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
 
         try:
-            event = ad.ed.wait_for_event(
+            ad.ed.wait_for_event(
                 EventDataConnectionStateChanged,
                 is_event_match,
                 timeout=timeout_value,
@@ -3490,7 +3490,7 @@ def wait_for_matching_sms(log,
         try:
             received_sms = ''
             while (text != ''):
-                ad_rx.messaging_ed.wait_for_event(
+                event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
                     phonenumber_tx, text)
                 ad_rx.log.info("Got event %s", EventSmsReceived)
@@ -3841,9 +3841,8 @@ def mms_receive_verify_after_call_hangup_for_subscription(
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                event = ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                                     max_wait_time)
-                ad_tx.log.info("Got event %s", event['name'])
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
+                ad_tx.log.info("Got event %s", EventMmsSentSuccess)
             except Empty:
                 log.warning("No sent_success event.")
                 if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):
