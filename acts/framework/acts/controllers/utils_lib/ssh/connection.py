@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import collections
-import logging
 import os
 import re
 import shutil
@@ -22,6 +21,7 @@ import threading
 import time
 import uuid
 
+from acts import logger
 from acts.controllers.utils_lib import host_utils
 from acts.controllers.utils_lib.ssh import formatter
 from acts.libs.proc import job
@@ -83,6 +83,10 @@ class SshConnection(object):
         self._master_ssh_tempdir = None
         self._tunnels = list()
 
+        def log_line(msg):
+            return '[SshConnection | %s] %s' % (self._settings.hostname, msg)
+        self.log = logger.create_logger(log_line)
+
     def __del__(self):
         self.close()
 
@@ -104,7 +108,7 @@ class SshConnection(object):
                 socket_path = self.socket_path
                 if (not os.path.exists(socket_path) or
                         self._master_ssh_proc.poll() is not None):
-                    logging.debug('Master ssh connection to %s is down.',
+                    self.log.debug('Master ssh connection to %s is down.',
                                   self._settings.hostname)
                     self._cleanup_master_ssh()
 
@@ -129,8 +133,7 @@ class SshConnection(object):
                     self._settings,
                     extra_flags=extra_flags,
                     extra_options=extra_options)
-                logging.info('Starting master ssh connection to %s',
-                             self._settings.hostname)
+                self.log.info('Starting master ssh connection.')
                 self._master_ssh_proc = job.run_async(master_cmd)
 
                 end_time = time.time() + timeout_seconds
@@ -178,8 +181,8 @@ class SshConnection(object):
         try:
             self.setup_master_ssh(self._settings.connect_timeout)
         except Error:
-            logging.warning('Failed to create master ssh connection, using '
-                            'normal ssh connection.')
+            self.log.warning('Failed to create master ssh connection, using '
+                             'normal ssh connection.')
 
         extra_options = {'BatchMode': True}
         if self._master_ssh_proc:
@@ -213,7 +216,7 @@ class SshConnection(object):
                     duration=result.duration,
                     did_timeout=result.did_timeout,
                     encoding=result._encoding)
-                if result.exit_status:
+                if result.exit_status and not ignore_status:
                     raise job.Error(result)
                 return result
 
@@ -227,7 +230,7 @@ class SshConnection(object):
                 dns_retry_count -= 1
                 if not dns_retry_count:
                     raise Error('DNS failed to find host.', result)
-                logging.debug('Failed to connecto to host, retrying...')
+                self.log.debug('Failed to connect to host, retrying...')
             else:
                 break
 
@@ -291,14 +294,14 @@ class SshConnection(object):
         """
         # If a master SSH connection is running, kill it.
         if self._master_ssh_proc is not None:
-            logging.debug('Nuking master_ssh_job.')
+            self.log.debug('Nuking master_ssh_job.')
             self._master_ssh_proc.kill()
             self._master_ssh_proc.wait()
             self._master_ssh_proc = None
 
         # Remove the temporary directory for the master SSH socket.
         if self._master_ssh_tempdir is not None:
-            logging.debug('Cleaning master_ssh_tempdir.')
+            self.log.debug('Cleaning master_ssh_tempdir.')
             shutil.rmtree(self._master_ssh_tempdir)
             self._master_ssh_tempdir = None
 
@@ -336,13 +339,13 @@ class SshConnection(object):
             self._settings,
             extra_flags=extra_flags,
             extra_options=extra_options)
-        logging.debug('Full tunnel command: %s', tunnel_cmd)
+        self.log.debug('Full tunnel command: %s', tunnel_cmd)
         # Exec the ssh process directly so that when we deliver signals, we
         # deliver them straight to the child process.
         tunnel_proc = job.run_async(tunnel_cmd)
-        logging.debug('Started ssh tunnel, local = %d'
-                      ' remote = %d, pid = %d', local_port, port,
-                      tunnel_proc.pid)
+        self.log.debug('Started ssh tunnel, local = %d'
+                       ' remote = %d, pid = %d', local_port, port,
+                       tunnel_proc.pid)
         self._tunnels.append(_Tunnel(local_port, port, tunnel_proc))
         return local_port
 
