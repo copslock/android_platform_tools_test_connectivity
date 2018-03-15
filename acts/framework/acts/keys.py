@@ -43,6 +43,7 @@ class Config(enum.Enum):
     key_access_point = "AccessPoint"
     key_attenuator = "Attenuator"
     key_iperf_server = "IPerfServer"
+    key_iperf_client = "IPerfClient"
     key_packet_sender = "PacketSender"
     key_monsoon = "Monsoon"
     key_sniffer = "Sniffer"
@@ -61,6 +62,7 @@ class Config(enum.Enum):
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
+    m_key_iperf_client = "iperf_client"
     m_key_packet_sender = "packet_sender"
     m_key_sniffer = "sniffer"
 
@@ -76,6 +78,7 @@ class Config(enum.Enum):
         key_access_point,
         key_attenuator,
         key_iperf_server,
+        key_iperf_client,
         key_packet_sender,
         key_monsoon,
         key_sniffer,
