@@ -3376,7 +3376,14 @@ def get_operator_name(log, ad, subId=None):
             result = operator_name_from_plmn_id(
                 ad.droid.telephonyGetNetworkOperator())
     except KeyError:
-        result = CARRIER_UNKNOWN
+        try:
+            if subId is not None:
+                result = ad.droid.telephonyGetNetworkOperatorNameForSubscription(
+                    sub_id)
+            else:
+                result = ad.droid.telephonyGetNetworkOperatorName()
+        except Exception:
+            result = CARRIER_UNKNOWN
     return result
 
 
@@ -3841,7 +3848,8 @@ def mms_receive_verify_after_call_hangup_for_subscription(
             hangup_call(log, ad_tx)
             hangup_call(log, ad_rx)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess, max_wait_time)
+                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
+                                             max_wait_time)
                 ad_tx.log.info("Got event %s", EventMmsSentSuccess)
             except Empty:
                 log.warning("No sent_success event.")
