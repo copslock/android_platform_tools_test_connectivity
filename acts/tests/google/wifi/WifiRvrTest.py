@@ -375,16 +375,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.post_process_results(rvr_result)
         self.pass_fail_check(rvr_result)
 
-
     #Test cases
-class WifiRvr_2GHz_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
-                      "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
-                      "test_rvr_TCP_DL_ch11_VHT20",
-                      "test_rvr_TCP_UL_ch11_VHT20")
-
     @test_tracker_info(uuid='e7586217-3739-44a4-a87b-d790208b04b9')
     def test_rvr_TCP_DL_ch1_VHT20(self):
         self._test_rvr()
@@ -408,19 +399,6 @@ class WifiRvr_2GHz_Test(WifiRvrTest):
     @test_tracker_info(uuid='a165884e-c928-46d9-b459-f550ceb0074f')
     def test_rvr_TCP_UL_ch11_VHT20(self):
         self._test_rvr()
-
-
-class WifiRvr_UNII1_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
-            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
-            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
-            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
-            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
-            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
-            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20")
 
     @test_tracker_info(uuid='a48ee2b4-3fb9-41fd-b292-0051bfc3b0cc')
     def test_rvr_TCP_DL_ch36_VHT20(self):
@@ -478,19 +456,6 @@ class WifiRvr_UNII1_Test(WifiRvrTest):
     def test_rvr_TCP_UL_ch48_VHT20(self):
         self._test_rvr()
 
-
-class WifiRvr_UNII3_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
-            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
-            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
-            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
-            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
-            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
-            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
-
     @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
     def test_rvr_TCP_DL_ch149_VHT20(self):
         self._test_rvr()
@@ -547,20 +512,6 @@ class WifiRvr_UNII3_Test(WifiRvrTest):
     def test_rvr_TCP_UL_ch161_VHT20(self):
         self._test_rvr()
 
-
-    # UDP Tests
-class WifiRvr_SampleUDP_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
-            "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
-            "test_rvr_UDP_DL_ch36_VHT40", "test_rvr_UDP_UL_ch36_VHT40",
-            "test_rvr_UDP_DL_ch36_VHT80", "test_rvr_UDP_UL_ch36_VHT80",
-            "test_rvr_UDP_DL_ch149_VHT20", "test_rvr_UDP_UL_ch149_VHT20",
-            "test_rvr_UDP_DL_ch149_VHT40", "test_rvr_UDP_UL_ch149_VHT40",
-            "test_rvr_UDP_DL_ch149_VHT80", "test_rvr_UDP_UL_ch149_VHT80")
-
     @test_tracker_info(uuid='05614f92-38fa-4289-bcff-d4b4a2a2ad5b')
     def test_rvr_UDP_DL_ch6_VHT20(self):
         self._test_rvr()
@@ -616,3 +567,105 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
     @test_tracker_info(uuid='69aab23d-1408-4cdd-9f57-2520a1e9cea8')
     def test_rvr_UDP_UL_ch149_VHT80(self):
         self._test_rvr()
+
+
+# Classes defining test suites
+class WifiRvr_2GHz_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
+                      "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+                      "test_rvr_TCP_DL_ch11_VHT20",
+                      "test_rvr_TCP_UL_ch11_VHT20")
+
+
+class WifiRvr_UNII1_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
+            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
+            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20")
+
+
+class WifiRvr_UNII3_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
+            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
+
+class WifiRvr_SampleUDP_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT40", "test_rvr_UDP_UL_ch36_VHT40",
+            "test_rvr_UDP_DL_ch36_VHT80", "test_rvr_UDP_UL_ch36_VHT80",
+            "test_rvr_UDP_DL_ch149_VHT20", "test_rvr_UDP_UL_ch149_VHT20",
+            "test_rvr_UDP_DL_ch149_VHT40", "test_rvr_UDP_UL_ch149_VHT40",
+            "test_rvr_UDP_DL_ch149_VHT80", "test_rvr_UDP_UL_ch149_VHT80")
+
+
+class WifiRvr_TCP_All_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
+            "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+            "test_rvr_TCP_DL_ch11_VHT20", "test_rvr_TCP_UL_ch11_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
+            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
+            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
+            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
+
+class WifiRvr_TCP_Downlink_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_DL_ch6_VHT20",
+            "test_rvr_TCP_DL_ch11_VHT20", "test_rvr_TCP_DL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_DL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_DL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_DL_ch48_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_DL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_DL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_DL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20")
+
+
+class WifiRvr_TCP_Uplink_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_UL_ch1_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+            "test_rvr_TCP_UL_ch11_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_UL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_UL_ch40_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_UL_ch44_VHT40", "test_rvr_TCP_UL_ch48_VHT20",
+            "test_rvr_TCP_UL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_UL_ch149_VHT80", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_UL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_UL_ch161_VHT20")
