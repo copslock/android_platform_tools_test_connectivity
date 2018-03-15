@@ -225,6 +225,7 @@ class _TelTables():
 
         #USCC
         '311580': tel_defines.CARRIER_USCC,
+        '31000': tel_defines.CARRIER_USCC,
 
         #Vodafone (Germany)
         '26202': tel_defines.CARRIER_GMBH,
@@ -680,8 +681,7 @@ operator_capabilities = {
         tel_defines.CAPABILITY_WFC
     ],
     tel_defines.CARRIER_EEUK: [
-        tel_defines.CAPABILITY_PHONE,
-        tel_defines.CAPABILITY_VOLTE,
+        tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
         tel_defines.CAPABILITY_WFC
     ],
     tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE],
