@@ -87,7 +87,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
     def _get_expected_call_state(self, ad):
         if ad.model in ("sailfish", "marlin") and "vzw" in [
-                sub["operator"] for sub in ad.cfg["subscription"].values()
+                sub["operator"]
+                for sub in ad.telephony["subscription"].values()
         ]:
             return CALL_STATE_ACTIVE
         return CALL_STATE_HOLDING
