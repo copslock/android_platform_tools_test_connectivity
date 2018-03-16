@@ -2827,7 +2827,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         # Co-ordinates Mapping
         lcd_density = ad.adb.shell("getprop ro.sf.lcd_density")
         ad.log.debug("lcd_density %s" % lcd_density)
-        if "420" in lcd_density:
+        if lcd_density in ["420", "440"]:
             agree_y_axis = 1000
         else:
             agree_y_axis = 1300
@@ -2858,8 +2858,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                         "android.permission.WRITE_EXTERNAL_STORAGE",
                         "am start -a android.intent.action.VIEW -n "
                         "com.mobitv.vzwdca/.DcaActivity",
-                        "input tap 500 %d" % agree_y_axis, "input keyevent 66",
-                        "input keyevent 66", "input keyevent 66"):
+                        "input tap 500 %d" % agree_y_axis, "input keyevent 61",
+                        "input keyevent 61", "input keyevent 61",
+                        "input keyevent 61", "input keyevent 61",
+                        "input keyevent 66"):
                 time.sleep(1)
                 ad.log.info(cmd)
                 ad.adb.shell(cmd)
