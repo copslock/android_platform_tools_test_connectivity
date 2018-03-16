@@ -142,7 +142,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             account_util = account_util[0]
         ad.log.info("Install account_util %s", account_util)
         ad.ensure_screen_on()
-        ad.adb.install("-r %s" % account_util, timeout=180)
+        ad.adb.install("-r %s" % account_util, timeout=300, ignore_status=True)
         time.sleep(3)
         if not ad.is_apk_installed("com.google.android.tradefed.account"):
             ad.log.info("com.google.android.tradefed.account is not installed")
@@ -505,8 +505,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             ad.send_keycode("ENTER")
             return True
         else:
-            ad.log.error("Carrier is %s. Fail to switch to %s",
-                         self.get_active_carrier(ad), carrier)
+            active_carrier = self.get_active_carrier(ad)
+            if active_carrier == carrier:
+                ad.log.info("Switched to %s successfully", carrier)
+                return True
+            ad.log.error("Carrier is %s. Fail to switch to %s", active_carrier,
+                         carrier)
             return False
 
     def operator_network_switch(self, ad, carrier):
