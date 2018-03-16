@@ -25,6 +25,7 @@ import os
 import urllib.parse
 import time
 
+from acts import signals
 from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
@@ -203,10 +204,6 @@ def get_sub_id_by_adb(ad):
 
 def setup_droid_properties_by_adb(log, ad, sim_filename=None):
 
-    # Check to see if droid already has this property
-    if hasattr(ad, 'cfg'):
-        return
-
     sim_data = None
     if sim_filename:
         try:
@@ -226,22 +223,18 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
     if not phone_number:
         ad.log.error("Failed to find valid phone number for %s", iccid)
         abort_all_tests("Failed to find valid phone number for %s" % ad.serial)
-    sim_record = {
+    sub_record = {
         'phone_num': phone_number,
         'iccid': get_iccid_by_adb(ad),
         'sim_operator_name': get_operator_by_adb(ad),
         'operator': operator_name_from_plmn_id(get_plmn_by_adb(ad))
     }
-    device_props = {'subscription': {sub_id: sim_record}}
-    ad.log.info("subId %s SIM record: %s", sub_id, sim_record)
-    setattr(ad, 'cfg', device_props)
+    device_props = {'subscription': {sub_id: sub_record}}
+    ad.log.info("subId %s SIM record: %s", sub_id, sub_record)
+    setattr(ad, 'telephony', device_props)
 
 
 def setup_droid_properties(log, ad, sim_filename=None):
-
-    # Check to see if droid already has this property
-    if hasattr(ad, 'cfg'):
-        return
 
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
@@ -257,40 +250,36 @@ def setup_droid_properties(log, ad, sim_filename=None):
             sim_data = load_config(sim_filename)
         except Exception:
             log.warning("Failed to load %s!", sim_filename)
-    if not ad.cfg["subscription"]:
+    if not ad.telephony["subscription"]:
         abort_all_tests(ad.log, "No Valid SIMs found in device")
     result = True
     active_sub_id = get_outgoing_voice_sub_id(ad)
-    for sub_id, sub_info in ad.cfg["subscription"].items():
+    for sub_id, sub_info in ad.telephony["subscription"].items():
         sub_info["operator"] = get_operator_name(log, ad, sub_id)
         iccid = sub_info["iccid"]
         if not iccid:
-            ad.log.warn("Unable to find ICC-ID for SIM")
+            ad.log.warning("Unable to find ICC-ID for subscriber %s", sub_id)
             continue
         if sub_info.get("phone_num"):
-            if getattr(ad, "phone_number", None) and check_phone_number_match(
-                    sub_info["phone_num"], ad.phone_number):
-                sub_info["phone_num"] = ad.phone_number
-            elif iccid and iccid in sim_data and sim_data[iccid].get(
-                    "phone_num"):
-                if check_phone_number_match(sim_data[iccid]["phone_num"],
-                                            sub_info["phone_num"]):
-                    sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-                else:
+            if iccid in sim_data and sim_data[iccid].get("phone_num"):
+                if not check_phone_number_match(sim_data[iccid]["phone_num"],
+                                                sub_info["phone_num"]):
                     ad.log.warning(
                         "phone_num %s in sim card data file for iccid %s"
-                        "  do not match phone_num %s in droid subscription",
+                        "  do not match phone_num %s from subscription",
                         sim_data[iccid]["phone_num"], iccid,
                         sub_info["phone_num"])
-        elif iccid and iccid in sim_data and sim_data[iccid].get("phone_num"):
-            sub_info["phone_num"] = sim_data[iccid]["phone_num"]
-        elif sub_id == active_sub_id:
-            phone_number = get_phone_number_by_secret_code(
-                ad, sub_info["sim_operator_name"])
-            if phone_number:
-                sub_info["phone_num"] = phone_number
-            elif getattr(ad, "phone_num", None):
-                sub_info["phone_num"] = ad.phone_number
+                sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+        else:
+            if iccid in sim_data and sim_data[iccid].get("phone_num"):
+                sub_info["phone_num"] = sim_data[iccid]["phone_num"]
+            elif sub_id == active_sub_id:
+                phone_number = get_phone_number_by_secret_code(
+                    ad, sub_info["sim_operator_name"])
+                if phone_number:
+                    sub_info["phone_num"] = phone_number
+                elif getattr(ad, "phone_num", None):
+                    sub_info["phone_num"] = ad.phone_number
         if (not sub_info.get("phone_num")) and sub_id == active_sub_id:
             ad.log.info("sub_id %s sub_info = %s", sub_id, sub_info)
             ad.log.error(
@@ -300,9 +289,8 @@ def setup_droid_properties(log, ad, sim_filename=None):
             result = False
         if not hasattr(
                 ad, 'roaming'
-        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and (
-                sub_info["sim_operator_name"].strip() not in
-                sub_info["network_operator_name"].strip()):
+        ) and sub_info["sim_plmn"] != sub_info["network_plmn"] and sub_info["sim_operator_name"].strip(
+        ) not in sub_info["network_operator_name"].strip():
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
@@ -312,11 +300,11 @@ def setup_droid_properties(log, ad, sim_filename=None):
     if not result:
         abort_all_tests(ad.log, "Failed to find valid phone number")
 
-    ad.log.debug("cfg = %s", ad.cfg)
+    ad.log.debug("telephony = %s", ad.telephony)
 
 
 def refresh_droid_config(log, ad):
-    """ Update Android Device cfg records for each sub_id.
+    """ Update Android Device telephony records for each sub_id.
 
     Args:
         log: log object
@@ -325,68 +313,83 @@ def refresh_droid_config(log, ad):
     Returns:
         None
     """
-    if hasattr(ad, 'cfg'):
-        cfg = ad.cfg.copy()
-    else:
-        cfg = {"subscription": {}}
+    if not getattr(ad, 'telephony', {}):
+        setattr(ad, 'telephony', {"subscription": {}})
     droid = ad.droid
     sub_info_list = droid.subscriptionGetAllSubInfoList()
+    active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
         sim_slot = sub_info["simSlotIndex"]
         if sim_slot != INVALID_SIM_SLOT_INDEX:
-            sim_record = {}
+            if sub_id not in ad.telephony["subscription"]:
+                ad.telephony["subscription"][sub_id] = {}
+            sub_record = ad.telephony["subscription"][sub_id]
             if sub_info.get("iccId"):
-                sim_record["iccid"] = sub_info["iccId"]
+                sub_record["iccid"] = sub_info["iccId"]
             else:
-                sim_record[
+                sub_record[
                     "iccid"] = droid.telephonyGetSimSerialNumberForSubscription(
                         sub_id)
-            sim_record["sim_slot"] = sim_slot
+            sub_record["sim_slot"] = sim_slot
+            if sub_info.get("mcc"):
+                sub_record["mcc"] = sub_info["mcc"]
+            if sub_info.get("mnc"):
+                sub_record["mnc"] = sub_info["mnc"]
+            if sub_info.get("displayName"):
+                sub_record["display_name"] = sub_info["displayName"]
             try:
-                sim_record[
+                sub_record[
                     "phone_type"] = droid.telephonyGetPhoneTypeForSubscription(
                         sub_id)
             except:
-                sim_record["phone_type"] = droid.telephonyGetPhoneType()
-            if sub_info.get("mcc"):
-                sim_record["mcc"] = sub_info["mcc"]
-            if sub_info.get("mnc"):
-                sim_record["mnc"] = sub_info["mnc"]
-            sim_record[
+                if not sub_record.get("phone_type"):
+                    sub_record["phone_type"] = droid.telephonyGetPhoneType()
+            sub_record[
                 "sim_plmn"] = droid.telephonyGetSimOperatorForSubscription(
                     sub_id)
-            sim_record["display_name"] = sub_info["displayName"]
-            sim_record[
+            sub_record[
                 "sim_operator_name"] = droid.telephonyGetSimOperatorNameForSubscription(
                     sub_id)
-            sim_record[
+            sub_record[
                 "network_plmn"] = droid.telephonyGetNetworkOperatorForSubscription(
                     sub_id)
-            sim_record[
+            sub_record[
                 "network_operator_name"] = droid.telephonyGetNetworkOperatorNameForSubscription(
                     sub_id)
-            sim_record[
-                "network_type"] = droid.telephonyGetNetworkTypeForSubscription(
-                    sub_id)
-            sim_record[
+            sub_record[
                 "sim_country"] = droid.telephonyGetSimCountryIsoForSubscription(
                     sub_id)
+            if active_sub_id == sub_id:
+                try:
+                    sub_record[
+                        "carrier_id"] = ad.droid.telephonyGetSimCarrierId()
+                    sub_record[
+                        "carrier_id_name"] = ad.droid.telephonyGetSimCarrierIdName(
+                        )
+                except:
+                    ad.log.info("Carrier ID is not supported")
+            if not sub_info.get("number"):
+                sub_info[
+                    "number"] = droid.telephonyGetLine1NumberForSubscription(
+                        sub_id)
             if sub_info.get("number"):
-                sim_record["phone_num"] = sub_info["number"]
-            else:
-                sim_record["phone_num"] = phone_number_formatter(
-                    droid.telephonyGetLine1NumberForSubscription(sub_id))
-            sim_record[
-                "phone_tag"] = droid.telephonyGetLine1AlphaTagForSubscription(
-                    sub_id)
-            if (not sim_record["phone_num"]
-                ) and cfg["subscription"].get(sub_id):
-                sim_record["phone_num"] = cfg["subscription"][sub_id][
-                    "phone_num"]
-            cfg['subscription'][sub_id] = sim_record
-            ad.log.debug("SubId %s SIM record: %s", sub_id, sim_record)
-    setattr(ad, 'cfg', cfg)
+                if sub_record.get("phone_num"):
+                    # Use the phone number provided in sim info file by default
+                    # as the sub_info["number"] may not be formatted in a
+                    # dialable number
+                    if not check_phone_number_match(sub_info["number"],
+                                                    sub_record["phone_num"]):
+                        ad.log.info(
+                            "Subscriber phone number changed from %s to %s",
+                            sub_record["phone_num"], sub_info["number"])
+                        sub_record["phone_num"] = sub_info["number"]
+                else:
+                    sub_record["phone_num"] = phone_number_formatter(
+                        sub_info["number"])
+            #ad.telephony['subscription'][sub_id] = sub_record
+            ad.log.info("SubId %s info: %s", sub_id, sorted(
+                sub_record.items()))
 
 
 def get_phone_number_by_secret_code(ad, operator):
@@ -1381,8 +1384,10 @@ def call_reject_for_subscription(log,
     """
     """
 
-    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
-    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
 
     ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
     try:
@@ -1472,8 +1477,10 @@ def call_reject_leave_message_for_subscription(
     # It does not work for VZW (see b/21559800)
     # "with VVM TelephonyManager APIs won't work for vm"
 
-    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
-    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
 
     ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
 
@@ -1633,7 +1640,8 @@ def call_setup_teardown(log,
                         verify_callee_func=None,
                         wait_time_in_call=WAIT_TIME_IN_CALL,
                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                        extra_sleep=0):
+                        extra_sleep=0,
+                        dialing_number_length=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -1666,7 +1674,7 @@ def call_setup_teardown(log,
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
-        incall_ui_display, extra_sleep)
+        incall_ui_display, extra_sleep, dialing_number_length)
 
 
 def call_setup_teardown_for_subscription(
@@ -1680,7 +1688,8 @@ def call_setup_teardown_for_subscription(
         verify_callee_func=None,
         wait_time_in_call=WAIT_TIME_IN_CALL,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-        extra_sleep=0):
+        extra_sleep=0,
+        dialing_number_length=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -1713,8 +1722,28 @@ def call_setup_teardown_for_subscription(
     CHECK_INTERVAL = 5
     begin_time = get_current_epoch_time()
 
-    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
-    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
+    if dialing_number_length:
+        skip_test = False
+        trunc_position = 0 - int(dialing_number_length)
+        try:
+            caller_area_code = caller_number[:trunc_position]
+            callee_area_code = callee_number[:trunc_position]
+            callee_dial_number = callee_number[trunc_position:]
+        except:
+            skip_test = True
+        if caller_area_code != callee_area_code:
+            skip_test = True
+        if skip_test:
+            msg = "Cannot make call from %s to %s by %s digits" % (
+                caller_number, callee_number, dialing_number_length)
+            ad_caller.log.info(msg)
+            raise signals.TestSkip(msg)
+        else:
+            callee_number = callee_dial_number
 
     if not verify_caller_func:
         verify_caller_func = is_phone_in_call
@@ -1972,7 +2001,7 @@ def start_youtube_video(ad, url="https://www.youtube.com/watch?v=VHF-XK0Vg1s"):
             "Started a video in youtube, but audio is not in MUSIC state")
 
 
-def active_file_download_task(log, ad, file_name="5MB", method="sl4a"):
+def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
@@ -3316,7 +3345,7 @@ def get_phone_number_for_subscription(log, ad, subid):
     """
     number = None
     try:
-        number = ad.cfg['subscription'][subid]['phone_num']
+        number = ad.telephony['subscription'][subid]['phone_num']
     except KeyError:
         number = ad.droid.telephonyGetLine1NumberForSubscription(subid)
     return number
@@ -3351,7 +3380,7 @@ def set_phone_number_for_subscription(log, ad, subid, phone_num):
         True if success.
     """
     try:
-        ad.cfg['subscription'][subid]['phone_num'] = phone_num
+        ad.telephony['subscription'][subid]['phone_num'] = phone_num
     except Exception:
         return False
     return True
@@ -3587,8 +3616,8 @@ def sms_send_receive_verify_for_subscription(
         subid_rx: Receiver's subsciption ID to be used for SMS
         array_message: the array of message to send/receive
     """
-    phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
-    phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
 
     for ad in (ad_tx, ad_rx):
         if not getattr(ad, "messaging_droid", None):
@@ -3734,8 +3763,8 @@ def mms_send_receive_verify_for_subscription(
         array_message: the array of message to send/receive
     """
 
-    phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
-    phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
 
     for ad in (ad_tx, ad_rx):
         if "Permissive" not in ad.adb.shell("su root getenforce"):
@@ -3831,8 +3860,8 @@ def mms_receive_verify_after_call_hangup_for_subscription(
         array_message: the array of message to send/receive
     """
 
-    phonenumber_tx = ad_tx.cfg['subscription'][subid_tx]['phone_num']
-    phonenumber_rx = ad_rx.cfg['subscription'][subid_rx]['phone_num']
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
     for ad in (ad_tx, ad_rx):
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
@@ -4019,20 +4048,20 @@ def ensure_network_generation_for_subscription(
     try:
         ad.log.info("Finding the network preference for generation %s for "
                     "operator %s phone type %s", generation,
-                    ad.cfg["subscription"][sub_id]["operator"],
-                    ad.cfg["subscription"][sub_id]["phone_type"])
+                    ad.telephony["subscription"][sub_id]["operator"],
+                    ad.telephony["subscription"][sub_id]["phone_type"])
         network_preference = network_preference_for_generation(
-            generation, ad.cfg["subscription"][sub_id]["operator"],
-            ad.cfg["subscription"][sub_id]["phone_type"])
+            generation, ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
         ad.log.info("Network preference for %s is %s", generation,
                     network_preference)
         rat_family = rat_family_for_generation(
-            generation, ad.cfg["subscription"][sub_id]["operator"],
-            ad.cfg["subscription"][sub_id]["phone_type"])
+            generation, ad.telephony["subscription"][sub_id]["operator"],
+            ad.telephony["subscription"][sub_id]["phone_type"])
     except KeyError as e:
         ad.log.error("Failed to find a rat_family entry for generation %s"
                      " for subscriber %s with error %s", generation,
-                     ad.cfg["subscription"][sub_id], e)
+                     ad.telephony["subscription"][sub_id], e)
         return False
 
     current_network_preference = \
@@ -4675,7 +4704,7 @@ def reset_preferred_network_type_to_allowable_range(log, ad):
     Returns:
         None
     """
-    for sub_id, sub_info in ad.cfg["subscription"].items():
+    for sub_id, sub_info in ad.telephony["subscription"].items():
         current_preference = \
             ad.droid.telephonyGetPreferredNetworkTypesForSubscription(sub_id)
         ad.log.debug("sub_id network preference is %s", current_preference)
