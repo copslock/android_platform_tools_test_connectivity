@@ -651,8 +651,10 @@ def video_call_setup_teardown_for_subscription(
     class _CallSequenceException(Exception):
         pass
 
-    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
-    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
 
     log.info("Call from {} to {}".format(caller_number, callee_number))
 
@@ -1003,9 +1005,9 @@ def video_call_downgrade(log,
     current_video_state_requester = ad_requester.droid.telecomCallVideoGetState(
         call_id_requester)
     if video_state_request is None:
-        if (current_video_state_requester == VT_STATE_BIDIRECTIONAL
-                or current_video_state_requester ==
-                VT_STATE_BIDIRECTIONAL_PAUSED):
+        if (current_video_state_requester == VT_STATE_BIDIRECTIONAL or
+                current_video_state_requester == VT_STATE_BIDIRECTIONAL_PAUSED
+            ):
             video_state_request = VT_STATE_RX_ENABLED
         elif (current_video_state_requester == VT_STATE_TX_ENABLED
               or current_video_state_requester == VT_STATE_TX_PAUSED):

@@ -50,17 +50,14 @@ from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
-from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call_active
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import phone_number_formatter
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import set_phone_number
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
@@ -201,29 +198,24 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        if self.android_devices[0].droid.telephonyGetSimCountryIso() == "ca":
-            raise signals.TestSkip("7 digit dialing not supported")
-
         ads = self.android_devices
-
+        if ads[0].droid.telephonyGetSimCountryIso() == "ca":
+            raise signals.TestSkip("7 digit dialing not supported")
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_volte,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        callee_default_number = get_phone_number(self.log, ads[1])
-        caller_dialing_number = phone_number_formatter(callee_default_number,
-                                                       7)
-        try:
-            set_phone_number(self.log, ads[1], caller_dialing_number)
-            return call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
-                is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
-        except Exception as e:
-            self.log.error("Exception happened: {}".format(e))
-        finally:
-            set_phone_number(self.log, ads[1], callee_default_number)
+        return call_setup_teardown(
+            self.log,
+            ads[0],
+            ads[1],
+            ads[0],
+            is_phone_in_call_volte,
+            is_phone_in_call_volte,
+            WAIT_TIME_IN_CALL_FOR_IMS,
+            dialing_number_length=7)
 
     @test_tracker_info(uuid="721ef935-a03c-4d0f-85b9-4753d857162f")
     @TelephonyBaseTest.tel_test_wrap
@@ -248,18 +240,15 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        callee_default_number = get_phone_number(self.log, ads[1])
-        caller_dialing_number = phone_number_formatter(callee_default_number,
-                                                       10)
-        try:
-            set_phone_number(self.log, ads[1], caller_dialing_number)
-            return call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
-                is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
-        except Exception as e:
-            self.log.error("Exception happened: {}".format(e))
-        finally:
-            set_phone_number(self.log, ads[1], callee_default_number)
+        return call_setup_teardown(
+            self.log,
+            ads[0],
+            ads[1],
+            ads[0],
+            is_phone_in_call_volte,
+            is_phone_in_call_volte,
+            WAIT_TIME_IN_CALL_FOR_IMS,
+            dialing_number_length=10)
 
     @test_tracker_info(uuid="4fd3aa62-2398-4cee-994e-7fc5cadbcbc1")
     @TelephonyBaseTest.tel_test_wrap
@@ -281,18 +270,15 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        callee_default_number = get_phone_number(self.log, ads[1])
-        caller_dialing_number = phone_number_formatter(callee_default_number,
-                                                       11)
-        try:
-            set_phone_number(self.log, ads[1], caller_dialing_number)
-            return call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
-                is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
-        except Exception as e:
-            self.log.error("Exception happened: {}".format(e))
-        finally:
-            set_phone_number(self.log, ads[1], callee_default_number)
+        return call_setup_teardown(
+            self.log,
+            ads[0],
+            ads[1],
+            ads[0],
+            is_phone_in_call_volte,
+            is_phone_in_call_volte,
+            WAIT_TIME_IN_CALL_FOR_IMS,
+            dialing_number_length=11)
 
     @test_tracker_info(uuid="969abdac-6a57-442a-9c40-48199bd8d556")
     @TelephonyBaseTest.tel_test_wrap
@@ -314,18 +300,15 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        callee_default_number = get_phone_number(self.log, ads[1])
-        caller_dialing_number = phone_number_formatter(callee_default_number,
-                                                       12)
-        try:
-            set_phone_number(self.log, ads[1], caller_dialing_number)
-            return call_setup_teardown(
-                self.log, ads[0], ads[1], ads[0], is_phone_in_call_volte,
-                is_phone_in_call_volte, WAIT_TIME_IN_CALL_FOR_IMS)
-        except Exception as e:
-            self.log.error("Exception happened: {}".format(e))
-        finally:
-            set_phone_number(self.log, ads[1], callee_default_number)
+        return call_setup_teardown(
+            self.log,
+            ads[0],
+            ads[1],
+            ads[0],
+            is_phone_in_call_volte,
+            is_phone_in_call_volte,
+            WAIT_TIME_IN_CALL_FOR_IMS,
+            dialing_number_length=12)
 
     @test_tracker_info(uuid="6b13a03d-c9ff-43d7-9798-adbead7688a4")
     @TelephonyBaseTest.tel_test_wrap
@@ -1509,12 +1492,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
+        self.log.info("Final Count - Success: %s, Failure: %s - %s%",
+                      success_count, fail_count,
+                      str(100 * success_count / (success_count + fail_count)))
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1568,12 +1551,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
+        self.log.info("Final Count - Success: %s, Failure: %s - %s%",
+                      success_count, fail_count,
+                      str(100 * success_count / (success_count + fail_count)))
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1627,12 +1610,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
+        self.log.info("Final Count - Success: %s, Failure: %s - %s%",
+                      success_count, fail_count,
+                      str(100 * success_count / (success_count + fail_count)))
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1686,12 +1669,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
+        self.log.info("Final Count - Success: %s, Failure: %s - %s%",
+                      success_count, fail_count,
+                      str(100 * success_count / (success_count + fail_count)))
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1745,12 +1728,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
-            success_count, fail_count,
-            str(100 * success_count / (success_count + fail_count))))
+        self.log.info("Final Count - Success: %s, Failure: %s - %s%",
+                      success_count, fail_count,
+                      str(100 * success_count / (success_count + fail_count)))
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1799,11 +1782,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {}".format(
-            success_count, fail_count))
+        self.log.info("Final Count - Success: %s, Failure: %s", success_count,
+                      fail_count)
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1852,11 +1835,11 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 fail_count += 1
                 result_str = "Failed"
 
-            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
-                i, result_str, success_count, self.stress_test_number))
+            self.log.info("Iteration %s %s. Current: %s / %s passed.", i,
+                          result_str, success_count, self.stress_test_number)
 
-        self.log.info("Final Count - Success: {}, Failure: {}".format(
-            success_count, fail_count))
+        self.log.info("Final Count - Success: %s, Failure: %s", success_count,
+                      fail_count)
         if success_count / (
                 success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
             return True
@@ -1882,35 +1865,35 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         call_list = ads[0].droid.telecomCallGetCallIds()
-        self.log.info("Calls in PhoneA{}".format(call_list))
-        if num_active_calls(self.log, ads[0]) != 1:
+        ads[0].log.info("Calls in PhoneA %s", call_list)
+        if num_active_calls(ads[0].log, ads[0]) != 1:
             return False
         call_id = call_list[0]
 
         if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            self.log.error(
-                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
-                    call_id, ads[0].droid.telecomCallGetCallState(call_id)))
+            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                             call_id,
+                             ads[0].droid.telecomCallGetCallState(call_id))
             return False
         # TODO: b/26296375 add voice check.
 
-        self.log.info("Hold call_id {} on PhoneA".format(call_id))
+        ads[0].log.info("Hold call_id %s on PhoneA", call_id)
         ads[0].droid.telecomCallHold(call_id)
         time.sleep(WAIT_TIME_IN_CALL)
         if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_HOLDING:
-            self.log.error(
-                "Call_id:{}, state:{}, expected: STATE_HOLDING".format(
-                    call_id, ads[0].droid.telecomCallGetCallState(call_id)))
+            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_HOLDING",
+                             call_id,
+                             ads[0].droid.telecomCallGetCallState(call_id))
             return False
         # TODO: b/26296375 add voice check.
 
-        self.log.info("Unhold call_id {} on PhoneA".format(call_id))
+        ads[0].log.info("Unhold call_id %s on PhoneA", call_id)
         ads[0].droid.telecomCallUnhold(call_id)
         time.sleep(WAIT_TIME_IN_CALL)
         if ads[0].droid.telecomCallGetCallState(call_id) != CALL_STATE_ACTIVE:
-            self.log.error(
-                "Call_id:{}, state:{}, expected: STATE_ACTIVE".format(
-                    call_id, ads[0].droid.telecomCallGetCallState(call_id)))
+            ads[0].log.error("Call_id:%s, state:%s, expected: STATE_ACTIVE",
+                             call_id,
+                             ads[0].droid.telecomCallGetCallState(call_id))
             return False
         # TODO: b/26296375 add voice check.
 
@@ -1945,8 +1928,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -1990,8 +1972,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2035,8 +2016,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2080,8 +2060,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2125,8 +2104,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2170,8 +2148,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2215,8 +2192,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2260,8 +2236,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2303,8 +2278,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2346,8 +2320,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2382,8 +2355,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
-            return False
+            ads[0].log.error(
+                "Not GSM phone, abort this wcdma hold/unhold test.")
+            raise signals.TestSkip(
+                "Not GSM phone, abort this wcdma hold/unhold test")
 
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2393,8 +2368,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2429,8 +2403,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
-            return False
+            ads[0].log.error(
+                "Not GSM phone, abort this wcdma hold/unhold test.")
+            raise signals.TestSkip(
+                "Not GSM phone, abort this wcdma hold/unhold test")
 
         tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2440,8 +2416,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2477,7 +2452,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
             self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
-            return False
+            raise signals.TestSkip(
+                "Not GSM phone, abort this wcdma hold/unhold test")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2487,8 +2463,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2523,8 +2498,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
-            return False
+            ads[0].log.error(
+                "Not GSM phone, abort this wcdma hold/unhold test.")
+            raise signals.TestSkip(
+                "Not GSM phone, abort this wcdma hold/unhold test")
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2534,8 +2511,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2581,7 +2557,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         return call_voicemail_erase_all_pending_voicemail(
-            self.log, self.android_devices[1])
+            self.log, self.android_devices[0])
 
     @test_tracker_info(uuid="c81156a2-089b-4b10-ba80-7afea61d06c6")
     @TelephonyBaseTest.tel_test_wrap
@@ -2589,7 +2565,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """Test Voice Mail notification in LTE (VoLTE enabled).
         This script currently only works for TMO now.
 
-        1. Make sure DUT (ads[1]) in VoLTE mode. Both PhoneB (ads[0]) and DUT idle.
+        1. Make sure DUT (ads[0]) in VoLTE mode. Both PhoneB (ads[0]) and DUT idle.
         2. Make call from PhoneB to DUT, reject on DUT.
         3. On PhoneB, leave a voice mail to DUT.
         4. Verify DUT receive voice mail notification.
@@ -2599,17 +2575,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
-                 (phone_setup_volte, (self.log, ads[1]))]
+        tasks = [(phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_volte, (self.log, ads[0]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[1]):
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
             self.log.error("Failed to clear voice mail.")
             return False
 
-        return two_phone_call_leave_voice_mail(self.log, ads[0], None, None,
-                                               ads[1], phone_idle_volte)
+        return two_phone_call_leave_voice_mail(self.log, ads[1], None, None,
+                                               ads[0], phone_idle_volte)
 
     @test_tracker_info(uuid="529e12cb-3178-4d2c-b155-d5cfb1eac0c9")
     @TelephonyBaseTest.tel_test_wrap
@@ -2632,7 +2608,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[1]):
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
             self.log.error("Failed to clear voice mail.")
             return False
 
@@ -2645,7 +2621,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """Test Voice Mail notification in 3G
         This script currently only works for TMO/ATT/SPT now.
 
-        1. Make sure DUT (ads[1]) in 3G mode. Both PhoneB (ads[0]) and DUT idle.
+        1. Make sure DUT (ads[0]) in 3G mode. Both PhoneB and DUT idle.
         2. Make call from PhoneB to DUT, reject on DUT.
         3. On PhoneB, leave a voice mail to DUT.
         4. Verify DUT receive voice mail notification.
@@ -2655,17 +2631,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
-                 (phone_setup_voice_3g, (self.log, ads[1]))]
+        tasks = [(phone_setup_voice_3g, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[1]):
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
             self.log.error("Failed to clear voice mail.")
             return False
 
-        return two_phone_call_leave_voice_mail(self.log, ads[0], None, None,
-                                               ads[1], phone_idle_3g)
+        return two_phone_call_leave_voice_mail(self.log, ads[1], None, None,
+                                               ads[0], phone_idle_3g)
 
     @test_tracker_info(uuid="e4c83cfa-db60-4258-ab69-15f7de3614b0")
     @TelephonyBaseTest.tel_test_wrap
@@ -2701,7 +2677,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """Test Voice Mail notification in WiFI Calling
         This script currently only works for TMO now.
 
-        1. Make sure DUT (ads[1]) in WFC mode. Both PhoneB (ads[0]) and DUT idle.
+        1. Make sure DUT (ads[0]) in WFC mode. Both PhoneB (ads[1]) and DUT idle.
         2. Make call from PhoneB to DUT, reject on DUT.
         3. On PhoneB, leave a voice mail to DUT.
         4. Verify DUT receive voice mail notification.
@@ -2711,19 +2687,19 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+        tasks = [(phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_iwlan,
-                  (self.log, ads[1], False, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[1]):
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
             self.log.error("Failed to clear voice mail.")
             return False
 
-        return two_phone_call_leave_voice_mail(self.log, ads[0], None, None,
-                                               ads[1], phone_idle_iwlan)
+        return two_phone_call_leave_voice_mail(self.log, ads[1], None, None,
+                                               ads[0], phone_idle_iwlan)
 
     @test_tracker_info(uuid="9bd0550e-abfd-436b-912f-571810f973d7")
     @TelephonyBaseTest.tel_test_wrap
@@ -2731,7 +2707,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """Test Voice Mail notification in WiFI Calling
         This script currently only works for TMO now.
 
-        1. Make sure DUT (ads[1]) in APM WFC mode. Both PhoneB (ads[0]) and DUT idle.
+        1. Make sure DUT (ads[0]) in APM WFC mode. Both PhoneB (ads[1]) and DUT idle.
         2. Make call from PhoneB to DUT, reject on DUT.
         3. On PhoneB, leave a voice mail to DUT.
         4. Verify DUT receive voice mail notification.
@@ -2741,19 +2717,19 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+        tasks = [(phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_iwlan,
-                  (self.log, ads[1], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
-        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[1]):
+        if not call_voicemail_erase_all_pending_voicemail(self.log, ads[0]):
             self.log.error("Failed to clear voice mail.")
             return False
 
-        return two_phone_call_leave_voice_mail(self.log, ads[0], None, None,
-                                               ads[1], phone_idle_iwlan)
+        return two_phone_call_leave_voice_mail(self.log, ads[1], None, None,
+                                               ads[0], phone_idle_iwlan)
 
     @test_tracker_info(uuid="6bd5cf0f-522e-4e4a-99bf-92ae46261d8c")
     @TelephonyBaseTest.tel_test_wrap
@@ -2822,8 +2798,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         # make sure PhoneA is GSM phone before proceed.
         if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            self.log.error("Not GSM phone, abort this wcdma hold/unhold test.")
-            return False
+            raise signals.TestSkip(
+                "Not GSM phone, abort this gsm hold/unhold test")
 
         tasks = [(phone_setup_voice_2g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -2833,8 +2809,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MO Call Hold/Unhold Test.")
@@ -2879,8 +2854,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ads[0].droid.telecomCallClearCallList()
         if num_active_calls(self.log, ads[0]) != 0:
-            self.log.error("Phone {} Call List is not empty.".format(
-                ads[0].serial))
+            ads[0].log.error("Call List is not empty.")
             return False
 
         self.log.info("Begin MT Call Hold/Unhold Test.")
@@ -2901,8 +2875,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
     def _test_call_long_duration(self, dut_incall_check_func, total_duration):
         ads = self.android_devices
-        self.log.info("Long Duration Call Test. Total duration = {}".format(
-            total_duration))
+        self.log.info("Long Duration Call Test. Total duration = %s",
+                      total_duration)
         return call_setup_teardown(
             self.log,
             ads[0],
@@ -3008,9 +2982,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
 
-        caller_number = ad_caller.cfg['subscription'][
+        caller_number = ad_caller.telephony['subscription'][
             get_outgoing_voice_sub_id(ad_caller)]['phone_num']
-        callee_number = ad_callee.cfg['subscription'][
+        callee_number = ad_callee.telephony['subscription'][
             get_incoming_voice_sub_id(ad_callee)]['phone_num']
 
         tasks = [(phone_setup_voice_general, (self.log, ad_caller)),
@@ -3021,21 +2995,19 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         ad_caller.droid.telecomCallClearCallList()
         if num_active_calls(self.log, ad_caller) != 0:
-            self.log.error("Phone {} has ongoing calls.".format(
-                ad_caller.serial))
+            ad_caller.log.error("Phone has ongoing calls.")
             return False
 
         if not initiate_call(self.log, ad_caller, callee_number):
-            self.log.error("Phone was {} unable to initate a call".format(
-                ads[0].serial))
+            ad_caller.log.error("Phone was unable to initate a call")
             return False
 
         if not wait_for_ringing_call(self.log, ad_callee, caller_number):
-            self.log.error("Phone {} never rang.".format(ad_callee.serial))
+            ad_callee.log.error("Phone never rang.")
             return False
 
         if not hangup_call(self.log, ad_caller):
-            self.log.error("Unable to hang up the call")
+            ad_caller.log.error("Unable to hang up the call")
             return False
 
         return True
@@ -3092,6 +3064,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        ads = self.android_devices
 
         def _call_setup_teardown(log, ad_caller, ad_callee, ad_hangup,
                                  caller_verifier, callee_verifier,
@@ -3103,30 +3076,29 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                        wait_time_in_call)
 
         if nw_gen:
-            if not ensure_network_generation(
-                    self.log, self.android_devices[0], nw_gen,
-                    MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-                self.log.error("Device failed to reselect in %s.",
-                               MAX_WAIT_TIME_NW_SELECTION)
+            if not ensure_network_generation(self.log, ads[0], nw_gen,
+                                             MAX_WAIT_TIME_NW_SELECTION,
+                                             NETWORK_SERVICE_DATA):
+                ads[0].log.error("Device failed to reselect in %s.",
+                                 MAX_WAIT_TIME_NW_SELECTION)
                 return False
 
-            self.android_devices[0].droid.telephonyToggleDataConnection(True)
-            if not wait_for_cell_data_connection(
-                    self.log, self.android_devices[0], True):
-                self.log.error("Data connection is not on cell")
+            adss[0].droid.telephonyToggleDataConnection(True)
+            if not wait_for_cell_data_connection(self.log, ads[0], True):
+                ads[0].log.error("Data connection is not on cell")
                 return False
 
-        if not verify_http_connection(self.log, self.android_devices[0]):
-            self.log.error("HTTP connection is not available")
+        if not verify_http_connection(self.log, ads[0]):
+            ads[0].log.error("HTTP connection is not available")
             return False
 
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
-            ad_caller = self.android_devices[0]
-            ad_callee = self.android_devices[1]
+            ad_caller = ads[0]
+            ad_callee = ads[1]
         else:
-            ad_caller = self.android_devices[1]
-            ad_callee = self.android_devices[0]
-        ad_download = self.android_devices[0]
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        ad_download = ads[0]
 
         start_youtube_video(ad_download)
         call_task = (_call_setup_teardown, (self.log, ad_caller, ad_callee,
@@ -3143,14 +3115,19 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Call setup failed in active data transfer.")
             return False
         if results[0]:
-            self.log.info("Data transfer succeeded.")
+            ad_download.log.info("Data transfer succeeded.")
             return True
         elif not allow_data_transfer_interruption:
-            self.log.error("Data transfer failed with parallel phone call.")
+            ad_download.log.error(
+                "Data transfer failed with parallel phone call.")
             return False
         else:
-            ad_download.log.info("Retry data transfer after call hung up")
-            return download_task[0](*download_task[1])
+            ad_download.log.info("Retry data connection after call hung up")
+            if not verify_http_connection(self.log, ad_download):
+                ad_download.log.error("HTTP connection is not available")
+                return False
+            else:
+                return True
 
     @test_tracker_info(uuid="aa40e7e1-e64a-480b-86e4-db2242449555")
     @TelephonyBaseTest.tel_test_wrap
@@ -3510,32 +3487,32 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        ads = self.android_devices
         if nw_gen:
-            if not ensure_network_generation(
-                    self.log, self.android_devices[0], nw_gen,
-                    MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
-                self.log.error("Device failed to reselect in %s.",
-                               MAX_WAIT_TIME_NW_SELECTION)
+            if not ensure_network_generation(self.log, ads[0], nw_gen,
+                                             MAX_WAIT_TIME_NW_SELECTION,
+                                             NETWORK_SERVICE_DATA):
+                ads[0].log.error("Device failed to reselect in %s.",
+                                 MAX_WAIT_TIME_NW_SELECTION)
                 return False
         else:
             ensure_phones_default_state(self.log, self.android_devices)
         self.android_devices[0].droid.telephonyToggleDataConnection(True)
-        if not wait_for_cell_data_connection(self.log, self.android_devices[0],
-                                             True):
-            self.log.error("Data connection is not on cell")
+        if not wait_for_cell_data_connection(self.log, ads[0], True):
+            ads[0].log.error("Data connection is not on cell")
             return False
 
-        if not verify_http_connection(self.log, self.android_devices[0]):
-            self.log.error("HTTP connection is not available")
+        if not verify_http_connection(self.log, ads[0]):
+            ads[0].error("HTTP connection is not available")
             return False
 
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
-            ad_caller = self.android_devices[0]
-            ad_callee = self.android_devices[1]
+            ad_caller = ads[0]
+            ad_callee = ads[1]
         else:
-            ad_caller = self.android_devices[1]
-            ad_callee = self.android_devices[0]
-        ad_download = self.android_devices[0]
+            ad_caller = ads[1]
+            ad_callee = ads[0]
+        ad_download = ads[0]
 
         start_youtube_video(ad_download)
 

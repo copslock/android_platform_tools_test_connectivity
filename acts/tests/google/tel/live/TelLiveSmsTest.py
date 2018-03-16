@@ -90,7 +90,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         for ad in self.android_devices:
             ad.sms_over_wifi = False
             #verizon supports sms over wifi. will add more carriers later
-            for sub in ad.cfg["subscription"].values():
+            for sub in ad.telephony["subscription"].values():
                 if sub["operator"] in SMS_OVER_WIFI_PROVIDERS:
                     ad.sms_over_wifi = True
             ad.adb.shell("su root setenforce 0")
@@ -2637,13 +2637,16 @@ class TelLiveSmsTest(TelephonyBaseTest):
         Airplane mode is off.
         Set the data limit to the current usage
         Send MMS from PhoneA to PhoneB.
-        Verify MMS cannot be send.
+        Verify MMS cannot be send. (Can be send/receive for Verizon)
 
         Returns:
             True if success.
             False if failed.
         """
         ads = self.android_devices
+        expected_result = False
+        if get_operator_name(self.log, ads[0]) == "vzw":
+            expected_result = True
         try:
             subscriber_id = ads[0].droid.telephonyGetSubscriberId()
             data_usage = get_mobile_data_usage(ads[0], subscriber_id)
@@ -2655,7 +2658,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return not self._mms_test_mo(ads)
+            return self._mms_test_mo(ads) == expected_result
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
@@ -2667,13 +2670,16 @@ class TelLiveSmsTest(TelephonyBaseTest):
         Airplane mode is off.
         Set the data limit to the current usage
         Send MMS from PhoneB to PhoneA.
-        Verify MMS cannot be received.
+        Verify MMS cannot be received. (Can be send/receive for Verizon)
 
         Returns:
             True if success.
             False if failed.
         """
         ads = self.android_devices
+        expected_result = False
+        if get_operator_name(self.log, ads[0]) == "vzw":
+            expected_result = True
         try:
             subscriber_id = ads[0].droid.telephonyGetSubscriberId()
             data_usage = get_mobile_data_usage(ads[0], subscriber_id)
@@ -2685,6 +2691,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return not self._mms_test_mt(ads)
+            return self._mms_test_mt(ads) == expected_result
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)

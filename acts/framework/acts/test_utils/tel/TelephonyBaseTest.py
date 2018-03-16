@@ -23,8 +23,6 @@ import re
 import shutil
 import traceback
 
-import acts.controllers.diag_logger
-
 from acts import asserts
 from acts import logger as acts_logger
 from acts.base_test import BaseTestClass
@@ -175,10 +173,6 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
 
-        setattr(self, "diag_logger",
-                self.register_controller(
-                    acts.controllers.diag_logger, required=False))
-
         if not self.user_params.get("Attenuator"):
             ensure_phones_default_state(self.log, self.android_devices)
         else:
@@ -189,7 +183,8 @@ class TelephonyBaseTest(BaseTestClass):
             # Setup VoWiFi MDN for Verizon. b/33187374
             build_id = ad.build_info["build_id"]
             if "vzw" in [
-                    sub["operator"] for sub in ad.cfg["subscription"].values()
+                    sub["operator"]
+                    for sub in ad.telephony["subscription"].values()
             ] and ad.is_apk_installed("com.google.android.wfcactivation"):
                 ad.log.info("setup VoWiFi MDN per b/33187374")
                 ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
@@ -292,10 +287,6 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.test_log_begin_time = match.group(0)
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
-        if getattr(self, "diag_logger", None):
-            for logger in self.diag_logger:
-                self.log.info("Starting a diagnostic session %s", logger)
-                self.logger_sessions.append((logger, logger.start()))
         if self.skip_reset_between_cases:
             ensure_phones_idle(self.log, self.android_devices)
         else:

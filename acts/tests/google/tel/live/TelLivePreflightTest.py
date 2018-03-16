@@ -75,16 +75,6 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 "wifi_network_pass_2g") or self.user_params.get(
                     "wifi_network_ssid_5g")
 
-    def setup_class(self):
-        for ad in self.android_devices:
-            toggle_airplane_mode_by_adb(self.log, ad, False)
-
-    def teardown_class(self):
-        pass
-
-    def setup_test(self):
-        pass
-
     """ Tests Begin """
 
     @test_tracker_info(uuid="cb897221-99e1-4697-927e-02d92d969440")
@@ -141,8 +131,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 abort_all_tests(ad.log, "WiFi connect fail")
-            if (not wait_for_wifi_data_connection(self.log, ad, True) or
-                    not verify_http_connection(self.log, ad)):
+            if (not wait_for_wifi_data_connection(self.log, ad, True)
+                    or not verify_http_connection(self.log, ad)):
                 abort_all_tests(ad.log, "Data not available on WiFi")
         finally:
             wifi_toggle_state(self.log, ad, False)
