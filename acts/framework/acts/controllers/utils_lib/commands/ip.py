@@ -15,6 +15,8 @@
 import ipaddress
 import re
 
+from acts.libs.proc import job
+
 
 class LinuxIpCommand(object):
     """Interface for doing standard IP commands on a linux system.
@@ -138,20 +140,17 @@ class LinuxIpCommand(object):
             # time this command has been called. In such a case, we would get
             # this error message.
             error_msg = 'RTNETLINK answers: Cannot assign requested address'
-            if result.exit_status != 0 and result.stderr == error_msg:
-                # If it was removed by another process, log a warning
-                if address not in self.get_ipv4_addresses(net_interface):
-                    self._runner.log.warning(
-                        'Unable to remove address %s. The address was removed '
-                        'by another process.' % address)
-                    continue
-                # If it was not removed, raise an error
-                else:
+            if result.exit_status != 0:
+                if error_msg in result.stderr:
+                    # If it was removed by another process, log a warning
+                    if address not in self.get_ipv4_addresses(net_interface):
+                        self._runner.log.warning(
+                            'Unable to remove address %s. The address was '
+                            'removed by another process.' % address)
+                        continue
+                    # If it was not removed, raise an error
                     self._runner.log.error(
                         'Unable to remove address %s. The address is still '
                         'registered to %s, despite call for removal.' %
-                        (address, net_interface)
-                    )
-                    raise result
-            else:
-                raise result
+                        (address, net_interface))
+                raise job.Error(result)
