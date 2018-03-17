@@ -3585,6 +3585,11 @@ def wait_for_matching_mms(log,
         ad_rx.messaging_ed.wait_for_event(EventMmsDownloaded, is_mms_match,
                                           max_wait_time, phonenumber_tx, text)
         ad_rx.log.info("Got event %s", EventMmsDownloaded)
+        smshandle_logs = ad_rx.search_logcat(
+            "GsmInboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
+            begin_time=begin_time)
+        if smshandle_logs:
+            ad_rx.log.warning("Found %s", smshandle_logs[-1]["log_message"])
         return True
     except Empty:
         ad_rx.log.warning("No matched MMS downloaded event.")
@@ -3628,6 +3633,10 @@ def sms_send_receive_verify_for_subscription(
                 if not ad.messaging_droid.is_live:
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
+                else:
+                    ad.messaging_ed.clear_all_events()
+                ad.messaging_droid.logI(
+                    "Start sms_send_receive_verify_for_subscription test")
             except Exception:
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
@@ -3722,6 +3731,14 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
 
 def sms_mms_receive_logcat_check(ad, type, begin_time):
     type = type.upper()
+    smshandle_logs = ad.search_logcat(
+        "GsmInboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
+        begin_time=begin_time)
+    if smshandle_logs:
+        ad.log.warning("Found %s", smshandle_logs[-1]["log_message"])
+    ad.log.info("GsmInboundSmsHandler logs: %s", sms_logs)
+    log_results = ad.search_logcat(
+        "%s Message sent successfully" % type, begin_time=begin_time)
     log_results = ad.search_logcat(
         "New %s Received" % type, begin_time=begin_time) or \
         ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
@@ -3777,6 +3794,10 @@ def mms_send_receive_verify_for_subscription(
                 if not ad.messaging_droid.is_live:
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
+                else:
+                    ad.messaging_ed.clear_all_events()
+                ad.messaging_droid.logI(
+                    "Start mms_send_receive_verify_for_subscription test")
             except Exception:
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
