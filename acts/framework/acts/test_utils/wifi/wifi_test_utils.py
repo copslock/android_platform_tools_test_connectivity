@@ -39,7 +39,7 @@ SHORT_TIMEOUT = 30
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
-DEFAULT_PING_ADDR = "http://www.google.com/robots.txt"
+DEFAULT_PING_ADDR = "https://www.google.com/robots.txt"
 
 
 class WifiEnums():
