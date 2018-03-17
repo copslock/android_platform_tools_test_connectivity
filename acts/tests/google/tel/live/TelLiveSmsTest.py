@@ -82,7 +82,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.caller = self.android_devices[0]
         self.callee = self.android_devices[1]
         self.number_of_devices = 2
-        self.message_lengths = (50, 160, 180)
+        self.message_lengths = (50, 180, 360)
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
