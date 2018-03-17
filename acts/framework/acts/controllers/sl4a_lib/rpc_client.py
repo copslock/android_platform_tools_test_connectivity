@@ -180,7 +180,7 @@ class RpcClient(object):
             self._working_connections.remove(connection)
             self._free_connections.append(connection)
 
-    def rpc(self, method, *args, timeout=None, retries=1):
+    def rpc(self, method, *args, timeout=None, retries=3):
         """Sends an rpc to sl4a.
 
         Sends an rpc call to sl4a over this RpcClient's corresponding session.
@@ -220,6 +220,9 @@ class RpcClient(object):
                             method, i)
                         continue
                     else:
+                        self._log.exception(
+                            'No response for RPC method %s on iteration %s',
+                            method, i)
                         self.on_error(connection)
                         raise Sl4aProtocolError(
                             Sl4aProtocolError.NO_RESPONSE_FROM_SERVER)
@@ -227,8 +230,8 @@ class RpcClient(object):
                     break
         except BrokenPipeError as e:
             if self.is_alive:
-                self._log.error('Exception %s happened while communicating to '
-                                'SL4A.', e)
+                self._log.exception('Exception %s happened for sl4a call %s',
+                                    e, method)
                 self.on_error(connection)
             else:
                 self._log.warning('The connection was killed during cleanup:')
