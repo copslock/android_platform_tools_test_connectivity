@@ -123,14 +123,8 @@ class TelephonyBaseTest(BaseTestClass):
                 result = True
                 if i > 1:
                     log_string = "[Test Case] RERUN %s" % test_name
-                    self.teardown_test()
-                    self.setup_test()
-                    self.log.info(log_string)
-                    for ad in self.android_devices:
-                        try:
-                            ad.droid.logI(log_string)
-                        except Exception as e:
-                            ad.log.warning(e)
+                    self._teardown_test()
+                    self._setup_test()
                 try:
                     result = fn(self, *args, **kwargs)
                 except (TestSignal, TestAbortClass, TestAbortAll) as signal:
@@ -138,7 +132,7 @@ class TelephonyBaseTest(BaseTestClass):
                         signal.details = self.result_detail
                     raise
                 except Exception as e:
-                    self.log.error(traceback.format_exc())
+                    self.log.exception(e)
                     asserts.fail(self.result_detail)
                 if result is not False: break
             if self.user_params.get("check_crash", True):
