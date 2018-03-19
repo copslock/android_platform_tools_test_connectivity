@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import statistics
 import time
 from acts import asserts
 from acts import base_test
@@ -59,6 +60,93 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def teardown_test(self):
         self.iperf_server.stop()
+
+    def pass_fail_check_rssi_stability(self, rssi_result):
+        """Check the test result and decide if it passed or failed.
+
+        Checks the RSSI test result and fails the test if the standard
+        deviation of signal_poll_rssi is beyond the threshold defined in the
+        config file.
+
+        Args:
+            rssi_result: dict containing attenuation, rssi, and other meta
+            data. This dict is the output of self.post_process_results
+        """
+        # Save output as text file
+        test_name = self.current_test_name
+        results_file_path = "{}/{}.json".format(self.log_path,
+                                                self.current_test_name)
+        with open(results_file_path, 'w') as results_file:
+            json.dump(rssi_result, results_file, indent=4)
+
+        x_data = []
+        y_data = []
+        legends = []
+        std_deviations = {
+            "signal_poll_rssi": [],
+            "signal_poll_avg_rssi": [],
+            "chain_0_rssi": [],
+            "chain_1_rssi": [],
+        }
+        for data_point in rssi_result["rssi_result"]:
+            for key, val in data_point["connected_rssi"].items():
+                if type(val) == list:
+                    x_data.append([
+                        x * self.test_params["polling_frequency"]
+                        for x in range(len(val))
+                    ])
+                    y_data.append(val)
+                    legends.append(key)
+                    std_deviations[key].append(
+                        data_point["connected_rssi"]["stdev_" + key])
+        data_sets = [x_data, y_data]
+        x_label = 'Time (s)'
+        y_label = 'RSSI (dBm)'
+        fig_property = {
+            "title": test_name,
+            "x_label": x_label,
+            "y_label": y_label,
+            "linewidth": 3,
+            "markersize": 0
+        }
+        output_file_path = "{}/{}.html".format(self.log_path, test_name)
+        wputils.bokeh_plot(
+            data_sets,
+            legends,
+            fig_property,
+            shaded_region=None,
+            output_file_path=output_file_path)
+
+        test_failed = any([
+            stdev > self.test_params["stdev_tolerance"]
+            for stdev in std_deviations["signal_poll_rssi"]
+        ])
+        if test_failed:
+            asserts.fail(
+                "RSSI stability failed. Standard deviations were {0} dB "
+                "(limit {1}), per chain standard deviation [{2}, {3}] dB".
+                format([
+                    float("{:.2f}".format(x))
+                    for x in std_deviations["signal_poll_rssi"]
+                ], self.test_params["stdev_tolerance"], [
+                    float("{:.2f}".format(x))
+                    for x in std_deviations["chain_0_rssi"]
+                ], [
+                    float("{:.2f}".format(x))
+                    for x in std_deviations["chain_1_rssi"]
+                ]))
+        asserts.explicit_pass(
+            "RSSI stability passed. Standard deviations were {0} dB "
+            "(limit {1}), per chain standard deviation [{2}, {3}] dB".format([
+                float("{:.2f}".format(x))
+                for x in std_deviations["signal_poll_rssi"]
+            ], self.test_params["stdev_tolerance"], [
+                float("{:.2f}".format(x))
+                for x in std_deviations["chain_0_rssi"]
+            ], [
+                float("{:.2f}".format(x))
+                for x in std_deviations["chain_1_rssi"]
+            ]))
 
     def pass_fail_check_rssi_vs_attenuation(self, postprocessed_results):
         """Check the test result and decide if it passed or failed.
@@ -137,7 +225,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             asserts.fail(test_message)
         asserts.explicit_pass(test_message)
 
-    def post_process_results(self, rssi_result):
+    def post_process_rssi_vs_attenuation(self, rssi_result):
         """Saves plots and JSON formatted results.
 
         Args:
@@ -152,7 +240,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         results_file_path = "{}/{}.json".format(self.log_path,
                                                 self.current_test_name)
         with open(results_file_path, 'w') as results_file:
-            json.dump(rssi_result, results_file)
+            json.dump(rssi_result, results_file, indent=4)
         # Plot and save
         total_attenuation = [
             att + rssi_result["fixed_attenuation"]
@@ -226,7 +314,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             num_measurements: number of scans done, and RSSIs collected
         Returns:
             scan_rssi: dict containing the measurement results as well as the
-            average scan RSSI for all BSSIDs in tracked_bssids
+            statistics of the scan RSSI for all BSSIDs in tracked_bssids
         """
         scan_rssi = {}
         for bssid in tracked_bssids:
@@ -252,8 +340,14 @@ class WifiRssiTest(base_test.BaseTestClass):
             if filtered_rssi_values:
                 scan_rssi[key]["avg_rssi"] = sum(filtered_rssi_values) / len(
                     filtered_rssi_values)
+                if len(filtered_rssi_values) > 1:
+                    scan_rssi[key]["stdev"] = statistics.stdev(
+                        filtered_rssi_values)
+                else:
+                    scan_rssi[key]["stdev"] = 0
             else:
                 scan_rssi[key]["avg_rssi"] = RSSI_ERROR_VAL
+                scan_rssi[key]["stdev"] = RSSI_ERROR_VAL
         return scan_rssi
 
     def get_connected_rssi(self,
@@ -267,7 +361,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             connected_rssi: dict containing the measurements results for
             all reported RSSI values (signal_poll, per chain, etc.) and their
-            averages
+            statistics
         """
         connected_rssi = {
             "signal_poll_rssi": [],
@@ -313,8 +407,14 @@ class WifiRssiTest(base_test.BaseTestClass):
             if filtered_rssi_values:
                 connected_rssi["mean_{}".format(key)] = sum(
                     filtered_rssi_values) / len(filtered_rssi_values)
+                if len(filtered_rssi_values) > 1:
+                    connected_rssi["stdev_{}".format(key)] = statistics.stdev(
+                        filtered_rssi_values)
+                else:
+                    connected_rssi["stdev_{}".format(key)] = 0
             else:
                 connected_rssi["mean_{}".format(key)] = RSSI_ERROR_VAL
+                connected_rssi["stdev_{}".format(key)] = RSSI_ERROR_VAL
         return connected_rssi
 
     def rssi_test(self, iperf_traffic, connected_measurements,
@@ -370,7 +470,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         return rssi_result
 
-    def rssi_test_func(self):
+    def rssi_test_func(self, iperf_traffic, connected_measurements,
+                       scan_measurements, bssids, polling_frequency):
         """Main function to test RSSI.
 
         The function sets up the AP in the correct channel and mode
@@ -380,16 +481,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             rssi_result: dict containing rssi_results and meta data
         """
-        #Initialize test parameters
-        num_atten_steps = int((self.test_params["rssi_atten_stop"] -
-                               self.test_params["rssi_atten_start"]) /
-                              self.test_params["rssi_atten_step"])
-        self.rssi_atten_range = [
-            self.test_params["rssi_atten_start"] +
-            x * self.test_params["rssi_atten_step"]
-            for x in range(0, num_atten_steps)
-        ]
-
+        #Initialize test settings
         rssi_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(self.channel)
@@ -418,10 +510,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         rssi_result["fixed_attenuation"] = self.test_params[
             "fixed_attenuation"][str(self.channel)]
         rssi_result["rssi_result"] = self.rssi_test(
-            self.iperf_traffic, self.test_params["connected_measurements"],
-            self.test_params["scan_measurements"], [
-                self.main_network[band]["BSSID"]
-            ], self.test_params["polling_frequency"])
+            iperf_traffic, connected_measurements, scan_measurements, bssids,
+            polling_frequency)
         self.testclass_results.append(rssi_result)
         return rssi_result
 
@@ -429,25 +519,152 @@ class WifiRssiTest(base_test.BaseTestClass):
         """ Function that gets called for each test case of rssi_vs_atten
 
         The function gets called in each rvr test case. The function customizes
-        the rvr test based on the test name of the test that called it
+        the test based on the test name of the test that called it
         """
         test_params = self.current_test_name.split("_")
         self.channel = int(test_params[4][2:])
         self.mode = test_params[5]
         self.iperf_traffic = "ActiveTraffic" in test_params[6]
         self.iperf_args = '-i 1 -t 3600 -J -R'
-        rssi_result = self.rssi_test_func()
-        postprocessed_results = self.post_process_results(rssi_result)
+        band = self.access_point.band_lookup_by_channel(self.channel)
+        num_atten_steps = int((self.test_params["rssi_atten_stop"] -
+                               self.test_params["rssi_atten_start"]) /
+                              self.test_params["rssi_atten_step"])
+        self.rssi_atten_range = [
+            self.test_params["rssi_atten_start"] +
+            x * self.test_params["rssi_atten_step"]
+            for x in range(0, num_atten_steps)
+        ]
+        rssi_result = self.rssi_test_func(
+            self.iperf_traffic, self.test_params["connected_measurements"],
+            self.test_params["scan_measurements"], [
+                self.main_network[band]["BSSID"]
+            ], self.test_params["polling_frequency"])
+        postprocessed_results = self.post_process_rssi_vs_attenuation(
+            rssi_result)
         self.pass_fail_check_rssi_vs_attenuation(postprocessed_results)
 
     def _test_rssi_stability(self):
-        #TODO: Implement test that looks at RSSI stability at fixed attenuation
-        pass
+        """ Function that gets called for each test case of rssi_stability
 
+        The function gets called in each stability test case. The function
+        customizes test based on the test name of the test that called it
+        """
+        test_params = self.current_test_name.split("_")
+        self.channel = int(test_params[3][2:])
+        self.mode = test_params[4]
+        self.iperf_traffic = "ActiveTraffic" in test_params[5]
+        self.iperf_args = '-i 1 -t 3600 -J -R'
+        band = self.access_point.band_lookup_by_channel(self.channel)
+        self.rssi_atten_range = self.test_params["stability_test_atten"]
+        connected_measurements = int(
+            self.test_params["stability_test_duration"] /
+            self.test_params["polling_frequency"])
+        rssi_result = self.rssi_test_func(
+            self.iperf_traffic, connected_measurements, 0, [
+                self.main_network[band]["BSSID"]
+            ], self.test_params["polling_frequency"])
+        self.pass_fail_check_rssi_stability(rssi_result)
 
-class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+    @test_tracker_info(uuid='519689b8-0a3c-4fd9-9227-fd7962d0f1a0')
+    def test_rssi_stability_ch1_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='23eca2ab-d0b4-4730-9f32-ec2d901ae493')
+    def test_rssi_stability_ch2_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='63d340c0-dcf9-4e14-87bd-a068a59836b2')
+    def test_rssi_stability_ch3_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='ddbe88d8-be20-40eb-8f29-55049e3fef28')
+    def test_rssi_stability_ch4_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='9c06304e-2b60-4619-8fb3-73fd2cb4b854')
+    def test_rssi_stability_ch5_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='74b656ca-132e-4d66-9584-560287081607')
+    def test_rssi_stability_ch6_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='23b5f19a-539b-4908-a197-06ce505d3d23')
+    def test_rssi_stability_ch7_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='e7b85167-f4c4-4adb-a111-04d8a5f10e1a')
+    def test_rssi_stability_ch8_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='2a0a9393-4b68-4c08-8787-3f35d1a8458b')
+    def test_rssi_stability_ch9_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='069c7acf-3e7e-4298-91cb-d292c6025ae1')
+    def test_rssi_stability_ch10_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='95c5a27c-1dea-47a4-a1c5-edf955545f12')
+    def test_rssi_stability_ch11_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='8aeab023-a096-4fbe-80dd-fd01466f9fac')
+    def test_rssi_stability_ch36_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='872fed9f-d0bb-4a7b-a2a7-bf8df7740b2d')
+    def test_rssi_stability_ch36_VHT40_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='27395fd1-e286-473a-b98e-5a50db2a598a')
+    def test_rssi_stability_ch36_VHT80_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='6f6b25e3-1a1e-4a61-930a-1d0aa25ba900')
+    def test_rssi_stability_ch40_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='c6717da7-855c-4c6e-a6e2-ee42b8feaaab')
+    def test_rssi_stability_ch44_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='2e34f735-079c-4619-9e74-b96dc8d0597f')
+    def test_rssi_stability_ch44_VHT40_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='d543c019-1ff5-41d4-9b37-ccdc593f3edd')
+    def test_rssi_stability_ch48_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='2bb08914-36b2-4f58-9b3e-c3f3f4fac8ab')
+    def test_rssi_stability_ch149_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='e2f585f5-7811-4570-b987-23da301eb75d')
+    def test_rssi_stability_ch149_VHT40_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='f3e74d5b-73f6-4723-abf3-c9c147db08e3')
+    def test_rssi_stability_ch149_VHT80_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='06503ed0-baf3-4cd1-ac5e-4124e3c7f52f')
+    def test_rssi_stability_ch153_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='0cf8286f-a919-4e29-a9f2-e7738a4afe8f')
+    def test_rssi_stability_ch157_VHT20_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='f9a0165c-468b-4096-8f4b-cc80bae564a0')
+    def test_rssi_stability_ch157_VHT40_ActiveTraffic(self):
+        self._test_rssi_stability()
+
+    @test_tracker_info(uuid='4b74dd46-4190-4556-8ad8-c55808e9e847')
+    def test_rssi_stability_ch161_VHT20_ActiveTraffic(self):
+        self._test_rssi_vs_atten()
 
     @test_tracker_info(uuid='ae54b7cc-d76d-4460-8dcc-2c439265c7c9')
     def test_rssi_vs_atten_ch1_VHT20_ActiveTraffic(self):
@@ -492,11 +709,6 @@ class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
     @test_tracker_info(uuid='f4d565f8-f060-462c-9b3c-cd1f7d27b3ea')
     def test_rssi_vs_atten_ch11_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
-
-
-class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
 
     @test_tracker_info(uuid='a33a93ac-604a-414f-ae96-42dffbe59a93')
     def test_rssi_vs_atten_ch36_VHT20_ActiveTraffic(self):
@@ -553,3 +765,63 @@ class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
     @test_tracker_info(uuid='581b5794-239e-4d1c-b0ce-7c6dc5bd373f')
     def test_rssi_vs_atten_ch161_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
+
+
+class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = ("test_rssi_stability_ch1_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch2_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch3_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch4_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch5_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch6_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch7_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch8_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch9_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch10_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch11_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch1_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch2_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch3_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch4_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch5_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch6_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch7_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch8_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch9_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch10_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch11_VHT20_ActiveTraffic")
+
+
+class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = ("test_rssi_stability_ch36_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch36_VHT40_ActiveTraffic",
+                      "test_rssi_stability_ch36_VHT80_ActiveTraffic",
+                      "test_rssi_stability_ch40_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch44_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch44_VHT40_ActiveTraffic",
+                      "test_rssi_stability_ch48_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch149_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch149_VHT40_ActiveTraffic",
+                      "test_rssi_stability_ch149_VHT80_ActiveTraffic",
+                      "test_rssi_stability_ch153_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch157_VHT20_ActiveTraffic",
+                      "test_rssi_stability_ch157_VHT40_ActiveTraffic",
+                      "test_rssi_stability_ch161_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch36_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch36_VHT40_ActiveTraffic",
+                      "test_rssi_vs_atten_ch36_VHT80_ActiveTraffic",
+                      "test_rssi_vs_atten_ch40_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch44_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch44_VHT40_ActiveTraffic",
+                      "test_rssi_vs_atten_ch48_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch149_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch149_VHT40_ActiveTraffic",
+                      "test_rssi_vs_atten_ch149_VHT80_ActiveTraffic",
+                      "test_rssi_vs_atten_ch153_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch157_VHT20_ActiveTraffic",
+                      "test_rssi_vs_atten_ch157_VHT40_ActiveTraffic",
+                      "test_rssi_vs_atten_ch161_VHT20_ActiveTraffic")
