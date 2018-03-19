@@ -17,6 +17,7 @@
 import queue
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -37,6 +38,7 @@ class RangeApSupporting11McTest(RttBaseTest):
 
   #############################################################################
 
+  @test_tracker_info(uuid="6705270f-924b-4bef-b50a-0f0a7eb9ce52")
   def test_rtt_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
     dut = self.android_devices[0]
@@ -76,6 +78,7 @@ class RangeApSupporting11McTest(RttBaseTest):
   #
   #########################################################################
 
+  @test_tracker_info(uuid="18be9737-2f03-4e35-9a23-f722dea7b82d")
   def test_legacy_rtt_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT only to those which support 802.11mc - using
     the LEGACY API!"""
