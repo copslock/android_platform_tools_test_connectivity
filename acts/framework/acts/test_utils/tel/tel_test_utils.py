@@ -3736,7 +3736,7 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
         begin_time=begin_time)
     if smshandle_logs:
         ad.log.warning("Found %s", smshandle_logs[-1]["log_message"])
-    ad.log.info("GsmInboundSmsHandler logs: %s", sms_logs)
+        ad.log.info("GsmInboundSmsHandler logs: %s", smshandle_logs)
     log_results = ad.search_logcat(
         "%s Message sent successfully" % type, begin_time=begin_time)
     log_results = ad.search_logcat(
