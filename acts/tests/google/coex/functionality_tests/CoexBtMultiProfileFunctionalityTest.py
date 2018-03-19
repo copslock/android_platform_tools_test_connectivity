@@ -1,4 +1,4 @@
-# /usr/bin/env python3.4
+# /usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -13,7 +13,14 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""
+Test suite to check Multi Profile Functionality with Wlan.
 
+Test Setup:
+
+Two Android deivce.
+One A2DP and HFP Headset connected to Relay.
+"""
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
@@ -28,17 +35,19 @@ from acts.test_utils.coex.coex_test_utils import setup_tel_config
 class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
 
     def __init__(self, controllers):
-        CoexBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
-        CoexBaseTest.setup_class(self)
-        req_params = ["sim_conf_file", "music_play_time"]
+        super().setup_class()
+        req_params = ["sim_conf_file", "music_play_time", "music_file"]
         self.unpack_userparams(req_params)
         self.ag_phone_number, self.re_phone_number = setup_tel_config(
             self.pri_ad, self.sec_ad, self.sim_conf_file)
+        if hasattr(self, "music_file"):
+            self.push_music_to_android_device(self.pri_ad)
 
     def setup_test(self):
-        CoexBaseTest.setup_test(self)
+        super().setup_test()
         self.audio_receiver.pairing_mode()
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
@@ -49,7 +58,7 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        CoexBaseTest.teardown_test(self)
+        super().teardown_test()
         self.audio_receiver.clean_up()
 
     def start_media_streaming_initiate_hfp_call_with_iperf(self):
