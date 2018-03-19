@@ -18,6 +18,7 @@ import random
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -33,6 +34,7 @@ class RttRequestManagementTest(RttBaseTest):
 
   #############################################################################
 
+  @test_tracker_info(uuid="29ff4a02-2952-47df-bf56-64f30c963093")
   def test_cancel_ranging(self):
     """Request a 'large' number of range operations with various UIDs (using the
     work-source API), then cancel some of them.
@@ -98,6 +100,7 @@ class RttRequestManagementTest(RttBaseTest):
       rutils.wait_for_event(dut, rutils.decorate_event(
           rconsts.EVENT_CB_RANGING_ON_RESULT, group3_ids[i]))
 
+  @test_tracker_info(uuid="48297480-c026-4780-8c13-476e7bea440c")
   def test_throttling(self):
     """Request sequential range operations using a bogus UID (which will
     translate as a throttled process) and similarly using the ACTS/sl4a as

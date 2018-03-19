@@ -17,6 +17,7 @@
 import queue
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -38,6 +39,7 @@ class RangeApNonSupporting11McTest(RttBaseTest):
 
   #############################################################################
 
+  @test_tracker_info(uuid="cde756e9-11f3-43da-b9ae-9edf85764f82")
   def test_rtt_non_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
     dut = self.android_devices[0]
@@ -71,6 +73,7 @@ class RangeApNonSupporting11McTest(RttBaseTest):
                 extras=stats)
     asserts.explicit_pass("RTT test done", extras=stats)
 
+  @test_tracker_info(uuid="c9e22185-16d4-4fe6-894f-5823587b3288")
   def test_rtt_non_80211mc_supporting_aps_wo_privilege(self):
     """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs with the
     device not having privilege access (expect failures)."""
@@ -98,6 +101,7 @@ class RangeApNonSupporting11McTest(RttBaseTest):
                             "Expected non-support error code", extras=stats)
     asserts.explicit_pass("RTT test done", extras=stats)
 
+  @test_tracker_info(uuid="e117af56-bd3f-40ae-a2fd-4175f0daa7fa")
   def test_rtt_non_80211mc_supporting_ap_faked_as_supporting(self):
     """Scan for APs which do not support IEEE 802.11mc, maliciously modify the
     Responder config to indicate support and pass-through to service. Verify
