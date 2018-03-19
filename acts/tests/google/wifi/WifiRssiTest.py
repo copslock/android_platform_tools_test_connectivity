@@ -444,6 +444,11 @@ class WifiRssiTest(base_test.BaseTestClass):
         #TODO: Implement test that looks at RSSI stability at fixed attenuation
         pass
 
+
+class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+
     @test_tracker_info(uuid='ae54b7cc-d76d-4460-8dcc-2c439265c7c9')
     def test_rssi_vs_atten_ch1_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
@@ -487,6 +492,11 @@ class WifiRssiTest(base_test.BaseTestClass):
     @test_tracker_info(uuid='f4d565f8-f060-462c-9b3c-cd1f7d27b3ea')
     def test_rssi_vs_atten_ch11_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
+
+
+class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
 
     @test_tracker_info(uuid='a33a93ac-604a-414f-ae96-42dffbe59a93')
     def test_rssi_vs_atten_ch36_VHT20_ActiveTraffic(self):
