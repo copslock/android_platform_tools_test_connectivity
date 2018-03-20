@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
 import time
 
 from acts import asserts
@@ -96,6 +97,9 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     autils.verify_no_more_events(p_dut, timeout=0)
     autils.verify_no_more_events(s_dut, timeout=0)
 
+  def getname(self):
+    """Python magic to return the name of the *calling* function."""
+    return sys._getframe(1).f_code.co_name
 
   #########################################################################
   # Run discovery with ranging configuration.
@@ -120,10 +124,12 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.create_discovery_config(self.SERVICE_NAME,
-                                                aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                                aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                                ssi=self.getname()),
         expect_discovery=True,
         expect_range=False)
 
@@ -138,10 +144,12 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.create_discovery_config(self.SERVICE_NAME,
-                                                aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                                aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                                ssi=self.getname()),
         expect_discovery=True,
         expect_range=False)
 
@@ -157,11 +165,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=False),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -179,11 +189,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=False),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -201,11 +213,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=False),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=None),
         expect_discovery=True,
@@ -223,11 +237,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=False),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=None),
         expect_discovery=True,
@@ -244,11 +260,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=0,
             max_distance_mm=None),
         expect_discovery=True,
@@ -265,11 +283,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -287,11 +307,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=0,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -308,11 +330,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=0,
             max_distance_mm=None),
         expect_discovery=True,
@@ -329,11 +353,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -351,11 +377,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=0,
             max_distance_mm=1000000),
         expect_discovery=True,
@@ -372,11 +400,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=None),
         expect_discovery=False)
@@ -392,11 +422,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=0),
         expect_discovery=False)
@@ -413,11 +445,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=1000001),
         expect_discovery=False)
@@ -433,11 +467,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=None),
         expect_discovery=False)
@@ -453,11 +489,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=None,
             max_distance_mm=0),
         expect_discovery=False)
@@ -474,11 +512,13 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     self.run_discovery(
         p_config=autils.add_ranging_to_pub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.PUBLISH_TYPE_SOLICITED),
+                                           aconsts.PUBLISH_TYPE_SOLICITED,
+                                           ssi=self.getname()),
             enable_ranging=True),
         s_config=autils.add_ranging_to_sub(
             autils.create_discovery_config(self.SERVICE_NAME,
-                                           aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                           aconsts.SUBSCRIBE_TYPE_ACTIVE,
+                                           ssi=self.getname()),
             min_distance_mm=1000000,
             max_distance_mm=1000001),
         expect_discovery=False)
