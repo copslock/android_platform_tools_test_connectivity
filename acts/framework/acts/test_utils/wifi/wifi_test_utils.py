@@ -1031,15 +1031,21 @@ def wait_for_disconnect(ad):
         raise signals.TestFailure("Device did not disconnect from the network")
 
 
-def connect_to_wifi_network(ad, network):
+def connect_to_wifi_network(ad, network, assert_on_fail=True):
     """Connection logic for open and psk wifi networks.
 
     Args:
-        params: A tuple of network info and AndroidDevice object.
+        ad: AndroidDevice to use for connection
+        network: network info of the network to connect to
+        assert_on_fail: If true, errors from wifi_connect will raise
+                        test failure signals.
     """
     start_wifi_connection_scan_and_ensure_network_found(
         ad, network[WifiEnums.SSID_KEY])
-    wifi_connect(ad, network, num_of_tries=3)
+    wifi_connect(ad,
+                 network,
+                 num_of_tries=3,
+                 assert_on_fail=assert_on_fail)
 
 
 def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
@@ -1053,8 +1059,7 @@ def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
              False otherwise.
 
     """
-    start_wifi_connection_scan_and_ensure_network_found(
-        ad, network[WifiEnums.SSID_KEY])
+    start_wifi_connection_scan_and_ensure_network_found(ad, network_ssid)
     wifi_connect_by_id(ad, network_id)
     connect_data = ad.droid.wifiGetConnectionInfo()
     connect_ssid = connect_data[WifiEnums.SSID_KEY]
@@ -1546,3 +1551,15 @@ def group_attenuators(attenuators):
         asserts.fail(("Either two or four attenuators are required for this "
                       "test, but found %s") % num_of_attns)
     return [attn0, attn1]
+
+
+def create_softap_config():
+    """Create a softap config with random ssid and password."""
+    ap_ssid = "softap_" + utils.rand_ascii_str(8)
+    ap_password = utils.rand_ascii_str(8)
+    logging.info("softap setup: %s %s", ap_ssid, ap_password)
+    config = {
+        WifiEnums.SSID_KEY: ap_ssid,
+        WifiEnums.PWD_KEY: ap_password,
+    }
+    return config

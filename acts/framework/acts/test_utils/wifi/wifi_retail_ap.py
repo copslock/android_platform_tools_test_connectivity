@@ -513,8 +513,10 @@ class NetgearR7500AP(WifiRetailAP):
             browser.visit(self.CONFIG_PAGE)
             sleep(BROWSER_WAIT_SHORT)
             browser.visit(self.CONFIG_PAGE)
+            sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
+            sleep(BROWSER_WAIT_SHORT)
 
             with browser.get_iframe("formframe") as iframe:
                 for key, value in self.CONFIG_PAGE_FIELDS.items():

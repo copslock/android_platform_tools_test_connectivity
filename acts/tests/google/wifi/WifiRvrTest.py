@@ -39,7 +39,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         req_params = ["test_params", "main_network"]
-        opt_params = ["RetailAccessPoints", "gldn_files_list"]
+        opt_params = ["RetailAccessPoints", "golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
@@ -49,12 +49,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
-        if not hasattr(self, "gldn_files_list"):
-            self.gldn_files_list = [
+        if not hasattr(self, "golden_files_list"):
+            self.golden_files_list = [
                 os.path.join(self.test_params["golden_results_path"], file)
                 for file in os.listdir(self.test_params["golden_results_path"])
             ]
         self.testclass_results = []
+        # Turn WiFi ON
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -62,6 +64,8 @@ class WifiRvrTest(base_test.BaseTestClass):
     def teardown_class(self):
         """Saves plot with all test results to enable comparison.
         """
+        # Turn WiFi OFF
+        wutils.wifi_toggle_state(self.dut, False)
         # Plot and save all results
         x_data = []
         y_data = []
@@ -104,13 +108,13 @@ class WifiRvrTest(base_test.BaseTestClass):
             data
         """
         test_name = self.current_test_name
-        gldn_path = [
-            file_name for file_name in self.gldn_files_list
+        golden_path = [
+            file_name for file_name in self.golden_files_list
             if test_name in file_name
         ]
-        gldn_path = gldn_path[0]
+        golden_path = golden_path[0]
         throughput_limits = self.compute_throughput_limits(
-            gldn_path, rvr_result)
+            golden_path, rvr_result)
 
         failure_count = 0
         for idx, current_throughput in enumerate(
@@ -134,7 +138,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             "Test passed. Found {} points outside throughput limits.".format(
                 failure_count))
 
-    def compute_throughput_limits(self, gldn_path, rvr_result):
+    def compute_throughput_limits(self, golden_path, rvr_result):
         """Compute throughput limits for current test.
 
         Checks the RvR test result and compares to a throughput limites for
@@ -142,17 +146,17 @@ class WifiRvrTest(base_test.BaseTestClass):
         config file.
 
         Args:
-            gldn_path: path to golden file used to generate limits
+            golden_path: path to golden file used to generate limits
             rvr_result: dict containing attenuation, throughput and other meta
             data
         Returns:
             throughput_limits: dict containing attenuation and throughput limit data
         """
-        with open(gldn_path, 'r') as gldn_file:
-            gldn_results = json.load(gldn_file)
-            gldn_attenuation = [
-                att + gldn_results["fixed_attenuation"]
-                for att in gldn_results["attenuation"]
+        with open(golden_path, 'r') as golden_file:
+            golden_results = json.load(golden_file)
+            golden_attenuation = [
+                att + golden_results["fixed_attenuation"]
+                for att in golden_results["attenuation"]
             ]
         attenuation = []
         lower_limit = []
@@ -161,13 +165,14 @@ class WifiRvrTest(base_test.BaseTestClass):
                 rvr_result["throughput_receive"]):
             current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
             att_distances = [
-                abs(current_att - gldn_att) for gldn_att in gldn_attenuation
+                abs(current_att - golden_att)
+                for golden_att in golden_attenuation
             ]
             sorted_distances = sorted(
                 enumerate(att_distances), key=lambda x: x[1])
             closest_indeces = [dist[0] for dist in sorted_distances[0:3]]
             closest_throughputs = [
-                gldn_results["throughput_receive"][index]
+                golden_results["throughput_receive"][index]
                 for index in closest_indeces
             ]
             closest_throughputs.sort()
@@ -217,28 +222,29 @@ class WifiRvrTest(base_test.BaseTestClass):
             "markersize": 10
         }
         try:
-            gldn_path = [
-                file_name for file_name in self.gldn_files_list
+            golden_path = [
+                file_name for file_name in self.golden_files_list
                 if test_name in file_name
             ]
-            gldn_path = gldn_path[0]
-            with open(gldn_path, 'r') as gldn_file:
-                gldn_results = json.load(gldn_file)
+            golden_path = golden_path[0]
+            with open(golden_path, 'r') as golden_file:
+                golden_results = json.load(golden_file)
             legends.insert(0, "Golden Results")
-            gldn_attenuation = [
-                att + gldn_results["fixed_attenuation"]
-                for att in gldn_results["attenuation"]
+            golden_attenuation = [
+                att + golden_results["fixed_attenuation"]
+                for att in golden_results["attenuation"]
             ]
-            data_sets[0].insert(0, gldn_attenuation)
-            data_sets[1].insert(0, gldn_results["throughput_receive"])
+            data_sets[0].insert(0, golden_attenuation)
+            data_sets[1].insert(0, golden_results["throughput_receive"])
             throughput_limits = self.compute_throughput_limits(
-                gldn_path, rvr_result)
+                golden_path, rvr_result)
             shaded_region = {
                 "x_vector": throughput_limits["attenuation"],
                 "lower_limit": throughput_limits["lower_limit"],
                 "upper_limit": throughput_limits["upper_limit"]
             }
         except:
+            shaded_region = None
             self.log.warning("ValueError: Golden file not found")
         output_file_path = "{}/{}.html".format(self.log_path, test_name)
         wputils.bokeh_plot(data_sets, legends, fig_property, shaded_region,
@@ -332,7 +338,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Set attenuator to 0 dB
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         # Connect DUT to Network
-        wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = channel
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
@@ -370,16 +375,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.post_process_results(rvr_result)
         self.pass_fail_check(rvr_result)
 
-
     #Test cases
-class WifiRvr_2GHz_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
-                      "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
-                      "test_rvr_TCP_DL_ch11_VHT20",
-                      "test_rvr_TCP_UL_ch11_VHT20")
-
     @test_tracker_info(uuid='e7586217-3739-44a4-a87b-d790208b04b9')
     def test_rvr_TCP_DL_ch1_VHT20(self):
         self._test_rvr()
@@ -403,19 +399,6 @@ class WifiRvr_2GHz_Test(WifiRvrTest):
     @test_tracker_info(uuid='a165884e-c928-46d9-b459-f550ceb0074f')
     def test_rvr_TCP_UL_ch11_VHT20(self):
         self._test_rvr()
-
-
-class WifiRvr_UNII1_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
-            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
-            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
-            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
-            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
-            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
-            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20")
 
     @test_tracker_info(uuid='a48ee2b4-3fb9-41fd-b292-0051bfc3b0cc')
     def test_rvr_TCP_DL_ch36_VHT20(self):
@@ -473,19 +456,6 @@ class WifiRvr_UNII1_Test(WifiRvrTest):
     def test_rvr_TCP_UL_ch48_VHT20(self):
         self._test_rvr()
 
-
-class WifiRvr_UNII3_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
-            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
-            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
-            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
-            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
-            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
-            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
-
     @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
     def test_rvr_TCP_DL_ch149_VHT20(self):
         self._test_rvr()
@@ -542,20 +512,6 @@ class WifiRvr_UNII3_Test(WifiRvrTest):
     def test_rvr_TCP_UL_ch161_VHT20(self):
         self._test_rvr()
 
-
-    # UDP Tests
-class WifiRvr_SampleUDP_Test(WifiRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = (
-            "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
-            "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
-            "test_rvr_UDP_DL_ch36_VHT40", "test_rvr_UDP_UL_ch36_VHT40",
-            "test_rvr_UDP_DL_ch36_VHT80", "test_rvr_UDP_UL_ch36_VHT80",
-            "test_rvr_UDP_DL_ch149_VHT20", "test_rvr_UDP_UL_ch149_VHT20",
-            "test_rvr_UDP_DL_ch149_VHT40", "test_rvr_UDP_UL_ch149_VHT40",
-            "test_rvr_UDP_DL_ch149_VHT80", "test_rvr_UDP_UL_ch149_VHT80")
-
     @test_tracker_info(uuid='05614f92-38fa-4289-bcff-d4b4a2a2ad5b')
     def test_rvr_UDP_DL_ch6_VHT20(self):
         self._test_rvr()
@@ -611,3 +567,105 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
     @test_tracker_info(uuid='69aab23d-1408-4cdd-9f57-2520a1e9cea8')
     def test_rvr_UDP_UL_ch149_VHT80(self):
         self._test_rvr()
+
+
+# Classes defining test suites
+class WifiRvr_2GHz_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
+                      "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+                      "test_rvr_TCP_DL_ch11_VHT20",
+                      "test_rvr_TCP_UL_ch11_VHT20")
+
+
+class WifiRvr_UNII1_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
+            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
+            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20")
+
+
+class WifiRvr_UNII3_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
+            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
+
+class WifiRvr_SampleUDP_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
+            "test_rvr_UDP_DL_ch36_VHT40", "test_rvr_UDP_UL_ch36_VHT40",
+            "test_rvr_UDP_DL_ch36_VHT80", "test_rvr_UDP_UL_ch36_VHT80",
+            "test_rvr_UDP_DL_ch149_VHT20", "test_rvr_UDP_UL_ch149_VHT20",
+            "test_rvr_UDP_DL_ch149_VHT40", "test_rvr_UDP_UL_ch149_VHT40",
+            "test_rvr_UDP_DL_ch149_VHT80", "test_rvr_UDP_UL_ch149_VHT80")
+
+
+class WifiRvr_TCP_All_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
+            "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+            "test_rvr_TCP_DL_ch11_VHT20", "test_rvr_TCP_UL_ch11_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
+            "test_rvr_TCP_DL_ch36_VHT80", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_UL_ch40_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_UL_ch44_VHT40",
+            "test_rvr_TCP_DL_ch48_VHT20", "test_rvr_TCP_UL_ch48_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_UL_ch149_VHT80",
+            "test_rvr_TCP_DL_ch153_VHT20", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
+
+class WifiRvr_TCP_Downlink_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_DL_ch6_VHT20",
+            "test_rvr_TCP_DL_ch11_VHT20", "test_rvr_TCP_DL_ch36_VHT20",
+            "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_DL_ch36_VHT80",
+            "test_rvr_TCP_DL_ch40_VHT20", "test_rvr_TCP_DL_ch44_VHT20",
+            "test_rvr_TCP_DL_ch44_VHT40", "test_rvr_TCP_DL_ch48_VHT20",
+            "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_DL_ch149_VHT40",
+            "test_rvr_TCP_DL_ch149_VHT80", "test_rvr_TCP_DL_ch153_VHT20",
+            "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_DL_ch157_VHT40",
+            "test_rvr_TCP_DL_ch161_VHT20")
+
+
+class WifiRvr_TCP_Uplink_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_UL_ch1_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
+            "test_rvr_TCP_UL_ch11_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
+            "test_rvr_TCP_UL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT80",
+            "test_rvr_TCP_UL_ch40_VHT20", "test_rvr_TCP_UL_ch44_VHT20",
+            "test_rvr_TCP_UL_ch44_VHT40", "test_rvr_TCP_UL_ch48_VHT20",
+            "test_rvr_TCP_UL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT40",
+            "test_rvr_TCP_UL_ch149_VHT80", "test_rvr_TCP_UL_ch153_VHT20",
+            "test_rvr_TCP_UL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT40",
+            "test_rvr_TCP_UL_ch161_VHT20")
