@@ -18,6 +18,7 @@ import queue
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -266,6 +267,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
   #############################################################################
 
+  @test_tracker_info(uuid="9e4e7ab4-2254-498c-9788-21e15ed9a370")
   def test_rtt_oob_discovery_one_way(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
     to communicate the MAC addresses to the peer. Test one-direction RTT only.
@@ -276,6 +278,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
           time_between_roles=self.TIME_BETWEEN_ROLES)
     self.verify_results(rtt_results)
 
+  @test_tracker_info(uuid="22edba77-eeb2-43ee-875a-84437550ad84")
   def test_rtt_oob_discovery_both_ways(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
     to communicate the MAC addresses to the peer. Test RTT both-ways:
@@ -287,6 +290,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         time_between_roles=self.TIME_BETWEEN_ROLES)
     self.verify_results(rtt_results1, rtt_results2)
 
+  @test_tracker_info(uuid="18cef4be-95b4-4f7d-a140-5165874e7d1c")
   def test_rtt_ib_discovery_one_way(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
     to communicate the MAC addresses to the peer. Test one-direction RTT only.
@@ -297,6 +301,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
            time_between_roles=self.TIME_BETWEEN_ROLES)
     self.verify_results(rtt_results)
 
+  @test_tracker_info(uuid="c67c8e70-c417-42d9-9bca-af3a89f1ddd9")
   def test_rtt_ib_discovery_both_ways(self):
     """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
     to communicate the MAC addresses to the peer. Test RTT both-ways:
@@ -308,6 +313,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         time_between_roles=self.TIME_BETWEEN_ROLES)
     self.verify_results(rtt_results1, rtt_results2)
 
+  @test_tracker_info(uuid="54f9693d-45e5-4979-adbb-1b875d217c0c")
   def test_rtt_without_initiator_aware(self):
     """Try to perform RTT operation when there is no local Aware session (on the
     Initiator). The Responder is configured normally: Aware on and a Publisher
@@ -349,6 +355,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                          extras=results)
     asserts.explicit_pass("RTT Aware test done", extras=results)
 
+  @test_tracker_info(uuid="87a69053-8261-4928-8ec1-c93aac7f3a8d")
   def test_rtt_without_responder_aware(self):
     """Try to perform RTT operation when there is no peer Aware session (on the
     Responder). Should FAIL."""

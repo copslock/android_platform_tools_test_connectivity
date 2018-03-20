@@ -239,9 +239,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             if message_type == "SMS":
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
-                self._take_bug_report("%s_%s_No_%s_failure" %
-                                      (self.test_name, message_type,
-                                       the_number), begin_time)
+                try:
+                    self._take_bug_report("%s_%s_No_%s_failure" %
+                                          (self.test_name, message_type,
+                                           the_number), begin_time)
+                except Exception as e:
+                    self.log.exception(e)
             else:
                 if incall_non_ims:
                     self.log.info(
@@ -252,9 +255,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.log.error("%s fails", log_msg)
                     self.result_info["MMS Failure"] += 1
                     if self.result_info["MMS Failure"] == 1:
-                        self._take_bug_report("%s_%s_No_%s_failure" %
-                                              (self.test_name, message_type,
-                                               the_number), begin_time)
+                        try:
+                            self._take_bug_report("%s_%s_No_%s_failure" %
+                                                  (self.test_name,
+                                                   message_type, the_number),
+                                                  begin_time)
+                        except Exception as e:
+                            self.log.exception(e)
             return False
         else:
             self.result_info["%s Total" % message_type] += 1
@@ -360,7 +367,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                                         "%s_binder_logs" % ad.serial)
                 utils.create_dir(log_path)
                 ad.pull_files(BINDER_LOGS, log_path)
-            self._take_bug_report(test_name, begin_time)
+            try:
+                self._take_bug_report(test_name, begin_time)
+            except Exception as e:
+                self.log.exception(e)
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
@@ -398,8 +408,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["RAT Change Total"] += 1
         if rat != "LTE":
             self.result_info["RAT Change Failure"] += 1
-            self._take_bug_report("%s_rat_change_failure" % self.test_name,
-                                  begin_time)
+            try:
+                self._take_bug_report("%s_rat_change_failure" % self.test_name,
+                                      begin_time)
+            except Exception as e:
+                self.log.exception(e)
             return False
         else:
             self.result_info["RAT Change Success"] += 1
@@ -436,7 +449,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.info(dict(self.result_info))
                 self._update_perf_json()
                 begin_time = get_current_epoch_time()
-                test_name = "found_crash_%s" % begin_time
+                run_time_in_seconds = (begin_time - self.begin_time) / 1000
+                test_name = "%s_crash_%s_seconds_after_start" % (
+                    self.test_name, run_time_in_seconds)
                 time.sleep(self.crash_check_interval)
                 for ad in self.android_devices:
                     crash_report = ad.check_crash_report(
@@ -448,7 +463,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                         for crash in crash_report:
                             if "ramdump_modem" in crash:
                                 self.result_info["Crashes-Modem"] += 1
-                        self.take_bug_report(test_name, begin_time)
+                        try:
+                            ad.take_bug_report(test_name, begin_time)
+                        except Exception as e:
+                            self.log.exception(e)
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -517,8 +535,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                 method=self.file_download_method):
             self.result_info["File Download Failure"] += 1
             if self.result_info["File Download Failure"] == 1:
-                self._take_bug_report(
-                    "%s_file_download_failure" % self.test_name, begin_time)
+                try:
+                    self._ad_take_extra_logs(
+                        self.dut, "%s_file_download_failure" % self.test_name,
+                        begin_time)
+                    self._ad_take_bug_report(
+                        self.dut, "%s_file_download_failure" % self.test_name,
+                        begin_time)
+                except Exception as e:
+                    self.log.exception(e)
             return False
         else:
             self.result_info["File Download Success"] += 1

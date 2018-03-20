@@ -20,21 +20,21 @@ import logging
 from acts.keys import Config
 from acts.libs.proc import job
 
-ACTS_CONTROLLER_CONFIG_NAME = "Attenuator"
-ACTS_CONTROLLER_REFERENCE_NAME = "attenuators"
+ACTS_CONTROLLER_CONFIG_NAME = 'Attenuator'
+ACTS_CONTROLLER_REFERENCE_NAME = 'attenuators'
 _ATTENUATOR_OPEN_RETRIES = 3
 
 
 def create(configs):
     objs = []
     for c in configs:
-        attn_model = c["Model"]
+        attn_model = c['Model']
         # Default to telnet.
-        protocol = c.get("Protocol", "telnet")
-        module_name = "acts.controllers.attenuator_lib.%s.%s" % (attn_model,
+        protocol = c.get('Protocol', 'telnet')
+        module_name = 'acts.controllers.attenuator_lib.%s.%s' % (attn_model,
                                                                  protocol)
         module = importlib.import_module(module_name)
-        inst_cnt = c["InstrumentCount"]
+        inst_cnt = c['InstrumentCount']
         attn_inst = module.AttenuatorInstrument(inst_cnt)
         attn_inst.model = attn_model
 
@@ -61,11 +61,11 @@ def create(configs):
                     raise
         for i in range(inst_cnt):
             attn = Attenuator(attn_inst, idx=i)
-            if "Paths" in c:
+            if 'Paths' in c:
                 try:
-                    setattr(attn, "path", c["Paths"][i])
+                    setattr(attn, 'path', c['Paths'][i])
                 except IndexError:
-                    logging.error("No path specified for attenuator %d.", i)
+                    logging.error('No path specified for attenuator %d.', i)
                     raise
             objs.append(attn)
     return objs
@@ -136,7 +136,7 @@ class AttenuatorInstrument(object):
 
         if type(self) is AttenuatorInstrument:
             raise NotImplementedError(
-                "Base class should not be instantiated directly!")
+                'Base class should not be instantiated directly!')
 
         self.num_atten = num_atten
         self.max_atten = AttenuatorInstrument.INVALID_MAX_ATTEN
@@ -150,7 +150,7 @@ class AttenuatorInstrument(object):
                 an instrument.
             value: a floating point value for nominal attenuation to be set.
         """
-        raise NotImplementedError("Base class should not be called directly!")
+        raise NotImplementedError('Base class should not be called directly!')
 
     def get_atten(self, idx):
         """Returns the current attenuation of the attenuator at index idx.
@@ -162,7 +162,7 @@ class AttenuatorInstrument(object):
         Returns:
             The current attenuation value as a floating point value
         """
-        raise NotImplementedError("Base class should not be called directly!")
+        raise NotImplementedError('Base class should not be called directly!')
 
 
 class Attenuator(object):
@@ -192,7 +192,7 @@ class Attenuator(object):
             IndexError if the index is out of range.
         """
         if not isinstance(instrument, AttenuatorInstrument):
-            raise TypeError("Must provide an Attenuator Instrument Ref")
+            raise TypeError('Must provide an Attenuator Instrument Ref')
         self.model = instrument.model
         self.instrument = instrument
         self.idx = idx
@@ -200,7 +200,7 @@ class Attenuator(object):
 
         if self.idx >= instrument.num_atten:
             raise IndexError(
-                "Attenuator index out of range for attenuator instrument")
+                'Attenuator index out of range for attenuator instrument')
 
     def set_atten(self, value):
         """Sets the attenuation.
@@ -213,7 +213,7 @@ class Attenuator(object):
         """
         if value + self.offset > self.instrument.max_atten:
             raise ValueError(
-                "Attenuator Value+Offset greater than Max Attenuation!")
+                'Attenuator Value+Offset greater than Max Attenuation!')
 
         self.instrument.set_atten(self.idx, value + self.offset)
 
@@ -225,7 +225,7 @@ class Attenuator(object):
         """Returns the max attenuation as a float, normalized by the offset."""
         if (self.instrument.max_atten ==
                 AttenuatorInstrument.INVALID_MAX_ATTEN):
-            raise ValueError("Invalid Max Attenuator Value")
+            raise ValueError('Invalid Max Attenuator Value')
 
         return self.instrument.max_atten - self.offset
 
@@ -241,7 +241,7 @@ class AttenuatorGroup(object):
     small loops scattered throughout user code.
     """
 
-    def __init__(self, name=""):
+    def __init__(self, name=''):
         """This constructor for AttenuatorGroup
 
         Args:
@@ -271,7 +271,7 @@ class AttenuatorGroup(object):
             Requires a valid AttenuatorInstrument to be passed in.
         """
         if not instrument or not isinstance(instrument, AttenuatorInstrument):
-            raise TypeError("Must provide an Attenuator Instrument Ref")
+            raise TypeError('Must provide an Attenuator Instrument Ref')
 
         if type(indices) is range or type(indices) is list:
             for i in indices:
@@ -289,7 +289,7 @@ class AttenuatorGroup(object):
             TypeError if the attenuator parameter is not an Attenuator.
         """
         if not isinstance(attenuator, Attenuator):
-            raise TypeError("Must provide an Attenuator")
+            raise TypeError('Must provide an Attenuator')
 
         self.attens.append(attenuator)
 
