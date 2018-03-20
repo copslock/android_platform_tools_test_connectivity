@@ -23,6 +23,14 @@ pan_connect_timeout = 5
 bt_discovery_timeout = 3
 small_timeout = 0.0001
 
+# Time delay (in seconds) at the end of each LE CoC Test to give sufficient time
+# for the ACL LE link to be disconnected. The ACL link stays connected after
+# L2CAP disconnects.  An example of the timeout is L2CAP_LINK_INACTIVITY_TOUT.
+# This delay must be greater than the maximum of these timeouts.
+# TODO: Investigate the use of broadcast intent
+# BluetoothDevice.ACTION_ACL_DISCONNECTED to replace this delay method.
+l2cap_max_inactivity_delay_after_disconnect = 5
+
 # LE specifications related constants
 le_connection_interval_time_step = 1.25
 le_default_supervision_timeout = 2000
