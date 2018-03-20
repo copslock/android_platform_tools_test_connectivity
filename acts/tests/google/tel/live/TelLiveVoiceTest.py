@@ -3083,7 +3083,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                  MAX_WAIT_TIME_NW_SELECTION)
                 return False
 
-            adss[0].droid.telephonyToggleDataConnection(True)
+            ads[0].droid.telephonyToggleDataConnection(True)
             if not wait_for_cell_data_connection(self.log, ads[0], True):
                 ads[0].log.error("Data connection is not on cell")
                 return False
