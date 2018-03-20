@@ -343,7 +343,7 @@ def airplane_mode_test(log, ad, retries=3):
         if not wait_for_cell_data_connection(log, ad, False):
             ad.log.error("Failed to disable cell data connection")
             return False
-        if verify_internet_connection(log, ad):
+        if not verify_internet_connection(log, ad, expected_result=False):
             ad.log.error("Data available in airplane mode.")
             return False
 
@@ -356,19 +356,9 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Failed to enable cell data connection")
             return False
 
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        log.info("Step4 verify internet")
-        for i in range(retries):
-            if verify_internet_connection(log, ad):
-                ad.log.info("Data available on cell.")
-                break
-            elif i == retries - 1:
-                ad.log.error("Data not available on cell.")
-                return False
-            else:
-                ad.log.warning("Attempt %d Data not available on cell" %
-                               (i + 1))
+        if not verify_internet_connection(log, ad, retries=5):
+            ad.log.warning("Data not available on cell")
+            return False
         return True
     finally:
         toggle_airplane_mode(log, ad, False)
@@ -412,7 +402,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             return False
 
         log.info("Step2 Verify internet")
-        if not verify_internet_connection(log, ad):
+        if not verify_internet_connection(log, ad, retries=3):
             ad.log.error("Data not available on cell.")
             return False
 
@@ -422,7 +412,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
             ad.log.error("Step3 Failed to disable data connection.")
             return False
 
-        if verify_internet_connection(log, ad):
+        if not verify_internet_connection(log, ad, expected_state=False):
             ad.log.error("Step3 Data still available when disabled.")
             return False
 
@@ -431,7 +421,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
         if not wait_for_cell_data_connection(log, ad, True):
             ad.log.error("Step4 failed to re-enable data.")
             return False
-        if not verify_internet_connection(log, ad):
+        if not verify_internet_connection(log, ad, retries=3):
             ad.log.error("Data not available on cell.")
             return False
 
