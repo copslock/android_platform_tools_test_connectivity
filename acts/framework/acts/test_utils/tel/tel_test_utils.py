@@ -3462,8 +3462,11 @@ def is_sms_partial_match(event, phonenumber_tx, text):
         Return True if 'text' starts with event['data']['Text']
             and phone number match.
     """
+    event_text = event['data']['Text']
+    if event_text.startswith("("):
+        event_text = event_text.split(")")[-1]
     return (check_phone_number_match(event['data']['Sender'], phonenumber_tx)
-            and text.startswith(event['data']['Text']))
+            and text.startswith(event_text))
 
 
 def sms_send_receive_verify(log,
@@ -3525,22 +3528,31 @@ def wait_for_matching_sms(log,
     else:
         try:
             received_sms = ''
-            while (text != ''):
+            remaining_text = text
+            while (remaining_text != ''):
                 event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
-                    phonenumber_tx, text)
-                ad_rx.log.info("Got event %s", EventSmsReceived)
-                text = text[len(event['data']['Text']):]
-                received_sms += event['data']['Text']
+                    phonenumber_tx, remaining_text)
+                event_text = event['data']['Text'].split(")")[-1]
+                event_text_length = len(event_text)
+                ad_rx.log.info("Got event %s of text length %s from %s",
+                               EventSmsReceived, event_text_length,
+                               phonenumber_tx)
+                remaining_text = remaining_text[event_text_length:]
+                received_sms += event_text
+            ad_rx.log.info("Received SMS of length %s", len(received_sms))
             return True
         except Empty:
-            ad_rx.log.error("No matched SMS received event.")
+            ad_rx.log.error(
+                "Missing SMS received event of text length %s from %s",
+                len(remaining_text), phonenumber_tx)
             if begin_time:
                 if sms_mms_receive_logcat_check(ad_rx, "sms", begin_time):
-                    ad_rx.log.info("Receivd SMS message is seen in logcat")
+                    ad_rx.log.info("Received SMS message is seen in logcat")
             if received_sms != '':
-                ad_rx.log.error("Only received partial matched SMS: %s",
-                                received_sms)
+                ad_rx.log.error(
+                    "Only received partial matched SMS of length %s",
+                    len(received_sms))
             return False
 
 
@@ -3586,7 +3598,7 @@ def wait_for_matching_mms(log,
                                           max_wait_time, phonenumber_tx, text)
         ad_rx.log.info("Got event %s", EventMmsDownloaded)
         smshandle_logs = ad_rx.search_logcat(
-            "GsmInboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
+            "InboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
             begin_time=begin_time)
         if smshandle_logs:
             ad_rx.log.warning("Found %s", smshandle_logs[-1]["log_message"])
@@ -3712,7 +3724,7 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
     log_results = ad.search_logcat(
         "%s Message sent successfully" % type, begin_time=begin_time)
     if log_results:
-        ad.log.info("Found %s sent succeessful log message: %s", type,
+        ad.log.info("Found %s sent successful log message: %s", type,
                     log_results[-1]["log_message"])
         return True
     else:
@@ -3732,13 +3744,10 @@ def sms_mms_send_logcat_check(ad, type, begin_time):
 def sms_mms_receive_logcat_check(ad, type, begin_time):
     type = type.upper()
     smshandle_logs = ad.search_logcat(
-        "GsmInboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
+        "InboundSmsHandler: No broadcast sent on processing EVENT_BROADCAST_SMS",
         begin_time=begin_time)
     if smshandle_logs:
         ad.log.warning("Found %s", smshandle_logs[-1]["log_message"])
-        ad.log.info("GsmInboundSmsHandler logs: %s", smshandle_logs)
-    log_results = ad.search_logcat(
-        "%s Message sent successfully" % type, begin_time=begin_time)
     log_results = ad.search_logcat(
         "New %s Received" % type, begin_time=begin_time) or \
         ad.search_logcat("New %s Downloaded" % type, begin_time=begin_time)
