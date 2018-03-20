@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
 import logging
 import os
 import time
@@ -120,6 +121,20 @@ def dut_rockbottom(ad):
     ad.log.info('Screen is ON')
 
 
+def unpack_custom_file(file, test_class=None):
+    """Unpack the pass_fail_thresholds from a common file.
+
+    Args:
+        file: the common file containing pass fail threshold.
+    """
+    with open(file, 'r') as f:
+        params = json.load(f)
+    if test_class:
+        return params[test_class]
+    else:
+        return params
+
+
 def pass_fail_check(test_class, test_result):
     """Check the test result and decide if it passed or failed.
     The threshold is provided in the config file
@@ -136,7 +151,7 @@ def pass_fail_check(test_class, test_result):
             THRESHOLD_TOLERANCE,
             ("Measured average current in [%s]: %s, which is "
              "more than %d percent off than acceptable threshold %.2fmA") %
-            (test_name, test_result, THRESHOLD_TOLERANCE * 100,
+            (test_name, test_result, test_class.pass_fail_tolerance * 100,
              current_threshold))
         asserts.explicit_pass("Measurement finished for %s." % test_name)
     else:
