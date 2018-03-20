@@ -212,7 +212,7 @@ class ConcurrentGattConnectTest(BluetoothBaseTest):
         return True
 
     @BluetoothBaseTest.bt_test_wrap
-    # @test_tracker_info(uuid='660bf05e-a8e5-45f3-b42b-b66b4ac0d85f')
+    @test_tracker_info(uuid='660bf05e-a8e5-45f3-b42b-b66b4ac0d85f')
     def test_data_transfer_to_concurrent_gatt_connections(self):
         """Test writing GATT descriptors concurrently to many peripherals.
 
@@ -246,7 +246,7 @@ class ConcurrentGattConnectTest(BluetoothBaseTest):
         for address_tuple in address_list:
             ad, address = address_tuple
 
-            gatts = GattServerLib(log=self.log, mac_addr=None, dut=ad)
+            gatts = GattServerLib(log=self.log, dut=ad)
             gatt_server, gatt_server_callback = gatts.setup_gatts_db(
                 database=gatt_server_read_descriptor_sample)
 
