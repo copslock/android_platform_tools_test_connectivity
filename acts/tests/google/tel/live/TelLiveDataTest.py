@@ -2421,8 +2421,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_internet_connection(
-                    self.log, ad, 'http://www.google.com', 100, .1):
+            if not verify_internet_connection(self.log, ad):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
 
