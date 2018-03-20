@@ -929,3 +929,127 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                                                 ssi=self.getname()),
             expect_discovery=True,
             expect_range=False)
+
+  #########################################################################
+
+  def test_ranged_discovery_multi_session(self):
+    """Verify behavior with multiple concurrent discovery session with different
+    configurations:
+
+    Device A (Publisher):
+      Publisher AA: ranging enabled
+      Publisher BB: ranging enabled
+      Publisher CC: ranging enabled
+      Publisher DD: ranging disabled
+    Device B (Subscriber):
+      Subscriber AA: ranging out-of-range -> no match
+      Subscriber BB: ranging in-range -> match w/range
+      Subscriber CC: ranging disabled -> match w/o range
+      Subscriber DD: ranging out-of-range -> match w/o range
+    """
+    p_dut = self.android_devices[0]
+    p_dut.pretty_name = "Publisher"
+    s_dut = self.android_devices[1]
+    s_dut.pretty_name = "Subscriber"
+
+    # Publisher+Subscriber: attach and wait for confirmation
+    p_id = p_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
+    s_id = s_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Subscriber: start sessions
+    aa_s_disc_id = s_dut.droid.wifiAwareSubscribe(
+        s_id,
+        autils.add_ranging_to_sub(
+            autils.create_discovery_config("AA",
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+            min_distance_mm=1000000, max_distance_mm=1000001),
+        True)
+    bb_s_disc_id = s_dut.droid.wifiAwareSubscribe(
+        s_id,
+        autils.add_ranging_to_sub(
+            autils.create_discovery_config("BB",
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+            min_distance_mm=0, max_distance_mm=1000000),
+        True)
+    cc_s_disc_id = s_dut.droid.wifiAwareSubscribe(
+        s_id,
+        autils.create_discovery_config("CC", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        True)
+    dd_s_disc_id = s_dut.droid.wifiAwareSubscribe(
+        s_id,
+        autils.add_ranging_to_sub(
+            autils.create_discovery_config("DD",
+                                           aconsts.SUBSCRIBE_TYPE_PASSIVE),
+            min_distance_mm=1000000, max_distance_mm=1000001),
+        True)
+
+    autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, aa_s_disc_id))
+    autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, bb_s_disc_id))
+    autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, cc_s_disc_id))
+    autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, dd_s_disc_id))
+
+    # Publisher: start sessions
+    aa_p_disc_id = p_dut.droid.wifiAwarePublish(
+        p_id,
+        autils.add_ranging_to_pub(
+            autils.create_discovery_config("AA",
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+            enable_ranging=True),
+        True)
+    bb_p_disc_id = p_dut.droid.wifiAwarePublish(
+        p_id,
+        autils.add_ranging_to_pub(
+            autils.create_discovery_config("BB",
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+            enable_ranging=True),
+        True)
+    cc_p_disc_id = p_dut.droid.wifiAwarePublish(
+        p_id,
+        autils.add_ranging_to_pub(
+            autils.create_discovery_config("CC",
+                                           aconsts.PUBLISH_TYPE_UNSOLICITED),
+            enable_ranging=True),
+        True)
+    dd_p_disc_id = p_dut.droid.wifiAwarePublish(
+        p_id,
+        autils.create_discovery_config("DD", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        True)
+
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, aa_p_disc_id))
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, bb_p_disc_id))
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, cc_p_disc_id))
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, dd_p_disc_id))
+
+    # Expected and unexpected service discovery
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, bb_s_disc_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for BB expected!")
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, cc_s_disc_id))
+    asserts.assert_false(
+        aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+        "Discovery with ranging for CC NOT expected!")
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, dd_s_disc_id))
+    asserts.assert_false(
+        aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+        "Discovery with ranging for DD NOT expected!")
+    autils.fail_on_event(s_dut, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, aa_s_disc_id))
+
+    # (single) sleep for timeout period and then verify that no further events
+    time.sleep(autils.EVENT_TIMEOUT)
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
