@@ -2416,6 +2416,9 @@ def trigger_modem_crash(ad, timeout=120):
 def trigger_modem_crash_by_modem(ad, timeout=120):
     begin_time = get_current_epoch_time()
     ad.adb.shell(
+        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+    # Legacy pixels use persist.sys.modem.diag.mdlog.
+    ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
     stop_qxdm_logger(ad)
     cmd = ('am instrument -w -e request "4b 25 03 00" '
@@ -5157,6 +5160,9 @@ def set_qxdm_logger_command(ad, mask=None):
         # Enable qxdm always on so that after device reboot, qxdm will be
         # turned on automatically
         ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
+        ad.adb.shell(
+            "setprop persist.vendor.sys.modem.diag.mdlog true", ignore_status=True)
+        # Legacy pixels use persist.sys.modem.diag.mdlog.
         ad.adb.shell(
             "setprop persist.sys.modem.diag.mdlog true", ignore_status=True)
         return True
