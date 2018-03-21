@@ -304,6 +304,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.droid.logI(log_msg)
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
+        failure_reasons = set()
         if self.single_phone_test:
             call_setup_result = initiate_call(
                 self.log,
@@ -316,8 +317,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log, ads[0], ads[1], ad_hangup=None, wait_time_in_call=0)
         if not call_setup_result:
             self.log.error("%s: Setup Call failed.", log_msg)
-            self.result_info["Call Setup Failure"] += 1
-            failure_reason = "setup"
+            failure_reasons.add("Setup")
             result = False
         else:
             elapsed_time = 0
@@ -333,8 +333,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.error("Call is NOT in correct %s state at %s",
                                      call_verification_func.__name__,
                                      time_message)
-                        self.result_info["Call Maintenance Failure"] += 1
-                        failure_reason = "maintenance"
+                        failure_reasons.add("Maintenance")
                         reasons = ad.search_logcat(
                             "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
                             begin_time)
@@ -353,15 +352,15 @@ class TelLiveStressTest(TelephonyBaseTest):
             for ad in ads:
                 if ad.droid.telecomIsInCall():
                     ad.log.error("Still in call after hungup")
-                    self.result_info["Call Teardown Failure"] += 1
-                    failure_reason = "teardown"
+                    failure_reasons.add("Teardown")
                     result = False
         self.result_info["Call Total"] += 1
         if not result:
             self.log.info("%s test failed", log_msg)
-            test_name = "%s_call_No_%s_%s_failure" % (self.test_name,
-                                                      the_number,
-                                                      failure_reason)
+            for reason in failure_reasons:
+                self.result_info["Call %s Failure" % reason] += 1
+            test_name = "%s_call_No_%s_%s_failure" % (
+                self.test_name, the_number, "_".join(failure_reasons))
             for ad in ads:
                 log_path = os.path.join(self.log_path, test_name,
                                         "%s_binder_logs" % ad.serial)
