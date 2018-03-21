@@ -5257,22 +5257,34 @@ def stop_qxdm_logger(ad):
         ad.log.debug("Kill the existing qxdm process")
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(5)
+    setattr(ad, "qxdm_process_start_time", None)
 
 
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     if not getattr(ad, "qxdm_log", True): return
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
+    current_time = get_current_epoch_time()
     if getattr(ad, "qxdm_log_path", None):
         seconds = None
-        if begin_time:
-            current_time = get_current_epoch_time()
-            seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
-        elif len(ad.get_file_names(ad.qxdm_log_path)) > 50:
-            seconds = 900
+        file_count = ad.adb.shell(
+            "find %s -type f -iname *.qmdl | wc -l" % ad.qxdm_log_path)
+        if int(file_count) > 50:
+            if begin_time:
+                # if begin_time specified, delete old qxdm logs modified
+                # 10 minutes before begin time
+                seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
+            else:
+                # if begin_time is not specified, delete old qxdm logs modified
+                # 15 minutes before current time
+                seconds = 15 * 60
         if seconds:
+            # Remove qxdm logs modified more than specified seconds ago
             ad.adb.shell(
                 "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" %
+                (ad.qxdm_log_path, seconds))
+            ad.adb.shell(
+                "find %s -type f -iname *.xml -not -mtime -%ss -delete" %
                 (ad.qxdm_log_path, seconds))
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
@@ -5280,15 +5292,27 @@ def start_qxdm_logger(ad, begin_time=None):
             ad.log.debug("QXDM logging command %s is not running",
                          ad.qxdm_logger_command)
             if "diag_mdlog" in output:
-                # Kill the existing diag_mdlog process
+                # Kill the existing non-matching diag_mdlog process
                 # Only one diag_mdlog process can be run
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             ad.adb.shell_nb(ad.qxdm_logger_command)
-        elif not ad.get_file_names(ad.qxdm_log_path, 60):
-            ad.log.debug("Existing diag_mdlog is not generating logs")
-            stop_qxdm_logger(ad)
-            ad.adb.shell_nb(ad.qxdm_logger_command)
+            setattr(ad, "qxdm_process_start_time", current_time)
+        else:
+            if ad.search_logcat(
+                    "Diag_Lib: diag: In delete_log",
+                    begin_time=getattr(
+                        ad, "qxdm_process_start_time", current_time -
+                        5 * 60 * 1000)) or not ad.get_file_names(
+                            ad.qxdm_log_path,
+                            begin_time=current_time - 60 * 000,
+                            match_string="*.qmdl"):
+                # diag_mdlog starts deleting files or no qmdl logs were
+                # modified in the past 60 seconds
+                ad.log.debug("Quit existing diag_mdlog and start a new one")
+                stop_qxdm_logger(ad)
+                ad.adb.shell_nb(ad.qxdm_logger_command)
+                setattr(ad, "qxdm_process_start_time", current_time)
         return True
 
 
@@ -5466,6 +5490,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if skip_setup_wizard:
         ad.exit_setup_wizard()
     if ad.skip_sl4a: return status
+    start_qxdm_logger(ad)
     bring_up_sl4a(ad)
 
     return status
@@ -5488,6 +5513,7 @@ def bring_up_sl4a(ad, attemps=3):
 
 def reboot_device(ad):
     ad.reboot()
+    start_qxdm_logger(ad)
     ad.ensure_screen_on()
     unlock_sim(ad)
 
