@@ -204,7 +204,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         results_file_path = "{}/{}.json".format(self.log_path,
                                                 self.current_test_name)
         with open(results_file_path, 'w') as results_file:
-            json.dump(rvr_result, results_file)
+            json.dump(rvr_result, results_file, indent=4)
         # Plot and save
         legends = [self.current_test_name]
         x_label = 'Attenuation (dB)'
