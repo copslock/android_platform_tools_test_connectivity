@@ -343,7 +343,7 @@ def airplane_mode_test(log, ad, retries=3):
         if not wait_for_cell_data_connection(log, ad, False):
             ad.log.error("Failed to disable cell data connection")
             return False
-        if not verify_internet_connection(log, ad, expected_result=False):
+        if not verify_internet_connection(log, ad, expected_state=False):
             ad.log.error("Data available in airplane mode.")
             return False
 
