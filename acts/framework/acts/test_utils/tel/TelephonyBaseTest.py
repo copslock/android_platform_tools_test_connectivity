@@ -40,6 +40,8 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
+from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import refresh_sl4a_session
@@ -49,7 +51,9 @@ from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import stop_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -73,10 +77,6 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = None
         stop_qxdm_loggers(self.log, self.android_devices)
         for ad in self.android_devices:
-            try:
-                ad.adb.shell("killall -9 tcpdump")
-            except AdbError:
-                ad.log.warn("Killing existing tcpdump processes failed")
             if not hasattr(ad, "init_log_path"):
                 ad.init_log_path = ad.log_path
             ad.log_path = self.log_path
@@ -281,19 +281,30 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.test_log_begin_time = match.group(0)
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
+        if getattr(self, "tcpdump_log", False):
+            mask = getattr(self, "tcpdump_mask", "ims")
+            interface = getattr(self, "tcpdump_interface", "any")
+            start_tcpdumps(
+                self.android_devices,
+                begin_time=self.begin_time,
+                interface=interface,
+                mask=mask)
+        else:
+            stop_tcpdumps(self.android_devices)
         if self.skip_reset_between_cases:
             ensure_phones_idle(self.log, self.android_devices)
         else:
             ensure_phones_default_state(self.log, self.android_devices)
 
+    def teardown_test(self):
+        stop_tcpdumps(self.android_devices)
+
     def on_exception(self, test_name, begin_time):
-        self._pull_diag_logs(test_name, begin_time)
         self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
         self._pull_diag_logs(test_name, begin_time)
         self._take_bug_report(test_name, begin_time)
-        self._cleanup_logger_sessions()
 
     def on_blocked(self, test_name, begin_time):
         self.on_fail(test_name, begin_time)
@@ -314,7 +325,8 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.log.error("Failed to get QXDM log for %s with error %s",
                              test_name, e)
                 result = False
-
+        get_tcpdump_log(ad, test_name, begin_time)
+        get_screen_shot_log(ad, test_name, begin_time)
         try:
             ad.check_crash_report(test_name, begin_time, log_crash_report=True)
         except Exception as e:
