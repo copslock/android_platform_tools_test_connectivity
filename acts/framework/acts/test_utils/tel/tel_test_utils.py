@@ -653,13 +653,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         result: True if operation succeed. False if error happens.
     """
 
-    ad.ed.clear_all_events()
-    sub_id_list = []
-
-    active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
-    for info in active_sub_info:
-        sub_id_list.append(info['subscriptionId'])
-
     cur_state = ad.droid.connectivityCheckAirplaneMode()
     if cur_state == new_state:
         ad.log.info("Airplane mode already in %s", new_state)
@@ -670,6 +663,13 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     if new_state is None:
         new_state = not cur_state
 
+    sub_id_list = []
+    active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in active_sub_info:
+        sub_id_list.append(info['subscriptionId'])
+
+    ad.ed.clear_all_events()
+    time.sleep(0.1)
     service_state_list = []
     if new_state:
         service_state_list.append(SERVICE_STATE_POWER_OFF)
@@ -2059,7 +2059,6 @@ def verify_internet_connection_by_ping(log, ad, retries=1,
                     ad.log.warning("Suspect dns failure")
                     ad.log.info("DNS config: %s",
                                 ad.adb.shell("getprop | grep dns"))
-                    return False
                 return True
             else:
                 ad.log.error(
@@ -2084,6 +2083,11 @@ def verify_internet_connection(log, ad, retries=3, expected_state=True):
                 log, ad, url=url, retry=retries,
                 expected_state=expected_state):
             return True
+    ad.log.info("DNS config: %s", " ".join(
+        ad.adb.shell("getprop | grep dns").split()))
+    ad.log.info("Interface info: %s", ad.adb.shell("ifconfig"))
+    ad.log.info("NetworkAgentInfo: %s",
+                ad.adb.shell("dumpsys connectivity | grep NetworkAgentInfo"))
     return False
 
 
@@ -5376,7 +5380,13 @@ def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
     return True
 
 
-def start_adb_tcpdump(ad, test_name, mask="ims"):
+def start_tcpdumps(ads, begin_time=None, interface="any", mask="ims"):
+    for ad in ads:
+        start_adb_tcpdump(
+            ad, begin_time=begin_time, interface=interface, mask=mask)
+
+
+def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
     """Start tcpdump on any iface
 
     Args:
@@ -5384,35 +5394,35 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         test_name: tcpdump file name will have this
 
     """
-    ad.log.debug("Ensuring no tcpdump is running in background")
-    try:
-        ad.adb.shell("killall -9 tcpdump")
-    except AdbError:
-        ad.log.warn("Killing existing tcpdump processes failed")
+    stop_adb_tcpdump(ad)
     out = ad.adb.shell("ls -l /sdcard/tcpdump/")
     if "No such file" in out or not out:
         ad.adb.shell("mkdir /sdcard/tcpdump")
     else:
         ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
 
-    begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
-    begin_time = normalize_log_line_timestamp(begin_time)
+    if not begin_time:
+        begin_time = get_current_epoch_time()
 
-    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (ad.serial,
-                                                           test_name,
-                                                           begin_time)
-    ad.log.info("tcpdump file is %s", file_name)
+    file_name = "/sdcard/tcpdump/tcpdump_%s_%s.pcap" % (ad.serial, begin_time)
+    ad.log.info("Start tcpdump to %s", file_name)
     if mask == "all":
-        cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
-                  format(ad.serial, file_name)
+        cmd = "adb -s %s shell tcpdump -i %s -s0 -w %s" % (ad.serial,
+                                                           interface,
+                                                           file_name)
     else:
-        cmd = "adb -s {} shell tcpdump -i any -s0 -n -p udp port 500 or \
-              udp port 4500 -w {}".format(ad.serial, file_name)
+        cmd = "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or \
+              udp port 4500 -w %s" % (ad.serial, interface, file_name)
     ad.log.debug("%s" % cmd)
     return start_standing_subprocess(cmd, 5)
 
 
-def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False, test_name=""):
+def stop_tcpdumps(ads):
+    for ad in ads:
+        stop_adb_tcpdump(ad)
+
+
+def stop_adb_tcpdump(ad):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
@@ -5422,18 +5432,29 @@ def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False, test_name=""):
         tcpdump_file: filename needed to pull out
 
     """
-    ad.log.info("Stopping and pulling tcpdump if any")
     try:
-        if proc is not None:
-            stop_standing_subprocess(proc)
+        ad.adb.shell("killall -9 tcpdump")
     except Exception as e:
-        ad.log.warning(e)
-    if pull_tcpdump:
+        ad.log.exception("Killing tcpdump with exception %s", e)
+
+
+def get_tcpdump_log(ad, test_name="", begin_time=None):
+    """Stops tcpdump on any iface
+       Pulls the tcpdump file in the tcpdump dir
+
+    Args:
+        ad: android device object.
+        test_name: test case name
+        begin_time: test begin time
+    """
+    logs = ad.get_file_names("/sdcard/tcpdump", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling tcpdumps %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
                                 "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
-        ad.adb.pull("/sdcard/tcpdump/. %s" % log_path)
-    ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+        ad.pull_files(logs, log_path)
+    stop_adb_tcpdump(ad)
     return True
 
 
@@ -5849,11 +5870,23 @@ def power_on_sim(ad, sim_slot_id=None):
 def log_screen_shot(ad, test_name):
     file_name = "/sdcard/Pictures/screencap_%s.png" % (
         utils.get_current_epoch_time())
-    screen_shot_path = os.path.join(ad.log_path, test_name,
-                                    "Screenshot_%s" % ad.serial)
-    utils.create_dir(screen_shot_path)
     try:
         ad.adb.shell("screencap -p %s" % file_name)
-        ad.adb.pull("%s %s" % (file_name, screen_shot_path))
     except:
-        ad.log.error("Fail to log screen shot")
+        ad.log.error("Fail to log screen shot to %s", file_name)
+
+
+def get_screen_shot_log(ad, test_name="", begin_time=None):
+    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "Screenshot_%s" % self.serial)
+        utils.create_dir(log_path)
+        self.pull_files(logs, log_path)
+    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
+
+
+def get_screen_shot_logs(ads, test_name="", begin_time=None):
+    for ad in ads:
+        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
