@@ -35,6 +35,7 @@ from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation_fo
 from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
@@ -321,20 +322,18 @@ def airplane_mode_test(log, ad, retries=3):
         ad.droid.telephonyToggleDataConnection(True)
         wifi_toggle_state(log, ad, False)
 
-        log.info("Step1: ensure attach")
+        ad.log.info("Step1: disable airplane mode and ensure attach")
         if not toggle_airplane_mode(log, ad, False):
             ad.log.error("Failed initial attach")
             return False
-        for i in range(retries):
-            if verify_internet_connection(log, ad):
-                ad.log.info("Data available on cell.")
-                break
-            elif i == retries - 1:
-                ad.log.error("Data not available on cell.")
-                return False
-            else:
-                ad.log.warning("Attempt %d Data not available on cell" %
-                               (i + 1))
+
+        if not wait_for_cell_data_connection(log, ad, True):
+            ad.log.error("Failed to enable data connection.")
+            return False
+
+        if not verify_internet_connection(log, ad, retries=3):
+            ad.log.error("Data not available on cell.")
+            return False
 
         log.info("Step2: enable airplane mode and ensure detach")
         if not toggle_airplane_mode(log, ad, True):
@@ -343,6 +342,7 @@ def airplane_mode_test(log, ad, retries=3):
         if not wait_for_cell_data_connection(log, ad, False):
             ad.log.error("Failed to disable cell data connection")
             return False
+
         if not verify_internet_connection(log, ad, expected_state=False):
             ad.log.error("Data available in airplane mode.")
             return False
@@ -356,7 +356,7 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Failed to enable cell data connection")
             return False
 
-        if not verify_internet_connection(log, ad, retries=5):
+        if not verify_internet_connection(log, ad, retries=3):
             ad.log.warning("Data not available on cell")
             return False
         return True
