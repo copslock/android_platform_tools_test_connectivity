@@ -5308,10 +5308,10 @@ def start_qxdm_logger(ad, begin_time=None):
             if ad.search_logcat(
                     "Diag_Lib: diag: In delete_log",
                     begin_time=getattr(
-                        ad, "qxdm_process_start_time", current_time -
-                        5 * 60 * 1000)) or not ad.get_file_names(
+                        ad, "qxdm_process_start_time",
+                        current_time - 300000)) or not ad.get_file_names(
                             ad.qxdm_log_path,
-                            begin_time=current_time - 60 * 000,
+                            begin_time=current_time - 60000,
                             match_string="*.qmdl"):
                 # diag_mdlog starts deleting files or no qmdl logs were
                 # modified in the past 60 seconds
