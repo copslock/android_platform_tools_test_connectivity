@@ -37,7 +37,7 @@ class PowerbaselineTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
-        req_params = ['baselinetest_params']
+        req_params = ['baselinetest_params', 'custom_files']
         self.unpack_userparams(req_params)
         self.unpack_testparams(self.baselinetest_params)
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
@@ -46,6 +46,11 @@ class PowerbaselineTest(base_test.BaseTestClass):
         self.mon.set_voltage(4.2)
         self.mon.attach_device(self.dut)
         self.mon_info = wputils.create_monsoon_info(self)
+        for file in self.custom_files:
+            if 'pass_fail_threshold' in file:
+                self.threshold_file = file
+        self.threshold = wputils.unpack_custom_file(self.threshold_file,
+                                                    self.TAG)
 
     def teardown_class(self):
         """Tearing down the entire test class.
