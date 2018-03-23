@@ -57,7 +57,7 @@ from acts.test_utils.tel.tel_test_utils import system_file_push
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import unlock_sim
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
@@ -105,7 +105,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if initial_setup_wifi and not ensure_wifi_connected(
                 self.log, self.ad, self.wifi_network_ssid,
                 self.wifi_network_pass):
-            self.log.error("Failed to connect WiFi")
+            self.log.error("Failed to bring up WiFi connection")
             return False
         if initial_setup_wfc_mode and not set_wfc_mode(self.log, self.ad,
                                                        initial_setup_wfc_mode):
@@ -166,15 +166,15 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         if initial_setup_wifi and not ensure_wifi_connected(
                 self.log, self.ad, self.wifi_network_ssid,
                 self.wifi_network_pass):
-            self.log.error("Failed to connect WiFi")
+            self.log.error("Failed to bring up WiFi connection")
             return False
         # Set to initial_wfc_mode first, then change to new_wfc_mode
         for (wfc_mode, is_wfc_available) in \
             [(initial_wfc_mode, is_wfc_available_in_initial_wfc_mode),
              (new_wfc_mode, is_wfc_available_in_new_wfc_mode)]:
             current_wfc_status = is_wfc_enabled(self.log, self.ad)
-            self.log.info("Current WFC: {}, Set WFC to {}".format(
-                current_wfc_status, wfc_mode))
+            self.ad.log.info("Current WFC: %s, Set WFC to %s",
+                             current_wfc_status, wfc_mode)
             if not set_wfc_mode(self.log, self.ad, wfc_mode):
                 self.log.error("Failed to set WFC mode.")
                 return False
@@ -214,7 +214,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             self, wfc_mode, is_wfc_available_after_turn_off_apm):
         if not ensure_wifi_connected(self.log, self.ad, self.wifi_network_ssid,
                                      self.wifi_network_pass):
-            self.log.error("Failed to connect WiFi")
+            self.log.error("Failed to bring up WiFi connection")
             return False
         if not set_wfc_mode(self.log, self.ad, wfc_mode):
             self.log.error("Failed to set WFC mode.")
@@ -468,24 +468,24 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFi Calling feature bit return True, network rat is iwlan.
         """
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE.")
+            self.ad.log.error("Failed to setup VoLTE.")
             return False
         if not phone_setup_iwlan(
                 self.log, self.ad, False, WFC_MODE_WIFI_PREFERRED,
                 self.wifi_network_ssid, self.wifi_network_pass):
-            self.log.error("Failed to setup WFC.")
+            self.ad.log.error("Failed to setup WFC.")
             return False
         # Turn Off VoLTE, then Turn On VoLTE
         for i in range(2):
             if not toggle_volte(self.log, self.ad):
-                self.log.error("Failed to toggle VoLTE.")
+                self.ad.log.error("Failed to toggle VoLTE.")
                 return False
-            if wait_for_wfc_disabled(self.log, self.ad):
-                self.log.error("WFC is not available.")
+            if wait_for_wfc_disabled(self.ad.log, self.ad):
+                self.ad.log.error("WFC is not available.")
                 return False
             if not is_droid_in_rat_family(self.log, self.ad, RAT_FAMILY_WLAN,
                                           NETWORK_SERVICE_DATA):
-                self.log.error("Data Rat is not iwlan.")
+                self.ad.log.error("Data Rat is not iwlan.")
                 return False
         return True
 
@@ -508,7 +508,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE.")
+            self.ad.log.error("Failed to setup VoLTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_WIFI_PREFERRED,
@@ -535,7 +535,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
         if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Failed to setup LTE.")
+            self.ad.log.error("Failed to setup LTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_WIFI_PREFERRED,
@@ -562,8 +562,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
         set_wifi_to_default(self.log, self.ad)
-        if not phone_setup_voice_3g(self.log, self.ad):
-            self.log.error("Failed to setup 3G.")
+        if not phone_setup_voice_3g(self.ad.log, self.ad):
+            self.ad.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, False)
@@ -586,7 +586,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
         if not toggle_airplane_mode_by_adb(self.log, self.ad, True):
-            self.log.error("Failed to turn on airplane mode")
+            self.ad.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_WIFI_PREFERRED, WFC_MODE_CELLULAR_PREFERRED, True, True)
@@ -610,7 +610,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE.")
+            self.ad.log.error("Failed to setup VoLTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_CELLULAR_PREFERRED,
@@ -637,7 +637,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
         if not phone_setup_csfb(self.log, self.ad):
-            self.log.error("Failed to setup LTE.")
+            self.ad.log.error("Failed to setup LTE.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_CELLULAR_PREFERRED,
@@ -665,7 +665,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
         set_wifi_to_default(self.log, self.ad)
         if not phone_setup_voice_3g(self.log, self.ad):
-            self.log.error("Failed to setup 3G.")
+            self.ad.log.error("Failed to setup 3G.")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, False, True)
@@ -688,7 +688,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         4. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
         if not toggle_airplane_mode_by_adb(self.log, self.ad, True):
-            self.log.error("Failed to turn on airplane mode")
+            self.ad.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_change_wfc_mode(
             WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED, True, True)
@@ -711,7 +711,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         5. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
         if not toggle_airplane_mode_by_adb(self.log, self.ad, True):
-            self.log.error("Failed to turn on airplane mode")
+            self.ad.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_turn_off_apm(
             WFC_MODE_WIFI_PREFERRED, True)
@@ -734,7 +734,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         5. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
         if not toggle_airplane_mode_by_adb(self.log, self.ad, True):
-            self.log.error("Failed to turn on airplane mode")
+            self.ad.log.error("Failed to turn on airplane mode")
             return False
         return self._wifi_connected_set_wfc_mode_turn_off_apm(
             WFC_MODE_CELLULAR_PREFERRED, False)
@@ -760,8 +760,6 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             Currently always return True.
         """
         # TODO: b/26338119 Set pass/fail criteria
-        ad = self.android_devices[0]
-
         time_values = {
             'start': 0,
             'wifi_enabled': 0,
@@ -773,90 +771,107 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             'mo_call_success': 0
         }
 
-        wifi_reset(self.log, ad)
-        toggle_airplane_mode_by_adb(self.log, ad, True)
+        wifi_reset(self.log, self.ad)
+        toggle_airplane_mode_by_adb(self.log, self.ad, True)
 
-        set_wfc_mode(self.log, ad, WFC_MODE_WIFI_PREFERRED)
+        set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
 
         time_values['start'] = time.time()
 
-        self.log.info("Start Time {}s".format(time_values['start']))
+        self.ad.log.info("Start Time %ss", time_values['start'])
 
-        wifi_toggle_state(self.log, ad, True)
+        wifi_toggle_state(self.log, self.ad, True)
         time_values['wifi_enabled'] = time.time()
-        self.log.info("WiFi Enabled After {}s".format(
-            time_values['wifi_enabled'] - time_values['start']))
+        self.ad.log.info("WiFi Enabled After %ss",
+                         time_values['wifi_enabled'] - time_values['start'])
 
-        ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
-                              self.wifi_network_pass)
-        ad.droid.wakeUpNow()
+        network = {WIFI_SSID_KEY: self.wifi_network_ssid}
+        if self.wifi_network_pass:
+            network[WIFI_PWD_KEY] = self.wifi_network_pass
+        try:
+            self.ad.droid.wifiConnectByConfig(network)
+        except Exception:
+            self.ad.log.info("Connecting to wifi by RPC wifiConnect instead")
+            self.ad.droid.wifiConnect(network)
+        self.ad.droid.wakeUpNow()
 
-        if not wait_for_wifi_data_connection(self.log, ad, True,
+        if not wait_for_wifi_data_connection(self.log, self.ad, True,
                                              MAX_WAIT_TIME_WIFI_CONNECTION):
-            self.log.error("Failed WiFi connection, aborting!")
+            self.ad.log.error("Failed WiFi connection, aborting!")
             return False
         time_values['wifi_connected'] = time.time()
 
-        self.log.info("WiFi Connected After {}s".format(
-            time_values['wifi_connected'] - time_values['wifi_enabled']))
+        self.ad.log.info(
+            "WiFi Connected After %ss",
+            time_values['wifi_connected'] - time_values['wifi_enabled'])
 
-        if not verify_http_connection(self.log, ad, 'http://www.google.com',
-                                      100, .1):
-            self.log.error("Failed to get user-plane traffic, aborting!")
+        if not verify_internet_connection(self.log, self.ad, retries=3):
+            self.ad.log.error("Failed to get user-plane traffic, aborting!")
             return False
 
         time_values['wifi_data'] = time.time()
-        self.log.info("WifiData After {}s".format(
-            time_values['wifi_data'] - time_values['wifi_connected']))
+        self.ad.log.info(
+            "WifiData After %ss",
+            time_values['wifi_data'] - time_values['wifi_connected'])
 
         if not wait_for_network_rat(
-                self.log, ad, RAT_FAMILY_WLAN,
+                self.log,
+                self.ad,
+                RAT_FAMILY_WLAN,
                 voice_or_data=NETWORK_SERVICE_DATA):
-            self.log.error("Failed to set-up iwlan, aborting!")
-            if is_droid_in_rat_family(self.log, ad, RAT_FAMILY_WLAN,
+            self.ad.log.error("Failed to set-up iwlan, aborting!")
+            if is_droid_in_rat_family(self.log, self.ad, RAT_FAMILY_WLAN,
                                       NETWORK_SERVICE_DATA):
-                self.log.error("Never received the event, but droid in iwlan")
+                self.ad.log.error(
+                    "Never received the event, but droid in iwlan")
             else:
                 return False
         time_values['iwlan_rat'] = time.time()
-        self.log.info("iWLAN Reported After {}s".format(
-            time_values['iwlan_rat'] - time_values['wifi_data']))
+        self.ad.log.info("iWLAN Reported After %ss",
+                         time_values['iwlan_rat'] - time_values['wifi_data'])
 
-        if not wait_for_ims_registered(self.log, ad,
+        if not wait_for_ims_registered(self.log, self.ad,
                                        MAX_WAIT_TIME_IMS_REGISTRATION):
-            self.log.error("Never received IMS registered, aborting")
+            self.ad.log.error("Never received IMS registered, aborting")
             return False
         time_values['ims_registered'] = time.time()
-        self.log.info("Ims Registered After {}s".format(
-            time_values['ims_registered'] - time_values['iwlan_rat']))
+        self.ad.log.info(
+            "Ims Registered After %ss",
+            time_values['ims_registered'] - time_values['iwlan_rat'])
 
-        if not wait_for_wfc_enabled(self.log, ad, MAX_WAIT_TIME_WFC_ENABLED):
-            self.log.error("Never received WFC feature, aborting")
+        if not wait_for_wfc_enabled(self.log, self.ad,
+                                    MAX_WAIT_TIME_WFC_ENABLED):
+            self.ad.log.error("Never received WFC feature, aborting")
             return False
 
         time_values['wfc_enabled'] = time.time()
-        self.log.info("Wifi Calling Feature Enabled After {}s".format(
-            time_values['wfc_enabled'] - time_values['ims_registered']))
+        self.ad.log.info(
+            "Wifi Calling Feature Enabled After %ss",
+            time_values['wfc_enabled'] - time_values['ims_registered'])
 
         set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
         wait_for_not_network_rat(
             self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
 
-        self.log.info("\n\n------------------summary-----------------")
-        self.log.info("WiFi Enabled After {0:.2f} s".format(
-            time_values['wifi_enabled'] - time_values['start']))
-        self.log.info("WiFi Connected After {0:.2f} s".format(
-            time_values['wifi_connected'] - time_values['wifi_enabled']))
-        self.log.info("WifiData After {0:.2f} s".format(
-            time_values['wifi_data'] - time_values['wifi_connected']))
-        self.log.info("iWLAN Reported After {0:.2f} s".format(
-            time_values['iwlan_rat'] - time_values['wifi_data']))
-        self.log.info("Ims Registered After {0:.2f} s".format(
-            time_values['ims_registered'] - time_values['iwlan_rat']))
-        self.log.info("Wifi Calling Feature Enabled After {0:.2f} s".format(
-            time_values['wfc_enabled'] - time_values['ims_registered']))
-        self.log.info("\n\n")
+        self.ad.log.info("\n\n------------------summary-----------------")
+        self.ad.log.info("WiFi Enabled After %.2f seconds",
+                         time_values['wifi_enabled'] - time_values['start'])
+        self.ad.log.info(
+            "WiFi Connected After %.2f seconds",
+            time_values['wifi_connected'] - time_values['wifi_enabled'])
+        self.ad.log.info(
+            "WifiData After %.2f s",
+            time_values['wifi_data'] - time_values['wifi_connected'])
+        self.ad.log.info("iWLAN Reported After %.2f seconds",
+                         time_values['iwlan_rat'] - time_values['wifi_data'])
+        self.ad.log.info(
+            "Ims Registered After %.2f seconds",
+            time_values['ims_registered'] - time_values['iwlan_rat'])
+        self.ad.log.info(
+            "Wifi Calling Feature Enabled After %.2f seconds",
+            time_values['wfc_enabled'] - time_values['ims_registered'])
+        self.ad.log.info("\n\n")
         return True
 
     @TelephonyBaseTest.tel_test_wrap
@@ -880,19 +895,19 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
 
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE")
+            self.ad.log.error("Failed to setup VoLTE")
             return False
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Start Iteration {}.".format(i))
+            self.log.info("Start Iteration %s.", i)
             result = self._wifi_connected_enable_wfc_teardown_wfc(
                 tear_down_operation=self._TEAR_DOWN_OPERATION_DISCONNECT_WIFI,
                 initial_setup_wifi=True,
                 initial_setup_wfc_mode=None,
                 check_volte_after_wfc_disabled=True)
             if not result:
-                self.log.error("Test Failed in iteration: {}.".format(i))
+                self.log.error("Test Failed in iteration: %s.", i)
                 return False
         return True
 
@@ -917,19 +932,19 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         """
 
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE")
+            self.ad.log.error("Failed to setup VoLTE")
             return False
         set_wfc_mode(self.log, self.ad, WFC_MODE_WIFI_PREFERRED)
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Start Iteration {}.".format(i))
+            self.log.info("Start Iteration %s.", i)
             result = self._wifi_connected_enable_wfc_teardown_wfc(
                 tear_down_operation=self._TEAR_DOWN_OPERATION_RESET_WIFI,
                 initial_setup_wifi=True,
                 initial_setup_wfc_mode=None,
                 check_volte_after_wfc_disabled=True)
             if not result:
-                self.log.error("Test Failed in iteration: {}.".format(i))
+                self.log.error("Test Failed in iteration: %s.", i)
                 return False
         return True
 
@@ -955,15 +970,15 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         5. DUT report VoLTE available.
         """
         if not phone_setup_volte(self.log, self.ad):
-            self.log.error("Failed to setup VoLTE.")
+            self.ad.log.error("Failed to setup VoLTE.")
             return False
         if not ensure_wifi_connected(self.log, self.ad, self.wifi_network_ssid,
                                      self.wifi_network_pass):
-            self.log.error("Failed to connect WiFi")
+            self.ad.log.error("Failed to bring up WiFi connection")
             return False
 
         for i in range(1, self.stress_test_number + 1):
-            self.log.info("Start Iteration {}.".format(i))
+            self.log.info("Start Iteration %s.", i)
             result = self._wifi_connected_set_wfc_mode_change_wfc_mode(
                 WFC_MODE_WIFI_PREFERRED,
                 WFC_MODE_CELLULAR_PREFERRED,
@@ -972,7 +987,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
                 initial_setup_wifi=False,
                 check_volte_after_wfc_disabled=True)
             if not result:
-                self.log.error("Test Failed in iteration: {}.".format(i))
+                self.log.error("Test Failed in iteration: %s.", i)
                 return False
         return True
 

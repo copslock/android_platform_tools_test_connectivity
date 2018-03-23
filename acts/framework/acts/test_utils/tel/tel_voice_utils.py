@@ -65,10 +65,13 @@ from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_data_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
@@ -347,9 +350,10 @@ def phone_setup_iwlan_for_subscription(log,
 
     if wifi_ssid is not None:
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
-            ad.log.error("Fail to connect to WiFi %s.", wifi_ssid)
+            ad.log.error("Fail to bring up WiFi connection on %s.", wifi_ssid)
             return False
 
+    start_adb_tcpdump(ad, interface="wlan0", mask="ims")
     if not set_wfc_mode(log, ad, wfc_mode):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False
@@ -405,13 +409,13 @@ def phone_setup_iwlan_cellular_preferred(log,
     except Exception as e:
         ad.log.error(e)
         ad.droid.telephonyToggleDataConnection(True)
-    if not set_wfc_mode(log, ad, WFC_MODE_CELLULAR_PREFERRED):
-        ad.log.error("Set WFC mode failed.")
-        return False
     if wifi_ssid is not None:
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
             ad.log.error("Connect to WiFi failed.")
             return False
+    if not set_wfc_mode(log, ad, WFC_MODE_CELLULAR_PREFERRED):
+        ad.log.error("Set WFC mode failed.")
+        return False
     if not wait_for_not_network_rat(
             log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA):
         ad.log.error("Data rat in iwlan mode.")
