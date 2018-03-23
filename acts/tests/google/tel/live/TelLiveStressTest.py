@@ -134,7 +134,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.wifi_network_ssid,
                     self.wifi_network_pass,
                     retries=3):
-                ad.log.error("Phone Wifi connection fails.")
+                ad.log.error("Bringing up Wifi connection fails.")
                 return False
             ad.log.info("Phone WIFI is connected successfully.")
             if not set_wfc_mode(self.log, ad, WFC_MODE_WIFI_PREFERRED):
