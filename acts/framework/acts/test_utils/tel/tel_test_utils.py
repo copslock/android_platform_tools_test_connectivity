@@ -1783,9 +1783,14 @@ def call_setup_teardown_for_subscription(
 
         for ad in (ad_caller, ad_callee):
             call_ids = ad.droid.telecomCallGetCallIds()
-            new_call_id = list(set(call_ids) - set(ad.call_ids))[0]
-            if not wait_for_in_call_active(ad, call_id=new_call_id):
+            new_call_ids = set(call_ids) - set(ad.call_ids)
+            if not new_call_ids:
+                ad.log.error(
+                    "No new call ids are found after call establishment")
                 result = False
+            for new_call_id in new_call_ids:
+                if not wait_for_in_call_active(ad, call_id=new_call_id):
+                    result = False
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
                 result = False
@@ -2887,6 +2892,7 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     if new_state is None:
         new_state = not current_state
     if new_state != current_state:
+        ad.log.info("Toggle Enhanced 4G LTE Mode")
         ad.droid.imsSetEnhanced4gMode(new_state)
     return True
 
@@ -2905,6 +2911,7 @@ def set_wfc_mode(log, ad, wfc_mode):
         True if success. False if ad does not support WFC or error happened.
     """
     try:
+        start_adb_tcpdump(ad, interface="wlan0", mask="ims")
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
@@ -4630,7 +4637,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             ad.droid.wifiToggleState(True)
         if check_is_wifi_connected(log, ad, wifi_ssid):
             ad.log.info("Wifi is connected to %s", wifi_ssid)
-            return True
+            return verify_internet_connection(log, ad, retries=3)
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
             try:
@@ -4641,7 +4648,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 ad.log.info("Connected to Wifi %s", wifi_ssid)
-                return True
+                return verify_internet_connection(log, ad, retries=3)
     ad.log.info("Fail to connected to wifi %s", wifi_ssid)
     return False
 
@@ -5400,7 +5407,6 @@ def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
         test_name: tcpdump file name will have this
 
     """
-    stop_adb_tcpdump(ad)
     out = ad.adb.shell("ls -l /sdcard/tcpdump/")
     if "No such file" in out or not out:
         ad.adb.shell("mkdir /sdcard/tcpdump")
@@ -5410,17 +5416,37 @@ def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
     if not begin_time:
         begin_time = get_current_epoch_time()
 
-    file_name = "/sdcard/tcpdump/tcpdump_%s_%s.pcap" % (ad.serial, begin_time)
-    ad.log.info("Start tcpdump to %s", file_name)
-    if mask == "all":
-        cmd = "adb -s %s shell tcpdump -i %s -s0 -w %s" % (ad.serial,
-                                                           interface,
-                                                           file_name)
+    out = ad.adb.shell("ifconfig | grep encap")
+    if interface == "any" or interface not in out:
+        intfs = [
+            intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
+            if intf in out
+        ]
     else:
-        cmd = "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or \
-              udp port 4500 -w %s" % (ad.serial, interface, file_name)
-    ad.log.debug("%s" % cmd)
-    return start_standing_subprocess(cmd, 5)
+        intfs = [interface]
+
+    out = ad.adb.shell("ps -ef | grep tcpdump")
+    cmds = []
+    for intf in intfs:
+        if intf in out:
+            ad.log.info("tcpdump on interface %s is already running", intf)
+            continue
+        else:
+            if mask == "ims":
+                cmds.append(
+                    "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or "
+                    "udp port 4500 -w /sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
+                    (ad.serial, intf, ad.serial, intf, begin_time))
+            else:
+                cmds.append("adb -s %s shell tcpdump -i %s -s0 -w "
+                            "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
+                            (ad.serial, intf, ad.serial, intf, begin_time))
+    for cmd in cmds:
+        ad.log.info(cmd)
+        try:
+            start_standing_subprocess(cmd, 10)
+        except Exception as e:
+            ad.log.exception(e)
 
 
 def stop_tcpdumps(ads):
@@ -5428,20 +5454,25 @@ def stop_tcpdumps(ads):
         stop_adb_tcpdump(ad)
 
 
-def stop_adb_tcpdump(ad):
+def stop_adb_tcpdump(ad, interface="any"):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
     Args:
         ad: android device object.
-        tcpdump_pid: need to know which pid to stop
-        tcpdump_file: filename needed to pull out
 
     """
-    try:
-        ad.adb.shell("killall -9 tcpdump")
-    except Exception as e:
-        ad.log.exception("Killing tcpdump with exception %s", e)
+    if interface == "any":
+        try:
+            ad.adb.shell("killall -9 tcpdump")
+        except Exception as e:
+            ad.log.exception("Killing tcpdump with exception %s", e)
+    else:
+        out = ad.adb.shell("ps -ef | grep tcpdump | grep %s" % interface)
+        if "tcpdump -i" in out:
+            pids = re.findall(r"\S+\s+(\d+).*tcpdump -i", out)
+            for pid in pids:
+                ad.adb.shell("kill -9 %s" % pid)
 
 
 def get_tcpdump_log(ad, test_name="", begin_time=None):

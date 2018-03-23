@@ -63,7 +63,6 @@ from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_state
-from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -558,8 +557,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
-        start_adb_tcpdump(ads[1], self.test_name, self.begin_time)
         tasks = [(phone_setup_iwlan, (self.log, ads[0], apm_mode, wfc_mode,
                                       wifi_ssid, wifi_pwd)),
                  (phone_setup_iwlan, (self.log, ads[1], apm_mode, wfc_mode,
@@ -635,8 +632,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
-        start_adb_tcpdump(ads[1], self.test_name, self.begin_time)
         tasks = [(phone_setup_iwlan_cellular_preferred,
                   (self.log, ads[0], self.wifi_network_ssid,
                    self.wifi_network_pass)),
@@ -718,7 +713,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -747,7 +741,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         result = True
-        start_adb_tcpdump(ads[0], self.test_name)
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -776,7 +769,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -804,7 +796,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
@@ -832,8 +823,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -862,8 +851,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -892,8 +879,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -922,8 +907,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -952,8 +935,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -982,7 +963,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1011,7 +991,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
@@ -1039,7 +1018,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        start_adb_tcpdump(ads[0], self.test_name, self.begin_time)
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
