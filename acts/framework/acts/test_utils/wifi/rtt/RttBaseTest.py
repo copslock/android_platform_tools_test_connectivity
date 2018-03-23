@@ -30,15 +30,17 @@ class RttBaseTest(BaseTestClass):
   def setup_test(self):
     required_params = ("lci_reference", "lcr_reference",
                        "rtt_reference_distance_mm",
-                       "rtt_reference_distance_margin_mm",
-                       "rtt_max_failure_rate_two_sided_rtt_percentage",
-                       "rtt_max_failure_rate_one_sided_rtt_percentage",
-                       "rtt_max_margin_exceeded_rate_two_sided_rtt_percentage",
-                       "rtt_max_margin_exceeded_rate_one_sided_rtt_percentage",
-                       "rtt_min_expected_rssi_dbm",
                        "stress_test_min_iteration_count",
                        "stress_test_target_run_time_sec")
     self.unpack_userparams(required_params)
+
+    # can be moved to JSON config file
+    self.rtt_reference_distance_margin_mm = 1000
+    self.rtt_max_failure_rate_two_sided_rtt_percentage = 10
+    self.rtt_max_failure_rate_one_sided_rtt_percentage = 50
+    self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage = 10
+    self.rtt_max_margin_exceeded_rate_one_sided_rtt_percentage = 50
+    self.rtt_min_expected_rssi_dbm = -100
 
     for ad in self.android_devices:
       utils.set_location_service(ad, True)

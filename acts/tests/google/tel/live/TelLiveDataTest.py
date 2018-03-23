@@ -127,28 +127,15 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "wifi_network_pass_2g")
         self.provider = self.android_devices[0]
         self.clients = self.android_devices[1:]
+        setattr(self, "tcpdump_log", True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
         self.number_of_devices = 1
-        try:
-            self.tcpdump_proc = [None, None]
-            self.tcpdump_proc[0] = start_adb_tcpdump(
-                self.android_devices[0], self.test_name, mask="all")
-        except Exception as e:
-            self.log.warning("Failed to start tcpdump collection", e)
-            pass
 
-    def on_fail(self, test_name, begin_time):
-        self.log.info("Inside Teardown Test")
-        TelephonyBaseTest.on_fail(self, test_name, begin_time)
-        try:
-            if self.tcpdump_proc[0] is not None:
-                stop_adb_tcpdump(self.android_devices[0], self.tcpdump_proc[0],
-                                 True, self.test_name)
-        except Exception as e:
-            self.log.warning("Failed to stop tcpdump collection", e)
-            pass
+    def teardown_class(self):
+        setattr(self, "tcpdump_log", False)
+        TelephonyBaseTest.teardown_class(self)
 
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -2421,8 +2408,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_internet_connection(
-                    self.log, ad, 'http://www.google.com', 100, .1):
+            if not verify_internet_connection(self.log, ad):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
 

@@ -653,13 +653,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         result: True if operation succeed. False if error happens.
     """
 
-    ad.ed.clear_all_events()
-    sub_id_list = []
-
-    active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
-    for info in active_sub_info:
-        sub_id_list.append(info['subscriptionId'])
-
     cur_state = ad.droid.connectivityCheckAirplaneMode()
     if cur_state == new_state:
         ad.log.info("Airplane mode already in %s", new_state)
@@ -670,6 +663,13 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     if new_state is None:
         new_state = not cur_state
 
+    sub_id_list = []
+    active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
+    for info in active_sub_info:
+        sub_id_list.append(info['subscriptionId'])
+
+    ad.ed.clear_all_events()
+    time.sleep(0.1)
     service_state_list = []
     if new_state:
         service_state_list.append(SERVICE_STATE_POWER_OFF)
@@ -1783,9 +1783,14 @@ def call_setup_teardown_for_subscription(
 
         for ad in (ad_caller, ad_callee):
             call_ids = ad.droid.telecomCallGetCallIds()
-            new_call_id = list(set(call_ids) - set(ad.call_ids))[0]
-            if not wait_for_in_call_active(ad, call_id=new_call_id):
+            new_call_ids = set(call_ids) - set(ad.call_ids)
+            if not new_call_ids:
+                ad.log.error(
+                    "No new call ids are found after call establishment")
                 result = False
+            for new_call_id in new_call_ids:
+                if not wait_for_in_call_active(ad, call_id=new_call_id):
+                    result = False
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
                 result = False
@@ -1899,7 +1904,7 @@ def get_internet_connection_type(log, ad):
 
 def verify_http_connection(log,
                            ad,
-                           url="www.google.com",
+                           url="https://www.google.com",
                            retry=5,
                            retry_interval=15,
                            expected_state=True):
@@ -1913,26 +1918,21 @@ def verify_http_connection(log,
 
     """
     for i in range(0, retry + 1):
-        # b/18899134 httpPing will hang
-        #try:
-        #    http_response = ad.droid.httpPing(url)
-        #except:
-        #    http_response = None
-        # If httpPing failed, it may return {} (if phone just turn off APM) or
-        # None (regular fail)
-        state = ad.droid.pingHost(url)
-        ad.log.info("Connection to %s is %s", url, state)
-        if expected_state == state:
-            ad.log.info("Verify Internet connection state is %s succeeded",
-                        str(expected_state))
+        try:
+            http_response = ad.droid.httpPing(url)
+        except:
+            http_response = None
+        if (expected_state and http_response) or (not expected_state
+                                                  and not http_response):
+            ad.log.info("Verify http connection to %s is %s as expected", url,
+                        expected_state)
             return True
         if i < retry:
-            ad.log.info(
-                "Verify Internet connection state=%s failed. Try again",
-                str(expected_state))
+            ad.log.info("Verify http connection to %s is %s failed. Try again",
+                        url, expected_state)
             time.sleep(retry_interval)
-    ad.log.info("Verify Internet state=%s failed after %s second",
-                expected_state, i * retry_interval)
+    ad.log.info("Verify http connection to %s is %s failed after %s second",
+                url, expected_state, i * retry_interval)
     return False
 
 
@@ -2041,7 +2041,8 @@ def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
     return task[0](*task[1])
 
 
-def verify_internet_connection(log, ad, retries=1):
+def verify_internet_connection_by_ping(log, ad, retries=1,
+                                       expected_state=True):
     """Verify internet connection by ping test.
 
     Args:
@@ -2049,14 +2050,49 @@ def verify_internet_connection(log, ad, retries=1):
         ad: Android Device Object.
 
     """
-    for i in range(retries):
-        ad.log.info("Verify internet connection - attempt %d", i + 1)
-        dest_to_ping = ["www.google.com", "www.amazon.com", "54.230.144.105"]
-        for dest in dest_to_ping:
+    ip_addr = "54.230.144.105"
+    for dest in ("www.google.com", "www.amazon.com", ip_addr):
+        for i in range(retries):
+            ad.log.info("Ping %s - attempt %d", dest, i + 1)
             result = adb_shell_ping(
                 ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
-            if result:
+            if result == expected_state:
+                ad.log.info(
+                    "Internet connection by ping test to %s is %s as expected",
+                    dest, expected_state)
+                if dest == ip_addr:
+                    ad.log.warning("Suspect dns failure")
+                    ad.log.info("DNS config: %s",
+                                ad.adb.shell("getprop | grep dns"))
                 return True
+            else:
+                ad.log.error(
+                    "Internet connection by ping test to %s is not %s as expected",
+                    dest, expected_state)
+    return False
+
+
+def verify_internet_connection(log, ad, retries=3, expected_state=True):
+    """Verify internet connection by ping test and http connection.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+
+    """
+    if verify_internet_connection_by_ping(
+            log, ad, retries=retries, expected_state=expected_state):
+        return True
+    for url in ("https://www.google.com", "https://www.amazon.com"):
+        if verify_http_connection(
+                log, ad, url=url, retry=retries,
+                expected_state=expected_state):
+            return True
+    ad.log.info("DNS config: %s", " ".join(
+        ad.adb.shell("getprop | grep dns").split()))
+    ad.log.info("Interface info: %s", ad.adb.shell("ifconfig"))
+    ad.log.info("NetworkAgentInfo: %s",
+                ad.adb.shell("dumpsys connectivity | grep NetworkAgentInfo"))
     return False
 
 
@@ -2856,6 +2892,7 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     if new_state is None:
         new_state = not current_state
     if new_state != current_state:
+        ad.log.info("Toggle Enhanced 4G LTE Mode")
         ad.droid.imsSetEnhanced4gMode(new_state)
     return True
 
@@ -2874,6 +2911,7 @@ def set_wfc_mode(log, ad, wfc_mode):
         True if success. False if ad does not support WFC or error happened.
     """
     try:
+        start_adb_tcpdump(ad, interface="wlan0", mask="ims")
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
@@ -4599,7 +4637,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             ad.droid.wifiToggleState(True)
         if check_is_wifi_connected(log, ad, wifi_ssid):
             ad.log.info("Wifi is connected to %s", wifi_ssid)
-            return True
+            return verify_internet_connection(log, ad, retries=3)
         else:
             ad.log.info("Connecting to wifi %s", wifi_ssid)
             try:
@@ -4610,7 +4648,7 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
             time.sleep(20)
             if check_is_wifi_connected(log, ad, wifi_ssid):
                 ad.log.info("Connected to Wifi %s", wifi_ssid)
-                return True
+                return verify_internet_connection(log, ad, retries=3)
     ad.log.info("Fail to connected to wifi %s", wifi_ssid)
     return False
 
@@ -5236,22 +5274,34 @@ def stop_qxdm_logger(ad):
         ad.log.debug("Kill the existing qxdm process")
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(5)
+    setattr(ad, "qxdm_process_start_time", None)
 
 
 def start_qxdm_logger(ad, begin_time=None):
     """Start QXDM logger."""
     if not getattr(ad, "qxdm_log", True): return
     # Delete existing QXDM logs 5 minutes earlier than the begin_time
+    current_time = get_current_epoch_time()
     if getattr(ad, "qxdm_log_path", None):
         seconds = None
-        if begin_time:
-            current_time = get_current_epoch_time()
-            seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
-        elif len(ad.get_file_names(ad.qxdm_log_path)) > 50:
-            seconds = 900
+        file_count = ad.adb.shell(
+            "find %s -type f -iname *.qmdl | wc -l" % ad.qxdm_log_path)
+        if int(file_count) > 50:
+            if begin_time:
+                # if begin_time specified, delete old qxdm logs modified
+                # 10 minutes before begin time
+                seconds = int((current_time - begin_time) / 1000.0) + 10 * 60
+            else:
+                # if begin_time is not specified, delete old qxdm logs modified
+                # 15 minutes before current time
+                seconds = 15 * 60
         if seconds:
+            # Remove qxdm logs modified more than specified seconds ago
             ad.adb.shell(
                 "find %s -type f -iname *.qmdl -not -mtime -%ss -delete" %
+                (ad.qxdm_log_path, seconds))
+            ad.adb.shell(
+                "find %s -type f -iname *.xml -not -mtime -%ss -delete" %
                 (ad.qxdm_log_path, seconds))
     if getattr(ad, "qxdm_logger_command", None):
         output = ad.adb.shell("ps -ef | grep mdlog") or ""
@@ -5259,15 +5309,27 @@ def start_qxdm_logger(ad, begin_time=None):
             ad.log.debug("QXDM logging command %s is not running",
                          ad.qxdm_logger_command)
             if "diag_mdlog" in output:
-                # Kill the existing diag_mdlog process
+                # Kill the existing non-matching diag_mdlog process
                 # Only one diag_mdlog process can be run
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             ad.adb.shell_nb(ad.qxdm_logger_command)
-        elif not ad.get_file_names(ad.qxdm_log_path, 60):
-            ad.log.debug("Existing diag_mdlog is not generating logs")
-            stop_qxdm_logger(ad)
-            ad.adb.shell_nb(ad.qxdm_logger_command)
+            setattr(ad, "qxdm_process_start_time", current_time)
+        else:
+            if ad.search_logcat(
+                    "Diag_Lib: diag: In delete_log",
+                    begin_time=getattr(
+                        ad, "qxdm_process_start_time",
+                        current_time - 300000)) or not ad.get_file_names(
+                            ad.qxdm_log_path,
+                            begin_time=current_time - 60000,
+                            match_string="*.qmdl"):
+                # diag_mdlog starts deleting files or no qmdl logs were
+                # modified in the past 60 seconds
+                ad.log.debug("Quit existing diag_mdlog and start a new one")
+                stop_qxdm_logger(ad)
+                ad.adb.shell_nb(ad.qxdm_logger_command)
+                setattr(ad, "qxdm_process_start_time", current_time)
         return True
 
 
@@ -5331,7 +5393,13 @@ def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
     return True
 
 
-def start_adb_tcpdump(ad, test_name, mask="ims"):
+def start_tcpdumps(ads, begin_time=None, interface="any", mask="ims"):
+    for ad in ads:
+        start_adb_tcpdump(
+            ad, begin_time=begin_time, interface=interface, mask=mask)
+
+
+def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
     """Start tcpdump on any iface
 
     Args:
@@ -5339,56 +5407,91 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
         test_name: tcpdump file name will have this
 
     """
-    ad.log.debug("Ensuring no tcpdump is running in background")
-    try:
-        ad.adb.shell("killall -9 tcpdump")
-    except AdbError:
-        ad.log.warn("Killing existing tcpdump processes failed")
     out = ad.adb.shell("ls -l /sdcard/tcpdump/")
     if "No such file" in out or not out:
         ad.adb.shell("mkdir /sdcard/tcpdump")
     else:
         ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
 
-    begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
-    begin_time = normalize_log_line_timestamp(begin_time)
+    if not begin_time:
+        begin_time = get_current_epoch_time()
 
-    file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" % (ad.serial,
-                                                           test_name,
-                                                           begin_time)
-    ad.log.info("tcpdump file is %s", file_name)
-    if mask == "all":
-        cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
-                  format(ad.serial, file_name)
+    out = ad.adb.shell("ifconfig | grep encap")
+    if interface == "any" or interface not in out:
+        intfs = [
+            intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
+            if intf in out
+        ]
     else:
-        cmd = "adb -s {} shell tcpdump -i any -s0 -n -p udp port 500 or \
-              udp port 4500 -w {}".format(ad.serial, file_name)
-    ad.log.debug("%s" % cmd)
-    return start_standing_subprocess(cmd, 5)
+        intfs = [interface]
+
+    out = ad.adb.shell("ps -ef | grep tcpdump")
+    cmds = []
+    for intf in intfs:
+        if intf in out:
+            ad.log.info("tcpdump on interface %s is already running", intf)
+            continue
+        else:
+            if mask == "ims":
+                cmds.append(
+                    "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or "
+                    "udp port 4500 -w /sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
+                    (ad.serial, intf, ad.serial, intf, begin_time))
+            else:
+                cmds.append("adb -s %s shell tcpdump -i %s -s0 -w "
+                            "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
+                            (ad.serial, intf, ad.serial, intf, begin_time))
+    for cmd in cmds:
+        ad.log.info(cmd)
+        try:
+            start_standing_subprocess(cmd, 10)
+        except Exception as e:
+            ad.log.exception(e)
 
 
-def stop_adb_tcpdump(ad, proc=None, pull_tcpdump=False, test_name=""):
+def stop_tcpdumps(ads):
+    for ad in ads:
+        stop_adb_tcpdump(ad)
+
+
+def stop_adb_tcpdump(ad, interface="any"):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
     Args:
         ad: android device object.
-        tcpdump_pid: need to know which pid to stop
-        tcpdump_file: filename needed to pull out
 
     """
-    ad.log.info("Stopping and pulling tcpdump if any")
-    try:
-        if proc is not None:
-            stop_standing_subprocess(proc)
-    except Exception as e:
-        ad.log.warning(e)
-    if pull_tcpdump:
+    if interface == "any":
+        try:
+            ad.adb.shell("killall -9 tcpdump")
+        except Exception as e:
+            ad.log.exception("Killing tcpdump with exception %s", e)
+    else:
+        out = ad.adb.shell("ps -ef | grep tcpdump | grep %s" % interface)
+        if "tcpdump -i" in out:
+            pids = re.findall(r"\S+\s+(\d+).*tcpdump -i", out)
+            for pid in pids:
+                ad.adb.shell("kill -9 %s" % pid)
+
+
+def get_tcpdump_log(ad, test_name="", begin_time=None):
+    """Stops tcpdump on any iface
+       Pulls the tcpdump file in the tcpdump dir
+
+    Args:
+        ad: android device object.
+        test_name: test case name
+        begin_time: test begin time
+    """
+    logs = ad.get_file_names("/sdcard/tcpdump", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling tcpdumps %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
                                 "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
-        ad.adb.pull("/sdcard/tcpdump/. %s" % log_path)
-    ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+        ad.pull_files(logs, log_path)
+    stop_adb_tcpdump(ad)
     return True
 
 
@@ -5445,6 +5548,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if skip_setup_wizard:
         ad.exit_setup_wizard()
     if ad.skip_sl4a: return status
+    start_qxdm_logger(ad)
     bring_up_sl4a(ad)
 
     return status
@@ -5467,6 +5571,7 @@ def bring_up_sl4a(ad, attemps=3):
 
 def reboot_device(ad):
     ad.reboot()
+    start_qxdm_logger(ad)
     ad.ensure_screen_on()
     unlock_sim(ad)
 
@@ -5802,11 +5907,23 @@ def power_on_sim(ad, sim_slot_id=None):
 def log_screen_shot(ad, test_name):
     file_name = "/sdcard/Pictures/screencap_%s.png" % (
         utils.get_current_epoch_time())
-    screen_shot_path = os.path.join(ad.log_path, test_name,
-                                    "Screenshot_%s" % ad.serial)
-    utils.create_dir(screen_shot_path)
     try:
         ad.adb.shell("screencap -p %s" % file_name)
-        ad.adb.pull("%s %s" % (file_name, screen_shot_path))
     except:
-        ad.log.error("Fail to log screen shot")
+        ad.log.error("Fail to log screen shot to %s", file_name)
+
+
+def get_screen_shot_log(ad, test_name="", begin_time=None):
+    logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
+    if logs:
+        ad.log.info("Pulling %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "Screenshot_%s" % self.serial)
+        utils.create_dir(log_path)
+        self.pull_files(logs, log_path)
+    ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
+
+
+def get_screen_shot_logs(ads, test_name="", begin_time=None):
+    for ad in ads:
+        get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)

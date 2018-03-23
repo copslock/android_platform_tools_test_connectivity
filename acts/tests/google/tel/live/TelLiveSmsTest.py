@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
@@ -944,6 +945,56 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_csfb, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._mms_test_mt(ads)
+
+    @test_tracker_info(uuid="8d454a25-a1e5-4872-8193-d435a84d54fa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_4g_volte(self):
+        """Test MMS text function between two phone. Phones in LTE network.
+
+        Airplane mode is off. VoLTE is enabled on PhoneA.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._mms_test_mo(ads)
+
+    @test_tracker_info(uuid="79b8239e-9e6a-4781-942b-2df5b060718d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mt_4g_volte(self):
+        """Test MMS text function between two phone. Phones in LTE network.
+
+        Airplane mode is off. Phone in 4G. VoLTE is enabled on PhoneA.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
