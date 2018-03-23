@@ -47,10 +47,14 @@ class PowerCoexBaseTest(base_test.BaseTestClass):
         for file in self.custom_files:
             if 'pass_fail_threshold' in file:
                 self.threshold_file = file
+            elif 'attenuator_setting' in file:
+                self.attenuation_file = file
             elif 'network_config' in file:
                 self.network_file = file
         self.threshold = wputils.unpack_custom_file(self.threshold_file,
                                                     self.TAG)
+        self.atten_level = wputils.unpack_custom_file(self.attenuation_file,
+                                                      self.TAG)
         self.networks = wputils.unpack_custom_file(self.network_file)
         self.main_network = self.networks['main_network']
 
