@@ -37,7 +37,7 @@ class PowerroamingTest(base_test.BaseTestClass):
         self.dut = self.android_devices[0]
         self.access_point_main = self.access_points[0]
         self.access_point_aux = self.access_points[1]
-        req_params = ('main_network', 'aux_network', 'roamingtest_params')
+        req_params = ['roamingtest_params', 'custom_files']
         self.unpack_userparams(req_params)
         self.unpack_testparams(self.roamingtest_params)
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
@@ -48,6 +48,20 @@ class PowerroamingTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
         self.mon_info = wputils.create_monsoon_info(self)
         self.num_atten = self.attenuators[0].instrument.num_atten
+        for file in self.custom_files:
+            if 'pass_fail_threshold' in file:
+                self.threshold_file = file
+            elif 'attenuator_setting' in file:
+                self.attenuation_file = file
+            elif 'network_config' in file:
+                self.network_file = file
+        self.threshold = wputils.unpack_custom_file(self.threshold_file,
+                                                    self.TAG)
+        self.atten_level = wputils.unpack_custom_file(self.attenuation_file,
+                                                      self.TAG)
+        self.networks = wputils.unpack_custom_file(self.network_file)
+        self.main_network = self.networks['main_network']
+        self.aux_network = self.networks['aux_network']
 
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
