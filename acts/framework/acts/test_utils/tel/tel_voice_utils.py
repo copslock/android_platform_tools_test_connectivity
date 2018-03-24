@@ -353,7 +353,6 @@ def phone_setup_iwlan_for_subscription(log,
             ad.log.error("Fail to bring up WiFi connection on %s.", wifi_ssid)
             return False
 
-    start_adb_tcpdump(ad, interface="wlan0", mask="ims")
     if not set_wfc_mode(log, ad, wfc_mode):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
         return False

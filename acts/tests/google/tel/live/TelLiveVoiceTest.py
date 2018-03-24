@@ -58,7 +58,7 @@ from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
@@ -2935,8 +2935,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                 ads[0].log.error("Data connection is not on cell")
                 return False
 
-        if not verify_http_connection(self.log, ads[0]):
-            ads[0].log.error("HTTP connection is not available")
+        if not verify_internet_connection(self.log, ads[0]):
+            ads[0].log.error("Internet connection is not available")
             return False
 
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
@@ -2970,8 +2970,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
         else:
             ad_download.log.info("Retry data connection after call hung up")
-            if not verify_http_connection(self.log, ad_download):
-                ad_download.log.error("HTTP connection is not available")
+            if not verify_internet_connection(self.log, ad_download):
+                ad_download.log.error("Internet connection is not available")
                 return False
             else:
                 return True
@@ -3349,8 +3349,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ads[0].log.error("Data connection is not on cell")
             return False
 
-        if not verify_http_connection(self.log, ads[0]):
-            ads[0].error("HTTP connection is not available")
+        if not verify_internet_connection(self.log, ads[0]):
+            ads[0].error("Internet connection is not available")
             return False
 
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
