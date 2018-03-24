@@ -53,7 +53,7 @@ from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlock_sim
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
@@ -74,6 +74,9 @@ class TelLivePreflightTest(TelephonyBaseTest):
             "wifi_network_pass") or self.user_params.get(
                 "wifi_network_pass_2g") or self.user_params.get(
                     "wifi_network_ssid_5g")
+
+    def setup_class(self):
+        pass
 
     """ Tests Begin """
 
@@ -132,7 +135,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
                                          self.wifi_network_pass):
                 abort_all_tests(ad.log, "WiFi connect fail")
             if (not wait_for_wifi_data_connection(self.log, ad, True)
-                    or not verify_http_connection(self.log, ad)):
+                    or not verify_internet_connection(self.log, ad)):
                 abort_all_tests(ad.log, "Data not available on WiFi")
         finally:
             wifi_toggle_state(self.log, ad, False)
@@ -142,11 +145,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
     @test_tracker_info(uuid="7bb23ac7-6b7b-4d5e-b8d6-9dd10032b9ad")
     @TelephonyBaseTest.tel_test_wrap
     def test_pre_flight_check(self):
-        for ad in self.android_devices:
-            #check for sim and service
-            if not ensure_phone_subscription(self.log, ad):
-                abort_all_tests(ad.log, "Unable to find a valid subscription!")
-        return True
+        return ensure_phones_default_state(self.log, self.android_devices)
 
     @test_tracker_info(uuid="1070b160-902b-43bf-92a0-92cc2d05bb13")
     @TelephonyBaseTest.tel_test_wrap
