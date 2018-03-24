@@ -35,7 +35,6 @@ from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation_fo
 from acts.test_utils.tel.tel_test_utils import rat_generation_from_rat
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
@@ -135,7 +134,8 @@ def wifi_tethering_setup_teardown(log,
             client.droid.telephonyToggleDataConnection(False)
         log.info("WiFI Tethering: Verify client have no Internet access.")
         for client in client_list:
-            if verify_internet_connection(log, client):
+            if not verify_internet_connection(
+                    log, client, expected_state=False):
                 client.log.error("Turn off Data on client fail")
                 return False
 

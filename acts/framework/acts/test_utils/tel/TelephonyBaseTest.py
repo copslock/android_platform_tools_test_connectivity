@@ -127,7 +127,7 @@ class TelephonyBaseTest(BaseTestClass):
                     self._setup_test()
                 try:
                     result = fn(self, *args, **kwargs)
-                except (TestSignal, TestAbortClass, TestAbortAll) as signal:
+                except (TestSignal, TestAbortClass, TestAbortAll):
                     if self.result_detail:
                         signal.details = self.result_detail
                     raise
