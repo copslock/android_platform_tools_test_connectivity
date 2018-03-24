@@ -25,7 +25,7 @@ from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
@@ -83,12 +83,11 @@ class TelWifiDataTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         toggle_airplane_mode(self.log, ad, False)
-        if not ensure_network_generation(self.log, ad,
-                                         GEN_4G, NETWORK_SERVICE_DATA):
+        if not ensure_network_generation(self.log, ad, GEN_4G,
+                                         NETWORK_SERVICE_DATA):
             return False
 
-        if not ensure_wifi_connected(self.log, ad,
-                                     self.live_network_ssid,
+        if not ensure_wifi_connected(self.log, ad, self.live_network_ssid,
                                      self.live_network_pwd):
             ad.log.error("connect WiFi failed")
             return False
@@ -152,8 +151,8 @@ class TelWifiDataTest(TelephonyBaseTest):
         """
         self._atten_setup_wifi_cell()
         if (not wait_for_wifi_data_connection(self.log, ad, True,
-                                              irat_wait_time) or
-                not verify_http_connection(self.log, ad)):
+                                              irat_wait_time)
+                or not verify_internet_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
             get_telephony_signal_strength(ad)
             get_wifi_signal_strength(ad)
@@ -162,8 +161,8 @@ class TelWifiDataTest(TelephonyBaseTest):
         ad.log.info("Triggering WiFi to Cellular IRAT")
         self._atten_setup_cell_only()
         if (not wait_for_cell_data_connection(self.log, ad, True,
-                                              irat_wait_time) or
-                not verify_http_connection(self.log, ad)):
+                                              irat_wait_time)
+                or not verify_internet_connection(self.log, ad)):
             ad.log.error("Data not on Cell")
             get_telephony_signal_strength(ad)
             get_wifi_signal_strength(ad)
@@ -335,16 +334,16 @@ class TelWifiDataTest(TelephonyBaseTest):
                           current_iteration, total_iteration)
 
             self._atten_setup_wifi_cell()
-            if (not wait_for_wifi_data_connection(self.log, ad, True) or
-                    not verify_http_connection(self.log, ad)):
+            if (not wait_for_wifi_data_connection(self.log, ad, True)
+                    or not verify_internet_connection(self.log, ad)):
                 ad.log.error("Data not on WiFi")
                 get_telephony_signal_strength(ad)
                 get_wifi_signal_strength(ad)
                 break
 
             self._atten_setup_cell_only()
-            if (not wait_for_cell_data_connection(self.log, ad, True) or
-                    not verify_http_connection(self.log, ad)):
+            if (not wait_for_cell_data_connection(self.log, ad, True)
+                    or not verify_internet_connection(self.log, ad)):
                 ad.log.error("Data not on Cell")
                 get_telephony_signal_strength(ad)
                 get_wifi_signal_strength(ad)
@@ -381,8 +380,8 @@ class TelWifiDataTest(TelephonyBaseTest):
             self.log.error("Basic Connectivity Check Failed")
             return False
         self._atten_setup_wifi_only()
-        if (not wait_for_wifi_data_connection(self.log, ad, True) or
-                not verify_http_connection(self.log, ad)):
+        if (not wait_for_wifi_data_connection(self.log, ad, True)
+                or not verify_internet_connection(self.log, ad)):
             ad.log.error("Data not on WiFi")
             get_telephony_signal_strength(ad)
             get_wifi_signal_strength(ad)
@@ -416,8 +415,8 @@ class TelWifiDataTest(TelephonyBaseTest):
             self.log.error("Basic Connectivity Check Failed")
             return False
         self._atten_setup_lte_only()
-        if (not wait_for_cell_data_connection(self.log, ad, True) or
-                not verify_http_connection(self.log, ad)):
+        if (not wait_for_cell_data_connection(self.log, ad, True)
+                or not verify_internet_connection(self.log, ad)):
             ad.log.error("Data not on LTE")
             get_telephony_signal_strength(ad)
             get_wifi_signal_strength(ad)

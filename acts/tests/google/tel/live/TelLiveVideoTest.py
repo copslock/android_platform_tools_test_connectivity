@@ -48,7 +48,7 @@ from acts.test_utils.tel.tel_test_utils import disconnect_call_by_id
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_video_enabled
 from acts.test_utils.tel.tel_video_utils import get_call_id_in_video_state
@@ -2588,7 +2588,7 @@ class TelLiveVideoTest(TelephonyBaseTest):
         try:
             self.log.info("Step2 Turn off data and verify not connected.")
             ads[0].droid.telephonyToggleDataConnection(False)
-            if verify_http_connection(self.log, ads[0]):
+            if verify_internet_connection(self.log, ads[0]):
                 self.log.error("Internet Accessible when Disabled")
                 return False
 

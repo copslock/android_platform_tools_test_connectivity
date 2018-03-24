@@ -21,9 +21,9 @@ import collections
 import random
 import time
 import os
+
+from acts import signals
 from acts.test_decorators import test_tracker_info
-from acts.base_test import BaseTestClass
-from queue import Empty
 from acts.test_utils.tel.tel_subscription_utils import \
     get_subid_from_slot_index
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
@@ -63,8 +63,6 @@ from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_cleanup
 from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
-from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
-from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -85,7 +83,6 @@ from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
@@ -127,14 +124,12 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "wifi_network_pass_2g")
         self.provider = self.android_devices[0]
         self.clients = self.android_devices[1:]
-        setattr(self, "tcpdump_log", True)
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
         self.number_of_devices = 1
 
     def teardown_class(self):
-        setattr(self, "tcpdump_log", False)
         TelephonyBaseTest.teardown_class(self)
 
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
@@ -469,7 +464,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             else:
                 self.log.info("Step3 Verify no Internet and skip step 4-5.")
                 if verify_internet_connection(
-                        self.log, self.android_devices[0], retry=0):
+                        self.log, self.android_devices[0], retries=0):
                     raise _LocalException("Internet Accessible.")
 
             self.log.info("Step6 Verify phones still in call and Hang up.")
@@ -803,10 +798,10 @@ class TelLiveDataTest(TelephonyBaseTest):
                                   provider_status=True):
         client_retry = 10 if client_status else 1
         for client in self.clients:
-            if not verify_http_connection(
+            if not verify_internet_connection(
                     self.log,
                     client,
-                    retry=client_retry,
+                    retries=client_retry,
                     expected_state=client_status):
                 client.log.error("client internet connection state is not %s",
                                  client_status)
@@ -814,8 +809,8 @@ class TelLiveDataTest(TelephonyBaseTest):
             else:
                 client.log.info("client internet connection state is %s",
                                 client_status)
-        if not verify_http_connection(
-                self.log, self.provider, retry=3,
+        if not verify_internet_connection(
+                self.log, self.provider, retries=3,
                 expected_state=provider_status):
             self.provider.log.error(
                 "provider internet connection is not %s" % provider_status)
@@ -853,16 +848,16 @@ class TelLiveDataTest(TelephonyBaseTest):
                     hangup_call(self.log, caller)
                     return False
                 self.log.info("Verify data.")
-                if not verify_http_connection(
-                        self.log, self.clients[0], retry=0):
+                if not verify_internet_connection(
+                        self.log, self.clients[0], retries=1):
                     self.clients[0].log.warning(
                         "client internet connection state is not on")
                 else:
                     self.clients[0].log.info(
                         "client internet connection state is on")
                 hangup_call(self.log, caller)
-                if not verify_http_connection(
-                        self.log, self.clients[0], retry=0):
+                if not verify_internet_connection(
+                        self.log, self.clients[0], retries=1):
                     self.clients[0].log.warning(
                         "client internet connection state is not on")
                     return False
@@ -1259,6 +1254,35 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        if not self._test_setup_tethering(RAT_4G):
+            self.log.error("Verify 4G Internet access failed.")
+            return False
+
+        return wifi_tethering_setup_teardown(
+            self.log,
+            self.provider,
+            self.clients,
+            ap_band=WIFI_CONFIG_APBAND_5G,
+            check_interval=10,
+            check_iteration=10)
+
+    @test_tracker_info(uuid="c1a16464-3800-40d3-ba63-35db784e0383")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_default_to_5gwifi(self):
+        """WiFi Tethering test: Default to WiFI 5G Tethering
+
+        1. DUT in default mode, idle.
+        2. DUT start 5G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. True: Stop
+           False: Change DUT to next device and repeat until find the device
+                  with tethering capability
+
+        Returns:
+            True if success.
+            False if no device has tethering capability.
+        """
         num = len(self.android_devices)
         for idx, ad in enumerate(self.android_devices):
             self.provider = self.android_devices[idx]
@@ -1266,14 +1290,17 @@ class TelLiveDataTest(TelephonyBaseTest):
                                                 idx] + self.android_devices[idx
                                                                             +
                                                                             1:]
-            if not self._test_setup_tethering(RAT_4G):
-                ad.log.error("Verify 4G Internet access failed.")
+            ensure_phones_default_state(self.log, self.android_devices)
+            wifi_toggle_state(self.log, self.provider, False)
+
+            if not self._test_setup_tethering(None):
+                self.provider.log.error("Data connection check failed.")
                 continue
 
             if not self.provider.droid.carrierConfigIsTetheringModeAllowed(
                     TETHERING_MODE_WIFI,
                     MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
-                ad.log.info("Tethering is not entitled")
+                self.provider.log.info("Tethering is not entitled")
                 continue
 
             if wifi_tethering_setup_teardown(
@@ -1287,8 +1314,63 @@ class TelLiveDataTest(TelephonyBaseTest):
             elif idx == num - 1:
                 self.log.error("Tethering is not working on all devices")
                 return False
-        self.log.error("Faile to enable tethering on all devices")
-        return False
+        self.log.error(
+            "Failed to enable tethering on any device in this testbed")
+        raise signals.TestAbortClass(
+            "Tethering is not available on all devices in this testbed")
+
+    @test_tracker_info(uuid="c9a570b0-838c-44ba-991c-f1ddeee21f3c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_default_to_2gwifi(self):
+        """WiFi Tethering test: Default to WiFI 2G Tethering
+
+        1. DUT in default mode, idle.
+        2. DUT start 2G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+        5. True: Stop
+           False: Change DUT to next device and repeat until find the device
+                  with tethering capability
+
+        Returns:
+            True if success.
+            False if no device has tethering capability.
+        """
+        num = len(self.android_devices)
+        for idx, ad in enumerate(self.android_devices):
+            self.provider = self.android_devices[idx]
+            self.clients = self.android_devices[:
+                                                idx] + self.android_devices[idx
+                                                                            +
+                                                                            1:]
+            ensure_phones_default_state(self.log, self.android_devices)
+            wifi_toggle_state(self.log, self.provider, False)
+
+            if not self._test_setup_tethering(None):
+                self.provider.log.error("Data connection check failed.")
+                continue
+
+            if not self.provider.droid.carrierConfigIsTetheringModeAllowed(
+                    TETHERING_MODE_WIFI,
+                    MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK):
+                self.provider.log.info("Tethering is not entitled")
+                continue
+
+            if wifi_tethering_setup_teardown(
+                    self.log,
+                    self.provider, [self.clients[0]],
+                    ap_band=WIFI_CONFIG_APBAND_2G,
+                    check_interval=10,
+                    check_iteration=10):
+                self.android_devices = [self.provider] + self.clients
+                return True
+            elif idx == num - 1:
+                self.log.error("Tethering is not working on all devices")
+                return False
+        self.log.error(
+            "Failed to enable tethering on any device in this testbed")
+        raise signals.TestAbortClass(
+            "Tethering is not available on all devices in this testbed")
 
     @test_tracker_info(uuid="59be8d68-f05b-4448-8584-de971174fd81")
     @TelephonyBaseTest.tel_test_wrap

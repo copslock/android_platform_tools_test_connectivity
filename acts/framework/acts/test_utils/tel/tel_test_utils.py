@@ -2908,8 +2908,9 @@ def set_wfc_mode(log, ad, wfc_mode):
         True if success. False if ad does not support WFC or error happened.
     """
     try:
-        start_adb_tcpdump(ad, interface="wlan0", mask="ims")
         ad.log.info("Set wfc mode to %s", wfc_mode)
+        if wfc_mode != WFC_MODE_DISABLED:
+            start_adb_tcpdump(ad, interface="wlan0", mask="ims")
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
                 return True
