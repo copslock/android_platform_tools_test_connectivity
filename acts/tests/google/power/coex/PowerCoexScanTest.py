@@ -38,7 +38,7 @@ class PowerCoexScanTest(base_test.BaseTestClass):
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
         self.access_point = self.access_points[0]
-        req_params = ['main_network', 'coexscan_params']
+        req_params = ['coexscan_params', 'custom_files']
         self.unpack_userparams(req_params)
         self.unpack_testparams(self.coexscan_params)
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
@@ -48,6 +48,19 @@ class PowerCoexScanTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
         self.mon_info = wputils.create_monsoon_info(self)
         self.num_atten = self.attenuators[0].instrument.num_atten
+        for file in self.custom_files:
+            if 'pass_fail_threshold' in file:
+                self.threshold_file = file
+            elif 'attenuator_setting' in file:
+                self.attenuation_file = file
+            elif 'network_config' in file:
+                self.network_file = file
+        self.threshold = wputils.unpack_custom_file(self.threshold_file,
+                                                    self.TAG)
+        self.atten_level = wputils.unpack_custom_file(self.attenuation_file,
+                                                      self.TAG)
+        self.networks = wputils.unpack_custom_file(self.network_file)
+        self.main_network = self.networks['main_network']
 
         # Start PMC app.
         self.log.info('Start PMC app...')

@@ -15,12 +15,6 @@
     "lci_reference": [],
     "lcr_reference": [],
     "rtt_reference_distance_mm": 100,
-    "rtt_reference_distance_margin_mm": 1000,
-    "rtt_max_failure_rate_two_sided_rtt_percentage": 10,
-    "rtt_max_failure_rate_one_sided_rtt_percentage": 50,
-    "rtt_max_margin_exceeded_rate_two_sided_rtt_percentage": 10,
-    "rtt_max_margin_exceeded_rate_one_sided_rtt_percentage": 50,
-    "rtt_min_expected_rssi_dbm": -100,
     "stress_test_min_iteration_count": 100,
     "stress_test_target_run_time_sec" : 30
 }
