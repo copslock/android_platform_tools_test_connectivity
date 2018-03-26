@@ -47,11 +47,10 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
-from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -528,6 +527,23 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info(dict(self.result_info))
         selection = random.randrange(0, len(file_names))
         file_name = file_names[selection]
+        self.result_info["Internet Connection Check Total"] += 1
+        if not verify_internet_connection(self.log, self.dut):
+            self.result_info["Internet Connection Check Failure"] += 1
+            test_name = "%s_internet_connection_No_%s_failure" % (
+                self.test_name,
+                self.result_info["Internet Connection Check Failure"])
+            try:
+                self._ad_take_extra_logs(
+                    self.dut, test_name, begin_time)
+                self._ad_take_bugreport(
+                    self.dut, test_name, begin_time)
+            except Exception as e:
+                self.log.exception(e)
+            return False
+        else:
+            self.result_info["Internet Connection Check Success"] += 1
+
         self.result_info["File Download Total"] += 1
         if not active_file_download_test(
                 self.log, self.dut, file_name,
@@ -538,7 +554,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self._ad_take_extra_logs(
                         self.dut, "%s_file_download_failure" % self.test_name,
                         begin_time)
-                    self._ad_take_bug_report(
+                    self._ad_take_bugreport(
                         self.dut, "%s_file_download_failure" % self.test_name,
                         begin_time)
                 except Exception as e:
@@ -561,7 +577,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 return False
             time.sleep(
                 random.randrange(self.min_sleep_time, self.max_sleep_time))
-        if self.result_info["File Download Failure"] / self.result_info["File Download Total"] > 0.1:
+        if self.result_info["Internet Connection Check Failure"]:
             return False
         else:
             return True
