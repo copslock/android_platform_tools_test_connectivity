@@ -5388,13 +5388,25 @@ def check_qxdm_logger_mask(ad, mask_file="QC_Default.cfg"):
     return True
 
 
-def start_tcpdumps(ads, begin_time=None, interface="any", mask="ims"):
+def start_tcpdumps(ads,
+                   test_name="",
+                   begin_time=None,
+                   interface="any",
+                   mask="ims"):
     for ad in ads:
         start_adb_tcpdump(
-            ad, begin_time=begin_time, interface=interface, mask=mask)
+            ad,
+            test_name=test_name,
+            begin_time=begin_time,
+            interface=interface,
+            mask=mask)
 
 
-def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
+def start_adb_tcpdump(ad,
+                      test_name="",
+                      begin_time=None,
+                      interface="any",
+                      mask="ims"):
     """Start tcpdump on any iface
 
     Args:
@@ -5427,15 +5439,15 @@ def start_adb_tcpdump(ad, begin_time=None, interface="any", mask="ims"):
             ad.log.info("tcpdump on interface %s is already running", intf)
             continue
         else:
+            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s%s.pcap" % (
+                ad.serial, intf, test_name, begin_time)
             if mask == "ims":
                 cmds.append(
                     "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or "
-                    "udp port 4500 -w /sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
-                    (ad.serial, intf, ad.serial, intf, begin_time))
+                    "udp port 4500 -w %s" % (ad.serial, intf, log_file_name))
             else:
-                cmds.append("adb -s %s shell tcpdump -i %s -s0 -w "
-                            "/sdcard/tcpdump/tcpdump_%s_%s_%s.pcap" %
-                            (ad.serial, intf, ad.serial, intf, begin_time))
+                cmds.append("adb -s %s shell tcpdump -i %s -s0 -w %s" %
+                            (ad.serial, intf, log_file_name))
     for cmd in cmds:
         ad.log.info(cmd)
         try:
