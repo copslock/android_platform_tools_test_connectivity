@@ -85,6 +85,7 @@ class SshConnection(object):
 
         def log_line(msg):
             return '[SshConnection | %s] %s' % (self._settings.hostname, msg)
+
         self.log = logger.create_logger(log_line)
 
     def __del__(self):
@@ -109,7 +110,7 @@ class SshConnection(object):
                 if (not os.path.exists(socket_path) or
                         self._master_ssh_proc.poll() is not None):
                     self.log.debug('Master ssh connection to %s is down.',
-                                  self._settings.hostname)
+                                   self._settings.hostname)
                     self._cleanup_master_ssh()
 
             if self._master_ssh_proc is None:
@@ -151,7 +152,8 @@ class SshConnection(object):
             timeout=3600,
             ignore_status=False,
             env=None,
-            io_encoding='utf-8'):
+            io_encoding='utf-8',
+            attempts=2):
         """Runs a remote command over ssh.
 
         Will ssh to a remote host and run a command. This method will
@@ -166,6 +168,7 @@ class SshConnection(object):
                            you should handle non-zero exit codes explicitly.
             env: dict environment variables to setup on the remote host.
             io_encoding: str unicode encoding of command output.
+            attempts: Number of attempts before giving up on command failures.
 
         Returns:
             A job.Result containing the results of the ssh command.
@@ -175,6 +178,8 @@ class SshConnection(object):
             Error: When the ssh connection failed to be created.
             CommandError: Ssh worked, but the command had an error executing.
         """
+        if attempts == 0:
+            return None
         if env is None:
             env = {}
 
@@ -254,7 +259,14 @@ class SshConnection(object):
         if unknown_host:
             raise Error('Unknown host.', result)
 
-        raise Error('The job failed for unkown reasons.', result)
+        self.log.error('An unknown error has occurred. Job result: %s' % result)
+        ping_output = job.run(
+            'ping %s -c 3 -w 1' % self._settings.hostname, ignore_status=True)
+        self.log.error('Ping result: %s' % ping_output)
+        if attempts > 1:
+            self.run(command, timeout, ignore_status, env, io_encoding,
+                     attempts - 1)
+        raise Error('The job failed for unknown reasons.', result)
 
     def run_async(self, command, env=None):
         """Starts up a background command over ssh.
@@ -398,9 +410,9 @@ class SshConnection(object):
         """
         # TODO: This may belong somewhere else: b/3257251
         free_port_cmd = (
-            'python -c "import socket; s=socket.socket(); '
-            's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
-        ) % interface_name
+                            'python -c "import socket; s=socket.socket(); '
+                            's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
+                        ) % interface_name
         port = int(self.run(free_port_cmd).stdout)
         # Yield to the os to ensure the port gets cleaned up.
         time.sleep(0.001)
