@@ -28,6 +28,7 @@ from acts.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
 from acts.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_constants import default_le_data_length
 from acts.test_utils.bt.bt_constants import l2cap_coc_header_size
+from acts.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
@@ -58,6 +59,8 @@ class BleCocTest(BluetoothBaseTest):
     def teardown_test(self):
         self.client_ad.droid.bluetoothSocketConnStop()
         self.server_ad.droid.bluetoothSocketConnStop()
+        # Give sufficient time for the physical LE link to be disconnected.
+        time.sleep(l2cap_max_inactivity_delay_after_disconnect)
 
     def _run_coc_connection_throughput(
             self,
