@@ -400,7 +400,7 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.error(e)
+            self.log.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
