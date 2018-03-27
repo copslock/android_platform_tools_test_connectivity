@@ -102,6 +102,7 @@ def connect_ble(pri_ad, sec_ad):
     gatt_server_list = []
     bluetooth_gatt_list = []
     pri_ad.droid.bluetoothEnableBLE()
+    sec_ad.droid.bluetoothEnableBLE()
     gatt_server_cb = sec_ad.droid.gattServerCreateGattServerCallback()
     gatt_server = sec_ad.droid.gattServerOpenGattServer(gatt_server_cb)
     gatt_server_list.append(gatt_server)
