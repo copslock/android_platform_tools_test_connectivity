@@ -1018,6 +1018,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
+        ads = self.android_devices
         # Turn OFF WiFi for Phone B
         set_wifi_to_default(self.log, ads[1])
         tasks = [(phone_setup_iwlan,
