@@ -120,10 +120,10 @@ class RangeApSupporting11McTest(RttBaseTest):
     # 3. overall (all BSSIDs) success rate > threshold
     asserts.assert_equal(num_missing, 0,
                          "Missing results (timeout waiting for event)",
-                         extras=results)
+                         extras={"data":results})
     asserts.assert_equal(num_failed_aborted, 0,
                          "Failed or aborted operations (not tried)",
-                         extras=results)
+                         extras={"data":results})
 
     num_results = 0
     num_errors = 0
@@ -137,8 +137,8 @@ class RangeApSupporting11McTest(RttBaseTest):
     asserts.assert_true(
       num_errors <= self.rtt_max_failure_rate_two_sided_rtt_percentage
         * num_results / 100,
-      "Failure rate is too high", extras=extras)
-    asserts.explicit_pass("RTT test done", extras=extras)
+      "Failure rate is too high", extras={"data":extras})
+    asserts.explicit_pass("RTT test done", extras={"data": extras})
 
   def rtt_config_from_scan_result(self, scan_result):
     """Creates an Rtt configuration based on the scan result of a network.
