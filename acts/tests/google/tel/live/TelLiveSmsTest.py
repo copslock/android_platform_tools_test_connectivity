@@ -83,7 +83,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.caller = self.android_devices[0]
         self.callee = self.android_devices[1]
         self.number_of_devices = 2
-        self.message_lengths = (50, 180, 1600)
+        self.message_lengths = (50, 160, 180, 1600)
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
@@ -311,72 +311,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.callee,
                 ad_hangup=None,
                 verify_caller_func=is_phone_in_call_2g,
-                verify_callee_func=None):
-            return False
-
-        if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mt(ads)
-        else:
-            return self._mms_test_mt_after_call_hangup(ads)
-
-    def _mo_sms_in_1x_call(self, ads):
-        self.log.info("Begin In Call SMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_1x,
-                verify_callee_func=None):
-            return False
-
-        if not self._sms_test_mo(ads):
-            self.log.error("SMS test fail.")
-            return False
-
-        return True
-
-    def _mt_sms_in_1x_call(self, ads):
-        self.log.info("Begin In Call SMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_1x,
-                verify_callee_func=None):
-            return False
-
-        if not self._sms_test_mt(ads):
-            self.log.error("SMS test fail.")
-            return False
-
-        return True
-
-    def _mo_mms_in_1x_call(self, ads, wifi=False):
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_1x,
-                verify_callee_func=None):
-            return False
-
-        if ads[0].sms_over_wifi and wifi:
-            return self._mms_test_mo(ads)
-        else:
-            return self._mms_test_mo_after_call_hangup(ads)
-
-    def _mt_mms_in_1x_call(self, ads, wifi=False):
-        self.log.info("Begin In Call MMS Test.")
-        if not call_setup_teardown(
-                self.log,
-                self.caller,
-                self.callee,
-                ad_hangup=None,
-                verify_caller_func=is_phone_in_call_1x,
                 verify_callee_func=None):
             return False
 
@@ -850,6 +784,56 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
+    @test_tracker_info(uuid="54a68d6a-dae7-4fe6-b2bb-7c73151a4a73")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_4g_volte(self):
+        """Test SMS text function between two phone. Phones in LTE network.
+
+        Airplane mode is off. VoLTE is enabled on PhoneA.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._sms_test_mo(ads)
+
+    @test_tracker_info(uuid="d0adcd69-37fc-49d1-8dd3-c03dd163fb25")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_4g_volte(self):
+        """Test SMS text function between two phone. Phones in LTE network.
+
+        Airplane mode is off. Phone in 4G. VoLTE is enabled on PhoneA.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._sms_test_mt(ads)
+
     @test_tracker_info(uuid="c97687e2-155a-4cf3-9f51-22543b89d53e")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_4g(self):
@@ -1280,167 +1264,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return True
 
-    @test_tracker_info(uuid="516457ae-5f99-41c1-b145-bfe72876b872")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mo_in_call_wcdma(self):
-        """ Test MO SMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA SMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mo_sms_in_3g_call(ads)
-
-    @test_tracker_info(uuid="d99697f4-5be2-46f2-9d95-aa73b5d9cebc")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mt_in_call_wcdma(self):
-        """ Test MT SMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive SMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA SMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mt_sms_in_3g_call(ads)
-
-    @test_tracker_info(uuid="2a2d64cc-88db-4ec0-9c2d-1da24a0f9eaf")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_wcdma(self):
-        """ Test MO MMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mo_mms_in_3g_call(ads)
-
-    @test_tracker_info(uuid="20df9556-a8af-4346-97b8-b97596d146a4")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_wcdma(self):
-        """ Test MT MMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mt_mms_in_3g_call(ads)
-
-    @test_tracker_info(uuid="c4a39519-44d8-4194-8dfc-68b1dd723b39")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_wcdma_wifi(self):
-        """ Test MO MMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Connect PhoneA to Wifi.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-
-        return self._mo_mms_in_3g_call(ads, wifi=True)
-
-    @test_tracker_info(uuid="bcc5b02d-2fef-431a-8c0b-f31c98999bfb")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_wcdma_wifi(self):
-        """ Test MT MMS during a MO wcdma call.
-
-        Make sure PhoneA is in wcdma mode.
-        Make sure PhoneB is able to make/receive call.
-        Connect PhoneA to Wifi.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is GSM phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM):
-            raise signals.TestSkip("Not GSM phone, abort this WCDMA MMS test.")
-
-        tasks = [(phone_setup_3g, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-        return self._mt_mms_in_3g_call(ads, wifi=True)
-
     @test_tracker_info(uuid="b6e9ce80-8577-48e5-baa7-92780932f278")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_csfb(self):
@@ -1605,8 +1428,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="60996028-b4b2-4a16-9e4b-eb6ef80179a7")
     @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mo_in_call_1x(self):
-        """ Test MO SMS during a MO 1x call.
+    def test_sms_mo_in_call_3g(self):
+        """ Test MO SMS during a MO 3G call.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1616,9 +1439,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip("Not CDMA phone, abort this 1x SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1627,12 +1447,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mo_sms_in_1x_call(ads)
+        return self._mo_sms_in_3g_call(ads)
 
     @test_tracker_info(uuid="6b352aac-9b4e-4062-8980-3b1c0e61015b")
     @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mt_in_call_1x(self):
-        """ Test MT SMS during a MO 1x call.
+    def test_sms_mt_in_call_3g(self):
+        """ Test MT SMS during a MO 3G call.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1642,9 +1462,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip("Not CDMA phone, abort this 1x SMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1653,12 +1470,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mt_sms_in_1x_call(ads)
+        return self._mt_sms_in_3g_call(ads)
 
     @test_tracker_info(uuid="cfae3613-c490-4ce0-b00b-c13286d85027")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_1x(self):
-        """ Test MO MMS during a MO 1x call.
+    def test_mms_mo_in_call_3g(self):
+        """ Test MO MMS during a MO 3G call.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1669,9 +1486,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip("Not CDMA phone, abort this 1x MMS test.")
 
         tasks = [(phone_setup_3g, (self.log, ads[0])),
                  (phone_setup_voice_general, (self.log, ads[1]))]
@@ -1680,12 +1494,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mo_mms_in_1x_call(ads)
+        return self._mo_mms_in_3g_call(ads)
 
     @test_tracker_info(uuid="42fc8c16-4a30-4f63-9728-2639f2b79c4c")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_1x(self):
-        """ Test MT MMS during a MO 1x call.
+    def test_mms_mt_in_call_3g(self):
+        """ Test MT MMS during a MO 3G call.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1707,12 +1521,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
             return False
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
-        return self._mt_mms_in_1x_call(ads)
+        return self._mt_mms_in_3g_call(ads)
 
-    @test_tracker_info(uuid="18093f87-aab5-4d86-b178-8085a1651828")
+    @test_tracker_info(uuid="c6cfba55-6cde-41cd-93bb-667c317a0127")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_1x_wifi(self):
-        """ Test MO MMS during a MO 1x call.
+    def test_mms_mo_in_call_3g_wifi(self):
+        """ Test MO MMS during a 3G call with Wifi on.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1736,12 +1550,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mo_mms_in_1x_call(ads, wifi=True)
+        return self._mo_mms_in_3g_call(ads, wifi=True)
 
-    @test_tracker_info(uuid="8fe3359a-0857-401f-a043-c47a2a2acb47")
+    @test_tracker_info(uuid="83c5dd99-f2fe-433d-9775-80a36d0d493b")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_1x_wifi(self):
-        """ Test MT MMS during a MO 1x call.
+    def test_mms_mt_in_call_3g_wifi(self):
+        """ Test MT MMS during a 3G call with Wifi On.
 
         Make sure PhoneA is in 1x mode.
         Make sure PhoneB is able to make/receive call.
@@ -1764,173 +1578,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
                               self.wifi_network_pass)
 
-        return self._mt_mms_in_1x_call(ads, wifi=True)
-
-    @test_tracker_info(uuid="96214c7c-2843-4242-8cfa-1d08241514b0")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mo_in_call_csfb_1x(self):
-        """ Test MO SMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send SMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x SMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mo_sms_in_1x_call(ads)
-
-    @test_tracker_info(uuid="3780a8e5-2649-45e6-bf6b-9ab1e86456eb")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mt_in_call_csfb_1x(self):
-        """ Test MT SMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive SMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x SMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mt_sms_in_1x_call(ads)
-
-    @test_tracker_info(uuid="5de29f86-1aa8-46ff-a679-97309c314fe2")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_csfb_1x(self):
-        """ Test MO MMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x SMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mo_mms_in_1x_call(ads)
-
-    @test_tracker_info(uuid="4311cb8c-626d-48a9-955b-6505b41c7519")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_csfb_1x(self):
-        """ Test MT MMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x MMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-
-        return self._mt_mms_in_1x_call(ads)
-
-    @test_tracker_info(uuid="12e05635-7934-4f14-a27e-430d0fc52edb")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_csfb_1x_wifi(self):
-        """ Test MO MMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, send MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x SMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-
-        return self._mo_mms_in_1x_call(ads, wifi=True)
-
-    @test_tracker_info(uuid="bd884be7-756b-4f0f-b233-052dc79233c0")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_csfb_1x_wifi(self):
-        """ Test MT MMS during a MO csfb 1x call.
-
-        Make sure PhoneA is in LTE mode (no VoLTE).
-        Make sure PhoneB is able to make/receive call.
-        Call from PhoneA to PhoneB, accept on PhoneB, receive MMS on PhoneA.
-
-        Returns:
-            True if pass; False if fail.
-        """
-        ads = self.android_devices
-        # Make sure PhoneA is CDMA phone before proceed.
-        if (ads[0].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA):
-            raise signals.TestSkip(
-                "Not CDMA phone, abort this csfb 1x MMS test.")
-
-        tasks = [(phone_setup_csfb, (self.log, ads[0])),
-                 (phone_setup_voice_general, (self.log, ads[1]))]
-        if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
-        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ensure_wifi_connected(self.log, ads[0], self.wifi_network_ssid,
-                              self.wifi_network_pass)
-
-        return self._mt_mms_in_1x_call(ads, wifi=True)
+        return self._mt_mms_in_3g_call(ads, wifi=True)
 
     @test_tracker_info(uuid="ed720013-e366-448b-8901-bb09d26cea05")
     @TelephonyBaseTest.tel_test_wrap
@@ -2434,7 +2082,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2a72ecc6-702d-4add-a7a2-8c1001628bb6")
     @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mo_in_call_gsm(self):
+    def test_sms_mo_in_call_2g(self):
         """ Test MO SMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode.
@@ -2474,7 +2122,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="facd1814-8d69-42a2-9f80-b6a28cc0c9d2")
     @TelephonyBaseTest.tel_test_wrap
-    def test_sms_mt_in_call_gsm(self):
+    def test_sms_mt_in_call_2g(self):
         """ Test MT SMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode.
@@ -2514,7 +2162,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="2bd94d69-3621-4b94-abc7-bd24c4325485")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_gsm(self):
+    def test_mms_mo_in_call_2g(self):
         """ Test MO MMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode.
@@ -2540,7 +2188,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="e20be70d-99d6-4344-a742-f69581b66d8f")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_gsm(self):
+    def test_mms_mt_in_call_2g(self):
         """ Test MT MMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode.
@@ -2566,7 +2214,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="3510d368-4b16-4716-92a3-9dd01842ba79")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mo_in_call_gsm_wifi(self):
+    def test_mms_mo_in_call_2g_wifi(self):
         """ Test MO MMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode with Wifi connected.
@@ -2594,7 +2242,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="060def89-01bd-4b44-a49b-a4536fe39165")
     @TelephonyBaseTest.tel_test_wrap
-    def test_mms_mt_in_call_gsm_wifi(self):
+    def test_mms_mt_in_call_2g_wifi(self):
         """ Test MT MMS during a MO gsm call.
 
         Make sure PhoneA is in gsm mode with wifi connected.
@@ -2698,6 +2346,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         expected_result = False
         if get_operator_name(self.log, ads[0]) == "vzw":
             expected_result = True
+
         try:
             subscriber_id = ads[0].droid.telephonyGetSubscriberId()
             data_usage = get_mobile_data_usage(ads[0], subscriber_id)
@@ -2709,7 +2358,11 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return self._mms_test_mo(ads) == expected_result
+            test_result = self._mms_test_mo(ads)
+            ads[0].log.info("Mms test %s, expecting %s", "succeed"
+                            if test_result else "fail", "succeed"
+                            if expected_result else "fail")
+            return test_result == expected_result
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
