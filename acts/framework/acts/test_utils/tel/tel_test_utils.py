@@ -3049,12 +3049,15 @@ def is_phone_in_call_active(ad, call_id=None):
         ad:  android device.
         call_id: the call id
     """
-    if not call_id:
-        call_id = ad.droid.telecomCallGetCallIds()[0]
-    call_state = ad.droid.telecomCallGetCallState(call_id)
-    ad.log.info("%s state is %s", call_id, call_state)
-    return call_state == "ACTIVE"
-
+    if ad.droid.telecomIsInCall():
+        if not call_id:
+            call_id = ad.droid.telecomCallGetCallIds()[0]
+        call_state = ad.droid.telecomCallGetCallState(call_id)
+        ad.log.info("%s state is %s", call_id, call_state)
+        return call_state == "ACTIVE"
+    else:
+        ad.log.error("No calls are found on this device to check state")
+        return False
 
 def wait_for_in_call_active(ad, timeout=5, interval=1, call_id=None):
     """Wait for call reach active state.
