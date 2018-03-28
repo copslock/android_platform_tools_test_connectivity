@@ -44,14 +44,12 @@ class GattServerLib():
     gatt_server_callback = None
     gatt_server_list = []
     log = None
-    mac_addr = None
     service_list = []
     write_mapping = {}
 
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut):
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
 
     def list_all_uuids(self):
         """From the GATT Client, discover services and list all services,
