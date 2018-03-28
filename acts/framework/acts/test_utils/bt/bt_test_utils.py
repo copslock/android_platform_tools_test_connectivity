@@ -53,6 +53,7 @@ from acts.test_utils.bt.bt_constants import bt_discovery_timeout
 from acts.test_utils.bt.bt_constants import bt_profile_states
 from acts.test_utils.bt.bt_constants import bt_profile_constants
 from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
+from acts.test_utils.bt.bt_constants import bluetooth_socket_conn_test_uuid
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import btsnoop_last_log_path_on_device
 from acts.test_utils.bt.bt_constants import btsnoop_log_path_on_device
@@ -324,6 +325,7 @@ def determine_max_advertisements(android_device):
         "Determining number of maximum concurrent advertisements...")
     advertisement_count = 0
     bt_enabled = False
+    expected_bluetooth_on_event_name = bluetooth_on
     if not android_device.droid.bluetoothCheckState():
         android_device.droid.bluetoothToggleState(True)
     try:
@@ -940,10 +942,10 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
     while not profile_disconnected.issuperset(profiles_list):
         try:
             profile_event = pri_ad.ed.pop_event(
-                bluetooth_profile_connection_state_changed, default_timeout)
+                bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
-        except Exception:
-            pri_ad.log.error("Did not disconnect from Profiles")
+        except Exception as e:
+            pri_ad.log.error("Did not disconnect from Profiles. Reason {}".format(e))
             return False
 
         profile = profile_event['data']['profile']

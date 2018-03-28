@@ -106,11 +106,12 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
                     self.SRC, self.SNK,
                     set([BtEnum.BluetoothProfile.A2DP.value]))):
                 return False
-
+        # Delay to establish A2DP connection before disconnecting
+        time.sleep(5)
         result = bt_test_utils.disconnect_pri_from_sec(
             self.SRC, self.SNK, [BtEnum.BluetoothProfile.A2DP.value])
         # Grace timeout to allow a2dp time to disconnect
-        time.sleep(3)
+        time.sleep(2)
         if not result:
             # Additional profile connection check for b/
             if bt_test_utils.is_a2dp_src_device_connected(
@@ -153,11 +154,13 @@ class BtCarMediaConnectionTest(BluetoothBaseTest):
                     self.SNK, self.SRC,
                     set([BtEnum.BluetoothProfile.A2DP_SINK.value]))):
                 return False
+        # Delay to establish A2DP connection before disconnecting
+        time.sleep(5)
         # Disconnect
         result = bt_test_utils.disconnect_pri_from_sec(
             self.SNK, self.SRC, [BtEnum.BluetoothProfile.A2DP_SINK.value])
         # Grace timeout to allow a2dp time to disconnect
-        time.sleep(3)
+        time.sleep(2)
         if not result:
             # Additional profile connection check for b/
             if bt_test_utils.is_a2dp_snk_device_connected(
