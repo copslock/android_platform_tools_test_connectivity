@@ -219,8 +219,9 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     if stats_reverse_direction is not None:
       self.log.debug("Stats in reverse direction: %s", stats_reverse_direction)
 
-    extras = stats if stats_reverse_direction is None else [stats,
-                                                        stats_reverse_direction]
+    extras = stats if stats_reverse_direction is None else {
+      "forward": stats,
+      "reverse": stats_reverse_direction}
 
     asserts.assert_true(stats['num_no_results'] == 0,
                         "Missing (timed-out) results", extras=extras)
@@ -350,10 +351,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         num_successes = num_successes + 1
 
     asserts.assert_equal(num_no_responses, 0, "No RTT response?",
-                         extras=results)
+                         extras={"data":results})
     asserts.assert_equal(num_successes, 0, "Aware RTT w/o Aware should FAIL!",
-                         extras=results)
-    asserts.explicit_pass("RTT Aware test done", extras=results)
+                         extras={"data":results})
+    asserts.explicit_pass("RTT Aware test done", extras={"data":results})
 
   @test_tracker_info(uuid="87a69053-8261-4928-8ec1-c93aac7f3a8d")
   def test_rtt_without_responder_aware(self):
@@ -398,7 +399,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
         num_successes = num_successes + 1
 
     asserts.assert_equal(num_no_responses, 0, "No RTT response?",
-                         extras=results)
+                         extras={"data":results})
     asserts.assert_equal(num_successes, 0, "Aware RTT w/o Aware should FAIL!",
-                         extras=results)
-    asserts.explicit_pass("RTT Aware test done", extras=results)
+                         extras={"data":results})
+    asserts.explicit_pass("RTT Aware test done", extras={"data":results})
