@@ -94,6 +94,7 @@ class RangeApSupporting11McTest(RttBaseTest):
 
     results = []
     num_missing = 0
+    num_failed_aborted = 0
     for i in range(self.NUM_ITER):
         idx = dut.droid.wifiRttStartRanging(rtt_configs)
         event = None
@@ -101,7 +102,13 @@ class RangeApSupporting11McTest(RttBaseTest):
           events = dut.ed.pop_events("WifiRttRanging%d" % idx, 30)
           dut.log.debug("Event=%s", events)
           for event in events:
-            results.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS])
+            if rconsts.EVENT_CB_RANGING_KEY_RESULTS in event["data"]:
+              results.append(
+                  event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS])
+            else:
+              self.log.info("RTT failed/aborted - %s", event)
+              results.append([])
+              num_failed_aborted = num_failed_aborted + 1
         except queue.Empty:
           self.log.debug("Waiting for RTT event timed out.")
           results.append([])
@@ -109,9 +116,13 @@ class RangeApSupporting11McTest(RttBaseTest):
 
     # basic error checking:
     # 1. no missing
-    # 2. overall (all BSSIDs) success rate > threshold
+    # 2. no full failed/aborted (i.e. operation not even tried)
+    # 3. overall (all BSSIDs) success rate > threshold
     asserts.assert_equal(num_missing, 0,
                          "Missing results (timeout waiting for event)",
+                         extras=results)
+    asserts.assert_equal(num_failed_aborted, 0,
+                         "Failed or aborted operations (not tried)",
                          extras=results)
 
     num_results = 0
