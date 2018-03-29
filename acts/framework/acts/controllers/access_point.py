@@ -142,14 +142,25 @@ class AccessPoint(object):
         """Initial AP interfaces.
 
         Bring down hostapd if instance is running, bring down all bridge
-        interfaces. This can simple be achieved by rebooting.
+        interfaces.
         """
-        # Reboot the AP.
+        # Stop hostapd instance if running
         try:
-            self.ssh.run('reboot')
-            time.sleep(60)
-        except Exception as e:
-            logging.exception("Error in rebooting AP: %s", e)
+            self.ssh.run('stop hostapd')
+        except job.Error:
+            logging.debug('No hostapd running')
+        # Bring down all wireless interfaces
+        for iface in self.wlan:
+            WLAN_DOWN = 'ifconfig {} down'.format(iface)
+            self.ssh.run(WLAN_DOWN)
+        # Bring down all bridge interfaces
+        bridge_interfaces = self.interfaces.get_bridge_interface()
+        if bridge_interfaces:
+            for iface in bridge_interfaces:
+                BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
+                BRIDGE_DEL = 'brctl delbr {}'.format(iface)
+                self.ssh.run(BRIDGE_DOWN)
+                self.ssh.run(BRIDGE_DEL)
 
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.
