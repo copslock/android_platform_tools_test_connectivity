@@ -221,10 +221,14 @@ class Sl4aManager(object):
             if self.adb.shell(
                     'ps | grep "S com.googlecode.android_scripting"'):
                 # Close all SL4A servers not opened by this manager.
-                self._close_all_ports()
-            else:
-                # Start the service if it is not up already.
-                self.adb.shell(_SL4A_START_SERVICE_CMD)
+                # TODO(markdr): revert back to closing all ports after
+                # b/76147680 is resolved.
+                self.adb.shell(
+                    'kill -9 $(pidof com.googlecode.android_scripting)')
+            self.adb.shell(
+                'settings put global hidden_api_blacklist_exemptions "*"')
+            # Start the service if it is not up already.
+            self.adb.shell(_SL4A_START_SERVICE_CMD)
 
     def obtain_sl4a_server(self, server_port):
         """Obtain an SL4A server port.
