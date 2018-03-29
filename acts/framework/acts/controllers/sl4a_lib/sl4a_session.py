@@ -172,7 +172,7 @@ class Sl4aSession(object):
         # Verify and obtain the port opened by SL4A.
         try:
             # Connect to the port that has been forwarded to the device.
-            client_socket.connect(('localhost', ports.forwarded_port))
+            client_socket.connect(('127.0.0.1', ports.forwarded_port))
         except socket.timeout:
             raise rpc_client.Sl4aConnectionError(
                 'SL4A has not connected over the specified port within the '
