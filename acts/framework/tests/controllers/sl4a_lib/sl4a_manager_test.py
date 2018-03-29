@@ -318,7 +318,7 @@ class Sl4aManagerTest(unittest.TestCase):
         Tests that SL4A is started if it was not already running.
         """
         adb = mock.Mock()
-        adb.shell = mock.Mock(side_effect=['', ''])
+        adb.shell = mock.Mock(side_effect=['', '', ''])
 
         manager = sl4a_manager.create_sl4a_manager(adb)
         manager.is_sl4a_installed = lambda: True
@@ -327,29 +327,6 @@ class Sl4aManagerTest(unittest.TestCase):
         except rpc_client.MissingSl4AError:
             self.fail('An error should not have been thrown.')
         adb.shell.assert_called_with(sl4a_manager._SL4A_START_SERVICE_CMD)
-
-    def test_start_sl4a_does_not_start_sl4a_if_sl4a_is_running(self):
-        """Tests sl4a_manager.Sl4aManager.start_sl4a_service().
-
-        Tests that SL4A is not started if it is already running.
-        """
-
-        def fail_on_start_service(command):
-            if command == sl4a_manager._SL4A_START_SERVICE_CMD:
-                self.fail(
-                    'Called start command when SL4A was already started.')
-            return 'SL4A has already started.'
-
-        adb = mock.Mock()
-        adb.shell = fail_on_start_service
-
-        manager = sl4a_manager.create_sl4a_manager(adb)
-        manager.is_sl4a_installed = lambda: True
-        manager._get_open_listening_port = lambda: ''
-        try:
-            manager.start_sl4a_service()
-        except rpc_client.MissingSl4AError:
-            self.fail('An error should not have been thrown.')
 
     def test_create_session_uses_oldest_server_port(self):
         """Tests sl4a_manager.Sl4aManager.create_session().
