@@ -62,7 +62,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -237,7 +237,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             return True
 
     def _check_data(self):
-        if not verify_http_connection(self.log, self.dut):
+        if not verify_internet_connection(self.log, self.dut):
             self.dut.log.error("Data connection is not available.")
             return False
         return True
@@ -254,7 +254,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                                               NETWORK_SERVICE_DATA):
             self.dut.log.error("Data is not on 4G network")
             return False
-        if not verify_http_connection(self.log, self.dut):
+        if not verify_internet_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
         return True
@@ -290,7 +290,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 voice_or_data=NETWORK_SERVICE_DATA):
             self.dut.log.error("Data service failed to camp to 4G")
             return False
-        if not verify_http_connection(self.log, self.dut):
+        if not verify_internet_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
         return True
@@ -319,7 +319,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 voice_or_data=NETWORK_SERVICE_DATA):
             self.dut.log.error("Data service failed to camp to 4G")
             return False
-        if not verify_http_connection(self.log, self.dut):
+        if not verify_internet_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
         return True
@@ -416,7 +416,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         if not phone_setup_voice_3g(self.log, self.dut):
             self.log.error("Failed to setup 3G")
             return False
-        if not verify_http_connection(self.log, self.dut):
+        if not verify_internet_connection(self.log, self.dut):
             self.log.error("Data not available on cell.")
             return False
         if not call_setup_teardown(self.log, self.dut, self.ad_reference,
