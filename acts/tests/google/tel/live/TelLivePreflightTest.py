@@ -74,6 +74,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
             "wifi_network_pass") or self.user_params.get(
                 "wifi_network_pass_2g") or self.user_params.get(
                     "wifi_network_ssid_5g")
+        self.user_params["telephony_auto_rerun"] = 0
 
     def setup_class(self):
         pass

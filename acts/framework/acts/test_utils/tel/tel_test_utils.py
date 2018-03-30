@@ -113,9 +113,11 @@ from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts.test_utils.tel.tel_defines import EventDataSmsReceived
 from acts.test_utils.tel.tel_defines import EventMessageWaitingIndicatorChanged
 from acts.test_utils.tel.tel_defines import EventServiceStateChanged
+from acts.test_utils.tel.tel_defines import EventMmsSentFailure
 from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventMmsDownloaded
 from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_defines import EventSmsSentFailure
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts.test_utils.tel.tel_defines import CallStateContainer
 from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
@@ -3052,11 +3054,15 @@ def is_phone_in_call_active(ad, call_id=None):
         ad:  android device.
         call_id: the call id
     """
-    if not call_id:
-        call_id = ad.droid.telecomCallGetCallIds()[0]
-    call_state = ad.droid.telecomCallGetCallState(call_id)
-    ad.log.info("%s state is %s", call_id, call_state)
-    return call_state == "ACTIVE"
+    if ad.droid.telecomIsInCall():
+        if not call_id:
+            call_id = ad.droid.telecomCallGetCallIds()[0]
+        call_state = ad.droid.telecomCallGetCallState(call_id)
+        ad.log.info("%s state is %s", call_id, call_state)
+        return call_state == "ACTIVE"
+    else:
+        ad.log.error("No calls are found on this device to check state")
+        return False
 
 
 def wait_for_in_call_active(ad, timeout=5, interval=1, call_id=None):
@@ -3705,16 +3711,30 @@ def sms_send_receive_verify_for_subscription(
         try:
             ad_rx.messaging_ed.clear_events(EventSmsReceived)
             ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
+            ad_tx.messaging_ed.clear_events(EventSmsSentFailure)
             ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
             time.sleep(1)  #sleep 100ms after starting event tracking
+            ad_tx.messaging_droid.logI("Sending SMS of length %s" % length)
+            ad_rx.messaging_droid.logI("Expecting SMS of length %s" % length)
             ad_tx.messaging_droid.smsSendTextMessage(phonenumber_rx, text,
-                                                     False)
+                                                     True)
             try:
-                ad_tx.messaging_ed.pop_event(EventSmsSentSuccess,
-                                             max_wait_time)
-                ad_tx.log.info("Got event %s", EventSmsSentSuccess)
+                events = ad_tx.messaging_ed.pop_events(
+                    "(%s|%s)" % (EventSmsSentSuccess,
+                                 EventSmsSentFailure), max_wait_time)
+                for event in events:
+                    ad_tx.log.info("Got event %s", event["name"])
+                    if event["name"] == EventSmsSentFailure:
+                        if event.get("data") and event["data"].get("Reason"):
+                            ad_tx.log.error("%s with reason: %s",
+                                            event["name"],
+                                            event["data"]["Reason"])
+                        return False
+                    elif event["name"] == EventSmsSentSuccess:
+                        break
             except Empty:
-                ad_tx.log.error("No sent_success event for SMS of length %s.",
+                ad_tx.log.error("No %s or %s event for SMS of length %s.",
+                                EventSmsSentSuccess, EventSmsSentFailure,
                                 length)
                 # check log message as a work around for the missing sl4a
                 # event dispatcher event
@@ -3857,6 +3877,7 @@ def mms_send_receive_verify_for_subscription(
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
         ad_tx.messaging_ed.clear_events(EventMmsSentSuccess)
+        ad_tx.messaging_ed.clear_events(EventMmsSentFailure)
         ad_rx.messaging_ed.clear_events(EventMmsDownloaded)
         ad_rx.messaging_droid.smsStartTrackingIncomingMmsMessage()
         ad_tx.log.info(
@@ -3866,11 +3887,22 @@ def mms_send_receive_verify_for_subscription(
             ad_tx.messaging_droid.smsSendMultimediaMessage(
                 phonenumber_rx, subject, message, phonenumber_tx, filename)
             try:
-                ad_tx.messaging_ed.pop_event(EventMmsSentSuccess,
-                                             max_wait_time)
-                ad_tx.log.info("Got event %s", EventMmsSentSuccess)
+                events = ad_tx.messaging_ed.pop_events(
+                    "(%s|%s)" % (EventMmsSentSuccess,
+                                 EventMmsSentFailure), max_wait_time)
+                for event in events:
+                    ad_tx.log.info("Got event %s", event["name"])
+                    if event["name"] == EventMmsSentFailure:
+                        if event.get("data") and event["data"].get("Reason"):
+                            ad_tx.log.error("%s with reason: %s",
+                                            event["name"],
+                                            event["data"]["Reason"])
+                        return False
+                    elif event["name"] == EventMmsSentSuccess:
+                        break
             except Empty:
-                ad_tx.log.warning("No sent_success event.")
+                ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
+                                  EventMmsSentFailure)
                 # check log message as a work around for the missing sl4a
                 # event dispatcher event
                 if not sms_mms_send_logcat_check(ad_tx, "mms", begin_time):

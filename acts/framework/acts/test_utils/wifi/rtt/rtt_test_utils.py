@@ -271,6 +271,8 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
   distances = []
   distance_std_devs = []
   rssis = []
+  num_attempted_measurements = []
+  num_successful_measurements = []
   status_codes = []
   lcis = []
   lcrs = []
@@ -301,6 +303,11 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
     if not min_rssi <= rssi <= 0:
       stats['num_invalid_rssi'] = stats['num_invalid_rssi'] + 1
 
+    num_attempted_measurements.append(
+      result[rconsts.EVENT_CB_RANGING_KEY_NUM_ATTEMPTED_MEASUREMENTS])
+    num_successful_measurements.append(
+        result[rconsts.EVENT_CB_RANGING_KEY_NUM_SUCCESSFUL_MEASUREMENTS])
+
     lcis.append(result[rconsts.EVENT_CB_RANGING_KEY_LCI])
     if (result[rconsts.EVENT_CB_RANGING_KEY_LCI] != reference_lci):
       stats['any_lci_mismatch'] = True
@@ -320,6 +327,8 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
     stats['distances'] = distances
     stats['distance_std_devs'] = distance_std_devs
     stats['rssis'] = rssis
+    stats['num_attempted_measurements'] = num_attempted_measurements
+    stats['num_successful_measurements'] = num_successful_measurements
     stats['status_codes'] = status_codes
     stats['lcis'] = lcis
     stats['lcrs'] = lcrs

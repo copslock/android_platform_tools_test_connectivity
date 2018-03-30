@@ -21,17 +21,13 @@ import logging
 import os
 import re
 import shutil
-import traceback
 
 from acts import asserts
 from acts import logger as acts_logger
+from acts import signals
 from acts.base_test import BaseTestClass
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.keys import Config
-from acts.signals import TestSignal
-from acts.signals import TestAbortClass
-from acts.signals import TestAbortAll
-from acts.signals import TestBlocked
 from acts import records
 from acts import utils
 
@@ -116,25 +112,36 @@ class TelephonyBaseTest(BaseTestClass):
                                     self.log_begin_time.replace(' ', '-'))
             self.test_id = test_id
             self.result_detail = ""
-            tries = 2 if self.user_params.get("telephony_auto_rerun") else 1
+            tries = int(self.user_params.get("telephony_auto_rerun", 1))
             for ad in self.android_devices:
                 ad.log_path = self.log_path
-            for i in range(tries):
+            for i in range(tries + 1):
                 result = True
-                if i > 1:
-                    log_string = "[Test Case] RERUN %s" % test_name
-                    self._teardown_test()
-                    self._setup_test()
+                if i > 0:
+                    log_string = "[Test Case] RERUN %s" % self.test_name
+                    self.log.info(log_string)
+                    self._teardown_test(self.test_name)
+                    self._setup_test(self.test_name)
                 try:
                     result = fn(self, *args, **kwargs)
-                except (TestSignal, TestAbortClass, TestAbortAll):
+                except signals.TestFailure:
+                    if i < tries + 1:
+                        continue
+                    if self.result_detail:
+                        signal.details = self.result_detail
+                    raise
+                except signals.TestSignal:
                     if self.result_detail:
                         signal.details = self.result_detail
                     raise
                 except Exception as e:
                     self.log.exception(e)
                     asserts.fail(self.result_detail)
-                if result is not False: break
+                if result is False:
+                    if i < tries + 1:
+                        continue
+                else:
+                    break
             if self.user_params.get("check_crash", True):
                 new_crash = ad.check_crash_report(self.test_name,
                                                   self.begin_time, True)
@@ -372,7 +379,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _block_all_test_cases(self, tests):
         """Over-write _block_all_test_case in BaseTestClass."""
         for (i, (test_name, test_func)) in enumerate(tests):
-            signal = TestBlocked("Failed class setup")
+            signal = signals.TestBlocked("Failed class setup")
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             # mark all test cases as FAIL

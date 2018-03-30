@@ -92,7 +92,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.file_download_method = "curl"
         else:
             self.android_devices = self.android_devices[:2]
-        self.user_params["telephony_auto_rerun"] = False
+        self.user_params["telephony_auto_rerun"] = 0
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get(
                 "wifi_network_ssid_2g")
