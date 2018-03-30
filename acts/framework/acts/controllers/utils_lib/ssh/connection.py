@@ -264,6 +264,7 @@ class SshConnection(object):
             'ping %s -c 3 -w 1' % self._settings.hostname, ignore_status=True)
         self.log.error('Ping result: %s' % ping_output)
         if attempts > 1:
+            self._cleanup_master_ssh()
             self.run(command, timeout, ignore_status, env, io_encoding,
                      attempts - 1)
         raise Error('The job failed for unknown reasons.', result)
