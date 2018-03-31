@@ -58,6 +58,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
@@ -144,6 +145,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ad.log.error("Phone is not in WFC enabled state.")
                 return False
             ad.log.info("Phone is in WFC enabled state.")
+        return True
+
+    def _setup_wfc_apm(self):
+        for ad in self.android_devices:
+            if not phone_setup_iwlan(
+                    self.log, ad, True, WFC_MODE_WIFI_PREFERRED,
+                    self.wifi_network_ssid, self.wifi_network_pass):
+                ad.log.error("Failed to setup WFC.")
+                return False
         return True
 
     def _setup_lte_volte_enabled(self):
@@ -534,10 +544,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.test_name,
                 self.result_info["Internet Connection Check Failure"])
             try:
-                self._ad_take_extra_logs(
-                    self.dut, test_name, begin_time)
-                self._ad_take_bugreport(
-                    self.dut, test_name, begin_time)
+                self._ad_take_extra_logs(self.dut, test_name, begin_time)
+                self._ad_take_bugreport(self.dut, test_name, begin_time)
             except Exception as e:
                 self.log.exception(e)
             return False
@@ -664,9 +672,17 @@ class TelLiveStressTest(TelephonyBaseTest):
     @test_tracker_info(uuid="fdb791bf-c414-4333-9fa3-cc18c9b3b234")
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_parallel_stress(self):
-        """ Wifi calling on stress test"""
+        """ Wifi calling APM mode off stress test"""
         return self.parallel_tests(
             setup_func=self._setup_wfc,
+            call_verification_func=is_phone_in_call_iwlan)
+
+    @test_tracker_info(uuid="e334c1b3-4378-49bb-bf57-1573fa1b23fa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wfc_apm_parallel_stress(self):
+        """ Wifi calling in APM mode on stress test"""
+        return self.parallel_tests(
+            setup_func=self._setup_wfc_apm,
             call_verification_func=is_phone_in_call_iwlan)
 
     @test_tracker_info(uuid="4566eef6-55de-4ac8-87ee-58f2ef41a3e8")
