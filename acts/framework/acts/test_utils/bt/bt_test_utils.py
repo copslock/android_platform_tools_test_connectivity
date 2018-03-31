@@ -1123,12 +1123,23 @@ def clear_bonded_devices(ad):
         True if clearing bonded devices was successful, false if unsuccessful.
     """
     bonded_device_list = ad.droid.bluetoothGetBondedDevices()
-    for device in bonded_device_list:
-        device_address = device['address']
+    while bonded_device_list:
+        device_address = bonded_device_list[0]['address']
         if not ad.droid.bluetoothUnbond(device_address):
-            log.error("Failed to unbond {}".format(device_address))
+            log.error("Failed to unbond {} from {}".format(
+                device_address, ad.serial))
             return False
-        log.info("Successfully unbonded {}".format(device_address))
+        log.info("Successfully unbonded {} from {}".format(
+            device_address, ad.serial))
+        #TODO: wait for BOND_STATE_CHANGED intent instead of waiting
+        time.sleep(1)
+
+        # If device was first connected using LE transport, after bonding it is
+        # accessible through it's LE address, and through it classic address.
+        # Unbonding it will unbond two devices representing different
+        # "addresses". Attempt to unbond such already unbonded devices will
+        # result in bluetoothUnbond returning false.
+        bonded_device_list = ad.droid.bluetoothGetBondedDevices()
     return True
 
 
