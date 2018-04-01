@@ -22,7 +22,8 @@ from acts.controllers.sl4a_lib import rpc_client
 from acts.controllers.sl4a_lib import sl4a_session
 from acts.controllers.sl4a_lib import error_reporter
 
-FIND_PORT_RETRIES = 3
+ATTEMPT_INTERVAL = .25
+MAX_WAIT_ON_SERVER_SECONDS = 5
 
 _SL4A_LAUNCH_SERVER_CMD = (
     'am startservice -a com.googlecode.android_scripting.action.LAUNCH_SERVER '
@@ -127,7 +128,7 @@ class Sl4aManager(object):
         of ADB/device."""
         self.error_reporter.create_error_report(self, session, connection)
 
-    def start_sl4a_server(self, device_port, try_interval=.01):
+    def start_sl4a_server(self, device_port, try_interval=ATTEMPT_INTERVAL):
         """Opens a server socket connection on SL4A.
 
         Args:
@@ -146,13 +147,15 @@ class Sl4aManager(object):
         # Launch a server through SL4A.
         self.adb.shell(_SL4A_LAUNCH_SERVER_CMD % device_port)
 
-        # There is a small chance that the server has not come up yet by the
-        # time the launch command has finished. Try to read get the listening
-        # port again after a small amount of time.
-        for _ in range(FIND_PORT_RETRIES):
+        # There is a chance that the server has not come up yet by the time the
+        # launch command has finished. Try to read get the listening port again
+        # after a small amount of time.
+        time_left = MAX_WAIT_ON_SERVER_SECONDS
+        while time_left > 0:
             port = self._get_open_listening_port()
             if port is None:
                 time.sleep(try_interval)
+                time_left -= try_interval
             else:
                 return port
 
@@ -176,12 +179,15 @@ class Sl4aManager(object):
                              'server connections cannot be verified.')
             return _SL4A_USER_FIND_PORT_CMD
 
+    def _get_all_ports(self):
+        return self.adb.shell(self._get_all_ports_command()).split()
+
     def _get_open_listening_port(self):
         """Returns any open, listening port found for SL4A.
 
         Will return none if no port is found.
         """
-        possible_ports = self.adb.shell(self._get_all_ports_command()).split()
+        possible_ports = self._get_all_ports()
         self.log.debug('SL4A Ports found: %s' % possible_ports)
 
         # Acquire the lock. We lock this method because if multiple threads
@@ -215,12 +221,14 @@ class Sl4aManager(object):
             if self.adb.shell(
                     'ps | grep "S com.googlecode.android_scripting"'):
                 # Close all SL4A servers not opened by this manager.
-                ports = self.adb.shell(self._get_all_ports_command()).split()
-                for port in ports:
-                    self.adb.shell(_SL4A_CLOSE_SERVER_CMD % port)
-            else:
-                # Start the service if it is not up already.
-                self.adb.shell(_SL4A_START_SERVICE_CMD)
+                # TODO(markdr): revert back to closing all ports after
+                # b/76147680 is resolved.
+                self.adb.shell(
+                    'kill -9 $(pidof com.googlecode.android_scripting)')
+            self.adb.shell(
+                'settings put global hidden_api_blacklist_exemptions "*"')
+            # Start the service if it is not up already.
+            self.adb.shell(_SL4A_START_SERVICE_CMD)
 
     def obtain_sl4a_server(self, server_port):
         """Obtain an SL4A server port.
@@ -277,6 +285,20 @@ class Sl4aManager(object):
         for _, session in self.sessions.items():
             session.terminate()
         self.sessions = {}
-        for port in self._sl4a_ports:
+        self._close_all_ports()
+
+    def _close_all_ports(self, try_interval=ATTEMPT_INTERVAL):
+        """Closes all ports opened on SL4A."""
+        ports = self._get_all_ports()
+        for port in set.union(self._sl4a_ports, ports):
             self.adb.shell(_SL4A_CLOSE_SERVER_CMD % port)
+        time_left = MAX_WAIT_ON_SERVER_SECONDS
+        while time_left > 0 and self._get_open_listening_port():
+            time.sleep(try_interval)
+            time_left -= try_interval
+
+        if time_left <= 0:
+            self.log.warning(
+                'Unable to close all un-managed servers! Server ports that are '
+                'still open are %s' % self._get_open_listening_port())
         self._sl4a_ports = set()
