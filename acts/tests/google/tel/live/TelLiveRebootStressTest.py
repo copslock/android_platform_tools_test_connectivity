@@ -327,9 +327,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
     def _check_vt(self):
         if CAPABILITY_VT in self.dut_capabilities:
             self.log.info("Check VT")
-            if not phone_setup_video(self.log, self.dut):
-                self.dut.log.error("Failed to setup VT.")
-                return False
+            for ad in (self.dut, self.ad_reference):
+                if not phone_setup_video(self.log, ad):
+                    ad.log.error("Failed to setup VT.")
+                    return False
             time.sleep(5)
             if not video_call_setup_teardown(
                     self.log,
