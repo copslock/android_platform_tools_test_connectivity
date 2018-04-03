@@ -224,7 +224,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
             phone_number = ad.phone_number
     if not phone_number:
         ad.log.error("Failed to find valid phone number for %s", iccid)
-        abort_all_tests("Failed to find valid phone number for %s" % ad.serial)
+        abort_all_tests(ad.log, "Failed to find valid phone number for %s")
     sub_record = {
         'phone_num': phone_number,
         'iccid': get_iccid_by_adb(ad),
@@ -5807,6 +5807,14 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         ad.fastboot.flash("radio %s" % file_path, timeout=300)
     except Exception as e:
         ad.log.error(e)
+    ad.fastboot.reboot("bootloader")
+    time.sleep(5)
+    output = ad.fastboot.getvar("version-baseband")
+    result = re.search(r"version-baseband: (\S+)", output)
+    if not result:
+        ad.log.error("fastboot getvar version-baseband output = %s", output)
+        abort_all_tests(ad.log, "Radio version-baseband is not provided")
+    fastboot_radio_version_output = result.group(1)
     for _ in range(2):
         try:
             ad.log.info("Reboot in fastboot")
@@ -5816,6 +5824,14 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         except Exception as e:
             ad.log.error("Exception error %s", e)
     ad.root_adb()
+    adb_radio_version_output = ad.adb.getprop("gsm.version.baseband")
+    ad.log.info("adb getprop gsm.version.baseband = %s",
+                adb_radio_version_output)
+    if adb_radio_version_output != fastboot_radio_version_output:
+        msg = ("fastboot radio version output %s does not match with adb"
+               " radio version output %s" % (fastboot_radio_version_output,
+                                             adb_radio_version_output))
+        abort_all_tests(ad.log, msg)
     if not ad.ensure_screen_on():
         ad.log.error("User window cannot come up")
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
