@@ -5995,11 +5995,11 @@ def bring_up_connectivity_monitor(ad):
         ad.log.info("reboot to bring up %s", monitor_apk)
         reboot_device(ad)
         for i in range(30):
-            if ads[0].is_apk_running(monitor_apk):
-                ads[0].log.info("%s is running after reboot", monitor_apk)
+            if ad.is_apk_running(monitor_apk):
+                ad.log.info("%s is running after reboot", monitor_apk)
                 return True
             else:
-                ads[0].log.info(
+                ad.log.info(
                     "%s is not running after reboot. Wait and check again",
                     monitor_apk)
                 time.sleep(30)
