@@ -2461,7 +2461,8 @@ def trigger_modem_crash(ad, timeout=120):
 def trigger_modem_crash_by_modem(ad, timeout=120):
     begin_time = get_current_epoch_time()
     ad.adb.shell(
-        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        "setprop persist.vendor.sys.modem.diag.mdlog false",
+        ignore_status=True)
     # Legacy pixels use persist.sys.modem.diag.mdlog.
     ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
@@ -5291,7 +5292,8 @@ def set_qxdm_logger_command(ad, mask=None):
         # turned on automatically
         ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
         ad.adb.shell(
-            "setprop persist.vendor.sys.modem.diag.mdlog true", ignore_status=True)
+            "setprop persist.vendor.sys.modem.diag.mdlog true",
+            ignore_status=True)
         # Legacy pixels use persist.sys.modem.diag.mdlog.
         ad.adb.shell(
             "setprop persist.sys.modem.diag.mdlog true", ignore_status=True)
@@ -5972,3 +5974,57 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
 def get_screen_shot_logs(ads, test_name="", begin_time=None):
     for ad in ads:
         get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
+
+
+def bring_up_connectivity_monitor(ad):
+    monitor_apk = None
+    for apk in ("com.google.telephonymonitor",
+                "com.google.android.connectivitymonitor"):
+        if ad.is_apk_installed(apk):
+            ad.log.info("apk %s is installed", apk)
+            monitor_apk = apk
+            break
+    if not monitor_apk:
+        ad.log.info("ConnectivityMonitor|TelephonyMonitor is not installed")
+        return False
+    toggle_connectivity_monitor_setting(ad, True)
+
+    if not ad.is_apk_running(monitor_apk):
+        ad.log.info("%s is not running", monitor_apk)
+        # Reboot
+        ad.log.info("reboot to bring up %s", monitor_apk)
+        reboot_device(ad)
+        for i in range(30):
+            if ad.is_apk_running(monitor_apk):
+                ad.log.info("%s is running after reboot", monitor_apk)
+                return True
+            else:
+                ad.log.info(
+                    "%s is not running after reboot. Wait and check again",
+                    monitor_apk)
+                time.sleep(30)
+        ad.log.error("%s is not running after reboot", monitor_apk)
+        return False
+    else:
+        ad.log.info("%s is running", monitor_apk)
+        return True
+
+
+def toggle_connectivity_monitor_setting(ad, state=True):
+    monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
+    ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
+    current_state = True if monitor_setting == "user_enabled" else False
+    if current_state == state:
+        return True
+    elif state is None:
+        state = not current_state
+    expected_monitor_setting = "user_enabled" if state else "disabled"
+    cmd = "setprop persist.radio.enable_tel_mon %s" % expected_monitor_setting
+    ad.log.info("Toggle connectivity monitor by %s", cmd)
+    ad.adb.shell(
+        "am start -n com.android.settings/.DevelopmentSettings",
+        ignore_status=True)
+    ad.adb.shell(cmd)
+    monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
+    ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
+    return monitor_setting == expected_monitor_setting
