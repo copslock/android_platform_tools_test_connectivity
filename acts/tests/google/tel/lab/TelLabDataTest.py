@@ -84,6 +84,7 @@ class TelLabDataTest(TelephonyBaseTest):
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        self.md8475_version = self.user_params.get("md8475", "A")
         self.step_size = self.user_params.get("power_step_size", 5)
         self.start_power_level = self.user_params.get("start_power_level", -40)
         self.stop_power_level = self.user_params.get("stop_power_level", -100)
@@ -95,7 +96,7 @@ class TelLabDataTest(TelephonyBaseTest):
     def setup_class(self):
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option)
+                                   self.wlan_option, self.md8475_version)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False
