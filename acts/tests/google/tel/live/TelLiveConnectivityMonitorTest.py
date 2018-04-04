@@ -281,7 +281,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         call_verification_function = None
         checking_counters = ["Calls", "Calls_dropped"]
         checking_reasons = []
-        vt = False
+        result = True
         if setup:
             if not hasattr(self, "_setup_%s" % setup):
                 self.log.error("_setup_%s function is not defined", setup)
@@ -349,9 +349,9 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             if self.dut.droid.telecomIsInCall():
                 hangup_call(self.log, self.dut)
                 if trigger:
-                    self.dut.log.info(
-                        "Still in call after trigger modem crash")
-                    return False
+                    self.dut.log.info("Still in call after trigger %s",
+                                      trigger)
+                    result = False
             else:
                 self.dut.log.info("Not in call anymore, there is call drop")
                 reasons = self.dut.search_logcat(
@@ -371,6 +371,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             if call_data_summary_after[counter] != call_data_summary_before.get(
                     counter, 0) + 1:
                 self.dut.log.error("Counter %s did not increase", counter)
+                result = False
         for reason_key in checking_reasons:
             if call_data_summary_after.get(reason_key):
                 drop_reason = call_data_summary_after[reason_key]
@@ -384,15 +385,23 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             else:
                 self.dut.log.error("%s is not provided in summary report",
                                    reason_key)
-        # Parse logcat for UI notification
-        if self.dut.search_logcat("Bugreport notification title Call Drop:"):
+                result = False
+
+        if not trigger:
+            return result
+        # Parse logcat for UI notification only for the first failure
+        if self.dut.search_logcat("Bugreport notification title Call Drop:",
+                                  self.begin_time):
             self.dut.log.info("User got the Call Drop Notification with "
                               "TelephonyMonitor/ConnectivityMonitor on")
-            return True
+            return result
         else:
-            self.dut.log.error("User didn't get Call Drop Notify with "
-                               "TelephonyMonitor/ConnectivityMonitor on")
-            return False
+            self.dut.log.warning("User didn't get Call Drop Notify with "
+                                 "TelephonyMonitor/ConnectivityMonitor on")
+            if call_data_summary_after.get("Calls_dropped", 0) > 1:
+                return result
+            else:
+                return False
 
     """ Tests Begin """
 
