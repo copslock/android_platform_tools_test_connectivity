@@ -38,9 +38,9 @@ from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
+from acts.test_utils.tel.tel_test_utils import is_sim_ready
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import reboot_device
-from acts.test_utils.tel.tel_test_utils import refresh_sl4a_session
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
@@ -179,10 +179,11 @@ class TelephonyBaseTest(BaseTestClass):
         else:
             ensure_phones_idle(self.log, self.android_devices)
         for ad in self.android_devices:
+            if not is_sim_ready(self.log, ad):
+                continue
             setup_droid_properties(self.log, ad, sim_conf_file)
 
             # Setup VoWiFi MDN for Verizon. b/33187374
-            build_id = ad.build_info["build_id"]
             if "vzw" in [
                     sub["operator"]
                     for sub in ad.telephony["subscription"].values()
