@@ -410,6 +410,23 @@ def get_phone_number_by_secret_code(ad, operator):
     return ""
 
 
+def get_user_config_profile(ad):
+    return {
+        "WFC Mode":
+        ad.droid.imsGetWfcMode(),
+        "WFC Enabled":
+        is_wfc_enabled(ad.log, ad),
+        "Airplane Mode":
+        ad.droid.connectivityCheckAirplaneMode(),
+        "Platform Enhanced 4G LTE Mode":
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform(),
+        "User Enhanced 4G LTE Mode":
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser(),
+        "VoLTE Enabled":
+        ad.droid.telephonyIsVolteAvailable()
+    }
+
+
 def get_slot_index_from_subid(log, ad, sub_id):
     try:
         info = ad.droid.subscriptionGetSubInfoForSubscriber(sub_id)
@@ -693,8 +710,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     timeout_time = time.time() + MAX_WAIT_TIME_AIRPLANEMODE_EVENT
     ad.droid.connectivityToggleAirplaneMode(new_state)
 
-    event = None
-
     try:
         try:
             event = ad.ed.wait_for_event(
@@ -705,13 +720,8 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                 value_list=service_state_list)
             ad.log.info("Got event %s", event)
         except Empty:
-            pass
-        if event is None:
-            ad.log.error("Did not get expected service state %s",
-                         service_state_list)
-            return False
-        else:
-            ad.log.info("Received event: %s", event)
+            ad.log.warning("Did not get expected service state change to %s",
+                           service_state_list)
     finally:
         for sub_id in sub_id_list:
             ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
@@ -2060,17 +2070,19 @@ def verify_internet_connection_by_ping(log, ad, retries=1,
                 ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
             if result == expected_state:
                 ad.log.info(
-                    "Internet connection by ping test to %s is %s as expected",
+                    "Internet connection by pinging to %s is %s as expected",
                     dest, expected_state)
                 if dest == ip_addr:
                     ad.log.warning("Suspect dns failure")
                     ad.log.info("DNS config: %s",
-                                ad.adb.shell("getprop | grep dns"))
+                                ad.adb.shell("getprop | grep dns").replace(
+                                    "\n", " "))
+                    return False
                 return True
             else:
                 ad.log.error(
-                    "Internet connection by ping test to %s is not %s as expected",
-                    dest, expected_state)
+                    "Internet connection test by pinging %s is %s, expecting %s",
+                    dest, result, expected_state)
     return False
 
 
@@ -5491,7 +5503,7 @@ def start_adb_tcpdump(ad,
         try:
             start_standing_subprocess(cmd, 10)
         except Exception as e:
-            ad.log.exception(e)
+            ad.log.error(e)
 
 
 def stop_tcpdumps(ads):
