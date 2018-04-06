@@ -722,10 +722,12 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         except Empty:
             ad.log.warning("Did not get expected service state change to %s",
                            service_state_list)
-    finally:
-        for sub_id in sub_id_list:
-            ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
-                sub_id)
+        finally:
+            for sub_id in sub_id_list:
+                ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
+                    sub_id)
+    except Exception as e:
+        ad.log.error(e)
 
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
     try:
@@ -5525,7 +5527,7 @@ def stop_adb_tcpdump(ad, interface="any"):
         try:
             ad.adb.shell("killall -9 tcpdump")
         except Exception as e:
-            ad.log.exception("Killing tcpdump with exception %s", e)
+            ad.log.error("Killing tcpdump with exception %s", e)
     else:
         out = ad.adb.shell("ps -ef | grep tcpdump | grep %s" % interface)
         if "tcpdump -i" in out:
@@ -5603,7 +5605,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     try:
         ad.start_adb_logcat()
     except:
-        ad.log.exception("Failed to start adb logcat!")
+        ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
     if ad.skip_sl4a: return status
@@ -5979,9 +5981,9 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
-def log_screen_shot(ad, test_name):
+def log_screen_shot(ad, test_name=""):
     file_name = "/sdcard/Pictures/screencap_%s.png" % (
-        utils.get_current_epoch_time())
+        test_name, utils.get_current_epoch_time())
     try:
         ad.adb.shell("screencap -p %s" % file_name)
     except:
@@ -5993,9 +5995,9 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     if logs:
         ad.log.info("Pulling %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
-                                "Screenshot_%s" % self.serial)
+                                "Screenshot_%s" % ad.serial)
         utils.create_dir(log_path)
-        self.pull_files(logs, log_path)
+        ad.pull_files(logs, log_path)
     ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
 
 
